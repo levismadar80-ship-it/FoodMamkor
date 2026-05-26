@@ -7,7 +7,7 @@
 
 ## 2026-05-26 — MEH-712 restore Heebo Hebrew fallback (RED, chunk-by-chunk)
 
-**Branch:** `feature/meh-712-restore-heebo-hebrew-fallback` (off staging tip `5125646`, Wave 1A merge). **PR #TBD** (draft), base `staging`. Closes MEH-712; unblocks MEH-700, MEH-701.
+**Branch:** `feature/meh-712-restore-heebo-hebrew-fallback` (off staging tip `5125646`, Wave 1A merge). **PR #855 merged** (`3fc3fff`), base `staging`. Closes MEH-712; unblocks MEH-700, MEH-701.
 
 **What:** restored Heebo to canonical `body-*`/`label-*` token stacks (`"DM Sans","Heebo","sans-serif"`) via DESIGN.md front-matter → tokens.json regen → config spread (no config edit; single source of truth + drift gate preserved). Migrated the 1 remaining `font-sans` usage (StoryCardCanvas.jsx:272 → `font-body-md`). DESIGN.md prose documents the Hebrew-fallback policy. Headlines (Frank Ruhl Libre) untouched.
 
@@ -19,7 +19,7 @@
 
 ## 2026-05-26 — MEH-686 Wave 1A (batched token migration)
 
-**Branch:** `feature/meh-686-wave-1a-token-cleanup` (off staging post-PR-#853). GREEN-tier batched (3 migrations, 1 PR) to resolve the 10-file overlap from Wave 1 Phase 0. **PR #TBD** (draft), base `staging`. Zero visual change (pure class renames; config untouched).
+**Branch:** `feature/meh-686-wave-1a-token-cleanup` (off staging post-PR-#853). GREEN-tier batched (3 migrations, 1 PR) to resolve the 10-file overlap from Wave 1 Phase 0. **PR #854 merged** (`5125646`), base `staging`. Zero visual change (pure class renames; config untouched).
 
 **Migrations:** MEH-707 `rounded`→`rounded-lg` (19) · MEH-704 `*-text-secondary` #6B6B6B→`*-muted` (21) · MEH-706 (reduced) `*-text-primary` #1C1A17→`*-text` (2). 34 files. build+lint+drift-gate green. Green `text-primary` (325 occ) verified untouched.
 

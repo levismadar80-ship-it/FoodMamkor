@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-05-26 — Fix DESIGN.md References: tailwind.tokens.js → .json (MEH-709)
+
+`fix(MEH-709)`: docs-only — corrected two stale references in `docs/DESIGN.md`
+(intro blockquote + References section) from `frontend/tailwind.tokens.js` to
+`frontend/tailwind.tokens.json` (the real generated artifact + `design:export`
+target). Phase-0 side-finding from MEH-686 Step 18. No code; drift gate green
+(prose change doesn't alter the export).
+
 ### 2026-05-26 — Restore Heebo Hebrew fallback to canonical body/label tokens (MEH-712)
 
 `feat(MEH-712)`: prerequisite hardening before the body/label token migrations
