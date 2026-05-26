@@ -105,7 +105,7 @@ export default function RatingPage() {
           <button
             type="submit"
             disabled={stars === 0}
-            className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+            className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
           >
             {t("submit")}
           </button>

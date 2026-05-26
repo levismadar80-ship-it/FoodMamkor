@@ -151,7 +151,7 @@ export default function RegisterClient() {
           <h1 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
-          <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center">
+          <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
         </div>
@@ -278,7 +278,7 @@ export default function RegisterClient() {
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+            className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">

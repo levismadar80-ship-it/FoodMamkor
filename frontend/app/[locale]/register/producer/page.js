@@ -398,7 +398,7 @@ function RegisterProducerPageBody() {
                 setStepError("");
                 setStep(2);
               }}
-              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition"
+              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition"
             >
               {t("auth.register.producer.actions.next")}
             </button>
@@ -462,7 +462,7 @@ function RegisterProducerPageBody() {
                       // private browsing / storage disabled — flag is best-effort
                     }
                   }}
-                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
                 >
                   {t("auth.register.producer.actions.write_later")}
                 </button>
@@ -486,7 +486,7 @@ function RegisterProducerPageBody() {
                       // private browsing / storage disabled — best-effort
                     }
                   }}
-                  className="text-xs text-primary underline mt-1 hover:text-primary-light"
+                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
                 >
                   {t("auth.register.producer.actions.edit_description")}
                 </button>
@@ -602,7 +602,7 @@ function RegisterProducerPageBody() {
               <button
                 type="button"
                 onClick={() => setLicenseOptionalExpanded(true)}
-                className="text-xs text-primary underline hover:text-primary-light text-right"
+                className="text-xs text-primary underline hover:text-primary-dark text-right"
               >
                 {t("auth.register.producer.actions.add_license")}
               </button>

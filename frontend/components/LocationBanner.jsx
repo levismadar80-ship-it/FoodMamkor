@@ -40,7 +40,7 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
         <button
           type="button"
           onClick={onOpenModal}
-          className="bg-primary text-white text-sm font-medium px-4 py-1.5 rounded-[8px] hover:bg-primary-light transition whitespace-nowrap"
+          className="bg-primary text-white text-sm font-medium px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition whitespace-nowrap"
         >
           {t("choose_city")}
         </button>

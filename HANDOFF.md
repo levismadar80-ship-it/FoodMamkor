@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-705 primary-light → primary-dark hover (🟡 YELLOW)
+
+**Branch:** `feature/meh-705-primary-light-to-primary-dark` (off staging `e859cf7`, #860 merge). **PR #TBD** (draft), base `staging`. Closes MEH-705. **YELLOW — mobile QA gate before merge.**
+
+**What:** `hover:bg-primary-light` (41) + `hover:text-primary-light` (6) → `hover:*-primary-dark` — 47 occurrences, 31 files. **Deliberate visual change** (hover flips lighten→darken) to align with DESIGN.md "brand greens go deeper on interaction." NOT value-identical — unlike the other Contract renames. `hover:*-primary-dark` 30→77. Non-hover primary-light = 0 (none existed). tailwind.config.js `primary-light` definition untouched (1 remaining, MEH-708 scope). build+lint+drift green.
+
+**⚠️ Mobile QA REQUIRED before merge:** verify hover→tap-active behavior on 3+ CTAs (buttons darken, not lighten) on the Vercel preview.
+
+**Next:** await mobile QA + Sapir MERGE. Remaining Contract: MEH-700 (font-headline split), MEH-703 (secondary, decision-needed), MEH-708 (alias-drop). MEH-713 (green-50 audit, Low). Do NOT auto-start next.
+
 ## 2026-05-26 — MEH-698 site-text → text (GREEN)
 
 **Branch:** `feature/meh-698-site-text-to-text` (off staging `2baf1e0`, #859 merge). **PR #TBD** (draft), base `staging`. Closes MEH-698.
