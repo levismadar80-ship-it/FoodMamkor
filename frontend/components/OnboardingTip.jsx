@@ -55,7 +55,7 @@ export default function OnboardingTip({
             <button
               type="button"
               onClick={onNext ?? onDismiss}
-              className="mt-2 text-xs font-semibold text-light hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
+              className="mt-2 text-xs font-semibold text-green-50 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
             >
               {ctaLabel} ←
             </button>

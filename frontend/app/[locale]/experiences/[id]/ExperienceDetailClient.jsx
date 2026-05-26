@@ -136,7 +136,7 @@ export default function ExperienceDetailClient() {
         )}
 
         {ex.category && (
-          <span className="inline-block bg-light text-primary text-xs px-3 py-1 rounded-full mb-3">
+          <span className="inline-block bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
             {ex.category}
           </span>
         )}
@@ -182,7 +182,7 @@ export default function ExperienceDetailClient() {
         )}
 
         {ex.requirements && (
-          <div className="bg-light border border-border rounded-[16px] p-6 mb-6">
+          <div className="bg-green-50 border border-border rounded-[16px] p-6 mb-6">
             <h2 className="font-headline text-lg font-bold text-site-text mb-2">
               {t("requirements_title")}
             </h2>
@@ -206,7 +206,7 @@ export default function ExperienceDetailClient() {
             </a>
             <Link
               href="/experiences"
-              className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
+              className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-green-50 transition"
             >
               {t("all_experiences")}
             </Link>

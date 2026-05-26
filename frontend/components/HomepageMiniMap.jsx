@@ -106,7 +106,7 @@ function CanvasClickToFullMap() {
 function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("loading")}</p>
     </div>
@@ -116,7 +116,7 @@ function PreviewSkeleton() {
 function PreviewEmpty() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-light flex flex-col items-center justify-center gap-2 px-4 text-center">
+    <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} weight="duotone" className="text-primary/40" />
       <p className="text-site-text text-sm">
         {t("pre_launch_hint")} 🌿

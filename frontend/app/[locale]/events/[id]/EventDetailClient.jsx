@@ -82,7 +82,7 @@ export default function EventDetailClient() {
           className="mb-4"
         />
 
-        <span className="inline-block bg-light text-primary text-xs px-3 py-1 rounded-full mb-3">
+        <span className="inline-block bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
           {event.category}
         </span>
 
@@ -140,7 +140,7 @@ export default function EventDetailClient() {
           )}
           <Link
             href="/events"
-            className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
+            className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-green-50 transition"
           >
             {t("all_events")}
           </Link>

@@ -74,12 +74,12 @@ export default function ExperiencesClient() {
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
             {t("title")}
           </h1>
-          <p className="text-light text-lg">
+          <p className="text-green-50 text-lg">
             {t("subtitle")}
           </p>
           <Link
             href="/experiences/new"
-            className="inline-block mt-6 bg-background text-primary px-6 py-3 rounded-full font-medium hover:bg-light transition"
+            className="inline-block mt-6 bg-background text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
           >
             {t("submit_cta")}
           </Link>
@@ -125,7 +125,7 @@ export default function ExperiencesClient() {
                 className={`px-3 py-1 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-light"
+                    : "bg-white text-site-text border border-border hover:bg-green-50"
                 }`}
               >
                 {tCat(cat.labelKey)}

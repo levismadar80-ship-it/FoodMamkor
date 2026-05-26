@@ -269,7 +269,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       )}
 
       {/* Caption preview */}
-      <pre className="text-xs bg-light rounded-[8px] p-3 whitespace-pre-wrap text-site-text font-body-md text-right" dir="rtl">
+      <pre className="text-xs bg-green-50 rounded-[8px] p-3 whitespace-pre-wrap text-site-text font-body-md text-right" dir="rtl">
         {caption}
       </pre>
     </div>

@@ -72,7 +72,7 @@ export default function MiniMap({ lat, lng, name }) {
               href={wazeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
+              className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-green-50 transition"
             >
               <NavigationArrow size={16} weight="regular" aria-hidden="true" />
               {t("open_in_waze")}-Waze
@@ -82,7 +82,7 @@ export default function MiniMap({ lat, lng, name }) {
             href={gmapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-light transition"
+            className="flex items-center gap-1.5 border border-[#1C1A17] text-site-text px-4 py-2 rounded-[6px] text-sm hover:bg-green-50 transition"
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
             {t("open_in_google")}-Google Maps

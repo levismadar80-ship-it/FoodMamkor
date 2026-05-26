@@ -106,7 +106,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
         {value.map((city) => (
           <span
             key={city}
-            className="inline-flex items-center gap-1 bg-light text-site-text border border-border rounded-full text-[12px] px-2.5 py-0.5"
+            className="inline-flex items-center gap-1 bg-green-50 text-site-text border border-border rounded-full text-[12px] px-2.5 py-0.5"
           >
             {city}
             <button
@@ -155,7 +155,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
               onMouseDown={(e) => { e.preventDefault(); addCity(city); }}
               onMouseEnter={() => setActiveIdx(i)}
               className={`px-4 py-2.5 cursor-pointer transition ${
-                i === activeIdx ? "bg-light text-primary" : "hover:bg-background"
+                i === activeIdx ? "bg-green-50 text-primary" : "hover:bg-background"
               }`}
             >
               {city}

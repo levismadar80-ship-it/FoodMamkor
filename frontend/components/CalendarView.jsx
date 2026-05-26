@@ -96,7 +96,7 @@ export default function CalendarView({ items, linkPrefix }) {
           type="button"
           onClick={prevMonth}
           aria-label={t("previous_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -109,7 +109,7 @@ export default function CalendarView({ items, linkPrefix }) {
           type="button"
           onClick={nextMonth}
           aria-label={t("next_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -156,7 +156,7 @@ export default function CalendarView({ items, linkPrefix }) {
                   ? "bg-primary text-white"
                   : isToday
                     ? "ring-2 ring-primary text-site-text"
-                    : "text-site-text hover:bg-light"
+                    : "text-site-text hover:bg-green-50"
               }`}
             >
               <span>{d.getDate()}</span>
@@ -189,7 +189,7 @@ export default function CalendarView({ items, linkPrefix }) {
                 <li key={it.id}>
                   <Link
                     href={`${linkPrefix}/${it.id}`}
-                    className="block rounded-lg border border-border p-3 hover:bg-light transition"
+                    className="block rounded-lg border border-border p-3 hover:bg-green-50 transition"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-site-text truncate">

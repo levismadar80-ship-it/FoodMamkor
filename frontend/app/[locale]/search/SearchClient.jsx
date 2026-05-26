@@ -172,7 +172,7 @@ function SearchPageBody() {
                     <li key={prod.id}>
                       <Link
                         href={href}
-                        className="flex flex-col gap-1 p-4 hover:bg-light/50 transition"
+                        className="flex flex-col gap-1 p-4 hover:bg-green-50/50 transition"
                       >
                         <span className="font-medium text-site-text">
                           {prod.name}
@@ -196,7 +196,7 @@ function SearchPageBody() {
           {totalHits === 0 && (
             <div className="text-center py-16">
               <div
-                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl"
+                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl"
                 aria-hidden="true"
               >
                 🌿

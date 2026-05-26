@@ -77,7 +77,7 @@ export default function NewEventPage() {
         </div>
       )}
 
-      <p className="text-sm text-fg-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+      <p className="text-sm text-fg-muted bg-green-50 rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
         {t("info_paragraph")}
       </p>
 
@@ -223,7 +223,7 @@ export default function NewEventPage() {
           </button>
           <Link
             href="/producer/dashboard"
-            className="border border-border text-site-text px-6 py-3 rounded-[8px] hover:bg-light transition"
+            className="border border-border text-site-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
           >
             {t("cancel")}
           </Link>

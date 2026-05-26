@@ -252,7 +252,7 @@ export default function AdminOutreachPage() {
                           <button
                             type="button"
                             onClick={() => setWaLeadId(lead.id)}
-                            className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-light"
+                            className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-green-50"
                           >
                             {t("outreach.actions.whatsapp")}
                           </button>
@@ -417,7 +417,7 @@ function AddLeadModal({ onClose, onCreated }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-light"
+            className="flex-1 border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
           >
             {t("common.cancel")}
           </button>
@@ -537,7 +537,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
                 <button
                   type="button"
                   onClick={() => copyTemplate(tpl)}
-                  className="text-xs px-2 py-1 rounded-lg border border-border hover:bg-light"
+                  className="text-xs px-2 py-1 rounded-lg border border-border hover:bg-green-50"
                 >
                   {t("outreach.modal_wa.copy")}
                 </button>
@@ -558,7 +558,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-light"
+          className="w-full border border-border rounded-[12px] py-2 text-sm hover:bg-green-50"
         >
           {t("outreach.modal_wa.close")}
         </button>

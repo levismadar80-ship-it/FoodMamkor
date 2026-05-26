@@ -56,7 +56,7 @@ export default function ContactClient() {
             })}
           </p>
 
-          <div className="bg-light/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
+          <div className="bg-green-50/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
             <p className="flex items-center gap-2 flex-wrap">
               <span>📧</span>
               <span>{t("email_label")}</span>

@@ -151,7 +151,7 @@ export default function EventsPage() {
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
             {t("title")}
           </h1>
-          <p className="text-light text-lg">
+          <p className="text-green-50 text-lg">
             {t("subtitle")}
           </p>
         </div>
@@ -203,7 +203,7 @@ export default function EventsPage() {
         <div
           role="tablist"
           aria-label={t("view_mode_label")}
-          className="inline-flex gap-1 rounded-lg bg-light p-1"
+          className="inline-flex gap-1 rounded-lg bg-green-50 p-1"
         >
           <button
             role="tab"
@@ -251,7 +251,7 @@ export default function EventsPage() {
                 className={`px-3 py-1 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-light"
+                    : "bg-white text-site-text border border-border hover:bg-green-50"
                 }`}
               >
                 {categoryLabel(cat)}
@@ -317,7 +317,7 @@ function EventCard({ event, freeLabel }) {
           style={{ backgroundImage: `url(${event.image_url})` }}
         />
       ) : (
-        <div className="h-44 bg-light flex items-center justify-center text-5xl">
+        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
           📅
         </div>
       )}
@@ -336,7 +336,7 @@ function EventCard({ event, freeLabel }) {
           <p className="text-sm text-site-text/85 line-clamp-2 mb-3">{event.description}</p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
-          <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
+          <span className="bg-green-50 text-primary text-xs px-2 py-1 rounded-full">
             {event.category}
           </span>
           <span className="text-accent font-semibold text-sm">

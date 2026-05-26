@@ -90,7 +90,7 @@ export function HomeProducersGrid({
         <div className="mb-6 flex items-center gap-2">
           <span className="text-sm text-fg-muted">{t("home.producers.filter_showing")}</span>
           {categories.find((c) => String(c.id) === filters.category) && (
-            <span className="bg-light text-primary px-3 py-1 rounded-full text-sm">
+            <span className="bg-green-50 text-primary px-3 py-1 rounded-full text-sm">
               {categories.find((c) => String(c.id) === filters.category).emoji}{" "}
               {categories.find((c) => String(c.id) === filters.category).name}
             </span>
@@ -119,7 +119,7 @@ export function HomeProducersGrid({
             </p>
           )}
           {showNewUserHint && visibleProducers.length > 0 && (
-            <div className="flex items-center gap-2 bg-light border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
+            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
               <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
@@ -142,7 +142,7 @@ export function HomeProducersGrid({
           </div>
           {producers.length === 0 && (
             <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-light mb-4" aria-hidden="true">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} weight="duotone" className="text-primary" />
               </div>
               <h3 className="font-headline text-xl font-bold text-site-text mb-2">
@@ -163,7 +163,7 @@ export function HomeProducersGrid({
             <div className="text-center mt-8">
               <button
                 onClick={onLoadMore}
-                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-light transition font-medium"
+                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-green-50 transition font-medium"
               >
                 {t("home.producers.load_more")}
               </button>

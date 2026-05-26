@@ -335,7 +335,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           <p className="text-xs text-fg-muted mb-3">עד {MAX_IMAGES} תמונות. לפחות תמונה אחת חובה.</p>
           <div className="flex flex-wrap gap-3 mb-2">
             {images.map((url, i) => (
-              <div key={i} className="relative w-24 h-24 rounded-[8px] overflow-hidden bg-light border border-border">
+              <div key={i} className="relative w-24 h-24 rounded-[8px] overflow-hidden bg-green-50 border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="w-full h-full object-cover" />
                 <button
@@ -352,7 +352,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               </div>
             ))}
             {images.length < MAX_IMAGES && (
-              <label className="w-24 h-24 border-2 border-dashed border-border rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-light transition text-fg-muted text-xs text-center p-2">
+              <label className="w-24 h-24 border-2 border-dashed border-border rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-green-50 transition text-fg-muted text-xs text-center p-2">
                 {uploading ? "מעלה..." : <><Camera size={16} weight="duotone" aria-hidden="true" className="inline" /> הוסיפי תמונה</>}
                 <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageUpload} />
               </label>

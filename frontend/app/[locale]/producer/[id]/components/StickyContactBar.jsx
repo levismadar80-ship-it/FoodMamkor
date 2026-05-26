@@ -79,7 +79,7 @@ export default function StickyContactBar({
                 ? "bg-primary text-white hover:bg-primary-light"
                 : getPrimaryMethod(producer) === "email"
                 ? "bg-primary-dark text-white hover:bg-primary"
-                : "bg-white text-site-text border border-primary hover:bg-light"
+                : "bg-white text-site-text border border-primary hover:bg-green-50"
             }`}
           >
             {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}

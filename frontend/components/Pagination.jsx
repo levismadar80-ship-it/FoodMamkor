@@ -71,7 +71,7 @@ export default function Pagination({
           onClick={() => go(safePage - 1)}
           disabled={safePage <= 1}
           aria-label={t("prev_aria")}
-          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-light disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {t("prev")}
         </button>
@@ -99,7 +99,7 @@ export default function Pagination({
               className={`min-w-[36px] px-2 py-1.5 rounded-[8px] text-sm border transition ${
                 active
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-site-text border-border hover:bg-light"
+                  : "bg-white text-site-text border-border hover:bg-green-50"
               }`}
             >
               {entry}
@@ -112,7 +112,7 @@ export default function Pagination({
           onClick={() => go(safePage + 1)}
           disabled={safePage >= totalPages}
           aria-label={t("next_aria")}
-          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-light disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-[8px] text-sm border border-border bg-white hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {t("next")}
         </button>

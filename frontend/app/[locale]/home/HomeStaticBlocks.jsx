@@ -44,7 +44,7 @@ export function HomeMarquee() {
             {MARQUEE_KEYS.map((key) => (
               <span
                 key={`${loop}-${key}`}
-                className="font-body whitespace-nowrap text-light"
+                className="font-body whitespace-nowrap text-green-50"
                 style={{
                   fontSize: 14,
                   letterSpacing: "0.06em",
@@ -73,7 +73,7 @@ export function HomeFounderQuote() {
         href="/about"
         className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <div className="w-20 h-20 rounded-full bg-light flex items-center justify-center shrink-0" aria-hidden="true">
+        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center shrink-0" aria-hidden="true">
           <Leaf size={36} weight="duotone" className="text-primary" />
         </div>
         <div className="flex-1">
@@ -112,7 +112,7 @@ export function HomeRecentlyViewed({ items }) {
               href={href}
               className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
             >
-              <div className="relative w-full h-[100px] bg-light overflow-hidden">
+              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
                   <img
                     src={imgSrc}
@@ -219,12 +219,12 @@ export function HomeCTA() {
         <h2 className="font-headline font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
-        <p className="text-light/90 text-lg mb-8 max-w-xl mx-auto">
+        <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body")}
         </p>
         <Link
           href="/register/producer"
-          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-light transition font-medium"
+          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-green-50 transition font-medium"
         >
           {t("home.cta.button")}
         </Link>

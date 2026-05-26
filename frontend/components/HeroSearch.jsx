@@ -342,7 +342,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {recentSearches.map((q) => (
                 <li
                   key={q}
-                  className="flex items-center justify-between px-3 py-2.5 text-sm text-site-text hover:bg-light/50 cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between px-3 py-2.5 text-sm text-site-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -376,7 +376,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {trending.map((q) => (
                 <li
                   key={q}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-site-text hover:bg-light/50 cursor-pointer min-h-[44px]"
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-site-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -421,7 +421,7 @@ function Row({ id, active, onSelect, onHover, children }) {
       }}
       onMouseEnter={onHover}
       className={`px-3 py-2.5 cursor-pointer text-sm min-h-[44px] flex items-start flex-col justify-center ${
-        active ? "bg-light text-primary" : "text-site-text hover:bg-light/50"
+        active ? "bg-green-50 text-primary" : "text-site-text hover:bg-green-50/50"
       }`}
     >
       {children}

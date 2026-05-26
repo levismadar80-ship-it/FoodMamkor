@@ -30,7 +30,7 @@ function VanityLinkCard({ slug }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
       <p className="text-sm font-medium text-site-text mb-2">{t("label")}</p>
-      <div className="flex items-center gap-2 bg-light rounded-[10px] px-3 py-2 mb-3">
+      <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
       </div>
       <div className="flex gap-2">
@@ -260,7 +260,7 @@ export default function ProducerDashboardPage() {
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   active
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-site-text border-border hover:bg-light"
+                    : "bg-white text-site-text border-border hover:bg-green-50"
                 }`}
               >
                 <span
@@ -657,7 +657,7 @@ function TopCitiesBarChart({ data }) {
               <span className="text-site-text">{row.city}</span>
               <span className="text-fg-muted">{row.count}</span>
             </div>
-            <div className="h-2 bg-light rounded-full overflow-hidden">
+            <div className="h-2 bg-green-50 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full"
                 style={{ width: `${pct}%` }}
@@ -708,7 +708,7 @@ function ProfileStrengthCard({ profile, analytics }) {
         <span className="text-primary font-bold text-lg">{pct}%</span>
       </div>
       <p className="text-xs text-fg-muted mb-3">{strengthLabel(pct)}</p>
-      <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
+      <div className="h-2 bg-green-50 rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-primary rounded-full transition-all duration-500"
           style={{ width: `${pct}%` }}

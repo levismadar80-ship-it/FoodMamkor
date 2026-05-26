@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-702 light → green-50 (GREEN, largest Contract PR)
+
+**Branch:** `feature/meh-702-light-to-green-50` (off staging `c0e9987`, #858 merge). **PR #TBD** (draft), base `staging`. Closes MEH-702.
+
+**What:** renamed `light` color → `green-50` — 199 occurrences (177 bg / 21 text / 1 border) across 83 files. Value-identical (#EAF3DE both, green-50 added in #857). Disambiguation clean: `primary-light` (47, MEH-705) + `secondary-light` (2, MEH-703) untouched (used 3 targeted prefix replacements, NOT blanket `light`). No config/tokens/DESIGN edit (legacy `light` alias drops in MEH-708). build+drift+lint green. Mobile QA waived.
+
+**⚠️ Side-finding (flag, not in MEH-702 scope):** 4 pre-existing `bg-green-50` usages (category-requests, AdminProducersImportPreview, ExperienceDetailClient, VerifyEmailClient) referenced Tailwind's *default* green-50; MEH-710's custom override shifted them #f0fdf4→#EAF3DE when #857 merged. Minor visual change already live on staging — candidate follow-up ticket.
+
+**Next:** await PR CI + Sapir merge. Execution-ready Contract: MEH-705 (primary-light→primary-dark, YELLOW), MEH-700 (font-headline split). MEH-708 (alias-drop) now can drop `light`+`site-muted` (both at 0 usage) but still blocked on site-text/secondary/headline/body. Do NOT auto-start next.
+
 ## 2026-05-26 — MEH-699 site-muted → fg-muted (GREEN)
 
 **Branch:** `feature/meh-699-site-muted-to-fg-muted` (off staging `ea29721`, #857 merge). **PR #TBD** (draft), base `staging`. Closes MEH-699.

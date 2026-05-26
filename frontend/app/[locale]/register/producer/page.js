@@ -293,7 +293,7 @@ function RegisterProducerPageBody() {
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
-          <div className="bg-light border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
+          <div className="bg-green-50 border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <span className="block">{t("auth.register.producer.upgrade_banner.connected_with", { email: user.email })}</span>
@@ -303,7 +303,7 @@ function RegisterProducerPageBody() {
         )}
 
         {showDraftBanner && step < 3 && (
-          <div className="bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
+          <div className="bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-site-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
               <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
@@ -321,7 +321,7 @@ function RegisterProducerPageBody() {
         )}
 
         {prefillToken && prefillApplied && (
-          <div className="bg-light text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
+          <div className="bg-green-50 text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
             {t("auth.register.producer.prefill_notice")}
           </div>
@@ -444,7 +444,7 @@ function RegisterProducerPageBody() {
                 disabled={descriptionDisabled}
                 placeholder={descriptionPlaceholder}
                 rows={6}
-                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-fg-muted disabled:cursor-not-allowed"
+                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
                 dir="rtl"
               />
               {!descriptionDisabled ? (
@@ -705,7 +705,7 @@ function RegisterProducerPageBody() {
                 {t("auth.register.producer.success.whatsapp_warning")}
               </div>
             )}
-            <div className="bg-light rounded-[16px] p-5 text-right mb-6">
+            <div className="bg-green-50 rounded-[16px] p-5 text-right mb-6">
               <h3 className="font-semibold text-site-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
               <ul className="text-sm text-fg-muted space-y-2">
                 <li>{t("auth.register.producer.success.next_step1")}</li>

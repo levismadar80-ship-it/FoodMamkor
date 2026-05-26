@@ -91,10 +91,10 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Dark-green sidebar — RTL, so it's on the right */}
-      <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-light flex-col z-40">
+      <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-green-50 flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
           <p className="font-headline text-xl text-white">{t("common.brand_admin")}</p>
-          <p className="text-light/60 text-xs mt-1">{user.name}</p>
+          <p className="text-green-50/60 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {NAV_HREFS.map((n) => {
@@ -111,7 +111,7 @@ export default function AdminLayout({ children }) {
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[8px] text-sm transition ${
                   active
                     ? "bg-primary text-white"
-                    : "text-light/70 hover:bg-white/5 hover:text-white"
+                    : "text-green-50/70 hover:bg-white/5 hover:text-white"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
@@ -130,7 +130,7 @@ export default function AdminLayout({ children }) {
             );
           })}
         </nav>
-        <div className="px-5 py-4 border-t border-white/10 text-xs text-light/50">
+        <div className="px-5 py-4 border-t border-white/10 text-xs text-green-50/50">
           <Link href="/" className="hover:text-white transition">
             {t("common.back_home")}
           </Link>
@@ -148,7 +148,7 @@ export default function AdminLayout({ children }) {
                 key={n.href}
                 href={n.href}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs transition ${
-                  active ? "bg-primary text-white" : "text-light/70"
+                  active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
               >
                 <Icon size={14} weight="duotone" />

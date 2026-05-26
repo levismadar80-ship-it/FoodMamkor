@@ -84,7 +84,7 @@ export default function NeighborClient() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed inset-x-4 z-[500] transition-opacity duration-500 top-20 rounded-[10px] bg-light text-primary py-[10px] px-4"
+          className="fixed inset-x-4 z-[500] transition-opacity duration-500 top-20 rounded-[10px] bg-green-50 text-primary py-[10px] px-4"
         >
           {/* TODO MEH-543: i18n after /neighbor activation post-launch */}
           <p className="text-sm font-medium text-center">
@@ -96,7 +96,7 @@ export default function NeighborClient() {
       {/* ================= Hero =================
           PREMIUM_DESIGN: Ken Burns background image behind the title —
           kitchen/cooking photo from Unsplash. */}
-      <section className="relative text-light py-16 md:py-20 overflow-hidden">
+      <section className="relative text-green-50 py-16 md:py-20 overflow-hidden">
         <div
           className="kenburns-left absolute"
           style={{
@@ -120,9 +120,9 @@ export default function NeighborClient() {
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
           >
             מהמטבח של השכן
-            <House size={44} weight="duotone" className="text-light" aria-hidden="true" />
+            <House size={44} weight="duotone" className="text-green-50" aria-hidden="true" />
           </h1>
-          <p className="font-body text-light/90 text-lg max-w-xl mx-auto">
+          <p className="font-body text-green-50/90 text-lg max-w-xl mx-auto">
             מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח
           </p>
         </div>
@@ -189,7 +189,7 @@ export default function NeighborClient() {
           <SkeletonProducerGrid count={6} />
         ) : listings.length === 0 ? (
           <div className="text-center py-16">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl" aria-hidden="true">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl" aria-hidden="true">
               🏡
             </div>
             {user?.role === "producer" ? (
@@ -211,7 +211,7 @@ export default function NeighborClient() {
                     <button
                       type="button"
                       onClick={() => setShowForm(true)}
-                      className="inline-block border border-primary text-primary rounded-full px-6 py-3 text-sm font-medium hover:bg-light transition"
+                      className="inline-block border border-primary text-primary rounded-full px-6 py-3 text-sm font-medium hover:bg-green-50 transition"
                     >
                       אני רוצה לפרסם מוצר חד-פעמי
                     </button>

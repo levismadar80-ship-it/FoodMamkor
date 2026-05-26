@@ -33,7 +33,7 @@ function GroupBuyCard({ gb }) {
             {gb.title}
           </h2>
           {gb.city && (
-            <span className="text-xs bg-light text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
+            <span className="text-xs bg-green-50 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
               {gb.city}
             </span>
           )}
@@ -136,7 +136,7 @@ export default function GroupBuysClient() {
           <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
             {t("hero_title")}
           </h1>
-          <p className="text-light text-lg">
+          <p className="text-green-50 text-lg">
             {t("hero_subtitle")}
           </p>
         </div>
