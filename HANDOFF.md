@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-686 Wave 1A (batched token migration)
+
+**Branch:** `feature/meh-686-wave-1a-token-cleanup` (off staging post-PR-#853). GREEN-tier batched (3 migrations, 1 PR) to resolve the 10-file overlap from Wave 1 Phase 0. **PR #TBD** (draft), base `staging`. Zero visual change (pure class renames; config untouched).
+
+**Migrations:** MEH-707 `rounded`→`rounded-lg` (19) · MEH-704 `*-text-secondary` #6B6B6B→`*-muted` (21) · MEH-706 (reduced) `*-text-primary` #1C1A17→`*-text` (2). 34 files. build+lint+drift-gate green. Green `text-primary` (325 occ) verified untouched.
+
+**Phase 1.5 scope changes:** MEH-712 opened (font-sans Heebo-fallback discovery, blocks MEH-708). MEH-706 reduced to text-text-primary only; `secondary-light`→MEH-703, `font-sans`→MEH-712.
+
+**Closes on merge:** MEH-707, MEH-704, MEH-706 (partial). **Still open Contract:** MEH-698/699/700/702/703/705/708 + MEH-701 (deferred Wave 1C) + MEH-712. Decisions still pending: light (MEH-702), site-muted (MEH-699), primary-light (MEH-705), font-sans (MEH-712).
+
 ## 2026-05-25 — MEH-686 Step 18 PR-A (Tailwind Expand phase)
 
 **Branch:** `feature/meh-686-step-18-pr-a-tailwind-expand` (off staging). Risk tier: 🔴 RED (central tokens config) — built chunk-by-chunk with WAIT gates. **PR #853 (draft)**, base `staging`. Awaiting CI green + Sapir mobile QA before merge.

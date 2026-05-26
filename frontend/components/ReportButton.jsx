@@ -49,7 +49,7 @@ export default function ReportButton({ producerId }) {
             {submitted ? (
               <div className="text-center">
                 <p className="text-lg font-semibold mb-2">{t("success_title")}</p>
-                <p className="text-text-secondary mb-4">{t("success_message")}</p>
+                <p className="text-muted mb-4">{t("success_message")}</p>
                 <button
                   onClick={() => { setShowModal(false); setSubmitted(false); setReason(""); }}
                   className="bg-primary text-white px-6 py-2 rounded-[12px]"
@@ -76,7 +76,7 @@ export default function ReportButton({ producerId }) {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="text-text-secondary hover:text-text-primary"
+                    className="text-muted hover:text-text"
                   >
                     {t("cancel")}
                   </button>

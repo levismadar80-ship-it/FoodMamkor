@@ -46,7 +46,7 @@ export default function OnboardingTip({
             <button
               type="button"
               onClick={onDismiss}
-              className="absolute top-2 end-3 text-white/60 hover:text-white text-base leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+              className="absolute top-2 end-3 text-white/60 hover:text-white text-base leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
               aria-label={t("close_aria")}
             >
               ×
@@ -55,7 +55,7 @@ export default function OnboardingTip({
             <button
               type="button"
               onClick={onNext ?? onDismiss}
-              className="mt-2 text-xs font-semibold text-light hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded"
+              className="mt-2 text-xs font-semibold text-light hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
             >
               {ctaLabel} ←
             </button>

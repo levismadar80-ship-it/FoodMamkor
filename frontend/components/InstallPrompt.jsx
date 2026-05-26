@@ -123,7 +123,7 @@ export default function InstallPrompt() {
       <button
         onClick={handleDismiss}
         aria-label={t("dismiss_aria")}
-        className="shrink-0 text-site-muted hover:text-site-text transition p-1 rounded"
+        className="shrink-0 text-site-muted hover:text-site-text transition p-1 rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

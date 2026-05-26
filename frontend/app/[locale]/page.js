@@ -90,7 +90,7 @@ export default function HomePage() {
       {!statsLoaded && (
         <section className="bg-primary text-white py-4 text-center" aria-busy="true">
           <p className="font-body text-lg tracking-wide opacity-60">
-            <span className="inline-block w-48 h-5 align-middle rounded bg-white/20 animate-pulse" />
+            <span className="inline-block w-48 h-5 align-middle rounded-lg bg-white/20 animate-pulse" />
           </p>
         </section>
       )}

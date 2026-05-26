@@ -31,7 +31,7 @@ export default function EditProducerPage() {
 
   if (loading || !user || fetching) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-muted">
         {t("common.loading")}
       </div>
     );
@@ -39,7 +39,7 @@ export default function EditProducerPage() {
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-text-secondary">
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-muted">
         {t("producers.edit.not_found")}
       </div>
     );
@@ -48,7 +48,7 @@ export default function EditProducerPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/admin?tab=producers" className="text-sm text-text-secondary hover:text-primary">
+        <Link href="/admin?tab=producers" className="text-sm text-muted hover:text-primary">
           {t("common.back")}
         </Link>
         <h1 className="text-2xl font-bold mt-2">{t("producers.edit.title", { name: producer.name })}</h1>

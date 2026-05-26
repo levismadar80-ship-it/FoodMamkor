@@ -66,7 +66,7 @@ export default function AdminUsersPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("users.title")}</h1>
-        <span className="text-sm text-text-secondary">{t("users.count", { count: users.length })}</span>
+        <span className="text-sm text-muted">{t("users.count", { count: users.length })}</span>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">
@@ -97,27 +97,27 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.name")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.email")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.city")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.role")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.favorites")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.joined")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("users.columns.actions")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.name")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.email")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.city")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.role")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.favorites")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.joined")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("users.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-text-secondary">{t("users.empty")}</td>
+                  <td colSpan={7} className="text-center py-8 text-muted">{t("users.empty")}</td>
                 </tr>
               )}
               {users.map((u) => (
                 <>
                   <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">{u.email}</td>
-                    <td className="px-4 py-3 text-text-secondary">{u.city || "—"}</td>
+                    <td className="px-4 py-3 text-muted text-xs">{u.email}</td>
+                    <td className="px-4 py-3 text-muted">{u.city || "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* Role badge */}
@@ -146,7 +146,7 @@ export default function AdminUsersPage() {
                         {u.role !== "admin" && (
                           <button
                             onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "promote" })}
-                            className="text-xs px-2 py-0.5 rounded border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
+                            className="text-xs px-2 py-0.5 rounded-lg border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
                           >
                             {t("users.actions.promote")}
                           </button>
@@ -156,7 +156,7 @@ export default function AdminUsersPage() {
                         {u.role === "admin" && !isSuperAdmin(u) && !isMe(u) && (
                           <button
                             onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "demote" })}
-                            className="text-xs px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
+                            className="text-xs px-2 py-0.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
                           >
                             {t("users.actions.demote")}
                           </button>
@@ -164,27 +164,27 @@ export default function AdminUsersPage() {
 
                         {/* Tooltip for protected super-admin row */}
                         {isSuperAdmin(u) && (
-                          <span className="text-xs text-text-secondary" title={t("users.actions.protected_title")}>
+                          <span className="text-xs text-muted" title={t("users.actions.protected_title")}>
                             🔒
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
+                    <td className="px-4 py-3 text-muted text-xs">
                       <button onClick={() => toggleExpand(u)} className="hover:text-primary hover:underline">
                         {u.favorites_count} ❤️
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
+                    <td className="px-4 py-3 text-muted text-xs">
                       {new Date(u.created_at).toLocaleDateString("he-IL")}
                     </td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleBlock(u.id)}
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`text-xs px-2 py-1 rounded-lg ${
                           u.is_blocked
                             ? "bg-red-100 text-red-700"
-                            : "text-text-secondary hover:text-red-600"
+                            : "text-muted hover:text-red-600"
                         }`}
                       >
                         {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
@@ -196,7 +196,7 @@ export default function AdminUsersPage() {
                       <td colSpan={7} className="px-6 py-3 text-xs">
                         <p className="font-medium mb-2">{t("users.favorites.of", { name: u.name })}</p>
                         {favorites[u.id].length === 0 ? (
-                          <p className="text-text-secondary">{t("users.favorites.empty")}</p>
+                          <p className="text-muted">{t("users.favorites.empty")}</p>
                         ) : (
                           <ul className="space-y-1">
                             {favorites[u.id].map((f) => (
@@ -242,7 +242,7 @@ export default function AdminUsersPage() {
               </button>
               <button
                 onClick={() => setConfirm(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-text-secondary hover:bg-gray-50 transition"
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
               >
                 {t("common.cancel")}
               </button>

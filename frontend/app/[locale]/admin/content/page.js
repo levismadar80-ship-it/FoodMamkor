@@ -87,7 +87,7 @@ function CategoriesEditor() {
 
       <ul className="space-y-2">
         {items.length === 0 ? (
-          <li className="text-sm text-text-secondary text-center py-4">{t("content.categories.empty")}</li>
+          <li className="text-sm text-muted text-center py-4">{t("content.categories.empty")}</li>
         ) : (
           items.map((c) => (
             <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
@@ -106,12 +106,12 @@ function CategoryRow({ cat, onSave, onDelete }) {
 
   return (
     <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
-      <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="border border-border rounded px-2 py-1 w-16 text-center" />
-      <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded px-2 py-1" />
+      <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="border border-border rounded-lg px-2 py-1 w-16 text-center" />
+      <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
       <button
         onClick={() => onSave(cat.id, name, emoji)}
         disabled={!dirty}
-        className="text-xs bg-secondary text-white px-3 py-1 rounded disabled:opacity-30"
+        className="text-xs bg-secondary text-white px-3 py-1 rounded-lg disabled:opacity-30"
       >
         {t("content.categories.save")}
       </button>
@@ -141,18 +141,18 @@ function HiddenHomeProducts() {
     <div className="bg-white border border-border rounded-[12px] p-5">
       <h2 className="font-semibold mb-3">{t("content.home_products.heading")}</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-text-secondary">{t("content.home_products.empty")}</p>
+        <p className="text-sm text-muted">{t("content.home_products.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {items.map((hp) => (
             <li key={hp.id} className="flex items-center justify-between border border-border rounded-[12px] p-3">
               <div>
                 <p className="font-medium">{hp.title}</p>
-                <p className="text-xs text-text-secondary">{hp.seller_name} · {hp.city}</p>
+                <p className="text-xs text-muted">{hp.seller_name} · {hp.city}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => restore(hp.id)} className="bg-primary text-white px-3 py-1 rounded text-xs">{t("content.home_products.restore")}</button>
-                <button onClick={() => remove(hp.id)} className="bg-red-500 text-white px-3 py-1 rounded text-xs">{t("content.home_products.delete")}</button>
+                <button onClick={() => restore(hp.id)} className="bg-primary text-white px-3 py-1 rounded-lg text-xs">{t("content.home_products.restore")}</button>
+                <button onClick={() => remove(hp.id)} className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs">{t("content.home_products.delete")}</button>
               </div>
             </li>
           ))}

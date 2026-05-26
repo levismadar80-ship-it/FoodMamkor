@@ -129,7 +129,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
     button = (
       <button
         {...commonProps}
-        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
       >
         {favorited ? "❤️" : "🤍"}
       </button>

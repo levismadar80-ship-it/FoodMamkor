@@ -41,7 +41,7 @@ export default function RatingPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-text-secondary">{t("loading")}</p>
+        <p className="text-muted">{t("loading")}</p>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export default function RatingPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white rounded-[12px] p-8 text-center max-w-sm">
           <p className="text-xl">😕</p>
-          <p className="text-text-secondary mt-2">{error}</p>
+          <p className="text-muted mt-2">{error}</p>
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export default function RatingPage() {
         <div className="bg-white rounded-[12px] p-8 text-center max-w-sm">
           <p className="text-5xl mb-4">🙏</p>
           <h1 className="text-2xl font-bold mb-2">{t("thanks_title")}</h1>
-          <p className="text-text-secondary">{t("thanks_message")}</p>
+          <p className="text-muted">{t("thanks_message")}</p>
         </div>
       </div>
     );
@@ -74,7 +74,7 @@ export default function RatingPage() {
       <div className="bg-white rounded-[12px] p-8 max-w-sm w-full">
         <h1 className="text-xl font-bold text-center mb-2">{t("heading")}</h1>
         {info?.seller_name && (
-          <p className="text-center text-text-secondary mb-1">
+          <p className="text-center text-muted mb-1">
             {t.rich("bought_from", {
               name: info.seller_name,
               seller: (chunks) => <strong>{chunks}</strong>,
@@ -82,7 +82,7 @@ export default function RatingPage() {
           </p>
         )}
         {info?.product_title && (
-          <p className="text-center text-text-secondary mb-6">{info.product_title}</p>
+          <p className="text-center text-muted mb-6">{info.product_title}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -97,7 +97,7 @@ export default function RatingPage() {
               maxLength={100}
               className="w-full border rounded-[12px] px-3 py-2 text-center"
             />
-            <p className="text-xs text-text-secondary text-center mt-1">{comment.length}/100</p>
+            <p className="text-xs text-muted text-center mt-1">{comment.length}/100</p>
           </div>
 
           {error && <p className="text-red-500 text-sm text-center" role="alert">{error}</p>}

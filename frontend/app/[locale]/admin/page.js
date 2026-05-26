@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     return <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-4">{error}</div>;
   }
   if (!data) {
-    return <div className="text-text-secondary">{t("common.loading")}</div>;
+    return <div className="text-muted">{t("common.loading")}</div>;
   }
 
   const s = data.stats;
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
-        <p className="text-text-secondary text-sm mt-1">{t("dashboard.subtitle")}</p>
+        <p className="text-muted text-sm mt-1">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* Stat cards */}
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
               <c.Icon size={28} weight="duotone" aria-hidden="true" className="text-primary" />
               <span className="text-3xl font-bold text-primary">{c.value}</span>
             </div>
-            <p className="text-xs text-text-secondary mt-2">
+            <p className="text-xs text-muted mt-2">
               {c.label}
               {c.key === "group_buys" && (
                 <span
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
               <HourglassSimple size={28} weight="duotone" aria-hidden="true" className="text-yellow-600" />
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.producers_waiting", { count: s.pending_producers })}</p>
-                <p className="text-xs text-text-secondary">{t("dashboard.alerts.click_to_handle")}</p>
+                <p className="text-xs text-muted">{t("dashboard.alerts.click_to_handle")}</p>
               </div>
             </Link>
           )}
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
               <Warning size={28} weight="fill" aria-hidden="true" className="text-red-500" />
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.open_reports", { count: s.open_reports })}</p>
-                <p className="text-xs text-text-secondary">{t("dashboard.alerts.needs_review")}</p>
+                <p className="text-xs text-muted">{t("dashboard.alerts.needs_review")}</p>
               </div>
             </Link>
           )}
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
               <Package size={28} weight="duotone" aria-hidden="true" className="text-orange-500" />
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.hidden_home_products", { count: s.hidden_home_products })}</p>
-                <p className="text-xs text-text-secondary">{t("dashboard.alerts.for_review")}</p>
+                <p className="text-xs text-muted">{t("dashboard.alerts.for_review")}</p>
               </div>
             </Link>
           )}
@@ -176,14 +176,14 @@ export default function AdminDashboard() {
             </Link>
           </div>
           {(data.pending_producers || []).length === 0 ? (
-            <p className="text-sm text-text-secondary">{t("dashboard.pending_panel.empty")}</p>
+            <p className="text-sm text-muted">{t("dashboard.pending_panel.empty")}</p>
           ) : (
             <ul className="space-y-2">
               {(data.pending_producers || []).map((p) => (
                 <li key={p.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
                   <div>
                     <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-text-secondary">{p.city || "—"}</p>
+                    <p className="text-xs text-muted">{p.city || "—"}</p>
                   </div>
                   <Link
                     href={`/admin/producers/${p.id}/edit`}
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
       <div className="bg-white border border-border rounded-[12px] p-5">
         <h2 className="font-semibold mb-3">{t("dashboard.activity.heading")}</h2>
         {(data.recent_activity || []).length === 0 && (
-          <p className="text-sm text-text-secondary">{t("dashboard.activity.empty")}</p>
+          <p className="text-sm text-muted">{t("dashboard.activity.empty")}</p>
         )}
         <ul className="space-y-2">
           {(data.recent_activity || []).map((a) => (
@@ -213,9 +213,9 @@ export default function AdminDashboard() {
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}
                 </Link>
-                <span className="text-xs text-text-secondary">({getProducerStatusLabel(a.status)})</span>
+                <span className="text-xs text-muted">({getProducerStatusLabel(a.status)})</span>
               </div>
-              <span className="text-xs text-text-secondary">
+              <span className="text-xs text-muted">
                 {a.created_at ? new Date(a.created_at).toLocaleDateString("he-IL") : ""}
               </span>
             </li>
@@ -280,8 +280,8 @@ function DeltaCard({ label, value, Icon, totalLabel }) {
         <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">+{value}</span>
       </div>
-      <p className="text-xs text-text-secondary">{label}</p>
-      <p className="text-xs text-text-secondary">{totalLabel}</p>
+      <p className="text-xs text-muted">{label}</p>
+      <p className="text-xs text-muted">{totalLabel}</p>
     </div>
   );
 }
@@ -296,7 +296,7 @@ function SimpleStat({ label, value, Icon, href }) {
         <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">{value}</span>
       </div>
-      <p className="text-xs text-text-secondary">{label}</p>
+      <p className="text-xs text-muted">{label}</p>
     </Link>
   );
 }
@@ -308,7 +308,7 @@ function SimpleStat({ label, value, Icon, href }) {
  */
 function DauLineChart({ data, emptyLabel, ariaLabel }) {
   if (!data || data.length === 0) {
-    return <p className="text-sm text-text-secondary">{emptyLabel}</p>;
+    return <p className="text-sm text-muted">{emptyLabel}</p>;
   }
   const W = 320;
   const H = 110;
@@ -348,7 +348,7 @@ function DauLineChart({ data, emptyLabel, ariaLabel }) {
 function TopCitiesList({ data, emptyLabel }) {
   if (!data || data.length === 0) {
     return (
-      <p className="text-sm text-text-secondary">{emptyLabel}</p>
+      <p className="text-sm text-muted">{emptyLabel}</p>
     );
   }
   const maxV = Math.max(1, ...data.map((d) => d.count));
@@ -359,8 +359,8 @@ function TopCitiesList({ data, emptyLabel }) {
         return (
           <li key={row.city} className="text-sm">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-text-primary">{row.city}</span>
-              <span className="text-text-secondary">{row.count}</span>
+              <span className="text-text">{row.city}</span>
+              <span className="text-muted">{row.count}</span>
             </div>
             <div className="h-2 bg-accent rounded-full overflow-hidden">
               <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
@@ -380,27 +380,27 @@ function ServerHealthPanel({ health }) {
     <div className="bg-white border border-border rounded-[12px] p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold">{t("dashboard.health.heading")}</h2>
-        <span className="text-xs text-text-secondary">
+        <span className="text-xs text-muted">
           {empty ? t("dashboard.health.waiting_traffic") : t("dashboard.health.requests_count", { count: health.sample_count })}
         </span>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs text-text-secondary mb-1">{t("dashboard.health.response_time_avg")}</p>
+          <p className="text-xs text-muted mb-1">{t("dashboard.health.response_time_avg")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.response_time_avg_ms}
-            <span className="text-sm text-text-secondary ms-1">ms</span>
+            <span className="text-sm text-muted ms-1">ms</span>
           </p>
         </div>
         <div>
-          <p className="text-xs text-text-secondary mb-1">{t("dashboard.health.requests_per_minute")}</p>
+          <p className="text-xs text-muted mb-1">{t("dashboard.health.requests_per_minute")}</p>
           <p className="text-2xl font-bold text-primary">
             {health.requests_per_minute}
-            <span className="text-sm text-text-secondary ms-1">req/min</span>
+            <span className="text-sm text-muted ms-1">req/min</span>
           </p>
         </div>
       </div>
-      <p className="text-[13px] text-text-secondary mt-3 leading-snug">
+      <p className="text-[13px] text-muted mt-3 leading-snug">
         {t("dashboard.health.footnote")}
       </p>
     </div>

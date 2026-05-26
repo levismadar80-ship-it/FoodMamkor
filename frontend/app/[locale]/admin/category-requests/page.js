@@ -60,7 +60,7 @@ export default function AdminCategoryRequestsPage() {
     <div className="space-y-6" dir="rtl">
       <div>
         <h1 className="text-2xl font-bold">{t("category_requests.title")}</h1>
-        <p className="text-text-secondary text-sm mt-1">
+        <p className="text-muted text-sm mt-1">
           {t("category_requests.subtitle", { count: groups.length })}
         </p>
       </div>

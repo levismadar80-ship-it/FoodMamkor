@@ -4,6 +4,21 @@
 
 ## Unreleased
 
+### 2026-05-26 — Tailwind token migration Wave 1A (MEH-686 Contract — batched)
+
+`refactor(MEH-686)`: first Contract-phase batch (Expand-Contract per ADR-007),
+combining 3 token migrations in one PR to resolve the 10-file overlap surfaced
+in Wave 1 Phase 0. Pure class renames — zero visual change, no `tailwind.config.js`
+edit (aliases stay until MEH-708):
+- **MEH-707** — bare `rounded` → `rounded-lg` (19 files; both 16px). Phase 0's
+  "20th file" was a JSDoc comment in `lib/distance.js`, not a class.
+- **MEH-704** — `*-text-secondary` (#6B6B6B token, double-prefix) → `*-muted` (21 files).
+- **MEH-706** (reduced) — `*-text-primary` (#1C1A17 token, double-prefix) → `*-text` (2 files).
+  `secondary-light` deferred to MEH-703; `font-sans` deferred to MEH-712 (non-equivalent
+  swap — Heebo Hebrew fallback drop needs a Sapir decision).
+- 34 files touched; bare green `text-primary` (325 occurrences) untouched — verified
+  occurrence-equal vs staging. build + lint + token-drift gate green.
+
 ### 2026-05-25 — Tailwind config Expand phase (MEH-686 Step 18 PR-A)
 
 `feat(MEH-686)`: **PR #853 (draft)** — Expand phase of the token migration per

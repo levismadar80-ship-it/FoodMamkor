@@ -347,7 +347,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
                   ✕
                 </button>
                 {i === 0 && (
-                  <span className="absolute bottom-1 start-1 bg-primary text-white text-[10px] px-1 rounded">ראשית</span>
+                  <span className="absolute bottom-1 start-1 bg-primary text-white text-[10px] px-1 rounded-lg">ראשית</span>
                 )}
               </div>
             ))}
