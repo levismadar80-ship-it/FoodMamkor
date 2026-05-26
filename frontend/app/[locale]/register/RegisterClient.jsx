@@ -148,7 +148,7 @@ export default function RegisterClient() {
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-          <h1 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
+          <h1 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium text-center">
@@ -170,7 +170,7 @@ export default function RegisterClient() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline text-2xl font-bold text-text mb-1">{t("auth.register.consumer.heading")}</h1>
+          <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.register.consumer.heading")}</h1>
           <p className="text-fg-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
         </div>
 

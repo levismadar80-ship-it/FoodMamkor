@@ -141,7 +141,7 @@ export default function ExperienceDetailClient() {
           </span>
         )}
 
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-text mb-4">
+        <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-4">
           {ex.title}
         </h1>
 
@@ -183,7 +183,7 @@ export default function ExperienceDetailClient() {
 
         {ex.requirements && (
           <div className="bg-green-50 border border-border rounded-[16px] p-6 mb-6">
-            <h2 className="font-headline text-lg font-bold text-text mb-2">
+            <h2 className="font-headline-md text-lg font-bold text-text mb-2">
               {t("requirements_title")}
             </h2>
             <p className="text-text/85 whitespace-pre-line">

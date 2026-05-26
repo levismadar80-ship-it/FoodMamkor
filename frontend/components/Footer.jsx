@@ -101,7 +101,7 @@ export default function Footer() {
               <ArrowLeft size={14} weight="bold" aria-hidden="true" />
             </Link>
             <div className="text-center sm:text-start">
-              <p className="font-headline text-white" style={{ fontSize: "14px" }}>
+              <p className="font-headline-md text-white" style={{ fontSize: "14px" }}>
                 {t("nav.footer.cta_pitch")}
               </p>
               <p style={{ fontSize: "11px", color: "#9ab89a" }}>
@@ -171,7 +171,7 @@ export default function Footer() {
           {/* Column 3 — Newsletter */}
           <div>
             <h3
-              className="font-headline text-white mb-4"
+              className="font-headline-md text-white mb-4"
               style={{ fontSize: "16px" }}
             >
               {t("nav.footer.newsletter_heading")}

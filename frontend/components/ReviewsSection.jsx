@@ -169,7 +169,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
-      <h2 className="font-headline text-2xl font-bold text-text mb-6">
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
@@ -180,7 +180,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       {showSummary && (
         <div className="bg-green-50 rounded-lg p-6 text-center mb-6">
           <p
-            className="font-headline font-black leading-none text-text mb-2"
+            className="font-headline-display font-black leading-none text-text mb-2"
             style={{ fontSize: 48 }}
           >
             {Number(avgRating).toFixed(1)}
@@ -211,7 +211,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               onSubmit={handleSubmit}
               className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
             >
-              <h3 className="font-headline text-lg font-bold text-text">{t("form_heading")}</h3>
+              <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
               <div>
                 <label className="block text-sm text-text mb-2">{t("rating_label")}</label>
                 <StarPicker

@@ -62,7 +62,7 @@ export default function EditRecipePage() {
       >
         {t("back")}
       </Link>
-      <h1 className="font-headline text-2xl font-bold text-text mt-1 mb-6">
+      <h1 className="font-headline-md text-2xl font-bold text-text mt-1 mb-6">
         {t("heading")}
       </h1>
       {recipe ? (

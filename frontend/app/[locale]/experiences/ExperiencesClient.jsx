@@ -71,7 +71,7 @@ export default function ExperiencesClient() {
           }}
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
             {t("title")}
           </h1>
           <p className="text-green-50 text-lg">

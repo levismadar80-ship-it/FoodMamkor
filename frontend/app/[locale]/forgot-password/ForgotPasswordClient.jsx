@@ -35,7 +35,7 @@ export default function ForgotPasswordClient() {
         <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
-        <h1 className="font-headline text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
+        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
         <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
 
         {submitted ? (

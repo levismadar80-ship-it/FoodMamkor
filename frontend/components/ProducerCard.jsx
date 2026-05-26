@@ -266,7 +266,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                   {producer.categories?.[0]?.emoji || "🌿"}
                 </span>
                 {producer.categories?.[0]?.name && (
-                  <span className="font-headline text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
+                  <span className="font-headline-md text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
                     {producer.categories[0].name}
                   </span>
                 )}
@@ -280,7 +280,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-baseline gap-2 justify-between">
           <Link href={producerHref} className="block flex-1 min-w-0">
-            <h3 className="font-headline font-bold text-[18px] text-text hover:text-primary transition leading-snug line-clamp-2">
+            <h3 className="font-headline-md font-bold text-[18px] text-text hover:text-primary transition leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}

@@ -98,7 +98,7 @@ function SearchPageBody() {
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-text mb-4">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-4">
         {q ? t("title_results", { q }) : t("title_default")}
       </h1>
 
@@ -146,7 +146,7 @@ function SearchPageBody() {
           {/* -------- Businesses -------- */}
           {producers.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-text mb-4">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
                 {t("section_producers")} ({producers.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -160,7 +160,7 @@ function SearchPageBody() {
           {/* -------- Products -------- */}
           {products.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-text mb-4">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
                 {t("section_products")} ({products.length})
               </h2>
               <ul className="divide-y divide-border bg-white rounded-[12px] border border-border overflow-hidden">
@@ -201,7 +201,7 @@ function SearchPageBody() {
               >
                 🌿
               </div>
-              <h2 className="font-headline text-2xl font-bold text-text mb-2">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                 {t("empty_title")}
               </h2>
               <p className="text-fg-muted mb-6 max-w-md mx-auto">

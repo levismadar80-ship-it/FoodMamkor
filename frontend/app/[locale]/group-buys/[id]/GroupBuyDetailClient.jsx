@@ -225,7 +225,7 @@ export default function GroupBuyDetailClient({ id }) {
                 {gb.city}
               </span>
             )}
-            <h1 className="font-headline text-2xl font-bold text-text mt-2 mb-1">
+            <h1 className="font-headline-md text-2xl font-bold text-text mt-2 mb-1">
               {gb.title}
             </h1>
             {gb.producer_name && (

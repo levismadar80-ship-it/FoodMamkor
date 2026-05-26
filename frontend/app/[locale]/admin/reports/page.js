@@ -43,7 +43,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold text-text">{t("reports.title")}</h1>
+      <h1 className="font-headline-lg text-3xl font-bold text-text">{t("reports.title")}</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">

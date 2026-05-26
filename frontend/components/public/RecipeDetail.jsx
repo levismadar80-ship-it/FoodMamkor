@@ -73,7 +73,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </div>
       )}
 
-      <h1 className="font-headline text-3xl font-bold text-text mb-3">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
         {recipe.title}
       </h1>
 
@@ -114,7 +114,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Ingredients */}
       {ingredients.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("ingredients_heading")}
           </h2>
           <ul className="list-disc ps-6 space-y-1 text-text/90">
@@ -128,7 +128,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Instructions */}
       {steps.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("instructions_heading")}
           </h2>
           <ol className="list-decimal ps-6 space-y-2 text-text/90">
@@ -144,7 +144,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Related products — silent when empty per spec. */}
       {relatedProducts && relatedProducts.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("related_products_heading")}
           </h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">

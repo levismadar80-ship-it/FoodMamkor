@@ -109,7 +109,7 @@ export default function AdminExperiencesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-2xl font-bold text-text">
+          <h1 className="font-headline-md text-2xl font-bold text-text">
             {t("experiences.title")}
           </h1>
           <p className="text-fg-muted text-sm mt-1">
@@ -195,7 +195,7 @@ export default function AdminExperiencesPage() {
       {modalEx && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
-            <h2 className="font-headline text-xl font-bold text-text mb-2">
+            <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
             <p className="text-fg-muted text-sm mb-4">

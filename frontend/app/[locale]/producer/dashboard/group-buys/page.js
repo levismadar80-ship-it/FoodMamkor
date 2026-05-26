@@ -58,7 +58,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
-      <h2 className="font-headline text-lg font-bold text-text">{t("heading")}</h2>
+      <h2 className="font-headline-md text-lg font-bold text-text">{t("heading")}</h2>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -253,7 +253,7 @@ export default function ProducerGroupBuysPage() {
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("back")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>

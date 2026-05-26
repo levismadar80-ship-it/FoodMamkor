@@ -49,7 +49,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="font-headline font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
+          className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
           style={{ lineHeight: 1.15 }}
         >
           {t("home.hero.title")}

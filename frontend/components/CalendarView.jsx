@@ -102,7 +102,7 @@ export default function CalendarView({ items, linkPrefix }) {
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h3 className="font-headline text-lg md:text-xl font-bold text-text">
+        <h3 className="font-headline-md text-lg md:text-xl font-bold text-text">
           {monthLabel}
         </h3>
         <button
@@ -176,7 +176,7 @@ export default function CalendarView({ items, linkPrefix }) {
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-border" data-testid="calendar-day-expansion">
           <div className="flex items-baseline justify-between mb-3">
-            <h4 className="font-headline text-lg font-bold text-text">
+            <h4 className="font-headline-md text-lg font-bold text-text">
               {formatHebrewDate(selectedDate)}
             </h4>
             <span className="text-sm text-fg-muted">

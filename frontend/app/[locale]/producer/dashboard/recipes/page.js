@@ -73,7 +73,7 @@ export default function ProducerRecipesPage() {
           >
             {t("back")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>

@@ -93,7 +93,7 @@ export default function AdminLayout({ children }) {
       {/* Dark-green sidebar — RTL, so it's on the right */}
       <aside className="hidden md:flex fixed top-16 start-0 bottom-0 w-60 bg-primary-dark text-green-50 flex-col z-40">
         <div className="px-5 py-6 border-b border-white/10">
-          <p className="font-headline text-xl text-white">{t("common.brand_admin")}</p>
+          <p className="font-headline-md text-xl text-white">{t("common.brand_admin")}</p>
           <p className="text-green-50/60 text-xs mt-1">{user.name}</p>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">

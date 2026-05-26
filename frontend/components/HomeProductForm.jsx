@@ -212,7 +212,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
   return (
     <div className="bg-white rounded-[16px] p-6 mb-6 border border-border">
-      <h3 className="font-headline text-2xl font-bold mb-1 text-text">פרסום מוצר ביתי</h3>
+      <h3 className="font-headline-md text-2xl font-bold mb-1 text-text">פרסום מוצר ביתי</h3>
       <p className="text-fg-muted text-sm mb-6">
         מלאי את כל השדות החובה. הקונים רואים את כל המידע ומחליטים על סמך זה.
       </p>
@@ -220,7 +220,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ==================== Section 1: Product ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-text mb-2">פרטי המוצר</legend>
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">פרטי המוצר</legend>
           <div>
             <label htmlFor="hpf-title" className="block text-sm text-text mb-1">
               שם המוצר <span className="text-red-500">*</span>
@@ -248,7 +248,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 2: Safety / dates ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-text mb-2">מידע חשוב לקונה</legend>
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">מידע חשוב לקונה</legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label htmlFor="hpf-prep" className="block text-sm text-text mb-1">
@@ -300,7 +300,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 3: Quantity + Price ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-text mb-2">כמות ומחיר</legend>
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">כמות ומחיר</legend>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label htmlFor="hpf-quantity" className="block text-sm text-text mb-1">
@@ -329,7 +329,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 4: Images ==================== */}
         <fieldset>
-          <legend className="font-headline text-lg font-bold text-text mb-2">
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">
             תמונות <span className="text-red-500 text-sm">*</span>
           </legend>
           <p className="text-xs text-fg-muted mb-3">עד {MAX_IMAGES} תמונות. לפחות תמונה אחת חובה.</p>
@@ -362,7 +362,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 5: Location ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-text mb-2">איפה נמצאים?</legend>
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">איפה נמצאים?</legend>
           <div>
             <label htmlFor="hpf-city" className="block text-sm text-text mb-1">
               עיר <span className="text-red-500">*</span>
@@ -440,7 +440,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 6: Delivery + Contact ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-text mb-2">איסוף ומסירה</legend>
+          <legend className="font-headline-md text-lg font-bold text-text mb-2">איסוף ומסירה</legend>
           <div>
             <label htmlFor="hpf-delivery" className="block text-sm text-text mb-1">שיטת מסירה</label>
             <select id="hpf-delivery" value={form.delivery_method} onChange={update("delivery_method")} className={baseInput}>

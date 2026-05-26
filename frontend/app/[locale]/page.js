@@ -172,7 +172,7 @@ export default function HomePage() {
           ========================= */}
       {newestProducers.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pb-20">
-          <h2 className="font-headline font-bold text-text mb-8 flex items-center gap-2" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
+          <h2 className="font-headline-lg font-bold text-text mb-8 flex items-center gap-2" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
             <Sparkle size={16} className="text-current" />
             {t("home.new_businesses.heading")}
           </h2>

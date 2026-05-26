@@ -362,7 +362,7 @@ function AddLeadModal({ onClose, onCreated }) {
         onSubmit={handleSubmit}
         className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
       >
-        <h2 className="font-headline text-xl font-bold">{t("outreach.modal_add.title")}</h2>
+        <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
         <input
           placeholder={t("outreach.modal_add.name_placeholder")}
           value={form.name}
@@ -447,7 +447,7 @@ function ScriptModal({ onClose }) {
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-[16px] p-6 max-w-lg w-full"
       >
-        <h2 className="font-headline text-xl font-bold mb-3 inline-flex items-center gap-2">
+        <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
           <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
@@ -520,7 +520,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-[16px] p-6 max-w-lg w-full space-y-4"
       >
-        <h2 className="font-headline text-xl font-bold">
+        <h2 className="font-headline-md text-xl font-bold">
           {t("outreach.modal_wa.title", { name: lead.name })}
         </h2>
         {tokenBusy && (

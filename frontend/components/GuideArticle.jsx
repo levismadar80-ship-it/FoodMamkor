@@ -57,7 +57,7 @@ function renderBlock(block, i) {
       return (
         <h2
           key={key}
-          className="font-headline mt-10 mb-3 sm:mt-12"
+          className="font-headline-md mt-10 mb-3 sm:mt-12"
           style={{ color: PRIMARY, fontSize: "22px", fontWeight: 700 }}
         >
           {block.text}
@@ -67,7 +67,7 @@ function renderBlock(block, i) {
       return (
         <h3
           key={key}
-          className="font-headline mt-8 mb-2"
+          className="font-headline-md mt-8 mb-2"
           style={{ color: PRIMARY_DARK, fontSize: "18px", fontWeight: 700 }}
         >
           {block.text}
@@ -164,7 +164,7 @@ export default function GuideArticle({
             מדריך לבעלות עסק · קריאה כ-{readMinutes} דקות
           </p>
           <h1
-            className="font-headline mb-3"
+            className="font-headline-lg mb-3"
             style={{
               color: PRIMARY_DARK,
               fontSize: "clamp(28px, 6vw, 44px)",
@@ -191,7 +191,7 @@ export default function GuideArticle({
           style={{ borderColor: RULE_GREEN_ALPHA }}
         >
           <p
-            className="text-[15px] mb-2 font-headline"
+            className="text-[15px] mb-2 font-headline-md"
             style={{ color: BODY_INK, fontWeight: 600 }}
           >
             ספיר שנפ

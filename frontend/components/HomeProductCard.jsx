@@ -53,7 +53,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             data-testid="homeproduct-empty-image"
           >
             <House size={36} weight="duotone" aria-hidden="true" />
-            <span className="font-headline text-sm opacity-70">מהמטבח של השכן</span>
+            <span className="font-headline-md text-sm opacity-70">מהמטבח של השכן</span>
           </div>
         )}
         <span className="absolute top-3 end-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
@@ -76,7 +76,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-headline font-bold text-lg mb-1 text-text">{product.title}</h3>
+        <h3 className="font-headline-md font-bold text-lg mb-1 text-text">{product.title}</h3>
 
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-2">

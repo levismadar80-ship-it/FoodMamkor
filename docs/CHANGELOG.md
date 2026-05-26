@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+### 2026-05-26 — Structural split: font-headline → headline-display/lg/md (MEH-700 Contract, YELLOW)
+
+`refactor(MEH-700)`: Contract-phase structural split — bare `font-headline` →
+sized canonical tokens `font-headline-display` / `font-headline-lg` /
+`font-headline-md` across **167 occurrences / 77 files**. **96 auto-applied**
+per LOCKED mapping where one clean canonical size class was present
+(`text-5xl+`→display, `text-3xl/4xl`→lg, `text-xl/2xl`→md): 4 display, 22 lg,
+70 md. **71 ambiguous** resolved per-group (below-range 33→md; no-size
+clamp/inline-px/arbitrary/template-literal 28 by rendered px; responsive 10 by
+largest breakpoint): +12 display, +9 lg, +50 md. **Value-identical / zero
+visual change** — empirically verified the compiled CSS emits
+`.font-headline-display,.font-headline-lg,.font-headline-md{font-family:Frank
+Ruhl Libre}` (family-only utilities; `font-size`/`weight` live on
+`text-headline-*`, which this migration never writes — size stays on the
+untouched `text-*`/`style`/`clamp` declarations). No `headline-sm` token exists
+— `md` is the smallest canonical headline. No `tailwind.config.js`/`tokens.json`/
+DESIGN.md edit (legacy `headline` family alias drops in MEH-708). 🟡 YELLOW,
+**mobile-QA gated before merge**. Build + lint green. Refs MEH-686.
+
 ### 2026-05-26 — Hover alignment: primary-light → primary-dark (MEH-705 Contract, YELLOW)
 
 `refactor(MEH-705)`: hover-state alignment — `hover:*-primary-light` →

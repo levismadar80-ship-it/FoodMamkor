@@ -116,7 +116,7 @@ function ResetPasswordForm() {
         <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
-        <h1 className="font-headline text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.reset.title")}</h1>
+        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.reset.title")}</h1>
         <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.reset.subtitle", { min: PASSWORD_MIN_LENGTH })}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-right">
