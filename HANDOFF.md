@@ -5,6 +5,21 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-25 — MEH-686 Step 18 PR-A (Tailwind Expand phase)
+
+**Branch:** `feature/meh-686-step-18-pr-a-tailwind-expand` (off staging). Risk tier: 🔴 RED (central tokens config) — built chunk-by-chunk with WAIT gates. **PR #853 (draft)**, base `staging`. Awaiting CI green + Sapir mobile QA before merge.
+
+**What landed (Expand, ADR-007):** `tailwind.config.js` now `require()`s the generated `tailwind.tokens.json` and spreads canonical tokens; all 13 active legacy tokens preserved (legacy wins on collision, zero visual change). 4 zero-usage tokens deleted (heebo, serif, accent-warm, accent-warm-light). CI drift gate added to pr-checks.yml build job (Flag B, MEH-271). build + lint PASS; gate self-test PASS.
+
+**Contract phase — 12 issues opened (MEH-698…MEH-709), all backlog, blocked-by MEH-686 / PR-A merge:**
+- MEH-698 site-text→text (101) · MEH-699 site-muted→fg-muted/muted (101) · MEH-700 font-headline split (77) · MEH-701 font-body split (13) · MEH-702 **light (83, BLOCKED on replacement decision)** · MEH-703 secondary per call-site (29) · MEH-704 text-secondary token→muted (21) · MEH-705 primary-light investigation (31, class-v) · MEH-706 low-usage cleanup (5) · MEH-707 rounded→rounded-lg (20) · MEH-708 alias-drop final (RED, blocked-by all) · MEH-709 DESIGN.md .js→.json (docs).
+
+**Decisions needed from Sapir before Contract runs:** (1) `light` replacement (green-scale ADR vs map vs keep) — MEH-702; (2) `site-muted`→fg-muted vs muted — MEH-699 defaults fg-muted; (3) `primary-light` resolution — MEH-705.
+
+**Pre-design-upload Checklist:** #13 (tailwind.config.js reconciled) partial — PR-A Expand closes it minimally; full close after Contract phase. Remaining gates: #2 partial, #10/#11/#14.
+
+**Next:** await PR #853 CI + Sapir merge; then Contract tickets (any order; MEH-702 blocked until light decision).
+
 ## 2026-05-24 — MEH-696: PreToolUse path-verification hook (A2 pattern)
 
 **Branch:** `feature/meh-696-path-verification-hook` (off staging). Risk tier: 🟢 GREEN — A2 pattern (script + settings + README row in PR body; only CHANGELOG + HANDOFF committed). Closes MEH-696.

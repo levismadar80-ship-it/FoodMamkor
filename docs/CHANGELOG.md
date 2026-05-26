@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-25 — Tailwind config Expand phase (MEH-686 Step 18 PR-A)
+
+`feat(MEH-686)`: **PR #853 (draft)** — Expand phase of the token migration per
+ADR-007 Expand-Contract:
+- Added canonical tokens via `require("./tailwind.tokens.json")` (ADR-019): 4 new
+  colors (`text`, `muted`, `fg-muted`, `surface`), 8 fontFamily, 8 fontSize, named
+  borderRadius scale, spacing scale.
+- Deleted 4 zero-usage tokens: `heebo`, `serif`, `accent-warm`, `accent-warm-light`.
+- Added CI drift gate enforcing `tailwind.tokens.json` ↔ `docs/DESIGN.md` sync
+  (`.github/workflows/pr-checks.yml` build job; MEH-271 two-owners rule).
+- All 13 active legacy tokens (site-text, site-muted, headline, body, light,
+  secondary, etc.) + `rounded` DEFAULT preserved for visual continuity (legacy
+  wins on name collision; `border` stays #e8e0d0).
+- 12 Contract-phase issues opened (MEH-698…MEH-709) for per-component migration.
+- Zero visual change expected (no component edits). RED tier, chunk-by-chunk.
+
 ### 2026-05-24 — MEH-696: PreToolUse path-verification hook (A2 pattern)
 
 `feat(hooks)`: new `.claude/hooks/check-path-exists.sh` (delivered in PR body
