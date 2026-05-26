@@ -160,7 +160,7 @@ export default function GroupBuyDetailClient({ id }) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <p className="text-4xl mb-4">🔍</p>
-        <p className="text-lg font-medium text-site-text">{t("not_found_title")}</p>
+        <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
         <Link href="/group-buys" className="text-primary hover:underline mt-4 inline-block">
           {t("back_to_list")}
         </Link>
@@ -225,14 +225,14 @@ export default function GroupBuyDetailClient({ id }) {
                 {gb.city}
               </span>
             )}
-            <h1 className="font-headline text-2xl font-bold text-site-text mt-2 mb-1">
+            <h1 className="font-headline text-2xl font-bold text-text mt-2 mb-1">
               {gb.title}
             </h1>
             {gb.producer_name && (
               <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
             )}
             {gb.description && (
-              <p className="text-sm text-site-text mt-3 leading-relaxed">{gb.description}</p>
+              <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
             )}
           </div>
 
@@ -257,7 +257,7 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Progress */}
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-site-text">
+              <span className="font-medium text-text">
                 {t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}
               </span>
               <span className="text-fg-muted text-xs">

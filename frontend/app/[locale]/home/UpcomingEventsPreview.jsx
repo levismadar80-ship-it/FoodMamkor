@@ -26,7 +26,7 @@ export function UpcomingEventsPreview() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y border-t border-border">
       <div className="flex items-baseline justify-between mb-8">
-        <h2 className="font-headline font-bold text-site-text flex items-center gap-2" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline font-bold text-text flex items-center gap-2" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           <Calendar size={16} className="text-current" />
           {t("home.events.heading")}
         </h2>
@@ -51,7 +51,7 @@ export function UpcomingEventsPreview() {
               <p className="text-primary text-sm font-semibold mb-1">
                 {formatEventDate(ev.event_date)} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
               </p>
-              <h3 className="font-headline text-xl font-bold text-site-text mb-1">{ev.title}</h3>
+              <h3 className="font-headline text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">
                 {ev.producer_name} · {ev.city}
               </p>

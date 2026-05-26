@@ -113,7 +113,7 @@ function LoginPageBody() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-1">
+          <h1 className="font-headline text-2xl font-bold text-text mb-1">
             {t("title")}
           </h1>
           <p className="text-fg-muted text-sm">{t("welcome")}</p>
@@ -186,7 +186,7 @@ function LoginPageBody() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
                 tabIndex={0}

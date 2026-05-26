@@ -22,7 +22,7 @@ export default function NotFound() {
           aria-hidden="true"
         />
         <p className="text-primary font-medium text-sm tracking-widest mb-2">404</p>
-        <h1 className="font-headline text-4xl font-bold text-site-text mb-3">
+        <h1 className="font-headline text-4xl font-bold text-text mb-3">
           {t("heading")}
         </h1>
         <p className="text-fg-muted text-lg mb-8 leading-relaxed">

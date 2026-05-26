@@ -247,7 +247,7 @@ export default function ChatWidget() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
-                  m.role === "user" ? "bg-primary text-white" : "bg-white text-site-text border border-border"
+                  m.role === "user" ? "bg-primary text-white" : "bg-white text-text border border-border"
                 }`}>
                   {m.content}
                 </div>
@@ -287,7 +287,7 @@ export default function ChatWidget() {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-fg-muted disabled:opacity-60"
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />

@@ -175,7 +175,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="flex-1 w-full bg-transparent outline-none text-site-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        className="flex-1 w-full bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown && hasResults}
@@ -320,7 +320,7 @@ function Row({ id, active, onSelect, onHover, children }) {
       }}
       onMouseEnter={onHover}
       className={`px-3 py-2 cursor-pointer text-sm ${
-        active ? "bg-green-50 text-primary" : "text-site-text hover:bg-green-50/50"
+        active ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
       }`}
     >
       {children}

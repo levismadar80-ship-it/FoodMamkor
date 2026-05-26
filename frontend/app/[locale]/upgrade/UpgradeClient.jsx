@@ -29,13 +29,13 @@ export default function UpgradeClient() {
     <div className="max-w-2xl mx-auto px-4 py-16">
       <div className="bg-background border border-border rounded-[16px] p-8 text-center">
         <div className="text-5xl mb-4" aria-hidden="true">⭐</div>
-        <h1 className="font-headline text-3xl font-bold text-site-text mb-2">{t("title")}</h1>
+        <h1 className="font-headline text-3xl font-bold text-text mb-2">{t("title")}</h1>
         <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Free Plan */}
           <div className="border border-border rounded-[16px] p-6">
-            <h3 className="font-semibold text-lg text-site-text mb-1">{t("free_plan.name")}</h3>
+            <h3 className="font-semibold text-lg text-text mb-1">{t("free_plan.name")}</h3>
             <p className="text-3xl font-bold text-primary mb-4">₪0</p>
             <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("free_plan.feature_map")}</li>
@@ -54,7 +54,7 @@ export default function UpgradeClient() {
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
               {t("premium_plan.recommended")}
             </span>
-            <h3 className="font-semibold text-lg text-site-text mb-1">{t("premium_plan.name")}</h3>
+            <h3 className="font-semibold text-lg text-text mb-1">{t("premium_plan.name")}</h3>
             <p className="text-3xl font-bold text-secondary mb-4">{t("premium_plan.price_pending")}</p>
             <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("premium_plan.feature_map")}</li>

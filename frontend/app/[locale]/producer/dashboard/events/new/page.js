@@ -65,10 +65,10 @@ export default function NewEventPage() {
       <nav className="text-sm text-fg-muted mb-4">
         <Link href="/producer/dashboard" className="hover:text-primary">{t("crumb_dashboard")}</Link>
         <span className="mx-2">›</span>
-        <span className="text-site-text">{t("crumb_current")}</span>
+        <span className="text-text">{t("crumb_current")}</span>
       </nav>
 
-      <h1 className="font-headline text-4xl font-bold text-site-text mb-2">{t("heading")}</h1>
+      <h1 className="font-headline text-4xl font-bold text-text mb-2">{t("heading")}</h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
       {error && (
@@ -139,7 +139,7 @@ export default function NewEventPage() {
         </Field>
 
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-site-text mb-1">{t("field_city_label")}</label>
+          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>
           <CitySearch
             id="city"
             label={t("field_city_label")}
@@ -223,7 +223,7 @@ export default function NewEventPage() {
           </button>
           <Link
             href="/producer/dashboard"
-            className="border border-border text-site-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
+            className="border border-border text-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
           >
             {t("cancel")}
           </Link>
@@ -252,7 +252,7 @@ export default function NewEventPage() {
 function Field({ id, label, required, children }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-site-text mb-1">
+      <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}

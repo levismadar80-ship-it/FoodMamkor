@@ -225,7 +225,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={(showAutocomplete && hasAutoResults) || showEmpty}
@@ -342,7 +342,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {recentSearches.map((q) => (
                 <li
                   key={q}
-                  className="flex items-center justify-between px-3 py-2.5 text-sm text-site-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-between px-3 py-2.5 text-sm text-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -358,7 +358,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                   </span>
                   <button
                     type="button"
-                    className="text-fg-muted hover:text-site-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="text-fg-muted hover:text-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label={t("remove_recent_aria", { q })}
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -376,7 +376,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {trending.map((q) => (
                 <li
                   key={q}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-site-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-text hover:bg-green-50/50 cursor-pointer min-h-[44px]"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     submitRaw(q);
@@ -421,7 +421,7 @@ function Row({ id, active, onSelect, onHover, children }) {
       }}
       onMouseEnter={onHover}
       className={`px-3 py-2.5 cursor-pointer text-sm min-h-[44px] flex items-start flex-col justify-center ${
-        active ? "bg-green-50 text-primary" : "text-site-text hover:bg-green-50/50"
+        active ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
       }`}
     >
       {children}

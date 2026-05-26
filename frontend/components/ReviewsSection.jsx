@@ -169,7 +169,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
-      <h2 className="font-headline text-2xl font-bold text-site-text mb-6">
+      <h2 className="font-headline text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
           <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
@@ -180,7 +180,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       {showSummary && (
         <div className="bg-green-50 rounded-lg p-6 text-center mb-6">
           <p
-            className="font-headline font-black leading-none text-site-text mb-2"
+            className="font-headline font-black leading-none text-text mb-2"
             style={{ fontSize: 48 }}
           >
             {Number(avgRating).toFixed(1)}
@@ -202,7 +202,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           !showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="mb-6 border border-site-text text-site-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
+              className="mb-6 border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>
@@ -211,9 +211,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               onSubmit={handleSubmit}
               className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
             >
-              <h3 className="font-headline text-lg font-bold text-site-text">{t("form_heading")}</h3>
+              <h3 className="font-headline text-lg font-bold text-text">{t("form_heading")}</h3>
               <div>
-                <label className="block text-sm text-site-text mb-2">{t("rating_label")}</label>
+                <label className="block text-sm text-text mb-2">{t("rating_label")}</label>
                 <StarPicker
                   value={stars}
                   onChange={setStars}
@@ -221,7 +221,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 />
               </div>
               <div>
-                <label htmlFor="review-body" className="block text-sm text-site-text mb-1">
+                <label htmlFor="review-body" className="block text-sm text-text mb-1">
                   {t("body_label")}
                 </label>
                 <textarea
@@ -251,7 +251,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="text-sm text-fg-muted hover:text-site-text transition"
+                  className="text-sm text-fg-muted hover:text-text transition"
                 >
                   {t("cancel")}
                 </button>
@@ -298,7 +298,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               <div key={review.id} className="bg-background py-6">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-body font-semibold text-[15px] text-site-text leading-snug">
+                    <p className="font-body font-semibold text-[15px] text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (
@@ -314,7 +314,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   />
                 </div>
                 {review.body && (
-                  <p className="text-[15px] text-site-text/85 leading-relaxed whitespace-pre-line">
+                  <p className="text-[15px] text-text/85 leading-relaxed whitespace-pre-line">
                     {review.body}
                   </p>
                 )}

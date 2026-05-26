@@ -225,7 +225,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-sm font-semibold text-site-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
+      <p className="text-sm font-semibold text-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
 
       {/* Canvas preview — scaled to fit */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
@@ -269,7 +269,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       )}
 
       {/* Caption preview */}
-      <pre className="text-xs bg-green-50 rounded-[8px] p-3 whitespace-pre-wrap text-site-text font-body-md text-right" dir="rtl">
+      <pre className="text-xs bg-green-50 rounded-[8px] p-3 whitespace-pre-wrap text-text font-body-md text-right" dir="rtl">
         {caption}
       </pre>
     </div>

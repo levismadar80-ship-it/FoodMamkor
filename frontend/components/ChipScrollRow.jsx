@@ -116,7 +116,7 @@ export default function ChipScrollRow({
               className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
                 active
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-site-text border-border hover:border-primary hover:text-primary"
+                  : "bg-white text-text border-border hover:border-primary hover:text-primary"
               }`}
             >
               {chip.icon && <span aria-hidden="true">{chip.icon}</span>}

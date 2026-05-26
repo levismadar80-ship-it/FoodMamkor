@@ -146,7 +146,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       onSubmit={handleSubmit}
       className="space-y-4 bg-white rounded-[16px] border border-border p-6"
     >
-      <h2 className="font-headline text-lg font-bold text-site-text">
+      <h2 className="font-headline text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
@@ -329,7 +329,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           <button
             type="button"
             onClick={onCancel}
-            className="text-fg-muted hover:text-site-text"
+            className="text-fg-muted hover:text-text"
           >
             {t("cancel")}
           </button>

@@ -17,7 +17,7 @@ export default function EmptyState({
           {emoji}
         </p>
       )}
-      <h3 className="font-headline text-2xl font-bold text-site-text mb-2">{title}</h3>
+      <h3 className="font-headline text-2xl font-bold text-text mb-2">{title}</h3>
       {description && (
         <p className="text-[15px] text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
       )}

@@ -98,7 +98,7 @@ export default function InstallPrompt() {
     >
       <span className="text-2xl shrink-0" aria-hidden="true">📲</span>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-site-text text-sm leading-snug">{t("title")}</p>
+        <p className="font-semibold text-text text-sm leading-snug">{t("title")}</p>
         {ios ? (
           <p className="text-xs text-fg-muted mt-1 leading-snug">
             {t.rich("ios_instructions", {
@@ -123,7 +123,7 @@ export default function InstallPrompt() {
       <button
         onClick={handleDismiss}
         aria-label={t("dismiss_aria")}
-        className="shrink-0 text-fg-muted hover:text-site-text transition p-1 rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition p-1 rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

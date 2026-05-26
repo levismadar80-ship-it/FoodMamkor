@@ -70,7 +70,7 @@ export default function FavoritesClient() {
         items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_favorites") }]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold mb-8 text-site-text inline-flex items-center gap-2">
+      <h1 className="font-headline text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
         <Heart size={28} weight="fill" className="text-red-500" aria-hidden="true" />
         {t("title")}
       </h1>
@@ -82,7 +82,7 @@ export default function FavoritesClient() {
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl">
             🌿
           </div>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+          <h2 className="font-headline text-2xl font-bold text-text mb-2">
             {t("empty_title")}
           </h2>
           <p className="text-fg-muted mb-6 max-w-md mx-auto">

@@ -106,7 +106,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
         {value.map((city) => (
           <span
             key={city}
-            className="inline-flex items-center gap-1 bg-green-50 text-site-text border border-border rounded-full text-[12px] px-2.5 py-0.5"
+            className="inline-flex items-center gap-1 bg-green-50 text-text border border-border rounded-full text-[12px] px-2.5 py-0.5"
           >
             {city}
             <button

@@ -109,7 +109,7 @@ export default function AdminExperiencesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-2xl font-bold text-site-text">
+          <h1 className="font-headline text-2xl font-bold text-text">
             {t("experiences.title")}
           </h1>
           <p className="text-fg-muted text-sm mt-1">
@@ -134,7 +134,7 @@ export default function AdminExperiencesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-site-text hover:bg-green-50"
+                : "bg-white border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`experiences.tabs.${value}`)}
@@ -195,13 +195,13 @@ export default function AdminExperiencesPage() {
       {modalEx && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
-            <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+            <h2 className="font-headline text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
             <p className="text-fg-muted text-sm mb-4">
               &quot;{modalEx.title}&quot; — {modalEx.host?.name}
             </p>
-            <label className="block text-sm font-medium text-site-text mb-1">
+            <label className="block text-sm font-medium text-text mb-1">
               {modalAction === "changes" ? t("experiences.modal.changes_label") : t("experiences.modal.reject_label")}
             </label>
             <textarea
@@ -219,7 +219,7 @@ export default function AdminExperiencesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-site-text hover:bg-green-50"
+                className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
@@ -257,7 +257,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="font-medium text-site-text hover:text-primary text-end"
+            className="font-medium text-text hover:text-primary text-end"
           >
             {ex.title}
           </button>
@@ -312,7 +312,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
       {expanded && (
         <tr className="bg-green-50/20 border-t border-border">
           <td colSpan={6} className="p-4">
-            <div className="text-sm space-y-2 text-site-text">
+            <div className="text-sm space-y-2 text-text">
               <p className="whitespace-pre-wrap">{ex.description}</p>
               {ex.address && (
                 <p className="text-fg-muted inline-flex items-center gap-1">

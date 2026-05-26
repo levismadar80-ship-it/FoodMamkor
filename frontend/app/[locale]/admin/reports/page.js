@@ -43,7 +43,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold text-site-text">{t("reports.title")}</h1>
+      <h1 className="font-headline text-3xl font-bold text-text">{t("reports.title")}</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">
@@ -56,7 +56,7 @@ export default function AdminReportsPage() {
               className={`px-4 py-2 text-sm transition border-b-2 ${
                 tab === tt.key
                   ? "border-primary text-primary font-semibold"
-                  : "border-transparent text-fg-muted hover:text-site-text"
+                  : "border-transparent text-fg-muted hover:text-text"
               }`}
               aria-current={tab === tt.key ? "page" : undefined}
             >
@@ -138,13 +138,13 @@ export default function AdminReportsPage() {
                 <div key={hp.id} className="bg-white rounded-[12px] p-5 border border-yellow-300">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-site-text">{hp.title}</h3>
+                      <h3 className="font-semibold text-text">{hp.title}</h3>
                       <p className="text-xs text-fg-muted mt-1">
                         {hp.seller_name} · {hp.city}
                         {hp.price != null && <> · ₪{hp.price}</>}
                       </p>
                       {hp.description && (
-                        <p className="text-sm text-site-text/85 mt-2 whitespace-pre-line">{hp.description}</p>
+                        <p className="text-sm text-text/85 mt-2 whitespace-pre-line">{hp.description}</p>
                       )}
                       <div
                         className="mt-3 rounded-[8px] p-3 text-sm"

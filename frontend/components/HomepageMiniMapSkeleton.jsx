@@ -29,7 +29,7 @@ export default function HomepageMiniMapSkeleton() {
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-site-text">
+          <h2 className="text-xl md:text-2xl font-semibold text-text">
             {t("dot_caption")}
           </h2>
           <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
