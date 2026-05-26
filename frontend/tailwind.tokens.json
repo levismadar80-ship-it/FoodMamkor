@@ -10,7 +10,13 @@
         "muted": "#6b6860",
         "fg-muted": "#5c584f",
         "accent": "#8b6914",
-        "border": "#e5dfd3"
+        "border": "#e5dfd3",
+        "green-50": "#eaf3de",
+        "green-100": "#c8dcb3",
+        "green-300": "#6fa284",
+        "green-500": "#2e6853",
+        "green-700": "#2e4a2e",
+        "green-900": "#143228"
       },
       "fontFamily": {
         "headline-display": [

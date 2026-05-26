@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-05-26 — Green scale tokens added to DESIGN.md (MEH-710)
+
+`feat(MEH-710)`: docs-only + derived-artifact regen. Added the 6-stop green tint
+scale to `docs/DESIGN.md` front-matter and `tailwind.tokens.json` (via
+`design:export`): `green-50 #EAF3DE`, `green-100 #C8DCB3`, `green-300 #6FA284`,
+`green-500 #2E6853` (= `primary`), `green-700 #2E4A2E` (= `primary-dark`),
+`green-900 #143228`. **green-700 reconciled to #2E4A2E** (primary-dark), superseding
+the S3-LOCK #1F4C3C, per Sapir's Wave-2A decision — keeps one canonical CTA-hover
+dark green. Colors prose updated to document the scale + preserve the
+deeper-on-hover rule. `tailwind.config.js` untouched (resolves via require()+spread).
+Tokens are preparatory (0 consumers yet — 6 "unused" lint warnings expected);
+unblocks MEH-702 (`light` → `green-50`, 83 files). Build + drift gate green.
+
 ### 2026-05-26 — Fix DESIGN.md References: tailwind.tokens.js → .json (MEH-709)
 
 `fix(MEH-709)`: docs-only — corrected two stale references in `docs/DESIGN.md`

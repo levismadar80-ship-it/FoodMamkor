@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-710 green scale tokens → DESIGN.md (GREEN)
+
+**Branch:** `feature/meh-710-green-scale-to-design-md` (off staging `ff43fbc`, #856 merge). **PR #TBD** (draft), base `staging`. Closes MEH-710; unblocks MEH-702.
+
+**What:** added 6 green-scale tokens to DESIGN.md front-matter → tokens.json regen (config resolves via spread; no config edit). green-50 #EAF3DE / 100 #C8DCB3 / 300 #6FA284 / 500 #2E6853 (=primary) / 700 #2E4A2E (=primary-dark) / 900 #143228. **green-700 reconciled to #2E4A2E** (not S3's #1F4C3C) per Sapir — single canonical CTA-hover dark green. Colors prose documents the scale + keeps deeper-on-hover rule. 6 "unused token" lint warnings expected (0 consumers; MEH-702 consumes). build + design:lint(0 err) + drift gate green. Mobile QA waived (no rendered change).
+
+**Next:** await PR CI + Sapir merge → MEH-702 (`light`→`green-50`, 83 files) unblocked. Other execution-ready: MEH-699 (site-muted, GREEN), MEH-705 (primary-light, YELLOW), MEH-700 (font-headline). Do NOT auto-start MEH-699 — await explicit go.
+
 ## 2026-05-26 — MEH-712 restore Heebo Hebrew fallback (RED, chunk-by-chunk)
 
 **Branch:** `feature/meh-712-restore-heebo-hebrew-fallback` (off staging tip `5125646`, Wave 1A merge). **PR #855 merged** (`3fc3fff`), base `staging`. Closes MEH-712; unblocks MEH-700, MEH-701.
