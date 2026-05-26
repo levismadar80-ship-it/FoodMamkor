@@ -58,7 +58,7 @@ export default function AboutPage() {
           }}
         />
         <div className="relative max-w-4xl mx-auto px-4 text-center">
-          <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="font-headline-display text-4xl md:text-6xl font-bold mb-6 leading-tight">
             {t("hero.heading")}
           </h1>
         </div>

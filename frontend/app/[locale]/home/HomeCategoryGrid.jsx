@@ -20,7 +20,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick }) {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection className="text-center mb-10">
-        <h2 className="font-headline font-bold text-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
+        <h2 className="font-headline-display font-bold text-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
           {t("home.categories.heading")}
         </h2>
         <p className="text-fg-muted text-base">{t("home.categories.subheading")}</p>
@@ -59,7 +59,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick }) {
               />
               <div className="relative z-10 h-full w-full flex flex-col items-center justify-center text-white transition-transform duration-500 ease-out group-hover:scale-[1.06]">
                 {LineArt && <LineArt size={64} className="w-8 h-8 md:w-16 md:h-16" stroke="white" strokeWidth={1.75} />}
-                <h3 className="font-headline font-bold mt-2 md:mt-3 text-[22px]">
+                <h3 className="font-headline-md font-bold mt-2 md:mt-3 text-[22px]">
                   {card.name}
                 </h3>
               </div>

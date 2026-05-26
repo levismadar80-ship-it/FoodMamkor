@@ -29,7 +29,7 @@ function GroupBuyCard({ gb }) {
 
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-headline text-lg font-bold text-text leading-tight">
+          <h2 className="font-headline-md text-lg font-bold text-text leading-tight">
             {gb.title}
           </h2>
           {gb.city && (
@@ -133,7 +133,7 @@ export default function GroupBuysClient() {
           style={{ background: "linear-gradient(to bottom, rgba(46,74,46,0.82) 0%, rgba(46,74,46,0.92) 100%)" }}
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
             {t("hero_title")}
           </h1>
           <p className="text-green-50 text-lg">

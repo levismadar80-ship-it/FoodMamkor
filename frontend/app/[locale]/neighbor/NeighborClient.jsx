@@ -116,7 +116,7 @@ export default function NeighborClient() {
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1
-            className="font-headline font-bold text-white mb-3 inline-flex items-center gap-3"
+            className="font-headline-display font-bold text-white mb-3 inline-flex items-center gap-3"
             style={{ fontSize: "clamp(36px, 5vw, 56px)" }}
           >
             מהמטבח של השכן

@@ -48,7 +48,7 @@ export default function ParallaxQuote({
       >
         <div className="text-center max-w-4xl">
           <blockquote
-            className="font-headline text-white italic leading-tight"
+            className="font-headline-display text-white italic leading-tight"
             style={{ fontSize: "clamp(24px, 4vw, 48px)" }}
           >
             &ldquo;{quote}&rdquo;

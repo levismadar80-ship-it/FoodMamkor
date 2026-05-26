@@ -66,7 +66,7 @@ export default function FridayDeliveryStrip({ city }) {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-lg">🛒</span>
-          <h2 className="font-headline font-semibold text-primary text-base">
+          <h2 className="font-headline-md font-semibold text-primary text-base">
             {t("title_alt")}
           </h2>
           {city && (

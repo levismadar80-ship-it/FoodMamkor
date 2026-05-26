@@ -1002,7 +1002,7 @@ function ProductsSection() {
   return (
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline text-lg font-bold text-text">{t("section_heading")}</h3>
+        <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setError(""); }}

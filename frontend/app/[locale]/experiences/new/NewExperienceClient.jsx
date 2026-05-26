@@ -222,7 +222,7 @@ export default function NewExperienceClient() {
         className="mb-4"
       />
 
-      <h1 className="font-headline text-3xl md:text-4xl font-bold text-text mb-2">
+      <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text mb-2">
         {t("title")}
       </h1>
       <p className="text-fg-muted mb-8">

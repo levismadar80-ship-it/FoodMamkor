@@ -74,7 +74,7 @@ export default async function GuidesIndexPage({ params }) {
             {ti("eyebrow")}
           </p>
           <h1
-            className="font-headline mb-4"
+            className="font-headline-lg mb-4"
             style={{
               color: PRIMARY_DARK,
               fontSize: "clamp(28px, 6vw, 44px)",
@@ -111,7 +111,7 @@ export default async function GuidesIndexPage({ params }) {
                   {ti("minutes_label", { minutes: g.readMinutes })}
                 </p>
                 <h2
-                  className="font-headline mb-2"
+                  className="font-headline-md mb-2"
                   style={{
                     color: PRIMARY_DARK,
                     fontSize: "20px",

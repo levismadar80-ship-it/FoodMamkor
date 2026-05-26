@@ -226,7 +226,7 @@ export default function ChatWidget() {
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-headline font-bold text-base">שאלי אותנו</span>
+              <span className="font-headline-md font-bold text-base">שאלי אותנו</span>
             </div>
             <button
               type="button"

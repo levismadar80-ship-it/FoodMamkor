@@ -58,7 +58,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
-      <h2 className="font-headline text-lg font-bold text-text">{t("heading")}</h2>
+      <h2 className="font-headline-md text-lg font-bold text-text">{t("heading")}</h2>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
