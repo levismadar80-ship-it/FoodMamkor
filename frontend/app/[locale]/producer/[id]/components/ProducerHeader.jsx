@@ -33,7 +33,7 @@ export default function ProducerHeader({
     <>
       {/* Header: name + trust badges */}
       <div className="flex items-center flex-wrap gap-2 mb-2">
-        <h1 className="font-headline text-4xl font-bold text-site-text">
+        <h1 className="font-headline text-4xl font-bold text-text">
           {producer.name}
         </h1>
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
@@ -95,7 +95,7 @@ export default function ProducerHeader({
       {(producer.top_product_name || producer.starting_price_label) && (
         <p className="mt-1 text-sm mb-3">
           {producer.top_product_name && (
-            <span className="text-site-text">{producer.top_product_name}</span>
+            <span className="text-text">{producer.top_product_name}</span>
           )}
           {producer.top_product_name && producer.starting_price_label && (
             <span className="text-fg-muted"> · </span>
@@ -119,22 +119,22 @@ export default function ProducerHeader({
       {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
-            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
             </span>
           )}
           {producer.organic_certified && (
-            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
-            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
-            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}

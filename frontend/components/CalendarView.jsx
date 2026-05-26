@@ -102,7 +102,7 @@ export default function CalendarView({ items, linkPrefix }) {
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h3 className="font-headline text-lg md:text-xl font-bold text-site-text">
+        <h3 className="font-headline text-lg md:text-xl font-bold text-text">
           {monthLabel}
         </h3>
         <button
@@ -155,8 +155,8 @@ export default function CalendarView({ items, linkPrefix }) {
                 isSelected
                   ? "bg-primary text-white"
                   : isToday
-                    ? "ring-2 ring-primary text-site-text"
-                    : "text-site-text hover:bg-green-50"
+                    ? "ring-2 ring-primary text-text"
+                    : "text-text hover:bg-green-50"
               }`}
             >
               <span>{d.getDate()}</span>
@@ -176,7 +176,7 @@ export default function CalendarView({ items, linkPrefix }) {
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-border" data-testid="calendar-day-expansion">
           <div className="flex items-baseline justify-between mb-3">
-            <h4 className="font-headline text-lg font-bold text-site-text">
+            <h4 className="font-headline text-lg font-bold text-text">
               {formatHebrewDate(selectedDate)}
             </h4>
             <span className="text-sm text-fg-muted">
@@ -192,7 +192,7 @@ export default function CalendarView({ items, linkPrefix }) {
                     className="block rounded-lg border border-border p-3 hover:bg-green-50 transition"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-site-text truncate">
+                      <span className="font-semibold text-text truncate">
                         {it.title}
                       </span>
                       {it.event_time && (

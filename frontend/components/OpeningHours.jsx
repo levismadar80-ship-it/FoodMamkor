@@ -84,7 +84,7 @@ export default function OpeningHours({ opening_hours }) {
 
   return (
     <section className="mt-8 border-t border-border pt-8">
-      <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("heading")}</h2>
+      <h2 className="font-headline text-2xl font-bold text-text mb-4">{t("heading")}</h2>
 
       {/* Open / closed indicator */}
       {status && (
@@ -129,7 +129,7 @@ export default function OpeningHours({ opening_hours }) {
           return (
             <div
               key={abbr}
-              className={`flex justify-between text-sm py-1.5 ${isToday ? "font-semibold text-site-text" : "text-site-text/80"}`}
+              className={`flex justify-between text-sm py-1.5 ${isToday ? "font-semibold text-text" : "text-text/80"}`}
             >
               <span>{t(`weekdays.${DAY_KEYS[i]}`)}</span>
               <span dir="ltr" className="text-start">

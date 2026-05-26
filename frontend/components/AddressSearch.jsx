@@ -201,7 +201,7 @@ export default function AddressSearch({
           onFocus={() => results.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-fg-muted"
+          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted"
           autoComplete="off"
           role="combobox"
           aria-expanded={isOpen && results.length > 0}
@@ -243,7 +243,7 @@ export default function AddressSearch({
                 className={`px-3 py-2 cursor-pointer text-sm border-b border-border last:border-b-0 ${
                   idx === highlight
                     ? "bg-green-50 text-primary"
-                    : "text-site-text"
+                    : "text-text"
                 }`}
               >
                 <div className="font-medium">{primary}</div>

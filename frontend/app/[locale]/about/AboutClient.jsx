@@ -91,23 +91,23 @@ export default function AboutPage() {
             </div>
             <div className="order-2 text-right">
               <div
-                className="text-site-text/85 font-body text-lg space-y-5"
+                className="text-text/85 font-body text-lg space-y-5"
                 style={{ lineHeight: "1.8" }}
               >
-                <p className="font-headline font-bold text-site-text text-2xl">{t("story.greeting")}</p>
+                <p className="font-headline font-bold text-text text-2xl">{t("story.greeting")}</p>
                 <p>{t("story.p1")}</p>
                 <p>{t("story.p2")}</p>
                 <p>{t("story.p3")}</p>
                 <p>{t("story.p4")}</p>
                 <p>{t("story.p5")}</p>
                 <div className="border-s-2 border-primary/40 ps-4 mt-2 space-y-3">
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption1")}
                   </p>
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption2")}
                   </p>
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption3")}
                   </p>
                 </div>
@@ -153,7 +153,7 @@ export default function AboutPage() {
 
       {/* ======== Section 4 — Tips accordion ======== */}
       <section className="max-w-3xl mx-auto px-4 section-y">
-        <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
+        <h2 className="font-headline text-3xl font-bold mb-8 text-center text-text">
           {t("tips.heading")}
         </h2>
         <div className="space-y-3">
@@ -162,7 +162,7 @@ export default function AboutPage() {
               <button
                 type="button"
                 onClick={() => setOpenTip(openTip === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-right font-medium text-site-text hover:bg-background transition"
+                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-right font-medium text-text hover:bg-background transition"
                 aria-expanded={openTip === i}
                 aria-controls={`tip-panel-${i}`}
               >
@@ -174,7 +174,7 @@ export default function AboutPage() {
                 )}
               </button>
               {openTip === i && (
-                <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
+                <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-text/85 leading-relaxed border-t border-border">
                   {t(`tips.${key}.answer`)}
                 </div>
               )}
@@ -186,7 +186,7 @@ export default function AboutPage() {
       {/* ======== Section 5 — Testimonials ======== */}
       <section className="bg-background section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-3xl font-bold mb-4 text-site-text">
+          <h2 className="font-headline text-3xl font-bold mb-4 text-text">
             {t("testimonials.heading")}
           </h2>
           <p className="text-fg-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
@@ -202,25 +202,25 @@ export default function AboutPage() {
       {/* ======== Section 6 — Values ======== */}
       <section className="bg-white section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="font-headline text-3xl font-bold mb-6 text-center text-site-text">
+          <h2 className="font-headline text-3xl font-bold mb-6 text-center text-text">
             {t("values.heading")}
           </h2>
-          <p className="text-site-text/85 text-right text-lg leading-relaxed mb-10">
+          <p className="text-text/85 text-right text-lg leading-relaxed mb-10">
             {t("values.intro")}
           </p>
           <div className="space-y-8 text-right">
             {VALUE_KEYS.map((key) => (
               <article key={key}>
-                <h3 className="font-headline font-bold text-2xl text-site-text mb-3">
+                <h3 className="font-headline font-bold text-2xl text-text mb-3">
                   {t(`values.${key}.title`)}
                 </h3>
-                <p className="text-site-text/85 text-lg leading-relaxed">
+                <p className="text-text/85 text-lg leading-relaxed">
                   {t(`values.${key}.body`)}
                 </p>
               </article>
             ))}
           </div>
-          <p className="text-site-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
+          <p className="text-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
             {t("values.closing")}
           </p>
         </div>
@@ -229,7 +229,7 @@ export default function AboutPage() {
       {/* ======== Section 7 — CTA for businesses ======== */}
       <section className="section-y bg-background border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-4xl font-bold mb-8 text-site-text">
+          <h2 className="font-headline text-4xl font-bold mb-8 text-text">
             {t("cta.heading")}
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -253,14 +253,14 @@ export default function AboutPage() {
       {/* ======== Contact form ======== */}
       <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-4xl font-bold text-site-text mb-3">{t("contact.heading")}</h2>
+          <h2 className="font-headline text-4xl font-bold text-text mb-3">{t("contact.heading")}</h2>
           <p className="text-fg-muted font-body text-base mb-10">
             {t("contact.subtitle")}
           </p>
 
           <form onSubmit={handleContact} className="space-y-4 text-right">
             <div>
-              <label htmlFor="contact-name" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-name" className="block text-sm font-medium text-text mb-1">
                 {t("contact.name_label")}
               </label>
               <input
@@ -274,7 +274,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <label htmlFor="contact-email" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-email" className="block text-sm font-medium text-text mb-1">
                 {t("contact.email_label")}
               </label>
               <input
@@ -289,7 +289,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <label htmlFor="contact-message" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-message" className="block text-sm font-medium text-text mb-1">
                 {t("contact.message_label")}
               </label>
               <textarea

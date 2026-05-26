@@ -57,7 +57,7 @@ export default function FollowersPage() {
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("back_link")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
@@ -76,7 +76,7 @@ export default function FollowersPage() {
       ) : (
         <div className="bg-white rounded-[14px] border border-border p-8 text-center">
           <p className="text-5xl mb-3">🌱</p>
-          <p className="text-3xl font-bold text-site-text mb-1">{followerCount}</p>
+          <p className="text-3xl font-bold text-text mb-1">{followerCount}</p>
           <p className="text-fg-muted mb-6">{t("followers_label")}</p>
           <p className="text-sm text-fg-muted mb-4">
             {t("share_hint")}

@@ -29,7 +29,7 @@ function VanityLinkCard({ slug }) {
 
   return (
     <div className="bg-white border border-border rounded-[16px] p-5 mb-6">
-      <p className="text-sm font-medium text-site-text mb-2">{t("label")}</p>
+      <p className="text-sm font-medium text-text mb-2">{t("label")}</p>
       <div className="flex items-center gap-2 bg-green-50 rounded-[10px] px-3 py-2 mb-3">
         <span className="text-sm text-primary font-mono flex-1 truncate" dir="ltr">{url}</span>
       </div>
@@ -144,7 +144,7 @@ export default function ProducerDashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="font-headline text-4xl font-bold text-site-text mb-2">
+      <h1 className="font-headline text-4xl font-bold text-text mb-2">
         {t("greeting", { name: user.name })}
       </h1>
       <p className="text-fg-muted mb-8">
@@ -212,7 +212,7 @@ export default function ProducerDashboardPage() {
           >
             <span className="text-xl shrink-0" aria-hidden="true">{h.emoji}</span>
             <div>
-              <p className="font-semibold text-site-text">{h.dashboardHint}</p>
+              <p className="font-semibold text-text">{h.dashboardHint}</p>
               <Link
                 href="/producer/dashboard"
                 className="text-xs mt-1 inline-block hover:underline"
@@ -260,7 +260,7 @@ export default function ProducerDashboardPage() {
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   active
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-site-text border-border hover:bg-green-50"
+                    : "bg-white text-text border-border hover:bg-green-50"
                 }`}
               >
                 <span
@@ -543,11 +543,11 @@ function WindowedMetricCard({ label, icon, windows, tooltip }) {
         <span className="font-headline text-4xl font-bold text-primary">
           {windows?.last_7d ?? 0}
         </span>
-        <span className="text-lg text-site-text/60">/</span>
-        <span className="font-headline text-2xl font-semibold text-site-text">
+        <span className="text-lg text-text/60">/</span>
+        <span className="font-headline text-2xl font-semibold text-text">
           {windows?.last_30d ?? 0}
         </span>
-        <span className="text-lg text-site-text/60">/</span>
+        <span className="text-lg text-text/60">/</span>
         <span className="font-headline text-xl text-fg-muted">
           {windows?.total ?? 0}
         </span>
@@ -654,7 +654,7 @@ function TopCitiesBarChart({ data }) {
         return (
           <li key={row.city} className="text-sm">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-site-text">{row.city}</span>
+              <span className="text-text">{row.city}</span>
               <span className="text-fg-muted">{row.count}</span>
             </div>
             <div className="h-2 bg-green-50 rounded-full overflow-hidden">
@@ -721,7 +721,7 @@ function ProfileStrengthCard({ profile, analytics }) {
           const label = item.label || t(`items.${item.key}`);
           return (
             <li key={item.key} className="flex items-center justify-between text-sm">
-              <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-fg-muted"}`}>
+              <span className={`flex items-center gap-2 ${done ? "text-text" : "text-fg-muted"}`}>
                 <span aria-hidden="true">{done ? "✓" : "○"}</span>
                 {label}
               </span>

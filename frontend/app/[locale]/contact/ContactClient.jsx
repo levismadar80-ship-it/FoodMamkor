@@ -44,7 +44,7 @@ export default function ContactClient() {
     <main className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div className="bg-white rounded-[16px] p-8 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
-          <h1 className="font-headline text-5xl font-bold text-site-text mb-2 text-center">
+          <h1 className="font-headline text-5xl font-bold text-text mb-2 text-center">
             {t("title")}
           </h1>
           <p className="text-fg-muted text-center mb-2">
@@ -79,7 +79,7 @@ export default function ContactClient() {
               <div className="mb-4 flex justify-center">
                 <CheckCircle size={56} weight="fill" className="text-primary" aria-hidden="true" />
               </div>
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+              <h2 className="font-headline text-2xl font-bold text-text mb-2">
                 {t("success_title")}
               </h2>
               <p className="text-fg-muted inline-flex items-center gap-1.5">
@@ -97,7 +97,7 @@ export default function ContactClient() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-site-text">
+                <label className="block text-sm font-medium mb-1 text-text">
                   {t("field_name_label")}
                 </label>
                 <input
@@ -109,7 +109,7 @@ export default function ContactClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-site-text">
+                <label className="block text-sm font-medium mb-1 text-text">
                   {t("field_email_label")}
                 </label>
                 <input
@@ -122,7 +122,7 @@ export default function ContactClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-site-text">
+                <label className="block text-sm font-medium mb-1 text-text">
                   {t("field_message_label")}
                 </label>
                 <textarea

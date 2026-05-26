@@ -80,7 +80,7 @@ export default function AdminKashrutPage() {
   return (
     <div dir="rtl">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold font-headline text-site-text mb-1">
+        <h1 className="text-2xl font-bold font-headline text-text mb-1">
           {t("kashrut.title")}
           <InfoTooltip
             content={t("kashrut.tooltip")}

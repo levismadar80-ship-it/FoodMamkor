@@ -302,7 +302,7 @@ function MetricCard({ label, value, tone }) {
       success: "text-[#22c55e]",
       primary: "text-primary",
       accent: "text-accent",
-    }[tone] || "text-site-text";
+    }[tone] || "text-text";
   return (
     <div className="bg-white border border-border rounded-[12px] p-3 text-center">
       <div className={`text-2xl font-bold ${toneClass}`}>{value}</div>
@@ -451,7 +451,7 @@ function ScriptModal({ onClose }) {
           <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
-        <pre className="whitespace-pre-wrap text-sm text-site-text font-body leading-relaxed">
+        <pre className="whitespace-pre-wrap text-sm text-text font-body leading-relaxed">
           {t("outreach.call_script")}
         </pre>
         <button
@@ -550,7 +550,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
                 </button>
               </div>
             </div>
-            <p className="text-sm text-site-text whitespace-pre-wrap leading-relaxed">
+            <p className="text-sm text-text whitespace-pre-wrap leading-relaxed">
               {t.raw(`outreach.wa_templates.${tpl.key}_body`)}
             </p>
           </div>

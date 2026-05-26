@@ -44,7 +44,7 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">
             ✉️
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.loading_title")}</h1>
+          <h1 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.verifyEmail.loading_title")}</h1>
           <p className="text-fg-muted text-sm">{t("auth.verifyEmail.loading_subtitle")}</p>
         </div>
       </div>
@@ -58,7 +58,7 @@ function VerifyEmailContent() {
           <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center text-3xl">
             ✅
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.success_title")}</h1>
+          <h1 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.verifyEmail.success_title")}</h1>
           <p className="text-fg-muted text-sm mb-6">{t("auth.verifyEmail.success_subtitle")}</p>
           <Link
             href="/"
@@ -77,7 +77,7 @@ function VerifyEmailContent() {
         <div className="w-16 h-16 rounded-full bg-red-50 mx-auto mb-4 flex items-center justify-center text-3xl">
           ❌
         </div>
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.verifyEmail.error_title")}</h1>
+        <h1 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.verifyEmail.error_title")}</h1>
         <p className="text-fg-muted text-sm mb-6">{errorMsg}</p>
         <Link
           href="/"

@@ -16,7 +16,7 @@ export default function ProducerNotFound() {
           className="mx-auto mb-4"
           aria-hidden="true"
         />
-        <h1 className="font-headline text-3xl font-bold text-site-text mb-3">
+        <h1 className="font-headline text-3xl font-bold text-text mb-3">
           {t("heading")}
         </h1>
         <p className="text-fg-muted mb-8">

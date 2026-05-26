@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-698 site-text → text (GREEN)
+
+**Branch:** `feature/meh-698-site-text-to-text` (off staging `2baf1e0`, #859 merge). **PR #TBD** (draft), base `staging`. Closes MEH-698.
+
+**What:** renamed `site-text` color → `text` — 347 occurrences (320 text / 25 hover:text / 1 bg / 1 border) across 101 files. Value-identical (#1C1A17 both); zero visual change. Disambiguation clean: `text-text-secondary`/`text-text-primary` (migrated #854) stayed 0; blanket `\bsite-text\b`→`text` safe (zero non-class occurrences). `text-text` 2→347. No config/tokens/DESIGN edit (legacy alias drops in MEH-708). build+lint+drift green. Mobile QA waived.
+
+**Next:** await PR CI + Sapir merge. Remaining Contract: MEH-705 (primary-light→primary-dark, YELLOW+mobile QA), MEH-700 (font-headline split), MEH-703 (secondary, decision-needed). MEH-708 alias-drop now clears `site-text`+`light`+`site-muted`+`text-secondary`+`text-primary` (all 0); still blocked on secondary/secondary-light/primary-light/headline/body/font-sans. MEH-713 (green-50 audit, Low) open. Do NOT auto-start next.
+
 ## 2026-05-26 — MEH-702 light → green-50 (GREEN, largest Contract PR)
 
 **Branch:** `feature/meh-702-light-to-green-50` (off staging `c0e9987`, #858 merge). **PR #TBD** (draft), base `staging`. Closes MEH-702.

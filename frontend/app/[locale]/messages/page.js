@@ -28,14 +28,14 @@ export default async function MessagesPage({ params }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 text-center">
       <div className="text-6xl mb-4" aria-hidden="true">💬</div>
-      <h1 className="font-headline text-2xl font-bold text-site-text mb-3">
+      <h1 className="font-headline text-2xl font-bold text-text mb-3">
         {t("heading")}
       </h1>
       <p className="text-fg-muted leading-relaxed mb-6">
         {t("intro")}
       </p>
       <div className="bg-background border border-border rounded-[16px] p-5 text-right mb-8">
-        <h2 className="font-semibold text-site-text mb-2">{t("why_heading")}</h2>
+        <h2 className="font-semibold text-text mb-2">{t("why_heading")}</h2>
         <ul className="text-sm text-fg-muted space-y-2">
           <li>{t("why_item_no_middlemen")}</li>
           <li>{t("why_item_direct_terms")}</li>

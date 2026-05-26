@@ -288,12 +288,12 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+        <h1 className="font-headline text-2xl font-bold text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
         <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
-          <div className="bg-green-50 border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-site-text flex items-start gap-2">
+          <div className="bg-green-50 border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <span className="block">{t("auth.register.producer.upgrade_banner.connected_with", { email: user.email })}</span>
@@ -304,10 +304,10 @@ function RegisterProducerPageBody() {
 
         {showDraftBanner && step < 3 && (
           <div className="bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
-            <span className="text-site-text">{t("auth.register.producer.draft.prompt")}</span>
+            <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
               <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-site-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
         )}
@@ -430,7 +430,7 @@ function RegisterProducerPageBody() {
             <div>
               <label
                 htmlFor="producer-description"
-                className="block text-sm font-medium text-site-text mb-1 text-right"
+                className="block text-sm font-medium text-text mb-1 text-right"
               >
                 {t("auth.register.producer.fields.description_label")}
               </label>
@@ -535,7 +535,7 @@ function RegisterProducerPageBody() {
               <div>
                 <label
                   htmlFor="producer-license-required"
-                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                  className="block text-sm font-medium text-text mb-1 text-right"
                 >
                   {t("auth.register.producer.fields.license_required_label")}
                 </label>
@@ -573,13 +573,13 @@ function RegisterProducerPageBody() {
                     setLicenseOptionalExpanded(false);
                   }}
                   aria-label={t("auth.register.producer.actions.close")}
-                  className="absolute top-0 end-0 text-fg-muted hover:text-site-text text-lg leading-none p-1"
+                  className="absolute top-0 end-0 text-fg-muted hover:text-text text-lg leading-none p-1"
                 >
                   ✕
                 </button>
                 <label
                   htmlFor="producer-license-optional"
-                  className="block text-sm font-medium text-site-text mb-1 text-right"
+                  className="block text-sm font-medium text-text mb-1 text-right"
                 >
                   {t("auth.register.producer.fields.license_optional_label")}
                 </label>
@@ -691,7 +691,7 @@ function RegisterProducerPageBody() {
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.success.heading")}</h2>
+            <h2 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
             <p className="text-fg-muted mb-6">
               {whatsappSent
                 ? t("auth.register.producer.success.body_with_whatsapp")
@@ -706,7 +706,7 @@ function RegisterProducerPageBody() {
               </div>
             )}
             <div className="bg-green-50 rounded-[16px] p-5 text-right mb-6">
-              <h3 className="font-semibold text-site-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
+              <h3 className="font-semibold text-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
               <ul className="text-sm text-fg-muted space-y-2">
                 <li>{t("auth.register.producer.success.next_step1")}</li>
                 <li>{t("auth.register.producer.success.next_step2")}</li>
@@ -735,7 +735,7 @@ function RegisterProducerPageBody() {
         {step === 3 && !didUpgrade && (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-            <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
+            <h2 className="font-headline text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
             <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
             <button

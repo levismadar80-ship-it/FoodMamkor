@@ -61,7 +61,7 @@ export default function AdminGroupBuysPage() {
           <Link href="/admin" className="text-sm text-primary hover:underline">
             {t("common.back_to_dashboard")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline text-2xl font-bold text-text mt-1">
             {t("group_buys.title")}
           </h1>
         </div>
@@ -112,7 +112,7 @@ export default function AdminGroupBuysPage() {
               <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <h2 className="font-semibold text-site-text">{gb.title}</h2>
+                    <h2 className="font-semibold text-text">{gb.title}</h2>
                     <p className="text-xs text-fg-muted">{gb.producer_name} · {gb.city}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>

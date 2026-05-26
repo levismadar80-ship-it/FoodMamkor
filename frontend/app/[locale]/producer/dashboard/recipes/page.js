@@ -73,7 +73,7 @@ export default function ProducerRecipesPage() {
           >
             {t("back")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
@@ -117,7 +117,7 @@ export default function ProducerRecipesPage() {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
-                  <h2 className="font-semibold text-site-text truncate">
+                  <h2 className="font-semibold text-text truncate">
                     {r.title}
                   </h2>
                   {r.description && (

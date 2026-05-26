@@ -72,7 +72,7 @@ export default function AvailabilityBadge({ status, variant = "card" }) {
       aria-label={label}
       data-testid="availability-badge"
       data-status={normalized}
-      className="inline-flex items-center text-xs text-site-text"
+      className="inline-flex items-center text-xs text-text"
     >
       <span
         aria-hidden="true"

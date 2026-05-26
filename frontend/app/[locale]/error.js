@@ -30,7 +30,7 @@ export default function GlobalError({ error, reset }) {
           className="mx-auto mb-5"
           aria-hidden="true"
         />
-        <h1 className="font-headline text-4xl font-bold text-site-text mb-3">
+        <h1 className="font-headline text-4xl font-bold text-text mb-3">
           {t("heading")}
         </h1>
         <p className="text-fg-muted text-lg mb-8 leading-relaxed">

@@ -212,7 +212,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
   return (
     <div className="bg-white rounded-[16px] p-6 mb-6 border border-border">
-      <h3 className="font-headline text-2xl font-bold mb-1 text-site-text">פרסום מוצר ביתי</h3>
+      <h3 className="font-headline text-2xl font-bold mb-1 text-text">פרסום מוצר ביתי</h3>
       <p className="text-fg-muted text-sm mb-6">
         מלאי את כל השדות החובה. הקונים רואים את כל המידע ומחליטים על סמך זה.
       </p>
@@ -220,21 +220,21 @@ export default function HomeProductForm({ onCreated, onCancel }) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* ==================== Section 1: Product ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">פרטי המוצר</legend>
+          <legend className="font-headline text-lg font-bold text-text mb-2">פרטי המוצר</legend>
           <div>
-            <label htmlFor="hpf-title" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-title" className="block text-sm text-text mb-1">
               שם המוצר <span className="text-red-500">*</span>
             </label>
             <input id="hpf-title" required value={form.title} onChange={update("title")} className={baseInput} placeholder="לחם מחמצת טרי" />
           </div>
           <div>
-            <label htmlFor="hpf-description" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-description" className="block text-sm text-text mb-1">
               תיאור <span className="text-red-500">*</span>
             </label>
             <textarea id="hpf-description" required rows={3} value={form.description} onChange={update("description")} className={`${baseInput} resize-none`} placeholder="איך הוכן? ממה?" />
           </div>
           <div>
-            <label htmlFor="hpf-category" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-category" className="block text-sm text-text mb-1">
               קטגוריה <span className="text-red-500">*</span>
             </label>
             <select id="hpf-category" required value={form.category} onChange={update("category")} className={baseInput}>
@@ -248,23 +248,23 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 2: Safety / dates ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">מידע חשוב לקונה</legend>
+          <legend className="font-headline text-lg font-bold text-text mb-2">מידע חשוב לקונה</legend>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hpf-prep" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-prep" className="block text-sm text-text mb-1">
                 תאריך הכנה <span className="text-red-500">*</span>
               </label>
               <input id="hpf-prep" type="date" required value={form.prep_date} onChange={update("prep_date")} className={baseInput} />
             </div>
             <div>
-              <label htmlFor="hpf-expiry" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-expiry" className="block text-sm text-text mb-1">
                 תאריך תפוגה <span className="text-red-500">*</span>
               </label>
               <input id="hpf-expiry" type="date" required value={form.expiry_date} onChange={update("expiry_date")} className={baseInput} />
             </div>
           </div>
           <div>
-            <label htmlFor="hpf-storage" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-storage" className="block text-sm text-text mb-1">
               אחסון נדרש <span className="text-red-500">*</span>
             </label>
             <select id="hpf-storage" required value={form.storage_type} onChange={update("storage_type")} className={baseInput}>
@@ -275,7 +275,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             </select>
           </div>
           <div>
-            <label htmlFor="hpf-allergens" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-allergens" className="block text-sm text-text mb-1">
               רכיבים ואלרגנים <span className="text-red-500">*</span>
             </label>
             <textarea id="hpf-allergens" required rows={2} value={form.allergens} onChange={update("allergens")} className={`${baseInput} resize-none`} placeholder="חיטה, ביצים, חלב..." />
@@ -283,7 +283,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="hpf-kosher" className="block text-sm text-site-text mb-1">כשרות</label>
+              <label htmlFor="hpf-kosher" className="block text-sm text-text mb-1">כשרות</label>
               <select id="hpf-kosher" value={form.kosher} onChange={update("kosher")} className={baseInput}>
                 <option value="">לא ידוע</option>
                 {KOSHER_OPTIONS.map((k) => (
@@ -293,23 +293,23 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             </div>
             <label className="flex items-center gap-2 mt-6 cursor-pointer">
               <input type="checkbox" checked={form.is_organic} onChange={update("is_organic")} className="w-4 h-4 accent-primary" />
-              <span className="text-sm text-site-text">🌿 גידול אורגני</span>
+              <span className="text-sm text-text">🌿 גידול אורגני</span>
             </label>
           </div>
         </fieldset>
 
         {/* ==================== Section 3: Quantity + Price ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">כמות ומחיר</legend>
+          <legend className="font-headline text-lg font-bold text-text mb-2">כמות ומחיר</legend>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="hpf-quantity" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-quantity" className="block text-sm text-text mb-1">
                 כמות <span className="text-red-500">*</span>
               </label>
               <input id="hpf-quantity" required value={form.quantity} onChange={update("quantity")} className={baseInput} placeholder="1" />
             </div>
             <div>
-              <label htmlFor="hpf-unit" className="block text-sm text-site-text mb-1">יחידה</label>
+              <label htmlFor="hpf-unit" className="block text-sm text-text mb-1">יחידה</label>
               <select id="hpf-unit" value={form.unit} onChange={update("unit")} className={baseInput}>
                 <option value="">בחרי...</option>
                 {UNITS.map((u) => (
@@ -318,7 +318,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               </select>
             </div>
             <div>
-              <label htmlFor="hpf-price" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-price" className="block text-sm text-text mb-1">
                 מחיר (₪) <span className="text-red-500">*</span>
               </label>
               <input id="hpf-price" type="number" step="0.01" min="0" required value={form.price} onChange={update("price")} className={baseInput} />
@@ -329,7 +329,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 4: Images ==================== */}
         <fieldset>
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">
+          <legend className="font-headline text-lg font-bold text-text mb-2">
             תמונות <span className="text-red-500 text-sm">*</span>
           </legend>
           <p className="text-xs text-fg-muted mb-3">עד {MAX_IMAGES} תמונות. לפחות תמונה אחת חובה.</p>
@@ -362,9 +362,9 @@ export default function HomeProductForm({ onCreated, onCancel }) {
 
         {/* ==================== Section 5: Location ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">איפה נמצאים?</legend>
+          <legend className="font-headline text-lg font-bold text-text mb-2">איפה נמצאים?</legend>
           <div>
-            <label htmlFor="hpf-city" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-city" className="block text-sm text-text mb-1">
               עיר <span className="text-red-500">*</span>
             </label>
             <CitySearch
@@ -376,7 +376,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             />
           </div>
           <div>
-            <label htmlFor="hpf-neighborhood" className="block text-sm text-site-text mb-1">שכונה</label>
+            <label htmlFor="hpf-neighborhood" className="block text-sm text-text mb-1">שכונה</label>
             <CitySearch
               id="hpf-neighborhood"
               label="שכונה"
@@ -391,7 +391,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               Falls back to plain text on network failure. */}
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-3">
             <div>
-              <label htmlFor="hpf-street" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-street" className="block text-sm text-text mb-1">
                 רחוב ומספר בית <span className="text-fg-muted text-xs">(פרטי — לא מוצג בכרטיסייה)</span>
               </label>
               <AddressSearch
@@ -415,7 +415,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               />
             </div>
             <div>
-              <label htmlFor="hpf-zip" className="block text-sm text-site-text mb-1">
+              <label htmlFor="hpf-zip" className="block text-sm text-text mb-1">
                 מיקוד
               </label>
               <input
@@ -433,16 +433,16 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             🔒 הכתובת המדויקת נשמרת לשימוש פנימי בלבד. ללקוחות מוצגים רק עיר ושכונה.
           </p>
           <div>
-            <label htmlFor="hpf-location-notes" className="block text-sm text-site-text mb-1">הערות מיקום</label>
+            <label htmlFor="hpf-location-notes" className="block text-sm text-text mb-1">הערות מיקום</label>
             <input id="hpf-location-notes" value={form.location_notes} onChange={update("location_notes")} className={baseInput} placeholder="ליד הסופר, כניסה מהחנייה" />
           </div>
         </fieldset>
 
         {/* ==================== Section 6: Delivery + Contact ==================== */}
         <fieldset className="space-y-3">
-          <legend className="font-headline text-lg font-bold text-site-text mb-2">איסוף ומסירה</legend>
+          <legend className="font-headline text-lg font-bold text-text mb-2">איסוף ומסירה</legend>
           <div>
-            <label htmlFor="hpf-delivery" className="block text-sm text-site-text mb-1">שיטת מסירה</label>
+            <label htmlFor="hpf-delivery" className="block text-sm text-text mb-1">שיטת מסירה</label>
             <select id="hpf-delivery" value={form.delivery_method} onChange={update("delivery_method")} className={baseInput}>
               <option value="">בחרי...</option>
               {DELIVERY_METHODS.map((d) => (
@@ -451,7 +451,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             </select>
           </div>
           <div>
-            <label htmlFor="hpf-phone" className="block text-sm text-site-text mb-1">
+            <label htmlFor="hpf-phone" className="block text-sm text-text mb-1">
               טלפון (ל-WhatsApp) <span className="text-red-500">*</span>
             </label>
             <input id="hpf-phone" required value={form.phone} onChange={update("phone")} className={baseInput} placeholder="0501234567" dir="ltr" />
@@ -500,7 +500,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             {submitting ? "מפרסמת..." : rejected ? "לא ניתן לפרסם" : "פרסמי מוצר"}
           </button>
           {onCancel && (
-            <button type="button" onClick={onCancel} className="text-fg-muted hover:text-site-text">
+            <button type="button" onClick={onCancel} className="text-fg-muted hover:text-text">
               ביטול
             </button>
           )}

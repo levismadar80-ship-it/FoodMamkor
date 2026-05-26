@@ -104,7 +104,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   const toggleRow = (key, label, emoji) => (
     <label key={key} className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none">
-      <span className="flex items-center gap-2 text-sm text-site-text">
+      <span className="flex items-center gap-2 text-sm text-text">
         <span aria-hidden="true">{emoji}</span>
         {label}
       </span>
@@ -128,7 +128,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   return (
     <div className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm" dir="rtl">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-site-text text-sm flex items-center gap-1.5">
+        <h3 className="font-semibold text-text text-sm flex items-center gap-1.5">
           <Bell size={16} weight="fill" className="text-primary" aria-hidden="true" />
           {t("heading")}
           <span className="font-normal text-fg-muted">({producerName})</span>
@@ -136,7 +136,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         {onClose && (
           <button
             onClick={onClose}
-            className="text-fg-muted hover:text-site-text text-lg leading-none"
+            className="text-fg-muted hover:text-text text-lg leading-none"
             aria-label={t("close_aria")}
           >
             ×

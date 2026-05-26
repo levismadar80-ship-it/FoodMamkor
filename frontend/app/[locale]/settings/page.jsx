@@ -86,7 +86,7 @@ function SettingsPageBody() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
+      <h1 className="font-headline text-3xl font-bold text-text mb-6">
         {tCommon("page_heading")}
       </h1>
 
@@ -156,7 +156,7 @@ const TabButton = forwardRef(function TabButton(
       className={`flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${
         active
           ? "bg-primary text-white"
-          : "text-fg-muted hover:text-site-text"
+          : "text-fg-muted hover:text-text"
       }`}
     >
       {icon}
@@ -277,7 +277,7 @@ function ProfileTab() {
         </label>
         <input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} disabled={uploading} />
         <div>
-          <p className="font-semibold text-site-text">{user.name}</p>
+          <p className="font-semibold text-text">{user.name}</p>
           <p className="text-sm text-fg-muted" dir="ltr">{user.email}</p>
           <p className="text-xs text-fg-muted mt-0.5">{t("avatar_hint")}</p>
         </div>
@@ -442,7 +442,7 @@ function PasswordChangeCard({ isOAuth }) {
   if (isOAuth) {
     return (
       <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
-        <h2 className="font-semibold text-site-text mb-2">{t("oauth_heading")}</h2>
+        <h2 className="font-semibold text-text mb-2">{t("oauth_heading")}</h2>
         <p className="text-sm text-fg-muted">{t("oauth_body")}</p>
       </section>
     );
@@ -451,7 +451,7 @@ function PasswordChangeCard({ isOAuth }) {
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-site-text">{t("heading")}</h2>
+        <h2 className="font-semibold text-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
           {t("forgot_link")}
         </Link>
@@ -476,7 +476,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
@@ -522,7 +522,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >
@@ -577,7 +577,7 @@ function LogoutAllDevicesCard() {
 
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
-      <h2 className="font-semibold text-site-text mb-1">{t("heading")}</h2>
+      <h2 className="font-semibold text-text mb-1">{t("heading")}</h2>
       <p className="text-sm text-fg-muted mb-4">
         {t("body")}
       </p>
@@ -605,7 +605,7 @@ function LogoutAllDevicesCard() {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-site-text transition"
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
@@ -653,7 +653,7 @@ function DangerZoneCard() {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
         <p className="text-2xl">⏳</p>
-        <h2 className="font-semibold text-site-text">{t("grace_heading")}</h2>
+        <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
         <p className="text-sm text-fg-muted">
           {t("grace_body")}
         </p>
@@ -712,7 +712,7 @@ function DangerZoneCard() {
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-site-text transition"
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
@@ -790,7 +790,7 @@ function BusinessTab() {
 
       {/* Stats grid */}
       <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-site-text mb-4">{t("stats_heading")}</h2>
+        <h2 className="font-semibold text-text mb-4">{t("stats_heading")}</h2>
         {loadingStats ? (
           <p className="text-sm text-fg-muted">{t("stats_loading")}</p>
         ) : stats ? (
@@ -1002,7 +1002,7 @@ function ProductsSection() {
   return (
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline text-lg font-bold text-site-text">{t("section_heading")}</h3>
+        <h3 className="font-headline text-lg font-bold text-text">{t("section_heading")}</h3>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setError(""); }}
@@ -1035,7 +1035,7 @@ function ProductsSection() {
               className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-site-text">{t("edit_heading")}</p>
+                <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
                 <button type="button" onClick={cancelEdit} aria-label={t("cancel_aria")}>
                   <X size={16} className="text-fg-muted" aria-hidden="true" />
                 </button>
@@ -1161,7 +1161,7 @@ function ProductsSection() {
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-site-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
+                  className="px-4 bg-white border border-border text-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
@@ -1179,7 +1179,7 @@ function ProductsSection() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-site-text truncate">{product.name}</p>
+                <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {(() => {
                   if (product.price_min != null && product.price_max != null)
                     return <p className="text-xs text-accent">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
@@ -1212,7 +1212,7 @@ function ProductsSection() {
       {adding && (
         <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-site-text">{t("add_heading")}</p>
+            <p className="text-sm font-medium text-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
               <X size={16} className="text-fg-muted" aria-hidden="true" />
             </button>
@@ -1340,7 +1340,7 @@ function ProductsSection() {
 function StatCard({ label, value }) {
   return (
     <div className="rounded-[12px] bg-green-50 px-4 py-3 text-center">
-      <p className="text-2xl font-bold text-site-text">{value}</p>
+      <p className="text-2xl font-bold text-text">{value}</p>
       <p className="text-xs text-fg-muted mt-0.5">{label}</p>
     </div>
   );
@@ -1358,7 +1358,7 @@ function SupportModal({ onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-site-text text-lg">{t("heading")}</h2>
+        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
         <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
@@ -1385,7 +1385,7 @@ function SupportModal({ onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-site-text transition"
+          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
         >
           {t("close_cta")}
         </button>

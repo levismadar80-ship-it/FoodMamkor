@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-26 — Migrate site-text → text (MEH-698 Contract)
+
+`feat(MEH-698)`: Contract-phase rename — `site-text` color → `text` across **101
+files / 347 occurrences** (320 `text-site-text`, 25 `hover:text-site-text`, 1
+`bg-`, 1 `border-`). Value-identical (both `#1C1A17`), **zero visual change**.
+Disambiguation verified: `text-text-secondary` / `text-text-primary` (the
+double-prefix tokens migrated in #854) stay 0 — not touched. `text-text` count
+2 (pre-existing from #854) → 347 post. No `tailwind.config.js`/`tokens.json`/
+DESIGN.md change (legacy `site-text` alias drops in MEH-708). Build + lint +
+drift gate green; mobile QA waived.
+
 ### 2026-05-26 — Migrate light → green-50 (MEH-702 Contract — largest Contract PR)
 
 `feat(MEH-702)`: Contract-phase rename — all `light` color usages → `green-50`

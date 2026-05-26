@@ -78,7 +78,7 @@ export default function AdminCategoryRequestsPage() {
         >
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div>
-              <span className="font-semibold text-site-text">{group.requested_name}</span>
+              <span className="font-semibold text-text">{group.requested_name}</span>
               <span className="ms-2 bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">
                 {group.count} {group.count === 1 ? t("category_requests.request_one") : t("category_requests.request_many")}
               </span>
@@ -152,7 +152,7 @@ export default function AdminCategoryRequestsPage() {
                         <button
                           onClick={() => updateStatus(req.id, "pending")}
                           disabled={actionLoading === req.id}
-                          className="text-xs text-fg-muted hover:text-site-text transition"
+                          className="text-xs text-fg-muted hover:text-text transition"
                         >
                           {t("category_requests.actions.reset")}
                         </button>

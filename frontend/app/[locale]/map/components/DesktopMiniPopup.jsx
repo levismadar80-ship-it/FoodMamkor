@@ -38,7 +38,7 @@ export default function DesktopMiniPopup({ selectedProducer, onClose }) {
       )}
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "15px" }}>{p.name}</h3>
+          <h3 className="font-headline font-bold text-text line-clamp-1" style={{ fontSize: "15px" }}>{p.name}</h3>
           <button type="button" onClick={onClose} className="shrink-0 w-7 h-7 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
             <X size={14} weight="bold" />
           </button>

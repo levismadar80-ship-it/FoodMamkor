@@ -222,7 +222,7 @@ export default function NewExperienceClient() {
         className="mb-4"
       />
 
-      <h1 className="font-headline text-3xl md:text-4xl font-bold text-site-text mb-2">
+      <h1 className="font-headline text-3xl md:text-4xl font-bold text-text mb-2">
         {t("title")}
       </h1>
       <p className="text-fg-muted mb-8">
@@ -351,7 +351,7 @@ export default function NewExperienceClient() {
                 className={`px-4 py-2 rounded-full text-sm transition ${
                   form.location_type === lt.value
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-green-50"
+                    : "bg-white text-text border border-border hover:bg-green-50"
                 }`}
               >
                 {t(lt.labelKey)}
@@ -459,7 +459,7 @@ export default function NewExperienceClient() {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-site-text mb-1">
+      <label className="block text-sm font-medium text-text mb-1">
         {label}
       </label>
       {children}

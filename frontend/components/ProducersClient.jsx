@@ -241,7 +241,7 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
+      <h1 className="font-headline text-3xl font-bold text-text mb-6">
         {searchQ ? (
           <>
             {t("title.search_results")}{" "}
@@ -414,7 +414,7 @@ function RecentlyViewedStrip() {
           <Link
             key={p.id}
             href={p.slug ? `/${p.slug}` : `/producer/${p.id}`}
-            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-site-text hover:border-primary hover:text-primary transition whitespace-nowrap"
+            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-text hover:border-primary hover:text-primary transition whitespace-nowrap"
           >
             {p.name}
           </Link>
@@ -434,7 +434,7 @@ function FilterEmptyState({ onClear, searchQ }) {
       >
         <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+      <h2 className="font-headline text-xl font-bold text-text mb-2">
         {searchQ
           ? t("empty.no_match_search", { q: searchQ })
           : t("empty.no_match_filters")}
@@ -448,7 +448,7 @@ function FilterEmptyState({ onClear, searchQ }) {
             <Link
               key={key}
               href={`/producers?q=${encodeURIComponent(q)}`}
-              className="bg-white border border-border text-site-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+              className="bg-white border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
               {t(`empty.category_chips.${key}`)}
             </Link>
@@ -481,7 +481,7 @@ function CatalogEmptyState() {
       >
         <span className="text-2xl">🌿</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+      <h2 className="font-headline text-xl font-bold text-text mb-2">
         {t("title")}
       </h2>
       <p className="text-fg-muted text-sm mb-6 max-w-sm mx-auto">
@@ -537,7 +537,7 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
@@ -550,7 +550,7 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>

@@ -155,7 +155,7 @@ export default function PasswordInput({
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
           aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
           aria-pressed={show}
           tabIndex={0}

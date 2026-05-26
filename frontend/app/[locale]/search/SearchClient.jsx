@@ -98,7 +98,7 @@ function SearchPageBody() {
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-4">
+      <h1 className="font-headline text-3xl font-bold text-text mb-4">
         {q ? t("title_results", { q }) : t("title_default")}
       </h1>
 
@@ -113,7 +113,7 @@ function SearchPageBody() {
             onChange={(e) => setInputVal(e.target.value)}
             placeholder={t("input_placeholder")}
             dir="rtl"
-            className="flex-1 bg-transparent outline-none text-site-text placeholder:text-fg-muted text-sm"
+            className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
             aria-label={t("input_aria")}
           />
         </div>
@@ -146,7 +146,7 @@ function SearchPageBody() {
           {/* -------- Businesses -------- */}
           {producers.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+              <h2 className="font-headline text-2xl font-bold text-text mb-4">
                 {t("section_producers")} ({producers.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -160,7 +160,7 @@ function SearchPageBody() {
           {/* -------- Products -------- */}
           {products.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+              <h2 className="font-headline text-2xl font-bold text-text mb-4">
                 {t("section_products")} ({products.length})
               </h2>
               <ul className="divide-y divide-border bg-white rounded-[12px] border border-border overflow-hidden">
@@ -174,7 +174,7 @@ function SearchPageBody() {
                         href={href}
                         className="flex flex-col gap-1 p-4 hover:bg-green-50/50 transition"
                       >
-                        <span className="font-medium text-site-text">
+                        <span className="font-medium text-text">
                           {prod.name}
                         </span>
                         {prod.description && (
@@ -201,7 +201,7 @@ function SearchPageBody() {
               >
                 🌿
               </div>
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+              <h2 className="font-headline text-2xl font-bold text-text mb-2">
                 {t("empty_title")}
               </h2>
               <p className="text-fg-muted mb-6 max-w-md mx-auto">

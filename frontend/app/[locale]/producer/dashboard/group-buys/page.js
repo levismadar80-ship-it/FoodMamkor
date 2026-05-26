@@ -58,7 +58,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
-      <h2 className="font-headline text-lg font-bold text-site-text">{t("heading")}</h2>
+      <h2 className="font-headline text-lg font-bold text-text">{t("heading")}</h2>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -253,7 +253,7 @@ export default function ProducerGroupBuysPage() {
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("back")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
@@ -296,7 +296,7 @@ export default function ProducerGroupBuysPage() {
               <div key={gb.id} className="bg-white rounded-[14px] border border-border p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <h2 className="font-semibold text-site-text">{gb.title}</h2>
+                    <h2 className="font-semibold text-text">{gb.title}</h2>
                     <p className="text-xs text-fg-muted mt-0.5">{gb.product_name}</p>
                   </div>
                   <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>

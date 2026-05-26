@@ -39,7 +39,7 @@ export default function RecipeCard({ slug, recipe }) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-site-text line-clamp-2 mb-1">
+        <h3 className="font-semibold text-text line-clamp-2 mb-1">
           {recipe.title}
         </h3>
         {totalMin && (
