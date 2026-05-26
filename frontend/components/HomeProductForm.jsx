@@ -495,7 +495,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           <button
             type="submit"
             disabled={rejected || submitting || checking || uploading}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-60 disabled:cursor-not-allowed font-medium"
           >
             {submitting ? "מפרסמת..." : rejected ? "לא ניתן לפרסם" : "פרסמי מוצר"}
           </button>

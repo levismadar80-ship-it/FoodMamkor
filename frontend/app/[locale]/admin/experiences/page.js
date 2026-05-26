@@ -276,7 +276,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
               <button
                 onClick={() => onApprove(ex)}
                 disabled={busy}
-                className="bg-primary text-white px-3 py-1 rounded-full text-xs hover:bg-primary-light disabled:opacity-50"
+                className="bg-primary text-white px-3 py-1 rounded-full text-xs hover:bg-primary-dark disabled:opacity-50"
               >
                 {t("experiences.actions.approve")}
               </button>

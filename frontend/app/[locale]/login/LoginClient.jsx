@@ -218,7 +218,7 @@ function LoginPageBody() {
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-light transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">

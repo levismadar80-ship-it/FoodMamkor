@@ -122,7 +122,7 @@ export default function MapPane({
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
           <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
-          <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-light transition">{t("map.pane.empty.cta")}</Link>
+          <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
         </div>
       )}
 

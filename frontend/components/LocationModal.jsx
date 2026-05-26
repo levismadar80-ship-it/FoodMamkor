@@ -131,7 +131,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           type="button"
           onClick={handleGeo}
           disabled={geoLoading}
-          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-[10px] font-medium transition hover:bg-primary-light disabled:opacity-60 mb-3"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white py-2.5 rounded-[10px] font-medium transition hover:bg-primary-dark disabled:opacity-60 mb-3"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("geo_loading") : t("geo_button")}

@@ -26,7 +26,7 @@ const VARIANTS = {
   phone: {
     Icon: Phone,
     className:
-      "bg-primary text-white hover:bg-primary-light focus-visible:ring-primary/40",
+      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
   },
   website: {
     Icon: Globe,

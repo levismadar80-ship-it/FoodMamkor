@@ -62,7 +62,7 @@ function VerifyEmailContent() {
           <p className="text-fg-muted text-sm mb-6">{t("auth.verifyEmail.success_subtitle")}</p>
           <Link
             href="/"
-            className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center"
+            className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium text-center"
           >
             {t("auth.verifyEmail.success_cta")}
           </Link>
@@ -81,7 +81,7 @@ function VerifyEmailContent() {
         <p className="text-fg-muted text-sm mb-6">{errorMsg}</p>
         <Link
           href="/"
-          className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center"
+          className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium text-center"
         >
           {t("auth.verifyEmail.error_cta")}
         </Link>

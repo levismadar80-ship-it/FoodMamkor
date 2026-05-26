@@ -149,7 +149,7 @@ export default function ContactClient() {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+                className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
               >
                 {status === "loading" ? t("submit_loading") : t("submit")}
               </button>

@@ -242,7 +242,7 @@ export default function HomepageMiniMap() {
         <div className="mt-3 text-center">
           <Link
             href="/map"
-            className="inline-flex items-center gap-1 text-primary hover:text-primary-light text-sm font-medium"
+            className="inline-flex items-center gap-1 text-primary hover:text-primary-dark text-sm font-medium"
           >
             {t("open_full")}
             <ArrowLeft size={16} weight="bold" aria-hidden="true" />

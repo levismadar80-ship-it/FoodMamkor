@@ -153,7 +153,7 @@ export function HomeProducersGrid({
               </p>
               <Link
                 href="/map"
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-light transition font-medium"
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
               >
                 {t("home.producers.explore_map")}
               </Link>

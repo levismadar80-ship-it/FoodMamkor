@@ -217,7 +217,7 @@ export default function NewEventPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium disabled:opacity-60"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-60"
           >
             {submitting ? t("submit_publishing") : t("submit")}
           </button>

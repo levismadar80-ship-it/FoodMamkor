@@ -159,7 +159,7 @@ export default function NeighborClient() {
             <button
               type="button"
               onClick={() => setShowForm(!showForm)}
-              className="hidden md:inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-full hover:bg-primary-light transition focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="hidden md:inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-full hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {showForm ? <X size={18} weight="bold" /> : <Plus size={18} weight="bold" />}
               {showForm ? "סגרי טופס" : "פרסמי מוצר"}
@@ -234,7 +234,7 @@ export default function NeighborClient() {
                   <button
                     type="button"
                     onClick={() => setShowForm(true)}
-                    className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-light transition font-medium"
+                    className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium"
                   >
                     פרסמי מוצר +
                   </button>

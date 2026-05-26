@@ -57,7 +57,7 @@ export default function FollowButton({ producerId }) {
       disabled={loading}
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] border text-sm font-medium transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
         following
-          ? "bg-primary text-white border-primary hover:bg-primary-light"
+          ? "bg-primary text-white border-primary hover:bg-primary-dark"
           : "bg-white text-primary border-primary hover:bg-green-50"
       }`}
       aria-pressed={following}

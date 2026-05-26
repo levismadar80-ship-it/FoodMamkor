@@ -351,7 +351,7 @@ function ProfileTab() {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? tCommon("saving") : tCommon("save_cta")}
         </button>
@@ -540,7 +540,7 @@ function PasswordChangeCard({ isOAuth }) {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? t("submit_saving") : t("submit_cta")}
         </button>
@@ -1154,7 +1154,7 @@ function ProductsSection() {
                 <button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
+                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
                 </button>
@@ -1326,7 +1326,7 @@ function ProductsSection() {
             <button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
+              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
             </button>

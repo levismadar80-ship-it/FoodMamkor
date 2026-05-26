@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-05-26 — Hover alignment: primary-light → primary-dark (MEH-705 Contract, YELLOW)
+
+`refactor(MEH-705)`: hover-state alignment — `hover:*-primary-light` →
+`hover:*-primary-dark` across **31 files / 47 occurrences** (41 `hover:bg-`, 6
+`hover:text-`). Aligns code with the DESIGN.md mandate *"brand greens go deeper
+on interaction"* — the legacy code lightened on hover (#2e6853→#3a7d64), which
+violated the spec; now it darkens (→ #2E4A2E). **This is a deliberate visual
+change** (hover direction flips), unlike the value-identical renames — 🟡 YELLOW,
+**mobile-QA gated before merge**. No config/tokens/DESIGN edit (legacy
+`primary-light` alias drops in MEH-708). Build + lint + drift gate green. Refs MEH-686.
+
 ### 2026-05-26 — Migrate site-text → text (MEH-698 Contract)
 
 `feat(MEH-698)`: Contract-phase rename — `site-text` color → `text` across **101

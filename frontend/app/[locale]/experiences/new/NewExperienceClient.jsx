@@ -442,7 +442,7 @@ export default function NewExperienceClient() {
           <button
             type="submit"
             disabled={submitting || verdict?.status === "REJECTED"}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting
               ? t("submitting")
