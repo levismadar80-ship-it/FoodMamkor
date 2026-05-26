@@ -36,7 +36,7 @@ const EMPTY_FORM = {
 function RegisterProducerPageFallback() {
   const t = useTranslations();
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">
+    <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">
       {t("auth.register.producer.loading_form")}
     </div>
   );
@@ -282,14 +282,14 @@ function RegisterProducerPageBody() {
   // Don't show step 1 (account form) until we know whether user is logged in —
   // prevents the flash of email/password inputs for already-authenticated users.
   if (authLoading && step === 1) {
-    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-site-muted">{t("auth.register.producer.loading")}</div>;
+    return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-[12px] p-8">
         <h1 className="font-headline text-2xl font-bold text-site-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-        <p className="text-site-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+        <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
@@ -307,7 +307,7 @@ function RegisterProducerPageBody() {
             <span className="text-site-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
               <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
-              <button onClick={() => setShowDraftBanner(false)} className="text-site-muted hover:text-site-text">{t("auth.register.producer.draft.dismiss")}</button>
+              <button onClick={() => setShowDraftBanner(false)} className="text-fg-muted hover:text-site-text">{t("auth.register.producer.draft.dismiss")}</button>
             </div>
           </div>
         )}
@@ -348,7 +348,7 @@ function RegisterProducerPageBody() {
               }}
             />
 
-            <h3 className="text-sm font-medium text-site-muted pt-2">{t("auth.register.producer.steps.account.email_section")}</h3>
+            <h3 className="text-sm font-medium text-fg-muted pt-2">{t("auth.register.producer.steps.account.email_section")}</h3>
 
             <input
               placeholder={t("auth.register.producer.fields.name")}
@@ -409,7 +409,7 @@ function RegisterProducerPageBody() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">{t("auth.register.producer.steps.business.title")}</h2>
-            <p className="text-sm text-site-muted">
+            <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
 
@@ -434,7 +434,7 @@ function RegisterProducerPageBody() {
               >
                 {t("auth.register.producer.fields.description_label")}
               </label>
-              <p className="text-xs text-site-muted mb-2 text-right">
+              <p className="text-xs text-fg-muted mb-2 text-right">
                 {t("auth.register.producer.fields.description_hint")}
               </p>
               <textarea
@@ -444,7 +444,7 @@ function RegisterProducerPageBody() {
                 disabled={descriptionDisabled}
                 placeholder={descriptionPlaceholder}
                 rows={6}
-                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-site-muted disabled:cursor-not-allowed"
+                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-light disabled:text-fg-muted disabled:cursor-not-allowed"
                 dir="rtl"
               />
               {!descriptionDisabled ? (
@@ -509,7 +509,7 @@ function RegisterProducerPageBody() {
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
               )}
-              <p className="text-xs text-site-muted mt-1">
+              <p className="text-xs text-fg-muted mt-1">
                 {t("auth.register.producer.fields.phone_hint")}
               </p>
             </div>
@@ -539,7 +539,7 @@ function RegisterProducerPageBody() {
                 >
                   {t("auth.register.producer.fields.license_required_label")}
                 </label>
-                <p className="text-xs text-site-muted mb-2 text-right">
+                <p className="text-xs text-fg-muted mb-2 text-right">
                   {t("auth.register.producer.fields.license_required_hint")}
                 </p>
                 <input
@@ -573,7 +573,7 @@ function RegisterProducerPageBody() {
                     setLicenseOptionalExpanded(false);
                   }}
                   aria-label={t("auth.register.producer.actions.close")}
-                  className="absolute top-0 end-0 text-site-muted hover:text-site-text text-lg leading-none p-1"
+                  className="absolute top-0 end-0 text-fg-muted hover:text-site-text text-lg leading-none p-1"
                 >
                   ✕
                 </button>
@@ -617,7 +617,7 @@ function RegisterProducerPageBody() {
                 className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
                 required
               />
-              <span className="leading-relaxed text-site-muted">
+              <span className="leading-relaxed text-fg-muted">
                 {t("auth.register.producer.terms.intro")}{" "}
                 <a href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</a>{" "}
                 {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>{t("auth.register.producer.terms.license_declaration")}
@@ -692,7 +692,7 @@ function RegisterProducerPageBody() {
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.success.heading")}</h2>
-            <p className="text-site-muted mb-6">
+            <p className="text-fg-muted mb-6">
               {whatsappSent
                 ? t("auth.register.producer.success.body_with_whatsapp")
                 : t("auth.register.producer.success.body_no_whatsapp")}
@@ -707,7 +707,7 @@ function RegisterProducerPageBody() {
             )}
             <div className="bg-light rounded-[16px] p-5 text-right mb-6">
               <h3 className="font-semibold text-site-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
-              <ul className="text-sm text-site-muted space-y-2">
+              <ul className="text-sm text-fg-muted space-y-2">
                 <li>{t("auth.register.producer.success.next_step1")}</li>
                 <li>{t("auth.register.producer.success.next_step2")}</li>
                 <li>{t("auth.register.producer.success.next_step3")}</li>
@@ -736,8 +736,8 @@ function RegisterProducerPageBody() {
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
             <h2 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
-            <p className="text-site-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
-            <p className="text-site-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
+            <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
+            <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
             <button
               onClick={() => router.push("/")}
               className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"

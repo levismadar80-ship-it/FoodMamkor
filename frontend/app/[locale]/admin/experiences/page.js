@@ -112,7 +112,7 @@ export default function AdminExperiencesPage() {
           <h1 className="font-headline text-2xl font-bold text-site-text">
             {t("experiences.title")}
           </h1>
-          <p className="text-site-muted text-sm mt-1">
+          <p className="text-fg-muted text-sm mt-1">
             {t("experiences.subtitle")}
           </p>
         </div>
@@ -149,15 +149,15 @@ export default function AdminExperiencesPage() {
       )}
 
       {loading ? (
-        <p className="text-site-muted">{t("common.loading_f")}</p>
+        <p className="text-fg-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
-        <div className="bg-white border border-border rounded-[16px] p-8 text-center text-site-muted">
+        <div className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted">
           {t("experiences.empty")}
         </div>
       ) : (
         <div className="bg-white border border-border rounded-[16px] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-light text-site-muted text-xs">
+            <thead className="bg-light text-fg-muted text-xs">
               <tr>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.title")}</th>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.host")}</th>
@@ -198,7 +198,7 @@ export default function AdminExperiencesPage() {
             <h2 className="font-headline text-xl font-bold text-site-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
-            <p className="text-site-muted text-sm mb-4">
+            <p className="text-fg-muted text-sm mb-4">
               &quot;{modalEx.title}&quot; — {modalEx.host?.name}
             </p>
             <label className="block text-sm font-medium text-site-text mb-1">
@@ -262,9 +262,9 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
             {ex.title}
           </button>
         </td>
-        <td className="p-3 text-site-muted">{ex.host?.name || "—"}</td>
-        <td className="p-3 text-site-muted">{formatDate(ex.event_date)}</td>
-        <td className="p-3 text-site-muted">{ex.city || "—"}</td>
+        <td className="p-3 text-fg-muted">{ex.host?.name || "—"}</td>
+        <td className="p-3 text-fg-muted">{formatDate(ex.event_date)}</td>
+        <td className="p-3 text-fg-muted">{ex.city || "—"}</td>
         <td className="p-3">
           <span className={`text-xs px-2 py-1 rounded-full ${modBadge}`}>
             {ex.moderation_status || "—"}
@@ -315,13 +315,13 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
             <div className="text-sm space-y-2 text-site-text">
               <p className="whitespace-pre-wrap">{ex.description}</p>
               {ex.address && (
-                <p className="text-site-muted inline-flex items-center gap-1">
+                <p className="text-fg-muted inline-flex items-center gap-1">
                   <MapPin size={14} weight="duotone" className="text-primary" aria-hidden="true" />
                   {ex.address}
                 </p>
               )}
               {ex.price_per_person != null && (
-                <p className="text-site-muted">
+                <p className="text-fg-muted">
                   💰{" "}
                   {Number(ex.price_per_person) === 0
                     ? t("experiences.free")
@@ -338,11 +338,11 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
                   <p className="font-medium text-xs mb-1">
                     {t("experiences.claude_preview")}
                   </p>
-                  <p className="text-xs text-site-muted">
+                  <p className="text-xs text-fg-muted">
                     {ex.moderation_reason}
                   </p>
                   {ex.moderation_suggestion && (
-                    <p className="text-xs text-site-muted mt-1">
+                    <p className="text-xs text-fg-muted mt-1">
                       💡 {ex.moderation_suggestion}
                     </p>
                   )}

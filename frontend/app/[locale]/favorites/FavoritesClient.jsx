@@ -85,7 +85,7 @@ export default function FavoritesClient() {
           <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
             {t("empty_title")}
           </h2>
-          <p className="text-site-muted mb-6 max-w-md mx-auto">
+          <p className="text-fg-muted mb-6 max-w-md mx-auto">
             {t("empty_subtitle")}
           </p>
           {isFirstVisit && (
@@ -105,7 +105,7 @@ export default function FavoritesClient() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-site-muted mb-4 flex items-center gap-1.5" dir="rtl">
+          <p className="text-xs text-fg-muted mb-4 flex items-center gap-1.5" dir="rtl">
             <Bell size={13} aria-hidden="true" />
             {t("list_alerts_hint")}
           </p>

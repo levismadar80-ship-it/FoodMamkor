@@ -270,7 +270,7 @@ export default function Header() {
           <button
             onClick={() => router.push("/search?focus=1")}
             aria-label={t("nav.search_label")}
-            className={`p-2 ${transparent ? "text-white" : "text-site-muted"}`}
+            className={`p-2 ${transparent ? "text-white" : "text-fg-muted"}`}
             style={transparentTextShadow}
           >
             <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
@@ -322,7 +322,7 @@ export default function Header() {
               with the icon for visual consistency between desktop + mobile. */}
           <div className="flex items-center gap-2">
             <LanguageToggle />
-            <span className="text-sm text-site-muted">
+            <span className="text-sm text-fg-muted">
               {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
             </span>
           </div>
@@ -331,7 +331,7 @@ export default function Header() {
             <>
               <Link
                 href="/favorites"
-                className="flex items-center gap-1 text-site-muted"
+                className="flex items-center gap-1 text-fg-muted"
                 onClick={() => setMenuOpen(false)}
               >
                 <Heart size={16} weight="duotone" aria-hidden="true" />
@@ -359,7 +359,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="block text-site-muted"
+              className="block text-fg-muted"
               onClick={() => setMenuOpen(false)}
             >
               {t("nav.login")}

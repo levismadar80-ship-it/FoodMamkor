@@ -19,7 +19,7 @@ export default function ProducerNotFound() {
         <h1 className="font-headline text-3xl font-bold text-site-text mb-3">
           {t("heading")}
         </h1>
-        <p className="text-site-muted mb-8">
+        <p className="text-fg-muted mb-8">
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

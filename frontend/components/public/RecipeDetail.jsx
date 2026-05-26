@@ -40,7 +40,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
     <article className="max-w-3xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav
-        className="text-sm text-site-muted mb-6"
+        className="text-sm text-fg-muted mb-6"
         aria-label={t("breadcrumb_aria")}
       >
         <Link href={`/${producer.slug}`} className="hover:underline">
@@ -82,7 +82,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         recipe.cook_time_min ||
         recipe.servings ||
         totalMin) && (
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-site-muted mb-6 border-y border-border py-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-fg-muted mb-6 border-y border-border py-3">
           {recipe.prep_time_min ? (
             <span>
               <strong className="text-site-text">{t("prep_time_label")}</strong>{" "}
@@ -174,7 +174,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                     {p.name}
                   </p>
                   {p.price_range && (
-                    <p className="text-xs text-site-muted">{p.price_range}</p>
+                    <p className="text-xs text-fg-muted">{p.price_range}</p>
                   )}
                 </div>
               </li>

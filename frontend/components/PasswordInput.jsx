@@ -155,7 +155,7 @@ export default function PasswordInput({
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
           aria-label={show ? tForm("toggle_hide") : tForm("toggle_show")}
           aria-pressed={show}
           tabIndex={0}
@@ -175,7 +175,7 @@ export default function PasswordInput({
         <ul className="mt-2 space-y-1" aria-live="polite">
           <li
             className={`text-xs flex items-center gap-1.5 ${
-              tooShort ? "text-site-muted" : "text-primary"
+              tooShort ? "text-fg-muted" : "text-primary"
             }`}
           >
             <span aria-hidden="true">{tooShort ? "○" : "✓"}</span>
@@ -188,7 +188,7 @@ export default function PasswordInput({
               breachOk
                 ? "text-primary"
                 : breachPending
-                  ? "text-site-muted"
+                  ? "text-fg-muted"
                   : "text-red-500"
             }`}
           >
@@ -202,7 +202,7 @@ export default function PasswordInput({
                 : tForm("not_breached")}
           </li>
           {showCurrentPasswordReuse && (
-            <li className="text-xs flex items-center gap-1.5 text-site-muted">
+            <li className="text-xs flex items-center gap-1.5 text-fg-muted">
               <span aria-hidden="true">○</span>
               {tForm("different_from_current")}
             </li>

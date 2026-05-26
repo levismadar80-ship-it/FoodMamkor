@@ -78,7 +78,7 @@ export function HomeProducersGrid({
         onNext={onboardAdvance}
       />
       {Object.values(chips).some(Boolean) && (
-        <p className="text-xs text-site-muted mb-4" aria-live="polite">
+        <p className="text-xs text-fg-muted mb-4" aria-live="polite">
           {t("home.producers.filter_prefix")}{" "}
           {CHIPS_CONFIG.filter((c) => chips[c.key])
             .map((c) => c.label)
@@ -88,7 +88,7 @@ export function HomeProducersGrid({
 
       {filters.category && (
         <div className="mb-6 flex items-center gap-2">
-          <span className="text-sm text-site-muted">{t("home.producers.filter_showing")}</span>
+          <span className="text-sm text-fg-muted">{t("home.producers.filter_showing")}</span>
           {categories.find((c) => String(c.id) === filters.category) && (
             <span className="bg-light text-primary px-3 py-1 rounded-full text-sm">
               {categories.find((c) => String(c.id) === filters.category).emoji}{" "}
@@ -111,7 +111,7 @@ export function HomeProducersGrid({
           {/* MEH-23 — "מציגים X מתוך Y" counter above the grid. */}
           {producers.length > 0 && (
             <p
-              className="text-sm text-site-muted mb-3"
+              className="text-sm text-fg-muted mb-3"
               data-testid="producers-counter"
               aria-live="polite"
             >
@@ -148,7 +148,7 @@ export function HomeProducersGrid({
               <h3 className="font-headline text-xl font-bold text-site-text mb-2">
                 {t("home.producers.empty_heading")}
               </h3>
-              <p className="text-site-muted mb-5 max-w-md mx-auto">
+              <p className="text-fg-muted mb-5 max-w-md mx-auto">
                 {t("home.producers.empty_subtext")}
               </p>
               <Link

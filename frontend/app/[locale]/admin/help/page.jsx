@@ -185,19 +185,19 @@ export default function AdminHelpPage() {
               <ExternalRow label={t("sections.urls.github_label")} href="https://github.com/levismadar80-ship-it/FoodMamkor">{t("sections.urls.github_text")}</ExternalRow>
               <li className="flex items-start gap-3 text-sm">
                 <span className="text-muted min-w-[140px]">{t("sections.urls.railway_label")}</span>
-                <span className="text-site-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>
+                <span className="text-fg-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <span className="text-muted min-w-[140px]">{t("sections.urls.vercel_label")}</span>
-                <span className="text-site-muted">{t.rich("sections.urls.vercel_text", richComponents)}</span>
+                <span className="text-fg-muted">{t.rich("sections.urls.vercel_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <span className="text-muted min-w-[140px]">{t("sections.urls.cloudinary_label")}</span>
-                <span className="text-site-muted">{t.rich("sections.urls.cloudinary_text", richComponents)}</span>
+                <span className="text-fg-muted">{t.rich("sections.urls.cloudinary_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <span className="text-muted min-w-[140px]">{t("sections.urls.anthropic_label")}</span>
-                <span className="text-site-muted">{t.rich("sections.urls.anthropic_text", richComponents)}</span>
+                <span className="text-fg-muted">{t.rich("sections.urls.anthropic_text", richComponents)}</span>
               </li>
             </ul>
           </Section>

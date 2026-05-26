@@ -40,7 +40,7 @@ function GroupBuyCard({ gb }) {
         </div>
 
         {gb.producer_name && (
-          <p className="text-sm text-site-muted">{t("by_producer", { name: gb.producer_name })}</p>
+          <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
         )}
 
         {/* Price display */}
@@ -48,18 +48,18 @@ function GroupBuyCard({ gb }) {
           <span className="text-2xl font-bold text-primary">
             ₪{Number(gb.price_per_unit_group).toFixed(0)}
           </span>
-          <span className="text-sm text-site-muted line-through">
+          <span className="text-sm text-fg-muted line-through">
             ₪{Number(gb.price_per_unit_regular).toFixed(0)}
           </span>
-          {gb.unit && <span className="text-xs text-site-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
+          {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
         </div>
-        <p className="text-xs text-site-muted">
+        <p className="text-xs text-fg-muted">
           {t("min_hint", { min: gb.min_participants })}
         </p>
 
         {/* Progress bar */}
         <div>
-          <div className="flex justify-between text-xs text-site-muted mb-1">
+          <div className="flex justify-between text-xs text-fg-muted mb-1">
             <span>{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
             <span>{pct}%</span>
           </div>
@@ -73,7 +73,7 @@ function GroupBuyCard({ gb }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-2">
-          <span className="text-xs text-site-muted">
+          <span className="text-xs text-fg-muted">
             {daysLeft > 0 ? t("days_left", { days: daysLeft }) : t("expired")}
           </span>
           <Link
@@ -166,7 +166,7 @@ export default function GroupBuysClient() {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition border ${
                   statusFilter === s.key
                     ? "bg-primary text-white border-primary"
-                    : "bg-white text-site-muted border-border hover:border-primary"
+                    : "bg-white text-fg-muted border-border hover:border-primary"
                 }`}
               >
                 {s.label}
@@ -182,7 +182,7 @@ export default function GroupBuysClient() {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 text-site-muted">
+          <div className="text-center py-20 text-fg-muted">
             <p className="text-4xl mb-4">🛒</p>
             <p className="text-lg font-medium">{t("empty_title")}</p>
             <p className="text-sm mt-1">{t("empty_subtitle")}</p>

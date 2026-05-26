@@ -87,7 +87,7 @@ export default function BottomNav() {
               <Link
                 href={tab.href}
                 className={`flex flex-col items-center justify-center py-2 min-h-[56px] text-[13px] transition ${
-                  active ? "text-primary" : "text-site-muted"
+                  active ? "text-primary" : "text-fg-muted"
                 }`}
                 aria-current={active ? "page" : undefined}
               >

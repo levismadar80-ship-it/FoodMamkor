@@ -57,7 +57,7 @@ export default function HolidayBanner() {
       <span className="text-2xl shrink-0" aria-hidden="true">{holiday.emoji}</span>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-site-text text-sm leading-snug">{label}</p>
-        <p className="text-site-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
+        <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
       </div>
       <Link
         href={searchHref}
@@ -69,7 +69,7 @@ export default function HolidayBanner() {
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-site-muted hover:text-site-text transition p-1 rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-site-text transition p-1 rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>

@@ -23,7 +23,7 @@ function MapLoadingState() {
   return (
     <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
-      <p className="text-site-muted text-sm">{t("map.client.loading_map")}</p>
+      <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
     </div>
   );
 }
@@ -121,7 +121,7 @@ export default function MapPane({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]" role="status">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline text-lg font-bold text-site-text mb-2">{t("map.pane.empty.heading")}</h3>
-          <p className="text-site-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
+          <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
           <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-light transition">{t("map.pane.empty.cta")}</Link>
         </div>
       )}

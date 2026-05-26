@@ -224,10 +224,10 @@ export default function MapPage() {
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
             <h1 className="font-headline text-xl font-bold text-site-text">{t("map.client.title")}</h1>
             <div className="flex gap-1">
-              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("50fr 50fr")} aria-label={t("map.client.aria.split_50_50")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("50") ? "bg-primary text-white" : "text-fg-muted hover:bg-light"}`}>
                 <Rows size={18} weight="bold" />
               </button>
-              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label={t("map.client.aria.split_25_75")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-site-muted hover:bg-light"}`}>
+              <button type="button" onClick={() => hints.setSplitRatio("25fr 75fr")} aria-label={t("map.client.aria.split_25_75")} className={`p-1.5 rounded-md transition ${hints.splitRatio.startsWith("25") ? "bg-primary text-white" : "text-fg-muted hover:bg-light"}`}>
                 <MapPinLine size={18} weight="bold" />
               </button>
             </div>
@@ -240,11 +240,11 @@ export default function MapPage() {
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-site-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
+              <p className="text-xs text-fg-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs text-site-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
+                className="text-xs text-fg-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
               >
                 <option value="default">{t("map.client.sort.nearest")}</option>
                 <option value="rating">{t("map.client.sort.top_rated")}</option>

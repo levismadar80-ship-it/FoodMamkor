@@ -38,7 +38,7 @@ export default function DeliveryBlock({ nationwide, cities = [], producer }) {
             </span>
           ))
         ) : (
-          <p className="text-sm text-site-muted">{t("arranged")}</p>
+          <p className="text-sm text-fg-muted">{t("arranged")}</p>
         )}
       </div>
 

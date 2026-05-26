@@ -98,7 +98,7 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 start-3 text-site-muted hover:text-site-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 start-3 text-fg-muted hover:text-site-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
@@ -121,7 +121,7 @@ export default function LoginPromptModal({
         <button
           type="button"
           onClick={onClose}
-          className="block w-full mt-2 text-sm text-site-muted hover:text-site-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full mt-2 text-sm text-fg-muted hover:text-site-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("dismiss_cta")}
         </button>

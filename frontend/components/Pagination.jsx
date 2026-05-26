@@ -46,7 +46,7 @@ export default function Pagination({
       data-testid="pagination"
     >
       {showPerPage ? (
-        <label className="inline-flex items-center gap-2 text-sm text-site-muted">
+        <label className="inline-flex items-center gap-2 text-sm text-fg-muted">
           {t("per_page_label")}
           <select
             value={perPage}
@@ -82,7 +82,7 @@ export default function Pagination({
               <span
                 key={`ellipsis-${i}`}
                 aria-hidden="true"
-                className="px-2 text-site-muted text-sm"
+                className="px-2 text-fg-muted text-sm"
               >
                 …
               </span>

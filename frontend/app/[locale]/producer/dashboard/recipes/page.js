@@ -99,7 +99,7 @@ export default function ProducerRecipesPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
           emoji="🍞"
@@ -121,7 +121,7 @@ export default function ProducerRecipesPage() {
                     {r.title}
                   </h2>
                   {r.description && (
-                    <p className="text-xs text-site-muted mt-0.5 line-clamp-2">
+                    <p className="text-xs text-fg-muted mt-0.5 line-clamp-2">
                       {r.description}
                     </p>
                   )}
@@ -140,7 +140,7 @@ export default function ProducerRecipesPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-site-muted">
+              <div className="flex items-center gap-4 text-xs text-fg-muted">
                 <span>
                   {r.published ? t("published") : t("not_published")}
                 </span>

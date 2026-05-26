@@ -44,7 +44,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
   if (!images.length) {
     return (
       <div
-        className="relative w-full h-[120px] md:h-[180px] rounded-[12px] flex flex-col items-center justify-center gap-2 text-site-muted"
+        className="relative w-full h-[120px] md:h-[180px] rounded-[12px] flex flex-col items-center justify-center gap-2 text-fg-muted"
         style={{ background: "#F5F0E8" }}
         data-testid="gallery-empty-state"
       >

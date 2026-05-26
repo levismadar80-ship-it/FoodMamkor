@@ -62,14 +62,14 @@ export default function NewEventPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <nav className="text-sm text-site-muted mb-4">
+      <nav className="text-sm text-fg-muted mb-4">
         <Link href="/producer/dashboard" className="hover:text-primary">{t("crumb_dashboard")}</Link>
         <span className="mx-2">›</span>
         <span className="text-site-text">{t("crumb_current")}</span>
       </nav>
 
       <h1 className="font-headline text-4xl font-bold text-site-text mb-2">{t("heading")}</h1>
-      <p className="text-site-muted mb-8">{t("subtitle")}</p>
+      <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
@@ -77,7 +77,7 @@ export default function NewEventPage() {
         </div>
       )}
 
-      <p className="text-sm text-site-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+      <p className="text-sm text-fg-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
         {t("info_paragraph")}
       </p>
 

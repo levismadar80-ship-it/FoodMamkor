@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-26 — MEH-699 site-muted → fg-muted (GREEN)
+
+**Branch:** `feature/meh-699-site-muted-to-fg-muted` (off staging `ea29721`, #857 merge). **PR #TBD** (draft), base `staging`. Closes MEH-699.
+
+**What:** renamed all `*-site-muted` → `*-fg-muted` — 424 occurrences (421 text / 2 bg / 1 border) across 101 files. Value-identical (#5c584f both); zero visual change (Wave-2A Option-A LOCK: fg-muted over muted to avoid the #6b6860 shift). No config/tokens/DESIGN edit (legacy `site-muted` alias drops in MEH-708). site-muted remaining: 0. build + drift gate green. Mobile QA waived.
+
+**Next:** await PR CI + Sapir merge. Execution-ready Contract: MEH-705 (primary-light→primary-dark, YELLOW), MEH-702 (light→green-50, now unblocked by MEH-710), MEH-700 (font-headline split). Do NOT auto-start next — await explicit go.
+
 ## 2026-05-26 — MEH-710 green scale tokens → DESIGN.md (GREEN)
 
 **Branch:** `feature/meh-710-green-scale-to-design-md` (off staging `ff43fbc`, #856 merge). **PR #TBD** (draft), base `staging`. Closes MEH-710; unblocks MEH-702.

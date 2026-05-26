@@ -43,7 +43,7 @@ export default function RecipeCard({ slug, recipe }) {
           {recipe.title}
         </h3>
         {totalMin && (
-          <p className="text-xs text-site-muted">
+          <p className="text-xs text-fg-muted">
             {totalMin} {t("minutes_suffix")}
             {recipe.servings ? ` · ${recipe.servings} ${t("servings_suffix")}` : ""}
           </p>

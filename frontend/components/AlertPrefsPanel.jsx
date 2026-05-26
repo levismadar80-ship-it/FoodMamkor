@@ -98,7 +98,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
 
   if (loading) {
     return (
-      <div className="p-4 text-sm text-site-muted text-center animate-pulse">{t("loading")}</div>
+      <div className="p-4 text-sm text-fg-muted text-center animate-pulse">{t("loading")}</div>
     );
   }
 
@@ -131,12 +131,12 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         <h3 className="font-semibold text-site-text text-sm flex items-center gap-1.5">
           <Bell size={16} weight="fill" className="text-primary" aria-hidden="true" />
           {t("heading")}
-          <span className="font-normal text-site-muted">({producerName})</span>
+          <span className="font-normal text-fg-muted">({producerName})</span>
         </h3>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-site-muted hover:text-site-text text-lg leading-none"
+            className="text-fg-muted hover:text-site-text text-lg leading-none"
             aria-label={t("close_aria")}
           >
             ×

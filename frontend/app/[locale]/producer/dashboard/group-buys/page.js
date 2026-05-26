@@ -278,7 +278,7 @@ export default function ProducerGroupBuysPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
           emoji="🛒"
@@ -297,7 +297,7 @@ export default function ProducerGroupBuysPage() {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
                     <h2 className="font-semibold text-site-text">{gb.title}</h2>
-                    <p className="text-xs text-site-muted mt-0.5">{gb.product_name}</p>
+                    <p className="text-xs text-fg-muted mt-0.5">{gb.product_name}</p>
                   </div>
                   <span className={`text-xs border px-2 py-0.5 rounded-full whitespace-nowrap ${cls}`}>
                     {statusLabel(gb.status)}
@@ -306,11 +306,11 @@ export default function ProducerGroupBuysPage() {
 
                 <div className="flex items-center gap-4 text-sm mb-3">
                   <span className="font-bold text-primary">₪{Number(gb.price_per_unit_group).toFixed(0)}</span>
-                  <span className="text-site-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
+                  <span className="text-fg-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
                 </div>
 
                 <div className="mb-2">
-                  <div className="flex justify-between text-xs text-site-muted mb-1">
+                  <div className="flex justify-between text-xs text-fg-muted mb-1">
                     <span>{t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}</span>
                     <span>{pct}%</span>
                   </div>
@@ -322,7 +322,7 @@ export default function ProducerGroupBuysPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-site-muted">
+                <div className="flex items-center justify-between text-xs text-fg-muted">
                   <span>
                     {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL") })}
                   </span>

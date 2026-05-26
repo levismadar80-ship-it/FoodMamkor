@@ -88,7 +88,7 @@ const SECTIONS = [
         <br />
         📞 {t("sections.contact.phone_placeholder")}
         <br />
-        <span className="text-sm text-site-muted">
+        <span className="text-sm text-fg-muted">
           {t("sections.contact.footnote")}
         </span>
       </>
@@ -125,7 +125,7 @@ export default async function AccessibilityPage({ params }) {
         <h1 className="font-headline text-5xl font-bold text-site-text mb-2">
           {t("heading")}
         </h1>
-        <p className="text-site-muted mb-12">{t("date_label")}</p>
+        <p className="text-fg-muted mb-12">{t("date_label")}</p>
 
         <div className="space-y-4">
           {SECTIONS.map((section) => (

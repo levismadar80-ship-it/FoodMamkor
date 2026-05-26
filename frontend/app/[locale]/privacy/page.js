@@ -166,7 +166,7 @@ export default async function PrivacyPage({ params }) {
         <h1 className="font-headline text-5xl font-bold text-site-text mb-2">
           {t("heading")}
         </h1>
-        <p className="text-site-muted mb-12">{t("date_label")}</p>
+        <p className="text-fg-muted mb-12">{t("date_label")}</p>
 
         <div className="space-y-4">
           {SECTION_IDS.map((id) => (

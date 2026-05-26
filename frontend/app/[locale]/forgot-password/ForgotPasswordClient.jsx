@@ -36,12 +36,12 @@ export default function ForgotPasswordClient() {
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
         <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
-        <p className="text-site-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
+        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
 
         {submitted ? (
           <div className="bg-light border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
             <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
-            <p className="text-site-muted text-xs mt-2">
+            <p className="text-fg-muted text-xs mt-2">
               {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
                 {CONTACT_EMAIL}
@@ -69,7 +69,7 @@ export default function ForgotPasswordClient() {
             >
               {loading ? t("auth.passwordRecovery.forgot.submit_sending") : t("auth.passwordRecovery.forgot.submit")}
             </button>
-            <p className="text-center text-sm text-site-muted">
+            <p className="text-center text-sm text-fg-muted">
               <Link href="/login" className="text-primary hover:underline">
                 {t("auth.passwordRecovery.forgot.back_to_login")}
               </Link>

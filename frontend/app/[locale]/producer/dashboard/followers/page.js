@@ -64,7 +64,7 @@ export default function FollowersPage() {
       </div>
 
       {followerCount === null ? (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : followerCount === 0 ? (
         <EmptyState
           emoji="🌱"
@@ -77,8 +77,8 @@ export default function FollowersPage() {
         <div className="bg-white rounded-[14px] border border-border p-8 text-center">
           <p className="text-5xl mb-3">🌱</p>
           <p className="text-3xl font-bold text-site-text mb-1">{followerCount}</p>
-          <p className="text-site-muted mb-6">{t("followers_label")}</p>
-          <p className="text-sm text-site-muted mb-4">
+          <p className="text-fg-muted mb-6">{t("followers_label")}</p>
+          <p className="text-sm text-fg-muted mb-4">
             {t("share_hint")}
           </p>
           {profileUrl && (
