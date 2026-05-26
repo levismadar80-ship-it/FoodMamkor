@@ -29,7 +29,7 @@ function GroupBuyCard({ gb }) {
 
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-headline text-lg font-bold text-site-text leading-tight">
+          <h2 className="font-headline text-lg font-bold text-text leading-tight">
             {gb.title}
           </h2>
           {gb.city && (

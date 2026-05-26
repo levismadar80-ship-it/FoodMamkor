@@ -125,7 +125,7 @@ export default function ExperiencesClient() {
                 className={`px-3 py-1 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-green-50"
+                    : "bg-white text-text border border-border hover:bg-green-50"
                 }`}
               >
                 {tCat(cat.labelKey)}

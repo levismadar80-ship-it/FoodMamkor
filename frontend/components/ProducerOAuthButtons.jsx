@@ -126,7 +126,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
 
   return (
     <div className="space-y-3" aria-busy={loading ? "true" : "false"}>
-      <p className="text-sm font-semibold text-site-text">{t("producer_quick_signup")}</p>
+      <p className="text-sm font-semibold text-text">{t("producer_quick_signup")}</p>
       {googleId && <div ref={googleBtnRef} className="w-full min-h-[48px]" />}
       {appleId && (
         <button

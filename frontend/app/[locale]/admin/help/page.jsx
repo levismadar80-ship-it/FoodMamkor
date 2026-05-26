@@ -227,11 +227,11 @@ function Section({ id, icon: Icon, title, children, danger = false }) {
           className={danger ? "text-red-600" : "text-primary"}
           aria-hidden="true"
         />
-        <h2 className={`text-xl font-bold ${danger ? "text-red-700" : "text-site-text"}`}>
+        <h2 className={`text-xl font-bold ${danger ? "text-red-700" : "text-text"}`}>
           {title}
         </h2>
       </div>
-      <div className="text-sm text-site-text leading-relaxed space-y-2 bg-white border border-border rounded-[12px] p-5">
+      <div className="text-sm text-text leading-relaxed space-y-2 bg-white border border-border rounded-[12px] p-5">
         {children}
       </div>
     </section>

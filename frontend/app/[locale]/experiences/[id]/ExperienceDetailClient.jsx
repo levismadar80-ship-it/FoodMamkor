@@ -141,11 +141,11 @@ export default function ExperienceDetailClient() {
           </span>
         )}
 
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-site-text mb-4">
+        <h1 className="font-headline text-4xl md:text-5xl font-bold text-text mb-4">
           {ex.title}
         </h1>
 
-        <div className="flex flex-wrap gap-4 text-site-text/85 mb-6">
+        <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
             <span aria-hidden>📅</span>
             {formatDate(ex.event_date)}
@@ -176,17 +176,17 @@ export default function ExperienceDetailClient() {
         </div>
 
         {ex.description && (
-          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-site-text/90">
+          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
             {ex.description}
           </div>
         )}
 
         {ex.requirements && (
           <div className="bg-green-50 border border-border rounded-[16px] p-6 mb-6">
-            <h2 className="font-headline text-lg font-bold text-site-text mb-2">
+            <h2 className="font-headline text-lg font-bold text-text mb-2">
               {t("requirements_title")}
             </h2>
-            <p className="text-site-text/85 whitespace-pre-line">
+            <p className="text-text/85 whitespace-pre-line">
               {ex.requirements}
             </p>
           </div>

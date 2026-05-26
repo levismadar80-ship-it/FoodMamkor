@@ -77,7 +77,7 @@ export function HomeFounderQuote() {
           <Leaf size={36} weight="duotone" className="text-primary" />
         </div>
         <div className="flex-1">
-          <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
+          <p className="font-headline italic text-text text-lg md:text-xl leading-relaxed mb-2">
             &ldquo;{t("home.founder_quote.text")}&rdquo;
           </p>
           <p className="font-body text-sm text-primary group-hover:underline">
@@ -99,7 +99,7 @@ export function HomeRecentlyViewed({ items }) {
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
-      <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+      <h2 className="font-headline font-bold text-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
         {t("home.recent.heading")}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
@@ -126,7 +126,7 @@ export function HomeRecentlyViewed({ items }) {
                 )}
               </div>
               <div className="p-2.5">
-                <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
+                <p className="font-headline font-bold text-sm text-text truncate">{p.name}</p>
                 <p className="text-xs text-fg-muted truncate">{p.city}</p>
               </div>
             </Link>
@@ -152,7 +152,7 @@ export function HomeKitchenPreview({ products, onWhatsAppClick }) {
     >
       <div className="flex items-baseline justify-between mb-6">
         <h2
-          className="font-headline font-bold text-site-text inline-flex items-center gap-2"
+          className="font-headline font-bold text-text inline-flex items-center gap-2"
           style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
         >
           <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
@@ -187,7 +187,7 @@ export function HomeHowItWorks() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
-        <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}
         </h2>
       </FadeInSection>
@@ -200,7 +200,7 @@ export function HomeHowItWorks() {
           <FadeInSection key={step.step} delay={idx * 0.12}>
             <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
             <h3 className="font-headline text-2xl font-bold mb-2">{step.title}</h3>
-            <p className="text-site-text/85 leading-relaxed">{step.text}</p>
+            <p className="text-text/85 leading-relaxed">{step.text}</p>
           </FadeInSection>
         ))}
       </div>

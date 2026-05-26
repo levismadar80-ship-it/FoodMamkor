@@ -32,7 +32,7 @@ function ProducerMiniCard({ producer }) {
         </span>
       </div>
       <div className="px-2 py-1.5">
-        <p className="text-xs font-semibold text-site-text truncate">{producer.name}</p>
+        <p className="text-xs font-semibold text-text truncate">{producer.name}</p>
         {producer.city && <p className="text-[11px] text-fg-muted truncate">{producer.city}</p>}
       </div>
     </Link>

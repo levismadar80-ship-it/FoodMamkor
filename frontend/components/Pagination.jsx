@@ -51,7 +51,7 @@ export default function Pagination({
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="border border-border rounded-[8px] px-2 py-1 bg-white text-site-text"
+            className="border border-border rounded-[8px] px-2 py-1 bg-white text-text"
             aria-label={t("per_page_aria")}
           >
             {perPageOptions.map((opt) => (
@@ -99,7 +99,7 @@ export default function Pagination({
               className={`min-w-[36px] px-2 py-1.5 rounded-[8px] text-sm border transition ${
                 active
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-site-text border-border hover:bg-green-50"
+                  : "bg-white text-text border-border hover:bg-green-50"
               }`}
             >
               {entry}

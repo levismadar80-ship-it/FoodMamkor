@@ -76,7 +76,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-headline font-bold text-lg mb-1 text-site-text">{product.title}</h3>
+        <h3 className="font-headline font-bold text-lg mb-1 text-text">{product.title}</h3>
 
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-2">
@@ -154,7 +154,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law on every home-listing card. */}
         <p className="mt-3 text-[11px] text-fg-muted leading-snug border-t border-border pt-2">
-          <span className="font-semibold text-site-text">{BRAND_NAME}</span> היא
+          <span className="font-semibold text-text">{BRAND_NAME}</span> היא
           פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר
           בלבד.
         </p>

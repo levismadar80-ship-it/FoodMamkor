@@ -665,7 +665,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={`px-4 py-1.5 rounded-full text-sm border transition ${
                 form.availability_state === value
                   ? "bg-primary text-white border-primary"
-                  : "border-border text-site-text hover:border-primary"
+                  : "border-border text-text hover:border-primary"
               }`}
             >
               {t(labelKey)}

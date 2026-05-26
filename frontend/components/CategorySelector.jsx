@@ -59,7 +59,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                   className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition min-h-[40px] ${
                     selected
                       ? "bg-primary text-white border-primary"
-                      : "bg-[#F5F0E8] text-site-text border-[#e5e0d8] hover:border-primary hover:bg-primary/5"
+                      : "bg-[#F5F0E8] text-text border-[#e5e0d8] hover:border-primary hover:bg-primary/5"
                   }`}
                 >
                   {cat.emoji} {cat.name}

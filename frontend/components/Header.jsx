@@ -216,7 +216,7 @@ export default function Header() {
               : "text-primary border-primary font-semibold";
             const inactiveClasses = transparent
               ? "text-white/90 border-transparent hover:text-white font-medium"
-              : "text-site-text border-transparent hover:text-primary font-medium";
+              : "text-text border-transparent hover:text-primary font-medium";
             return (
               <Link
                 key={item.href}
@@ -276,7 +276,7 @@ export default function Header() {
             <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
           </button>
           <button
-            className={`p-2 ${transparent ? "text-white" : "text-site-text"}`}
+            className={`p-2 ${transparent ? "text-white" : "text-text"}`}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? t("nav.menu_close") : t("nav.menu_open")}
             aria-expanded={menuOpen}
@@ -299,7 +299,7 @@ export default function Header() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`block text-base ${active ? "text-primary font-semibold" : "text-site-text"}`}
+                className={`block text-base ${active ? "text-primary font-semibold" : "text-text"}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {item.label}
@@ -494,7 +494,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
               role="menuitem"
               href={item.href}
               onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-site-text hover:bg-[#F5F0E8] transition"
+              className="block px-4 py-2 text-sm text-text hover:bg-[#F5F0E8] transition"
             >
               {item.label}
             </Link>

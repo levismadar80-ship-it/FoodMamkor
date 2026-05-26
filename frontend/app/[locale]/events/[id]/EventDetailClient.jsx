@@ -86,11 +86,11 @@ export default function EventDetailClient() {
           {event.category}
         </span>
 
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-site-text mb-4">
+        <h1 className="font-headline text-4xl md:text-5xl font-bold text-text mb-4">
           {event.title}
         </h1>
 
-        <div className="flex flex-wrap gap-4 text-site-text/85 mb-6">
+        <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
             <span aria-hidden>📅</span>
             {formatDate(event.event_date)}
@@ -115,7 +115,7 @@ export default function EventDetailClient() {
         </div>
 
         {event.description && (
-          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-site-text/90">
+          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
             {event.description}
           </div>
         )}

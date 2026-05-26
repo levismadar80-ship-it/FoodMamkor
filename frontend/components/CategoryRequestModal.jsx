@@ -60,7 +60,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-[16px] shadow-xl w-full max-w-sm p-6 text-right" dir="rtl">
-        <h2 id="cat-req-title" className="font-headline text-lg font-bold text-site-text mb-4">
+        <h2 id="cat-req-title" className="font-headline text-lg font-bold text-text mb-4">
           {t("title")}
         </h2>
 
@@ -103,7 +103,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-site-text border transition"
+              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-text border transition"
             >
               {t("close")}
             </button>

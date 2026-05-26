@@ -128,7 +128,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-fg-muted text-right"
+          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-right"
           dir="rtl"
           autoComplete="off"
           role="combobox"
@@ -140,7 +140,7 @@ export default function CitySearch({
           <button
             type="button"
             onClick={handleClear}
-            className="text-fg-muted hover:text-site-text"
+            className="text-fg-muted hover:text-text"
             aria-label={t("clear_aria")}
           >
             ×
@@ -169,7 +169,7 @@ export default function CitySearch({
               className={`px-3 py-2 cursor-pointer text-sm ${
                 idx === highlight
                   ? "bg-green-50 text-primary"
-                  : "text-site-text"
+                  : "text-text"
               }`}
             >
               {city}

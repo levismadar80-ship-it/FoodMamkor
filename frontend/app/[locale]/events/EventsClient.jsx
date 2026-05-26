@@ -212,7 +212,7 @@ export default function EventsPage() {
             className={`px-4 py-2 text-sm rounded-lg transition ${
               view === "list"
                 ? "bg-primary text-white"
-                : "text-site-text hover:bg-background"
+                : "text-text hover:bg-background"
             }`}
           >
             {t("view_list")}
@@ -224,7 +224,7 @@ export default function EventsPage() {
             className={`px-4 py-2 text-sm rounded-lg transition ${
               view === "calendar"
                 ? "bg-primary text-white"
-                : "text-site-text hover:bg-background"
+                : "text-text hover:bg-background"
             }`}
           >
             {t("view_calendar")}
@@ -251,7 +251,7 @@ export default function EventsPage() {
                 className={`px-3 py-1 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-green-50"
+                    : "bg-white text-text border border-border hover:bg-green-50"
                 }`}
               >
                 {categoryLabel(cat)}
@@ -284,7 +284,7 @@ export default function EventsPage() {
           <div className="space-y-12">
             {Object.entries(groupedByMonth).map(([month, monthEvents]) => (
               <div key={month}>
-                <h2 className="font-headline text-2xl font-bold text-site-text mb-6 border-b border-border pb-2">
+                <h2 className="font-headline text-2xl font-bold text-text mb-6 border-b border-border pb-2">
                   {month}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -326,14 +326,14 @@ function EventCard({ event, freeLabel }) {
           {formatDate(event.event_date)}
           {event.event_time && ` · ${formatTime(event.event_time)}`}
         </p>
-        <h3 className="font-headline text-xl font-bold text-site-text mb-1">
+        <h3 className="font-headline text-xl font-bold text-text mb-1">
           {event.title}
         </h3>
         <p className="text-sm text-fg-muted mb-2">
           {event.producer_name} · {event.city}
         </p>
         {event.description && (
-          <p className="text-sm text-site-text/85 line-clamp-2 mb-3">{event.description}</p>
+          <p className="text-sm text-text/85 line-clamp-2 mb-3">{event.description}</p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
           <span className="bg-green-50 text-primary text-xs px-2 py-1 rounded-full">

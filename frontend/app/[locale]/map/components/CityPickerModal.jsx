@@ -36,15 +36,15 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
         <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={16} weight="bold" />
         </button>
-        <h3 className="font-headline text-lg font-bold text-site-text mb-1">{t("map.city_picker.heading")}</h3>
+        <h3 className="font-headline text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {POPULAR_CITIES.map(({ key, canonical }) => (
-            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-site-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
+            <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
           ))}
         </div>
         <CitySearch id="city-picker-search" label={t("map.city_picker.other.label")} value="" onChange={(v) => { if (v.trim()) onSelectCity(v.trim()); }} placeholder={t("map.city_picker.other.placeholder")} />
-        <button type="button" onClick={onClose} className="w-full mt-3 text-center text-sm text-fg-muted hover:text-site-text transition py-2">{t("map.city_picker.skip")}</button>
+        <button type="button" onClick={onClose} className="w-full mt-3 text-center text-sm text-fg-muted hover:text-text transition py-2">{t("map.city_picker.skip")}</button>
       </div>
     </div>
   );

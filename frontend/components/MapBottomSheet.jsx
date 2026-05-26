@@ -74,7 +74,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
 
       {/* Peek header */}
       <div className="px-4 pb-2 shrink-0 flex items-center justify-between">
-        <p className="text-sm font-medium text-site-text">
+        <p className="text-sm font-medium text-text">
           {count} {t("title")}
         </p>
         {snap === FULL && (
