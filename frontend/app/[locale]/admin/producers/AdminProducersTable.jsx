@@ -133,7 +133,7 @@ function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus
       {p.status === "approved" && (
         <button
           onClick={() => onToggleAmbassador(p.id, p.ambassador)}
-          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-site-muted hover:text-primary"}`}
+          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-fg-muted hover:text-primary"}`}
           title={p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
         >
           {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}

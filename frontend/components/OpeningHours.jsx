@@ -97,7 +97,7 @@ export default function OpeningHours({ opening_hours }) {
             <span className="text-primary">
               {t("open_now")}
               {status.closeTime && (
-                <span className="text-site-muted font-normal">
+                <span className="text-fg-muted font-normal">
                   {" "}{t("closes_at", { time: status.closeTime })}
                 </span>
               )}
@@ -106,7 +106,7 @@ export default function OpeningHours({ opening_hours }) {
             <span className="text-[#A32D2D]">
               {t("closed_now")}
               {status.nextDayKey && (
-                <span className="text-site-muted font-normal">
+                <span className="text-fg-muted font-normal">
                   {" "}
                   {t("opens_at", {
                     day: status.nextIsTomorrow

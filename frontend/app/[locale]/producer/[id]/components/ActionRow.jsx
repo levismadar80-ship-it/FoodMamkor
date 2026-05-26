@@ -73,7 +73,7 @@ export default function ActionRow({
             href={`https://wa.me/?text=${encodeURIComponent(t("producer.detail.action_row.referral_msg", { code: user.referral_code }))}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium"
+            className="flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-[10px] hover:bg-light transition text-sm font-medium"
           >
             {t("producer.detail.action_row.referral_cta")}
           </a>

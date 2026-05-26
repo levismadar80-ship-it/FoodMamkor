@@ -105,7 +105,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Dates */}
         {(product.prep_date || product.expiry_date) && (
-          <p className="text-xs text-site-muted mb-2">
+          <p className="text-xs text-fg-muted mb-2">
             {product.prep_date && <><CalendarBlank size={13} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> הוכן: {formatDate(product.prep_date)}</>}
             {product.prep_date && product.expiry_date && " · "}
             {product.expiry_date && <>עד: {formatDate(product.expiry_date)}</>}
@@ -114,14 +114,14 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Allergens warning */}
         {product.allergens && (
-          <p className="text-xs text-site-muted mb-2" title={product.allergens}>
+          <p className="text-xs text-fg-muted mb-2" title={product.allergens}>
             <Warning size={13} weight="fill" aria-hidden="true" className="inline align-[-2px]" /> אלרגנים: {product.allergens.length > 50 ? product.allergens.slice(0, 50) + "…" : product.allergens}
           </p>
         )}
 
         {/* Location + price */}
         <div className="flex items-center justify-between mb-2">
-          <p className="text-site-muted text-sm">
+          <p className="text-fg-muted text-sm">
             <MapPin size={14} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> {product.neighborhood || product.city}
           </p>
           <span className="font-semibold text-accent">
@@ -134,13 +134,13 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         </div>
 
         {product.quantity && (
-          <p className="text-xs text-site-muted mb-2">
+          <p className="text-xs text-fg-muted mb-2">
             כמות זמינה: {product.quantity} {product.unit || ""}
           </p>
         )}
 
         {product.seller_name && (
-          <p className="text-xs text-site-muted mb-2">מוכר: {product.seller_name}</p>
+          <p className="text-xs text-fg-muted mb-2">מוכר: {product.seller_name}</p>
         )}
 
         <StarRating avg={product.avg_rating} count={product.rating_count} />
@@ -153,7 +153,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law on every home-listing card. */}
-        <p className="mt-3 text-[11px] text-site-muted leading-snug border-t border-border pt-2">
+        <p className="mt-3 text-[11px] text-fg-muted leading-snug border-t border-border pt-2">
           <span className="font-semibold text-site-text">{BRAND_NAME}</span> היא
           פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר
           בלבד.

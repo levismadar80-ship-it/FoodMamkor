@@ -213,7 +213,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
   return (
     <div className="bg-white rounded-[16px] p-6 mb-6 border border-border">
       <h3 className="font-headline text-2xl font-bold mb-1 text-site-text">פרסום מוצר ביתי</h3>
-      <p className="text-site-muted text-sm mb-6">
+      <p className="text-fg-muted text-sm mb-6">
         מלאי את כל השדות החובה. הקונים רואים את כל המידע ומחליטים על סמך זה.
       </p>
 
@@ -279,7 +279,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               רכיבים ואלרגנים <span className="text-red-500">*</span>
             </label>
             <textarea id="hpf-allergens" required rows={2} value={form.allergens} onChange={update("allergens")} className={`${baseInput} resize-none`} placeholder="חיטה, ביצים, חלב..." />
-            <p className="text-xs text-site-muted mt-1">חשוב לאנשים עם אלרגיות ורגישויות.</p>
+            <p className="text-xs text-fg-muted mt-1">חשוב לאנשים עם אלרגיות ורגישויות.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
@@ -322,7 +322,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
                 מחיר (₪) <span className="text-red-500">*</span>
               </label>
               <input id="hpf-price" type="number" step="0.01" min="0" required value={form.price} onChange={update("price")} className={baseInput} />
-              <p className="text-xs text-site-muted mt-1">0 = במתנה</p>
+              <p className="text-xs text-fg-muted mt-1">0 = במתנה</p>
             </div>
           </div>
         </fieldset>
@@ -332,7 +332,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           <legend className="font-headline text-lg font-bold text-site-text mb-2">
             תמונות <span className="text-red-500 text-sm">*</span>
           </legend>
-          <p className="text-xs text-site-muted mb-3">עד {MAX_IMAGES} תמונות. לפחות תמונה אחת חובה.</p>
+          <p className="text-xs text-fg-muted mb-3">עד {MAX_IMAGES} תמונות. לפחות תמונה אחת חובה.</p>
           <div className="flex flex-wrap gap-3 mb-2">
             {images.map((url, i) => (
               <div key={i} className="relative w-24 h-24 rounded-[8px] overflow-hidden bg-light border border-border">
@@ -352,7 +352,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               </div>
             ))}
             {images.length < MAX_IMAGES && (
-              <label className="w-24 h-24 border-2 border-dashed border-border rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-light transition text-site-muted text-xs text-center p-2">
+              <label className="w-24 h-24 border-2 border-dashed border-border rounded-[8px] flex items-center justify-center cursor-pointer hover:bg-light transition text-fg-muted text-xs text-center p-2">
                 {uploading ? "מעלה..." : <><Camera size={16} weight="duotone" aria-hidden="true" className="inline" /> הוסיפי תמונה</>}
                 <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={handleImageUpload} />
               </label>
@@ -392,7 +392,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
           <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-3">
             <div>
               <label htmlFor="hpf-street" className="block text-sm text-site-text mb-1">
-                רחוב ומספר בית <span className="text-site-muted text-xs">(פרטי — לא מוצג בכרטיסייה)</span>
+                רחוב ומספר בית <span className="text-fg-muted text-xs">(פרטי — לא מוצג בכרטיסייה)</span>
               </label>
               <AddressSearch
                 id="hpf-street"
@@ -429,7 +429,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
               />
             </div>
           </div>
-          <p className="text-xs text-site-muted">
+          <p className="text-xs text-fg-muted">
             🔒 הכתובת המדויקת נשמרת לשימוש פנימי בלבד. ללקוחות מוצגים רק עיר ושכונה.
           </p>
           <div>
@@ -461,8 +461,8 @@ export default function HomeProductForm({ onCreated, onCancel }) {
         {/* ==================== Moderation feedback ==================== */}
         <div role="status" aria-live="polite">
           {checking && (
-            <div className="text-sm text-site-muted flex items-center gap-2">
-              <span className="inline-block w-3 h-3 rounded-full bg-site-muted animate-pulse" aria-hidden="true" />
+            <div className="text-sm text-fg-muted flex items-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-full bg-fg-muted animate-pulse" aria-hidden="true" />
               בודקת תוכן...
             </div>
           )}
@@ -500,7 +500,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
             {submitting ? "מפרסמת..." : rejected ? "לא ניתן לפרסם" : "פרסמי מוצר"}
           </button>
           {onCancel && (
-            <button type="button" onClick={onCancel} className="text-site-muted hover:text-site-text">
+            <button type="button" onClick={onCancel} className="text-fg-muted hover:text-site-text">
               ביטול
             </button>
           )}

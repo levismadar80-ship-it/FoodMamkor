@@ -54,13 +54,13 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
           <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
         )}
         {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay close button, physically positioned */}
-        <button type="button" onClick={onClose} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-site-muted" aria-label={t("common.aria.close")}>
+        <button type="button" onClick={onClose} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={14} weight="bold" />
         </button>
       </div>
       <div className="p-3">
         <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
-        <p className="text-[13px] text-site-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
+        <p className="text-[13px] text-fg-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
         {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>}

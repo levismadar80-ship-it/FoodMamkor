@@ -170,7 +170,7 @@ export default function AddressSearch({
       )}
       <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
         <svg
-          className="w-4 h-4 text-site-muted shrink-0"
+          className="w-4 h-4 text-fg-muted shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -201,7 +201,7 @@ export default function AddressSearch({
           onFocus={() => results.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted"
+          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-fg-muted"
           autoComplete="off"
           role="combobox"
           aria-expanded={isOpen && results.length > 0}
@@ -211,7 +211,7 @@ export default function AddressSearch({
         {loading && (
           <span
             aria-hidden="true"
-            className="text-xs text-site-muted shrink-0"
+            className="text-xs text-fg-muted shrink-0"
           >
             …
           </span>
@@ -248,7 +248,7 @@ export default function AddressSearch({
               >
                 <div className="font-medium">{primary}</div>
                 {secondary && (
-                  <div className="text-xs text-site-muted mt-0.5">
+                  <div className="text-xs text-fg-muted mt-0.5">
                     {secondary}
                   </div>
                 )}

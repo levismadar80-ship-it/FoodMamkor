@@ -30,14 +30,14 @@ export default function UpgradeClient() {
       <div className="bg-background border border-border rounded-[16px] p-8 text-center">
         <div className="text-5xl mb-4" aria-hidden="true">⭐</div>
         <h1 className="font-headline text-3xl font-bold text-site-text mb-2">{t("title")}</h1>
-        <p className="text-site-muted mb-8">{t("subtitle")}</p>
+        <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Free Plan */}
           <div className="border border-border rounded-[16px] p-6">
             <h3 className="font-semibold text-lg text-site-text mb-1">{t("free_plan.name")}</h3>
             <p className="text-3xl font-bold text-primary mb-4">₪0</p>
-            <ul className="text-right text-sm space-y-2 text-site-muted">
+            <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("free_plan.feature_map")}</li>
               <li>{t("free_plan.feature_3_images")}</li>
               <li>{t("free_plan.feature_contact")}</li>
@@ -56,7 +56,7 @@ export default function UpgradeClient() {
             </span>
             <h3 className="font-semibold text-lg text-site-text mb-1">{t("premium_plan.name")}</h3>
             <p className="text-3xl font-bold text-secondary mb-4">{t("premium_plan.price_pending")}</p>
-            <ul className="text-right text-sm space-y-2 text-site-muted">
+            <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("premium_plan.feature_map")}</li>
               <li>{t("premium_plan.feature_unlimited_images")}</li>
               <li>{t("premium_plan.feature_contact")}</li>

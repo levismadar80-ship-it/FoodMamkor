@@ -78,7 +78,7 @@ export default function AdminGroupBuysPage() {
         <button
           onClick={() => setStatusFilter("")}
           className={`px-4 py-1.5 rounded-full text-sm border transition ${
-            !statusFilter ? "bg-primary text-white border-primary" : "bg-white text-site-muted border-border"
+            !statusFilter ? "bg-primary text-white border-primary" : "bg-white text-fg-muted border-border"
           }`}
         >
           {t("group_buys.all")}
@@ -88,7 +88,7 @@ export default function AdminGroupBuysPage() {
             key={s}
             onClick={() => setStatusFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm border transition ${
-              statusFilter === s ? "bg-primary text-white border-primary" : "bg-white text-site-muted border-border"
+              statusFilter === s ? "bg-primary text-white border-primary" : "bg-white text-fg-muted border-border"
             }`}
           >
             {statusLabel(s)}
@@ -97,9 +97,9 @@ export default function AdminGroupBuysPage() {
       </div>
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">{t("common.loading_f")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("common.loading_f")}</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-site-muted">
+        <div className="text-center py-16 text-fg-muted">
           <p className="text-4xl mb-3">🛒</p>
           <p>{t("group_buys.empty")}</p>
         </div>
@@ -113,7 +113,7 @@ export default function AdminGroupBuysPage() {
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
                     <h2 className="font-semibold text-site-text">{gb.title}</h2>
-                    <p className="text-xs text-site-muted">{gb.producer_name} · {gb.city}</p>
+                    <p className="text-xs text-fg-muted">{gb.producer_name} · {gb.city}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>
                     {statusLabel(gb.status)}
@@ -122,19 +122,19 @@ export default function AdminGroupBuysPage() {
 
                 <div className="flex items-center gap-4 text-sm mb-3">
                   <span className="font-bold text-primary">₪{Number(gb.price_per_unit_group).toFixed(0)}</span>
-                  <span className="text-site-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
-                  <span className="text-site-muted">|</span>
-                  <span className="text-site-muted">
+                  <span className="text-fg-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
+                  <span className="text-fg-muted">|</span>
+                  <span className="text-fg-muted">
                     {gb.commits_count} / {gb.min_participants} · {pct}%
                   </span>
-                  <span className="text-site-muted">|</span>
-                  <span className="text-site-muted text-xs">
+                  <span className="text-fg-muted">|</span>
+                  <span className="text-fg-muted text-xs">
                     {t("group_buys.until", { date: new Date(gb.deadline).toLocaleDateString("he-IL") })}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-site-muted me-2">{t("group_buys.change_status")}</span>
+                  <span className="text-xs text-fg-muted me-2">{t("group_buys.change_status")}</span>
                   {STATUS_OPTIONS.filter((opt) => opt !== gb.status).map((opt) => (
                     <button
                       key={opt}

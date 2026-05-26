@@ -32,12 +32,12 @@ export default function HomepageMiniMapSkeleton() {
           <h2 className="text-xl md:text-2xl font-semibold text-site-text">
             {t("dot_caption")}
           </h2>
-          <p className="text-sm text-site-muted mt-1">{t("dot_subtitle")}</p>
+          <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
         </header>
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
           <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
             <MapTrifold size={48} weight="duotone" className="text-primary/30" />
-            <p className="text-site-muted text-sm">{t("loading")}</p>
+            <p className="text-fg-muted text-sm">{t("loading")}</p>
           </div>
         </div>
       </div>

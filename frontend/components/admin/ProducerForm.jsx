@@ -67,7 +67,7 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
         {required ? t("producers.form.fields.license_required_suffix") : ""}
       </label>
       {required && (
-        <p className="text-xs text-site-muted mb-2">
+        <p className="text-xs text-fg-muted mb-2">
           {t("producers.form.fields.license_required_hint")}
         </p>
       )}

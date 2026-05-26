@@ -172,7 +172,7 @@ export default function EventsPage() {
             className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
               tab === "events"
                 ? "border-primary text-primary"
-                : "border-transparent text-site-muted hover:text-primary"
+                : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
             <span className="inline-flex items-center gap-1"><Grains size={16} className="text-current" />{t("tab_events")}</span>
@@ -184,7 +184,7 @@ export default function EventsPage() {
             className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
               tab === "experiences"
                 ? "border-primary text-primary"
-                : "border-transparent text-site-muted hover:text-primary"
+                : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
             <span className="inline-flex items-center gap-1"><CookingPot size={16} className="text-current" />{t("tab_experiences")}</span>
@@ -261,7 +261,7 @@ export default function EventsPage() {
         </div>
 
         {loading ? (
-          <p className="text-center text-site-muted py-12">
+          <p className="text-center text-fg-muted py-12">
             {tab === "experiences" ? t("loading_experiences") : t("loading_events")}
           </p>
         ) : events.length === 0 ? (
@@ -269,7 +269,7 @@ export default function EventsPage() {
             <p className="text-5xl mb-4">
               {tab === "experiences" ? "🌱" : "📅"}
             </p>
-            <p className="text-site-muted">
+            <p className="text-fg-muted">
               {tab === "experiences"
                 ? t("empty_experiences")
                 : t("empty_events")}
@@ -329,7 +329,7 @@ function EventCard({ event, freeLabel }) {
         <h3 className="font-headline text-xl font-bold text-site-text mb-1">
           {event.title}
         </h3>
-        <p className="text-sm text-site-muted mb-2">
+        <p className="text-sm text-fg-muted mb-2">
           {event.producer_name} · {event.city}
         </p>
         {event.description && (

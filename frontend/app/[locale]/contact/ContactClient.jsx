@@ -47,10 +47,10 @@ export default function ContactClient() {
           <h1 className="font-headline text-5xl font-bold text-site-text mb-2 text-center">
             {t("title")}
           </h1>
-          <p className="text-site-muted text-center mb-2">
+          <p className="text-fg-muted text-center mb-2">
             {t("subtitle")}
           </p>
-          <p className="text-sm text-site-muted text-center mb-8">
+          <p className="text-sm text-fg-muted text-center mb-8">
             {t.rich("response_time_inline", {
               strong: (chunks) => <strong>{chunks}</strong>,
             })}
@@ -82,7 +82,7 @@ export default function ContactClient() {
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
                 {t("success_title")}
               </h2>
-              <p className="text-site-muted inline-flex items-center gap-1.5">
+              <p className="text-fg-muted inline-flex items-center gap-1.5">
                 {t("success_message")}
                 <Leaf size={14} weight="duotone" className="text-primary" aria-hidden="true" />
               </p>
@@ -154,7 +154,7 @@ export default function ContactClient() {
                 {status === "loading" ? t("submit_loading") : t("submit")}
               </button>
 
-              <p className="text-xs text-site-muted text-center">
+              <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {
                   link: (chunks) => (
                     <a href="/privacy" className="text-primary hover:underline">

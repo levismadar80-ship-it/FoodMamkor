@@ -119,7 +119,7 @@ export default function CalendarView({ items, linkPrefix }) {
 
       <div
         role="row"
-        className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-site-muted"
+        className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-fg-muted"
       >
         {DAY_KEYS.map((key) => (
           <div key={key} className="py-2" role="columnheader">
@@ -179,7 +179,7 @@ export default function CalendarView({ items, linkPrefix }) {
             <h4 className="font-headline text-lg font-bold text-site-text">
               {formatHebrewDate(selectedDate)}
             </h4>
-            <span className="text-sm text-site-muted">
+            <span className="text-sm text-fg-muted">
               {t("events_count", { count: selectedItems.length })}
             </span>
           </div>
@@ -196,13 +196,13 @@ export default function CalendarView({ items, linkPrefix }) {
                         {it.title}
                       </span>
                       {it.event_time && (
-                        <span className="text-sm text-site-muted shrink-0">
+                        <span className="text-sm text-fg-muted shrink-0">
                           {formatTime(it.event_time)}
                         </span>
                       )}
                     </div>
                     {it.city && (
-                      <p className="text-sm text-site-muted mt-1">{it.city}</p>
+                      <p className="text-sm text-fg-muted mt-1">{it.city}</p>
                     )}
                   </Link>
                 </li>

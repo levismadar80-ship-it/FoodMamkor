@@ -33,7 +33,7 @@ function ProducerMiniCard({ producer }) {
       </div>
       <div className="px-2 py-1.5">
         <p className="text-xs font-semibold text-site-text truncate">{producer.name}</p>
-        {producer.city && <p className="text-[11px] text-site-muted truncate">{producer.city}</p>}
+        {producer.city && <p className="text-[11px] text-fg-muted truncate">{producer.city}</p>}
       </div>
     </Link>
   );
@@ -70,7 +70,7 @@ export default function FridayDeliveryStrip({ city }) {
             {t("title_alt")}
           </h2>
           {city && (
-            <span className="text-xs text-site-muted border border-border rounded-full px-2 py-0.5">
+            <span className="text-xs text-fg-muted border border-border rounded-full px-2 py-0.5">
               {city}
             </span>
           )}

@@ -306,7 +306,7 @@ function MetricCard({ label, value, tone }) {
   return (
     <div className="bg-white border border-border rounded-[12px] p-3 text-center">
       <div className={`text-2xl font-bold ${toneClass}`}>{value}</div>
-      <div className="text-xs text-site-muted mt-0.5">{label}</div>
+      <div className="text-xs text-fg-muted mt-0.5">{label}</div>
     </div>
   );
 }
@@ -524,7 +524,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
           {t("outreach.modal_wa.title", { name: lead.name })}
         </h2>
         {tokenBusy && (
-          <p className="text-sm text-site-muted">{t("outreach.modal_wa.preparing")}</p>
+          <p className="text-sm text-fg-muted">{t("outreach.modal_wa.preparing")}</p>
         )}
         {WA_TEMPLATE_KEYS.map((tpl) => (
           <div

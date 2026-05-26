@@ -19,7 +19,7 @@ export default function EmptyState({
       )}
       <h3 className="font-headline text-2xl font-bold text-site-text mb-2">{title}</h3>
       {description && (
-        <p className="text-[15px] text-site-muted max-w-xs mx-auto mb-6">{description}</p>
+        <p className="text-[15px] text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
       )}
       {ctaLabel && (ctaHref || ctaOnClick) && (
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

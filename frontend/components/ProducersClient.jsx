@@ -322,7 +322,7 @@ export default function ProducersClient({
 
       {/* Counter */}
       {counterText && (
-        <p className="text-sm text-site-muted mb-4" aria-live="polite">
+        <p className="text-sm text-fg-muted mb-4" aria-live="polite">
           {counterText}
         </p>
       )}
@@ -364,7 +364,7 @@ export default function ProducersClient({
                 </div>
               )}
               {!hasMore && appendItems.length > 0 && (
-                <p className="text-center text-site-muted text-sm py-8">
+                <p className="text-center text-fg-muted text-sm py-8">
                   {t("discovery.all_shown", { count: liveTotal })}
                 </p>
               )}
@@ -408,7 +408,7 @@ function RecentlyViewedStrip() {
 
   return (
     <section aria-label={t("aria")} className="mb-5">
-      <p className="text-xs font-semibold text-site-muted mb-2 px-0.5">{t("label")}</p>
+      <p className="text-xs font-semibold text-fg-muted mb-2 px-0.5">{t("label")}</p>
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {producers.map((p) => (
           <Link
@@ -439,7 +439,7 @@ function FilterEmptyState({ onClear, searchQ }) {
           ? t("empty.no_match_search", { q: searchQ })
           : t("empty.no_match_filters")}
       </h2>
-      <p className="text-site-muted text-sm mb-6">
+      <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
       {searchQ && (
@@ -484,7 +484,7 @@ function CatalogEmptyState() {
       <h2 className="font-headline text-xl font-bold text-site-text mb-2">
         {t("title")}
       </h2>
-      <p className="text-site-muted text-sm mb-6 max-w-sm mx-auto">
+      <p className="text-fg-muted text-sm mb-6 max-w-sm mx-auto">
         {t("subtitle")}
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -511,7 +511,7 @@ function PageOverflowState() {
   const t = useTranslations("producers.page_overflow");
   return (
     <div className="text-center py-16">
-      <p className="text-site-muted mb-4">{t("message")}</p>
+      <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
         className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-light transition"
@@ -542,11 +542,11 @@ function ServerPageLinks({ page, totalPages }) {
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
           {t("prev")}
         </span>
       )}
-      <span className="text-site-muted">{t("page_of", { page, totalPages })}</span>
+      <span className="text-fg-muted">{t("page_of", { page, totalPages })}</span>
       {next ? (
         <Link
           href={next}
@@ -555,7 +555,7 @@ function ServerPageLinks({ page, totalPages }) {
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
           {t("next")}
         </span>
       )}

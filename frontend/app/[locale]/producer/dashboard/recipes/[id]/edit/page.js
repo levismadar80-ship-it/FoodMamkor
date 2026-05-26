@@ -49,7 +49,7 @@ export default function EditRecipePage() {
         >
           {t("back")}
         </Link>
-        <p className="mt-4 text-site-muted">{error}</p>
+        <p className="mt-4 text-fg-muted">{error}</p>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default function EditRecipePage() {
           onCancel={() => router.push("/producer/dashboard/recipes")}
         />
       ) : (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       )}
     </div>
   );

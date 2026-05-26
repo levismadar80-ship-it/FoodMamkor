@@ -197,7 +197,7 @@ export default function NeighborClient() {
                 <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
                   מהמטבח של השכן = מכירה חד-פעמית מהבית
                 </h2>
-                <p className="text-site-muted mb-6 max-w-md mx-auto">
+                <p className="text-fg-muted mb-6 max-w-md mx-auto">
                   זה לא העסק שלך — זה פיצ׳ר נפרד לאנשים שמוכרים פעם-פעמיים מהמטבח (עוגה לחג, מרק שהכינו יותר מדי). העסק שלך מופיע ב-/producers.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -225,7 +225,7 @@ export default function NeighborClient() {
                     ? "אין מוצרים באזור הזה עדיין 🌱"
                     : "אין עדיין מוצרים ביתיים 🌱"}
                 </h2>
-                <p className="text-site-muted mb-6 max-w-md mx-auto">
+                <p className="text-fg-muted mb-6 max-w-md mx-auto">
                   {user
                     ? "היי את הראשונה לפרסם מוצר בית!"
                     : "התחברי כדי לפרסם מוצר משלך."}

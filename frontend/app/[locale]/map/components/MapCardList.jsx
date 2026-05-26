@@ -53,7 +53,7 @@ export default function MapCardList({
         <div className="text-center py-12">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline text-lg font-bold text-site-text mb-2">{t("map.card_list.empty.heading")}</h3>
-          <p className="text-site-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
+          <p className="text-fg-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
           <button
             type="button"
             onClick={onResetAll}

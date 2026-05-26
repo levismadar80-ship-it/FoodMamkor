@@ -25,7 +25,7 @@ export default function NotFound() {
         <h1 className="font-headline text-4xl font-bold text-site-text mb-3">
           {t("heading")}
         </h1>
-        <p className="text-site-muted text-lg mb-8 leading-relaxed">
+        <p className="text-fg-muted text-lg mb-8 leading-relaxed">
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

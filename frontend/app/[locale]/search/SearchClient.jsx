@@ -113,7 +113,7 @@ function SearchPageBody() {
             onChange={(e) => setInputVal(e.target.value)}
             placeholder={t("input_placeholder")}
             dir="rtl"
-            className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-sm"
+            className="flex-1 bg-transparent outline-none text-site-text placeholder:text-fg-muted text-sm"
             aria-label={t("input_aria")}
           />
         </div>
@@ -126,7 +126,7 @@ function SearchPageBody() {
       </form>
 
       {!loading && q && (
-        <p className="text-site-muted mb-8 text-sm">
+        <p className="text-fg-muted mb-8 text-sm">
           {totalHits === 0
             ? t("no_results_hint")
             : t("results_count", { totalHits })}
@@ -134,7 +134,7 @@ function SearchPageBody() {
       )}
 
       {!q && (
-        <p className="text-site-muted">
+        <p className="text-fg-muted">
           {t("empty_prompt")}
         </p>
       )}
@@ -178,7 +178,7 @@ function SearchPageBody() {
                           {prod.name}
                         </span>
                         {prod.description && (
-                          <span className="text-sm text-site-muted line-clamp-2">
+                          <span className="text-sm text-fg-muted line-clamp-2">
                             {prod.description}
                           </span>
                         )}
@@ -204,7 +204,7 @@ function SearchPageBody() {
               <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
                 {t("empty_title")}
               </h2>
-              <p className="text-site-muted mb-6 max-w-md mx-auto">
+              <p className="text-fg-muted mb-6 max-w-md mx-auto">
                 {t("empty_subtitle")}
               </p>
               <Link

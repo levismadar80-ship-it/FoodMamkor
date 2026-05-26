@@ -100,7 +100,7 @@ export default function ExperiencesClient() {
       <div className="max-w-5xl mx-auto px-4 pt-2">
         <Link
           href="/events?tab=experiences"
-          className="text-sm text-site-muted hover:text-primary transition"
+          className="text-sm text-fg-muted hover:text-primary transition"
         >
           {t("cross_link_events")}
         </Link>
@@ -135,7 +135,7 @@ export default function ExperiencesClient() {
         </div>
 
         {loading ? (
-          <p className="text-center text-site-muted py-12">
+          <p className="text-center text-fg-muted py-12">
             {t("loading")}
           </p>
         ) : experiences.length === 0 ? (
@@ -143,7 +143,7 @@ export default function ExperiencesClient() {
             <div className="mb-4 flex justify-center">
               <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
             </div>
-            <p className="text-site-muted">
+            <p className="text-fg-muted">
               {t("empty_title")}
             </p>
             <Link

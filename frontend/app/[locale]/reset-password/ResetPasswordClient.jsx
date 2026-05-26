@@ -13,7 +13,7 @@ import { PASSWORD_MIN_LENGTH } from "@/lib/validators";
 export default function ResetPasswordClient() {
   const t = useTranslations();
   return (
-    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-site-muted">{t("auth.passwordRecovery.reset.loading")}</div>}>
+    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.passwordRecovery.reset.loading")}</div>}>
       <ResetPasswordForm />
     </Suspense>
   );
@@ -104,7 +104,7 @@ function ResetPasswordForm() {
             <Leaf size={32} weight="duotone" className="text-primary" />
           </div>
           <p className="text-primary font-semibold text-lg mb-1">{t("auth.passwordRecovery.reset.success_title")}</p>
-          <p className="text-site-muted text-sm">{t("auth.passwordRecovery.reset.success_subtitle")}</p>
+          <p className="text-fg-muted text-sm">{t("auth.passwordRecovery.reset.success_subtitle")}</p>
         </div>
       </div>
     );
@@ -117,7 +117,7 @@ function ResetPasswordForm() {
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
         <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.passwordRecovery.reset.title")}</h1>
-        <p className="text-site-muted text-sm mb-6">{t("auth.passwordRecovery.reset.subtitle", { min: PASSWORD_MIN_LENGTH })}</p>
+        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.reset.subtitle", { min: PASSWORD_MIN_LENGTH })}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-right">
           {/* MEH-306: PasswordInput owns the new-password input + eye toggle
@@ -146,7 +146,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text" // rtl-ok: eye toggle inside dir="ltr" input
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-site-text" // rtl-ok: eye toggle inside dir="ltr" input
               aria-label={showConfirm ? t("auth.passwordRecovery.reset.toggle_hide") : t("auth.passwordRecovery.reset.toggle_show")}
             >
               {showConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}

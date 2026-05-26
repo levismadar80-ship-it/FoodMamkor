@@ -76,7 +76,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               className="w-full border rounded-[12px] px-3 py-2 text-sm text-right"
               dir="rtl"
             />
-            <p className="text-xs text-site-muted mt-1">{t("name_example")}</p>
+            <p className="text-xs text-fg-muted mt-1">{t("name_example")}</p>
           </div>
 
           <div>
@@ -89,7 +89,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
               className="w-full border rounded-[12px] px-3 py-2 text-sm text-right resize-none"
               dir="rtl"
             />
-            <p className="text-xs text-site-muted mt-1">{t("examples_hint")}</p>
+            <p className="text-xs text-fg-muted mt-1">{t("examples_hint")}</p>
           </div>
 
           <div className="flex gap-3 pt-1">
@@ -103,7 +103,7 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-[12px] text-sm text-site-muted hover:text-site-text border transition"
+              className="px-4 py-2 rounded-[12px] text-sm text-fg-muted hover:text-site-text border transition"
             >
               {t("close")}
             </button>

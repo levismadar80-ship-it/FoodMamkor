@@ -205,7 +205,7 @@ export default function NewExperienceClient() {
 
   if (authLoading || !user) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-site-muted">
+      <div className="max-w-3xl mx-auto px-4 py-16 text-fg-muted">
         {t("auth_loading")}
       </div>
     );
@@ -225,7 +225,7 @@ export default function NewExperienceClient() {
       <h1 className="font-headline text-3xl md:text-4xl font-bold text-site-text mb-2">
         {t("title")}
       </h1>
-      <p className="text-site-muted mb-8">
+      <p className="text-fg-muted mb-8">
         {t("subtitle")}
       </p>
 
@@ -263,7 +263,7 @@ export default function NewExperienceClient() {
 
         {/* Live moderation feedback */}
         {checking && (
-          <p className="text-xs text-site-muted">{t("checking_content")}</p>
+          <p className="text-xs text-fg-muted">{t("checking_content")}</p>
         )}
         {verdict?.status === "FLAGGED" && (
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
@@ -436,7 +436,7 @@ export default function NewExperienceClient() {
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <Link href="/experiences" className="text-sm text-site-muted hover:text-primary">
+          <Link href="/experiences" className="text-sm text-fg-muted hover:text-primary">
             {t("cancel")}
           </Link>
           <button

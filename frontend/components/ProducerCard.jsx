@@ -298,7 +298,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         </div>
 
         <p
-          className="text-[13px] text-site-muted mt-1 truncate flex items-center gap-1.5"
+          className="text-[13px] text-fg-muted mt-1 truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
           {dotColor && (
@@ -358,7 +358,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         </div>
 
         {localFavCount >= 5 && (
-          <p className="mt-1 flex items-center gap-1 text-[12px] text-site-muted">
+          <p className="mt-1 flex items-center gap-1 text-[12px] text-fg-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>

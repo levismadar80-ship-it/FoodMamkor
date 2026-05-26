@@ -113,7 +113,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
               type="button"
               onClick={(e) => { e.stopPropagation(); removeCity(city); }}
               aria-label={t("remove_aria", { city })}
-              className="text-site-muted hover:text-red-500 transition leading-none"
+              className="text-fg-muted hover:text-red-500 transition leading-none"
             >
               ×
             </button>

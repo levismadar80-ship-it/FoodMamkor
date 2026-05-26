@@ -149,8 +149,8 @@ export default function RegisterClient() {
         <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
           <h1 className="font-headline text-2xl font-bold text-site-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
-          <p className="text-site-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
-          <p className="text-site-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
+          <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
+          <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
@@ -171,11 +171,11 @@ export default function RegisterClient() {
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
           <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.register.consumer.heading")}</h1>
-          <p className="text-site-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
+          <p className="text-fg-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
         </div>
 
         {/* Value-prop strip */}
-        <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+        <div className="flex justify-center gap-5 mb-5 text-fg-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
           <span className="inline-flex items-center gap-1"><MapPin size={14} className="text-current" />{t("auth.register.consumer.value_props.discover")}</span>
           <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("auth.register.consumer.value_props.favorites")}</span>
           <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("auth.register.consumer.value_props.rate")}</span>
@@ -289,7 +289,7 @@ export default function RegisterClient() {
               t("auth.register.consumer.actions.submit")
             )}
           </button>
-          <p className="text-center mt-3 text-site-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
+          <p className="text-center mt-3 text-fg-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
             {t("auth.register.consumer.email_hint")}
           </p>
         </form>
@@ -301,7 +301,7 @@ export default function RegisterClient() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-site-muted">{t("auth.register.consumer.oauth_divider")}</span>
+                <span className="px-3 bg-white text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
               </div>
             </div>
             <div className="space-y-2.5">
@@ -321,13 +321,13 @@ export default function RegisterClient() {
           </>
         )}
 
-        <p className="text-center text-sm text-site-muted mt-6">
+        <p className="text-center text-sm text-fg-muted mt-6">
           {t("auth.register.consumer.have_account")}{" "}
           <Link href="/login" className="text-primary hover:underline">
             {t("auth.register.consumer.login_link")}
           </Link>
         </p>
-        <p className="text-center text-sm text-site-muted mt-2">
+        <p className="text-center text-sm text-fg-muted mt-2">
           {t("auth.register.consumer.cta_producer")}{" "}
           <Link href="/register/producer" className="text-secondary hover:underline">
             {t("auth.register.consumer.cta_producer_link")}

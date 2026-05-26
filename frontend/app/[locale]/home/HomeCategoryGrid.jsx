@@ -23,7 +23,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick }) {
         <h2 className="font-headline font-bold text-site-text mb-2" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
           {t("home.categories.heading")}
         </h2>
-        <p className="text-site-muted text-base">{t("home.categories.subheading")}</p>
+        <p className="text-fg-muted text-base">{t("home.categories.subheading")}</p>
       </FadeInSection>
       <div
         className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3"

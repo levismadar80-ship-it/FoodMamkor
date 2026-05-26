@@ -77,7 +77,7 @@ export default function AdminLayout({ children }) {
 
   if (loading || !user || user.role !== "admin") {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 text-site-muted">
+      <div className="max-w-7xl mx-auto px-4 py-12 text-fg-muted">
         {t("common.loading_f")}
       </div>
     );

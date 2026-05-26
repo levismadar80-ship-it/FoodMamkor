@@ -53,7 +53,7 @@ export default function ExperienceDetailClient() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-site-muted">
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
         {t("loading")}
       </div>
     );
@@ -65,7 +65,7 @@ export default function ExperienceDetailClient() {
         <div className="mb-4 flex justify-center">
           <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
         </div>
-        <p className="text-site-muted mb-6">{t("not_found")}</p>
+        <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">
           {t("back_to_all")}
         </Link>
@@ -214,7 +214,7 @@ export default function ExperienceDetailClient() {
         )}
 
         {ex.host?.name && (
-          <p className="text-sm text-site-muted mt-8">
+          <p className="text-sm text-fg-muted mt-8">
             {t("host_label")} <span className="text-primary">{ex.host.name}</span>
           </p>
         )}

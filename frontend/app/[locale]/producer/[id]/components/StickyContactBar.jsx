@@ -44,9 +44,9 @@ export default function StickyContactBar({
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
         {isVacation ? (
-          <span className="text-[11px] text-site-muted shrink-0">🌿 {vacationReturnLabel}</span>
+          <span className="text-[11px] text-fg-muted shrink-0">🌿 {vacationReturnLabel}</span>
         ) : producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-[11px] text-site-muted leading-tight">
+          <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
             <div className="font-bold text-[#8B6914]">
               ⭐ {Number(producer.avg_rating).toFixed(1)}
             </div>

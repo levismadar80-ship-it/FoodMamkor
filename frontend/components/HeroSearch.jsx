@@ -225,7 +225,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={(showAutocomplete && hasAutoResults) || showEmpty}
@@ -259,10 +259,10 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           dir="rtl"
         >
           {loading && !hasAutoResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">{t("loading")}</p>
+            <p className="px-3 py-3 text-xs text-fg-muted">{t("loading")}</p>
           )}
           {!loading && !hasAutoResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">
+            <p className="px-3 py-3 text-xs text-fg-muted">
               {t("no_results_for")} &quot;{trimmed}&quot;
             </p>
           )}
@@ -281,7 +281,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                   >
                     <div className="font-medium">{highlightMatch(p.name, trimmed)}</div>
                     {p.city && (
-                      <div className="text-xs text-site-muted mt-0.5">{p.city}</div>
+                      <div className="text-xs text-fg-muted mt-0.5">{p.city}</div>
                     )}
                   </Row>
                 );
@@ -351,14 +351,14 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                   <span className="flex items-center gap-2">
                     <ClockCounterClockwise
                       size={16}
-                      className="text-site-muted shrink-0"
+                      className="text-fg-muted shrink-0"
                       aria-hidden="true"
                     />
                     {q}
                   </span>
                   <button
                     type="button"
-                    className="text-site-muted hover:text-site-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="text-fg-muted hover:text-site-text p-1.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label={t("remove_recent_aria", { q })}
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -401,7 +401,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
 function Section({ title, children }) {
   return (
     <div className="py-1">
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-site-muted">
+      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>

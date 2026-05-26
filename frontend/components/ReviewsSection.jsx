@@ -172,7 +172,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       <h2 className="font-headline text-2xl font-bold text-site-text mb-6">
         {t("section_heading")}
         {total > 0 && (
-          <span className="text-base font-normal text-site-muted ms-2">({total})</span>
+          <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
         )}
       </h2>
 
@@ -190,7 +190,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             size={20}
             ariaLabel={t("star_aria", { value: Math.round(Number(avgRating)) })}
           />
-          <p className="text-site-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
+          <p className="text-fg-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
         </div>
       )}
 
@@ -233,7 +233,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
                   placeholder={t("body_placeholder")}
                 />
-                <p className="text-xs text-site-muted mt-1">{body.length}/500</p>
+                <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
               </div>
               {error && (
                 <p className="text-sm text-red-600" role="alert">
@@ -251,7 +251,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="text-sm text-site-muted hover:text-site-text transition"
+                  className="text-sm text-fg-muted hover:text-site-text transition"
                 >
                   {t("cancel")}
                 </button>
@@ -259,12 +259,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             </form>
           )
         ) : (
-          <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
+          <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
             {t("wa_gate_message")}
           </div>
         )
       ) : (
-        <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
+        <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
             login: (chunks) => (
               <a href="/login" className="text-primary hover:underline">{chunks}</a>
@@ -275,7 +275,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
       {/* Reviews list */}
       {loading ? (
-        <p className="text-sm text-site-muted">{t("loading")}</p>
+        <p className="text-sm text-fg-muted">{t("loading")}</p>
       ) : reviews.length === 0 ? (
         isOwner ? (
           <EmptyState
@@ -288,7 +288,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         ) : (
           <div className="text-center py-8">
             <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-site-muted">{t("empty_message")}</p>
+            <p className="text-fg-muted">{t("empty_message")}</p>
           </div>
         )
       ) : (
@@ -302,7 +302,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (
-                      <p className="text-[13px] text-site-muted mt-0.5">
+                      <p className="text-[13px] text-fg-muted mt-0.5">
                         {new Date(review.created_at).toLocaleDateString("he-IL")}
                       </p>
                     )}
@@ -332,7 +332,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               >
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
               </button>
-              <span className="text-sm text-site-muted" dir="ltr">
+              <span className="text-sm text-fg-muted" dir="ltr">
                 {page} / {pages}
               </span>
               <button
