@@ -134,7 +134,7 @@ export default function ProducerDashboardPage() {
   if (authLoading || !user || user.role !== "producer") return null;
   if (!data) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-site-muted">
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
         {t("loading_data")}
       </div>
     );
@@ -147,7 +147,7 @@ export default function ProducerDashboardPage() {
       <h1 className="font-headline text-4xl font-bold text-site-text mb-2">
         {t("greeting", { name: user.name })}
       </h1>
-      <p className="text-site-muted mb-8">
+      <p className="text-fg-muted mb-8">
         {t.rich("welcome_subtitle", {
           business: () => <span className="font-semibold">{producer.name}</span>,
         })}
@@ -186,13 +186,13 @@ export default function ProducerDashboardPage() {
       {producer.status === "pending_whatsapp" && (
         <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
           <p className="font-semibold text-primary mb-1">{t("status.pending_whatsapp.title")}</p>
-          <p className="text-site-muted mb-3">
+          <p className="text-fg-muted mb-3">
             {t("status.pending_whatsapp.body")}
           </p>
           <Link href="/settings" className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition">
             {t("status.pending_whatsapp.cta")}
           </Link>
-          <p className="text-xs text-site-muted mt-3">
+          <p className="text-xs text-fg-muted mt-3">
             {PENDING_WHATSAPP_COMPANION_COPY.split(" — ")[0]} —{" "}
             <Link href="/settings" className="text-primary hover:underline">
               {t("status.pending_whatsapp.companion_link")}
@@ -235,11 +235,11 @@ export default function ProducerDashboardPage() {
           enum. Backend dual-writes to legacy columns during the 7-day
           overlap (Phase 4 drops them). */}
       <div className="bg-white border border-border rounded-[16px] p-6 mb-8">
-        <p className="text-sm uppercase tracking-wider text-site-muted mb-1">
+        <p className="text-sm uppercase tracking-wider text-fg-muted mb-1">
           {t("availability.heading")}
           <InfoTooltip content={AVAILABILITY_TOOLTIP} label={t("availability.info_label")} position="bottom" />
         </p>
-        <p className="text-site-muted text-sm mb-4">
+        <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
         <div role="radiogroup" aria-label={t("availability.group_aria")} className="flex flex-wrap gap-2">
@@ -281,7 +281,7 @@ export default function ProducerDashboardPage() {
         </div>
         {(producer.availability_state || "accepting_orders") === "on_vacation" && (
           <div className="mt-4 flex items-center gap-3">
-            <label htmlFor="vacation-until" className="text-sm text-site-muted whitespace-nowrap">
+            <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
               {t("availability.vacation_return_label")}
             </label>
             <input
@@ -298,7 +298,7 @@ export default function ProducerDashboardPage() {
               <button
                 type="button"
                 onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
-                className="text-xs text-site-muted hover:text-red-600 transition"
+                className="text-xs text-fg-muted hover:text-red-600 transition"
                 aria-label={t("availability.remove_vacation_date_aria")}
               >
                 ✕
@@ -312,7 +312,7 @@ export default function ProducerDashboardPage() {
       {analytics ? (
         <AnalyticsSection analytics={analytics} profile={profile} />
       ) : (
-        <p className="text-sm text-site-muted mb-8">{t("loading_analytics")}</p>
+        <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
       )}
 
       {/* Quick links */}
@@ -322,28 +322,28 @@ export default function ProducerDashboardPage() {
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline text-lg font-bold mb-1">{t("quick_links.settings.title")}</p>
-          <p className="text-sm text-site-muted">{t("quick_links.settings.sub")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.settings.sub")}</p>
         </Link>
         <Link
           href="/producer/dashboard/events/new"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline text-lg font-bold mb-1">{t("quick_links.add_event.title")}</p>
-          <p className="text-sm text-site-muted">{t("quick_links.add_event.sub")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.add_event.sub")}</p>
         </Link>
         <Link
           href={`/producer/${producer.id}`}
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline text-lg font-bold mb-1">{t("quick_links.view_business.title")}</p>
-          <p className="text-sm text-site-muted">{t("quick_links.view_business.sub")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.view_business.sub")}</p>
         </Link>
         <Link
           href="/producer/dashboard/group-buys"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline text-lg font-bold mb-1">{t("quick_links.group_buys.title")}</p>
-          <p className="text-sm text-site-muted">{t("quick_links.group_buys.sub")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.group_buys.sub")}</p>
         </Link>
         {/* MEH-590: producer recipes tab (chunk 3/4 of the producer-recipes epic). */}
         <Link
@@ -351,7 +351,7 @@ export default function ProducerDashboardPage() {
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
-          <p className="text-sm text-site-muted">{t("quick_links.recipes.sub")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
         </Link>
       </div>
 
@@ -400,7 +400,7 @@ function AnalyticsSection({ analytics, profile }) {
   } = analytics;
 
   const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
-  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-site-muted";
+  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
   const cityName = profile?.city ? ` ${profile.city}` : "";
   const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 
@@ -411,33 +411,33 @@ function AnalyticsSection({ analytics, profile }) {
       {/* MEH-57: Hero 4-stat bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">{t("hero.views_week_label")}</p>
+          <p className="text-xs text-fg-muted mb-1">{t("hero.views_week_label")}</p>
           <p className={`font-headline text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
             {profile_views?.last_7d ?? 0}
             <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
           </p>
-          <p className="text-xs text-site-muted mt-1">{t("hero.views_week_sub")}</p>
+          <p className="text-xs text-fg-muted mt-1">{t("hero.views_week_sub")}</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">{t("hero.whatsapp_clicks_label")}</p>
+          <p className="text-xs text-fg-muted mb-1">{t("hero.whatsapp_clicks_label")}</p>
           <p className="font-headline text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
-          <p className="text-xs text-site-muted mt-1">{t("hero.whatsapp_clicks_sub")}</p>
+          <p className="text-xs text-fg-muted mt-1">{t("hero.whatsapp_clicks_sub")}</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">
+          <p className="text-xs text-fg-muted mb-1">
             {t("hero.conversion_label")}
             <InfoTooltip content={t("hero.conversion_tooltip")} />
           </p>
           <p className="font-headline text-3xl font-bold text-primary">{conversion_rate}%</p>
-          <p className="text-xs text-site-muted mt-1">{t("hero.conversion_sub")}</p>
+          <p className="text-xs text-fg-muted mt-1">{t("hero.conversion_sub")}</p>
         </div>
         <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-site-muted mb-1">
+          <p className="text-xs text-fg-muted mb-1">
             {t("hero.rank_label")}
             <InfoTooltip content={t("hero.rank_tooltip")} />
           </p>
           <p className="font-headline text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
-          <p className="text-xs text-site-muted mt-1">{t("hero.rank_sub")}</p>
+          <p className="text-xs text-fg-muted mt-1">{t("hero.rank_sub")}</p>
         </div>
       </div>
 
@@ -450,7 +450,7 @@ function AnalyticsSection({ analytics, profile }) {
               {t("eligible_weekly_title")}
               <InfoTooltip content={t("eligible_weekly_tooltip")} />
             </p>
-            <p className="text-xs text-site-muted">{t("eligible_weekly_sub")}</p>
+            <p className="text-xs text-fg-muted">{t("eligible_weekly_sub")}</p>
           </div>
         </div>
       )}
@@ -533,9 +533,9 @@ function WindowedMetricCard({ label, icon, windows, tooltip }) {
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-2xl" aria-hidden="true">{icon}</span>
-        <span className="text-xs text-site-muted">{t("stats_window_label")}</span>
+        <span className="text-xs text-fg-muted">{t("stats_window_label")}</span>
       </div>
-      <p className="text-sm text-site-muted mb-2">
+      <p className="text-sm text-fg-muted mb-2">
         {label}
         {tooltip && <InfoTooltip content={tooltip} />}
       </p>
@@ -548,7 +548,7 @@ function WindowedMetricCard({ label, icon, windows, tooltip }) {
           {windows?.last_30d ?? 0}
         </span>
         <span className="text-lg text-site-text/60">/</span>
-        <span className="font-headline text-xl text-site-muted">
+        <span className="font-headline text-xl text-fg-muted">
           {windows?.total ?? 0}
         </span>
       </div>
@@ -562,9 +562,9 @@ function SimpleCard({ label, icon, value, sub }) {
       <div className="flex items-center justify-between mb-3">
         <span className="text-2xl" aria-hidden="true">{icon}</span>
       </div>
-      <p className="text-sm text-site-muted mb-2">{label}</p>
+      <p className="text-sm text-fg-muted mb-2">{label}</p>
       <p className="font-headline text-4xl font-bold text-primary">{value}</p>
-      <p className="text-xs text-site-muted mt-1">{sub}</p>
+      <p className="text-xs text-fg-muted mt-1">{sub}</p>
     </div>
   );
 }
@@ -577,7 +577,7 @@ function SimpleCard({ label, icon, value, sub }) {
 function ViewsLineChart({ data }) {
   const t = useTranslations("dashboard.producer.analytics");
   if (!data || data.length === 0) {
-    return <p className="text-sm text-site-muted">{t("views_chart_empty")}</p>;
+    return <p className="text-sm text-fg-muted">{t("views_chart_empty")}</p>;
   }
   const W = 320;
   const H = 120;
@@ -641,7 +641,7 @@ function TopCitiesBarChart({ data }) {
   const t = useTranslations("dashboard.producer.analytics");
   if (!data || data.length === 0) {
     return (
-      <p className="text-sm text-site-muted">
+      <p className="text-sm text-fg-muted">
         {t("top_cities_empty")}
       </p>
     );
@@ -655,7 +655,7 @@ function TopCitiesBarChart({ data }) {
           <li key={row.city} className="text-sm">
             <div className="flex items-center justify-between mb-1">
               <span className="text-site-text">{row.city}</span>
-              <span className="text-site-muted">{row.count}</span>
+              <span className="text-fg-muted">{row.count}</span>
             </div>
             <div className="h-2 bg-light rounded-full overflow-hidden">
               <div
@@ -707,7 +707,7 @@ function ProfileStrengthCard({ profile, analytics }) {
         </h2>
         <span className="text-primary font-bold text-lg">{pct}%</span>
       </div>
-      <p className="text-xs text-site-muted mb-3">{strengthLabel(pct)}</p>
+      <p className="text-xs text-fg-muted mb-3">{strengthLabel(pct)}</p>
       <div className="h-2 bg-light rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-primary rounded-full transition-all duration-500"
@@ -721,7 +721,7 @@ function ProfileStrengthCard({ profile, analytics }) {
           const label = item.label || t(`items.${item.key}`);
           return (
             <li key={item.key} className="flex items-center justify-between text-sm">
-              <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-site-muted"}`}>
+              <span className={`flex items-center gap-2 ${done ? "text-site-text" : "text-fg-muted"}`}>
                 <span aria-hidden="true">{done ? "✓" : "○"}</span>
                 {label}
               </span>
@@ -774,7 +774,7 @@ function CustomQuestionsCard({ profile, onSave }) {
         {t("heading")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </h2>
-      <p className="text-xs text-site-muted mb-4">
+      <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
       </p>
       <div className="space-y-2">
@@ -851,7 +851,7 @@ function BioPanelCard({ profile, onSave }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <h2 className="font-headline text-base font-bold mb-1 flex items-center gap-1"><PencilSimple size={16} className="text-current" />{t("heading")}</h2>
-      <p className="text-xs text-site-muted mb-3">
+      <p className="text-xs text-fg-muted mb-3">
         {t("intro")}
       </p>
 
@@ -884,7 +884,7 @@ function BioPanelCard({ profile, onSave }) {
             maxLength={150}
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-site-muted">{generatedBio.length}/150</span>
+            <span className="text-xs text-fg-muted">{generatedBio.length}/150</span>
             <button
               onClick={saveBio}
               disabled={saving}

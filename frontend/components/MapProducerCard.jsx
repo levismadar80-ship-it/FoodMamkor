@@ -80,7 +80,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
           </h3>
           {/* Category name in muted, price in Cormorant italic gold — separate lines */}
           {category?.name && (
-            <p className="text-site-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
+            <p className="text-fg-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
               {category.name}
             </p>
           )}
@@ -102,7 +102,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
 
         {/* Trust strip — max 2 items */}
         {trustItems.length > 0 && (
-          <p className="text-[12px] text-site-muted mt-1">
+          <p className="text-[12px] text-fg-muted mt-1">
             {trustItems.slice(0, 2).join(" · ")}
           </p>
         )}

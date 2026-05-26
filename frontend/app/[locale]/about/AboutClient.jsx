@@ -189,7 +189,7 @@ export default function AboutPage() {
           <h2 className="font-headline text-3xl font-bold mb-4 text-site-text">
             {t("testimonials.heading")}
           </h2>
-          <p className="text-site-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
+          <p className="text-fg-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
           <Link
             href="/contact"
             className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
@@ -254,7 +254,7 @@ export default function AboutPage() {
       <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="font-headline text-4xl font-bold text-site-text mb-3">{t("contact.heading")}</h2>
-          <p className="text-site-muted font-body text-base mb-10">
+          <p className="text-fg-muted font-body text-base mb-10">
             {t("contact.subtitle")}
           </p>
 

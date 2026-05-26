@@ -97,7 +97,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <h2 className="font-headline text-xl font-bold text-site-text mb-1">
           {t("title")}
         </h2>
-        <p className="text-site-muted text-sm mb-5">
+        <p className="text-fg-muted text-sm mb-5">
           {t("subtitle")}
         </p>
 
@@ -140,7 +140,7 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full flex items-center justify-center text-sm text-site-muted hover:text-primary transition-colors min-h-[44px] px-4 py-3"
+          className="w-full flex items-center justify-center text-sm text-fg-muted hover:text-primary transition-colors min-h-[44px] px-4 py-3"
         >
           {t("skip")}
         </button>

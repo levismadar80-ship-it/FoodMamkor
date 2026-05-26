@@ -4,6 +4,15 @@
 
 ## Unreleased
 
+### 2026-05-26 — Migrate site-muted → fg-muted (MEH-699 Contract)
+
+`feat(MEH-699)`: Contract-phase rename — all `*-site-muted` → `*-fg-muted` across
+**101 files / 424 occurrences** (421 `text-`, 2 `bg-`, 1 `border-`). Value-identical
+(both `#5c584f`), **zero visual change**. Per Wave-2A Option-A LOCK: default to
+`fg-muted` (pixel-exact) over `muted` (which would shift to #6b6860). No
+`tailwind.config.js` / `tokens.json` / DESIGN.md change (legacy `site-muted` alias
+drops in MEH-708). Build + drift gate green; mobile QA waived (value-identical).
+
 ### 2026-05-26 — Green scale tokens added to DESIGN.md (MEH-710)
 
 `feat(MEH-710)`: docs-only + derived-artifact regen. Added the 6-stop green tint

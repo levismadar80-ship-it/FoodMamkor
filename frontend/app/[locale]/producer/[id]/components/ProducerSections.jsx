@@ -93,7 +93,7 @@ export default function ProducerSections({
         <section className="mt-8 border-t border-border pt-8">
           <h2 className="font-headline text-2xl font-bold text-site-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
-            <p className="text-sm text-site-muted mb-4">
+            <p className="text-sm text-fg-muted mb-4">
               {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
             </p>
           )}
@@ -136,7 +136,7 @@ export default function ProducerSections({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-site-text leading-snug">{ev.title}</p>
-                    <p className="text-sm text-site-muted mt-0.5">
+                    <p className="text-sm text-fg-muted mt-0.5">
                       {dateStr}{timeStr && ` · ${timeStr}`}
                       {ev.city && ` · ${ev.city}`}
                     </p>
@@ -194,13 +194,13 @@ export default function ProducerSections({
                   </div>
                 ) : (
                   <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
-                    <Package size={28} className="text-site-muted/60" aria-hidden="true" />
+                    <Package size={28} className="text-fg-muted/60" aria-hidden="true" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-site-text">{product.name}</p>
                   {product.description && (
-                    <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
+                    <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
                   )}
                   {(() => {
                     if (product.price_min != null && product.price_max != null)

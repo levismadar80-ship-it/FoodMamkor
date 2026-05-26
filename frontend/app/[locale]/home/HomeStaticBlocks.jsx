@@ -127,7 +127,7 @@ export function HomeRecentlyViewed({ items }) {
               </div>
               <div className="p-2.5">
                 <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
-                <p className="text-xs text-site-muted truncate">{p.city}</p>
+                <p className="text-xs text-fg-muted truncate">{p.city}</p>
               </div>
             </Link>
           );

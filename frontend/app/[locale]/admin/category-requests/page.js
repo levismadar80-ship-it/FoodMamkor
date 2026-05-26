@@ -54,7 +54,7 @@ export default function AdminCategoryRequestsPage() {
     }
   };
 
-  if (loading) return <div className="text-site-muted">{t("common.loading_f")}</div>;
+  if (loading) return <div className="text-fg-muted">{t("common.loading_f")}</div>;
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -66,7 +66,7 @@ export default function AdminCategoryRequestsPage() {
       </div>
 
       {groups.length === 0 && (
-        <div className="bg-white border border-border rounded-[12px] p-8 text-center text-site-muted">
+        <div className="bg-white border border-border rounded-[12px] p-8 text-center text-fg-muted">
           {t("category_requests.empty")}
         </div>
       )}
@@ -84,7 +84,7 @@ export default function AdminCategoryRequestsPage() {
               </span>
             </div>
             {group.examples.length > 0 && (
-              <p className="text-xs text-site-muted max-w-xs truncate">
+              <p className="text-xs text-fg-muted max-w-xs truncate">
                 {group.examples.join(" · ")}
               </p>
             )}
@@ -92,7 +92,7 @@ export default function AdminCategoryRequestsPage() {
 
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-site-muted text-xs">
+              <tr className="bg-gray-50 text-fg-muted text-xs">
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.id")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.business")}</th>
                 <th className="px-5 py-2 text-start font-medium">{t("category_requests.columns.date")}</th>
@@ -103,13 +103,13 @@ export default function AdminCategoryRequestsPage() {
             <tbody>
               {group.requests.map((req) => (
                 <tr key={req.id} className="border-t border-border hover:bg-gray-50/50">
-                  <td className="px-5 py-3 text-xs text-site-muted font-mono">
+                  <td className="px-5 py-3 text-xs text-fg-muted font-mono">
                     {req.id.slice(0, 8)}…
                   </td>
-                  <td className="px-5 py-3 text-xs text-site-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted">
                     {req.producer_id ? req.producer_id.slice(0, 8) + "…" : "—"}
                   </td>
-                  <td className="px-5 py-3 text-xs text-site-muted">
+                  <td className="px-5 py-3 text-xs text-fg-muted">
                     {new Date(req.created_at).toLocaleDateString("he-IL")}
                   </td>
                   <td className="px-5 py-3">
@@ -152,7 +152,7 @@ export default function AdminCategoryRequestsPage() {
                         <button
                           onClick={() => updateStatus(req.id, "pending")}
                           disabled={actionLoading === req.id}
-                          className="text-xs text-site-muted hover:text-site-text transition"
+                          className="text-xs text-fg-muted hover:text-site-text transition"
                         >
                           {t("category_requests.actions.reset")}
                         </button>

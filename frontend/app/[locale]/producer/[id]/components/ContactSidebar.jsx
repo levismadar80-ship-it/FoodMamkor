@@ -143,7 +143,7 @@ export default function ContactSidebar({
             href={producer.whatsapp_group}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
+            className="w-full flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
           >
             <WhatsappLogo size={16} weight="duotone" />
             {t("producer.detail.contact_sidebar.join_whatsapp_group")}

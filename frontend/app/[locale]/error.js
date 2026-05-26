@@ -33,7 +33,7 @@ export default function GlobalError({ error, reset }) {
         <h1 className="font-headline text-4xl font-bold text-site-text mb-3">
           {t("heading")}
         </h1>
-        <p className="text-site-muted text-lg mb-8 leading-relaxed">
+        <p className="text-fg-muted text-lg mb-8 leading-relaxed">
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -51,14 +51,14 @@ export default function GlobalError({ error, reset }) {
             {t("home")}
           </Link>
         </div>
-        <p className="mt-6 text-sm text-site-muted">
+        <p className="mt-6 text-sm text-fg-muted">
           {t("contact_prefix")}{" "}
           <Link href="/contact" className="text-primary underline underline-offset-2 hover:text-primary-light transition">
             {t("contact_link")}
           </Link>
         </p>
         {process.env.NODE_ENV === "development" && error?.message && (
-          <pre className="mt-8 text-left text-xs text-site-muted bg-white border border-border rounded-[8px] p-4 overflow-auto max-h-40">
+          <pre className="mt-8 text-left text-xs text-fg-muted bg-white border border-border rounded-[8px] p-4 overflow-auto max-h-40">
             {error.message}
           </pre>
         )}

@@ -370,7 +370,7 @@ export default function AdminSettingsPage() {
           {saving ? t("settings.save.saving") : t("settings.save.submit")}
         </button>
         {isDirty && !saving && (
-          <span className="text-xs text-site-muted">
+          <span className="text-xs text-fg-muted">
             {t("settings.save.unsaved_count", { count: changedKeys.length })}
           </span>
         )}

@@ -52,7 +52,7 @@ export function UpcomingEventsPreview() {
                 {formatEventDate(ev.event_date)} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
               </p>
               <h3 className="font-headline text-xl font-bold text-site-text mb-1">{ev.title}</h3>
-              <p className="text-sm text-site-muted mb-2">
+              <p className="text-sm text-fg-muted mb-2">
                 {ev.producer_name} · {ev.city}
               </p>
               <p className="text-sm text-accent font-semibold">

@@ -255,7 +255,7 @@ export default function ChatWidget() {
             ))}
             {sending && (
               <div className="flex justify-end">
-                <div className="bg-white text-site-muted border border-border px-3 py-2 rounded-[12px] text-sm">
+                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-[12px] text-sm">
                   <span className="inline-flex gap-1">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>
@@ -287,7 +287,7 @@ export default function ChatWidget() {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-site-muted disabled:opacity-60"
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-fg-muted disabled:opacity-60"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />

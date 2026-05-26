@@ -88,7 +88,7 @@ export default function AdminKashrutPage() {
             position="bottom"
           />
         </h1>
-        <p className="text-sm text-site-muted">
+        <p className="text-sm text-fg-muted">
           {t("kashrut.subtitle")}
         </p>
       </div>
@@ -105,9 +105,9 @@ export default function AdminKashrutPage() {
       </div>
 
       {loading ? (
-        <p className="text-site-muted">{t("common.loading_f")}</p>
+        <p className="text-fg-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-site-muted">{t("kashrut.no_requests")}</p>
+        <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (
         <div className="overflow-x-auto rounded-[12px] border border-border">
           <table className="w-full text-sm">
@@ -143,11 +143,11 @@ export default function AdminKashrutPage() {
                         {t("kashrut.cert_view")}
                       </a>
                     ) : (
-                      <span className="text-site-muted text-xs">{t("kashrut.no_cert")}</span>
+                      <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-site-muted">{formatDate(row.created_at)}</td>
-                  <td className="px-4 py-3 text-site-muted text-xs">{row.notes || "—"}</td>
+                  <td className="px-4 py-3 text-fg-muted">{formatDate(row.created_at)}</td>
+                  <td className="px-4 py-3 text-fg-muted text-xs">{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
                     <td className="px-4 py-3">
                       <div className="flex gap-2">

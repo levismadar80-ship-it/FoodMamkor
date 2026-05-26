@@ -86,7 +86,7 @@ export default function ExperienceCard({ experience: ex }) {
         <h3 className="font-headline text-xl font-bold text-site-text mb-1">
           {ex.title}
         </h3>
-        <p className="text-sm text-site-muted mb-2">
+        <p className="text-sm text-fg-muted mb-2">
           {ex.host?.name || t("host_fallback")}
           {ex.city ? ` · ${ex.city}` : ""}
         </p>

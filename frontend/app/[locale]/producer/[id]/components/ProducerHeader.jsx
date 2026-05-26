@@ -54,7 +54,7 @@ export default function ProducerHeader({
           </span>
         )}
         {(producer.favorites_count ?? 0) >= 5 && (
-          <span className="inline-flex items-center gap-1 text-[13px] text-site-muted">
+          <span className="inline-flex items-center gap-1 text-[13px] text-fg-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
             {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
           </span>
@@ -70,18 +70,18 @@ export default function ProducerHeader({
       </div>
 
       {producer.short_description && (
-        <p className="text-sm md:text-base text-site-muted line-clamp-1 mt-1">
+        <p className="text-sm md:text-base text-fg-muted line-clamp-1 mt-1">
           {producer.short_description}
         </p>
       )}
 
       {producer.contact_name && (
-        <p className="text-[12px] text-site-muted mt-0.5">
+        <p className="text-[12px] text-fg-muted mt-0.5">
           {t("producer.detail.header.behind", { name: producer.contact_name })}
         </p>
       )}
 
-      <p className="text-site-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
+      <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
         <MapPin size={14} weight="duotone" />
         {producer.city}
         {primaryCategory && (
@@ -98,7 +98,7 @@ export default function ProducerHeader({
             <span className="text-site-text">{producer.top_product_name}</span>
           )}
           {producer.top_product_name && producer.starting_price_label && (
-            <span className="text-site-muted"> · </span>
+            <span className="text-fg-muted"> · </span>
           )}
           {producer.starting_price_label && (
             <span className="text-accent font-semibold">{producer.starting_price_label}</span>

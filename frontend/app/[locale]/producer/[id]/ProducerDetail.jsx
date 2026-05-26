@@ -52,7 +52,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.loading_fresh")}
       </div>
     );
@@ -60,7 +60,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   if (!producer) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-site-muted">
+      <div className="max-w-4xl mx-auto px-4 py-12 text-center text-fg-muted">
         {t("producer.detail.not_found")}
       </div>
     );
@@ -127,7 +127,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               className={`flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] text-xs font-medium transition border-b-2 ${
                 activeTab === tab.key
                   ? "border-primary text-primary"
-                  : "border-transparent text-site-muted"
+                  : "border-transparent text-fg-muted"
               }`}
             >
               <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "duotone"} />
