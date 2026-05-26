@@ -127,7 +127,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
                 key={i}
                 type="button"
                 onClick={() => setCurrent(i)}
-                className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
                 aria-label={t("thumb_aria", { n: i + 1 })}
                 aria-current={i === current ? "true" : undefined}
               >

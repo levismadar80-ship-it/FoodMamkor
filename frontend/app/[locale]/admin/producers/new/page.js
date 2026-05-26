@@ -21,11 +21,11 @@ export default function NewProducerPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <Link href="/admin?tab=producers" className="text-sm text-text-secondary hover:text-primary">
+        <Link href="/admin?tab=producers" className="text-sm text-muted hover:text-primary">
           {t("common.back")}
         </Link>
         <h1 className="text-2xl font-bold mt-2">{t("producers.new.title")}</h1>
-        <p className="text-text-secondary text-sm mt-1">
+        <p className="text-muted text-sm mt-1">
           {t("producers.new.subtitle")}
         </p>
       </div>

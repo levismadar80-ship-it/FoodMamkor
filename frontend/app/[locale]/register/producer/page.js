@@ -631,7 +631,7 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-text-secondary">{t("auth.register.producer.actions.back")}</button>
+                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               )}
               <button
                 onClick={() => {

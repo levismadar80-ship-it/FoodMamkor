@@ -92,7 +92,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <button
           type="button"
           onClick={() => router.back()}
-          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded px-1"
+          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-1"
           aria-label={t("producer.detail.aria.back")}
         >
           {t("producer.detail.back_label")}

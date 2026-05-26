@@ -171,26 +171,26 @@ export default function AdminOutreachPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.name")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.city")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.category")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.phone")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.instagram")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.status")}</th>
-                <th className="text-end px-3 py-3 font-medium text-text-secondary">{t("outreach.columns.actions")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.name")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.city")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.category")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.phone")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.instagram")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.status")}</th>
+                <th className="text-end px-3 py-3 font-medium text-muted">{t("outreach.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-text-secondary">
+                  <td colSpan={7} className="text-center py-8 text-muted">
                     {t("outreach.loading_leads")}
                   </td>
                 </tr>
               )}
               {!loading && leads.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-text-secondary">
+                  <td colSpan={7} className="text-center py-8 text-muted">
                     {t("outreach.empty")}
                   </td>
                 </tr>
@@ -199,9 +199,9 @@ export default function AdminOutreachPage() {
                 leads.map((lead) => (
                   <tr key={lead.id} className="border-t align-top">
                     <td className="px-3 py-3 font-medium">{lead.name}</td>
-                    <td className="px-3 py-3 text-text-secondary">{lead.city || "—"}</td>
-                    <td className="px-3 py-3 text-text-secondary">{lead.category || "—"}</td>
-                    <td className="px-3 py-3 text-text-secondary" dir="ltr">
+                    <td className="px-3 py-3 text-muted">{lead.city || "—"}</td>
+                    <td className="px-3 py-3 text-muted">{lead.category || "—"}</td>
+                    <td className="px-3 py-3 text-muted" dir="ltr">
                       {lead.phone ? (
                         <a href={`tel:${lead.phone}`} className="text-primary hover:underline">
                           {lead.phone}
@@ -210,7 +210,7 @@ export default function AdminOutreachPage() {
                         "—"
                       )}
                     </td>
-                    <td className="px-3 py-3 text-text-secondary" dir="ltr">
+                    <td className="px-3 py-3 text-muted" dir="ltr">
                       {lead.instagram ? (
                         <a
                           href={`https://instagram.com/${lead.instagram}`}
@@ -228,7 +228,7 @@ export default function AdminOutreachPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleStatusChange(lead.id, e.target.value)}
-                        className="text-xs border border-border rounded px-2 py-1 bg-white"
+                        className="text-xs border border-border rounded-lg px-2 py-1 bg-white"
                         data-testid={`status-select-${lead.id}`}
                       >
                         {STATUS_ORDER.map((s) => (
@@ -243,7 +243,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleMintToken(lead.id)}
-                          className="text-xs px-2 py-1 rounded bg-primary text-white hover:bg-primary-light"
+                          className="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-light"
                           title={t("outreach.actions.prefill_title")}
                         >
                           {t("outreach.actions.prefill")}
@@ -252,7 +252,7 @@ export default function AdminOutreachPage() {
                           <button
                             type="button"
                             onClick={() => setWaLeadId(lead.id)}
-                            className="text-xs px-2 py-1 rounded border border-border text-primary hover:bg-light"
+                            className="text-xs px-2 py-1 rounded-lg border border-border text-primary hover:bg-light"
                           >
                             {t("outreach.actions.whatsapp")}
                           </button>
@@ -260,7 +260,7 @@ export default function AdminOutreachPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(lead.id)}
-                          className="text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50"
+                          className="text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50"
                         >
                           {t("outreach.actions.delete")}
                         </button>
@@ -537,14 +537,14 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
                 <button
                   type="button"
                   onClick={() => copyTemplate(tpl)}
-                  className="text-xs px-2 py-1 rounded border border-border hover:bg-light"
+                  className="text-xs px-2 py-1 rounded-lg border border-border hover:bg-light"
                 >
                   {t("outreach.modal_wa.copy")}
                 </button>
                 <button
                   type="button"
                   onClick={() => openTemplate(tpl)}
-                  className="btn-whatsapp text-xs px-2 py-1 rounded"
+                  className="btn-whatsapp text-xs px-2 py-1 rounded-lg"
                 >
                   {t("outreach.modal_wa.open")}
                 </button>
