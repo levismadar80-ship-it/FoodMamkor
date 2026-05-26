@@ -33,7 +33,7 @@ export default function AdminHelpPage() {
   const richComponents = {
     strong: (chunks) => <strong>{chunks}</strong>,
     code: (chunks) => (
-      <code className="bg-light px-1.5 py-0.5 rounded-lg text-xs">{chunks}</code>
+      <code className="bg-green-50 px-1.5 py-0.5 rounded-lg text-xs">{chunks}</code>
     ),
     em: (chunks) => <em>{chunks}</em>,
     placeholder: (chunks) => <>&lt;{chunks}&gt;</>,

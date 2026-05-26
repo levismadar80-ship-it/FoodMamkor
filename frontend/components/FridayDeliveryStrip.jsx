@@ -19,7 +19,7 @@ function ProducerMiniCard({ producer }) {
       className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white hover:shadow-md transition-shadow group"
       aria-label={producer.name}
     >
-      <div className="relative h-24 bg-light">
+      <div className="relative h-24 bg-green-50">
         {img ? (
           <Image src={img} alt={producer.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="144px" />
         ) : (

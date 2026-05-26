@@ -71,7 +71,7 @@ export default function AboutPage() {
             {/* Founder photo — Path C editorial portrait (MEH-100) */}
             <div className="flex justify-center md:justify-start order-1">
               <div
-                className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-light flex items-center justify-center border border-primary/15 overflow-hidden"
+                className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-green-50 flex items-center justify-center border border-primary/15 overflow-hidden"
                 aria-label={t("story.image_aria")}
               >
                 {imgFailed ? (
@@ -131,19 +131,19 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
               <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
                 {t("benefits.local.body")}
               </p>
             </div>
             <div className="text-center">
               <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.trust.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
                 {t("benefits.trust.body")}
               </p>
             </div>
             <div className="text-center">
               <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.community.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
                 {t("benefits.community.body")}
               </p>
             </div>
@@ -242,7 +242,7 @@ export default function AboutPage() {
             </Link>
             <Link
               href="/map"
-              className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-light transition font-semibold text-lg"
+              className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-green-50 transition font-semibold text-lg"
             >
               {t("cta.explore")}
             </Link>

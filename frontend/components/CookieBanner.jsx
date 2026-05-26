@@ -33,12 +33,12 @@ export default function CookieBanner() {
 
   return (
     <div
-      className="cookie-banner fixed bottom-16 md:bottom-0 inset-x-0 z-[599] bg-primary-dark text-light shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
+      className="cookie-banner fixed bottom-16 md:bottom-0 inset-x-0 z-[599] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
       role="dialog"
       aria-label={t("aria_label")}
     >
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-xs md:text-sm text-light/90 min-w-0">
+        <p className="text-xs md:text-sm text-green-50/90 min-w-0">
           {t.rich("message", {
             link: (chunks) => (
               <Link href="/privacy" className="underline hover:text-white">
@@ -51,14 +51,14 @@ export default function CookieBanner() {
           <button
             type="button"
             onClick={() => accept("all")}
-            className="bg-light text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap"
+            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap"
           >
             {t("accept_all")}
           </button>
           <button
             type="button"
             onClick={() => accept("essential")}
-            className="text-light/80 text-xs px-4 py-2 rounded-full border border-light/30 hover:bg-light/10 transition whitespace-nowrap"
+            className="text-green-50/80 text-xs px-4 py-2 rounded-full border border-green-50/30 hover:bg-green-50/10 transition whitespace-nowrap"
           >
             {t("essential_only")}
           </button>

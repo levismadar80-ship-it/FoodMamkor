@@ -113,7 +113,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
             ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-            : "bg-white text-site-text border-border hover:bg-light"
+            : "bg-white text-site-text border-border hover:bg-green-50"
         }`}
       >
         <HeartStraight

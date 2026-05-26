@@ -62,7 +62,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         </span>
         {product.moderation_status === "FLAGGED" && (
           <span
-            className="absolute top-3 start-3 bg-light text-accent border border-accent/30 text-xs px-2 py-1 rounded-full"
+            className="absolute top-3 start-3 bg-green-50 text-accent border border-accent/30 text-xs px-2 py-1 rounded-full"
             title={product.moderation_reason || "המודעה בבדיקת אדמין"}
           >
             <MagnifyingGlass size={14} weight="bold" aria-hidden="true" className="inline" /> בבדיקה
@@ -81,23 +81,23 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           {product.is_organic && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
               <Leaf size={13} weight="duotone" aria-hidden="true" />
               אורגני
             </span>
           )}
           {product.kosher && product.kosher !== "לא ידוע" && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               ✡️ {product.kosher}
             </span>
           )}
           {product.storage_type && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               {storageEmoji(product.storage_type)} {product.storage_type}
             </span>
           )}
           {product.category && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               {product.category}
             </span>
           )}

@@ -267,7 +267,7 @@ export default function ProducersClient({
 
       {/* Active filter strip */}
       {hasActiveChips && (
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-light border-y border-border">
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-green-50 border-y border-border">
           <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
             {t("filters.filter_by")}
           </span>
@@ -429,7 +429,7 @@ function FilterEmptyState({ onClear, searchQ }) {
   return (
     <div className="text-center py-16">
       <div
-        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
+        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
         <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
@@ -476,7 +476,7 @@ function CatalogEmptyState() {
   return (
     <div className="text-center py-16">
       <div
-        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
+        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
         <span className="text-2xl">🌿</span>
@@ -498,7 +498,7 @@ function CatalogEmptyState() {
         )}
         <Link
           href="/about#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-light transition"
+          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -537,7 +537,7 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
+          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
@@ -550,7 +550,7 @@ function ServerPageLinks({ page, totalPages }) {
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
+          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>

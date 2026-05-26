@@ -111,7 +111,7 @@ export default function AdminKashrutPage() {
       ) : (
         <div className="overflow-x-auto rounded-[12px] border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-light">
+            <thead className="bg-green-50">
               <tr>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.producer")}</th>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.badge")}</th>
@@ -125,7 +125,7 @@ export default function AdminKashrutPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-light/50 transition">
+                <tr key={row.id} className="hover:bg-green-50/50 transition">
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">

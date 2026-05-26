@@ -42,7 +42,7 @@ export default function ProducerHeader({
         <TrustBadge tier={producer.trust_tier} />
         {producer.reviews_count > 0 && (
           <span
-            className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
+            className="bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
             title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
           >
             ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
@@ -119,22 +119,22 @@ export default function ProducerHeader({
       {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
             </span>
           )}
           {producer.organic_certified && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}

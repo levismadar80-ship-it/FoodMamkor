@@ -31,7 +31,7 @@ export default function WhatsAppQuestionChips({ producer }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block font-body text-primary transition hover:bg-light"
+              className="inline-block font-body text-primary transition hover:bg-green-50"
               style={{
                 border: "1px solid #e8e0d0",
                 borderRadius: "20px",

@@ -183,7 +183,7 @@ export default function ProducerSections({
                 className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
               >
                 {product.image_url ? (
-                  <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-light">
+                  <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-green-50">
                     <Image
                       src={product.image_url}
                       alt={product.name}
@@ -193,7 +193,7 @@ export default function ProducerSections({
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
+                  <div className="w-16 h-16 shrink-0 rounded-[8px] bg-green-50 flex items-center justify-center">
                     <Package size={28} className="text-fg-muted/60" aria-hidden="true" />
                   </div>
                 )}
@@ -256,7 +256,7 @@ export default function ProducerSections({
           </h2>
           <div className="bg-white rounded-[12px] overflow-hidden border border-border">
             <table className="w-full">
-              <thead className="bg-light">
+              <thead className="bg-green-50">
                 <tr>
                   <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.city")}</th>
                   <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.min_order")}</th>

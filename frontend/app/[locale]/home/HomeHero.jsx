@@ -58,7 +58,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="font-body mt-3 text-light"
+          className="font-body mt-3 text-green-50"
           style={{
             fontSize: "18px",
             letterSpacing: "0.12em",

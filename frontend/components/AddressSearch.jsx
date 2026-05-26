@@ -242,7 +242,7 @@ export default function AddressSearch({
                 onMouseEnter={() => setHighlight(idx)}
                 className={`px-3 py-2 cursor-pointer text-sm border-b border-border last:border-b-0 ${
                   idx === highlight
-                    ? "bg-light text-primary"
+                    ? "bg-green-50 text-primary"
                     : "text-site-text"
                 }`}
               >

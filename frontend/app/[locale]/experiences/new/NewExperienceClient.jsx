@@ -351,7 +351,7 @@ export default function NewExperienceClient() {
                 className={`px-4 py-2 rounded-full text-sm transition ${
                   form.location_type === lt.value
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-light"
+                    : "bg-white text-site-text border border-border hover:bg-green-50"
                 }`}
               >
                 {t(lt.labelKey)}
