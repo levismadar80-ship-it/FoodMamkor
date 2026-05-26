@@ -17,6 +17,12 @@ colors:
   fg-muted: "#5c584f"
   accent: "#8B6914"
   border: "#E5DFD3"
+  green-50: "#EAF3DE"
+  green-100: "#C8DCB3"
+  green-300: "#6FA284"
+  green-500: "#2E6853"
+  green-700: "#2E4A2E"
+  green-900: "#143228"
 typography:
   headline-display:
     fontFamily: Frank Ruhl Libre
@@ -132,10 +138,12 @@ exception (quotes, loan words), not the baseline.
 
 ## Colors
 
-The palette is deliberately small. One brand green, one warm gold accent, a
-cream background, and a tight set of neutrals. There is **no state-color
-palette** (no red/amber/slate) — see *Elevation & Depth* for how state is
-expressed instead, and *Do's and Don'ts* for why.
+The palette is deliberately small: **one brand green** — expressed as a
+systematic 6-stop tint scale (`green-50`…`green-900`) for badges, hovers and
+depth, **not** as multiple brand colors — plus one warm gold accent, a cream
+background, and a tight set of neutrals. There is **no state-color palette**
+(no red/amber/slate) — see *Elevation & Depth* for how state is expressed
+instead, and *Do's and Don'ts* for why.
 
 - **Primary (`#2e6853`):** Deep forest green. The single brand accent —
   primary CTAs, the logo, links, "available today" affordances. Also serves
@@ -160,8 +168,15 @@ expressed instead, and *Do's and Don'ts* for why.
   highlights, pull-quotes. A second voice, never a second brand color.
 - **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
   Low-contrast by design; structure should be felt, not drawn.
-
-## Typography
+- **Green scale (`green-50` … `green-900`):** A 6-stop tint scale of the one
+  brand green for systematic reference — `green-50 #EAF3DE` (badge / light
+  surfaces; the legacy `light`), `green-100 #C8DCB3`, `green-300 #6FA284`
+  (subtle highlight), `green-500 #2E6853` (= `primary`, brand identity),
+  `green-700 #2E4A2E` (= `primary-dark`, the CTA hover/active target),
+  `green-900 #143228` (deep emphasis, footer ground). This is a shading system,
+  **not** a second brand color — the hover rule above still holds: brand greens
+  go **deeper** on interaction (`primary` → `primary-dark` / `green-700`), never
+  lighter.
 
 Two families carry the whole system. **Frank Ruhl Libre** — a Hebrew serif —
 for headlines, set at weight **900** for editorial gravitas (the canonical
