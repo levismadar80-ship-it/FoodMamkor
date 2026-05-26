@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-26 — Restore Heebo Hebrew fallback to canonical body/label tokens (MEH-712)
+
+`feat(MEH-712)`: prerequisite hardening before the body/label token migrations
+(MEH-700/701). PR #853 (Expand phase) had set the canonical `body-lg/md/sm` +
+`label-md/sm` font stacks to `["DM Sans"]` only; DM Sans has **no Hebrew Unicode
+coverage** (U+0590–05FF), so the tokens needed Heebo back before any component
+adopts them.
+- (a) `docs/DESIGN.md` front-matter: 5 token `fontFamily` → `"DM Sans", "Heebo",
+  sans-serif`; `tailwind.tokens.json` regenerated; `tailwind.config.js` resolves
+  the stack via its existing `require()`+spread (no config edit — single source
+  of truth preserved, drift gate green). Typography prose documents the policy.
+- (b) `StoryCardCanvas.jsx:272` `font-sans` → `font-body-md` (the lone remaining
+  `font-sans` usage; its Hebrew `<pre>` now renders via the canonical token).
+- Not a shipped regression — verified 0 component adoption of the new tokens +
+  `globals.css` root fallback intact during the window. Headlines untouched.
+
 ### 2026-05-26 — Tailwind token migration Wave 1A (MEH-686 Contract — batched)
 
 `refactor(MEH-686)`: first Contract-phase batch (Expand-Contract per ADR-007),

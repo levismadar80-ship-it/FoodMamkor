@@ -34,27 +34,27 @@ typography:
     fontWeight: 700
     lineHeight: 1.3
   body-lg:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 18px
     fontWeight: 400
     lineHeight: 1.6
   body-md:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 16px
     fontWeight: 400
     lineHeight: 1.6
   body-sm:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 14px
     fontWeight: 400
     lineHeight: 1.5
   label-md:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 16px
     fontWeight: 600
     lineHeight: 1.4
   label-sm:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 14px
     fontWeight: 500
     lineHeight: 1.4
@@ -180,9 +180,16 @@ screen.
 - **Labels (`label-md` / `label-sm`):** DM Sans 500–600 for buttons, chips and
   metadata.
 
-Fallbacks (not tokenized): **Heebo** covers the long tail of Hebrew glyphs and
-legacy `font-heebo` components; **Cormorant Garamond** is reserved for Latin
-pull-quotes only. Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+**Hebrew fallback policy (body & label families).** DM Sans covers Latin only
+(no Hebrew Unicode block, U+0590–05FF), so every `body-*` and `label-*` token
+ships the stack `"DM Sans", "Heebo", sans-serif` — DM Sans renders Latin, **Heebo
+catches Hebrew glyphs**, generic `sans-serif` is the last resort. Heebo here is a
+**tokenized** fallback layer, not optional (restored in MEH-712 after the
+DESIGN.md token transform briefly dropped it). The document root
+(`globals.css` `body`) carries the same stack as a safety net.
+
+**Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
+Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
 
 ## Layout
 
