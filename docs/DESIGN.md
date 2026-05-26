@@ -34,27 +34,27 @@ typography:
     fontWeight: 700
     lineHeight: 1.3
   body-lg:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 18px
     fontWeight: 400
     lineHeight: 1.6
   body-md:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 16px
     fontWeight: 400
     lineHeight: 1.6
   body-sm:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 14px
     fontWeight: 400
     lineHeight: 1.5
   label-md:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 16px
     fontWeight: 600
     lineHeight: 1.4
   label-sm:
-    fontFamily: DM Sans
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
     fontSize: 14px
     fontWeight: 500
     lineHeight: 1.4
