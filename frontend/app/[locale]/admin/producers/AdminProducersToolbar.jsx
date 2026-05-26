@@ -42,7 +42,7 @@ function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
     ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-white border-border text-text-secondary hover:border-yellow-400";
+    : "bg-white border-border text-muted hover:border-yellow-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}

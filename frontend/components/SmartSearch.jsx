@@ -26,7 +26,7 @@ function Highlighted({ text, query }) {
         typeof part === "string" ? (
           <span key={i}>{part}</span>
         ) : (
-          <mark key={i} className="bg-yellow-100 text-inherit rounded px-0.5">
+          <mark key={i} className="bg-yellow-100 text-inherit rounded-lg px-0.5">
             {part.match}
           </mark>
         ),

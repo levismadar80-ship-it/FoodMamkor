@@ -8,8 +8,8 @@ export default function Loading() {
             <div key={col} className="rounded-[12px] overflow-hidden bg-white">
               <div className="h-[200px] bg-border animate-pulse" />
               <div className="p-4 space-y-2">
-                <div className="h-4 bg-border rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-border rounded animate-pulse w-1/2" />
+                <div className="h-4 bg-border rounded-lg animate-pulse w-3/4" />
+                <div className="h-3 bg-border rounded-lg animate-pulse w-1/2" />
               </div>
             </div>
           ))}

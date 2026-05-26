@@ -121,12 +121,12 @@ function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus
         {t("common.edit")}
       </Link>
       {p.slug && (
-        <Link href={`/${p.slug}`} target="_blank" className="text-text-secondary hover:text-primary text-xs">
+        <Link href={`/${p.slug}`} target="_blank" className="text-muted hover:text-primary text-xs">
           {t("common.view")}
         </Link>
       )}
       {(p.status === "approved" || p.status === "inactive") && (
-        <button onClick={() => onToggleStatus(p.id)} className="text-text-secondary hover:text-primary text-xs">
+        <button onClick={() => onToggleStatus(p.id)} className="text-muted hover:text-primary text-xs">
           {p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate")}
         </button>
       )}
@@ -167,7 +167,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
             <span>{p.name}</span>
           </div>
         </td>
-        <td className="px-4 py-3 text-text-secondary">{p.city || "—"}</td>
+        <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
         <td className="px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
         <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
@@ -206,16 +206,16 @@ function TableHead() {
   return (
     <thead className="bg-gray-50">
       <tr>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.name")}</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.city")}</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.categories")}</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.tags")}</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.risk")}</th>
-        <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("producers.table.columns.actions")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
+        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
       </tr>
     </thead>
   );
@@ -225,7 +225,7 @@ function EmptyRow({ incompleteOnly }) {
   const t = useTranslations("admin");
   return (
     <tr>
-      <td colSpan={TABLE_COLUMN_COUNT} className="text-center py-8 text-text-secondary">
+      <td colSpan={TABLE_COLUMN_COUNT} className="text-center py-8 text-muted">
         {incompleteOnly ? t("producers.table.all_complete") : t("producers.table.empty")}
       </td>
     </tr>

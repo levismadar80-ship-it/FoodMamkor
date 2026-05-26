@@ -33,7 +33,7 @@ export default function AdminHelpPage() {
   const richComponents = {
     strong: (chunks) => <strong>{chunks}</strong>,
     code: (chunks) => (
-      <code className="bg-light px-1.5 py-0.5 rounded text-xs">{chunks}</code>
+      <code className="bg-light px-1.5 py-0.5 rounded-lg text-xs">{chunks}</code>
     ),
     em: (chunks) => <em>{chunks}</em>,
     placeholder: (chunks) => <>&lt;{chunks}&gt;</>,
@@ -45,14 +45,14 @@ export default function AdminHelpPage() {
         <Lifebuoy size={28} weight="fill" className="text-primary" aria-hidden="true" />
         <h1 className="text-2xl font-bold">{t("title")}</h1>
       </div>
-      <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+      <p className="text-sm text-muted mb-6 leading-relaxed">
         {t("intro")}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6">
         {/* Sticky TOC */}
         <aside className="md:sticky md:top-24 self-start bg-white border border-border rounded-[12px] p-4 text-sm">
-          <p className="text-xs uppercase tracking-wider text-text-secondary mb-2">{t("toc_label")}</p>
+          <p className="text-xs uppercase tracking-wider text-muted mb-2">{t("toc_label")}</p>
           <nav className="flex flex-col gap-1.5">
             <a href="#dashboard" className="hover:text-primary transition">{t("toc.dashboard")}</a>
             <a href="#producers" className="hover:text-primary transition">{t("toc.producers")}</a>
@@ -88,7 +88,7 @@ export default function AdminHelpPage() {
               <li>{t.rich("sections.producers.li4", richComponents)}</li>
               <li>{t.rich("sections.producers.li5", richComponents)}</li>
             </ol>
-            <p className="mt-3 text-xs text-text-secondary">
+            <p className="mt-3 text-xs text-muted">
               {t.rich("sections.producers.footnote", richComponents)}
             </p>
           </Section>
@@ -101,7 +101,7 @@ export default function AdminHelpPage() {
               <li>{t.rich("sections.users.li2", richComponents)}</li>
               <li>{t.rich("sections.users.li3", richComponents)}</li>
             </ul>
-            <p className="mt-3 text-xs text-text-secondary">
+            <p className="mt-3 text-xs text-muted">
               {t.rich("sections.users.footnote", richComponents)}
             </p>
           </Section>
@@ -124,7 +124,7 @@ export default function AdminHelpPage() {
               <li>{t.rich("sections.reports.li2", richComponents)}</li>
               <li>{t.rich("sections.reports.li3", richComponents)}</li>
             </ul>
-            <p className="mt-3 text-xs text-text-secondary">
+            <p className="mt-3 text-xs text-muted">
               {t.rich("sections.reports.footnote", richComponents)}
             </p>
           </Section>
@@ -143,31 +143,31 @@ export default function AdminHelpPage() {
             <ul className="space-y-3">
               <li>
                 <strong>{t("sections.emergency.site_down_title")}</strong>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-muted mt-1">
                   {t.rich("sections.emergency.site_down_body", richComponents)}
                 </p>
               </li>
               <li>
                 <strong>{t("sections.emergency.migration_title")}</strong>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-muted mt-1">
                   {t.rich("sections.emergency.migration_body", richComponents)}
                 </p>
               </li>
               <li>
                 <strong>{t("sections.emergency.login_broken_title")}</strong>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-muted mt-1">
                   {t.rich("sections.emergency.login_broken_body", richComponents)}
                 </p>
               </li>
               <li>
                 <strong>{t("sections.emergency.spam_title")}</strong>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-muted mt-1">
                   {t.rich("sections.emergency.spam_body", richComponents)}
                 </p>
               </li>
               <li>
                 <strong>{t("sections.emergency.ai_silent_title")}</strong>
-                <p className="text-sm text-text-secondary mt-1">
+                <p className="text-sm text-muted mt-1">
                   {t.rich("sections.emergency.ai_silent_body", richComponents)}
                 </p>
               </li>
@@ -176,7 +176,7 @@ export default function AdminHelpPage() {
 
           {/* ===== URLs ===== */}
           <Section id="urls" icon={LinkSimple} title={t("sections.urls.title")}>
-            <p className="text-sm text-text-secondary mb-3">
+            <p className="text-sm text-muted mb-3">
               {t("sections.urls.intro")}
             </p>
             <ul className="space-y-2">
@@ -184,19 +184,19 @@ export default function AdminHelpPage() {
               <ExternalRow label={t("sections.urls.staging_label")} href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
               <ExternalRow label={t("sections.urls.github_label")} href="https://github.com/levismadar80-ship-it/FoodMamkor">{t("sections.urls.github_text")}</ExternalRow>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.railway_label")}</span>
+                <span className="text-muted min-w-[140px]">{t("sections.urls.railway_label")}</span>
                 <span className="text-site-muted">{t.rich("sections.urls.railway_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.vercel_label")}</span>
+                <span className="text-muted min-w-[140px]">{t("sections.urls.vercel_label")}</span>
                 <span className="text-site-muted">{t.rich("sections.urls.vercel_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.cloudinary_label")}</span>
+                <span className="text-muted min-w-[140px]">{t("sections.urls.cloudinary_label")}</span>
                 <span className="text-site-muted">{t.rich("sections.urls.cloudinary_text", richComponents)}</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="text-text-secondary min-w-[140px]">{t("sections.urls.anthropic_label")}</span>
+                <span className="text-muted min-w-[140px]">{t("sections.urls.anthropic_label")}</span>
                 <span className="text-site-muted">{t.rich("sections.urls.anthropic_text", richComponents)}</span>
               </li>
             </ul>
@@ -204,7 +204,7 @@ export default function AdminHelpPage() {
 
           {/* Footer link back to the docs */}
           <div className="pt-6 border-t border-border">
-            <p className="text-xs text-text-secondary">
+            <p className="text-xs text-muted">
               {t.rich("footer", richComponents)}
               <Link href="/admin" className="ms-3 text-primary hover:underline">
                 {t("footer_back")}
@@ -241,7 +241,7 @@ function Section({ id, icon: Icon, title, children, danger = false }) {
 function ExternalRow({ label, href, children }) {
   return (
     <li className="flex items-start gap-3 text-sm">
-      <span className="text-text-secondary min-w-[140px]">{label}</span>
+      <span className="text-muted min-w-[140px]">{label}</span>
       <a
         href={href}
         target="_blank"

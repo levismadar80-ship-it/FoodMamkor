@@ -9,7 +9,7 @@ import { useAdminProducers } from "./use-admin-producers";
 
 function SuspenseFallback() {
   const t = useTranslations("admin");
-  return <div className="text-text-secondary">{t("common.loading")}</div>;
+  return <div className="text-muted">{t("common.loading")}</div>;
 }
 
 export default function ProducersPageWrapper() {
@@ -25,7 +25,7 @@ function PageHeader({ count }) {
   return (
     <div className="flex items-center justify-between">
       <h1 className="text-2xl font-bold">{t("producers.list.title")}</h1>
-      <span className="text-sm text-text-secondary">{t("producers.list.records_count", { count })}</span>
+      <span className="text-sm text-muted">{t("producers.list.records_count", { count })}</span>
     </div>
   );
 }

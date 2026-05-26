@@ -62,7 +62,7 @@ export default function AdminSettingsPage() {
   }, []);
 
   if (loadError) return <div className="text-red-600 text-sm">{t("settings.load_error")}</div>;
-  if (!settings) return <div className="text-text-secondary">{t("common.loading")}</div>;
+  if (!settings) return <div className="text-muted">{t("common.loading")}</div>;
 
   const update = (key, value) => {
     setSettings({ ...settings, [key]: value });
@@ -195,7 +195,7 @@ export default function AdminSettingsPage() {
             position="bottom"
           />
         </h2>
-        <p className="text-xs text-text-secondary">{t("settings.sections.holiday_hint")}</p>
+        <p className="text-xs text-muted">{t("settings.sections.holiday_hint")}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm">{t("settings.sections.holiday_active")}</span>
           <button
@@ -233,7 +233,7 @@ export default function AdminSettingsPage() {
             position="bottom"
           />
         </h2>
-        <p className="text-xs text-text-secondary">
+        <p className="text-xs text-muted">
           {t("settings.sections.friday_hint")}
         </p>
         <div className="flex items-center justify-between">
@@ -268,7 +268,7 @@ export default function AdminSettingsPage() {
             position="bottom"
           />
         </h2>
-        <p className="text-xs text-text-secondary">{t("settings.sections.vacation_hint")}</p>
+        <p className="text-xs text-muted">{t("settings.sections.vacation_hint")}</p>
         <div className="flex items-center justify-between">
           <span className="text-sm">{t("settings.sections.vacation_active")}</span>
           <button
@@ -354,7 +354,7 @@ export default function AdminSettingsPage() {
 
       <div className="bg-white border border-border rounded-[12px] p-5">
         <h2 className="font-semibold mb-2">{t("settings.sections.categories")}</h2>
-        <p className="text-sm text-text-secondary mb-3">{t("settings.sections.categories_hint")}</p>
+        <p className="text-sm text-muted mb-3">{t("settings.sections.categories_hint")}</p>
         <Link href="/admin/content" className="text-primary text-sm hover:underline">
           {t("settings.sections.categories_link")}
         </Link>
@@ -383,7 +383,7 @@ export default function AdminSettingsPage() {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="text-xs text-text-secondary mb-1 block">{label}</span>
+      <span className="text-xs text-muted mb-1 block">{label}</span>
       {children}
     </label>
   );
