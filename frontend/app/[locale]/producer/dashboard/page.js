@@ -867,7 +867,7 @@ function BioPanelCard({ profile, onSave }) {
       <button
         onClick={generate}
         disabled={loading || !source.trim()}
-        className="w-full mt-2 bg-secondary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-secondary-light transition"
+        className="w-full mt-2 bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition"
       >
         {loading ? t("generating") : t("generate_cta")}
       </button>

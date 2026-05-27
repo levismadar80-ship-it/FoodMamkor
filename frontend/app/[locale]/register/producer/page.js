@@ -659,7 +659,7 @@ function RegisterProducerPageBody() {
                   handleSubmit();
                 }}
                 disabled={loading}
-                className="flex-1 bg-secondary text-white py-3 rounded-[12px] hover:bg-secondary-light transition font-medium disabled:opacity-50"
+                className="flex-1 bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
               >
                 {loading ? (
                   <span className="inline-flex items-center gap-2">

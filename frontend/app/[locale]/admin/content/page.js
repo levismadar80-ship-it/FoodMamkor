@@ -111,7 +111,7 @@ function CategoryRow({ cat, onSave, onDelete }) {
       <button
         onClick={() => onSave(cat.id, name, emoji)}
         disabled={!dirty}
-        className="text-xs bg-secondary text-white px-3 py-1 rounded-lg disabled:opacity-30"
+        className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
       >
         {t("content.categories.save")}
       </button>
