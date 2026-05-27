@@ -5,6 +5,35 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## Session 26/5/26 — Wave 1A + Contract Phase Execution
+
+**10 PRs merged to staging:**
+- #853 — MEH-686 Step 18 PR-A (Expand + drift gate)
+- #854 — Wave 1A batched (MEH-707/704/706p): rounded-lg / muted / text aliases
+- #855 — MEH-712 Heebo Hebrew fallback restoration (RED tier, mobile QA passed)
+- #856 — MEH-709 DESIGN.md .js→.json
+- #857 — MEH-710 green scale to DESIGN.md
+- #858 — MEH-699 site-muted→fg-muted (424 occ)
+- #859 — MEH-702 light→green-50 (199 occ, 83 files)
+- #860 — MEH-698 site-text→text (347 occ)
+- #861 — MEH-705 hover primary-light→primary-dark (47 occ, 31 files, YELLOW)
+- #862 — MEH-700 font-headline structural split (167 occ, 77 files, YELLOW)
+
+**Contract phase remaining (MEH-686):**
+- MEH-703 — secondary migration (decision-needed: secondary→primary vs keep)
+- MEH-701 — font-body split (Wave 1C, deferred)
+- MEH-708 — final alias-drop. Now able to clear: site-text, site-muted, light, text-secondary, text-primary, primary-light, headline family. Still blocking: secondary, secondary-light, body, sans, english, rounded DEFAULT
+- MEH-713 — green-50 audit (Low, retrospective on #859)
+
+**Key learnings this session:**
+- "Zero visual change" claim on token migration MUST verify token CSS shape (family-only vs full type) before approve. Caught regression risk on 33 cases pre-MEH-700 execution.
+- Orchestrator must not instruct CC to push direct to staging — CLAUDE.md branch protection applies to CC sessions. Docs-only direct is Sapir-only.
+- Wave 1A batched-PR pattern works for value-identical renames with file overlap ≥5.
+- GitHub Actions outage cascade (budget→auth) survived; diagnosis order: Billing banner first, then incident hub, then status page.
+
+**Open items for next session:**
+- None blocking. MEH-703 needs Sapir designer decision before unblocking.
+
 ## 2026-05-26 — MEH-700 font-headline structural split (🟡 YELLOW)
 
 **Branch:** `feature/meh-700-split-font-headline` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-700. **YELLOW — mobile QA gate before merge.**
