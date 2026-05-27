@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-27 — Brand LOCK fix — /about meta copy (MEH-718, GREEN)
+
+`fix(MEH-718)`: replaced the one **about-specific** "אוכל אמיתי" string —
+`seo.about.description` (`frontend/messages/he.json:471`) — which fed the
+/about meta description and caused competitor confusion with realfood.co.il.
+NEW (verbatim from issue): *"מהמקור — בתי עסק מקומיים מתחום המזון בישראל, כולם
+במקום אחד. הסיפור של ספיר, המייסדת, הערכים וקריטריוני הכניסה."* Single-line
+i18n edit; build green; `grep "אוכל אמיתי"` in `app/[locale]/about/` → 0.
+**Scope correction (Phase 0):** the issue's `file_locations`
+(`frontend/app/about/page.js`) don't exist — the route is `app/[locale]/about/`
+with **i18n-driven `generateMetadata`**. Strings 2-4 (keywords + twitter
+title/desc) actually live in **site-wide** `seo.site.*` + `layout.js`, and
+String 5 ("יש לך עסק מזון מקומי?") is the **global Footer** CTA
+(`Footer.jsx:103`, all pages) — all deferred to a follow-up per Sapir decision
+(site-wide blast radius kept out of an /about PR).
+
 ### 2026-05-26 — Structural split: font-headline → headline-display/lg/md (MEH-700 Contract, YELLOW)
 
 `refactor(MEH-700)`: Contract-phase structural split — bare `font-headline` →
