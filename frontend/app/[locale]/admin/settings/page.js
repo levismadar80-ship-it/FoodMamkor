@@ -342,7 +342,7 @@ export default function AdminSettingsPage() {
                 )}
                 <button
                   onClick={() => testService(key)}
-                  className="text-xs bg-secondary text-white px-3 py-1 rounded-[12px]"
+                  className="text-xs bg-primary text-white px-3 py-1 rounded-[12px]"
                 >
                   {t("settings.tests.test_btn")}
                 </button>

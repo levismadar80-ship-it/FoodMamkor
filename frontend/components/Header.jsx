@@ -340,7 +340,7 @@ export default function Header() {
               {user.role === "admin" && (
                 <Link
                   href="/admin"
-                  className="block text-secondary"
+                  className="block text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t("nav.admin")}

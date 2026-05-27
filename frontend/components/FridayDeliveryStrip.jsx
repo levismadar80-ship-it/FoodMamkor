@@ -27,7 +27,7 @@ function ProducerMiniCard({ producer }) {
             {(producer.name || "?")[0]}
           </div>
         )}
-        <span className="absolute top-1.5 end-1.5 bg-secondary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+        <span className="absolute top-1.5 end-1.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
           🛒 {t("today")}
         </span>
       </div>
