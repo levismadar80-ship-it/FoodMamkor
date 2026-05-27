@@ -24,9 +24,9 @@ import {
   OG_ALTERNATE_LOCALES,
 } from "@/lib/i18n-seo";
 
-const SITE_TITLE = "מהמקור — אוכל אמיתי, ישר מהמקור אליך";
+const SITE_TITLE = "מהמקור — בתי עסק מקומיים בתחום המזון, כולם במקום אחד";
 const SITE_DESCRIPTION =
-  "בתי עסק מקומיים, כולם במקום אחד. מצאי אוכל אמיתי, טרי ובריא באזור שלך.";
+  "בתי עסק מקומיים מתחום המזון בישראל, כולם במקום אחד. כל בית עסק נבחר אישית.";
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 // MEH-476 PR 3b1: ACTIVE for all locale-stable routes (no headers() reads).
@@ -45,7 +45,6 @@ const BASE_METADATA = {
   },
   description: SITE_DESCRIPTION,
   keywords: [
-    "אוכל אמיתי",
     "מוצרים מקומיים",
     "grass-fed",
     "אוכל בריא",
