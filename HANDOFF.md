@@ -96,9 +96,9 @@
 
 **Context:** PR #853 dropped Heebo from these stacks; DM Sans has no Hebrew coverage (Wave 2A web-confirmed). NOT a shipped regression (0 token adoption + globals.css:24 root fallback). MEH-712 absorbed the original font-sans scope + the body/label hardening (MEH-713 was NOT created — folded here per Option A).
 
-**Verification:** chunk1 (tokens) + chunk2 (prose+StoryCardCanvas) committed; design:lint 0 errors; drift gate clean; build green. **Mobile QA REQUIRED** post-merge: Hebrew render smoke test on StoryCardCanvas output (verify Heebo, not system default).
+**Verification:** chunk1 (tokens) + chunk2 (prose+StoryCardCanvas) committed; design:lint 0 errors; drift gate clean; build green. **Mobile QA ✅ — verified by Sapir 27/5/26** (StoryCardCanvas Hebrew render correct, Heebo not system default).
 
-**Next:** await PR CI + Sapir mobile QA → merge → MEH-700/701 unblocked. Pending decisions still open: MEH-702 (light/green scale via MEH-710), MEH-699 (site-muted→fg-muted), MEH-705 (primary-light hover→primary-dark, YELLOW).
+**Status: ✅ DONE (27/5/26).** Merged #855, mobile QA passed, MEH-712 closed in Linear. Unblocked MEH-700 (shipped #862) + MEH-701 (deferred).
 
 ## 2026-05-26 — MEH-686 Wave 1A (batched token migration)
 
