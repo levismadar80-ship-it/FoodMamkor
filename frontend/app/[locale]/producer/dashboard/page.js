@@ -726,7 +726,7 @@ function ProfileStrengthCard({ profile, analytics }) {
                 {label}
               </span>
               {!done && (
-                <span className="text-xs text-secondary font-medium">+{item.weight}%</span>
+                <span className="text-xs text-primary font-medium">+{item.weight}%</span>
               )}
             </li>
           );
