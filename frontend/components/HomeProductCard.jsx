@@ -56,7 +56,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             <span className="font-headline-md text-sm opacity-70">מהמטבח של השכן</span>
           </div>
         )}
-        <span className="absolute top-3 end-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+        <span className="absolute top-3 end-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
           ביתי
           <House size={14} weight="fill" aria-hidden="true" />
         </span>

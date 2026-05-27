@@ -36,7 +36,7 @@ export default function BadgeRow({ producer, limit }) {
 const COLOR_CLASSES = {
   primary: "bg-primary text-white",
   accent: "bg-accent text-white",
-  secondary: "bg-secondary text-white",
+  secondary: "bg-primary text-white",
   muted: "bg-green-50 text-text border border-border",
 };
 

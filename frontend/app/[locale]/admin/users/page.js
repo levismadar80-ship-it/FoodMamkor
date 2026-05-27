@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={load} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button onClick={load} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
           {t("common.search")}
         </button>
       </div>
