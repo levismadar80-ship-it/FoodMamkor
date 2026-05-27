@@ -5,6 +5,22 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-27 — MEH-718 /about meta brand-LOCK fix (GREEN)
+
+**Branch:** `feature/meh-718-about-meta-brand-lock-fix` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-718.
+
+**What:** one-line i18n edit — `seo.about.description` (`frontend/messages/he.json:471`) "אוכל אמיתי" → brand-safe NEW (verbatim from issue). Removes the only **about-specific** competitor-confusion string. Build green; JSON valid; `grep "אוכל אמיתי"` + `grep "מתווכים\|תיווך"` in `app/[locale]/about/` → 0.
+
+**Phase 0 scope correction (STOP fired, resolved with Sapir):** issue's `file_locations` (`frontend/app/about/page.js`, `about-client.jsx`) are wrong — route is `app/[locale]/about/` with i18n `generateMetadata` (page.js:9, namespace `seo.about`). Of the issue's 5 strings, only String 1 is about-specific. Strings 2-4 live **site-wide** (`layout.js` keywords/SITE_TITLE/SITE_DESCRIPTION + `seo.site.*`); String 5 ("יש לך עסק מזון מקומי?") = `nav.footer.cta_pitch`, the **global Footer** CTA (`Footer.jsx:103`, every page) — NOT an /about hero. The real /about hero (`AboutClient.jsx:41`) uses `hero.heading`, already brand-safe; about's `og_title` ("החזון שלנו — על מהמקור") also already clean.
+
+**Sapir decisions (27/5/26):** (1) SEO scope = "both, separate PRs" → this PR /about-only; site-wide SEO is a follow-up. (2) Footer CTA = leave out of scope.
+
+**Out-of-scope follow-ups (NOT in this PR — for a new issue):**
+- Site-wide "אוכל אמיתי": `layout.js:27/29/48` (SITE_TITLE/DESC/keywords), `he.json` `seo.site.*` (462-467), `seo.map`/`seo.register` (485,531,533), `public/manifest.json:2,4`, plus body copy (he.json 302,370,387,1450,2008,2018,2634).
+- Global Footer B2B CTA (`nav.footer.cta_pitch`/`cta_subpitch`, he.json:49-50) — needs new verbatim copy + site-wide decision.
+
+**Next:** await PR CI + Sapir mobile QA (view-source on preview /about meta description) + merge.
+
 ## Session 26/5/26 — Wave 1A + Contract Phase Execution
 
 **10 PRs merged to staging:**
