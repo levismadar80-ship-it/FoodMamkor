@@ -49,13 +49,13 @@ export default function UpgradeClient() {
           </div>
 
           {/* Premium Plan */}
-          <div className="border-2 border-secondary rounded-[16px] p-6 relative">
+          <div className="border-2 border-primary rounded-[16px] p-6 relative">
             {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-3 py-1 rounded-full">
               {t("premium_plan.recommended")}
             </span>
             <h3 className="font-semibold text-lg text-text mb-1">{t("premium_plan.name")}</h3>
-            <p className="text-3xl font-bold text-secondary mb-4">{t("premium_plan.price_pending")}</p>
+            <p className="text-3xl font-bold text-primary mb-4">{t("premium_plan.price_pending")}</p>
             <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("premium_plan.feature_map")}</li>
               <li>{t("premium_plan.feature_unlimited_images")}</li>
@@ -86,7 +86,7 @@ export default function UpgradeClient() {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-secondary text-white px-6 py-3 rounded-full hover:bg-secondary/90 transition font-medium disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-secondary/40"
+              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {submitting ? t("notify_submitting") : t("notify_cta")}
             </button>
