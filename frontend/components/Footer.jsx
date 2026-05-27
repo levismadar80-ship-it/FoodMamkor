@@ -79,10 +79,8 @@ export default function Footer() {
             only the Link would leave an orphan "יש לך עסק?" pitch box. */}
         {!isAdmin && (
           <div
-            className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4 bg-primary/15 border border-primary/30"
             style={{
-              backgroundColor: "rgba(76,176,139,0.15)",
-              border: "1px solid rgba(76,176,139,0.3)",
               padding: "12px 24px",
             }}
           >
