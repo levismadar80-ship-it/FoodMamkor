@@ -17,7 +17,7 @@ import { BRAND_NAME } from "@/lib/constants";
  * Structure (top → bottom):
  *   1. CTA row — teal-tinted panel inside the primary-dark footer,
  *      "יש לך עסק?" pitch on the right, "הוסיפי את העסק שלך" CTA on the
- *      left (secondary #4cb08b per DESIGN.md brand token).
+ *      left (primary #2e6853 brand green; MEH-703 retired the prior secondary).
  *   2. 3-column body — Brand / Navigation / Newsletter. Dropped the
  *      previous 4-nav-column sitemap that had drifted from DESIGN.md
  *      and doubled up with the new CTA row (add-business pitch was in
@@ -29,11 +29,10 @@ import { BRAND_NAME } from "@/lib/constants";
  *   - POST /newsletter endpoint untouched (still the submit target).
  *   - No other pages modified.
  *
- * About the CTA button color #4cb08b (secondary token): white-on-#4cb08b
- * has a ~2.2:1 contrast ratio which fails WCAG AA. It's the established
- * brand secondary per DESIGN.md (`--secondary: #4cb08b`) so matching the
- * spec literally this round. If we later tighten a11y, `primary #2e6853`
- * is the drop-in replacement that passes AA.
+ * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
+ * consolidated the brand palette to a single green and retired the prior
+ * `secondary` #4cb08b (whose white-on-#4cb08b was ~2.2:1, failing WCAG AA);
+ * white-on-#2e6853 passes AA — the drop-in this header already anticipated.
  */
 export default function Footer() {
   const t = useTranslations();
@@ -89,9 +88,8 @@ export default function Footer() {
           >
             <Link
               href="/register/producer"
-              className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60"
+              className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60 bg-primary"
               style={{
-                backgroundColor: "#4cb08b",
                 color: "white",
                 borderRadius: "8px",
                 padding: "10px 20px",
