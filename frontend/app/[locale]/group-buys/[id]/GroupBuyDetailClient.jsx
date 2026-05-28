@@ -21,7 +21,7 @@ function Confetti() {
       x: Math.random() * canvas.width,
       y: -20,
       r: Math.random() * 6 + 3,
-      color: ["#2e6853", "#4cb08b", "#F5F0E8", "#fbbf24", "#f87171"][Math.floor(Math.random() * 5)],
+      color: ["#2e6853", "#2e6853", "#F5F0E8", "#fbbf24", "#f87171"][Math.floor(Math.random() * 5)],
       vx: (Math.random() - 0.5) * 3,
       vy: Math.random() * 3 + 2,
       angle: Math.random() * Math.PI * 2,

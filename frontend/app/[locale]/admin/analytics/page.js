@@ -53,7 +53,7 @@ export default function AdminAnalyticsPage() {
           </div>
           <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
             <path d={path("producers")} fill="none" stroke="#2e6853" strokeWidth="2" />
-            <path d={path("users")} fill="none" stroke="#4cb08b" strokeWidth="2" />
+            <path d={path("users")} fill="none" stroke="#2e6853" strokeWidth="2" />
             {months.map((m, i) => {
               const x = pad + i * stepX;
               return (

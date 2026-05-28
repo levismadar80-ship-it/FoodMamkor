@@ -9,7 +9,7 @@
  *   - Logo text: מהמקור, white, bottom-center
  *   - Producer name: Frank Ruhl Libre 52px white
  *   - City + category: DM Sans 24px #EAF3DE
- *   - Vanity URL: DM Sans 20px #4cb08b
+ *   - Vanity URL: DM Sans 20px #2e6853
  *   - CTA: "גלי עוד בתי עסק ב mehamakor.online"
  */
 
@@ -148,7 +148,7 @@ async function drawCard(canvas, producer, strings) {
   // Vanity URL
   const slug = producer.slug || "";
   if (slug) {
-    ctx.fillStyle = "#4cb08b";
+    ctx.fillStyle = "#2e6853";
     ctx.font = `500 24px "DM Sans", sans-serif`;
     ctx.fillText(`mehamakor.online/p/${slug}`, W / 2, nameY + 190);
   }
