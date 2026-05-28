@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-28 — MEH-717 availability #4cb08b → primary (GREEN)
+
+**Branch:** `feature/meh-717-availability-primary` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-717.
+
+**What:** eliminated all 5 hardcoded `#4cb08b` availability-signal usages → `primary` (#2e6853), per DESIGN.md "available today affordances = primary; no separate success green". 4 files: `ProducerCard.jsx` (:64/:68 dot color, :354 badge classes secondary→primary), `AvailabilityBadge.jsx:37` dot, `dashboard:248` swatch, `Footer.jsx:34` stale comment reworded. Fixes ProducerCard:354 WCAG AA failure (#4cb08b small text on near-white ~2.0:1 → #2e6853 passes). No new token (DESIGN-aligned). Build green. `grep #4cb08b frontend/` → only `tailwind.config.js:23` (secondary def, MEH-708).
+
+**Unblocks:** MEH-708 — the `secondary` token now has only the config def left (zero code consumers), so the final alias-drop can proceed (also gated on MEH-712 font-sans).
+
+**Next:** await PR CI + Sapir merge. After merge, MEH-708 (alias-drop) is the remaining MEH-686 Contract tail (blocked only on MEH-712 + MEH-686).
+
 ## 2026-05-27 — MEH-720 site-wide SEO/meta brand-LOCK fix (GREEN)
 
 **Branch:** `feature/meh-720-sitewide-seo-brand-lock-fix` (off staging, synced past #868 merge `14e2887`). **PR #TBD** (draft), base `staging`. Closes MEH-720.

@@ -245,7 +245,7 @@ export default function ProducerDashboardPage() {
         <div role="radiogroup" aria-label={t("availability.group_aria")} className="flex flex-wrap gap-2">
           {[
             { value: "accepting_orders", color: "#22c55e" },
-            { value: "available_today",  color: "#4cb08b" },
+            { value: "available_today",  color: "#2e6853" },
             { value: "full_this_week",   color: "#f97316" },
             { value: "on_vacation",      color: "#9ca3af" },
           ].map((opt) => {
