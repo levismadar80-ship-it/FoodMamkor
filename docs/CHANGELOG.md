@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-28 — /map geolocation PERMISSION_DENIED opens city-search fallback
+
+`feat`: on `/map`, geolocation **permission-denied** (`err.code === 1`) now opens
+the existing `LocationModal` (city-search fallback) instead of a dead-end toast, so
+a user who declines location isn't left staring at a country-wide map that looks
+empty. Technical failures (`POSITION_UNAVAILABLE`/`TIMEOUT`, codes 2/3) keep the
+existing toast. Two failure paths wired: Path B `handleGpsClick`
+(`frontend/app/[locale]/map/MapClient.jsx:107-121` → `setLocationModalOpen(true)`)
+and Path A imperative `goToMyLocation` (`frontend/components/MapComponent.jsx:218`
+now takes an `onPermissionDenied` callback, surfaced from the call site
+`MapClient.jsx:282`). No re-prompt (the modal doesn't re-call `getCurrentPosition`);
+no new i18n keys; selecting a city filters `/map` as before. **Scope reopener:**
+deliberately revisits MEH-592 §5.5 #7 ("/map stays as-is"). **Follow-up:** orphaned
+key `map.client.errors.permission_denied` (he/en `:871`) now unreferenced; the two
+GPS buttons / two failure paths remain a separate consolidation issue.
+
 ### 2026-05-28 — Eliminate #4cb08b: availability signal → primary (MEH-717, GREEN)
 
 `refactor(MEH-717)`: consolidated the 5 hardcoded `#4cb08b` availability-signal

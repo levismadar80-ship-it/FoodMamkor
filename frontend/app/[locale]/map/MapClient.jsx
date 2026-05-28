@@ -106,8 +106,14 @@ export default function MapPage() {
       },
       (err) => {
         setGpsLoading(false);
+        // PERMISSION_DENIED → open the city-search fallback instead of a toast,
+        // so a denied user isn't left staring at an empty-looking map. Technical
+        // failures (position unavailable / timeout) keep the toast.
+        if (err.code === 1) {
+          setLocationModalOpen(true);
+          return;
+        }
         const msgs = {
-          1: t("map.client.errors.permission_denied"),
           2: t("map.client.errors.position_unavailable"),
           3: t("map.client.errors.timeout"),
         };
@@ -273,7 +279,7 @@ export default function MapPage() {
             <div className="flex-1">
               <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
             </div>
-            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation()} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
+            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation(() => setLocationModalOpen(true))} className="cursor-pointer shrink-0 w-10 h-10 rounded-[10px] border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
               <Crosshair size={18} weight="duotone" className="text-primary" />
             </button>
           </div>
