@@ -31,7 +31,7 @@ import { BRAND_NAME } from "@/lib/constants";
  *
  * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
  * consolidated the brand palette to a single green and retired the prior
- * `secondary` #4cb08b (whose white-on-#4cb08b was ~2.2:1, failing WCAG AA);
+ * sage `secondary` accent (whose white-on-sage was ~2.2:1, failing WCAG AA);
  * white-on-#2e6853 passes AA — the drop-in this header already anticipated.
  */
 export default function Footer() {

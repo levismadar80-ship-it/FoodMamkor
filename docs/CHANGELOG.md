@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-28 — Eliminate #4cb08b: availability signal → primary (MEH-717, GREEN)
+
+`refactor(MEH-717)`: consolidated the 5 hardcoded `#4cb08b` availability-signal
+usages onto the existing `primary` token (#2e6853), eliminating `#4cb08b` from
+the codebase (only the `secondary` token def in `tailwind.config.js:23` remains,
+owned by MEH-708). Per DESIGN.md §Color (lines 148-150): "available today"
+affordances + the `success` role both map to `primary`; no separate success
+green. Sites: `ProducerCard.jsx:64,68` `availabilityDotColor()` return →
+#2e6853; `ProducerCard.jsx:354` badge `bg-secondary/10`+`border-secondary/30`+
+`text-secondary` → `bg-primary/10`+`border-primary/30`+`text-primary` (also
+**fixes a WCAG AA failure** — #4cb08b small text on near-white tint was ~2.0:1;
+#2e6853 passes); `AvailabilityBadge.jsx:37` dot color → #2e6853;
+`dashboard:248` radio swatch → #2e6853; `Footer.jsx:34` stale #4cb08b comment
+reworded. **Unblocks MEH-708** to drop the `secondary` token. No new token added
+(per DESIGN.md). Build green. Refs MEH-686.
+
 ### 2026-05-27 — Brand LOCK fix — site-wide SEO/meta copy (MEH-720, GREEN)
 
 `fix(MEH-720)`: follow-up to MEH-718 — removed competitor-confusion brand-LOCK
