@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-28 — /map geo PERMISSION_DENIED → city-search fallback (no MEH#)
+
+**Branch:** `feature/map-geo-denied-modal` (off staging, fresh `origin/staging` 4ef977e). **PR #TBD** (draft), base `staging`. No Linear issue yet — descriptive slug per Smadar's session call; PR body omits `Closes`.
+
+**What:** on `/map`, geolocation **permission-denied** (`err.code === 1`) now opens the existing `LocationModal` (city-search fallback) instead of a dead-end toast (a denied user otherwise sees a country-wide map that reads as empty). Technical failures (codes 2/3) keep the toast. 2 files / 3 edits, both central components:
+- Path B `handleGpsClick` (`MapClient.jsx:107-121`) — `if (err.code===1){setLocationModalOpen(true);return;}` before the toast; `1:` key dropped from `msgs`.
+- Path A imperative `goToMyLocation` (`MapComponent.jsx:218`) — now takes `onPermissionDenied`; failure cb branches `err?.code===1 → onPermissionDenied?.()` else `geo_failure` toast.
+- Call site `MapClient.jsx:282` — passes `() => setLocationModalOpen(true)`.
+
+**Verify:** `npm run build` green; vitest `ModalFocusReturn` (LocationModal) 5/5 green; `/adversarial-review` → 0 blocking. pytest NOT run (frontend-only + backend env not provisioned in container). E2E/preview mobile QA deferred to Smadar (CC sandbox limitation).
+
+**Scope reopener:** deliberately revisits **MEH-592 §5.5 #7** ("/map stays as-is") — Smadar-approved decision, not drift.
+
+**Follow-ups (not done, by design — 2-file scope):** (1) orphaned i18n key `map.client.errors.permission_denied` (he/en `:871`) now unreferenced; (2) the two GPS buttons / two failure paths remain a candidate consolidation issue; (3) inline GPS button still returns silently when `navigator.geolocation` absent (Path B shows `no_gps` toast) — pre-existing asymmetry.
+
+**Next:** await draft-PR CI + Sapir mobile QA (deny→modal, timeout→toast on 375px) → mark ready + merge.
+
 ## 2026-05-28 — MEH-717 availability #4cb08b → primary (GREEN)
 
 **Branch:** `feature/meh-717-availability-primary` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-717.
