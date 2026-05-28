@@ -329,7 +329,7 @@ export default function RegisterClient() {
         </p>
         <p className="text-center text-sm text-fg-muted mt-2">
           {t("auth.register.consumer.cta_producer")}{" "}
-          <Link href="/register/producer" className="text-secondary hover:underline">
+          <Link href="/register/producer" className="text-primary hover:underline">
             {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>
