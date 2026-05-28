@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-27 — MEH-703 secondary → primary consolidation DONE (🟡 YELLOW, MEH-686 Contract)
+
+**Branches/PRs (all merged to staging):** #866 (Chunk 1), #867 (1.5), #869 (2+3), #870 (4), #871 (5), #872 (6), + Chunk 7 close PR (this).
+
+**What:** consolidated brand `secondary` (#4cb08b) → `primary` (#2e6853) across all button/text/badge surfaces, the `/upgrade` premium page, and 4 hardcoded `#4cb08b` literals; dropped `secondary-light` (#6dc4a3) token (zero consumers). 7 chunks; HIGH-RISK chunked review with WAIT gates at Chunks 4 + 6. `hover:bg-secondary-light` → `hover:bg-primary-dark` (MEH-705 deepen-on-hover). Build+lint green each chunk.
+
+**`secondary` token RETAINED (deliberate):** `ProducerCard.jsx:354` className (`bg-secondary/10 border-secondary/30 text-secondary`) + semantic `available_today` accent (`AvailabilityBadge.jsx:37`, `ProducerCard.jsx:64,68`, `dashboard:248`) still reference it → all deferred to **MEH-717**. Dropping the token would unstyle the availability badge (surfaced + Sapir-decided at Chunk 6 WAIT gate: "drop only secondary-light").
+
+**Consequence:** **MEH-708** (final alias-drop) blocked-on changed **MEH-703 → MEH-717** (secondary token can't drop until MEH-717 migrates :354 + semantic accent). MEH-708 Linear description updated.
+
+**Premium-page note (Chunk 4):** Free + Premium plan prices now both `text-primary`; premium differentiation rests on `border-2` + "recommended" badge. Gold #8B6914 accent reroute left open if positioning reads weak — Sapir to flag on `/upgrade` preview.
+
+**Next:** await Chunk 7 close PR CI + Sapir merge. MEH-703 → Done. MEH-717 (semantic availability accent + ProducerCard:354) now carries remaining secondary work + blocks MEH-708.
+
 ## 2026-05-27 — MEH-718 /about meta brand-LOCK fix (GREEN)
 
 **Branch:** `feature/meh-718-about-meta-brand-lock-fix` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-718.
@@ -35,10 +49,10 @@
 - #861 — MEH-705 hover primary-light→primary-dark (47 occ, 31 files, YELLOW)
 - #862 — MEH-700 font-headline structural split (167 occ, 77 files, YELLOW)
 
-**Contract phase remaining (MEH-686):**
-- MEH-703 — secondary migration (decision-needed: secondary→primary vs keep)
+**Contract phase remaining (MEH-686):** _(updated 27/5 — MEH-703 done)_
+- ~~MEH-703 — secondary migration~~ ✅ DONE 27/5 (secondary→primary; secondary-light dropped; secondary token retained pending MEH-717 — see 27/5 entry above).
 - MEH-701 — font-body split (Wave 1C, deferred)
-- MEH-708 — final alias-drop. Now able to clear: site-text, site-muted, light, text-secondary, text-primary, primary-light, headline family. Still blocking: secondary, secondary-light, body, sans, english, rounded DEFAULT
+- MEH-708 — final alias-drop. Cleared: site-text, site-muted, light, text-secondary, text-primary, primary-light, headline family, secondary-light. Still blocking: secondary (now via **MEH-717**), body, sans, english, rounded DEFAULT
 - MEH-713 — green-50 audit (Low, retrospective on #859)
 
 **Key learnings this session:**
@@ -48,7 +62,7 @@
 - GitHub Actions outage cascade (budget→auth) survived; diagnosis order: Billing banner first, then incident hub, then status page.
 
 **Open items for next session:**
-- None blocking. MEH-703 needs Sapir designer decision before unblocking.
+- None blocking. MEH-703 done (27/5); MEH-717 (semantic availability accent) now carries remaining secondary work + blocks MEH-708.
 
 ## 2026-05-26 — MEH-700 font-headline structural split (🟡 YELLOW)
 
