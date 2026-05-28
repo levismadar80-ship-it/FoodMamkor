@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-27 — Brand LOCK fix — site-wide SEO/meta copy (MEH-720, GREEN)
+
+`fix(MEH-720)`: follow-up to MEH-718 — removed competitor-confusion brand-LOCK
+terms ("אוכל אמיתי", the "האמיתי" inflection, and "דירקטורי" anti-pattern) from
+**all SEO/meta surfaces**, verbatim per Sapir. Touched: `frontend/app/[locale]/layout.js`
+(SITE_TITLE / SITE_DESCRIPTION constants + BASE_METADATA keywords),
+`frontend/messages/he.json` `seo.site.*` / `seo.home` / `seo.map` / `seo.register`
+/ `seo.login` / `seo.search`, and `frontend/public/manifest.json` (name +
+description). The dual site-title owners (`layout.js` constants and per-locale
+`generateMetadata` reading `seo.site.*`) were reconciled together. **Acceptance:**
+`grep "אוכל אמיתי\|האמיתי\|דירקטורי"` → 0 across seo.*, layout.js, manifest.json;
+build green. **Out of scope (untouched):** body/narrative brand voice (he.json
+370/2008/2018/2634/302/1450) and 5 "דירקטורי" occurrences in legal/terms/privacy
++ WhatsApp template (2531/2669/2784/2798/1452) — deliberate legal/operational
+language, separate review if ever needed. Footer producer-CTA → MEH-721.
+
 ### 2026-05-27 — Brand-token consolidation: secondary → primary (MEH-703 Contract, YELLOW)
 
 `refactor(MEH-703)`: Contract-phase consolidation of the brand `secondary`

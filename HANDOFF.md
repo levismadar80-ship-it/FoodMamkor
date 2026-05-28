@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-27 — MEH-720 site-wide SEO/meta brand-LOCK fix (GREEN)
+
+**Branch:** `feature/meh-720-sitewide-seo-brand-lock-fix` (off staging, synced past #868 merge `14e2887`). **PR #TBD** (draft), base `staging`. Closes MEH-720.
+
+**What:** removed "אוכל אמיתי" + "האמיתי" inflection + "דירקטורי" anti-pattern from **all SEO/meta surfaces** (verbatim NEW from Sapir, applied across 3 string batches). Files: `layout.js` (SITE_TITLE/SITE_DESCRIPTION constants + BASE_METADATA keywords), `he.json` `seo.site.*`/`seo.home`/`seo.map`/`seo.register`/`seo.login`/`seo.search`, `manifest.json` name+description. Dual site-title owners (layout.js constants + per-locale `generateMetadata`→`seo.site.*`) reconciled together.
+
+**Acceptance (all met):** `grep "אוכל אמיתי\|האמיתי\|דירקטורי"` → 0 in seo.*, layout.js, manifest.json; he.json + manifest JSON-valid; build green.
+
+**Out of scope (untouched — verified via diff):** brand-voice body copy (he.json 370/2008/2018/2634/302/1450); 5 "דירקטורי" in legal/terms/privacy + WhatsApp template (2531/2669/2784/2798/1452) — deliberate legal/operational language (Sapir: separate legal review if ever wanted; may open MEH-722 herself, NOT auto-created). Footer producer-CTA → MEH-721 (strategic, parked).
+
+**Next:** await PR CI + Sapir mobile QA (view-source meta on a few routes) + merge.
+
 ## 2026-05-27 — MEH-703 secondary → primary consolidation DONE (🟡 YELLOW, MEH-686 Contract)
 
 **Branches/PRs (all merged to staging):** #866 (Chunk 1), #867 (1.5), #869 (2+3), #870 (4), #871 (5), #872 (6), + Chunk 7 close PR (this).
@@ -19,7 +31,7 @@
 
 **Next:** await Chunk 7 close PR CI + Sapir merge. MEH-703 → Done. MEH-717 (semantic availability accent + ProducerCard:354) now carries remaining secondary work + blocks MEH-708.
 
-## 2026-05-27 — MEH-718 /about meta brand-LOCK fix (GREEN)
+## 2026-05-27 — MEH-718 /about meta brand-LOCK fix (GREEN) — MERGED #868 (14e2887)
 
 **Branch:** `feature/meh-718-about-meta-brand-lock-fix` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-718.
 
