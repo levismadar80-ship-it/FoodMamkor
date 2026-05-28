@@ -20,6 +20,39 @@ build green. **Out of scope (untouched):** body/narrative brand voice (he.json
 + WhatsApp template (2531/2669/2784/2798/1452) — deliberate legal/operational
 language, separate review if ever needed. Footer producer-CTA → MEH-721.
 
+### 2026-05-27 — Brand-token consolidation: secondary → primary (MEH-703 Contract, YELLOW)
+
+`refactor(MEH-703)`: Contract-phase consolidation of the brand `secondary`
+(#4cb08b) accent into the single brand green `primary` (#2e6853), per DESIGN.md
+"single brand green, no second brand color; greens deepen on interaction".
+Executed as **7 chunks across 8 PRs** (#866, #867, #869, #870, #871, #872 +
+this close):
+
+- **Chunk 1 / 1.5** (#866/#867) — Footer CTA: inline `#4cb08b` +
+  `rgba(76,176,139,…)` → `bg-primary` / `bg-primary/15` / `border-primary/30`.
+- **Chunk 2** (#869) — 6 button surfaces `bg-secondary` → `bg-primary`; 2 hover
+  pairs `hover:bg-secondary-light` → `hover:bg-primary-dark` (MEH-705).
+- **Chunk 3** (#869) — 3× `text-secondary` → `text-primary` (Header,
+  RegisterClient, dashboard) + 4 non-button `bg-secondary` → `bg-primary`
+  (BadgeRow, FridayDeliveryStrip, HomeProductCard, analytics legend).
+- **Chunk 4** (#870) — `/upgrade` premium page: border / badge / price / CTA
+  (incl. `hover:bg-primary-dark`, `ring-primary/40`). Both plan prices now share
+  `text-primary`; premium differentiation rests on `border-2` + "recommended"
+  badge (gold #8B6914 accent reroute left open).
+- **Chunk 5** (#871) — 4 hardcoded `#4cb08b` → `#2e6853` / `text-primary`
+  (StoryCardCanvas canvas fill, AdminProducersTable arbitrary class, analytics
+  SVG stroke, group-buys confetti).
+- **Chunk 6** (#872) — dropped `secondary-light` (#6dc4a3) token from
+  `tailwind.config.js` (zero consumers).
+
+**`secondary` (#4cb08b) token RETAINED** — `ProducerCard.jsx:354` className +
+the semantic `available_today` accent (AvailabilityBadge / ProducerCard:64,68 /
+dashboard:248) still use it; both deferred to **MEH-717**. Dropping the token
+now would leave that availability badge unstyled (surfaced + decided at the
+Chunk 6 WAIT gate). Consequently **MEH-708** (final alias-drop) is now blocked
+on **MEH-717**, not MEH-703. 🟡 YELLOW, mobile-QA reviewed per chunk. Build +
+lint green each chunk. Refs MEH-686.
+
 ### 2026-05-27 — Brand LOCK fix — /about meta copy (MEH-718, GREEN)
 
 `fix(MEH-718)`: replaced the one **about-specific** "אוכל אמיתי" string —
