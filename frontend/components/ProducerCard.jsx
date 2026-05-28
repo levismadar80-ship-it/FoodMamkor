@@ -61,11 +61,11 @@ function availabilityDotColor(producer) {
   const state = producer.availability_state;
   if (state === "on_vacation") return "#EF9F27"; // accent-warm
   if (state === "full_this_week") return "#f97316"; // orange
-  if (state === "available_today") return "#4cb08b"; // secondary (green)
+  if (state === "available_today") return "#2e6853"; // primary (MEH-717: available-today affordance = brand green per DESIGN.md)
   if (state === "accepting_orders") return null;
   // Fallback during overlap if availability_state is missing on a stale row.
   if (producer.availability_status === "vacation") return "#EF9F27";
-  if (producer.is_available_today) return "#4cb08b";
+  if (producer.is_available_today) return "#2e6853";
   return null;
 }
 
@@ -351,7 +351,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             </span>
           )}
           {fridayMode && producer.is_available_today && (
-            <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
+            <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
               {t("producer.card.badges.available_today")}
             </span>
           )}

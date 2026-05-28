@@ -34,7 +34,7 @@ const STATUS_CONFIG = {
   vacation:         { color: "#9ca3af", labelKey: "status_label.on_vacation" },
   // MEH-291 — new 4-state availability_state with emojis on card label
   accepting_orders: { color: "#22c55e", labelKey: "card_label.open_orders" },
-  available_today:  { color: "#4cb08b", labelKey: "card_label.available_today" },
+  available_today:  { color: "#2e6853", labelKey: "card_label.available_today" },
   full_this_week:   { color: "#f97316", labelKey: "card_label.busy_week" },
   on_vacation:      { color: "#9ca3af", labelKey: "card_label.on_vacation" },
 };
