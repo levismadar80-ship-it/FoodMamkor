@@ -298,7 +298,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               <div key={review.id} className="bg-background py-6">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-body font-semibold text-[15px] text-text leading-snug">
+                    <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (

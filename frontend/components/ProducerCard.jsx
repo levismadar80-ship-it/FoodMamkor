@@ -366,7 +366,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (
-            <span className="font-body font-semibold text-accent text-sm truncate max-w-[120px]">
+            <span className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]">
               {priceLabel}
             </span>
           ) : (

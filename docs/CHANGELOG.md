@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-05-28 — Structural split: font-body → font-body-md (MEH-701 Contract, GREEN)
+
+`refactor(MEH-701)`: bare `font-body` → `font-body-md` across **21 occurrences /
+13 files**. **Value-identical / zero visual change** — empirically verified the
+compiled CSS emits `.font-body-md{font-family:DM Sans,Heebo,sans-serif}`,
+identical to legacy `font-body` (`fontFamily.body-{sm,md,lg}` are family-only;
+`font-size` lives on the separate `fontSize.body-*` consumed by `text-body-*`,
+which this migration never writes — size stays on the untouched `text-*`
+declarations). Mirrors the MEH-700 headline split. No per-occurrence size
+mapping: `font-*` carries family only, so all 21 → `font-body-md` (the canonical
+16px-default family alias) regardless of adjacent `text-*` size; the root
+`<body>` (layout.js:196) → `font-body-md` too. No `tailwind.config.js`/
+`tokens.json`/DESIGN.md edit (legacy `font-body` alias drops in MEH-708).
+**Unblocks MEH-708** — `font-body` was its last per-component dependency. Build
+green. Refs MEH-686.
+
 ### 2026-05-28 — Eliminate #4cb08b: availability signal → primary (MEH-717, GREEN)
 
 `refactor(MEH-717)`: consolidated the 5 hardcoded `#4cb08b` availability-signal

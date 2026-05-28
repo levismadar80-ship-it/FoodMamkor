@@ -44,7 +44,7 @@ export function HomeMarquee() {
             {MARQUEE_KEYS.map((key) => (
               <span
                 key={`${loop}-${key}`}
-                className="font-body whitespace-nowrap text-green-50"
+                className="font-body-md whitespace-nowrap text-green-50"
                 style={{
                   fontSize: 14,
                   letterSpacing: "0.06em",
@@ -80,7 +80,7 @@ export function HomeFounderQuote() {
           <p className="font-headline-md italic text-text text-lg md:text-xl leading-relaxed mb-2">
             &ldquo;{t("home.founder_quote.text")}&rdquo;
           </p>
-          <p className="font-body text-sm text-primary group-hover:underline">
+          <p className="font-body-md text-sm text-primary group-hover:underline">
             {t("home.founder_quote.attribution")}
           </p>
         </div>
