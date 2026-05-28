@@ -20,8 +20,7 @@ module.exports = {
         primary: "#2e6853",        // ירוק כהה — כפתורים, לוגו
         "primary-light": "#3a7d64",
         "primary-dark": "#2E4A2E", // hero overlays, footer
-        secondary: "#4cb08b",       // ירוק בינוני — הדגשות
-        "secondary-light": "#6dc4a3",
+        secondary: "#4cb08b",       // MEH-703: retained pending MEH-717 (ProducerCard:354 className + semantic available_today). The lighter variant was removed here.
         background: "#F5F0E8",      // קרם חם — לא לבן
         accent: "#8B6914",          // זהב חם — מחירים, הדגשות
         light: "#EAF3DE",           // ירוק בהיר — badges
