@@ -142,7 +142,7 @@ function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus
       {p.status === "approved" && p.slug && (
         <button
           onClick={() => onToggleStoryCard(p.id)}
-          className="text-[#4cb08b] hover:underline text-xs"
+          className="text-primary hover:underline text-xs"
           title={t("producers.table.actions.story_card_title")}
         >
           {t("producers.table.actions.story_card")}
