@@ -4,6 +4,39 @@
 
 ## Unreleased
 
+### 2026-05-29 — Legacy token alias-drop + border canonicalization (MEH-708 Contract, GREEN — closes MEH-686 Step 18)
+
+`refactor(MEH-708)`: removed the legacy token block from
+`frontend/tailwind.config.js` now that every Contract child migrated its
+consumers. **12 legacy tokens dropped** (each gated by a grep-zero proof),
+plus the `border` value canonicalized:
+
+- **Chunk 1 (11 tokens, grep-zero verified):** colors `primary-light`,
+  `secondary`, `light`, `site-text`, `site-muted`, `text-primary` (#1C1A17),
+  `text-secondary` (#6B6B6B); `borderRadius.DEFAULT` (bare `rounded`);
+  fontFamily `headline`, `body`, `sans`. (`secondary-light` already removed
+  by MEH-703 #872.)
+- **Chunk 2 (border flip):** `border` token `#e8e0d0` → canonical `#e5dfd3`
+  (matches `tailwind.tokens.json` + DESIGN.md), drift TODO removed.
+  MEH-724 had already migrated the 5 `border-[#e8e0d0]` literals to
+  `border-border`, so the flip propagated `#e5dfd3` to Header /
+  WhatsAppShareButton automatically.
+- **Chunk 3 (english):** `english` font alias dropped. Shape-check
+  corrected an orchestrator claim — `english` is **absent** from both
+  `tailwind.tokens.json` and DESIGN.md; DESIGN.md:206 explicitly states
+  Cormorant Garamond is **"not tokenized."** The 2 consumers
+  (`HomeStaticBlocks.jsx:201`, `MapProducerCard.jsx:88`) keep working via
+  `globals.css:37` `.font-english` (value-identical), which is now the
+  **single owner** — collapsing the MEH-271 two-owner smell. No component
+  edits.
+
+Config-only across all three chunks. Build green each chunk. The 5
+remaining explicit color entries (`primary`, `primary-dark`, `background`,
+`accent`, `border`) are now **value-identical redundant duplicates** of the
+canonical `...tokens.theme.extend.colors` spread — out of MEH-708 scope, a
+possible trivial follow-up cleanup. Out-of-scope deferrals unchanged: 5
+icon-fill `#e8e0d0` literals → MEH-725. Refs MEH-686. Closes MEH-708.
+
 ### 2026-05-28 — Border literals → token: `border-[#e8e0d0]` → `border-border` (MEH-724, GREEN)
 
 `refactor(MEH-724)`: replaced **5 hardcoded `border-[#e8e0d0]` literals** with the
