@@ -451,7 +451,7 @@ function ScriptModal({ onClose }) {
           <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
-        <pre className="whitespace-pre-wrap text-sm text-text font-body leading-relaxed">
+        <pre className="whitespace-pre-wrap text-sm text-text font-body-md leading-relaxed">
           {t("outreach.call_script")}
         </pre>
         <button

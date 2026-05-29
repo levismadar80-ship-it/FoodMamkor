@@ -210,7 +210,7 @@ export default function ChatWidget() {
         aria-expanded={open}
       >
         {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
-        {showPillText && !open && <span className="font-body text-sm">שאלה? שאלי אותי</span>}
+        {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלי אותי</span>}
       </button>
 
       {/* ── Chat panel ── */}

@@ -193,7 +193,7 @@ export default async function LocaleLayout({ children, params }) {
           rel="stylesheet"
         />
       </head>
-      <body className="font-body bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
+      <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
         {/* rtl-ok: focus position for accessibility */}
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}

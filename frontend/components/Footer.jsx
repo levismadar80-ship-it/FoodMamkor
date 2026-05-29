@@ -132,7 +132,7 @@ export default function Footer() {
               style={{ color: "#c8dcc8" }}
             >
               <InstagramLogo size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-body">@meha_makor</span>
+              <span className="font-body-md">@meha_makor</span>
             </a>
           </div>
 

@@ -91,7 +91,7 @@ export default function AboutPage() {
             </div>
             <div className="order-2 text-right">
               <div
-                className="text-text/85 font-body text-lg space-y-5"
+                className="text-text/85 font-body-md text-lg space-y-5"
                 style={{ lineHeight: "1.8" }}
               >
                 <p className="font-headline-md font-bold text-text text-2xl">{t("story.greeting")}</p>
@@ -131,19 +131,19 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
               <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
-              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.local.body")}
               </p>
             </div>
             <div className="text-center">
               <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.trust.title")}</h3>
-              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.trust.body")}
               </p>
             </div>
             <div className="text-center">
               <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.community.title")}</h3>
-              <p className="text-green-50/90 leading-relaxed font-body whitespace-pre-line">
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.community.body")}
               </p>
             </div>
@@ -254,7 +254,7 @@ export default function AboutPage() {
       <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="font-headline-lg text-4xl font-bold text-text mb-3">{t("contact.heading")}</h2>
-          <p className="text-fg-muted font-body text-base mb-10">
+          <p className="text-fg-muted font-body-md text-base mb-10">
             {t("contact.subtitle")}
           </p>
 

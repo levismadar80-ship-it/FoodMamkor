@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-28 — MEH-701 font-body → font-body-md split (GREEN, value-identical)
+
+**Branch:** `feature/meh-701-migrate-font-body` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-701.
+
+**What:** bare `font-body` → `font-body-md`, **21 occ / 13 files**. Value-identical family rename — shape-check confirmed `font-body-*` are family-only (size lives on separate `text-body-*`), so no per-occurrence mapping; all → `font-body-md`. Empirically verified compiled CSS: `.font-body-md{font-family:DM Sans,Heebo,sans-serif}` (identical to legacy). Root `<body>` (layout.js:196) → font-body-md too. Mirrors MEH-700. No config/tokens/DESIGN edit (legacy alias drops in MEH-708). Build green; diff = pure swap (21 del / 21 add, zero other lines).
+
+**Unblocks MEH-708** — `font-body` was its last per-component blocker. Per the 28/5 children-status check, MEH-708 (final alias-drop, RED, config-only) was blocked-by MEH-701 only. After this merges, MEH-708 is execution-ready **pending** verification of the remaining Contract children (702/704/705/706/707/709/710 — not yet status-checked) and adoption of canonical `border` #e5dfd3.
+
+**Next:** await PR CI + Sapir mobile QA (body text across home/about/explore/neighbor) + merge. Then MEH-708 readiness check.
+
 ## 2026-05-28 — /map geo PERMISSION_DENIED → city-search fallback (no MEH#)
 
 **Branch:** `feature/map-geo-denied-modal` (off staging, fresh `origin/staging` 4ef977e). **PR #TBD** (draft), base `staging`. No Linear issue yet — descriptive slug per Smadar's session call; PR body omits `Closes`.

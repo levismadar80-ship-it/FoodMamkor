@@ -54,7 +54,7 @@ export default function ParallaxQuote({
             &ldquo;{quote}&rdquo;
           </blockquote>
           {attribution && (
-            <p className="mt-4 text-white/75 font-body" style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}>
+            <p className="mt-4 text-white/75 font-body-md" style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}>
               {attribution}
             </p>
           )}

@@ -122,7 +122,7 @@ export default function NeighborClient() {
             מהמטבח של השכן
             <House size={44} weight="duotone" className="text-green-50" aria-hidden="true" />
           </h1>
-          <p className="font-body text-green-50/90 text-lg max-w-xl mx-auto">
+          <p className="font-body-md text-green-50/90 text-lg max-w-xl mx-auto">
             מוצרים ביתיים מהשכנות שלך — ישירות מהמטבח
           </p>
         </div>
