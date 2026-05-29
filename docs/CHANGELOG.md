@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-05-28 — Border literals → token: `border-[#e8e0d0]` → `border-border` (MEH-724, GREEN)
+
+`refactor(MEH-724)`: replaced **5 hardcoded `border-[#e8e0d0]` literals** with the
+`border-border` token utility across 2 files — `Header.jsx:165,166` (sticky/top
+`border-b`), `Header.jsx:294` (mobile-menu `border-t` divider), `Header.jsx:488`
+(dropdown panel `border`), `WhatsAppShareButton.jsx:29` (share-button outline).
+Directional sides (`border-b`/`border-t`/`border`) preserved — only the color
+literal swapped. **Value-identical today** (the `border` token in
+`tailwind.config.js:31` is still `#e8e0d0`); the point is that **MEH-708's**
+`border` token swap (`#e8e0d0` → canonical `#e5dfd3`) will now propagate to these
+5 sites automatically instead of leaving drift. Pre-req for MEH-708. Build green.
+Refs MEH-686.
+
 ### 2026-05-28 — Structural split: font-body → font-body-md (MEH-701 Contract, GREEN)
 
 `refactor(MEH-701)`: bare `font-body` → `font-body-md` across **21 occurrences /

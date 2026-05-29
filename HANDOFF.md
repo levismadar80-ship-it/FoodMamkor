@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-28 — MEH-724 border literals → border-border token (GREEN)
+
+**Branch:** `feature/meh-724-border-literals-to-token` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-724.
+
+**What:** 5 hardcoded `border-[#e8e0d0]` → `border-border` across 2 files — Header.jsx:165/166/294/488 + WhatsAppShareButton.jsx:29. Directional sides (`border-b`/`border-t`/`border`) preserved; only color literal swapped. Value-identical today (`border` token still `#e8e0d0`); converts these sites to token-driven so **MEH-708**'s `border` value swap (`#e8e0d0`→`#e5dfd3`) propagates automatically. `grep border-[#e8e0d0] frontend/` → 0. Build green; diff = pure swap, 2 files.
+
+**Scope correction (Skeptic-mode):** my MEH-708 Phase 0 grep was `| head`-truncated and undercounted Header's border literals at 2; actual = 4 (165/166/294/488). MEH-724 spec inherited the undercount (3 sites); Phase 0 re-grep caught it, STOPped, Sapir confirmed Option 1 (all 5). Lesson reinforced: never `| head` a count grep that feeds a scope.
+
+**Pre-req for MEH-708.** Remaining `#e8e0d0` literals are the 5 icon-fill sites (Skeleton:77/79/95, StarSelector:29, ReviewsSection:27/54) — **NOT borders** (skeleton shimmer + empty-star tint), out of MEH-708 scope → MEH-725 if ever tokenized.
+
+**Next:** await PR CI + Sapir merge. Then MEH-708 (config `border` #e8e0d0→#e5dfd3 + final alias-drop) is execution-ready pending the remaining-children status check (702/704/705/706/707/709/710).
+
 ## 2026-05-28 — MEH-701 font-body → font-body-md split (GREEN, value-identical)
 
 **Branch:** `feature/meh-701-migrate-font-body` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-701.
