@@ -21,7 +21,7 @@ module.exports = {
         "primary-dark": "#2E4A2E", // hero overlays, footer
         background: "#F5F0E8",      // קרם חם — לא לבן
         accent: "#8B6914",          // זהב חם — מחירים, הדגשות
-        border: "#e8e0d0",          // TODO (MEH-686 Contract): drift to #e5dfd3 per DESIGN.md — deferred to MEH-708 Chunk 2
+        border: "#e5dfd3",          // canonical (matches tailwind.tokens.json; MEH-708 Chunk 2 flip)
       },
       borderRadius: {
         ...tokens.theme.extend.borderRadius,
