@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-29 — MEH-708 legacy alias-drop + border canonicalization (GREEN — MEH-686 Step 18 Contract COMPLETE)
+
+**Branch:** `feature/meh-708-alias-drop` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-708; final Contract child of MEH-686 Step 18.
+
+**What (config-only, 3 RED-tier chunks, each grep-gated + build-verified):**
+- **Chunk 1** (`10b21a1`): dropped 11 grep-zero legacy tokens from `tailwind.config.js` — colors `primary-light`/`secondary`/`light`/`site-text`/`site-muted`/`text-primary`/`text-secondary`, `borderRadius.DEFAULT` (bare `rounded`), fontFamily `headline`/`body`/`sans`. `secondary-light` already gone (MEH-703 #872).
+- **Chunk 2** (`ee0bb90`): `border` token `#e8e0d0`→`#e5dfd3` (canonical), drift TODO removed. Propagates to MEH-724's 5 migrated `border-border` sites automatically.
+- **Chunk 3** (this commit): dropped `english` font alias.
+
+**Skeptic-mode / orchestrator-correction (Chunk 1 + shape-check):**
+- Chunk 1 grep gate caught `english` with 3 live refs → STOPped, did not drop (Sapir Option 1).
+- Pre-Chunk-3 shape-check **corrected the orchestrator's claim** that DESIGN.md lists `english` as a legitimate token. File evidence: `english` ABSENT from `tailwind.tokens.json` AND DESIGN.md; **DESIGN.md:206** explicitly says Cormorant Garamond is "not tokenized." The token shape came from `docs/archive/TASKS.md:28` (stale archive). Verdict LEGACY-MIGRATE → dropped in Chunk 3. `globals.css:37` `.font-english` (value-identical) is now sole owner → MEH-271 two-owner smell collapsed, no follow-up needed.
+
+**End state:** `theme.extend` legacy block fully removed. 5 explicit color entries remain (`primary`/`primary-dark`/`background`/`accent`/`border`) but are now **value-identical redundant duplicates** of the canonical `...tokens.theme.extend.colors` spread — out of MEH-708 scope; trivial follow-up cleanup candidate. No component edits anywhere; 2 `font-english` consumers untouched.
+
+**Deferred (unchanged):** 5 icon-fill `#e8e0d0` literals (Skeleton/StarSelector/ReviewsSection) → MEH-725.
+
+**Next:** await PR CI + Sapir mobile QA (RED-tier, draft) → mark ready → merge. `Closes MEH-708` then cascades the MEH-686 Step 18 Contract phase to done.
+
 ## 2026-05-28 — MEH-724 border literals → border-border token (GREEN)
 
 **Branch:** `feature/meh-724-border-literals-to-token` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-724.

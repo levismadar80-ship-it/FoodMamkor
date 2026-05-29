@@ -28,9 +28,6 @@ module.exports = {
       },
       fontFamily: {
         ...tokens.theme.extend.fontFamily,
-        // ── Legacy family alias — `english` retained: still consumed by
-        //    HomeStaticBlocks.jsx:201 + MapProducerCard.jsx:88 (MEH-708 Chunk 1 grep gate). ──
-        english: ['"Cormorant Garamond"', "serif"],
       },
     },
   },
