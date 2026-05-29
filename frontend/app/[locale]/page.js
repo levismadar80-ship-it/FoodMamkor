@@ -89,14 +89,14 @@ export default function HomePage() {
           ========================= */}
       {!statsLoaded && (
         <section className="bg-primary text-white py-4 text-center" aria-busy="true">
-          <p className="font-body text-lg tracking-wide opacity-60">
+          <p className="font-body-md text-lg tracking-wide opacity-60">
             <span className="inline-block w-48 h-5 align-middle rounded-lg bg-white/20 animate-pulse" />
           </p>
         </section>
       )}
       {showStatsCounter && (
         <section className="bg-primary text-white py-4 text-center">
-          <p className="font-body text-lg tracking-wide">
+          <p className="font-body-md text-lg tracking-wide">
             {t("home.stats.issue_prefix", { month: monthName })}{" "}
             <span className="font-semibold tabular-nums">
               <AnimatedCounter target={statsProducersCount} />
@@ -114,7 +114,7 @@ export default function HomePage() {
       )}
       {showStatsFallback && (
         <section className="bg-primary text-white py-4 text-center">
-          <p className="font-body text-lg tracking-wide">{t("home.stats.fallback")}</p>
+          <p className="font-body-md text-lg tracking-wide">{t("home.stats.fallback")}</p>
         </section>
       )}
 
