@@ -162,8 +162,8 @@ export default function Header() {
         transparent
           ? "bg-transparent"
           : scrolled
-            ? "bg-background/95 backdrop-blur-md border-b border-[#e8e0d0] shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
-            : "bg-background border-b border-[#e8e0d0]",
+            ? "bg-background/95 backdrop-blur-md border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+            : "bg-background border-b border-border",
       ].join(" ")}
     >
       {/* Local darkening gradient — only when transparent. Lives INSIDE
@@ -291,7 +291,7 @@ export default function Header() {
           Drawer always uses the cream background regardless of transparent
           state, so links read correctly when expanded over the hero. */}
       {menuOpen && (
-        <div className="md:hidden bg-background border-t border-[#e8e0d0] px-4 py-3 space-y-3">
+        <div className="md:hidden bg-background border-t border-border px-4 py-3 space-y-3">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
             return (
@@ -485,7 +485,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
       {open && (
         <div
           role="menu"
-          className="absolute top-11 bg-white border border-[#e8e0d0] rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          className="absolute top-11 bg-white border border-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item) => (
