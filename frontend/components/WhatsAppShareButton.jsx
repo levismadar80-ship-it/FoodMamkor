@@ -26,7 +26,7 @@ export default function WhatsAppShareButton({ producer, url }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium border border-[#e8e0d0] bg-white text-[#1C1A17] hover:bg-[#F5F0E8] transition"
+      className="flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] text-sm font-medium border border-border bg-white text-[#1C1A17] hover:bg-[#F5F0E8] transition"
       aria-label={t("share_aria")}
     >
       <span aria-hidden>💬</span>
