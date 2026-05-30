@@ -16,12 +16,6 @@ module.exports = {
       spacing: tokens.theme.extend.spacing,
       colors: {
         ...tokens.theme.extend.colors,
-        // ── Legacy tokens — remaining aliases pending Contract migration (MEH-686) ──
-        primary: "#2e6853",        // ירוק כהה — כפתורים, לוגו
-        "primary-dark": "#2E4A2E", // hero overlays, footer
-        background: "#F5F0E8",      // קרם חם — לא לבן
-        accent: "#8B6914",          // זהב חם — מחירים, הדגשות
-        border: "#e5dfd3",          // canonical (matches tailwind.tokens.json; MEH-708 Chunk 2 flip)
       },
       borderRadius: {
         ...tokens.theme.extend.borderRadius,
