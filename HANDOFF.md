@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-05-29 — MEH-726 drop 5 redundant explicit color overrides (GREEN — post-MEH-708 cleanup)
+
+**Branch:** `feature/meh-726-drop-duplicate-colors` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-726.
+
+**What:** removed 5 explicit color entries (`primary`/`primary-dark`/`background`/`accent`/`border`) from `tailwind.config.js` that duplicated the `...tokens.theme.extend.colors` spread value-identically. Spread is now sole owner; config colors block = spread only. Gate: each of the 5 verified == tokens.json before removal (3 differed in hex casing only, CSS-identical). **Zero visual change** — compiled-CSS spot-check: `.bg-primary`=`rgb(46 104 83)`, `.border-border`=`rgb(229 223 211)`. Config-only, build green, no `design:export`.
+
+**Origin:** the redundant-duplicate follow-up I flagged at the MEH-708 #879 merge. Resolves it.
+
+**Next:** await PR CI + Sapir mobile QA (central config → draft) → mark ready → merge.
+
 ## 2026-05-29 — MEH-708 legacy alias-drop + border canonicalization (GREEN — MEH-686 Step 18 Contract COMPLETE)
 
 **Branch:** `feature/meh-708-alias-drop` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-708; final Contract child of MEH-686 Step 18.
