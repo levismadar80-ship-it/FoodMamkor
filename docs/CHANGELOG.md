@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-05-29 — Drop 5 redundant explicit color overrides (MEH-726, GREEN — post-MEH-708 cleanup)
+
+`refactor(MEH-726)`: removed the 5 explicit color entries (`primary`,
+`primary-dark`, `background`, `accent`, `border`) from `tailwind.config.js`
+that duplicated the canonical `...tokens.theme.extend.colors` spread
+**value-identically** — the spread is now sole owner of those colors. Each
+value verified against `tailwind.tokens.json` before removal (3 differed in
+hex *casing* only — `#2E4A2E`/`#F5F0E8`/`#8B6914` — which CSS treats
+identically). **Zero visual change**, confirmed via compiled-CSS spot-check:
+`.bg-primary` → `rgb(46 104 83)` (#2e6853), `.border-border` →
+`rgb(229 223 211)` (#e5dfd3) — identical pre/post. Config-only, no
+`design:export` (tokens.json untouched). Closes the redundant-duplicate
+follow-up flagged at MEH-708 #879 merge. Refs MEH-686 / MEH-708.
+
 ### 2026-05-29 — Legacy token alias-drop + border canonicalization (MEH-708 Contract, GREEN — closes MEH-686 Step 18)
 
 `refactor(MEH-708)`: removed the legacy token block from
