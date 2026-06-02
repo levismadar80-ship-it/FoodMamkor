@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-02 — MEH-680 English→Hebrew wordmark swap (GREEN — asset-only)
+
+**Branch:** `feature/meh-680-en-to-he-wordmark` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-680.
+
+**What:** swapped the English wordmark to a Hebrew `מהמקור` master across all 4 in-code touchpoints — `Header` (`/logo.png` 106×40, dark→white via CSS filter on transparent homepage hero), `Footer` (`/logo-footer.png` 127×48 on dark-green), `error.js` + `not-found.js` (`/logo.png` 120×40, centered). Both deliverables derived from a single 910×230 RGBA master (alpha:true, dark glyphs verified: channel means R=17/G=16/B=12, opaque mean=15.3) via `sharp` in a scratch dir outside the repo; `fit:contain` with transparent letterbox padding, `kernel:lanczos3`, no distortion. Post-derive verify: `logo.png` 106×40 RGBA opaqueMean=16.5, `logo-footer.png` 127×48 RGBA opaqueMean=14.9 — alpha + dark glyphs preserved.
+
+**Constraints honored:** master NOT shipped (rm'd from working tree before commit); `package.json` untouched (sharp installed in `C:/Users/sint1/meh-680-scratch`, separate `node_modules`); diff = `logo.png` + `logo-footer.png` + CHANGELOG + HANDOFF only.
+
+**Build/verify:** `npm run build` green — 27.5s compile, 101/101 static pages.
+
+**Next:** await Vercel preview → Sapir mobile + desktop visual approval (Header transparent→cream, Footer on dark-green, error, 404) → mark ready → squash merge. STOP-after-draft per spec.
+
 ## 2026-05-29 — MEH-726 drop 5 redundant explicit color overrides (GREEN — post-MEH-708 cleanup)
 
 **Branch:** `feature/meh-726-drop-duplicate-colors` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-726.

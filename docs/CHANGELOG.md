@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-06-02 — MEH-680 English→Hebrew wordmark swap (Header/Footer/error/404)
+
+`chore(MEH-680)`: החלפת ה-wordmark האנגלי במקור עברי `מהמקור` בכל 4 נקודות
+ה-in-code השירותיות — `Header` (`/logo.png`, 106×40, dark→white via CSS
+filter כשה-header שקוף בעמוד הבית), `Footer` (`/logo-footer.png`, 127×48
+על רקע ירוק כהה), `error.js` + `not-found.js` (`/logo.png` 120×40 ממורכז).
+שני הקבצים נגזרו ממאסטר יחיד 910×230 RGBA (alpha:true, dark glyphs —
+channel means R=17/G=16/B=12, opaque mean=15.3) באמצעות `sharp` ב-scratch
+dir מחוץ ל-repo, `fit:contain` עם letterbox שקוף ו-`kernel:lanczos3`, ללא
+distortion. Post-derive verify: `logo.png` 106×40 RGBA opaqueMean=16.5,
+`logo-footer.png` 127×48 RGBA opaqueMean=14.9 — alpha + dark glyphs נשמרו.
+מאסטר לא נשמר ב-repo (rm לפני commit). `package.json` לא נגעו (sharp הותקן
+ב-`C:/Users/sint1/meh-680-scratch`). Build green (27.5s compile, 101/101
+static pages). Diff = `logo.png` + `logo-footer.png` + CHANGELOG + HANDOFF
+בלבד. אישור ויזואלי ממתין ל-Vercel preview (desktop 1280 + mobile 375:
+Header TOP שקוף→white logo, Header SCROLLED cream→dark logo, Footer on
+dark green, error, 404). Closes MEH-680.
+
 ### 2026-05-29 — Drop 5 redundant explicit color overrides (MEH-726, GREEN — post-MEH-708 cleanup)
 
 `refactor(MEH-726)`: removed the 5 explicit color entries (`primary`,
