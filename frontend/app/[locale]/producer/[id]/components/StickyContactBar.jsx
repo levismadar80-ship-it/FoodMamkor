@@ -44,9 +44,9 @@ export default function StickyContactBar({
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
         {isVacation ? (
-          <span className="text-[11px] text-site-muted shrink-0">🌿 {vacationReturnLabel}</span>
+          <span className="text-[11px] text-fg-muted shrink-0">🌿 {vacationReturnLabel}</span>
         ) : producer.reviews_count >= 3 ? (
-          <div className="shrink-0 text-[11px] text-site-muted leading-tight">
+          <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
             <div className="font-bold text-[#8B6914]">
               ⭐ {Number(producer.avg_rating).toFixed(1)}
             </div>
@@ -76,10 +76,10 @@ export default function StickyContactBar({
                 : getPrimaryMethod(producer) === "whatsapp"
                 ? "btn-whatsapp"
                 : getPrimaryMethod(producer) === "phone"
-                ? "bg-primary text-white hover:bg-primary-light"
+                ? "bg-primary text-white hover:bg-primary-dark"
                 : getPrimaryMethod(producer) === "email"
                 ? "bg-primary-dark text-white hover:bg-primary"
-                : "bg-white text-site-text border border-primary hover:bg-light"
+                : "bg-white text-text border border-primary hover:bg-green-50"
             }`}
           >
             {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}

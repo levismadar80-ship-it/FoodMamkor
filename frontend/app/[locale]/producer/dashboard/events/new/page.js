@@ -62,14 +62,14 @@ export default function NewEventPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <nav className="text-sm text-site-muted mb-4">
+      <nav className="text-sm text-fg-muted mb-4">
         <Link href="/producer/dashboard" className="hover:text-primary">{t("crumb_dashboard")}</Link>
         <span className="mx-2">›</span>
-        <span className="text-site-text">{t("crumb_current")}</span>
+        <span className="text-text">{t("crumb_current")}</span>
       </nav>
 
-      <h1 className="font-headline text-4xl font-bold text-site-text mb-2">{t("heading")}</h1>
-      <p className="text-site-muted mb-8">{t("subtitle")}</p>
+      <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">{t("heading")}</h1>
+      <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
@@ -77,7 +77,7 @@ export default function NewEventPage() {
         </div>
       )}
 
-      <p className="text-sm text-site-muted bg-light rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
+      <p className="text-sm text-fg-muted bg-green-50 rounded-[10px] px-4 py-3 mb-6 leading-relaxed">
         {t("info_paragraph")}
       </p>
 
@@ -139,7 +139,7 @@ export default function NewEventPage() {
         </Field>
 
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-site-text mb-1">{t("field_city_label")}</label>
+          <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>
           <CitySearch
             id="city"
             label={t("field_city_label")}
@@ -217,13 +217,13 @@ export default function NewEventPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium disabled:opacity-60"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-60"
           >
             {submitting ? t("submit_publishing") : t("submit")}
           </button>
           <Link
             href="/producer/dashboard"
-            className="border border-border text-site-text px-6 py-3 rounded-[8px] hover:bg-light transition"
+            className="border border-border text-text px-6 py-3 rounded-[8px] hover:bg-green-50 transition"
           >
             {t("cancel")}
           </Link>
@@ -252,7 +252,7 @@ export default function NewEventPage() {
 function Field({ id, label, required, children }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-site-text mb-1">
+      <label htmlFor={id} className="block text-sm font-medium text-text mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}

@@ -20,7 +20,7 @@ export function SkeletonCard({ className = "" }) {
 export function SkeletonLine({ width = "100%", height = "14px", className = "" }) {
   return (
     <div
-      className={`skeleton-box rounded ${className}`}
+      className={`skeleton-box rounded-lg ${className}`}
       style={{ width, height }}
       aria-hidden="true"
     />
@@ -40,15 +40,15 @@ function SkeletonProducerCard() {
     >
       <div className="skeleton-box w-full aspect-square lg:aspect-[4/3]" />
       <div className="p-4 flex-1 flex flex-col gap-2">
-        <div className="skeleton-box rounded h-[20px] w-[80%]" />
-        <div className="skeleton-box rounded h-[13px] w-[55%]" />
-        <div className="skeleton-box rounded h-[14px] w-[90%]" />
+        <div className="skeleton-box rounded-lg h-[20px] w-[80%]" />
+        <div className="skeleton-box rounded-lg h-[13px] w-[55%]" />
+        <div className="skeleton-box rounded-lg h-[14px] w-[90%]" />
         <div className="flex gap-1.5 mt-1">
           <div className="skeleton-box rounded-full h-[20px] w-[54px]" />
           <div className="skeleton-box rounded-full h-[20px] w-[48px]" />
         </div>
         <div className="mt-auto pt-3 flex items-center justify-between">
-          <div className="skeleton-box rounded h-[16px] w-[60px]" />
+          <div className="skeleton-box rounded-lg h-[16px] w-[60px]" />
           <div className="skeleton-box rounded-full h-[18px] w-[18px]" />
         </div>
       </div>

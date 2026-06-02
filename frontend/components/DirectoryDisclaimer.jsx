@@ -14,10 +14,10 @@ export default function DirectoryDisclaimer({ className = "" }) {
   const t = useTranslations("directory.disclaimer");
   return (
     <div
-      className={`bg-light/60 border border-border rounded-[12px] p-3 text-xs text-site-text/80 leading-relaxed ${className}`}
+      className={`bg-green-50/60 border border-border rounded-[12px] p-3 text-xs text-text/80 leading-relaxed ${className}`}
       role="note"
     >
-      <span className="font-semibold text-site-text">{BRAND_NAME}</span> {t("brand_is_prefix")}{" "}
+      <span className="font-semibold text-text">{BRAND_NAME}</span> {t("brand_is_prefix")}{" "}
       {t("directory_only")}{" "}
       {t("prices_set_by_businesses")}
     </div>

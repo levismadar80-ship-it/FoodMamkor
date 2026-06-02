@@ -61,11 +61,11 @@ function availabilityDotColor(producer) {
   const state = producer.availability_state;
   if (state === "on_vacation") return "#EF9F27"; // accent-warm
   if (state === "full_this_week") return "#f97316"; // orange
-  if (state === "available_today") return "#4cb08b"; // secondary (green)
+  if (state === "available_today") return "#2e6853"; // primary (MEH-717: available-today affordance = brand green per DESIGN.md)
   if (state === "accepting_orders") return null;
   // Fallback during overlap if availability_state is missing on a stale row.
   if (producer.availability_status === "vacation") return "#EF9F27";
-  if (producer.is_available_today) return "#4cb08b";
+  if (producer.is_available_today) return "#2e6853";
   return null;
 }
 
@@ -178,7 +178,7 @@ function CardHeart({ producer, onCountChange }) {
       <HeartStraight
         size={22}
         weight={filled ? "fill" : "regular"}
-        className={filled ? "text-red-500" : "text-site-text"}
+        className={filled ? "text-primary" : "text-text"}
         aria-hidden="true"
       />
     </button>
@@ -259,14 +259,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               />
             ) : (
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-light px-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 px-2"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <span className="text-5xl leading-none" aria-hidden="true">
                   {producer.categories?.[0]?.emoji || "🌿"}
                 </span>
                 {producer.categories?.[0]?.name && (
-                  <span className="font-headline text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
+                  <span className="font-headline-md text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
                     {producer.categories[0].name}
                   </span>
                 )}
@@ -280,7 +280,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-baseline gap-2 justify-between">
           <Link href={producerHref} className="block flex-1 min-w-0">
-            <h3 className="font-headline font-bold text-[18px] text-site-text hover:text-primary transition leading-snug line-clamp-2">
+            <h3 className="font-headline-md font-bold text-[18px] text-text hover:text-primary transition leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
@@ -288,7 +288,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </Link>
           {hasRating && (
             <span
-              className="text-sm text-site-text/80 shrink-0 whitespace-nowrap"
+              className="text-sm text-text/80 shrink-0 whitespace-nowrap"
               dir="ltr"
               data-testid="card-rating"
             >
@@ -298,7 +298,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         </div>
 
         <p
-          className="text-[13px] text-site-muted mt-1 truncate flex items-center gap-1.5"
+          className="text-[13px] text-fg-muted mt-1 truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
           {dotColor && (
@@ -332,7 +332,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         {descriptionText && (
           <p
-            className="text-sm text-site-text/85 mt-1.5 line-clamp-1"
+            className="text-sm text-text/85 mt-1.5 line-clamp-1"
             data-testid="card-description"
           >
             {descriptionText}
@@ -346,19 +346,19 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           )}
           {/* MEH-213: delivery-only badge — shown when no physical storefront */}
           {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-light border border-border text-site-text px-2 py-0.5 text-[11px]">
+            <span className="inline-flex items-center rounded-full bg-green-50 border border-border text-text px-2 py-0.5 text-[11px]">
               {t("producer.card.badges.delivery_only")}
             </span>
           )}
           {fridayMode && producer.is_available_today && (
-            <span className="inline-flex items-center rounded-full bg-secondary/10 border border-secondary/30 text-secondary px-2 py-0.5 text-[11px] font-semibold">
+            <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
               {t("producer.card.badges.available_today")}
             </span>
           )}
         </div>
 
         {localFavCount >= 5 && (
-          <p className="mt-1 flex items-center gap-1 text-[12px] text-site-muted">
+          <p className="mt-1 flex items-center gap-1 text-[12px] text-fg-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
@@ -366,7 +366,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (
-            <span className="font-body font-semibold text-accent text-sm truncate max-w-[120px]">
+            <span className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]">
               {priceLabel}
             </span>
           ) : (

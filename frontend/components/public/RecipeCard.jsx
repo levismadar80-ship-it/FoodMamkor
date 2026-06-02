@@ -25,7 +25,7 @@ export default function RecipeCard({ slug, recipe }) {
       href={`/${slug}/recipes/${recipe.id}`}
       className="block bg-white rounded-[14px] border border-border overflow-hidden hover:border-primary transition focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      <div className="aspect-[4/3] bg-light flex items-center justify-center text-3xl">
+      <div className="aspect-[4/3] bg-green-50 flex items-center justify-center text-3xl">
         {recipe.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -39,11 +39,11 @@ export default function RecipeCard({ slug, recipe }) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-site-text line-clamp-2 mb-1">
+        <h3 className="font-semibold text-text line-clamp-2 mb-1">
           {recipe.title}
         </h3>
         {totalMin && (
-          <p className="text-xs text-site-muted">
+          <p className="text-xs text-fg-muted">
             {totalMin} {t("minutes_suffix")}
             {recipe.servings ? ` · ${recipe.servings} ${t("servings_suffix")}` : ""}
           </p>

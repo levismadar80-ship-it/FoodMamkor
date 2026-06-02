@@ -21,7 +21,7 @@ function Confetti() {
       x: Math.random() * canvas.width,
       y: -20,
       r: Math.random() * 6 + 3,
-      color: ["#2e6853", "#4cb08b", "#F5F0E8", "#fbbf24", "#f87171"][Math.floor(Math.random() * 5)],
+      color: ["#2e6853", "#2e6853", "#F5F0E8", "#fbbf24", "#f87171"][Math.floor(Math.random() * 5)],
       vx: (Math.random() - 0.5) * 3,
       vy: Math.random() * 3 + 2,
       angle: Math.random() * Math.PI * 2,
@@ -150,7 +150,7 @@ export default function GroupBuyDetailClient({ id }) {
 
   if (loading || authLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center text-site-muted">
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center text-fg-muted">
         {t("loading")}
       </div>
     );
@@ -160,7 +160,7 @@ export default function GroupBuyDetailClient({ id }) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
         <p className="text-4xl mb-4">🔍</p>
-        <p className="text-lg font-medium text-site-text">{t("not_found_title")}</p>
+        <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
         <Link href="/group-buys" className="text-primary hover:underline mt-4 inline-block">
           {t("back_to_list")}
         </Link>
@@ -207,12 +207,12 @@ export default function GroupBuyDetailClient({ id }) {
           </div>
         )}
         {cancelled && (
-          <div className="mb-6 rounded-[12px] bg-border px-5 py-3 text-center text-site-muted text-sm">
+          <div className="mb-6 rounded-[12px] bg-border px-5 py-3 text-center text-fg-muted text-sm">
             {t("cancelled")}
           </div>
         )}
         {fulfilled && (
-          <div className="mb-6 rounded-[12px] bg-light border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
+          <div className="mb-6 rounded-[12px] bg-green-50 border border-primary/20 px-5 py-3 text-center text-primary text-sm font-medium">
             {t("fulfilled")}
           </div>
         )}
@@ -221,34 +221,34 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Header */}
           <div className="mb-4">
             {gb.city && (
-              <span className="text-xs bg-light text-primary px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-green-50 text-primary px-2 py-0.5 rounded-full">
                 {gb.city}
               </span>
             )}
-            <h1 className="font-headline text-2xl font-bold text-site-text mt-2 mb-1">
+            <h1 className="font-headline-md text-2xl font-bold text-text mt-2 mb-1">
               {gb.title}
             </h1>
             {gb.producer_name && (
-              <p className="text-sm text-site-muted">{t("by_producer", { name: gb.producer_name })}</p>
+              <p className="text-sm text-fg-muted">{t("by_producer", { name: gb.producer_name })}</p>
             )}
             {gb.description && (
-              <p className="text-sm text-site-text mt-3 leading-relaxed">{gb.description}</p>
+              <p className="text-sm text-text mt-3 leading-relaxed">{gb.description}</p>
             )}
           </div>
 
           {/* Price */}
-          <div className="flex items-center gap-3 mb-4 p-4 rounded-[12px] bg-light">
+          <div className="flex items-center gap-3 mb-4 p-4 rounded-[12px] bg-green-50">
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-primary">
                   ₪{Number(gb.price_per_unit_group).toFixed(0)}
                 </span>
-                <span className="text-site-muted line-through text-lg">
+                <span className="text-fg-muted line-through text-lg">
                   ₪{Number(gb.price_per_unit_regular).toFixed(0)}
                 </span>
-                {gb.unit && <span className="text-sm text-site-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
+                {gb.unit && <span className="text-sm text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
               </div>
-              <p className="text-xs text-site-muted mt-0.5">
+              <p className="text-xs text-fg-muted mt-0.5">
                 {t("discount_hint", { discount })}
               </p>
             </div>
@@ -257,10 +257,10 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Progress */}
           <div className="mb-6">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-site-text">
+              <span className="font-medium text-text">
                 {t("progress_label", { commits: gb.commits_count, min: gb.min_participants })}
               </span>
-              <span className="text-site-muted text-xs">
+              <span className="text-fg-muted text-xs">
                 {pct}%
               </span>
             </div>
@@ -271,11 +271,11 @@ export default function GroupBuyDetailClient({ id }) {
               />
             </div>
             {!expired && open && (
-              <p className="text-xs text-site-muted mt-1.5">
+              <p className="text-xs text-fg-muted mt-1.5">
                 {t("remaining_to_open", { n: Math.max(0, gb.min_participants - gb.commits_count) })}
               </p>
             )}
-            <p className="text-xs text-site-muted mt-1">
+            <p className="text-xs text-fg-muted mt-1">
               {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function GroupBuyDetailClient({ id }) {
                 {submitting ? t("submitting") : user ? t("submit_join") : t("submit_login")}
               </button>
               {!user && (
-                <p className="text-center text-xs text-site-muted">
+                <p className="text-center text-xs text-fg-muted">
                   {t("login_required")}
                 </p>
               )}
@@ -332,7 +332,7 @@ export default function GroupBuyDetailClient({ id }) {
                 <button
                   onClick={handleCancel}
                   disabled={cancelling}
-                  className="w-full text-sm text-site-muted hover:text-red-500 transition text-center"
+                  className="w-full text-sm text-fg-muted hover:text-red-500 transition text-center"
                 >
                   {cancelling ? t("cancelling") : t("cancel_cta")}
                 </button>
@@ -341,7 +341,7 @@ export default function GroupBuyDetailClient({ id }) {
           )}
 
           {expired && open && (
-            <div className="rounded-[12px] bg-border px-4 py-3 text-site-muted text-sm text-center">
+            <div className="rounded-[12px] bg-border px-4 py-3 text-fg-muted text-sm text-center">
               {t("deadline_passed")}
             </div>
           )}

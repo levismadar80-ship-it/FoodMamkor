@@ -9,11 +9,12 @@
  *   - Logo text: מהמקור, white, bottom-center
  *   - Producer name: Frank Ruhl Libre 52px white
  *   - City + category: DM Sans 24px #EAF3DE
- *   - Vanity URL: DM Sans 20px #4cb08b
+ *   - Vanity URL: DM Sans 20px #2e6853
  *   - CTA: "גלי עוד בתי עסק ב mehamakor.online"
  */
 
 import { useEffect, useRef, useState } from "react";
+import { Camera } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
@@ -147,7 +148,7 @@ async function drawCard(canvas, producer, strings) {
   // Vanity URL
   const slug = producer.slug || "";
   if (slug) {
-    ctx.fillStyle = "#4cb08b";
+    ctx.fillStyle = "#2e6853";
     ctx.font = `500 24px "DM Sans", sans-serif`;
     ctx.fillText(`mehamakor.online/p/${slug}`, W / 2, nameY + 190);
   }
@@ -224,7 +225,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
 
   return (
     <div className="mt-4 space-y-4">
-      <p className="text-sm font-semibold text-site-text">{t("title")}</p>
+      <p className="text-sm font-semibold text-text inline-flex items-center gap-1"><Camera size={16} className="text-current" />{t("title")}</p>
 
       {/* Canvas preview — scaled to fit */}
       <div className="relative bg-[#2E4A2E] rounded-[12px] overflow-hidden" style={{ aspectRatio: "9/16", maxWidth: 270 }}>
@@ -268,7 +269,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       )}
 
       {/* Caption preview */}
-      <pre className="text-xs bg-light rounded-[8px] p-3 whitespace-pre-wrap text-site-text font-sans text-right" dir="rtl">
+      <pre className="text-xs bg-green-50 rounded-[8px] p-3 whitespace-pre-wrap text-text font-body-md text-right" dir="rtl">
         {caption}
       </pre>
     </div>

@@ -111,7 +111,7 @@ export default function CitySearch({
         </label>
       )}
       <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
-        <svg className="w-4 h-4 text-site-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg className="w-4 h-4 text-fg-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
@@ -128,7 +128,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-site-text placeholder:text-site-muted text-right"
+          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-right"
           dir="rtl"
           autoComplete="off"
           role="combobox"
@@ -140,7 +140,7 @@ export default function CitySearch({
           <button
             type="button"
             onClick={handleClear}
-            className="text-site-muted hover:text-site-text"
+            className="text-fg-muted hover:text-text"
             aria-label={t("clear_aria")}
           >
             ×
@@ -168,8 +168,8 @@ export default function CitySearch({
               onMouseEnter={() => setHighlight(idx)}
               className={`px-3 py-2 cursor-pointer text-sm ${
                 idx === highlight
-                  ? "bg-light text-primary"
-                  : "text-site-text"
+                  ? "bg-green-50 text-primary"
+                  : "text-text"
               }`}
             >
               {city}

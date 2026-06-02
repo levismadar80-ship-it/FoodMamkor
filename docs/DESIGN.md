@@ -1,580 +1,334 @@
-# מהמקור — עיצוב מפורט
-> קרא קובץ זה כשעובדים על עיצוב, UI, קומפוננטות
-
+---
+version: alpha
+name: Mehamakor
+description: >-
+  Mehamakor (מהמקור) — an editorial directory of licensed Israeli food
+  businesses. The visual identity is warm, restrained, and magazine-like:
+  cream over pure white, deep forest green as the single brand accent, and
+  Hebrew-first RTL typography. Tokens are the normative source of truth;
+  the prose explains why each value exists and how to apply it.
+colors:
+  primary: "#2e6853"
+  primary-dark: "#2E4A2E"
+  background: "#F5F0E8"
+  surface: "#FFFFFF"
+  text: "#1C1A17"
+  muted: "#6B6860"
+  fg-muted: "#5c584f"
+  accent: "#8B6914"
+  border: "#E5DFD3"
+  green-50: "#EAF3DE"
+  green-100: "#C8DCB3"
+  green-300: "#6FA284"
+  green-500: "#2E6853"
+  green-700: "#2E4A2E"
+  green-900: "#143228"
+typography:
+  headline-display:
+    fontFamily: Frank Ruhl Libre
+    fontSize: 48px
+    fontWeight: 900
+    lineHeight: 1.2
+  headline-lg:
+    fontFamily: Frank Ruhl Libre
+    fontSize: 32px
+    fontWeight: 900
+    lineHeight: 1.25
+  headline-md:
+    fontFamily: Frank Ruhl Libre
+    fontSize: 24px
+    fontWeight: 700
+    lineHeight: 1.3
+  body-lg:
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
+    fontSize: 18px
+    fontWeight: 400
+    lineHeight: 1.6
+  body-md:
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
+    fontSize: 16px
+    fontWeight: 400
+    lineHeight: 1.6
+  body-sm:
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.5
+  label-md:
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
+    fontSize: 16px
+    fontWeight: 600
+    lineHeight: 1.4
+  label-sm:
+    fontFamily: '"DM Sans", "Heebo", sans-serif'
+    fontSize: 14px
+    fontWeight: 500
+    lineHeight: 1.4
+spacing:
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 24px
+  "2xl": 32px
+  "3xl": 48px
+  "4xl": 64px
+  gutter: 16px
+rounded:
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 20px
+components:
+  button-primary:
+    backgroundColor: "{colors.primary}"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.sm}"
+    padding: 12px
+    typography: "{typography.label-md}"
+  button-primary-hover:
+    backgroundColor: "{colors.primary-dark}"
+  card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.lg}"
+    padding: 24px
+  card-caption:
+    textColor: "{colors.muted}"
+    typography: "{typography.body-sm}"
+  card-skeleton:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.fg-muted}"
+  input:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.sm}"
+    padding: 12px
+  input-divider:
+    backgroundColor: "{colors.border}"
+  price-tag:
+    textColor: "{colors.accent}"
+    typography: "{typography.label-md}"
 ---
 
-## השראת עיצוב
-
-### gardensweet.com (ראשי)
-האסתטיקה שרוצים לשכפל:
-- תמונות טבע שממלאות את כל המסך (full-bleed)
-- parallax scroll — התמונה זזה לאט יותר מהתוכן, יוצרת עומק
-- פונטים סריפיים גדולים ואלגנטיים
-- טקסט לבן על תמונות כהות — קריא ומרשים
-- מרווח לבן נדיב בין סקציות — לא צפוף
-- תחושה אישית וחמה — כמו מכתב מהחווה, לא קטלוג
-- כפתורים פשוטים עם border בלבד (outlined) — לא filled
-- אנימציות fade-in עדינות כשגוללים למטה
-
-### foraged.com/categories (category grid)
-- תמונה מלאה + overlay ירוק כהה + טקסט לבן מרוכז
-- hover: overlay בהיר יותר + scale קל
-
----
-
-## צבעים
-
-```css
---primary:       #2e6853;   /* ירוק כהה — כפתורים, לוגו */
---primary-dark:  #2E4A2E;   /* hero overlays, footer */
---secondary:     #4cb08b;   /* ירוק בינוני — הדגשות */
---background:    #F5F0E8;   /* קרם חם — לא לבן! */
---text:          #1C1A17;   /* שחור חם — לא pure black */
---accent:        #8B6914;   /* זהב — מחירים, הדגשות */
---light:         #EAF3DE;   /* ירוק בהיר — badges */
---border:        #e8e0d0;   /* גבולות */
-```
-
-tailwind.config.js:
-```js
-colors: {
-  // ——— Core brand ———
-  primary:         '#2e6853',
-  'primary-light': '#3a7d64',   // producer card hover, CTA hover
-  'primary-dark':  '#2E4A2E',   // footer, hero overlay
-  secondary:       '#4cb08b',
-  'secondary-light':'#6dc4a3',  // secondary CTA hover
-  background:      '#F5F0E8',
-  'site-text':     '#1C1A17',
-  'site-muted':    '#6B6B6B',   // secondary copy, placeholders
-  accent:          '#8B6914',   // gold — prices, highlights
-  'accent-warm':   '#E8823A',   // warm orange — "premium" badge
-  'accent-warm-light':'#f0a060',
-  light:           '#EAF3DE',
-  border:          '#e8e0d0',
-  // ——— Text aliases (used in legacy components) ———
-  'text-primary':  '#1C1C1C',
-  'text-secondary':'#6B6B6B',
-}
-```
-
-The 8 "core brand" tokens are locked; the hover-state, muted-text, and
-accent-warm tokens evolved with the v1 shipping work and are also
-considered canonical.
-
-globals.css:
-```css
-body {
-  background-color: #F5F0E8;
-  color: #1C1A17;
-  font-family: 'DM Sans', sans-serif;
-}
-h1, h2, h3 { font-family: 'Frank Ruhl Libre', serif; }
-```
-
----
-
-## פונטים
-
-התקן מ-Google Fonts ב-app/layout.js:
-```html
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-```
-
-| פונט | שימוש | משקלים נטענים |
-|------|--------|----------------|
-| Frank Ruhl Libre | כותרות עברית h1-h3, גדול ואלגנטי | 400, 700, 900 |
-| Cormorant Garamond | טקסט אנגלי בלבד (לציטוטים) | 400, 600 |
-| DM Sans | גוף טקסט, כפתורים, ניווט | 400, 500, 600 |
-| Heebo | fallback לעברית כאשר DM Sans לא זמין | 300–700 |
-
-tailwind:
-```js
-fontFamily: {
-  headline: ['Frank Ruhl Libre', 'serif'],
-  english:  ['Cormorant Garamond', 'serif'],
-  body:     ['DM Sans', 'Heebo', 'sans-serif'],
-  heebo:    ['Heebo', 'sans-serif'],  // used by legacy components
-}
-```
-
-Heebo is loaded from `globals.css` (not from `layout.js` like the other
-three) at weights 300/400/500/600/700. It's the fallback Hebrew body
-font — DM Sans renders Hebrew fine for most glyphs but Heebo covers the
-tail of less-common code points and legacy components that explicitly
-ask for `font-heebo`.
-
----
-
-## כללי מיקרו-קופי (Brand Hub v1.1)
-
-Mirrored from the brand hub. Source of truth: `02-מדריך-מותג.md` v1.1
-(16 May 2026) — see [02-מדריך-מותג](https://drive.google.com/file/d/1bvRiJNc1lPli6WlgsdcmWizWMctuL5uG/view)
-and [07-language-rules](https://drive.google.com/file/d/1sgbLoPlOODtBOvJW5LiT3cUuMZkhBeYx/view).
-When the brand hub and this file disagree, the brand hub wins.
-
-### Audience targeting in CTAs — no partial category lists
-
-When a CTA names mehamakor's audience, **do not enumerate a subset of
-categories**. Formulations like "בעלת עסק, חקלאית או מגדלת" or "מה שהיא
-מגדלת" exclude bakeries, dairies, wineries, chocolatiers, and other
-non-growing producers — together ~75% of the base. Prefer generic
-business framings ("בעלת עסק" / "בית עסק" / "עסק שמייצר אוכל אמיתי")
-and outcome verbs ("מה שהיא מציעה" / "מה שהיא מייצרת"). Reviewed copy
-from Linear issues, mockups, or prior sessions is not exempt — audit
-every audience descriptor against this rule before opening a PR.
-
-### "מגזין" — internal use only (show, don't tell)
-
-"מגזין" describes mehamakor's editorial thesis internally but **must
-not appear in UI copy**. Surface the magazine-tier voice through *what*
-the copy says — curation signal, producer-page format, founder
-accountability, story-led framing — rather than *labeling* the product
-as a magazine. If you reach for "מגזין" in a button, headline, or body,
-restructure the line around the underlying signal instead.
-
-_Precedent: PR #682 (MEH-605/606/609, 2026-05-16) — both rules drove
-the Sapir-override of the A/B/C copy menus in those Linear issues. See
-[docs/CHANGELOG.md](./CHANGELOG.md) and [HANDOFF.md](../HANDOFF.md)._
-
-### Brand name — UI vs outbound (Q6 hybrid rule)
-
-The brand has two written forms. UI surfaces visible inside the app use
-the Hebrew "מהמקור"; outbound surfaces visible to crawlers, link
-previews, or non-Hebrew audiences use the Latin "Mehamakor". The split
-is by surface type, not by locale — even in `/en/` pages the in-app
-siteName stays "מהמקור".
-
-| Context | Name | Surface type | Why |
-|---|---|---|---|
-| Header logo, page `<title>` | מהמקור | UI | In-app display; Hebrew audience reads the chrome |
-| `og:site_name` meta tag (appears in WhatsApp/FB/Twitter share preview cards) | מהמקור | UI metadata | Platform chrome, not our prose. One source-of-truth for the siteName constant. WhatsApp/FB render Hebrew normally for Hebrew sites — no friction |
-| Footer `© 2026 מהמקור` | מהמקור | UI | Visible UI |
-| `Organization.name` (JSON-LD structured data) | Mehamakor | Outbound (SEO) | Crawlers + knowledge-panel surfaces; Latin is the cross-platform key |
-| Sitemap URL path slugs (domain `mehamakor.online`, `/en/...` paths) | Mehamakor | Outbound (SEO) | URL-safe ASCII; international tooling |
-| WhatsApp Business display name + auto-replies | Mehamakor | Outbound | Cross-platform; non-Hebrew speakers in shared chats |
-| Share text **body** — the prose the user types or we pre-fill (e.g. "Check out Mehamakor at…") | Mehamakor | Outbound prose | This is our copy, not platform chrome. Distinct from `og:site_name` which is metadata, even though both appear in shares |
-
-_Precedent: Session 2026-05-16 — hybrid decision codified during Wave 4
-pre-flight (PR #704 MEH-473 reconstruction). Pointer from MEH-476 Wave 6
-spec; Brand Hub `02-מדריך-מותג.md` v1.2 mirrors this table._
-
----
-
-## Hero Section — בדיוק כמו gardensweet.com
-
-```
-גובה: 100vh (מסך מלא)
-
-תמונת רקע עם PARALLAX:
-  url: https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920
-  background-attachment: fixed  ← זה ה-parallax!
-  background-size: cover
-  background-position: center
-  background-repeat: no-repeat
-
-gradient overlay (מלמטה כלפי מעלה):
-  background: linear-gradient(
-    to top,
-    rgba(46, 74, 46, 0.88) 0%,
-    rgba(46, 74, 46, 0.4) 50%,
-    rgba(0,0,0,0.1) 100%
-  )
-
-טקסט — position: absolute, bottom: 25%, width: 100%, text-align: center:
-
-  כותרת ראשית:
-    "אוכל אמיתי, ישר מהמקור אליך"
-    font-family: Frank Ruhl Libre
-    font-size: clamp(42px, 6vw, 80px)
-    font-weight: 700
-    color: white
-    line-height: 1.15
-
-  כתובית:
-    "בתי עסק מקומיים, מגדלים קטנים ושכנות שמבשלות בבית"
-    font-family: DM Sans
-    font-size: 18px
-    letter-spacing: 0.12em
-    text-transform: uppercase
-    color: #EAF3DE
-    margin-top: 12px
-
-  search bar:
-    margin-top: 32px
-    width: min(580px, 88vw)
-    background: white
-    border-radius: 50px
-    padding: 14px 24px
-    display: flex, align-items: center, gap: 10px
-    אייקון חיפוש (#2e6853) + input
-    placeholder: "חפשי ירקות טריים, בשר grass-fed..."
-    font-size: 16px, RTL
-
-חץ scroll למטה (animate-bounce):
-  position: absolute, bottom: 32px, left: 50%
-  color: white, opacity: 0.7
-  גודל: 28px
-```
-
----
-
-## Social Proof Bar
-
-מיקום: מיד אחרי ה-Hero, לפני הקטגוריות
-
-```jsx
-<div className="bg-primary text-white py-4 text-center">
-  <span className="font-body text-lg tracking-wide">
-    {producersCount} יצרנים מאומתים &nbsp;·&nbsp;
-    {categoriesCount} קטגוריות &nbsp;·&nbsp;
-    מכל רחבי הארץ
-  </span>
-</div>
-
-// backend: GET /api/stats → { producers_count, categories_count }
-```
-
----
-
-## Parallax Sections (בין סקציות — כמו gardensweet.com)
-
-הוסף 2-3 סקציות parallax בדף הבית בין הגריד ל"מהמטבח של השכן":
-
-```jsx
-// SectionDivider component — תמונה שזזה לאט:
-<div style={{
-  height: '400px',
-  backgroundImage: 'url(https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600)',
-  backgroundAttachment: 'fixed',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-  position: 'relative',
-}}>
-  <div style={{
-    position: 'absolute', inset: 0,
-    background: 'rgba(46,74,46,0.6)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  }}>
-    <h2 style={{
-      fontFamily: 'Frank Ruhl Libre',
-      fontSize: 'clamp(32px, 4vw, 56px)',
-      color: 'white',
-      textAlign: 'center',
-    }}>
-      "כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
-    </h2>
-  </div>
-</div>
-```
-
-תמונות לשימוש ב-parallax dividers:
-- https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600 (שדה חיטה)
-- https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600 (חווה ירוקה)
-
----
-
-## Category Grid (בהשראת foraged.com/categories)
-
-```
-Layout: grid-cols-3 desktop | grid-cols-2 tablet | grid-cols-1 mobile
-gap: 20px | padding: 40px
-
-כל כרטיסייה:
-  height: 280px
-  border-radius: 16px
-  overflow: hidden
-  position: relative
-  cursor: pointer
-
-  תמונת רקע:
-    width: 100%, height: 100%
-    object-fit: cover
-    transition: transform 0.4s ease
-    hover: transform scale(1.06)
-
-  overlay:
-    position: absolute, inset: 0
-    background: rgba(46,104,83,0.65)
-    transition: background 0.3s
-    hover: rgba(46,104,83,0.45)
-
-  טקסט (מרוכז):
-    position: absolute, inset: 0
-    display: flex, flex-direction: column
-    align-items: center, justify-content: center
-    emoji: font-size 40px, margin-bottom 8px
-    שם: Frank Ruhl Libre, 22px, white, font-weight 700
-```
-
-| קטגוריה | תמונה Unsplash |
-|----------|----------------|
-| 🥩 בשר, עוף ודגים | photo-1607623814075-e51df1bdc82f |
-| 🥬 ירקות, פירות ומשקים | photo-1540420773420-3366772f4999 |
-| 🥛 חלב וגבינות | photo-1486297678162-eb2a19b0a432 |
-| 🍞 לחמים ואפייה | photo-1509440159596-0249088772ff |
-| 🫒 שמנים ודבש | photo-1474979266404-7eaacbcd87c5 |
-| 🧴 טיפוח וסבונים | photo-1608248597279-f99d160bfcbc |
-
-URL: `https://images.unsplash.com/[photo-id]?w=600&fit=crop&auto=format`
-
----
-
-## כרטיסיית עסק (ProducerCard)
-
-> Redesigned April 2026 (Phases A → B → C). Entire card is the navigation
-> target; the heart is the only secondary action. No inline contact icons
-> — `ProducerListOut` doesn't carry `phone` / `website` / `instagram`, so
-> a row of 5 icons was dead code on every grid view.
-
-```css
-.producer-card {
-  background: #F5F0E8;
-  border: 1px solid #e8e0d0;
-  border-radius: 16px;   /* Tailwind rounded-2xl */
-  overflow: hidden;
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-.producer-card:hover {
-  box-shadow: 0 8px 32px rgba(46,104,83,0.12);
-  transform: translateY(-2px);
-}
-```
-
-**Anatomy**
-
-```
-image (aspect-square on mobile → lg:aspect-[4/3]):
-  object-cover object-center
-  Cloudinary: c_fill,g_auto,ar_4:3 — saliency-aware smart crop
-  top-3 start-3 overlay: ♡ heart button (white circle 44×44,
-    HeartStraight icon, aria-pressed, z-10)
-
-body (p-4, flex-col, flex-1):
-  name row (flex justify-between items-baseline):
-    ── h3 Frank Ruhl Libre 18px bold #1C1A17, 2-line clamp
-    ── rating span (dir="ltr", shrink-0): ★ 4.8 · 12
-       shown only when reviews_count >= 3 AND avg_rating > 0
-
-  location line (13px #6b6b6b, flex items-center gap-1.5):
-    ● dot 8×8 (green #4cb08b = available_today, orange #EF9F27 = vacation)
-    {city}[ · {distance dir="ltr"}]
-
-  description line (14px #1C1A17/85, line-clamp-1):
-    short_description → top_product_name (80-char soft cap, then "…")
-    entire row hidden when both null
-
-  BadgeRow(producer, limit=2) — max 2 pills by priority:
-    verified > recommended > new > organic > grass_fed > kosher > delivery > products
-
-  footer (mt-auto pt-3 flex justify-between — no border-top):
-    start: price label (max-w-[120px] truncate, #8B6914, 600)
-    end:   primary_contact_method hint icon (decorative, 18px)
-```
-
-**Heart button contract**
-- Logged-in tap → optimistic fill → `POST /users/me/favorites/{id}` → revert + error toast on failure.
-- Logged-out tap → local fill + `sessionStorage["post_login_action"] = "favorite:{id}"` → snackbar toast with `התחברי` link (`/login?next=…`). `AuthContext.afterLogin` drains the pending action on next sign-in.
-- Hidden when `user.producer_id === producer.id` (producer viewing own card).
-- Uses `start-3` physical-RTL convention (project enforces logical properties via `no-restricted-syntax`).
-
-**What's explicitly NOT on the card (moved to detail)**
-- Contact icon row (WhatsApp / phone / website / email / Instagram).
-- "פרמיום" plan overlay.
-- "גלי עוד" / "מידע נוסף" text CTA.
-- "זמין היום" pill overlay (folded into the location-line dot).
-- Rating when `reviews_count < 3` (gate avoids misleadingly authoritative "★ 5.0 · 1" lines).
-
----
-
-## אנימציות Scroll (כמו gardensweet.com)
-
-הוסף fade-in לכל הסקציות — עם Intersection Observer:
-
-```jsx
-// hooks/useFadeIn.js
-export const useFadeIn = () => {
-  const ref = useRef(null)
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1'
-          entry.target.style.transform = 'translateY(0)'
-        }
-      },
-      { threshold: 0.15 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [])
-  return ref
-}
-
-// שימוש:
-// style={{ opacity: 0, transform: 'translateY(30px)', transition: 'all 0.7s ease' }}
-// ref={useFadeIn()}
-```
-
----
-
-## Footer
-
-```
-background: #2E4A2E | color: #EAF3DE | padding: 48px 0
-
-3 עמודות (desktop):
-
-עמודה 1 — לוגו + תיאור:
-  לוגו מהמקור (גרסה לבנה)
-  "ישר מהמקור אליך"
-  אינסטגרם: אייקון + "@meha_makor"
-  → https://www.instagram.com/meha_makor (new tab)
-
-עמודה 2 — ניווט:
-  דף הבית | מפה | בתי עסק | אירועים | מהמטבח של השכן | הוסף עסק
-
-עמודה 3 — ניוזלטר:
-  כותרת: "הישארי מעודכנת" (Frank Ruhl Libre, 22px)
-  תת-כותרת: "מוצרים חדשים, אירועים ועסקים ישר לתיבה שלך"
-  input email + כפתור "הצטרפי"
-  POST /newsletter → newsletter_subscribers
-  success: "ברוכה הבאה למהמקור 🌱 נפגשות בתיבה"
-  עיצוב input: border: 1px solid rgba(255,255,255,0.3), bg: transparent, color white
-
-שורה תחתונה:
-  © 2026 מהמקור | תנאי שימוש | פרטיות
-```
-
----
-
-## עמוד /about — סקציות חדשות (הוסף בסוף)
-
-### סקציה A — Parallax Quote
-```
-תמונת רקע parallax:
-  url: https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1600
-  background-attachment: fixed | height: 350px
-  overlay: rgba(46,74,46,0.7)
-  ציטוט מרוכז לבן, Frank Ruhl Libre, italic, 36px:
-  "כשאתה יודע מאיפה האוכל שלך — הכל טועם אחרת"
-```
-
-### סקציה B — 3 עמודות ערכים
-```
-background: #2e6853 | padding: 64px 0
-3 עמודות עם SVG line-art לבן (50px):
-
-  🏡 "המשימה"
-  ליצור הזדמנויות כלכליות ליצרנים מקומיים
-  ולחבר קהילות עם יתרונות אוכל מקומי.
-
-  🌳 "קהילה"
-  כפלטפורמה מונעת ערכים, הקהילה היא העדיפות.
-  חיבור בין אנשים הוא המוקד של כל מה שאנחנו עושים.
-
-  🌾 "למה מהמקור"
-  מערכות המזון הגלובליות שבירות.
-  מקורות מזון מקומיים יכולים להסתגל ולהתמיד.
-```
-
-### סקציה C — סיפור המייסדת
-```
-background: #F5F0E8 | padding: 80px 0
-
-layout RTL:
-  תמונה מימין — placeholder עגול 380x380px,
-                 border-radius: 16px
-                 (הערה בקוד: // TODO: replace with real photo)
-  טקסט משמאל
-
-  "היי, אני ספיר."
-  Frank Ruhl Libre, 52px, #1C1A17
-
-  DM Sans, 18px, line-height: 1.85, #3a3a3a:
-  "אמא, מחפשת אוכל אמיתי, ובעלת מהמקור.
-
-  כמו הרבה משפחות, התחלנו לחפש מקורות
-  מזון מקומיים ובריאים יותר. וגילינו שזה
-  לוקח המון צעדים — לשאול בקבוצות ווטסאפ,
-  לגוגל, לחפש באינסטגרם...
-
-  עם כל הטכנולוגיה שיש לנו, זה לא אמור
-  להיות כל כך מסובך. אז מהמקור נולד."
-```
-
-### סקציה D — טופס יצירת קשר
-```
-background: #F5F0E8 | padding: 64px 0
-
-"דברי איתנו" — Frank Ruhl Libre, 40px, מרוכז
-"שאלות, רעיונות, או סתם שלום — נשמח לשמוע"
-DM Sans, 17px, #6b6b6b, מרוכז
-
-טופס max-width 560px, margin: auto:
-  שם מלא | אימייל | textarea "איך נוכל לעזור?" (4 שורות)
-  כפתור "שלח" — background: #2e6853, white, border-radius: 8px
-  POST /api/contact → מייל לאדמין
-  success: "תודה! נחזור אליך בקרוב 🌿"
-
-עיצוב שדות:
-  background: white | border: 1px solid #e8e0d0
-  border-radius: 8px | padding: 12px 16px
-  focus: border-color #2e6853, outline: none
-```
-
----
-
-## Endpoints חדשים הנדרשים
-```
-GET  /api/stats       → { producers_count, categories_count }
-POST /api/newsletter  { email } → 201 (שמור ב-newsletter_subscribers)
-POST /api/contact     { name, email, message } → שלח מייל לאדמין → 200
-```
-
----
-
-## Producer Detail Page — עיצוב (feature/meh-producer-detail-redesign, 2026-04-18)
-
-### עמודות
-
-- **Mobile**: עמוד ראשי (main column) קודם, `<aside>` שני. אין `order-` classes — DOM order הוא הסדר.
-- **Desktop** (`lg:grid-cols-[1fr_320px]`): RTL grid — main column ימין, sidebar שמאל. `lg:sticky lg:top-24` ב-sidebar.
-
-### Gallery placeholder (ללא תמונות)
-
-- גובה: `h-[120px] md:h-[180px]`, רקע `#F5F0E8`
-- מרכז: emoji קטגוריה (48px) + 2 אותיות ראשונות שם העסק (14px bold, `#2e6853` opacity-60)
-- כאשר יש תמונות: `h-52` (208px), `priority={true}` על התמונה הראשונה
-
-### StickyContactBar (mobile only)
-
-- `fixed bottom-16 inset-x-0 z-[598]` — מתחת ל-CookieBanner (z-[599]) ו-BottomNav (z-[1000])
-- IO trigger: `inlineCTARef` — כשה-CTA יוצא מה-viewport → הבר נכנסת (translateY 0, 200ms ease-out)
-- כשה-CTA חוזר → הבר יוצאת (translateY 100%, 150ms ease-in)
-- `paddingBottom: env(safe-area-inset-bottom, 0px)` לתמיכה ב-iPhone notch
-- **Vacation state**: CTA בצבע `#6EAF8A`, label → "שלחי הודעה — יחזרו בקרוב", opacity 0.85
-
-### Vacation UI
-
-- Main column: `bg-amber-50 border border-amber-300 rounded-xl p-3` banner עם "🌿 בית עסק זה בהפסקה כרגע"
-- Sidebar: `opacity-50 pointer-events-auto` עטיפה מעל כל תוכן ה-contact
-
-### Highlights strip
-
-- תנאי: אחד מהשדות `grass_fed / organic_certified / delivery_areas.length > 0 / kosher` הוא truthy
-- סגנון chip: `background #EAF3DE, color #1C1A17, border 1px solid #e8e0d0, border-radius 20px, font-size 11px, padding 4px 10px`
-- Label מיפוי: grass_fed → "🌾 מרעה חופשי", organic_certified → "🌿 אורגני מוסמך", delivery → "🚚 משלוח", kosher → "✡️ כשר"
-
----
-
-## אחרי כל שינויי עיצוב — הרץ:
-```bash
-npx skills add pbakaus/impeccable
-/audit
-/polish homepage
-/polish producer-card
-/polish about-page
-/normalize
-/critique
-```
+# Mehamakor — DESIGN.md
+
+> Canonical design-system source of truth, in the [Google DESIGN.md](https://github.com/google-labs-code/design.md)
+> format. The YAML front matter above is normative; this prose explains the
+> rationale. Generated Tailwind tokens are exported to
+> `frontend/tailwind.tokens.json` (see References). Truth Hierarchy: ADRs win
+> over this file — where an ADR and a token disagree, the ADR is correct and
+> this file is the drift.
+
+## Overview
+
+Mehamakor is a **magazine, not a marketplace** — an editorial directory of
+licensed Israeli food businesses (`בתי עסק`). The UI should feel like a
+warm print publication: generous whitespace, calm hierarchy, no SaaS-dashboard
+chrome. The emotional target is *trust and craft*, not *transact now*.
+
+The whole system rests on two anchors: a **warm cream page surface**
+(`background #F5F0E8`, never pure white) and a **single deep-forest-green
+accent** (`primary #2e6853`). Everything else is restraint — one accent color,
+two type families, a small spacing scale. The restraint is itself the brand
+signal: a curated, edited feel rather than a feature-dense product.
+
+Hebrew is the primary script and the layout is **RTL-first**. Latin text is the
+exception (quotes, loan words), not the baseline.
+
+## Colors
+
+The palette is deliberately small: **one brand green** — expressed as a
+systematic 6-stop tint scale (`green-50`…`green-900`) for badges, hovers and
+depth, **not** as multiple brand colors — plus one warm gold accent, a cream
+background, and a tight set of neutrals. There is **no state-color palette**
+(no red/amber/slate) — see *Elevation & Depth* for how state is expressed
+instead, and *Do's and Don'ts* for why.
+
+- **Primary (`#2e6853`):** Deep forest green. The single brand accent —
+  primary CTAs, the logo, links, "available today" affordances. Also serves
+  the `success` role; we do not maintain a separate success green.
+- **Primary-dark (`#2E4A2E`):** Hover/active state for primary, hero overlays,
+  footer ground. Darker, never brighter — the brand greens go deeper on
+  interaction, they don't light up.
+- **Background (`#F5F0E8`):** Warm cream. The universal page surface. **Never
+  pure white as a page background** — pure white reads as "app", cream reads as
+  "magazine". This is a hard brand LOCK (BRAND.md §3).
+- **Surface (`#FFFFFF`):** Pure white, allowed **only** for content that sits
+  on top of the cream page — cards, modals, inputs. Never the page itself.
+- **Text (`#1C1A17`):** Warm near-black for body copy and headings. Not
+  `#000000` — a warm ink, consistent with the cream warmth.
+- **Muted (`#6B6860`):** Warm gray for secondary text, captions, helper copy
+  and placeholders. Passes WCAG AA (≥ 4.5:1) on the cream background.
+- **Fg-muted (`#5c584f`):** The single de-emphasis foreground (the `--fg-muted`
+  of ADR-019). Used for state de-emphasis (disabled, loading, vacation) instead
+  of introducing new state colors. Slightly deeper than `muted` for stronger
+  recede without a color shift.
+- **Accent (`#8B6914`):** Warm gold. Used **sparingly** — prices, "premium"
+  highlights, pull-quotes. A second voice, never a second brand color.
+- **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
+  Low-contrast by design; structure should be felt, not drawn.
+- **Green scale (`green-50` … `green-900`):** A 6-stop tint scale of the one
+  brand green for systematic reference — `green-50 #EAF3DE` (badge / light
+  surfaces; the legacy `light`), `green-100 #C8DCB3`, `green-300 #6FA284`
+  (subtle highlight), `green-500 #2E6853` (= `primary`, brand identity),
+  `green-700 #2E4A2E` (= `primary-dark`, the CTA hover/active target),
+  `green-900 #143228` (deep emphasis, footer ground). This is a shading system,
+  **not** a second brand color — the hover rule above still holds: brand greens
+  go **deeper** on interaction (`primary` → `primary-dark` / `green-700`), never
+  lighter.
+
+Two families carry the whole system. **Frank Ruhl Libre** — a Hebrew serif —
+for headlines, set at weight **900** for editorial gravitas (the canonical
+headline weight per CONTEXT.md §5 and BRAND.md §3). **DM Sans** for all body,
+labels, navigation and buttons. No more than three visible weights on one
+screen.
+
+- **Headlines (`headline-display`, `headline-lg`):** Frank Ruhl Libre 900.
+  Large and confident — this is the magazine voice. Line-height stays tight
+  (1.2–1.25) so multi-line Hebrew headlines hold together.
+- **Sub-headings (`headline-md`):** Frank Ruhl Libre 700 for section titles
+  where 900 would shout.
+- **Body (`body-lg` / `body-md` / `body-sm`):** DM Sans 400, line-height
+  1.5–1.6 for comfortable long-form Hebrew reading. `body-md` is 16px desktop;
+  drop to 14px on mobile.
+- **Labels (`label-md` / `label-sm`):** DM Sans 500–600 for buttons, chips and
+  metadata.
+
+**Hebrew fallback policy (body & label families).** DM Sans covers Latin only
+(no Hebrew Unicode block, U+0590–05FF), so every `body-*` and `label-*` token
+ships the stack `"DM Sans", "Heebo", sans-serif` — DM Sans renders Latin, **Heebo
+catches Hebrew glyphs**, generic `sans-serif` is the last resort. Heebo here is a
+**tokenized** fallback layer, not optional (restored in MEH-712 after the
+DESIGN.md token transform briefly dropped it). The document root
+(`globals.css` `body`) carries the same stack as a safety net.
+
+**Cormorant Garamond** is reserved for Latin pull-quotes only (not tokenized).
+Hebrew punctuation must be correct (`״`, `׳`, em-dash `—`).
+
+## Layout
+
+An **8px base spacing scale** governs all rhythm. Allowed steps: 4, 8, 12, 16,
+24, 32, 48, 64 — no arbitrary values. Mobile grid gutter is 16px. Card padding
+is 16px on mobile, 24px on desktop. Desktop content sits in a fixed max-width
+column; mobile is fluid. Whitespace is a feature, not waste — the editorial
+feel comes from letting content breathe.
+
+Because the layout is RTL-first, always use **logical** spacing properties
+(`ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`), never physical `ml-`/`mr-`. See
+`.claude/rules/rtl.md` for the full rule and its narrow exceptions.
+
+## Elevation & Depth
+
+Mehamakor is a **flat, tonal** system. Depth comes from the cream-vs-white
+tonal step and hairline borders — **not** from shadows. There is **no shadow
+lift on hover** (that is a SaaS pattern, off-brand). Cards are white surfaces on
+cream with a `border #E5DFD3` hairline; that tonal contrast is the entire
+elevation language.
+
+### State management — opacity-on-cream + fg-muted (ADR-019)
+
+This is the load-bearing rule for all component states, and it is why the
+palette has no state colors. Per **ADR-019 (`docs/decisions/ADR-019-component-state-tokens.md`, decision §:24)**,
+component state treatments use exactly two mechanisms:
+
+1. **De-emphasized foreground** → switch text from `text` to `fg-muted`
+   (`#5c584f`). This is the warm muted gray already in the system; it preserves
+   editorial warmth without a color shift.
+2. **De-emphasized surface** → reduce the opacity of foreground content on the
+   existing cream background. Opacity scale: 100% / 70% / 50% / 30%. Never
+   introduce a darker or lighter background token for a state.
+
+Concrete applications:
+
+- **Loading skeleton:** cream background, content at 30% opacity on cream. No
+  `loading-bg-*` token.
+- **Vacation / unavailable:** background stays cream; text = `fg-muted`. The
+  vacation banner is **not** amber and **not** slate — it recedes via
+  `fg-muted`, it does not recolor.
+- **Disabled button:** cream (or primary at 50% opacity if it was a primary
+  button); text = `fg-muted`. No `disabled-bg-*` token.
+- **Empty state:** content at 50% opacity on cream.
+
+## Shapes
+
+Corners are softly rounded, never pill-shaped on rectangles. Inputs and
+buttons use `rounded.sm` (8px); cards use `rounded.lg` (16px) — `rounded.md`
+(12px) is the in-between for smaller cards and chips; modals use `rounded.xl`
+(20px). **No `rounded-full` on rectangular elements** (BRAND.md §3) — full
+rounding is reserved for genuinely circular elements (avatars, icon buttons).
+
+## Components
+
+Components are composed from the tokens above; see the `components` block in the
+front matter for the normative token bindings.
+
+- **Buttons:** `button-primary` is forest green (`primary`) with white
+  (`surface`) text, 8px radius, `label-md` type. Hover goes **darker**
+  (`primary-dark`), never lighter and never with a shadow.
+- **Cards (ProducerCard et al.):** white `surface` on cream, `border` hairline,
+  16px radius, 24px desktop padding. Captions and metadata use the `muted`
+  foreground (`card-caption`). Loading uses `card-skeleton` (cream + `fg-muted`,
+  opacity-on-cream) — never a gray placeholder block.
+- **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
+  radius. Dividers use the `border` token.
+- **Price tags / premium accents:** `accent` gold, used sparingly with
+  `label-md`. The save/like ("heart") affordance is **green or gold, never a red
+  fill** (BRAND.md §3; the brand has no red token — see Do's and Don'ts).
+
+## Do's and Don'ts
+
+- **Do** keep pure white (`surface`) only on top of the cream page — cards,
+  modals, inputs. **Don't** use `#FFFFFF` as a page background.
+- **Do** use `primary` as the single brand accent and `accent` gold only for
+  prices/premium. **Don't** introduce a second brand color.
+- **Do** express state with opacity-on-cream + `fg-muted`. **Don't** add
+  state-color tokens.
+- **Do** maintain WCAG 2.1 AA contrast — ≥ 4.5:1 body, ≥ 3:1 large text.
+  Keyboard-navigable, screen-reader-labelled (IS 5568). **Don't** ship `muted`
+  or `fg-muted` text on white where it drops below 4.5:1.
+- **Do** use Tailwind tokens (`text-primary`, not `text-[#2e6853]`). **Don't**
+  hard-code hex values in JSX.
+- **Don't** add gradient orbs, blurred/glass backgrounds, or hover shadow lift —
+  all signal "app", the opposite of "magazine" (BRAND.md §3).
+
+### Why we don't have a state-color palette
+
+The deliberate **absence** of `error`, `warning`, and `vacation-slate` tokens is
+a decision, not an oversight. Two earlier proposals — a `--slate` token
+(`#64748B`, Tailwind slate-500) and per-state background tokens
+(`loading-bg-brown`, `vacation-bg-grey`) — were **permanently rejected** by
+**ADR-019 (§:40–48)**:
+
+- `--slate` / `#64748B` signals "SaaS dashboard" (Tailwind's default neutral) —
+  the exact opposite of Mehamakor's editorial positioning.
+- A "neutral palette" tier in DESIGN.md is the camel's nose: once one
+  state-shade exists, every component proposes another.
+- Fine-grained color-coded state (error vs warning vs info) is a
+  category-mismatched need for a magazine.
+
+If a future state genuinely cannot be served by opacity-on-cream + `fg-muted`
+(e.g. a destructive-action confirmation), the resolution is a **new ADR that
+supersedes ADR-019** — not a token quietly added to `tailwind.config.js`. The
+friction is the feature. This rule is already enforced in code: F1 / PR #831
+implemented the HeartButton with `text-primary`, not a red token.
+
+## References
+
+- **Tokens → Tailwind:** generated by `@google/design.md export` to
+  `frontend/tailwind.tokens.json`. `frontend/tailwind.config.js` is reconciled to
+  import it in a separate change (Consolidation Plan Step 18) — until then the
+  config may carry extra dev-exploration tokens that this file intentionally
+  omits.
+- **Brand domain SoT:** `docs/BRAND.md` (positioning, voice, LOCKs, inspiration).
+  Editorial inspiration direction lives there (Kinfolk / Natoora / The
+  Infatuation / Cherry Bombe). The earlier `gardensweet` / `foraged` references
+  are **retired** (Consolidation Plan §B.9 I1).
+- **Voice / micro-copy:** `docs/BRAND.md` §4–7 and ADR-014 (audience-targeted
+  CTAs, "מגזין" internal-only, brand-name UI vs outbound). Not duplicated here.
+- **Color audit baseline:** `.claude/commands/design-review/design-principles.md`
+  (design-review checklist; treated as a cross-check, not canonical).
+- **Decisions:** ADR-011 (tagline), ADR-013 (iconography — Phosphor only, Lucide
+  forbidden), ADR-014 (voice), ADR-019 (component state tokens).
+- **Endpoints / data shapes:** `docs/DATA.md` (not a design concern).
+- **RTL rules:** `.claude/rules/rtl.md`. **Accessibility law:** IS 5568.

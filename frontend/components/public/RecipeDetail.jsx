@@ -40,7 +40,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
     <article className="max-w-3xl mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav
-        className="text-sm text-site-muted mb-6"
+        className="text-sm text-fg-muted mb-6"
         aria-label={t("breadcrumb_aria")}
       >
         <Link href={`/${producer.slug}`} className="hover:underline">
@@ -58,12 +58,12 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         <span className="mx-2" aria-hidden="true">
           {">"}
         </span>
-        <span className="text-site-text">{recipe.title}</span>
+        <span className="text-text">{recipe.title}</span>
       </nav>
 
       {/* Hero */}
       {recipe.image_url && (
-        <div className="aspect-[16/9] bg-light rounded-[16px] overflow-hidden mb-6">
+        <div className="aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={recipe.image_url}
@@ -73,7 +73,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </div>
       )}
 
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-3">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
         {recipe.title}
       </h1>
 
@@ -82,22 +82,22 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         recipe.cook_time_min ||
         recipe.servings ||
         totalMin) && (
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-site-muted mb-6 border-y border-border py-3">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-fg-muted mb-6 border-y border-border py-3">
           {recipe.prep_time_min ? (
             <span>
-              <strong className="text-site-text">{t("prep_time_label")}</strong>{" "}
+              <strong className="text-text">{t("prep_time_label")}</strong>{" "}
               {recipe.prep_time_min} {t("minutes_unit")}
             </span>
           ) : null}
           {recipe.cook_time_min ? (
             <span>
-              <strong className="text-site-text">{t("cook_time_label")}</strong>{" "}
+              <strong className="text-text">{t("cook_time_label")}</strong>{" "}
               {recipe.cook_time_min} {t("minutes_unit")}
             </span>
           ) : null}
           {recipe.servings ? (
             <span>
-              <strong className="text-site-text">{t("servings_label")}</strong>{" "}
+              <strong className="text-text">{t("servings_label")}</strong>{" "}
               {recipe.servings}
             </span>
           ) : null}
@@ -106,7 +106,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
       {/* Description */}
       {recipe.description && (
-        <p className="text-site-text/85 leading-relaxed whitespace-pre-line mb-8">
+        <p className="text-text/85 leading-relaxed whitespace-pre-line mb-8">
           {recipe.description}
         </p>
       )}
@@ -114,10 +114,10 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Ingredients */}
       {ingredients.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("ingredients_heading")}
           </h2>
-          <ul className="list-disc ps-6 space-y-1 text-site-text/90">
+          <ul className="list-disc ps-6 space-y-1 text-text/90">
             {ingredients.map((line, i) => (
               <li key={i}>{line}</li>
             ))}
@@ -128,10 +128,10 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Instructions */}
       {steps.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("instructions_heading")}
           </h2>
-          <ol className="list-decimal ps-6 space-y-2 text-site-text/90">
+          <ol className="list-decimal ps-6 space-y-2 text-text/90">
             {steps.map((step, i) => (
               <li key={i} className="whitespace-pre-line">
                 {step}
@@ -144,7 +144,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Related products — silent when empty per spec. */}
       {relatedProducts && relatedProducts.length > 0 && (
         <section className="mb-8">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">
             {t("related_products_heading")}
           </h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -164,17 +164,17 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 ) : (
                   <span
                     aria-hidden="true"
-                    className="w-14 h-14 rounded-[8px] bg-light flex items-center justify-center text-xl"
+                    className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center text-xl"
                   >
                     🌿
                   </span>
                 )}
                 <div className="min-w-0">
-                  <p className="font-medium text-site-text truncate">
+                  <p className="font-medium text-text truncate">
                     {p.name}
                   </p>
                   {p.price_range && (
-                    <p className="text-xs text-site-muted">{p.price_range}</p>
+                    <p className="text-xs text-fg-muted">{p.price_range}</p>
                   )}
                 </div>
               </li>

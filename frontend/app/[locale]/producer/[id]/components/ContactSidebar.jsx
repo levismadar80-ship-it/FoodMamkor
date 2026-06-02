@@ -69,7 +69,7 @@ export default function ContactSidebar({
           {producer.phone && (
             <a
               href={`tel:${producer.phone}`}
-              className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "phone")}
             >
@@ -88,7 +88,7 @@ export default function ContactSidebar({
                 href={`https://instagram.com/${handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm overflow-hidden"
+                className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm overflow-hidden"
                 dir="ltr"
                 onClick={() => trackContactClick(producer.id, "instagram")}
               >
@@ -110,7 +110,7 @@ export default function ContactSidebar({
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
               onClick={() => trackContactClick(producer.id, "website")}
             >
               <Globe size={18} weight="duotone" className="text-primary shrink-0" />
@@ -122,7 +122,7 @@ export default function ContactSidebar({
           {producer.contact_email && getPrimaryMethod(producer) !== "email" && (
             <a
               href={`mailto:${producer.contact_email}`}
-              className="flex items-center justify-center gap-2 border border-border text-site-text px-3 py-3 rounded-[10px] hover:bg-light transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "email")}
             >
@@ -143,7 +143,7 @@ export default function ContactSidebar({
             href={producer.whatsapp_group}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 border border-border text-site-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
+            className="w-full flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
           >
             <WhatsappLogo size={16} weight="duotone" />
             {t("producer.detail.contact_sidebar.join_whatsapp_group")}

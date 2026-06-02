@@ -31,7 +31,7 @@ import EmptyState from "@/components/ui/EmptyState";
 function SettingsLoadingFallback() {
   const tCommon = useTranslations("settings.common");
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12 text-site-muted">
+    <div className="max-w-3xl mx-auto px-4 py-12 text-fg-muted">
       {tCommon("loading")}
     </div>
   );
@@ -86,7 +86,7 @@ function SettingsPageBody() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
         {tCommon("page_heading")}
       </h1>
 
@@ -156,7 +156,7 @@ const TabButton = forwardRef(function TabButton(
       className={`flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap ${
         active
           ? "bg-primary text-white"
-          : "text-site-muted hover:text-site-text"
+          : "text-fg-muted hover:text-text"
       }`}
     >
       {icon}
@@ -277,9 +277,9 @@ function ProfileTab() {
         </label>
         <input id="avatar-upload" type="file" accept="image/*" className="sr-only" onChange={handleAvatarChange} disabled={uploading} />
         <div>
-          <p className="font-semibold text-site-text">{user.name}</p>
-          <p className="text-sm text-site-muted" dir="ltr">{user.email}</p>
-          <p className="text-xs text-site-muted mt-0.5">{t("avatar_hint")}</p>
+          <p className="font-semibold text-text">{user.name}</p>
+          <p className="text-sm text-fg-muted" dir="ltr">{user.email}</p>
+          <p className="text-xs text-fg-muted mt-0.5">{t("avatar_hint")}</p>
         </div>
       </div>
 
@@ -298,7 +298,7 @@ function ProfileTab() {
         </div>
         <div>
           <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
-            {t("field_city_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
+            {t("field_city_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <CitySearch
             id="profile-city"
@@ -306,7 +306,7 @@ function ProfileTab() {
             onChange={setCity}
             placeholder={t("field_city_placeholder")}
           />
-          <p className="text-xs text-site-muted mt-1 text-right">
+          <p className="text-xs text-fg-muted mt-1 text-right">
             {t("field_city_hint")}
           </p>
         </div>
@@ -318,10 +318,10 @@ function ProfileTab() {
             value={user.email || ""}
             readOnly
             disabled
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-light text-site-muted cursor-not-allowed"
+            className="w-full border border-border rounded-[12px] px-3 py-2 bg-green-50 text-fg-muted cursor-not-allowed"
             dir="ltr"
           />
-          <p className="text-xs text-site-muted mt-1 text-right">
+          <p className="text-xs text-fg-muted mt-1 text-right">
             {isOAuth
               ? t("email_oauth_hint", { provider: oAuthProvider ?? t("email_oauth_provider_fallback") })
               : t("email_change_hint")}
@@ -329,7 +329,7 @@ function ProfileTab() {
         </div>
         <div>
           <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
-            {t("field_phone_label")} <span className="text-site-muted font-normal">{tCommon("optional_suffix")}</span>
+            {t("field_phone_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
           </label>
           <input
             id="profile-phone"
@@ -340,7 +340,7 @@ function ProfileTab() {
             className="w-full border border-border rounded-[12px] px-3 py-2"
             dir="ltr"
           />
-          <p className="text-xs text-site-muted mt-1 text-right">
+          <p className="text-xs text-fg-muted mt-1 text-right">
             {t("field_phone_hint")}
           </p>
         </div>
@@ -351,7 +351,7 @@ function ProfileTab() {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? tCommon("saving") : tCommon("save_cta")}
         </button>
@@ -442,8 +442,8 @@ function PasswordChangeCard({ isOAuth }) {
   if (isOAuth) {
     return (
       <section role="tabpanel" aria-label={t("oauth_tabpanel_aria")} className="bg-white border border-border rounded-[16px] p-6">
-        <h2 className="font-semibold text-site-text mb-2">{t("oauth_heading")}</h2>
-        <p className="text-sm text-site-muted">{t("oauth_body")}</p>
+        <h2 className="font-semibold text-text mb-2">{t("oauth_heading")}</h2>
+        <p className="text-sm text-fg-muted">{t("oauth_body")}</p>
       </section>
     );
   }
@@ -451,7 +451,7 @@ function PasswordChangeCard({ isOAuth }) {
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-site-text">{t("heading")}</h2>
+        <h2 className="font-semibold text-text">{t("heading")}</h2>
         <Link href="/forgot-password" className="text-xs text-primary hover:underline">
           {t("forgot_link")}
         </Link>
@@ -476,7 +476,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
@@ -522,7 +522,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >
@@ -540,7 +540,7 @@ function PasswordChangeCard({ isOAuth }) {
         <button
           type="submit"
           disabled={!canSave || saving}
-          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-6 py-2.5 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? t("submit_saving") : t("submit_cta")}
         </button>
@@ -577,8 +577,8 @@ function LogoutAllDevicesCard() {
 
   return (
     <section className="bg-white border border-border rounded-[16px] p-6">
-      <h2 className="font-semibold text-site-text mb-1">{t("heading")}</h2>
-      <p className="text-sm text-site-muted mb-4">
+      <h2 className="font-semibold text-text mb-1">{t("heading")}</h2>
+      <p className="text-sm text-fg-muted mb-4">
         {t("body")}
       </p>
 
@@ -605,7 +605,7 @@ function LogoutAllDevicesCard() {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
@@ -653,8 +653,8 @@ function DangerZoneCard() {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
         <p className="text-2xl">⏳</p>
-        <h2 className="font-semibold text-site-text">{t("grace_heading")}</h2>
-        <p className="text-sm text-site-muted">
+        <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
+        <p className="text-sm text-fg-muted">
           {t("grace_body")}
         </p>
         <button
@@ -671,7 +671,7 @@ function DangerZoneCard() {
   return (
     <section className="bg-white border border-red-200 rounded-[16px] p-6">
       <h2 className="font-semibold text-red-700 mb-1">{t("heading")}</h2>
-      <p className="text-sm text-site-muted mb-4">
+      <p className="text-sm text-fg-muted mb-4">
         {t("body")}
       </p>
 
@@ -712,7 +712,7 @@ function DangerZoneCard() {
             <button
               type="button"
               onClick={() => { setPhase("idle"); setEmailInput(""); setError(null); }}
-              className="px-5 py-2 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+              className="px-5 py-2 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
             >
               {tCommon("cancel")}
             </button>
@@ -790,9 +790,9 @@ function BusinessTab() {
 
       {/* Stats grid */}
       <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-site-text mb-4">{t("stats_heading")}</h2>
+        <h2 className="font-semibold text-text mb-4">{t("stats_heading")}</h2>
         {loadingStats ? (
-          <p className="text-sm text-site-muted">{t("stats_loading")}</p>
+          <p className="text-sm text-fg-muted">{t("stats_loading")}</p>
         ) : stats ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <StatCard label={t("stat_views")} value={stats.views ?? 0} />
@@ -803,7 +803,7 @@ function BusinessTab() {
             <StatCard label={t("stat_orders")} value={stats.orders ?? 0} />
           </div>
         ) : (
-          <p className="text-sm text-site-muted">{t("stats_unavailable")}</p>
+          <p className="text-sm text-fg-muted">{t("stats_unavailable")}</p>
         )}
       </section>
 
@@ -1002,7 +1002,7 @@ function ProductsSection() {
   return (
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline text-lg font-bold text-site-text">{t("section_heading")}</h3>
+        <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
         {!adding && (
           <button
             onClick={() => { setAdding(true); setError(""); }}
@@ -1032,21 +1032,21 @@ function ProductsSection() {
             <form
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
-              className="border border-border rounded-[10px] p-4 space-y-3 bg-light"
+              className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-site-text">{t("edit_heading")}</p>
+                <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
                 <button type="button" onClick={cancelEdit} aria-label={t("cancel_aria")}>
-                  <X size={16} className="text-site-muted" aria-hidden="true" />
+                  <X size={16} className="text-fg-muted" aria-hidden="true" />
                 </button>
               </div>
               {product.price_min == null && product.price_range && (
-                <p className="text-xs text-site-muted mb-2">
+                <p className="text-xs text-fg-muted mb-2">
                   {t("edit_legacy_price_note", { range: product.price_range })}
                 </p>
               )}
               <div>
-                <label className="text-xs text-site-muted mb-1 block">{tForm("name_label")}</label>
+                <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
                 <input
                   required
                   value={editForm.name || ""}
@@ -1055,7 +1055,7 @@ function ProductsSection() {
                 />
               </div>
               <div>
-                <label className="text-xs text-site-muted mb-1 block">{tForm("description_label")}</label>
+                <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
                 <input
                   value={editForm.description || ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -1064,7 +1064,7 @@ function ProductsSection() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-site-muted mb-1 block">{tForm("price_min_label")}</label>
+                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
                   <input
                     required
                     type="number"
@@ -1077,7 +1077,7 @@ function ProductsSection() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-site-muted mb-1 block">{tForm("price_max_label")} <span className="text-site-muted">{tForm("price_max_optional_suffix")}</span></label>
+                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
                   <input
                     type="number"
                     min={1}
@@ -1090,7 +1090,7 @@ function ProductsSection() {
                 </div>
               </div>
               <div>
-                <p className="text-xs text-site-muted mb-2">{tForm("diet_heading")}</p>
+                <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1122,7 +1122,7 @@ function ProductsSection() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-site-muted mb-1 block">{tForm("image_label")}</label>
+                <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
                 {editForm.image_url ? (
                   <div className="flex items-center gap-2">
                     <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
@@ -1154,32 +1154,32 @@ function ProductsSection() {
                 <button
                   type="submit"
                   disabled={savingEdit || editUploading}
-                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
+                  className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
                 >
                   {savingEdit ? t("save_edit_saving") : t("save_edit_cta")}
                 </button>
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="px-4 bg-white border border-border text-site-text rounded-[8px] py-2 text-sm font-medium hover:bg-light transition"
+                  className="px-4 bg-white border border-border text-text rounded-[8px] py-2 text-sm font-medium hover:bg-green-50 transition"
                 >
                   {t("cancel_edit_cta")}
                 </button>
               </div>
             </form>
           ) : (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-light">
+            <div key={product.id} className="flex items-center gap-3 p-3 rounded-[10px] bg-green-50">
               {product.image_url ? (
                 <div className="relative w-12 h-12 shrink-0 rounded-[6px] overflow-hidden">
                   <Image src={product.image_url} alt={product.name} fill className="object-cover" sizes="48px" />
                 </div>
               ) : (
                 <div className="w-12 h-12 shrink-0 rounded-[6px] bg-white border border-border flex items-center justify-center">
-                  <Package size={20} className="text-site-muted/60" aria-hidden="true" />
+                  <Package size={20} className="text-fg-muted/60" aria-hidden="true" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-site-text truncate">{product.name}</p>
+                <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {(() => {
                   if (product.price_min != null && product.price_max != null)
                     return <p className="text-xs text-accent">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
@@ -1193,14 +1193,14 @@ function ProductsSection() {
               <button
                 onClick={() => startEdit(product)}
                 aria-label={t("card.edit_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-site-muted hover:text-primary hover:bg-primary/5 transition"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-primary hover:bg-primary/5 transition"
               >
                 <Pencil size={16} aria-hidden="true" />
               </button>
               <button
                 onClick={() => handleDelete(product.id)}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-site-muted hover:text-red-500 hover:bg-red-50 transition"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
@@ -1210,15 +1210,15 @@ function ProductsSection() {
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-light">
+        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-site-text">{t("add_heading")}</p>
+            <p className="text-sm font-medium text-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
-              <X size={16} className="text-site-muted" aria-hidden="true" />
+              <X size={16} className="text-fg-muted" aria-hidden="true" />
             </button>
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">{tForm("name_label")}</label>
+            <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
             <input
               required
               value={form.name}
@@ -1227,7 +1227,7 @@ function ProductsSection() {
             />
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">{tForm("description_label")}</label>
+            <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
             <input
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
@@ -1236,7 +1236,7 @@ function ProductsSection() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-site-muted mb-1 block">{tForm("price_min_label")}</label>
+              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
               <input
                 required
                 type="number"
@@ -1249,7 +1249,7 @@ function ProductsSection() {
               />
             </div>
             <div>
-              <label className="text-xs text-site-muted mb-1 block">{tForm("price_max_label")} <span className="text-site-muted">{tForm("price_max_optional_suffix")}</span></label>
+              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
               <input
                 type="number"
                 min={1}
@@ -1262,7 +1262,7 @@ function ProductsSection() {
             </div>
           </div>
           <div>
-            <p className="text-xs text-site-muted mb-2">{tForm("diet_heading")}</p>
+            <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -1294,7 +1294,7 @@ function ProductsSection() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-site-muted mb-1 block">{tForm("image_label")}</label>
+            <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
             {form.image_url ? (
               <div className="flex items-center gap-2">
                 <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
@@ -1326,7 +1326,7 @@ function ProductsSection() {
             <button
               type="submit"
               disabled={saving || uploading}
-              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-light transition disabled:opacity-50"
+              className="flex-1 bg-primary text-white rounded-[8px] py-2 text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {saving ? t("add_submitting") : t("add_submit_cta")}
             </button>
@@ -1339,9 +1339,9 @@ function ProductsSection() {
 
 function StatCard({ label, value }) {
   return (
-    <div className="rounded-[12px] bg-light px-4 py-3 text-center">
-      <p className="text-2xl font-bold text-site-text">{value}</p>
-      <p className="text-xs text-site-muted mt-0.5">{label}</p>
+    <div className="rounded-[12px] bg-green-50 px-4 py-3 text-center">
+      <p className="text-2xl font-bold text-text">{value}</p>
+      <p className="text-xs text-fg-muted mt-0.5">{label}</p>
     </div>
   );
 }
@@ -1358,34 +1358,34 @@ function SupportModal({ onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-[24px] sm:rounded-[20px] w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-site-text text-lg">{t("heading")}</h2>
-        <p className="text-sm text-site-muted">{t("body")}</p>
+        <h2 className="font-semibold text-text text-lg">{t("heading")}</h2>
+        <p className="text-sm text-fg-muted">{t("body")}</p>
         <a
           href={`https://wa.me/${env.NEXT_PUBLIC_SUPPORT_PHONE || "972500000000"}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <WhatsappLogo size={22} weight="fill" className="text-[#25D366] shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("whatsapp_label")}</p>
-            <p className="text-xs text-site-muted">{t("whatsapp_hours")}</p>
+            <p className="text-xs text-fg-muted">{t("whatsapp_hours")}</p>
           </div>
         </a>
         <a
           href="mailto:support@mehamakor.online"
-          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-light transition"
+          className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
           <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
-            <p className="text-xs text-site-muted">support@mehamakor.online</p>
+            <p className="text-xs text-fg-muted">support@mehamakor.online</p>
           </div>
         </a>
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-site-muted hover:text-site-text transition"
+          className="w-full py-2.5 rounded-[12px] text-sm font-medium text-fg-muted hover:text-text transition"
         >
           {t("close_cta")}
         </button>

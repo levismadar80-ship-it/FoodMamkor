@@ -75,12 +75,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
       {/* Text content — LEFT in RTL */}
       <div className="flex-1 py-2 pe-3 min-w-0 flex flex-col justify-between">
         <div>
-          <h3 className="font-headline font-bold text-site-text line-clamp-1" style={{ fontSize: "17px" }}>
+          <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}
           </h3>
           {/* Category name in muted, price in Cormorant italic gold — separate lines */}
           {category?.name && (
-            <p className="text-site-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
+            <p className="text-fg-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
               {category.name}
             </p>
           )}
@@ -94,7 +94,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Pills row */}
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {deliveryMatch && (
-            <span className="text-[11px] bg-light text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
+            <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
               🚚 {t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
             </span>
           )}
@@ -102,7 +102,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
 
         {/* Trust strip — max 2 items */}
         {trustItems.length > 0 && (
-          <p className="text-[12px] text-site-muted mt-1">
+          <p className="text-[12px] text-fg-muted mt-1">
             {trustItems.slice(0, 2).join(" · ")}
           </p>
         )}

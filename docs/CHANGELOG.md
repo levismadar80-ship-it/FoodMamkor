@@ -4,6 +4,512 @@
 
 ## Unreleased
 
+### 2026-05-29 — Drop 5 redundant explicit color overrides (MEH-726, GREEN — post-MEH-708 cleanup)
+
+`refactor(MEH-726)`: removed the 5 explicit color entries (`primary`,
+`primary-dark`, `background`, `accent`, `border`) from `tailwind.config.js`
+that duplicated the canonical `...tokens.theme.extend.colors` spread
+**value-identically** — the spread is now sole owner of those colors. Each
+value verified against `tailwind.tokens.json` before removal (3 differed in
+hex *casing* only — `#2E4A2E`/`#F5F0E8`/`#8B6914` — which CSS treats
+identically). **Zero visual change**, confirmed via compiled-CSS spot-check:
+`.bg-primary` → `rgb(46 104 83)` (#2e6853), `.border-border` →
+`rgb(229 223 211)` (#e5dfd3) — identical pre/post. Config-only, no
+`design:export` (tokens.json untouched). Closes the redundant-duplicate
+follow-up flagged at MEH-708 #879 merge. Refs MEH-686 / MEH-708.
+
+### 2026-05-29 — Legacy token alias-drop + border canonicalization (MEH-708 Contract, GREEN — closes MEH-686 Step 18)
+
+`refactor(MEH-708)`: removed the legacy token block from
+`frontend/tailwind.config.js` now that every Contract child migrated its
+consumers. **12 legacy tokens dropped** (each gated by a grep-zero proof),
+plus the `border` value canonicalized:
+
+- **Chunk 1 (11 tokens, grep-zero verified):** colors `primary-light`,
+  `secondary`, `light`, `site-text`, `site-muted`, `text-primary` (#1C1A17),
+  `text-secondary` (#6B6B6B); `borderRadius.DEFAULT` (bare `rounded`);
+  fontFamily `headline`, `body`, `sans`. (`secondary-light` already removed
+  by MEH-703 #872.)
+- **Chunk 2 (border flip):** `border` token `#e8e0d0` → canonical `#e5dfd3`
+  (matches `tailwind.tokens.json` + DESIGN.md), drift TODO removed.
+  MEH-724 had already migrated the 5 `border-[#e8e0d0]` literals to
+  `border-border`, so the flip propagated `#e5dfd3` to Header /
+  WhatsAppShareButton automatically.
+- **Chunk 3 (english):** `english` font alias dropped. Shape-check
+  corrected an orchestrator claim — `english` is **absent** from both
+  `tailwind.tokens.json` and DESIGN.md; DESIGN.md:206 explicitly states
+  Cormorant Garamond is **"not tokenized."** The 2 consumers
+  (`HomeStaticBlocks.jsx:201`, `MapProducerCard.jsx:88`) keep working via
+  `globals.css:37` `.font-english` (value-identical), which is now the
+  **single owner** — collapsing the MEH-271 two-owner smell. No component
+  edits.
+
+Config-only across all three chunks. Build green each chunk. The 5
+remaining explicit color entries (`primary`, `primary-dark`, `background`,
+`accent`, `border`) are now **value-identical redundant duplicates** of the
+canonical `...tokens.theme.extend.colors` spread — out of MEH-708 scope, a
+possible trivial follow-up cleanup. Out-of-scope deferrals unchanged: 5
+icon-fill `#e8e0d0` literals → MEH-725. Refs MEH-686. Closes MEH-708.
+
+### 2026-05-28 — Border literals → token: `border-[#e8e0d0]` → `border-border` (MEH-724, GREEN)
+
+`refactor(MEH-724)`: replaced **5 hardcoded `border-[#e8e0d0]` literals** with the
+`border-border` token utility across 2 files — `Header.jsx:165,166` (sticky/top
+`border-b`), `Header.jsx:294` (mobile-menu `border-t` divider), `Header.jsx:488`
+(dropdown panel `border`), `WhatsAppShareButton.jsx:29` (share-button outline).
+Directional sides (`border-b`/`border-t`/`border`) preserved — only the color
+literal swapped. **Value-identical today** (the `border` token in
+`tailwind.config.js:31` is still `#e8e0d0`); the point is that **MEH-708's**
+`border` token swap (`#e8e0d0` → canonical `#e5dfd3`) will now propagate to these
+5 sites automatically instead of leaving drift. Pre-req for MEH-708. Build green.
+Refs MEH-686.
+
+### 2026-05-28 — Structural split: font-body → font-body-md (MEH-701 Contract, GREEN)
+
+`refactor(MEH-701)`: bare `font-body` → `font-body-md` across **21 occurrences /
+13 files**. **Value-identical / zero visual change** — empirically verified the
+compiled CSS emits `.font-body-md{font-family:DM Sans,Heebo,sans-serif}`,
+identical to legacy `font-body` (`fontFamily.body-{sm,md,lg}` are family-only;
+`font-size` lives on the separate `fontSize.body-*` consumed by `text-body-*`,
+which this migration never writes — size stays on the untouched `text-*`
+declarations). Mirrors the MEH-700 headline split. No per-occurrence size
+mapping: `font-*` carries family only, so all 21 → `font-body-md` (the canonical
+16px-default family alias) regardless of adjacent `text-*` size; the root
+`<body>` (layout.js:196) → `font-body-md` too. No `tailwind.config.js`/
+`tokens.json`/DESIGN.md edit (legacy `font-body` alias drops in MEH-708).
+**Unblocks MEH-708** — `font-body` was its last per-component dependency. Build
+green. Refs MEH-686.
+
+### 2026-05-28 — /map geolocation PERMISSION_DENIED opens city-search fallback
+
+`feat`: on `/map`, geolocation **permission-denied** (`err.code === 1`) now opens
+the existing `LocationModal` (city-search fallback) instead of a dead-end toast, so
+a user who declines location isn't left staring at a country-wide map that looks
+empty. Technical failures (`POSITION_UNAVAILABLE`/`TIMEOUT`, codes 2/3) keep the
+existing toast. Two failure paths wired: Path B `handleGpsClick`
+(`frontend/app/[locale]/map/MapClient.jsx:107-121` → `setLocationModalOpen(true)`)
+and Path A imperative `goToMyLocation` (`frontend/components/MapComponent.jsx:218`
+now takes an `onPermissionDenied` callback, surfaced from the call site
+`MapClient.jsx:282`). No re-prompt (the modal doesn't re-call `getCurrentPosition`);
+no new i18n keys; selecting a city filters `/map` as before. **Scope reopener:**
+deliberately revisits MEH-592 §5.5 #7 ("/map stays as-is"). **Follow-up:** orphaned
+key `map.client.errors.permission_denied` (he/en `:871`) now unreferenced; the two
+GPS buttons / two failure paths remain a separate consolidation issue.
+
+### 2026-05-28 — Eliminate #4cb08b: availability signal → primary (MEH-717, GREEN)
+
+`refactor(MEH-717)`: consolidated the 5 hardcoded `#4cb08b` availability-signal
+usages onto the existing `primary` token (#2e6853), eliminating `#4cb08b` from
+the codebase (only the `secondary` token def in `tailwind.config.js:23` remains,
+owned by MEH-708). Per DESIGN.md §Color (lines 148-150): "available today"
+affordances + the `success` role both map to `primary`; no separate success
+green. Sites: `ProducerCard.jsx:64,68` `availabilityDotColor()` return →
+#2e6853; `ProducerCard.jsx:354` badge `bg-secondary/10`+`border-secondary/30`+
+`text-secondary` → `bg-primary/10`+`border-primary/30`+`text-primary` (also
+**fixes a WCAG AA failure** — #4cb08b small text on near-white tint was ~2.0:1;
+#2e6853 passes); `AvailabilityBadge.jsx:37` dot color → #2e6853;
+`dashboard:248` radio swatch → #2e6853; `Footer.jsx:34` stale #4cb08b comment
+reworded. **Unblocks MEH-708** to drop the `secondary` token. No new token added
+(per DESIGN.md). Build green. Refs MEH-686.
+
+### 2026-05-27 — Brand LOCK fix — site-wide SEO/meta copy (MEH-720, GREEN)
+
+`fix(MEH-720)`: follow-up to MEH-718 — removed competitor-confusion brand-LOCK
+terms ("אוכל אמיתי", the "האמיתי" inflection, and "דירקטורי" anti-pattern) from
+**all SEO/meta surfaces**, verbatim per Sapir. Touched: `frontend/app/[locale]/layout.js`
+(SITE_TITLE / SITE_DESCRIPTION constants + BASE_METADATA keywords),
+`frontend/messages/he.json` `seo.site.*` / `seo.home` / `seo.map` / `seo.register`
+/ `seo.login` / `seo.search`, and `frontend/public/manifest.json` (name +
+description). The dual site-title owners (`layout.js` constants and per-locale
+`generateMetadata` reading `seo.site.*`) were reconciled together. **Acceptance:**
+`grep "אוכל אמיתי\|האמיתי\|דירקטורי"` → 0 across seo.*, layout.js, manifest.json;
+build green. **Out of scope (untouched):** body/narrative brand voice (he.json
+370/2008/2018/2634/302/1450) and 5 "דירקטורי" occurrences in legal/terms/privacy
++ WhatsApp template (2531/2669/2784/2798/1452) — deliberate legal/operational
+language, separate review if ever needed. Footer producer-CTA → MEH-721.
+
+### 2026-05-27 — Brand-token consolidation: secondary → primary (MEH-703 Contract, YELLOW)
+
+`refactor(MEH-703)`: Contract-phase consolidation of the brand `secondary`
+(#4cb08b) accent into the single brand green `primary` (#2e6853), per DESIGN.md
+"single brand green, no second brand color; greens deepen on interaction".
+Executed as **7 chunks across 8 PRs** (#866, #867, #869, #870, #871, #872 +
+this close):
+
+- **Chunk 1 / 1.5** (#866/#867) — Footer CTA: inline `#4cb08b` +
+  `rgba(76,176,139,…)` → `bg-primary` / `bg-primary/15` / `border-primary/30`.
+- **Chunk 2** (#869) — 6 button surfaces `bg-secondary` → `bg-primary`; 2 hover
+  pairs `hover:bg-secondary-light` → `hover:bg-primary-dark` (MEH-705).
+- **Chunk 3** (#869) — 3× `text-secondary` → `text-primary` (Header,
+  RegisterClient, dashboard) + 4 non-button `bg-secondary` → `bg-primary`
+  (BadgeRow, FridayDeliveryStrip, HomeProductCard, analytics legend).
+- **Chunk 4** (#870) — `/upgrade` premium page: border / badge / price / CTA
+  (incl. `hover:bg-primary-dark`, `ring-primary/40`). Both plan prices now share
+  `text-primary`; premium differentiation rests on `border-2` + "recommended"
+  badge (gold #8B6914 accent reroute left open).
+- **Chunk 5** (#871) — 4 hardcoded `#4cb08b` → `#2e6853` / `text-primary`
+  (StoryCardCanvas canvas fill, AdminProducersTable arbitrary class, analytics
+  SVG stroke, group-buys confetti).
+- **Chunk 6** (#872) — dropped `secondary-light` (#6dc4a3) token from
+  `tailwind.config.js` (zero consumers).
+
+**`secondary` (#4cb08b) token RETAINED** — `ProducerCard.jsx:354` className +
+the semantic `available_today` accent (AvailabilityBadge / ProducerCard:64,68 /
+dashboard:248) still use it; both deferred to **MEH-717**. Dropping the token
+now would leave that availability badge unstyled (surfaced + decided at the
+Chunk 6 WAIT gate). Consequently **MEH-708** (final alias-drop) is now blocked
+on **MEH-717**, not MEH-703. 🟡 YELLOW, mobile-QA reviewed per chunk. Build +
+lint green each chunk. Refs MEH-686.
+
+### 2026-05-27 — Brand LOCK fix — /about meta copy (MEH-718, GREEN)
+
+`fix(MEH-718)`: replaced the one **about-specific** "אוכל אמיתי" string —
+`seo.about.description` (`frontend/messages/he.json:471`) — which fed the
+/about meta description and caused competitor confusion with realfood.co.il.
+NEW (verbatim from issue): *"מהמקור — בתי עסק מקומיים מתחום המזון בישראל, כולם
+במקום אחד. הסיפור של ספיר, המייסדת, הערכים וקריטריוני הכניסה."* Single-line
+i18n edit; build green; `grep "אוכל אמיתי"` in `app/[locale]/about/` → 0.
+**Scope correction (Phase 0):** the issue's `file_locations`
+(`frontend/app/about/page.js`) don't exist — the route is `app/[locale]/about/`
+with **i18n-driven `generateMetadata`**. Strings 2-4 (keywords + twitter
+title/desc) actually live in **site-wide** `seo.site.*` + `layout.js`, and
+String 5 ("יש לך עסק מזון מקומי?") is the **global Footer** CTA
+(`Footer.jsx:103`, all pages) — all deferred to a follow-up per Sapir decision
+(site-wide blast radius kept out of an /about PR).
+
+### 2026-05-26 — Structural split: font-headline → headline-display/lg/md (MEH-700 Contract, YELLOW)
+
+`refactor(MEH-700)`: Contract-phase structural split — bare `font-headline` →
+sized canonical tokens `font-headline-display` / `font-headline-lg` /
+`font-headline-md` across **167 occurrences / 77 files**. **96 auto-applied**
+per LOCKED mapping where one clean canonical size class was present
+(`text-5xl+`→display, `text-3xl/4xl`→lg, `text-xl/2xl`→md): 4 display, 22 lg,
+70 md. **71 ambiguous** resolved per-group (below-range 33→md; no-size
+clamp/inline-px/arbitrary/template-literal 28 by rendered px; responsive 10 by
+largest breakpoint): +12 display, +9 lg, +50 md. **Value-identical / zero
+visual change** — empirically verified the compiled CSS emits
+`.font-headline-display,.font-headline-lg,.font-headline-md{font-family:Frank
+Ruhl Libre}` (family-only utilities; `font-size`/`weight` live on
+`text-headline-*`, which this migration never writes — size stays on the
+untouched `text-*`/`style`/`clamp` declarations). No `headline-sm` token exists
+— `md` is the smallest canonical headline. No `tailwind.config.js`/`tokens.json`/
+DESIGN.md edit (legacy `headline` family alias drops in MEH-708). 🟡 YELLOW,
+**mobile-QA gated before merge**. Build + lint green. Refs MEH-686.
+
+### 2026-05-26 — Hover alignment: primary-light → primary-dark (MEH-705 Contract, YELLOW)
+
+`refactor(MEH-705)`: hover-state alignment — `hover:*-primary-light` →
+`hover:*-primary-dark` across **31 files / 47 occurrences** (41 `hover:bg-`, 6
+`hover:text-`). Aligns code with the DESIGN.md mandate *"brand greens go deeper
+on interaction"* — the legacy code lightened on hover (#2e6853→#3a7d64), which
+violated the spec; now it darkens (→ #2E4A2E). **This is a deliberate visual
+change** (hover direction flips), unlike the value-identical renames — 🟡 YELLOW,
+**mobile-QA gated before merge**. No config/tokens/DESIGN edit (legacy
+`primary-light` alias drops in MEH-708). Build + lint + drift gate green. Refs MEH-686.
+
+### 2026-05-26 — Migrate site-text → text (MEH-698 Contract)
+
+`feat(MEH-698)`: Contract-phase rename — `site-text` color → `text` across **101
+files / 347 occurrences** (320 `text-site-text`, 25 `hover:text-site-text`, 1
+`bg-`, 1 `border-`). Value-identical (both `#1C1A17`), **zero visual change**.
+Disambiguation verified: `text-text-secondary` / `text-text-primary` (the
+double-prefix tokens migrated in #854) stay 0 — not touched. `text-text` count
+2 (pre-existing from #854) → 347 post. No `tailwind.config.js`/`tokens.json`/
+DESIGN.md change (legacy `site-text` alias drops in MEH-708). Build + lint +
+drift gate green; mobile QA waived.
+
+### 2026-05-26 — Migrate light → green-50 (MEH-702 Contract — largest Contract PR)
+
+`feat(MEH-702)`: Contract-phase rename — all `light` color usages → `green-50`
+across **83 files / 199 occurrences** (177 `bg-light`, 21 `text-light`, 1
+`border-light`). Value-identical (`light` = `green-50` = `#EAF3DE`, the latter
+added in MEH-710/#857), **zero visual change**. Disambiguation verified:
+`primary-light` (47, MEH-705) and `secondary-light` (2, MEH-703) untouched; no
+blanket `light` replace. No `tailwind.config.js`/`tokens.json`/DESIGN.md change
+(legacy `light` alias drops in MEH-708). Build + drift gate green; mobile QA waived.
+- _Side-finding (not in scope, flagged):_ 4 pre-existing `bg-green-50` usages
+  (in files this PR didn't touch) referenced Tailwind's default green-50;
+  MEH-710's custom `green-50` override silently shifted them #f0fdf4→#EAF3DE on
+  #857 merge. Candidate follow-up ticket.
+
+### 2026-05-26 — Migrate site-muted → fg-muted (MEH-699 Contract)
+
+`feat(MEH-699)`: Contract-phase rename — all `*-site-muted` → `*-fg-muted` across
+**101 files / 424 occurrences** (421 `text-`, 2 `bg-`, 1 `border-`). Value-identical
+(both `#5c584f`), **zero visual change**. Per Wave-2A Option-A LOCK: default to
+`fg-muted` (pixel-exact) over `muted` (which would shift to #6b6860). No
+`tailwind.config.js` / `tokens.json` / DESIGN.md change (legacy `site-muted` alias
+drops in MEH-708). Build + drift gate green; mobile QA waived (value-identical).
+
+### 2026-05-26 — Green scale tokens added to DESIGN.md (MEH-710)
+
+`feat(MEH-710)`: docs-only + derived-artifact regen. Added the 6-stop green tint
+scale to `docs/DESIGN.md` front-matter and `tailwind.tokens.json` (via
+`design:export`): `green-50 #EAF3DE`, `green-100 #C8DCB3`, `green-300 #6FA284`,
+`green-500 #2E6853` (= `primary`), `green-700 #2E4A2E` (= `primary-dark`),
+`green-900 #143228`. **green-700 reconciled to #2E4A2E** (primary-dark), superseding
+the S3-LOCK #1F4C3C, per Sapir's Wave-2A decision — keeps one canonical CTA-hover
+dark green. Colors prose updated to document the scale + preserve the
+deeper-on-hover rule. `tailwind.config.js` untouched (resolves via require()+spread).
+Tokens are preparatory (0 consumers yet — 6 "unused" lint warnings expected);
+unblocks MEH-702 (`light` → `green-50`, 83 files). Build + drift gate green.
+
+### 2026-05-26 — Fix DESIGN.md References: tailwind.tokens.js → .json (MEH-709)
+
+`fix(MEH-709)`: docs-only — corrected two stale references in `docs/DESIGN.md`
+(intro blockquote + References section) from `frontend/tailwind.tokens.js` to
+`frontend/tailwind.tokens.json` (the real generated artifact + `design:export`
+target). Phase-0 side-finding from MEH-686 Step 18. No code; drift gate green
+(prose change doesn't alter the export).
+
+### 2026-05-26 — Restore Heebo Hebrew fallback to canonical body/label tokens (MEH-712)
+
+`feat(MEH-712)`: prerequisite hardening before the body/label token migrations
+(MEH-700/701). PR #853 (Expand phase) had set the canonical `body-lg/md/sm` +
+`label-md/sm` font stacks to `["DM Sans"]` only; DM Sans has **no Hebrew Unicode
+coverage** (U+0590–05FF), so the tokens needed Heebo back before any component
+adopts them.
+- (a) `docs/DESIGN.md` front-matter: 5 token `fontFamily` → `"DM Sans", "Heebo",
+  sans-serif`; `tailwind.tokens.json` regenerated; `tailwind.config.js` resolves
+  the stack via its existing `require()`+spread (no config edit — single source
+  of truth preserved, drift gate green). Typography prose documents the policy.
+- (b) `StoryCardCanvas.jsx:272` `font-sans` → `font-body-md` (the lone remaining
+  `font-sans` usage; its Hebrew `<pre>` now renders via the canonical token).
+- Not a shipped regression — verified 0 component adoption of the new tokens +
+  `globals.css` root fallback intact during the window. Headlines untouched.
+
+### 2026-05-26 — Tailwind token migration Wave 1A (MEH-686 Contract — batched)
+
+`refactor(MEH-686)`: first Contract-phase batch (Expand-Contract per ADR-007),
+combining 3 token migrations in one PR to resolve the 10-file overlap surfaced
+in Wave 1 Phase 0. Pure class renames — zero visual change, no `tailwind.config.js`
+edit (aliases stay until MEH-708):
+- **MEH-707** — bare `rounded` → `rounded-lg` (19 files; both 16px). Phase 0's
+  "20th file" was a JSDoc comment in `lib/distance.js`, not a class.
+- **MEH-704** — `*-text-secondary` (#6B6B6B token, double-prefix) → `*-muted` (21 files).
+- **MEH-706** (reduced) — `*-text-primary` (#1C1A17 token, double-prefix) → `*-text` (2 files).
+  `secondary-light` deferred to MEH-703; `font-sans` deferred to MEH-712 (non-equivalent
+  swap — Heebo Hebrew fallback drop needs a Sapir decision).
+- 34 files touched; bare green `text-primary` (325 occurrences) untouched — verified
+  occurrence-equal vs staging. build + lint + token-drift gate green.
+
+### 2026-05-25 — Tailwind config Expand phase (MEH-686 Step 18 PR-A)
+
+`feat(MEH-686)`: **PR #853 (draft)** — Expand phase of the token migration per
+ADR-007 Expand-Contract:
+- Added canonical tokens via `require("./tailwind.tokens.json")` (ADR-019): 4 new
+  colors (`text`, `muted`, `fg-muted`, `surface`), 8 fontFamily, 8 fontSize, named
+  borderRadius scale, spacing scale.
+- Deleted 4 zero-usage tokens: `heebo`, `serif`, `accent-warm`, `accent-warm-light`.
+- Added CI drift gate enforcing `tailwind.tokens.json` ↔ `docs/DESIGN.md` sync
+  (`.github/workflows/pr-checks.yml` build job; MEH-271 two-owners rule).
+- All 13 active legacy tokens (site-text, site-muted, headline, body, light,
+  secondary, etc.) + `rounded` DEFAULT preserved for visual continuity (legacy
+  wins on name collision; `border` stays #e8e0d0).
+- 12 Contract-phase issues opened (MEH-698…MEH-709) for per-component migration.
+- Zero visual change expected (no component edits). RED tier, chunk-by-chunk.
+
+### 2026-05-24 — MEH-696: PreToolUse path-verification hook (A2 pattern)
+
+`feat(hooks)`: new `.claude/hooks/check-path-exists.sh` (delivered in PR body
+for manual install — deny-list blocks `.claude/hooks/**`). Blocks `Edit`/
+`MultiEdit` when target `file_path` does NOT exist on disk. Catches the
+"orchestrator-claimed wrong path" pattern (meta-patterns.md §1, proven 4x in
+2026-05). Pass-through for Write (intentional file creation). Fail-open on
+missing jq, consistent with other hooks. README hook-inventory row also
+deferred to PR body (same `Edit(.claude/hooks/**)` deny). Manual wiring
+(cp + chmod + settings.json paste + README row) required post-merge — see
+PR description.
+
+Closes MEH-696.
+
+### 2026-05-24 — MEH-694: `.claude/rules/meta-patterns.md` — 5 shaping patterns codified
+
+`docs(rules)`: new `.claude/rules/meta-patterns.md` with 5 cross-session
+shaping patterns from claude.ai userMemories 2026-05. Patterns: orchestrator
+claim verification, two-stage CC flow, large payload splitting,
+explicit-spec-over-hooks, autonomy preference. CLAUDE.md pointer extended
+(80-line cap preserved). Compliance note included acknowledging
+Jaroslawicz et al. 2025 on linear-decay — for mechanical enforcement, see
+follow-up hooks (separate PRs). Closes MEH-694.
+
+### 2026-05-24 — MEH-693: Template content debt sweep (5 anomalies)
+
+**Type:** docs (content reconciliation)
+
+**Shipped:**
+- Anomaly 1 — `docs/templates/06-linear-issue.md`: removed stale `_migrate_columns` references from the MEH-103 example block; replaced with Alembic + ADR-003 + ADR-007 + `docs/MIGRATIONS.md` pointers matching the Template 02 v2.1 canonical pattern.
+- Anomaly 2 — `docs/templates/05-claude-research.md`: rationale reconciled from Opus 4.6 to Opus 4.7 (qualitative point-gap, no re-benchmarking).
+- Anomaly 3 — `docs/templates/00-model-selection-guide.md`: dropped the specific 1.2pt / 79.6% SWE-bench figure for a qualitative comparison and removed the stale `Opus 4.6 default` effort line; reconciled to Opus 4.7.
+- Anomaly 4 — founder name `Smadar` → `Sapir` directory-wide across templates 00/06/08 (5 occurrences; scope extension beyond the spec's Template-08-only wording confirmed by Sapir per ADR-020 Deciders + CONTEXT.md §1).
+- Anomaly 5 — `docs/templates/08-linear-issue-examples.md`: version label bumped 1.0 → 2.0 with a one-line changelog header.
+
+**Impact:**
+- First repo-canonical template content PR enabled by MEH-689 (ADR-020) — cleared the content debt logged during the byte-identical promotion, with no Drive-side manual sync.
+
+**PR:** #837 (squash `af74dbd`, merged 2026-05-24). Closes MEH-693.
+
+### 2026-05-24 — MEH-689: Templates promoted to repo (ADR-020)
+
+**Type:** docs (structural)
+
+**Shipped:**
+- ADR-020 establishing `docs/templates/` as canonical home for prompt templates.
+- 9 templates (00-08) moved byte-identical from Drive `02-Templates/` to `docs/templates/`.
+- `docs/templates/README.md` scaffolded with template index + edit workflow + Truth Hierarchy reference.
+- Downstream sync: `docs/CONTEXT.md` §12, `CLAUDE.md` doc map, `Doc-Consolidation-Plan.md` §C target architecture diagram.
+
+**Deferred:**
+- Template 09 (Council Mode) status reconciliation → MEH-690 follow-up.
+- Template content debt sweep (Template 06 `_migrate_columns` refs, Template 05/00 version slip, Template 08 founder name) → MEH-693 follow-up (to be opened post-merge).
+
+**Impact:**
+- Future template edits become repo-canonical PRs. Eliminates Drive-side manual sync pattern (5-step Sapir-manual flow) that drove 3 of 5 PRs in MEH-686 Phase δ Session 1.
+- AGENTS.md / CONTEXT.md pattern consistency: templates now sit at the repo apex layer alongside CONTEXT.md, BRAND.md, DESIGN.md.
+
+**PR:** #836 (squash `165d2293`, merged 2026-05-24).
+
+### 2026-05-24 — MEH-686 Phase ε F1: HeartButton saved-state color swap
+
+`fix(MEH-686)`: `CardHeart` saved state in `frontend/components/ProducerCard.jsx:181`
+now uses `text-primary` (#2e6853) instead of `text-red-500`, per BRAND.md §3
+(no red on heart save/like — Ive council guidance). Single-line className
+ternary swap; the unfilled branch (`text-site-text`) is unchanged.
+
+Out of scope (recorded as follow-ups in PR body): `ProducerCard.jsx:362`
+inline `<Heart>` with hardcoded `#A32D2D` (separate issue), and the broader
+`he.json` emoji audit (original F2 key path was wrong — 🛒 lives at
+`producer.card.badges.available_today`, not `home.hero.friday_subtitle`).
+
+Risk tier: GREEN per ADR-016 (single-line, single-file, no logic change).
+Refs MEH-686 Phase ε (partial — F1 only).
+
+### 2026-05-23 — MEH-686 Phase γ commit 10: ADR-017 supersedence of ADR-001 (Y1 close)
+
+`docs(MEH-686)`: closes the Y1 audit finding — ADR-001 title described a
+target state (both tokens in HttpOnly cookie) that was never fully
+implemented. Actual state: refresh token in HttpOnly cookie, access token in
+localStorage (verified at `frontend/lib/auth-context.js:93` +
+`frontend/lib/api.js:12`).
+
+Per `docs/decisions/_TEMPLATE.md` "never edit an Accepted ADR" rule, the
+correction lands as a supersedence (ADR-017), not as a title rename. ADR-001
+status transitions to "Superseded by ADR-017".
+
+Files added:
+- `docs/decisions/ADR-017-jwt-access-token-localStorage.md` — documents actual
+  current state.
+
+Files updated:
+- `docs/decisions/ADR-001-jwt-httponly-cookie.md` — Status line only (per
+  README "one-line edit only" rule).
+- `docs/decisions/README.md` — ADR-001 row Status updated; ADR-017 row added.
+
+This is not a code change. No application behavior changes; the
+access-token-in-localStorage posture is documented, not modified.
+
+Risk tier: GREEN per ADR-016 (docs-only). Closes MEH-686 partial (Y1 finding).
+
+### 2026-05-23 — MEH-686 Phase β: foundation commit (CONTEXT.md + BRAND.md + ADR index)
+
+`docs(MEH-686)`: Phase β of documentation consolidation epic. Adds two new
+canonical SoT files following the PrestaShop AGENTS.md / CONTEXT.md pattern
+(March 2026 industry standard). Tool-specific files (CLAUDE.md,
+personal-preferences-v2.md, future IDE configs) become thin pointers to
+docs/CONTEXT.md going forward.
+
+Files added:
+- `docs/CONTEXT.md` (199 lines) — AI-agnostic apex SoT. DNA, stack, brand
+  locks, Truth Hierarchy, working model, Skeptic Mode, connector verification
+  (4-layer), memory hygiene. Replaces 3 stale copies of
+  `00-mehamakor-context.md` (which remain in Drive pending Phase ζ cleanup).
+- `docs/BRAND.md` (144 lines) — brand narrative one-pager. Positioning,
+  tagline (per ADR-011), LOCKs, voice (per ADR-014), inspiration index,
+  design patterns canonical home (per BRAND.md §6 pattern index).
+
+Files updated:
+- `docs/decisions/README.md` — 9 new rows in the Index table (ADR-010 through
+  ADR-019, excluding ADR-017 which lands in Phase γ commit 10 as a
+  supersedence of ADR-001).
+
+Risk tier: GREEN per ADR-016 (docs-only, no schema, no code, no CI behavior
+change). Phase γ (next): 9 atomic per-ADR commits + ADR-017 supersedence of
+ADR-001. Single PR with rebase-and-merge strategy. Closes MEH-686 partial.
+
+### 2026-05-23 — chore: remove orphan doc artifacts
+
+`chore`: **Removed** orphan doc artifacts — `docs/wave-5-scan.json` (15,344
+lines), `docs/wave-5-inventory.md`, `tasks_for_claude_code.md`. One-time
+static-analysis output, complexity inventory, and superseded task tracker. 12
+provenance references (5 code comments + 7 MANUAL_TESTING headers) stripped to
+remove broken pointers. Cleanup trilogy: #815 → #817 → this PR.
+
+### 2026-05-23 — MEH-657: Emoji LOCK v2 — remove/replace 94 emoji instances
+
+- 🧹 MEH-657: Emoji LOCK v2 enforcement on he.json + en.json. Categories
+  A (48, strip decorative), B (18, → Phosphor icons inline at JSX render
+  sites), D4 (26, do/don't ✅/❌ → bold `**כן:**`/`**לא:**` markers + ℹ️/↗/📋
+  handling), E (2, rewrite self-referential emoji-guidance copy). Phosphor
+  (not Lucide — repo bans Lucide; `components/CLAUDE.md`). Emoji count he
+  176→79, en 175→78. The remaining 75 (C category tags / D1 WhatsApp /
+  D2 toasts / D3 ICU plural) are intentionally untouched — deferred to
+  MEH-683 (C, hand-drawn glyphs), MEH-684 (D3), MEH-685 (D2 toast API).
+
+### 2026-05-23 — MEH-675: e2e.yml paths-filter fetch-depth fix
+
+- 🐛 MEH-675: תיקון e2e.yml — fetch-depth: 0 ב-actions/checkout כדי שpaths-filter יעבוד ב-deployment_status events
+
+### 2026-05-23 — chore: remove dead frontend code + orphan i18n keys
+
+`chore`: **Removed** dead frontend code — `ProducerReviews.jsx` (superseded by
+`ReviewsSection.jsx`, forensic comparison confirmed full feature parity),
+`lib/api-client.js` (superseded by `lib/api.js`), `lib/useFadeIn.js` (orphan
+hook, zero imports). Cleaned 4 orphan i18n keys used only by the deleted
+component (`reviews.owner_heading`, `body_label_alt`, `body_placeholder_alt`,
+`edit_cta`) from both `he.json`/`en.json`; `reviews.submit_update` kept
+(consumed by `admin/ProducerForm.jsx`). `npm run build` verified green
+post-deletion. Audit: `/tmp/cleanup_audit.md` + forensic verdict 2026-05-23.
+Follow-up to #815.
+
+### 2026-05-23 — chore: remove 11 legacy .docx/.xlsx files from repo root
+
+`chore`: deleted 10 obsolete `.docx` drafts (admin/testing/design/roadmap
+briefs) plus the unreferenced `mehamakor_producers.xlsx`, all superseded by
+the Drive Brand Hub (post-May 2026). Verified via repo-wide grep: no CI,
+script, or active doc depends on them. The two `admin_brief.docx`
+doc-comment references in `producer_import.py` and `import_producers_xlsx.py`
+were repointed to `CLAUDE.md §4`. Kept `mehamakor_producers_final.xlsx` and
+`mehamakor_producers_updated.xlsx` — they feed the live dev seed pipeline
+(`enrich_producers.py` → `import_producers_xlsx.py`).
+
+### 2026-05-23 — chore: skip deploy.yml lint + api-contract on docs-only PRs
+
+`chore`: F2 of the May 2026 Actions cost sweep. Adds a `changes`
+paths-filter job to `.github/workflows/deploy.yml` and gates the two
+PR-triggered jobs — `lint` (Frontend ESLint) and `api-contract-static` — so
+they skip on docs-only PRs. `deploy.yml` was ~21.8% of monthly Actions
+minutes; both jobs did a full `npm ci`/Python setup on every PR including
+docs-only. Est. **~30 min/month** saved.
+
+**Option A (job-skip), chosen deliberately:** `Frontend lint (RTL + Next.js
+rules)` and `API contract audit (static)` are **required checks** on the
+protect-main ruleset (confirmed via GitHub UI). A trigger-level `paths-ignore`
+(Option C) would make those checks *absent* on docs-only PRs → branch
+protection blocks the PR forever. The job-skip pattern reports skipped jobs as
+`success`, satisfying the required checks (same MEH-485 contract pr-checks.yml
+relies on). `lint` → `if: frontend || workflows`; `api-contract-static` →
+`if: frontend || backend || workflows`.
+
+**Deploy jobs untouched:** `production`, `staging`, `api-contract-probe-staging`
+do **not** depend on `changes` and keep their `if: github.event_name == 'push'
+&& github.ref == ...` guards — they always run on push regardless of paths.
+Added `pull-requests: read` to `permissions` (dorny/paths-filter@v3 needs the
+PR Files API on `pull_request`; read-only, no write scope). All 5 original job
+names unchanged. Landed via GitHub API (local `Edit`/`Write` denied on
+`.github/workflows/**`, MEH-671). Known minor gap: a PR touching *only*
+`scripts/check_api_contract.py` would skip the static check (the post-deploy
+staging probe is the backstop). Risk: LOW.
+
 ### 2026-05-23 — chore: skip Claude PR review on docs-only PRs
 
 `chore`: adds a `paths-ignore:` block to the `pull_request:` trigger in

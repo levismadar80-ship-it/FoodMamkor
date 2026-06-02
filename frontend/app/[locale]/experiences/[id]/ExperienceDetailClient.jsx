@@ -53,7 +53,7 @@ export default function ExperienceDetailClient() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-site-muted">
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
         {t("loading")}
       </div>
     );
@@ -65,7 +65,7 @@ export default function ExperienceDetailClient() {
         <div className="mb-4 flex justify-center">
           <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
         </div>
-        <p className="text-site-muted mb-6">{t("not_found")}</p>
+        <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">
           {t("back_to_all")}
         </Link>
@@ -136,16 +136,16 @@ export default function ExperienceDetailClient() {
         )}
 
         {ex.category && (
-          <span className="inline-block bg-light text-primary text-xs px-3 py-1 rounded-full mb-3">
+          <span className="inline-block bg-green-50 text-primary text-xs px-3 py-1 rounded-full mb-3">
             {ex.category}
           </span>
         )}
 
-        <h1 className="font-headline text-4xl md:text-5xl font-bold text-site-text mb-4">
+        <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-4">
           {ex.title}
         </h1>
 
-        <div className="flex flex-wrap gap-4 text-site-text/85 mb-6">
+        <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
             <span aria-hidden>📅</span>
             {formatDate(ex.event_date)}
@@ -176,17 +176,17 @@ export default function ExperienceDetailClient() {
         </div>
 
         {ex.description && (
-          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-site-text/90">
+          <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
             {ex.description}
           </div>
         )}
 
         {ex.requirements && (
-          <div className="bg-light border border-border rounded-[16px] p-6 mb-6">
-            <h2 className="font-headline text-lg font-bold text-site-text mb-2">
+          <div className="bg-green-50 border border-border rounded-[16px] p-6 mb-6">
+            <h2 className="font-headline-md text-lg font-bold text-text mb-2">
               {t("requirements_title")}
             </h2>
-            <p className="text-site-text/85 whitespace-pre-line">
+            <p className="text-text/85 whitespace-pre-line">
               {ex.requirements}
             </p>
           </div>
@@ -200,13 +200,13 @@ export default function ExperienceDetailClient() {
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition"
+              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition"
             >
               {t("whatsapp_cta")}
             </a>
             <Link
               href="/experiences"
-              className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-light transition"
+              className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-green-50 transition"
             >
               {t("all_experiences")}
             </Link>
@@ -214,7 +214,7 @@ export default function ExperienceDetailClient() {
         )}
 
         {ex.host?.name && (
-          <p className="text-sm text-site-muted mt-8">
+          <p className="text-sm text-fg-muted mt-8">
             {t("host_label")} <span className="text-primary">{ex.host.name}</span>
           </p>
         )}

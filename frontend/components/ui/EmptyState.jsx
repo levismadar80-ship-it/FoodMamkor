@@ -17,9 +17,9 @@ export default function EmptyState({
           {emoji}
         </p>
       )}
-      <h3 className="font-headline text-2xl font-bold text-site-text mb-2">{title}</h3>
+      <h3 className="font-headline-md text-2xl font-bold text-text mb-2">{title}</h3>
       {description && (
-        <p className="text-[15px] text-site-muted max-w-xs mx-auto mb-6">{description}</p>
+        <p className="text-[15px] text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
       )}
       {ctaLabel && (ctaHref || ctaOnClick) && (
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -41,7 +41,7 @@ export default function EmptyState({
           {secondaryLabel && secondaryHref && (
             <Link
               href={secondaryHref}
-              className="inline-block border border-primary text-primary rounded-full px-6 py-3 text-sm font-medium hover:bg-light transition"
+              className="inline-block border border-primary text-primary rounded-full px-6 py-3 text-sm font-medium hover:bg-green-50 transition"
             >
               {secondaryLabel}
             </Link>

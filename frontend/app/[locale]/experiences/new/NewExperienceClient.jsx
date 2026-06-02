@@ -205,7 +205,7 @@ export default function NewExperienceClient() {
 
   if (authLoading || !user) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-site-muted">
+      <div className="max-w-3xl mx-auto px-4 py-16 text-fg-muted">
         {t("auth_loading")}
       </div>
     );
@@ -222,10 +222,10 @@ export default function NewExperienceClient() {
         className="mb-4"
       />
 
-      <h1 className="font-headline text-3xl md:text-4xl font-bold text-site-text mb-2">
+      <h1 className="font-headline-lg text-3xl md:text-4xl font-bold text-text mb-2">
         {t("title")}
       </h1>
-      <p className="text-site-muted mb-8">
+      <p className="text-fg-muted mb-8">
         {t("subtitle")}
       </p>
 
@@ -263,7 +263,7 @@ export default function NewExperienceClient() {
 
         {/* Live moderation feedback */}
         {checking && (
-          <p className="text-xs text-site-muted">{t("checking_content")}</p>
+          <p className="text-xs text-fg-muted">{t("checking_content")}</p>
         )}
         {verdict?.status === "FLAGGED" && (
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
@@ -351,7 +351,7 @@ export default function NewExperienceClient() {
                 className={`px-4 py-2 rounded-full text-sm transition ${
                   form.location_type === lt.value
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-light"
+                    : "bg-white text-text border border-border hover:bg-green-50"
                 }`}
               >
                 {t(lt.labelKey)}
@@ -436,13 +436,13 @@ export default function NewExperienceClient() {
         </div>
 
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <Link href="/experiences" className="text-sm text-site-muted hover:text-primary">
+          <Link href="/experiences" className="text-sm text-fg-muted hover:text-primary">
             {t("cancel")}
           </Link>
           <button
             type="submit"
             disabled={submitting || verdict?.status === "REJECTED"}
-            className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-light transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting
               ? t("submitting")
@@ -459,7 +459,7 @@ export default function NewExperienceClient() {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-site-text mb-1">
+      <label className="block text-sm font-medium text-text mb-1">
         {label}
       </label>
       {children}

@@ -42,7 +42,7 @@ function IncompleteToggle({ active, count, onToggle }) {
   const t = useTranslations("admin");
   const cls = active
     ? "bg-yellow-100 border-yellow-400 text-yellow-800"
-    : "bg-white border-border text-text-secondary hover:border-yellow-400";
+    : "bg-white border-border text-muted hover:border-yellow-400";
   return (
     <button
       onClick={() => onToggle((v) => !v)}
@@ -120,7 +120,7 @@ export default function AdminProducersToolbar({
     <div className="flex flex-col md:flex-row gap-3">
       <SearchInput value={producerSearch} onChange={setProducerSearch} onSearch={onSearch} />
       <StatusSelect value={producerStatus} onChange={setProducerStatus} />
-      <button onClick={() => onSearch()} className="bg-secondary text-white px-4 py-2 rounded-[12px] text-sm">
+      <button onClick={() => onSearch()} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
         {t("common.search")}
       </button>
       <IncompleteToggle active={incompleteOnly} count={incompleteCount} onToggle={setIncompleteOnly} />

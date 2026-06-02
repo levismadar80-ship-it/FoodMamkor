@@ -71,15 +71,15 @@ export default function ExperiencesClient() {
           }}
         />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
             {t("title")}
           </h1>
-          <p className="text-light text-lg">
+          <p className="text-green-50 text-lg">
             {t("subtitle")}
           </p>
           <Link
             href="/experiences/new"
-            className="inline-block mt-6 bg-background text-primary px-6 py-3 rounded-full font-medium hover:bg-light transition"
+            className="inline-block mt-6 bg-background text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
           >
             {t("submit_cta")}
           </Link>
@@ -100,7 +100,7 @@ export default function ExperiencesClient() {
       <div className="max-w-5xl mx-auto px-4 pt-2">
         <Link
           href="/events?tab=experiences"
-          className="text-sm text-site-muted hover:text-primary transition"
+          className="text-sm text-fg-muted hover:text-primary transition"
         >
           {t("cross_link_events")}
         </Link>
@@ -125,7 +125,7 @@ export default function ExperiencesClient() {
                 className={`px-3 py-1 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
-                    : "bg-white text-site-text border border-border hover:bg-light"
+                    : "bg-white text-text border border-border hover:bg-green-50"
                 }`}
               >
                 {tCat(cat.labelKey)}
@@ -135,7 +135,7 @@ export default function ExperiencesClient() {
         </div>
 
         {loading ? (
-          <p className="text-center text-site-muted py-12">
+          <p className="text-center text-fg-muted py-12">
             {t("loading")}
           </p>
         ) : experiences.length === 0 ? (
@@ -143,7 +143,7 @@ export default function ExperiencesClient() {
             <div className="mb-4 flex justify-center">
               <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
             </div>
-            <p className="text-site-muted">
+            <p className="text-fg-muted">
               {t("empty_title")}
             </p>
             <Link

@@ -29,15 +29,15 @@ export default function UpgradeClient() {
     <div className="max-w-2xl mx-auto px-4 py-16">
       <div className="bg-background border border-border rounded-[16px] p-8 text-center">
         <div className="text-5xl mb-4" aria-hidden="true">⭐</div>
-        <h1 className="font-headline text-3xl font-bold text-site-text mb-2">{t("title")}</h1>
-        <p className="text-site-muted mb-8">{t("subtitle")}</p>
+        <h1 className="font-headline-lg text-3xl font-bold text-text mb-2">{t("title")}</h1>
+        <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Free Plan */}
           <div className="border border-border rounded-[16px] p-6">
-            <h3 className="font-semibold text-lg text-site-text mb-1">{t("free_plan.name")}</h3>
+            <h3 className="font-semibold text-lg text-text mb-1">{t("free_plan.name")}</h3>
             <p className="text-3xl font-bold text-primary mb-4">₪0</p>
-            <ul className="text-right text-sm space-y-2 text-site-muted">
+            <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("free_plan.feature_map")}</li>
               <li>{t("free_plan.feature_3_images")}</li>
               <li>{t("free_plan.feature_contact")}</li>
@@ -49,14 +49,14 @@ export default function UpgradeClient() {
           </div>
 
           {/* Premium Plan */}
-          <div className="border-2 border-secondary rounded-[16px] p-6 relative">
+          <div className="border-2 border-primary rounded-[16px] p-6 relative">
             {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-secondary text-white text-xs px-3 py-1 rounded-full">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-3 py-1 rounded-full">
               {t("premium_plan.recommended")}
             </span>
-            <h3 className="font-semibold text-lg text-site-text mb-1">{t("premium_plan.name")}</h3>
-            <p className="text-3xl font-bold text-secondary mb-4">{t("premium_plan.price_pending")}</p>
-            <ul className="text-right text-sm space-y-2 text-site-muted">
+            <h3 className="font-semibold text-lg text-text mb-1">{t("premium_plan.name")}</h3>
+            <p className="text-3xl font-bold text-primary mb-4">{t("premium_plan.price_pending")}</p>
+            <ul className="text-right text-sm space-y-2 text-fg-muted">
               <li>{t("premium_plan.feature_map")}</li>
               <li>{t("premium_plan.feature_unlimited_images")}</li>
               <li>{t("premium_plan.feature_contact")}</li>
@@ -69,7 +69,7 @@ export default function UpgradeClient() {
         </div>
 
         {submitted ? (
-          <div className="bg-light border border-primary/20 rounded-[16px] px-6 py-5">
+          <div className="bg-green-50 border border-primary/20 rounded-[16px] px-6 py-5">
             <p className="text-primary font-semibold">{t("notify_success")}</p>
           </div>
         ) : (
@@ -86,7 +86,7 @@ export default function UpgradeClient() {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-secondary text-white px-6 py-3 rounded-full hover:bg-secondary/90 transition font-medium disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-secondary/40"
+              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {submitting ? t("notify_submitting") : t("notify_cta")}
             </button>

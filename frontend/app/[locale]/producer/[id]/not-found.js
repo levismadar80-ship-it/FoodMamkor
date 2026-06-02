@@ -16,10 +16,10 @@ export default function ProducerNotFound() {
           className="mx-auto mb-4"
           aria-hidden="true"
         />
-        <h1 className="font-headline text-3xl font-bold text-site-text mb-3">
+        <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
           {t("heading")}
         </h1>
-        <p className="text-site-muted mb-8">
+        <p className="text-fg-muted mb-8">
           {t("message")}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -32,7 +32,7 @@ export default function ProducerNotFound() {
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
+            className="inline-flex items-center justify-center gap-2 border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium"
           >
             <House size={18} weight="duotone" />
             {t("home")}

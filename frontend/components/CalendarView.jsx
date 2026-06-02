@@ -96,20 +96,20 @@ export default function CalendarView({ items, linkPrefix }) {
           type="button"
           onClick={prevMonth}
           aria-label={t("previous_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h3 className="font-headline text-lg md:text-xl font-bold text-site-text">
+        <h3 className="font-headline-md text-lg md:text-xl font-bold text-text">
           {monthLabel}
         </h3>
         <button
           type="button"
           onClick={nextMonth}
           aria-label={t("next_month")}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-light transition"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-green-50 transition"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -119,7 +119,7 @@ export default function CalendarView({ items, linkPrefix }) {
 
       <div
         role="row"
-        className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-site-muted"
+        className="grid grid-cols-7 mb-2 text-center text-xs font-semibold text-fg-muted"
       >
         {DAY_KEYS.map((key) => (
           <div key={key} className="py-2" role="columnheader">
@@ -155,8 +155,8 @@ export default function CalendarView({ items, linkPrefix }) {
                 isSelected
                   ? "bg-primary text-white"
                   : isToday
-                    ? "ring-2 ring-primary text-site-text"
-                    : "text-site-text hover:bg-light"
+                    ? "ring-2 ring-primary text-text"
+                    : "text-text hover:bg-green-50"
               }`}
             >
               <span>{d.getDate()}</span>
@@ -176,10 +176,10 @@ export default function CalendarView({ items, linkPrefix }) {
       {selectedDate && (
         <div className="mt-6 pt-6 border-t border-border" data-testid="calendar-day-expansion">
           <div className="flex items-baseline justify-between mb-3">
-            <h4 className="font-headline text-lg font-bold text-site-text">
+            <h4 className="font-headline-md text-lg font-bold text-text">
               {formatHebrewDate(selectedDate)}
             </h4>
-            <span className="text-sm text-site-muted">
+            <span className="text-sm text-fg-muted">
               {t("events_count", { count: selectedItems.length })}
             </span>
           </div>
@@ -189,20 +189,20 @@ export default function CalendarView({ items, linkPrefix }) {
                 <li key={it.id}>
                   <Link
                     href={`${linkPrefix}/${it.id}`}
-                    className="block rounded-lg border border-border p-3 hover:bg-light transition"
+                    className="block rounded-lg border border-border p-3 hover:bg-green-50 transition"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-site-text truncate">
+                      <span className="font-semibold text-text truncate">
                         {it.title}
                       </span>
                       {it.event_time && (
-                        <span className="text-sm text-site-muted shrink-0">
+                        <span className="text-sm text-fg-muted shrink-0">
                           {formatTime(it.event_time)}
                         </span>
                       )}
                     </div>
                     {it.city && (
-                      <p className="text-sm text-site-muted mt-1">{it.city}</p>
+                      <p className="text-sm text-fg-muted mt-1">{it.city}</p>
                     )}
                   </Link>
                 </li>

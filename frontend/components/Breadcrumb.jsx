@@ -20,7 +20,7 @@ export default function Breadcrumb({ items = [], className = "" }) {
   return (
     <nav
       aria-label={t("aria")}
-      className={`text-sm text-site-muted ${className}`}
+      className={`text-sm text-fg-muted ${className}`}
     >
       <ol className="flex flex-wrap items-center gap-x-1">
         {items.map((item, i) => {
@@ -33,7 +33,7 @@ export default function Breadcrumb({ items = [], className = "" }) {
                 </Link>
               ) : (
                 <span
-                  className={isLast ? "text-site-text font-medium" : ""}
+                  className={isLast ? "text-text font-medium" : ""}
                   aria-current={isLast ? "page" : undefined}
                 >
                   {item.label}

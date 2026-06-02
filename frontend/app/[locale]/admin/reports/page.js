@@ -43,7 +43,7 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-headline text-3xl font-bold text-site-text">{t("reports.title")}</h1>
+      <h1 className="font-headline-lg text-3xl font-bold text-text">{t("reports.title")}</h1>
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border">
@@ -56,13 +56,13 @@ export default function AdminReportsPage() {
               className={`px-4 py-2 text-sm transition border-b-2 ${
                 tab === tt.key
                   ? "border-primary text-primary font-semibold"
-                  : "border-transparent text-site-muted hover:text-site-text"
+                  : "border-transparent text-fg-muted hover:text-text"
               }`}
               aria-current={tab === tt.key ? "page" : undefined}
             >
               {tt.label}
               {count > 0 && (
-                <span className="me-2 bg-light text-primary px-2 py-0.5 rounded-full text-xs">{count}</span>
+                <span className="me-2 bg-green-50 text-primary px-2 py-0.5 rounded-full text-xs">{count}</span>
               )}
             </button>
           );
@@ -74,7 +74,7 @@ export default function AdminReportsPage() {
         <section>
           <h2 className="font-semibold text-lg mb-3">{t("reports.section_3plus")}</h2>
           {reports.length === 0 ? (
-            <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
+            <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
               {t("reports.no_reports")}
             </p>
           ) : (
@@ -108,7 +108,7 @@ export default function AdminReportsPage() {
                       {r.reports.map((rep) => (
                         <li key={rep.id} className="bg-red-50 rounded-[8px] p-2 text-xs">
                           <p>{rep.reason}</p>
-                          <p className="text-site-muted mt-1">
+                          <p className="text-fg-muted mt-1">
                             {new Date(rep.created_at).toLocaleDateString("he-IL")}
                           </p>
                         </li>
@@ -125,11 +125,11 @@ export default function AdminReportsPage() {
       {tab === "flagged" && (
         <section>
           <h2 className="font-semibold text-lg mb-3">{t("reports.flagged.heading")}</h2>
-          <p className="text-sm text-site-muted mb-4">
+          <p className="text-sm text-fg-muted mb-4">
             {t("reports.flagged.subtitle")}
           </p>
           {flagged.length === 0 ? (
-            <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
+            <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
               {t("reports.flagged.empty")}
             </p>
           ) : (
@@ -138,13 +138,13 @@ export default function AdminReportsPage() {
                 <div key={hp.id} className="bg-white rounded-[12px] p-5 border border-yellow-300">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-site-text">{hp.title}</h3>
-                      <p className="text-xs text-site-muted mt-1">
+                      <h3 className="font-semibold text-text">{hp.title}</h3>
+                      <p className="text-xs text-fg-muted mt-1">
                         {hp.seller_name} · {hp.city}
                         {hp.price != null && <> · ₪{hp.price}</>}
                       </p>
                       {hp.description && (
-                        <p className="text-sm text-site-text/85 mt-2 whitespace-pre-line">{hp.description}</p>
+                        <p className="text-sm text-text/85 mt-2 whitespace-pre-line">{hp.description}</p>
                       )}
                       <div
                         className="mt-3 rounded-[8px] p-3 text-sm"
@@ -159,7 +159,7 @@ export default function AdminReportsPage() {
                     <div className="flex flex-col gap-2 shrink-0">
                       <button
                         onClick={() => approveFlagged(hp.id)}
-                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-light transition"
+                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-dark transition"
                       >
                         <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {t("reports.flagged.approve")}
                       </button>
@@ -183,7 +183,7 @@ export default function AdminReportsPage() {
         <section>
           <h2 className="font-semibold text-lg mb-3">{t("reports.hidden.heading")}</h2>
           {hidden.length === 0 ? (
-            <p className="text-sm text-site-muted bg-white border border-border rounded-[12px] p-5">
+            <p className="text-sm text-fg-muted bg-white border border-border rounded-[12px] p-5">
               {t("reports.hidden.empty")}
             </p>
           ) : (
@@ -192,7 +192,7 @@ export default function AdminReportsPage() {
                 <div key={hp.id} className="bg-white border border-yellow-200 rounded-[12px] p-4 flex items-center justify-between">
                   <div>
                     <p className="font-medium">{hp.title}</p>
-                    <p className="text-xs text-site-muted">{hp.seller_name} · {hp.city}</p>
+                    <p className="text-xs text-fg-muted">{hp.seller_name} · {hp.city}</p>
                   </div>
                   <button
                     onClick={async () => {

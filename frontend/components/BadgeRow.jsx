@@ -36,8 +36,8 @@ export default function BadgeRow({ producer, limit }) {
 const COLOR_CLASSES = {
   primary: "bg-primary text-white",
   accent: "bg-accent text-white",
-  secondary: "bg-secondary text-white",
-  muted: "bg-light text-site-text border border-border",
+  secondary: "bg-primary text-white",
+  muted: "bg-green-50 text-text border border-border",
 };
 
 function Badge({ badge }) {
@@ -85,7 +85,7 @@ function Badge({ badge }) {
         <span
           role="tooltip"
           data-testid={`badge-tooltip-${badge.key}`}
-          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-[10px] shadow-lg p-3 text-xs text-site-text leading-relaxed w-52 text-right"
+          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-[10px] shadow-lg p-3 text-xs text-text leading-relaxed w-52 text-right"
         >
           {badge.tooltip}
         </span>

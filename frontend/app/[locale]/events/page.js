@@ -26,7 +26,7 @@ export default function EventsPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-site-muted">
+        <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
           טוענת אירועים...
         </div>
       }

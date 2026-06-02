@@ -70,7 +70,7 @@ export default function FavoritesClient() {
         items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_favorites") }]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold mb-8 text-site-text inline-flex items-center gap-2">
+      <h1 className="font-headline-lg text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
         <Heart size={28} weight="fill" className="text-red-500" aria-hidden="true" />
         {t("title")}
       </h1>
@@ -79,17 +79,17 @@ export default function FavoritesClient() {
         <SkeletonProducerGrid count={6} />
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl">
             🌿
           </div>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
             {t("empty_title")}
           </h2>
-          <p className="text-site-muted mb-6 max-w-md mx-auto">
+          <p className="text-fg-muted mb-6 max-w-md mx-auto">
             {t("empty_subtitle")}
           </p>
           {isFirstVisit && (
-            <div className="inline-flex items-center gap-2 bg-light border border-primary/20 rounded-[12px] px-4 py-3 mb-6 text-sm text-primary">
+            <div className="inline-flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-6 text-sm text-primary">
               <span className="text-xl" aria-hidden="true">👇</span>
               <span>{t("first_visit_tip")}</span>
             </div>
@@ -105,7 +105,7 @@ export default function FavoritesClient() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-site-muted mb-4 flex items-center gap-1.5" dir="rtl">
+          <p className="text-xs text-fg-muted mb-4 flex items-center gap-1.5" dir="rtl">
             <Bell size={13} aria-hidden="true" />
             {t("list_alerts_hint")}
           </p>

@@ -87,6 +87,20 @@ jobs:
           # Silence telemetry noise in CI logs.
           NEXT_TELEMETRY_DISABLED: "1"
 
+      # MEH-686 Step 18 — design-token drift gate (Flag B). Re-exports tokens
+      # from docs/DESIGN.md and fails if the committed tailwind.tokens.json
+      # drifts. Closes the two-owners gap (MEH-271) between DESIGN.md and the
+      # generated artifact that tailwind.config.js consumes via require().
+      - name: Verify tailwind.tokens.json sync with DESIGN.md
+        working-directory: frontend
+        run: |
+          npm run design:export
+          git diff --exit-code tailwind.tokens.json || {
+            echo "::error::tailwind.tokens.json is out of sync with docs/DESIGN.md."
+            echo "::error::Run 'cd frontend && npm run design:export' locally and commit the result."
+            exit 1
+          }
+
   # ─────────────────────────────────────────────
   # JOB 2: pytest
   # ─────────────────────────────────────────────

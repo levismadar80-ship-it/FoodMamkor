@@ -106,9 +106,9 @@ function CanvasClickToFullMap() {
 function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-light animate-pulse flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
-      <p className="text-site-muted text-sm">{t("loading")}</p>
+      <p className="text-fg-muted text-sm">{t("loading")}</p>
     </div>
   );
 }
@@ -116,9 +116,9 @@ function PreviewSkeleton() {
 function PreviewEmpty() {
   const t = useTranslations("map.homepage_mini");
   return (
-    <div className="w-full h-full rounded-[12px] bg-light flex flex-col items-center justify-center gap-2 px-4 text-center">
+    <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} weight="duotone" className="text-primary/40" />
-      <p className="text-site-text text-sm">
+      <p className="text-text text-sm">
         {t("pre_launch_hint")} 🌿
       </p>
     </div>
@@ -182,10 +182,10 @@ export default function HomepageMiniMap() {
     >
       <div className="max-w-6xl mx-auto">
         <header className="mb-3 text-center">
-          <h2 className="text-xl md:text-2xl font-semibold text-site-text">
+          <h2 className="text-xl md:text-2xl font-semibold text-text">
             {t("dot_caption")}
           </h2>
-          <p className="text-sm text-site-muted mt-1">{t("dot_subtitle")}</p>
+          <p className="text-sm text-fg-muted mt-1">{t("dot_subtitle")}</p>
         </header>
 
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
@@ -227,7 +227,7 @@ export default function HomepageMiniMap() {
                     <div className="text-sm">
                       <div className="font-medium">{producer.name}</div>
                       {producer.categories?.[0]?.name && (
-                        <div className="text-xs text-site-muted">
+                        <div className="text-xs text-fg-muted">
                           {producer.categories[0].name}
                         </div>
                       )}
@@ -242,7 +242,7 @@ export default function HomepageMiniMap() {
         <div className="mt-3 text-center">
           <Link
             href="/map"
-            className="inline-flex items-center gap-1 text-primary hover:text-primary-light text-sm font-medium"
+            className="inline-flex items-center gap-1 text-primary hover:text-primary-dark text-sm font-medium"
           >
             {t("open_full")}
             <ArrowLeft size={16} weight="bold" aria-hidden="true" />

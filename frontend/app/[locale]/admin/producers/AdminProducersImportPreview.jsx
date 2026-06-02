@@ -60,15 +60,15 @@ function PreviewStats({ preview }) {
     <div className="grid grid-cols-3 gap-3 mb-4 text-center">
       <div className="bg-green-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-primary">{preview.imported}</p>
-        <p className="text-xs text-text-secondary">{t("producers.preview.stats.to_import")}</p>
+        <p className="text-xs text-muted">{t("producers.preview.stats.to_import")}</p>
       </div>
       <div className="bg-yellow-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-yellow-700">{preview.skipped}</p>
-        <p className="text-xs text-text-secondary">{t("producers.preview.stats.skipped")}</p>
+        <p className="text-xs text-muted">{t("producers.preview.stats.skipped")}</p>
       </div>
       <div className="bg-red-50 rounded-[12px] p-3">
         <p className="text-2xl font-bold text-red-700">{preview.errors}</p>
-        <p className="text-xs text-text-secondary">{t("producers.preview.stats.errors")}</p>
+        <p className="text-xs text-muted">{t("producers.preview.stats.errors")}</p>
       </div>
     </div>
   );

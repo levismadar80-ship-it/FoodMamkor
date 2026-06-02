@@ -48,13 +48,13 @@ export default function ParallaxQuote({
       >
         <div className="text-center max-w-4xl">
           <blockquote
-            className="font-headline text-white italic leading-tight"
+            className="font-headline-display text-white italic leading-tight"
             style={{ fontSize: "clamp(24px, 4vw, 48px)" }}
           >
             &ldquo;{quote}&rdquo;
           </blockquote>
           {attribution && (
-            <p className="mt-4 text-white/75 font-body" style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}>
+            <p className="mt-4 text-white/75 font-body-md" style={{ fontSize: "clamp(14px, 1.5vw, 18px)" }}>
               {attribution}
             </p>
           )}

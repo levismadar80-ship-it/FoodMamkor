@@ -53,16 +53,16 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             data-testid="homeproduct-empty-image"
           >
             <House size={36} weight="duotone" aria-hidden="true" />
-            <span className="font-headline text-sm opacity-70">מהמטבח של השכן</span>
+            <span className="font-headline-md text-sm opacity-70">מהמטבח של השכן</span>
           </div>
         )}
-        <span className="absolute top-3 end-3 bg-secondary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
+        <span className="absolute top-3 end-3 bg-primary text-white text-xs px-2 py-1 rounded-full inline-flex items-center gap-1">
           ביתי
           <House size={14} weight="fill" aria-hidden="true" />
         </span>
         {product.moderation_status === "FLAGGED" && (
           <span
-            className="absolute top-3 start-3 bg-light text-accent border border-accent/30 text-xs px-2 py-1 rounded-full"
+            className="absolute top-3 start-3 bg-green-50 text-accent border border-accent/30 text-xs px-2 py-1 rounded-full"
             title={product.moderation_reason || "המודעה בבדיקת אדמין"}
           >
             <MagnifyingGlass size={14} weight="bold" aria-hidden="true" className="inline" /> בבדיקה
@@ -76,28 +76,28 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
       </div>
 
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="font-headline font-bold text-lg mb-1 text-site-text">{product.title}</h3>
+        <h3 className="font-headline-md font-bold text-lg mb-1 text-text">{product.title}</h3>
 
         {/* Trust badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           {product.is_organic && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20 inline-flex items-center gap-0.5">
               <Leaf size={13} weight="duotone" aria-hidden="true" />
               אורגני
             </span>
           )}
           {product.kosher && product.kosher !== "לא ידוע" && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               ✡️ {product.kosher}
             </span>
           )}
           {product.storage_type && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               {storageEmoji(product.storage_type)} {product.storage_type}
             </span>
           )}
           {product.category && (
-            <span className="bg-light text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
+            <span className="bg-green-50 text-primary text-[11px] px-2 py-0.5 rounded-full border border-primary/20">
               {product.category}
             </span>
           )}
@@ -105,7 +105,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Dates */}
         {(product.prep_date || product.expiry_date) && (
-          <p className="text-xs text-site-muted mb-2">
+          <p className="text-xs text-fg-muted mb-2">
             {product.prep_date && <><CalendarBlank size={13} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> הוכן: {formatDate(product.prep_date)}</>}
             {product.prep_date && product.expiry_date && " · "}
             {product.expiry_date && <>עד: {formatDate(product.expiry_date)}</>}
@@ -114,14 +114,14 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Allergens warning */}
         {product.allergens && (
-          <p className="text-xs text-site-muted mb-2" title={product.allergens}>
+          <p className="text-xs text-fg-muted mb-2" title={product.allergens}>
             <Warning size={13} weight="fill" aria-hidden="true" className="inline align-[-2px]" /> אלרגנים: {product.allergens.length > 50 ? product.allergens.slice(0, 50) + "…" : product.allergens}
           </p>
         )}
 
         {/* Location + price */}
         <div className="flex items-center justify-between mb-2">
-          <p className="text-site-muted text-sm">
+          <p className="text-fg-muted text-sm">
             <MapPin size={14} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> {product.neighborhood || product.city}
           </p>
           <span className="font-semibold text-accent">
@@ -134,13 +134,13 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         </div>
 
         {product.quantity && (
-          <p className="text-xs text-site-muted mb-2">
+          <p className="text-xs text-fg-muted mb-2">
             כמות זמינה: {product.quantity} {product.unit || ""}
           </p>
         )}
 
         {product.seller_name && (
-          <p className="text-xs text-site-muted mb-2">מוכר: {product.seller_name}</p>
+          <p className="text-xs text-fg-muted mb-2">מוכר: {product.seller_name}</p>
         )}
 
         <StarRating avg={product.avg_rating} count={product.rating_count} />
@@ -153,8 +153,8 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
 
         {/* Directory-only disclaimer — required by Israeli consumer
             protection law on every home-listing card. */}
-        <p className="mt-3 text-[11px] text-site-muted leading-snug border-t border-border pt-2">
-          <span className="font-semibold text-site-text">{BRAND_NAME}</span> היא
+        <p className="mt-3 text-[11px] text-fg-muted leading-snug border-t border-border pt-2">
+          <span className="font-semibold text-text">{BRAND_NAME}</span> היא
           פלטפורמת דירקטורי בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר
           בלבד.
         </p>

@@ -126,7 +126,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
 
   return (
     <div className="space-y-3" aria-busy={loading ? "true" : "false"}>
-      <p className="text-sm font-semibold text-site-text">{t("producer_quick_signup")}</p>
+      <p className="text-sm font-semibold text-text">{t("producer_quick_signup")}</p>
       {googleId && <div ref={googleBtnRef} className="w-full min-h-[48px]" />}
       {appleId && (
         <button
@@ -142,12 +142,12 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
           {t("apple_continue_f")}
         </button>
       )}
-      <p className="text-xs text-site-muted text-center">
+      <p className="text-xs text-fg-muted text-center">
         {t("producer_only_email_name")}
       </p>
       <div className="flex items-center gap-3 pt-2">
         <div className="flex-1 h-px bg-border" />
-        <span className="text-xs text-site-muted">{t("or")}</span>
+        <span className="text-xs text-fg-muted">{t("or")}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
     </div>
