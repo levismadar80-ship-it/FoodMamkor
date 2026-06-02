@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { useTranslations } from "next-intl";
-import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -162,8 +162,8 @@ export default function Header() {
         transparent
           ? "bg-transparent"
           : scrolled
-            ? "bg-background/95 backdrop-blur-md border-b border-[#e8e0d0] shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
-            : "bg-background border-b border-[#e8e0d0]",
+            ? "bg-background/95 backdrop-blur-md border-b border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+            : "bg-background border-b border-border",
       ].join(" ")}
     >
       {/* Local darkening gradient — only when transparent. Lives INSIDE
@@ -216,7 +216,7 @@ export default function Header() {
               : "text-primary border-primary font-semibold";
             const inactiveClasses = transparent
               ? "text-white/90 border-transparent hover:text-white font-medium"
-              : "text-site-text border-transparent hover:text-primary font-medium";
+              : "text-text border-transparent hover:text-primary font-medium";
             return (
               <Link
                 key={item.href}
@@ -270,13 +270,13 @@ export default function Header() {
           <button
             onClick={() => router.push("/search?focus=1")}
             aria-label={t("nav.search_label")}
-            className={`p-2 ${transparent ? "text-white" : "text-site-muted"}`}
+            className={`p-2 ${transparent ? "text-white" : "text-fg-muted"}`}
             style={transparentTextShadow}
           >
             <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
           </button>
           <button
-            className={`p-2 ${transparent ? "text-white" : "text-site-text"}`}
+            className={`p-2 ${transparent ? "text-white" : "text-text"}`}
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? t("nav.menu_close") : t("nav.menu_open")}
             aria-expanded={menuOpen}
@@ -291,7 +291,7 @@ export default function Header() {
           Drawer always uses the cream background regardless of transparent
           state, so links read correctly when expanded over the hero. */}
       {menuOpen && (
-        <div className="md:hidden bg-background border-t border-[#e8e0d0] px-4 py-3 space-y-3">
+        <div className="md:hidden bg-background border-t border-border px-4 py-3 space-y-3">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href);
             return (
@@ -299,7 +299,7 @@ export default function Header() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`block text-base ${active ? "text-primary font-semibold" : "text-site-text"}`}
+                className={`block text-base ${active ? "text-primary font-semibold" : "text-text"}`}
                 onClick={() => setMenuOpen(false)}
               >
                 {item.label}
@@ -322,7 +322,7 @@ export default function Header() {
               with the icon for visual consistency between desktop + mobile. */}
           <div className="flex items-center gap-2">
             <LanguageToggle />
-            <span className="text-sm text-site-muted">
+            <span className="text-sm text-fg-muted">
               {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
             </span>
           </div>
@@ -331,7 +331,7 @@ export default function Header() {
             <>
               <Link
                 href="/favorites"
-                className="flex items-center gap-1 text-site-muted"
+                className="flex items-center gap-1 text-fg-muted"
                 onClick={() => setMenuOpen(false)}
               >
                 <Heart size={16} weight="duotone" aria-hidden="true" />
@@ -340,7 +340,7 @@ export default function Header() {
               {user.role === "admin" && (
                 <Link
                   href="/admin"
-                  className="block text-secondary"
+                  className="block text-primary"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t("nav.admin")}
@@ -359,7 +359,7 @@ export default function Header() {
           ) : (
             <Link
               href="/login"
-              className="block text-site-muted"
+              className="block text-fg-muted"
               onClick={() => setMenuOpen(false)}
             >
               {t("nav.login")}
@@ -370,7 +370,7 @@ export default function Header() {
 
       {user && user.email_verified === false && (
         <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
-          <span className="text-amber-800">{t("auth.verify.banner")}</span>
+          <span className="text-amber-800 inline-flex items-center gap-1"><EnvelopeSimple size={16} className="text-current" />{t("auth.verify.banner")}</span>
           {resendError ? (
             <span className="text-red-600 text-xs font-medium">{resendError}</span>
           ) : !resendSent ? (
@@ -485,7 +485,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
       {open && (
         <div
           role="menu"
-          className="absolute top-11 bg-white border border-[#e8e0d0] rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
+          className="absolute top-11 bg-white border border-border rounded-[10px] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1 z-[1001]"
           style={{ minWidth: 160, insetInlineStart: 0 }}
         >
           {items.map((item) => (
@@ -494,7 +494,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
               role="menuitem"
               href={item.href}
               onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-site-text hover:bg-[#F5F0E8] transition"
+              className="block px-4 py-2 text-sm text-text hover:bg-[#F5F0E8] transition"
             >
               {item.label}
             </Link>

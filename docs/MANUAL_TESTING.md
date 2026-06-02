@@ -568,6 +568,13 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 ### /map — desktop
 - [ ] פתחי /map — sidebar מציג שתי שורות צ'יפים (קטגוריה + תכונות) + שורת סיכום כשיש סינון פעיל
 
+### /map — כשל הרשאת מיקום פותח חיפוש עיר (geo PERMISSION_DENIED)
+- [ ] /map → לחצי על כפתור ה-GPS (🎯 "קרוב אליי") → **סרבי** להרשאת מיקום בדפדפן — איך לבדוק: בדפדפן/מובייל בחרי "Block"/"חסום" בבקשת המיקום — **תוצאה מצופה:** נפתח LocationModal (חיפוש עיר + ערים פופולריות), לא toast בלבד
+- [ ] בחרי עיר ב-modal שנפתח (חיפוש או צ'יפ עיר פופולרית) — **תוצאה מצופה:** ה-modal נסגר, רשימת בתי העסק ב-/map מסוננת לפי אותה עיר (כמו היום, ללא geocoding/זום)
+- [ ] /map → GPS → סרבי, ואז סגרי את ה-modal — **תוצאה מצופה:** אין בקשת הרשאה חוזרת אוטומטית (no re-prompt); הדפדפן לא שואל שוב מעצמו
+- [ ] /map → GPS → סמלצי כשל טכני (timeout/מיקום לא זמין, לא סירוב) — איך לבדוק: DevTools → Sensors → Location: "Unavailable", או נתקי GPS — **תוצאה מצופה:** toast שגיאה בלבד ("המיקום שלך לא זמין" / "לקח יותר מדי זמן"), **ללא** פתיחת modal
+- [ ] חזרי על הסירוב גם דרך כפתור ה-GPS בשורת הסינון (mobile sticky bar) וגם דרך ה-flow השני — שני ה-paths פותחים את אותו modal
+
 ### דף הבית — filters מעל גריד היצרנים
 - [ ] פתחי דף הבית — שורת תכונות אחת (כשר · אורגני · משלוח · מאומת בלבד) עם edge-fade בצד שמאל
 - [ ] לחצי "אורגני" — הצ'יפ נצבע; שורת סיכום "מסנן לפי: אורגני" מופיעה מעל הגריד
@@ -665,7 +672,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 
 ---
 
-## Registration forms — RTL + dashboard copy (tasks_for_claude_code.md PR 1 — tasks 1+2)
+## Registration forms — RTL + dashboard copy
 
 RTL tests (Task 1) — verify on a mobile viewport (iOS Safari / Android Chrome), not only on desktop. The bug reproduces only on mobile.
 
@@ -690,7 +697,7 @@ Dashboard copy tests (Task 2):
 
 ---
 
-## Map city search width + dropdown z-index (tasks_for_claude_code.md PR 2 — task 3)
+## Map city search width + dropdown z-index
 
 The width bug only shows on desktop (≥ `md` breakpoint, 768px+). Mobile was already correct (`w-full`). The z-index bug shows on `/map` specifically because Leaflet's panes (z-index 200–700) were covering the dropdown (z-50).
 
@@ -704,7 +711,7 @@ The width bug only shows on desktop (≥ `md` breakpoint, 768px+). Mobile was al
 
 ---
 
-## Category card images — dairy + care (tasks_for_claude_code.md PR 3 — tasks 4+5)
+## Category card images — dairy + care
 
 Both cards render on the homepage category grid (`frontend/app/page.js` `CATEGORY_CARDS` array). Each card is a `<motion.button>` with a `backgroundImage: url(…)` style and a 65% green overlay (`rgba(46,104,83,0.65)`) on top. A "plain green" card means the image URL 404'd — the overlay is showing through nothing. A card that looks OK but has a visible logo/text is the image loading fine but carrying branding.
 
@@ -718,7 +725,7 @@ Both cards render on the homepage category grid (`frontend/app/page.js` `CATEGOR
 
 ---
 
-## iOS Safari parallax verification (tasks_for_claude_code.md PR 4 — task 16)
+## iOS Safari parallax verification
 
 Task 16 asked to add a `background-attachment: fixed` fallback for iOS Safari, but the hero and `ParallaxQuote` had already been refactored to Ken Burns CSS-transform animations in the April 8 PREMIUM_DESIGN commit, so no code fallback is needed. The refactor removed the bug described in the task. This checklist verifies the current Ken Burns pattern renders correctly on real iOS Safari (and Chrome iOS), which is what the task wanted us to confirm.
 
@@ -735,7 +742,7 @@ Test on a **real iOS device** (iPhone Safari + Chrome iOS preferred) — simulat
 
 ---
 
-## WhatsApp phone normalization (tasks_for_claude_code.md PR 5 — task 17)
+## WhatsApp phone normalization
 
 The bug was: 4 separate inline phone-normalization implementations across the frontend, each with its own subset of handled input formats. One of them (`ProducerCard.jsx` and its copy in `ProducerDetail.jsx`) had an order-of-operations bug where input with leading whitespace would output an unchanged local-format number. Fix: a single `normalizePhone()` helper in `lib/utils.js` with 19 unit tests, applied at all 4 call sites.
 
@@ -777,7 +784,7 @@ The fix applies to **4 distinct UI surfaces** — verify each:
 
 ---
 
-## Form submit loading state — 5 forms (tasks_for_claude_code.md PR 6 — task 18)
+## Form submit loading state — 5 forms
 
 A shared `ButtonSpinner` component (`frontend/components/ButtonSpinner.jsx`, wraps Phosphor `CircleNotch` + Tailwind `animate-spin`) is now used inside the submit button of every public form. Each form also kept `disabled={loading}` so double-submission is prevented before the spinner even needs to be visible.
 
@@ -881,7 +888,7 @@ VERCEL_ENV=preview node -e "const c=require('./frontend/next.config.js'); c.head
 
 ---
 
-## Eye toggle + inline form validation on /login + /register (tasks_for_claude_code.md PR 8 — tasks 7+8)
+## Eye toggle + inline form validation on /login + /register
 
 Two tightly coupled tasks shipped in one PR. Task 7 = show/hide password button. Task 8 = inline onBlur validation with red borders, green checkmarks, error messages, and a submit button that's disabled until the form is valid.
 

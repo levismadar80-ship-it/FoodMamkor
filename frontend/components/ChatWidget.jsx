@@ -210,7 +210,7 @@ export default function ChatWidget() {
         aria-expanded={open}
       >
         {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
-        {showPillText && !open && <span className="font-body text-sm">שאלה? שאלי אותי</span>}
+        {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלי אותי</span>}
       </button>
 
       {/* ── Chat panel ── */}
@@ -226,7 +226,7 @@ export default function ChatWidget() {
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
-              <span className="font-headline font-bold text-base">שאלי אותנו</span>
+              <span className="font-headline-md font-bold text-base">שאלי אותנו</span>
             </div>
             <button
               type="button"
@@ -247,7 +247,7 @@ export default function ChatWidget() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
                 <div className={`max-w-[85%] px-3 py-2 rounded-[12px] text-sm leading-relaxed whitespace-pre-line ${
-                  m.role === "user" ? "bg-primary text-white" : "bg-white text-site-text border border-border"
+                  m.role === "user" ? "bg-primary text-white" : "bg-white text-text border border-border"
                 }`}>
                   {m.content}
                 </div>
@@ -255,7 +255,7 @@ export default function ChatWidget() {
             ))}
             {sending && (
               <div className="flex justify-end">
-                <div className="bg-white text-site-muted border border-border px-3 py-2 rounded-[12px] text-sm">
+                <div className="bg-white text-fg-muted border border-border px-3 py-2 rounded-[12px] text-sm">
                   <span className="inline-flex gap-1">
                     <span className="animate-pulse">●</span>
                     <span className="animate-pulse" style={{ animationDelay: "0.15s" }}>●</span>
@@ -273,7 +273,7 @@ export default function ChatWidget() {
               <div className="flex flex-col gap-2 pt-1">
                 {SUGGESTED_PROMPTS.map((p) => (
                   <button key={p} type="button" onClick={() => sendMessage(p)}
-                    className="text-right text-xs text-primary bg-light hover:bg-light/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="text-right text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   >{p}</button>
                 ))}
               </div>
@@ -287,7 +287,7 @@ export default function ChatWidget() {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-site-text placeholder:text-site-muted disabled:opacity-60"
+              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />

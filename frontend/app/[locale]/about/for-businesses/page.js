@@ -123,7 +123,7 @@ export default async function FaqForBusinessesPage({ params }) {
             {t("eyebrow")}
           </p>
           <h1
-            className="font-headline mb-4"
+            className="font-headline-lg mb-4"
             style={{
               color: "#2E4A2E",
               fontSize: "clamp(28px, 6vw, 44px)",
@@ -139,7 +139,7 @@ export default async function FaqForBusinessesPage({ params }) {
           {CATEGORIES.map((cat) => (
             <section key={cat.key}>
               <h2
-                className="font-headline mb-4"
+                className="font-headline-md mb-4"
                 style={{
                   color: "#2e6853",
                   fontSize: "20px",
@@ -159,7 +159,7 @@ export default async function FaqForBusinessesPage({ params }) {
                       }}
                     >
                       <summary
-                        className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2e6853]/40 rounded-lg"
+                        className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2e6853]/40 rounded-lg"
                         style={{
                           color: "#1C1A17",
                           fontSize: "17px",

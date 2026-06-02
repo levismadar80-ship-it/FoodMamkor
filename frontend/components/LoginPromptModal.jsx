@@ -98,30 +98,30 @@ export default function LoginPromptModal({
           type="button"
           onClick={onClose}
           aria-label={t("close_aria")}
-          className="absolute top-3 start-3 text-site-muted hover:text-site-text transition p-1 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="absolute top-3 start-3 text-fg-muted hover:text-text transition p-1 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X size={20} weight="bold" aria-hidden="true" />
         </button>
 
         <h2
           id="login-prompt-title"
-          className="font-headline text-xl font-bold text-site-text mb-3"
+          className="font-headline-md text-xl font-bold text-text mb-3"
         >
           {t("title")}
         </h2>
-        <p className="text-site-text mb-6 leading-relaxed">{promptMessage}</p>
+        <p className="text-text mb-6 leading-relaxed">{promptMessage}</p>
 
         <a
           ref={primaryRef}
           href={loginHref}
-          className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-light transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("login_cta")}
         </a>
         <button
           type="button"
           onClick={onClose}
-          className="block w-full mt-2 text-sm text-site-muted hover:text-site-text transition py-2 rounded focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="block w-full mt-2 text-sm text-fg-muted hover:text-text transition py-2 rounded-lg focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("dismiss_cta")}
         </button>

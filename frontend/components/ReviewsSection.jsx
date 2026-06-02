@@ -169,18 +169,18 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
   return (
     <section ref={sectionRef} className="mt-12 pt-8 border-t border-border">
-      <h2 className="font-headline text-2xl font-bold text-site-text mb-6">
+      <h2 className="font-headline-md text-2xl font-bold text-text mb-6">
         {t("section_heading")}
         {total > 0 && (
-          <span className="text-base font-normal text-site-muted ms-2">({total})</span>
+          <span className="text-base font-normal text-fg-muted ms-2">({total})</span>
         )}
       </h2>
 
       {/* Rating summary block — only when ≥3 reviews */}
       {showSummary && (
-        <div className="bg-light rounded-lg p-6 text-center mb-6">
+        <div className="bg-green-50 rounded-lg p-6 text-center mb-6">
           <p
-            className="font-headline font-black leading-none text-site-text mb-2"
+            className="font-headline-display font-black leading-none text-text mb-2"
             style={{ fontSize: 48 }}
           >
             {Number(avgRating).toFixed(1)}
@@ -190,7 +190,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             size={20}
             ariaLabel={t("star_aria", { value: Math.round(Number(avgRating)) })}
           />
-          <p className="text-site-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
+          <p className="text-fg-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
         </div>
       )}
 
@@ -202,7 +202,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           !showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="mb-6 border border-site-text text-site-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-light transition"
+              className="mb-6 border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>
@@ -211,9 +211,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               onSubmit={handleSubmit}
               className="bg-white rounded-[16px] p-5 border border-border mb-8 space-y-4"
             >
-              <h3 className="font-headline text-lg font-bold text-site-text">{t("form_heading")}</h3>
+              <h3 className="font-headline-md text-lg font-bold text-text">{t("form_heading")}</h3>
               <div>
-                <label className="block text-sm text-site-text mb-2">{t("rating_label")}</label>
+                <label className="block text-sm text-text mb-2">{t("rating_label")}</label>
                 <StarPicker
                   value={stars}
                   onChange={setStars}
@@ -221,7 +221,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 />
               </div>
               <div>
-                <label htmlFor="review-body" className="block text-sm text-site-text mb-1">
+                <label htmlFor="review-body" className="block text-sm text-text mb-1">
                   {t("body_label")}
                 </label>
                 <textarea
@@ -233,7 +233,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none"
                   placeholder={t("body_placeholder")}
                 />
-                <p className="text-xs text-site-muted mt-1">{body.length}/500</p>
+                <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
               </div>
               {error && (
                 <p className="text-sm text-red-600" role="alert">
@@ -251,7 +251,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="text-sm text-site-muted hover:text-site-text transition"
+                  className="text-sm text-fg-muted hover:text-text transition"
                 >
                   {t("cancel")}
                 </button>
@@ -259,12 +259,12 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             </form>
           )
         ) : (
-          <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
+          <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
             {t("wa_gate_message")}
           </div>
         )
       ) : (
-        <div className="bg-light/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-site-muted text-center">
+        <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
             login: (chunks) => (
               <a href="/login" className="text-primary hover:underline">{chunks}</a>
@@ -275,7 +275,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
 
       {/* Reviews list */}
       {loading ? (
-        <p className="text-sm text-site-muted">{t("loading")}</p>
+        <p className="text-sm text-fg-muted">{t("loading")}</p>
       ) : reviews.length === 0 ? (
         isOwner ? (
           <EmptyState
@@ -288,7 +288,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         ) : (
           <div className="text-center py-8">
             <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-site-muted">{t("empty_message")}</p>
+            <p className="text-fg-muted">{t("empty_message")}</p>
           </div>
         )
       ) : (
@@ -298,11 +298,11 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               <div key={review.id} className="bg-background py-6">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-body font-semibold text-[15px] text-site-text leading-snug">
+                    <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (
-                      <p className="text-[13px] text-site-muted mt-0.5">
+                      <p className="text-[13px] text-fg-muted mt-0.5">
                         {new Date(review.created_at).toLocaleDateString("he-IL")}
                       </p>
                     )}
@@ -314,7 +314,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                   />
                 </div>
                 {review.body && (
-                  <p className="text-[15px] text-site-text/85 leading-relaxed whitespace-pre-line">
+                  <p className="text-[15px] text-text/85 leading-relaxed whitespace-pre-line">
                     {review.body}
                   </p>
                 )}
@@ -328,18 +328,18 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 onClick={() => fetchPage(page - 1)}
                 disabled={page <= 1}
                 aria-label={t("pagination.prev_aria")}
-                className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
+                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >
                 <ArrowRight size={18} weight="bold" aria-hidden="true" />
               </button>
-              <span className="text-sm text-site-muted" dir="ltr">
+              <span className="text-sm text-fg-muted" dir="ltr">
                 {page} / {pages}
               </span>
               <button
                 onClick={() => fetchPage(page + 1)}
                 disabled={page >= pages}
                 aria-label={t("pagination.next_aria")}
-                className="p-2 rounded-full hover:bg-light transition disabled:opacity-30"
+                className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >
                 <ArrowLeft size={18} weight="bold" aria-hidden="true" />
               </button>

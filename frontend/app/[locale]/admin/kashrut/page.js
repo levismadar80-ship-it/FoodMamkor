@@ -80,7 +80,7 @@ export default function AdminKashrutPage() {
   return (
     <div dir="rtl">
       <div className="mb-5">
-        <h1 className="text-2xl font-bold font-headline text-site-text mb-1">
+        <h1 className="text-2xl font-bold font-headline-md text-text mb-1">
           {t("kashrut.title")}
           <InfoTooltip
             content={t("kashrut.tooltip")}
@@ -88,7 +88,7 @@ export default function AdminKashrutPage() {
             position="bottom"
           />
         </h1>
-        <p className="text-sm text-site-muted">
+        <p className="text-sm text-fg-muted">
           {t("kashrut.subtitle")}
         </p>
       </div>
@@ -105,13 +105,13 @@ export default function AdminKashrutPage() {
       </div>
 
       {loading ? (
-        <p className="text-site-muted">{t("common.loading_f")}</p>
+        <p className="text-fg-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-site-muted">{t("kashrut.no_requests")}</p>
+        <p className="text-fg-muted">{t("kashrut.no_requests")}</p>
       ) : (
         <div className="overflow-x-auto rounded-[12px] border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-light">
+            <thead className="bg-green-50">
               <tr>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.producer")}</th>
                 <th className="text-start px-4 py-3 font-semibold">{t("kashrut.columns.badge")}</th>
@@ -125,7 +125,7 @@ export default function AdminKashrutPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-light/50 transition">
+                <tr key={row.id} className="hover:bg-green-50/50 transition">
                   <td className="px-4 py-3 font-medium">{row.producer_name || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary px-2 py-0.5 text-xs font-medium">
@@ -143,11 +143,11 @@ export default function AdminKashrutPage() {
                         {t("kashrut.cert_view")}
                       </a>
                     ) : (
-                      <span className="text-site-muted text-xs">{t("kashrut.no_cert")}</span>
+                      <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-site-muted">{formatDate(row.created_at)}</td>
-                  <td className="px-4 py-3 text-site-muted text-xs">{row.notes || "—"}</td>
+                  <td className="px-4 py-3 text-fg-muted">{formatDate(row.created_at)}</td>
+                  <td className="px-4 py-3 text-fg-muted text-xs">{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
                     <td className="px-4 py-3">
                       <div className="flex gap-2">

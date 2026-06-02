@@ -58,7 +58,7 @@ export default function AboutPage() {
           }}
         />
         <div className="relative max-w-4xl mx-auto px-4 text-center">
-          <h1 className="font-headline text-4xl md:text-6xl font-bold mb-6 leading-tight">
+          <h1 className="font-headline-display text-4xl md:text-6xl font-bold mb-6 leading-tight">
             {t("hero.heading")}
           </h1>
         </div>
@@ -71,7 +71,7 @@ export default function AboutPage() {
             {/* Founder photo — Path C editorial portrait (MEH-100) */}
             <div className="flex justify-center md:justify-start order-1">
               <div
-                className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-light flex items-center justify-center border border-primary/15 overflow-hidden"
+                className="relative w-[280px] h-[373px] md:w-[360px] md:h-[480px] rounded-xl bg-green-50 flex items-center justify-center border border-primary/15 overflow-hidden"
                 aria-label={t("story.image_aria")}
               >
                 {imgFailed ? (
@@ -91,23 +91,23 @@ export default function AboutPage() {
             </div>
             <div className="order-2 text-right">
               <div
-                className="text-site-text/85 font-body text-lg space-y-5"
+                className="text-text/85 font-body-md text-lg space-y-5"
                 style={{ lineHeight: "1.8" }}
               >
-                <p className="font-headline font-bold text-site-text text-2xl">{t("story.greeting")}</p>
+                <p className="font-headline-md font-bold text-text text-2xl">{t("story.greeting")}</p>
                 <p>{t("story.p1")}</p>
                 <p>{t("story.p2")}</p>
                 <p>{t("story.p3")}</p>
                 <p>{t("story.p4")}</p>
                 <p>{t("story.p5")}</p>
                 <div className="border-s-2 border-primary/40 ps-4 mt-2 space-y-3">
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption1")}
                   </p>
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption2")}
                   </p>
-                  <p className="text-base text-site-text/85 italic leading-relaxed">
+                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption3")}
                   </p>
                 </div>
@@ -130,20 +130,20 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.local.body")}
               </p>
             </div>
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.trust.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.trust.title")}</h3>
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.trust.body")}
               </p>
             </div>
             <div className="text-center">
-              <h3 className="font-headline text-2xl font-bold mb-4">{t("benefits.community.title")}</h3>
-              <p className="text-light/90 leading-relaxed font-body whitespace-pre-line">
+              <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.community.title")}</h3>
+              <p className="text-green-50/90 leading-relaxed font-body-md whitespace-pre-line">
                 {t("benefits.community.body")}
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function AboutPage() {
 
       {/* ======== Section 4 — Tips accordion ======== */}
       <section className="max-w-3xl mx-auto px-4 section-y">
-        <h2 className="font-headline text-3xl font-bold mb-8 text-center text-site-text">
+        <h2 className="font-headline-lg text-3xl font-bold mb-8 text-center text-text">
           {t("tips.heading")}
         </h2>
         <div className="space-y-3">
@@ -162,7 +162,7 @@ export default function AboutPage() {
               <button
                 type="button"
                 onClick={() => setOpenTip(openTip === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-right font-medium text-site-text hover:bg-background transition"
+                className="w-full flex items-center justify-between gap-4 px-6 py-4 text-right font-medium text-text hover:bg-background transition"
                 aria-expanded={openTip === i}
                 aria-controls={`tip-panel-${i}`}
               >
@@ -174,7 +174,7 @@ export default function AboutPage() {
                 )}
               </button>
               {openTip === i && (
-                <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-site-text/85 leading-relaxed border-t border-border">
+                <div id={`tip-panel-${i}`} className="px-6 pb-5 pt-4 text-text/85 leading-relaxed border-t border-border">
                   {t(`tips.${key}.answer`)}
                 </div>
               )}
@@ -186,10 +186,10 @@ export default function AboutPage() {
       {/* ======== Section 5 — Testimonials ======== */}
       <section className="bg-background section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-3xl font-bold mb-4 text-site-text">
+          <h2 className="font-headline-lg text-3xl font-bold mb-4 text-text">
             {t("testimonials.heading")}
           </h2>
-          <p className="text-site-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
+          <p className="text-fg-muted text-lg mb-6">{t("testimonials.subtitle")}</p>
           <Link
             href="/contact"
             className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
@@ -202,25 +202,25 @@ export default function AboutPage() {
       {/* ======== Section 6 — Values ======== */}
       <section className="bg-white section-y border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
-          <h2 className="font-headline text-3xl font-bold mb-6 text-center text-site-text">
+          <h2 className="font-headline-lg text-3xl font-bold mb-6 text-center text-text">
             {t("values.heading")}
           </h2>
-          <p className="text-site-text/85 text-right text-lg leading-relaxed mb-10">
+          <p className="text-text/85 text-right text-lg leading-relaxed mb-10">
             {t("values.intro")}
           </p>
           <div className="space-y-8 text-right">
             {VALUE_KEYS.map((key) => (
               <article key={key}>
-                <h3 className="font-headline font-bold text-2xl text-site-text mb-3">
+                <h3 className="font-headline-md font-bold text-2xl text-text mb-3">
                   {t(`values.${key}.title`)}
                 </h3>
-                <p className="text-site-text/85 text-lg leading-relaxed">
+                <p className="text-text/85 text-lg leading-relaxed">
                   {t(`values.${key}.body`)}
                 </p>
               </article>
             ))}
           </div>
-          <p className="text-site-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
+          <p className="text-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
             {t("values.closing")}
           </p>
         </div>
@@ -229,20 +229,20 @@ export default function AboutPage() {
       {/* ======== Section 7 — CTA for businesses ======== */}
       <section className="section-y bg-background border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-4xl font-bold mb-8 text-site-text">
+          <h2 className="font-headline-lg text-4xl font-bold mb-8 text-text">
             {t("cta.heading")}
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/register/producer"
-              className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-semibold text-lg"
+              className="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-dark transition font-semibold text-lg"
             >
               {t("cta.register")}
               <Leaf size={20} weight="duotone" aria-hidden="true" />
             </Link>
             <Link
               href="/map"
-              className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-light transition font-semibold text-lg"
+              className="bg-white text-primary border border-primary px-8 py-3 rounded-[8px] hover:bg-green-50 transition font-semibold text-lg"
             >
               {t("cta.explore")}
             </Link>
@@ -253,14 +253,14 @@ export default function AboutPage() {
       {/* ======== Contact form ======== */}
       <section className="bg-background section-y border-t border-border">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline text-4xl font-bold text-site-text mb-3">{t("contact.heading")}</h2>
-          <p className="text-site-muted font-body text-base mb-10">
+          <h2 className="font-headline-lg text-4xl font-bold text-text mb-3">{t("contact.heading")}</h2>
+          <p className="text-fg-muted font-body-md text-base mb-10">
             {t("contact.subtitle")}
           </p>
 
           <form onSubmit={handleContact} className="space-y-4 text-right">
             <div>
-              <label htmlFor="contact-name" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-name" className="block text-sm font-medium text-text mb-1">
                 {t("contact.name_label")}
               </label>
               <input
@@ -274,7 +274,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <label htmlFor="contact-email" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-email" className="block text-sm font-medium text-text mb-1">
                 {t("contact.email_label")}
               </label>
               <input
@@ -289,7 +289,7 @@ export default function AboutPage() {
               />
             </div>
             <div>
-              <label htmlFor="contact-message" className="block text-sm font-medium text-site-text mb-1">
+              <label htmlFor="contact-message" className="block text-sm font-medium text-text mb-1">
                 {t("contact.message_label")}
               </label>
               <textarea
@@ -305,7 +305,7 @@ export default function AboutPage() {
             <button
               type="submit"
               disabled={contactStatus === "loading"}
-              className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-light transition font-medium w-full md:w-auto disabled:opacity-60"
+              className="bg-primary text-white px-8 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium w-full md:w-auto disabled:opacity-60"
             >
               {contactStatus === "loading" ? (
                 <span className="inline-flex items-center gap-2">

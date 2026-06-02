@@ -44,7 +44,7 @@ export function HomeMarquee() {
             {MARQUEE_KEYS.map((key) => (
               <span
                 key={`${loop}-${key}`}
-                className="font-body whitespace-nowrap text-light"
+                className="font-body-md whitespace-nowrap text-green-50"
                 style={{
                   fontSize: 14,
                   letterSpacing: "0.06em",
@@ -73,14 +73,14 @@ export function HomeFounderQuote() {
         href="/about"
         className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <div className="w-20 h-20 rounded-full bg-light flex items-center justify-center shrink-0" aria-hidden="true">
+        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center shrink-0" aria-hidden="true">
           <Leaf size={36} weight="duotone" className="text-primary" />
         </div>
         <div className="flex-1">
-          <p className="font-headline italic text-site-text text-lg md:text-xl leading-relaxed mb-2">
+          <p className="font-headline-md italic text-text text-lg md:text-xl leading-relaxed mb-2">
             &ldquo;{t("home.founder_quote.text")}&rdquo;
           </p>
-          <p className="font-body text-sm text-primary group-hover:underline">
+          <p className="font-body-md text-sm text-primary group-hover:underline">
             {t("home.founder_quote.attribution")}
           </p>
         </div>
@@ -99,7 +99,7 @@ export function HomeRecentlyViewed({ items }) {
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
-      <h2 className="font-headline font-bold text-site-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+      <h2 className="font-headline-md font-bold text-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
         {t("home.recent.heading")}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
@@ -112,7 +112,7 @@ export function HomeRecentlyViewed({ items }) {
               href={href}
               className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
             >
-              <div className="relative w-full h-[100px] bg-light overflow-hidden">
+              <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
                   <img
                     src={imgSrc}
@@ -126,8 +126,8 @@ export function HomeRecentlyViewed({ items }) {
                 )}
               </div>
               <div className="p-2.5">
-                <p className="font-headline font-bold text-sm text-site-text truncate">{p.name}</p>
-                <p className="text-xs text-site-muted truncate">{p.city}</p>
+                <p className="font-headline-md font-bold text-sm text-text truncate">{p.name}</p>
+                <p className="text-xs text-fg-muted truncate">{p.city}</p>
               </div>
             </Link>
           );
@@ -152,7 +152,7 @@ export function HomeKitchenPreview({ products, onWhatsAppClick }) {
     >
       <div className="flex items-baseline justify-between mb-6">
         <h2
-          className="font-headline font-bold text-site-text inline-flex items-center gap-2"
+          className="font-headline-md font-bold text-text inline-flex items-center gap-2"
           style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
         >
           <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
@@ -187,7 +187,7 @@ export function HomeHowItWorks() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
-        <h2 className="font-headline font-bold text-site-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}
         </h2>
       </FadeInSection>
@@ -199,8 +199,8 @@ export function HomeHowItWorks() {
         ].map((step, idx) => (
           <FadeInSection key={step.step} delay={idx * 0.12}>
             <div className="font-english text-5xl text-accent mb-2">{step.step}</div>
-            <h3 className="font-headline text-2xl font-bold mb-2">{step.title}</h3>
-            <p className="text-site-text/85 leading-relaxed">{step.text}</p>
+            <h3 className="font-headline-md text-2xl font-bold mb-2">{step.title}</h3>
+            <p className="text-text/85 leading-relaxed">{step.text}</p>
           </FadeInSection>
         ))}
       </div>
@@ -216,15 +216,15 @@ export function HomeCTA() {
   return (
     <section className="bg-primary-dark text-white py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        <h2 className="font-headline font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
+        <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
-        <p className="text-light/90 text-lg mb-8 max-w-xl mx-auto">
+        <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body")}
         </p>
         <Link
           href="/register/producer"
-          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-light transition font-medium"
+          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-green-50 transition font-medium"
         >
           {t("home.cta.button")}
         </Link>

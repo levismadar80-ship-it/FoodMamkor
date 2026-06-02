@@ -53,7 +53,7 @@ export default function InfoTooltip({
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
-        className="inline-flex items-center justify-center w-4 h-4 mx-1 rounded-full border border-site-muted/40 text-site-muted text-[10px] leading-none hover:bg-site-muted/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+        className="inline-flex items-center justify-center w-4 h-4 mx-1 rounded-full border border-fg-muted/40 text-fg-muted text-[10px] leading-none hover:bg-fg-muted/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
       >
         <span aria-hidden="true">i</span>
       </button>

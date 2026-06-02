@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash, Leaf } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Heart, House, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -36,7 +36,7 @@ export default function LoginClient() {
 function LoginPageFallback() {
   const t = useTranslations("auth.login");
   return (
-    <div className="max-w-md mx-auto px-4 py-12 text-center text-site-muted">
+    <div className="max-w-md mx-auto px-4 py-12 text-center text-fg-muted">
       {t("loading")}
     </div>
   );
@@ -54,7 +54,7 @@ function LoginPageBody() {
   const [loading, setLoading] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-  // tasks_for_claude_code.md task 7 — eye-icon toggle for password visibility
+  // Eye-icon toggle for password visibility
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ function LoginPageBody() {
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
-  // tasks_for_claude_code.md task 8 — inline field-level validation.
+  // Inline field-level validation.
   // onBlur flips the `*Touched` state; error / valid states below only
   // activate after the user has interacted with the field, so the form
   // doesn't show a sea of red borders before the user types anything.
@@ -108,22 +108,22 @@ function LoginPageBody() {
         {/* Brand mark + heading */}
         <div className="mb-6">
           <div
-            className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center"
+            className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline text-2xl font-bold text-site-text mb-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mb-1">
             {t("title")}
           </h1>
-          <p className="text-site-muted text-sm">{t("welcome")}</p>
+          <p className="text-fg-muted text-sm">{t("welcome")}</p>
         </div>
 
         {/* Value-prop strip */}
-        <div className="flex justify-center gap-5 mb-5 text-site-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span>{t("value_save")}</span>
-          <span>{t("value_rate")}</span>
-          <span>{t("value_publish")}</span>
+        <div className="flex justify-center gap-5 mb-5 text-fg-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+          <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("value_save")}</span>
+          <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("value_rate")}</span>
+          <span className="inline-flex items-center gap-1"><House size={14} className="text-current" />{t("value_publish")}</span>
         </div>
 
         {/* Email + password form — FIRST per spec */}
@@ -186,7 +186,7 @@ function LoginPageBody() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-site-muted hover:text-site-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
                 aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
                 tabIndex={0}
@@ -205,7 +205,7 @@ function LoginPageBody() {
               <p className="text-xs text-primary mt-1 text-right">{t("valid")}</p>
             )}
             <div className="text-end mt-1">
-              <Link href="/forgot-password" className="text-xs text-site-muted hover:text-primary transition">
+              <Link href="/forgot-password" className="text-xs text-fg-muted hover:text-primary transition">
                 {t("forgot_password")}
               </Link>
             </div>
@@ -218,7 +218,7 @@ function LoginPageBody() {
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-light transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -239,7 +239,7 @@ function LoginPageBody() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-site-muted">{t("or")}</span>
+                <span className="px-3 bg-white text-fg-muted">{t("or")}</span>
               </div>
             </div>
 
@@ -260,7 +260,7 @@ function LoginPageBody() {
           </>
         )}
 
-        <p className="text-center text-sm text-site-muted mt-6">
+        <p className="text-center text-sm text-fg-muted mt-6">
           {t("no_account")}{" "}
           <Link href="/register" className="text-primary hover:underline">
             {t("register_cta")}

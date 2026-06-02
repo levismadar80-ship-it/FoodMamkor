@@ -73,8 +73,8 @@ export default function ProducerSections({
       {/* Description */}
       {producer.description && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-3">{t("producer.detail.sections.about")}</h2>
-          <p className="text-site-text/85 leading-relaxed whitespace-pre-line">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("producer.detail.sections.about")}</h2>
+          <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
         </section>
@@ -91,9 +91,9 @@ export default function ProducerSections({
       {/* MEH-102: Similar producers */}
       {similarProducers.length >= 3 && (
         <section className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
-            <p className="text-sm text-site-muted mb-4">
+            <p className="text-sm text-fg-muted mb-4">
               {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
             </p>
           )}
@@ -110,7 +110,7 @@ export default function ProducerSections({
       {/* Events section */}
       {events.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.events.heading")}</h2>
           <div className="space-y-3">
             {(showAllEvents ? events : events.slice(0, 3)).map((ev) => {
               // MEH-473: Q4 — Gregorian dates via next-intl/format. The
@@ -135,8 +135,8 @@ export default function ProducerSections({
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-site-text leading-snug">{ev.title}</p>
-                    <p className="text-sm text-site-muted mt-0.5">
+                    <p className="font-medium text-text leading-snug">{ev.title}</p>
+                    <p className="text-sm text-fg-muted mt-0.5">
                       {dateStr}{timeStr && ` · ${timeStr}`}
                       {ev.city && ` · ${ev.city}`}
                     </p>
@@ -175,7 +175,7 @@ export default function ProducerSections({
       {/* Products (premium only) */}
       {producer.products?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {producer.products.map((product) => (
               <div
@@ -183,7 +183,7 @@ export default function ProducerSections({
                 className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
               >
                 {product.image_url ? (
-                  <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-light">
+                  <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-green-50">
                     <Image
                       src={product.image_url}
                       alt={product.name}
@@ -193,14 +193,14 @@ export default function ProducerSections({
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 shrink-0 rounded-[8px] bg-light flex items-center justify-center">
-                    <Package size={28} className="text-site-muted/60" aria-hidden="true" />
+                  <div className="w-16 h-16 shrink-0 rounded-[8px] bg-green-50 flex items-center justify-center">
+                    <Package size={28} className="text-fg-muted/60" aria-hidden="true" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-site-text">{product.name}</p>
+                  <p className="font-medium text-text">{product.name}</p>
                   {product.description && (
-                    <p className="text-sm text-site-muted mt-1 line-clamp-2">{product.description}</p>
+                    <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
                   )}
                   {(() => {
                     if (product.price_min != null && product.price_max != null)
@@ -224,7 +224,7 @@ export default function ProducerSections({
           RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
       {producer.slug && recipes.length > 0 && (
         <section className="mt-8" id="recipes">
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.recipes.cta")}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -251,12 +251,12 @@ export default function ProducerSections({
           (has delivery_areas rows but no delivery_cities set yet). */}
       {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
-          <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.delivery.heading")}
           </h2>
           <div className="bg-white rounded-[12px] overflow-hidden border border-border">
             <table className="w-full">
-              <thead className="bg-light">
+              <thead className="bg-green-50">
                 <tr>
                   <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.city")}</th>
                   <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.min_order")}</th>
@@ -266,11 +266,11 @@ export default function ProducerSections({
               <tbody>
                 {producer.delivery_areas.map((da) => (
                   <tr key={da.id} className="border-t border-border">
-                    <td className="px-4 py-3 text-site-text">{da.city}</td>
-                    <td className="px-4 py-3 text-site-text">
+                    <td className="px-4 py-3 text-text">{da.city}</td>
+                    <td className="px-4 py-3 text-text">
                       {da.min_order ? `₪${da.min_order}` : "—"}
                     </td>
-                    <td className="px-4 py-3 text-site-text">{da.delivery_day || "—"}</td>
+                    <td className="px-4 py-3 text-text">{da.delivery_day || "—"}</td>
                   </tr>
                 ))}
               </tbody>

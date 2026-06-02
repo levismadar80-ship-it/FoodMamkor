@@ -197,6 +197,57 @@ this codebase. Open:
 > checks" autocomplete AFTER it has seen the check run at least once. Do not
 > configure the rules below until the first run has completed.
 
+#### Required checks (authoritative — verified 2026-05-23)
+
+**Branch protection on this repo is enforced via Rulesets** (Settings → Rules),
+NOT classic Branch Protection (Settings → Branches). This has a critical API
+consequence:
+
+> **`GET /repos/{owner}/{repo}/branches/{branch}/protection` returns `404`**
+> when only Rulesets are configured (no classic Branch Protection rule). This is
+> the post-2024 GitHub model. **Do NOT read the 404 as "no protection"** — the
+> branch IS protected; the classic-BP endpoint just can't see Rulesets. Read the
+> real config from Settings → Rules in the UI, or `GET /repos/{owner}/{repo}/rulesets`.
+> _(Source: 2026-05-23 — a session note briefly claimed "branch protection absent"
+> off this 404 before it was corrected from the Rulesets UI.)_
+
+**The 6 required status checks on `protect-main`** (verbatim job `name:` strings,
+confirmed from the Rulesets UI 2026-05-23):
+
+1. `Frontend build (Next.js)` — `pr-checks.yml` job key `build`
+2. `Backend tests (pytest)` — `pr-checks.yml` job key `pytest`
+3. `Backend lint (ruff)` — `pr-checks.yml` job key `lint-backend`
+4. `Env drift (.env.example)` — `pr-checks.yml` job key `env-drift`
+5. `Frontend lint (RTL + Next.js rules)` — `deploy.yml` job key `lint`
+6. `API contract audit (static)` — `deploy.yml` job key `api-contract-static`
+
+> `protect-staging` is assumed to mirror this list (the tables below have
+> historically been identical for both branches), but only `protect-main` was
+> screenshotted on 2026-05-23 — confirm via Settings → Rules → `protect-staging`
+> if it ever matters.
+
+> **`Backend dependency audit (pip-audit)` and `Frontend dependency audit (npm
+> audit)` are NOT required checks** as of this audit. They are *blocking jobs*
+> in `dependency-audit.yml` (`continue-on-error: false` — a real CVE fails that
+> workflow run) but are not in the `protect-main` required-status-checks list.
+> **"Blocking job" ≠ "required check."**
+
+**The required-check identifier is the job's `name:` field, NOT the job key (id).**
+GitHub matches required checks by the human-readable `name:` string. The
+`deploy.yml` job *key* is `api-contract-static`, but the required-check *name*
+is `API contract audit (static)`.
+- Renaming a job's **`name:`** silently **breaks** branch protection — the
+  required check goes missing and PRs block forever waiting for a status that
+  never reports. Update the ruleset in the same change.
+- Renaming a job **key** is safe for branch protection (but update any `needs:`).
+
+**Decision rule — skipping a check on docs-only PRs without breaking protection:**
+
+| Check is… | How to skip on docs-only PRs | Why it's safe |
+|---|---|---|
+| **Required** (any of the 6 above) | **Job-skip pattern** — `needs: changes` + `if: <paths>`, gated by a `dorny/paths-filter` `changes` job. | A skipped job reports `conclusion=success`, which **satisfies** the required check. Worked examples: **#811 (F1)** gated 3 `pr-checks.yml` jobs; **#814 (F2)** gated `deploy.yml`'s `lint` + `api-contract-static`. |
+| **Not required** (e.g. `Adversarial review (calibration)`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected → nothing to satisfy. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. **NEVER** apply `paths-ignore` to a *required* check: the check becomes **absent** and branch protection blocks the PR forever. |
+
 #### Rule 1: `main`
 
 | Setting | Value |
@@ -208,9 +259,10 @@ this codebase. Open:
 | Require status checks to pass before merging | ✅ |
 | → Required checks | `Frontend build (Next.js)` |
 | → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Backend lint (ruff)` |
+| → Required checks | `Env drift (.env.example)` |
 | → Required checks | `Frontend lint (RTL + Next.js rules)` |
-| → Required checks | `Backend dependency audit (pip-audit)` |
-| → Required checks | `Frontend dependency audit (npm audit)` |
+| → Required checks | `API contract audit (static)` |
 | Require branches to be up to date before merging | ✅ |
 | Require linear history (squash or rebase only) | ✅ |
 | Do not allow bypassing the above settings | ✅ (applies to admins too) |
@@ -227,9 +279,10 @@ this codebase. Open:
 | Require status checks to pass before merging | ✅ |
 | → Required checks | `Frontend build (Next.js)` |
 | → Required checks | `Backend tests (pytest)` |
+| → Required checks | `Backend lint (ruff)` |
+| → Required checks | `Env drift (.env.example)` |
 | → Required checks | `Frontend lint (RTL + Next.js rules)` |
-| → Required checks | `Backend dependency audit (pip-audit)` |
-| → Required checks | `Frontend dependency audit (npm audit)` |
+| → Required checks | `API contract audit (static)` |
 | Require branches to be up to date before merging | ✅ |
 | Allow force pushes | ❌ disabled |
 | Allow deletions | ❌ disabled |
@@ -261,16 +314,16 @@ this codebase. Open:
 > after the first run on the protected branch.
 
 > **`Backend dependency audit (pip-audit)` and `Frontend dependency audit
-> (npm audit)` are required checks (MEH-336, 2026-05-01).** Both jobs run
-> with `continue-on-error: false`. The MEH-330 baseline (frontend 13 high
-> / 6 moderate, backend 8 vulns at 2026-04-26) was cleared and the gate
-> flipped to blocking on 2026-05-01. **Manual step on first deploy after
-> the flip:** add both job names to the required-checks lists under
-> `staging` *and* `main` in the GitHub branch-protection UI (the tables
-> above already reflect the post-flip state — but GitHub only auto-suggests
-> a check after it has run once on the protected branch, so on first run
-> push the merge PR, let CI complete, then add the two checks to the
-> branch-protection rule).
+> (npm audit)` are blocking jobs, but NOT `protect-main` required checks**
+> (corrected 2026-05-23 — see "Required checks (authoritative)" above). Both
+> run with `continue-on-error: false` in `dependency-audit.yml`, so a real
+> high/critical CVE fails that workflow run (MEH-336; MEH-330 baseline —
+> frontend 13 high / 6 moderate, backend 8 vulns at 2026-04-26 — cleared and
+> flipped to blocking 2026-05-01). However, they are NOT in the `protect-main`
+> ruleset's required-status-checks list: an earlier revision of this section
+> wrongly listed them as required and claimed the tables reflected that. The
+> tables above now show the ruleset-authoritative 6. **"Blocking job" (fails
+> its own workflow run) ≠ "required check" (gates the PR via the ruleset).**
 
 After saving both rules, verify by attempting a direct push from a feature branch
 to `staging` — it should be rejected with "protected branch" error.

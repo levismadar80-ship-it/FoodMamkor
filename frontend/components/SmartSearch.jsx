@@ -26,7 +26,7 @@ function Highlighted({ text, query }) {
         typeof part === "string" ? (
           <span key={i}>{part}</span>
         ) : (
-          <mark key={i} className="bg-yellow-100 text-inherit rounded px-0.5">
+          <mark key={i} className="bg-yellow-100 text-inherit rounded-lg px-0.5">
             {part.match}
           </mark>
         ),
@@ -175,7 +175,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
         onFocus={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="flex-1 w-full bg-transparent outline-none text-site-text placeholder:text-site-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        className="flex-1 w-full bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown && hasResults}
@@ -195,10 +195,10 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           dir="rtl"
         >
           {loading && !hasResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">{t("loading")}</p>
+            <p className="px-3 py-3 text-xs text-fg-muted">{t("loading")}</p>
           )}
           {!loading && !hasResults && (
-            <p className="px-3 py-3 text-xs text-site-muted">
+            <p className="px-3 py-3 text-xs text-fg-muted">
               {t("no_results_for")} &quot;{trimmed}&quot;
             </p>
           )}
@@ -219,7 +219,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
                       <Highlighted text={p.name} query={trimmed} />
                     </div>
                     {p.city && (
-                      <div className="text-xs text-site-muted mt-0.5">
+                      <div className="text-xs text-fg-muted mt-0.5">
                         {p.city}
                       </div>
                     )}
@@ -244,7 +244,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
                     <div className="font-medium">
                       <Highlighted text={p.name} query={trimmed} />
                     </div>
-                    <div className="text-xs text-site-muted mt-0.5">
+                    <div className="text-xs text-fg-muted mt-0.5">
                       {t("product_by_prefix")} {p.producer_name}
                     </div>
                   </Row>
@@ -300,7 +300,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
 function Section({ title, children }) {
   return (
     <div className="py-1">
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-site-muted">
+      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>
@@ -320,7 +320,7 @@ function Row({ id, active, onSelect, onHover, children }) {
       }}
       onMouseEnter={onHover}
       className={`px-3 py-2 cursor-pointer text-sm ${
-        active ? "bg-light text-primary" : "text-site-text hover:bg-light/50"
+        active ? "bg-green-50 text-primary" : "text-text hover:bg-green-50/50"
       }`}
     >
       {children}

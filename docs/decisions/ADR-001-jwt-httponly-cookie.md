@@ -1,6 +1,6 @@
 # ADR-001: JWT in HttpOnly cookie, not localStorage
 
-**Status:** Accepted
+**Status:** Superseded by ADR-017
 **Date:** 2026-04-26
 **Deciders:** Smadar Levi
 **Source:** MEH-326 (PR #349, merged SHA `7b7f880` — HANDOFF.md:1809)

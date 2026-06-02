@@ -241,7 +241,7 @@ export default function ProducersClient({
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-6">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
         {searchQ ? (
           <>
             {t("title.search_results")}{" "}
@@ -267,7 +267,7 @@ export default function ProducersClient({
 
       {/* Active filter strip */}
       {hasActiveChips && (
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-light border-y border-border">
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-green-50 border-y border-border">
           <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
             {t("filters.filter_by")}
           </span>
@@ -322,7 +322,7 @@ export default function ProducersClient({
 
       {/* Counter */}
       {counterText && (
-        <p className="text-sm text-site-muted mb-4" aria-live="polite">
+        <p className="text-sm text-fg-muted mb-4" aria-live="polite">
           {counterText}
         </p>
       )}
@@ -364,7 +364,7 @@ export default function ProducersClient({
                 </div>
               )}
               {!hasMore && appendItems.length > 0 && (
-                <p className="text-center text-site-muted text-sm py-8">
+                <p className="text-center text-fg-muted text-sm py-8">
                   {t("discovery.all_shown", { count: liveTotal })}
                 </p>
               )}
@@ -408,13 +408,13 @@ function RecentlyViewedStrip() {
 
   return (
     <section aria-label={t("aria")} className="mb-5">
-      <p className="text-xs font-semibold text-site-muted mb-2 px-0.5">{t("label")}</p>
+      <p className="text-xs font-semibold text-fg-muted mb-2 px-0.5">{t("label")}</p>
       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         {producers.map((p) => (
           <Link
             key={p.id}
             href={p.slug ? `/${p.slug}` : `/producer/${p.id}`}
-            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-site-text hover:border-primary hover:text-primary transition whitespace-nowrap"
+            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-text hover:border-primary hover:text-primary transition whitespace-nowrap"
           >
             {p.name}
           </Link>
@@ -429,17 +429,17 @@ function FilterEmptyState({ onClear, searchQ }) {
   return (
     <div className="text-center py-16">
       <div
-        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
+        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
         <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+      <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
           ? t("empty.no_match_search", { q: searchQ })
           : t("empty.no_match_filters")}
       </h2>
-      <p className="text-site-muted text-sm mb-6">
+      <p className="text-fg-muted text-sm mb-6">
         {searchQ ? t("empty.search_hint") : t("empty.filters_hint")}
       </p>
       {searchQ && (
@@ -448,7 +448,7 @@ function FilterEmptyState({ onClear, searchQ }) {
             <Link
               key={key}
               href={`/producers?q=${encodeURIComponent(q)}`}
-              className="bg-white border border-border text-site-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
+              className="bg-white border border-border text-text rounded-full px-4 py-1.5 text-sm hover:border-primary hover:text-primary transition"
             >
               {t(`empty.category_chips.${key}`)}
             </Link>
@@ -458,7 +458,7 @@ function FilterEmptyState({ onClear, searchQ }) {
       <button
         type="button"
         onClick={onClear}
-        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+        className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
       >
         {t("empty.clear_all_show_all")}
       </button>
@@ -476,29 +476,29 @@ function CatalogEmptyState() {
   return (
     <div className="text-center py-16">
       <div
-        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-light mb-4"
+        className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
         <span className="text-2xl">🌿</span>
       </div>
-      <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+      <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}
       </h2>
-      <p className="text-site-muted text-sm mb-6 max-w-sm mx-auto">
+      <p className="text-fg-muted text-sm mb-6 max-w-sm mx-auto">
         {t("subtitle")}
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         {!isAdmin && (
           <Link
             href="/register/producer"
-            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-light transition"
+            className="bg-primary text-white px-6 py-3 rounded-[12px] font-medium hover:bg-primary-dark transition"
           >
             {t("add_cta")}
           </Link>
         )}
         <Link
           href="/about#newsletter"
-          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-light transition"
+          className="border border-primary text-primary px-6 py-3 rounded-[12px] font-medium hover:bg-green-50 transition"
         >
           {t("notify_cta")}
         </Link>
@@ -511,10 +511,10 @@ function PageOverflowState() {
   const t = useTranslations("producers.page_overflow");
   return (
     <div className="text-center py-16">
-      <p className="text-site-muted mb-4">{t("message")}</p>
+      <p className="text-fg-muted mb-4">{t("message")}</p>
       <Link
         href="/producers"
-        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-light transition"
+        className="inline-flex items-center bg-primary text-white px-5 py-2 rounded-[12px] hover:bg-primary-dark transition"
       >
         {t("back_cta")}
       </Link>
@@ -537,25 +537,25 @@ function ServerPageLinks({ page, totalPages }) {
       {prev ? (
         <Link
           href={prev}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("prev")}
         </Link>
       ) : (
-        <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
           {t("prev")}
         </span>
       )}
-      <span className="text-site-muted">{t("page_of", { page, totalPages })}</span>
+      <span className="text-fg-muted">{t("page_of", { page, totalPages })}</span>
       {next ? (
         <Link
           href={next}
-          className="border border-border bg-white text-site-text px-4 py-2 rounded-[12px] hover:bg-light transition"
+          className="border border-border bg-white text-text px-4 py-2 rounded-[12px] hover:bg-green-50 transition"
         >
           {t("next")}
         </Link>
       ) : (
-        <span className="border border-border text-site-muted px-4 py-2 rounded-[12px] opacity-50">
+        <span className="border border-border text-fg-muted px-4 py-2 rounded-[12px] opacity-50">
           {t("next")}
         </span>
       )}

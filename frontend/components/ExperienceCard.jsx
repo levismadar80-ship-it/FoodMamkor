@@ -65,7 +65,7 @@ export default function ExperienceCard({ experience: ex }) {
             <span
               className={`absolute top-3 end-3 text-xs px-2 py-1 rounded-full ${
                 ex.spots_left === 0
-                  ? "bg-site-text/80 text-white"
+                  ? "bg-text/80 text-white"
                   : "bg-accent text-white"
               }`}
             >
@@ -74,7 +74,7 @@ export default function ExperienceCard({ experience: ex }) {
           )}
         </div>
       ) : (
-        <div className="h-44 bg-light flex items-center justify-center text-5xl">
+        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
           🍳
         </div>
       )}
@@ -83,21 +83,21 @@ export default function ExperienceCard({ experience: ex }) {
           {formatDate(ex.event_date)}
           {ex.event_time && ` · ${formatTime(ex.event_time)}`}
         </p>
-        <h3 className="font-headline text-xl font-bold text-site-text mb-1">
+        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
           {ex.title}
         </h3>
-        <p className="text-sm text-site-muted mb-2">
+        <p className="text-sm text-fg-muted mb-2">
           {ex.host?.name || t("host_fallback")}
           {ex.city ? ` · ${ex.city}` : ""}
         </p>
         {ex.description && (
-          <p className="text-sm text-site-text/85 line-clamp-2 mb-3">
+          <p className="text-sm text-text/85 line-clamp-2 mb-3">
             {ex.description}
           </p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
           {ex.category && (
-            <span className="bg-light text-primary text-xs px-2 py-1 rounded-full">
+            <span className="bg-green-50 text-primary text-xs px-2 py-1 rounded-full">
               {ex.category}
             </span>
           )}

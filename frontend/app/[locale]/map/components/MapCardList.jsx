@@ -40,7 +40,7 @@ export default function MapCardList({
           ref={(el) => { if (el) cardRefs.current.set(p.id, el); else cardRefs.current.delete(p.id); }}
           onMouseEnter={() => onCardMouseEnter(p.id)}
           onMouseLeave={onCardMouseLeave}
-          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-light/[6%]" : ""} transition`}
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-green-50/[6%]" : ""} transition`}
         >
           <MapProducerCard
             producer={p}
@@ -52,8 +52,8 @@ export default function MapCardList({
       {visibleProducers.length === 0 && (
         <div className="text-center py-12">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
-          <h3 className="font-headline text-lg font-bold text-site-text mb-2">{t("map.card_list.empty.heading")}</h3>
-          <p className="text-site-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
+          <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.card_list.empty.heading")}</h3>
+          <p className="text-fg-muted text-sm mb-3">{t("map.card_list.empty.body")}</p>
           <button
             type="button"
             onClick={onResetAll}

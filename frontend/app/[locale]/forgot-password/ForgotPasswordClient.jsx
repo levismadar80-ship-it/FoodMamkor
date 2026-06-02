@@ -32,16 +32,16 @@ export default function ForgotPasswordClient() {
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
       <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-        <div className="w-16 h-16 rounded-full bg-light mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
+        <div className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
           <Leaf size={32} weight="duotone" className="text-primary" />
         </div>
-        <h1 className="font-headline text-2xl font-bold text-site-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
-        <p className="text-site-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
+        <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.passwordRecovery.forgot.title")}</h1>
+        <p className="text-fg-muted text-sm mb-6">{t("auth.passwordRecovery.forgot.subtitle")}</p>
 
         {submitted ? (
-          <div className="bg-light border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
+          <div className="bg-green-50 border border-primary/20 rounded-[12px] px-5 py-4 text-primary text-sm">
             <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
-            <p className="text-site-muted text-xs mt-2">
+            <p className="text-fg-muted text-xs mt-2">
               {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
               <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
                 {CONTACT_EMAIL}
@@ -69,7 +69,7 @@ export default function ForgotPasswordClient() {
             >
               {loading ? t("auth.passwordRecovery.forgot.submit_sending") : t("auth.passwordRecovery.forgot.submit")}
             </button>
-            <p className="text-center text-sm text-site-muted">
+            <p className="text-center text-sm text-fg-muted">
               <Link href="/login" className="text-primary hover:underline">
                 {t("auth.passwordRecovery.forgot.back_to_login")}
               </Link>

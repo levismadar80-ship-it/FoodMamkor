@@ -97,7 +97,7 @@ export default function PasswordStrength({ password }) {
             <li
               key={rule.id}
               className={`text-xs flex items-center gap-1.5 ${
-                ok ? "text-primary" : "text-site-muted"
+                ok ? "text-primary" : "text-fg-muted"
               }`}
             >
               <span aria-hidden="true">{ok ? "✓" : "○"}</span>

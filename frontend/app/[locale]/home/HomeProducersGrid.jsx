@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, MapPin } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -44,10 +44,11 @@ export function HomeProducersGrid({
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-headline font-bold text-site-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg font-bold text-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.producers.heading")}
         </h2>
         <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
+          <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
       </div>
@@ -77,7 +78,7 @@ export function HomeProducersGrid({
         onNext={onboardAdvance}
       />
       {Object.values(chips).some(Boolean) && (
-        <p className="text-xs text-site-muted mb-4" aria-live="polite">
+        <p className="text-xs text-fg-muted mb-4" aria-live="polite">
           {t("home.producers.filter_prefix")}{" "}
           {CHIPS_CONFIG.filter((c) => chips[c.key])
             .map((c) => c.label)
@@ -87,9 +88,9 @@ export function HomeProducersGrid({
 
       {filters.category && (
         <div className="mb-6 flex items-center gap-2">
-          <span className="text-sm text-site-muted">{t("home.producers.filter_showing")}</span>
+          <span className="text-sm text-fg-muted">{t("home.producers.filter_showing")}</span>
           {categories.find((c) => String(c.id) === filters.category) && (
-            <span className="bg-light text-primary px-3 py-1 rounded-full text-sm">
+            <span className="bg-green-50 text-primary px-3 py-1 rounded-full text-sm">
               {categories.find((c) => String(c.id) === filters.category).emoji}{" "}
               {categories.find((c) => String(c.id) === filters.category).name}
             </span>
@@ -110,7 +111,7 @@ export function HomeProducersGrid({
           {/* MEH-23 — "מציגים X מתוך Y" counter above the grid. */}
           {producers.length > 0 && (
             <p
-              className="text-sm text-site-muted mb-3"
+              className="text-sm text-fg-muted mb-3"
               data-testid="producers-counter"
               aria-live="polite"
             >
@@ -118,7 +119,7 @@ export function HomeProducersGrid({
             </p>
           )}
           {showNewUserHint && visibleProducers.length > 0 && (
-            <div className="flex items-center gap-2 bg-light border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
+            <div className="flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-2.5 mb-4 text-sm text-primary w-fit">
               <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
@@ -141,18 +142,18 @@ export function HomeProducersGrid({
           </div>
           {producers.length === 0 && (
             <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-light mb-4" aria-hidden="true">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} weight="duotone" className="text-primary" />
               </div>
-              <h3 className="font-headline text-xl font-bold text-site-text mb-2">
+              <h3 className="font-headline-md text-xl font-bold text-text mb-2">
                 {t("home.producers.empty_heading")}
               </h3>
-              <p className="text-site-muted mb-5 max-w-md mx-auto">
+              <p className="text-fg-muted mb-5 max-w-md mx-auto">
                 {t("home.producers.empty_subtext")}
               </p>
               <Link
                 href="/map"
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-light transition font-medium"
+                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
               >
                 {t("home.producers.explore_map")}
               </Link>
@@ -162,7 +163,7 @@ export function HomeProducersGrid({
             <div className="text-center mt-8">
               <button
                 onClick={onLoadMore}
-                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-light transition font-medium"
+                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-green-50 transition font-medium"
               >
                 {t("home.producers.load_more")}
               </button>

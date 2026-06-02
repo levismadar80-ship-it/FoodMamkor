@@ -36,8 +36,8 @@ export default function SearchClient() {
 function SearchPageSkeleton() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-4 h-4 w-32 bg-border/50 rounded animate-pulse" />
-      <div className="h-8 w-64 bg-border/50 rounded animate-pulse mb-6" />
+      <div className="mb-4 h-4 w-32 bg-border/50 rounded-lg animate-pulse" />
+      <div className="h-8 w-64 bg-border/50 rounded-lg animate-pulse mb-6" />
       <SkeletonProducerGrid count={6} />
     </div>
   );
@@ -98,7 +98,7 @@ function SearchPageBody() {
         ]}
         className="mb-4"
       />
-      <h1 className="font-headline text-3xl font-bold text-site-text mb-4">
+      <h1 className="font-headline-lg text-3xl font-bold text-text mb-4">
         {q ? t("title_results", { q }) : t("title_default")}
       </h1>
 
@@ -113,7 +113,7 @@ function SearchPageBody() {
             onChange={(e) => setInputVal(e.target.value)}
             placeholder={t("input_placeholder")}
             dir="rtl"
-            className="flex-1 bg-transparent outline-none text-site-text placeholder:text-site-muted text-sm"
+            className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
             aria-label={t("input_aria")}
           />
         </div>
@@ -126,7 +126,7 @@ function SearchPageBody() {
       </form>
 
       {!loading && q && (
-        <p className="text-site-muted mb-8 text-sm">
+        <p className="text-fg-muted mb-8 text-sm">
           {totalHits === 0
             ? t("no_results_hint")
             : t("results_count", { totalHits })}
@@ -134,7 +134,7 @@ function SearchPageBody() {
       )}
 
       {!q && (
-        <p className="text-site-muted">
+        <p className="text-fg-muted">
           {t("empty_prompt")}
         </p>
       )}
@@ -146,7 +146,7 @@ function SearchPageBody() {
           {/* -------- Businesses -------- */}
           {producers.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
                 {t("section_producers")} ({producers.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -160,7 +160,7 @@ function SearchPageBody() {
           {/* -------- Products -------- */}
           {products.length > 0 && (
             <section className="mb-12">
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-4">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
                 {t("section_products")} ({products.length})
               </h2>
               <ul className="divide-y divide-border bg-white rounded-[12px] border border-border overflow-hidden">
@@ -172,13 +172,13 @@ function SearchPageBody() {
                     <li key={prod.id}>
                       <Link
                         href={href}
-                        className="flex flex-col gap-1 p-4 hover:bg-light/50 transition"
+                        className="flex flex-col gap-1 p-4 hover:bg-green-50/50 transition"
                       >
-                        <span className="font-medium text-site-text">
+                        <span className="font-medium text-text">
                           {prod.name}
                         </span>
                         {prod.description && (
-                          <span className="text-sm text-site-muted line-clamp-2">
+                          <span className="text-sm text-fg-muted line-clamp-2">
                             {prod.description}
                           </span>
                         )}
@@ -196,20 +196,20 @@ function SearchPageBody() {
           {totalHits === 0 && (
             <div className="text-center py-16">
               <div
-                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-light mb-6 text-5xl"
+                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl"
                 aria-hidden="true"
               >
                 🌿
               </div>
-              <h2 className="font-headline text-2xl font-bold text-site-text mb-2">
+              <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                 {t("empty_title")}
               </h2>
-              <p className="text-site-muted mb-6 max-w-md mx-auto">
+              <p className="text-fg-muted mb-6 max-w-md mx-auto">
                 {t("empty_subtitle")}
               </p>
               <Link
                 href="/"
-                className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-light transition font-medium"
+                className="inline-flex items-center bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium"
               >
                 {t("empty_home_cta")}
               </Link>

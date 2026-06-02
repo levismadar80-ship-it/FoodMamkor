@@ -109,10 +109,10 @@ export default function AdminExperiencesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-headline text-2xl font-bold text-site-text">
+          <h1 className="font-headline-md text-2xl font-bold text-text">
             {t("experiences.title")}
           </h1>
-          <p className="text-site-muted text-sm mt-1">
+          <p className="text-fg-muted text-sm mt-1">
             {t("experiences.subtitle")}
           </p>
         </div>
@@ -134,7 +134,7 @@ export default function AdminExperiencesPage() {
             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition ${
               tab === value
                 ? "bg-primary text-white"
-                : "bg-white border border-border text-site-text hover:bg-light"
+                : "bg-white border border-border text-text hover:bg-green-50"
             }`}
           >
             {t(`experiences.tabs.${value}`)}
@@ -149,15 +149,15 @@ export default function AdminExperiencesPage() {
       )}
 
       {loading ? (
-        <p className="text-site-muted">{t("common.loading_f")}</p>
+        <p className="text-fg-muted">{t("common.loading_f")}</p>
       ) : rows.length === 0 ? (
-        <div className="bg-white border border-border rounded-[16px] p-8 text-center text-site-muted">
+        <div className="bg-white border border-border rounded-[16px] p-8 text-center text-fg-muted">
           {t("experiences.empty")}
         </div>
       ) : (
         <div className="bg-white border border-border rounded-[16px] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-light text-site-muted text-xs">
+            <thead className="bg-green-50 text-fg-muted text-xs">
               <tr>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.title")}</th>
                 <th className="text-end p-3 font-medium">{t("experiences.columns.host")}</th>
@@ -195,13 +195,13 @@ export default function AdminExperiencesPage() {
       {modalEx && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-background rounded-[16px] p-6 max-w-lg w-full border border-border">
-            <h2 className="font-headline text-xl font-bold text-site-text mb-2">
+            <h2 className="font-headline-md text-xl font-bold text-text mb-2">
               {modalAction === "changes" ? t("experiences.modal.changes_title") : t("experiences.modal.reject_title")}
             </h2>
-            <p className="text-site-muted text-sm mb-4">
+            <p className="text-fg-muted text-sm mb-4">
               &quot;{modalEx.title}&quot; — {modalEx.host?.name}
             </p>
-            <label className="block text-sm font-medium text-site-text mb-1">
+            <label className="block text-sm font-medium text-text mb-1">
               {modalAction === "changes" ? t("experiences.modal.changes_label") : t("experiences.modal.reject_label")}
             </label>
             <textarea
@@ -219,7 +219,7 @@ export default function AdminExperiencesPage() {
               <button
                 onClick={closeModal}
                 disabled={busy}
-                className="px-4 py-2 rounded-[8px] border border-border text-site-text hover:bg-light"
+                className="px-4 py-2 rounded-[8px] border border-border text-text hover:bg-green-50"
               >
                 {t("common.cancel")}
               </button>
@@ -248,23 +248,23 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
     ex.moderation_status === "FLAGGED"
       ? "bg-yellow-100 text-yellow-800"
       : ex.moderation_status === "APPROVED"
-      ? "bg-light text-primary"
+      ? "bg-green-50 text-primary"
       : "bg-gray-100 text-gray-600";
 
   return (
     <>
-      <tr className="border-t border-border hover:bg-light/30">
+      <tr className="border-t border-border hover:bg-green-50/30">
         <td className="p-3">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="font-medium text-site-text hover:text-primary text-end"
+            className="font-medium text-text hover:text-primary text-end"
           >
             {ex.title}
           </button>
         </td>
-        <td className="p-3 text-site-muted">{ex.host?.name || "—"}</td>
-        <td className="p-3 text-site-muted">{formatDate(ex.event_date)}</td>
-        <td className="p-3 text-site-muted">{ex.city || "—"}</td>
+        <td className="p-3 text-fg-muted">{ex.host?.name || "—"}</td>
+        <td className="p-3 text-fg-muted">{formatDate(ex.event_date)}</td>
+        <td className="p-3 text-fg-muted">{ex.city || "—"}</td>
         <td className="p-3">
           <span className={`text-xs px-2 py-1 rounded-full ${modBadge}`}>
             {ex.moderation_status || "—"}
@@ -276,7 +276,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
               <button
                 onClick={() => onApprove(ex)}
                 disabled={busy}
-                className="bg-primary text-white px-3 py-1 rounded-full text-xs hover:bg-primary-light disabled:opacity-50"
+                className="bg-primary text-white px-3 py-1 rounded-full text-xs hover:bg-primary-dark disabled:opacity-50"
               >
                 {t("experiences.actions.approve")}
               </button>
@@ -310,18 +310,18 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-light/20 border-t border-border">
+        <tr className="bg-green-50/20 border-t border-border">
           <td colSpan={6} className="p-4">
-            <div className="text-sm space-y-2 text-site-text">
+            <div className="text-sm space-y-2 text-text">
               <p className="whitespace-pre-wrap">{ex.description}</p>
               {ex.address && (
-                <p className="text-site-muted inline-flex items-center gap-1">
+                <p className="text-fg-muted inline-flex items-center gap-1">
                   <MapPin size={14} weight="duotone" className="text-primary" aria-hidden="true" />
                   {ex.address}
                 </p>
               )}
               {ex.price_per_person != null && (
-                <p className="text-site-muted">
+                <p className="text-fg-muted">
                   💰{" "}
                   {Number(ex.price_per_person) === 0
                     ? t("experiences.free")
@@ -338,11 +338,11 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
                   <p className="font-medium text-xs mb-1">
                     {t("experiences.claude_preview")}
                   </p>
-                  <p className="text-xs text-site-muted">
+                  <p className="text-xs text-fg-muted">
                     {ex.moderation_reason}
                   </p>
                   {ex.moderation_suggestion && (
-                    <p className="text-xs text-site-muted mt-1">
+                    <p className="text-xs text-fg-muted mt-1">
                       💡 {ex.moderation_suggestion}
                     </p>
                   )}

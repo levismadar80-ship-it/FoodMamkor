@@ -215,7 +215,7 @@ export default function MapComponent({
       // search) and calls this imperative method on success. Geolocation
       // + the "my location" marker stay here because they operate on
       // the internal `mapInstanceRef` and `myLocationMarkerRef`.
-      goToMyLocation: () => {
+      goToMyLocation: (onPermissionDenied) => {
         if (!mapInstanceRef.current || !navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -240,7 +240,16 @@ export default function MapComponent({
               }).addTo(mapInstanceRef.current);
             }
           },
-          () => showToast(t("geo_failure"), "error"),
+          // PERMISSION_DENIED (err.code === 1) → hand off to MapClient so it can
+          // open the city-search fallback (LocationModal) instead of a dead-end
+          // toast on a map that looks empty. Technical failures (2/3) keep the toast.
+          (err) => {
+            if (err?.code === 1) {
+              onPermissionDenied?.();
+              return;
+            }
+            showToast(t("geo_failure"), "error");
+          },
         );
       },
       getMap: () => mapInstanceRef.current,

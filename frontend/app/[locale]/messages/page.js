@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Heart, MapPin } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -27,15 +28,15 @@ export default async function MessagesPage({ params }) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 text-center">
       <div className="text-6xl mb-4" aria-hidden="true">💬</div>
-      <h1 className="font-headline text-2xl font-bold text-site-text mb-3">
+      <h1 className="font-headline-md text-2xl font-bold text-text mb-3">
         {t("heading")}
       </h1>
-      <p className="text-site-muted leading-relaxed mb-6">
+      <p className="text-fg-muted leading-relaxed mb-6">
         {t("intro")}
       </p>
       <div className="bg-background border border-border rounded-[16px] p-5 text-right mb-8">
-        <h2 className="font-semibold text-site-text mb-2">{t("why_heading")}</h2>
-        <ul className="text-sm text-site-muted space-y-2">
+        <h2 className="font-semibold text-text mb-2">{t("why_heading")}</h2>
+        <ul className="text-sm text-fg-muted space-y-2">
           <li>{t("why_item_no_middlemen")}</li>
           <li>{t("why_item_direct_terms")}</li>
           <li>{t("why_item_trust")}</li>
@@ -44,14 +45,16 @@ export default async function MessagesPage({ params }) {
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <Link
           href="/map"
-          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40 inline-flex items-center justify-center gap-1"
         >
+          <MapPin size={14} className="text-current" />
           {t("cta_map")}
         </Link>
         <Link
           href="/favorites"
-          className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-light transition font-medium"
+          className="border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium inline-flex items-center justify-center gap-1"
         >
+          <Heart size={14} className="text-current" />
           {t("cta_favorites")}
         </Link>
       </div>

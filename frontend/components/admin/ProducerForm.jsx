@@ -49,7 +49,7 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
         <button
           type="button"
           onClick={() => setOptionalExpanded(true)}
-          className="text-xs text-primary underline hover:text-primary-light"
+          className="text-xs text-primary underline hover:text-primary-dark"
         >
           {t("producers.form.fields.license_optional_toggle")}
         </button>
@@ -61,13 +61,13 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
     <div className="pt-4 border-t border-border mt-4">
       <label
         htmlFor="admin-producer-license"
-        className="block text-sm text-text-secondary mb-1"
+        className="block text-sm text-muted mb-1"
       >
         {t("producers.form.fields.license_label")}
         {required ? t("producers.form.fields.license_required_suffix") : ""}
       </label>
       {required && (
-        <p className="text-xs text-site-muted mb-2">
+        <p className="text-xs text-fg-muted mb-2">
           {t("producers.form.fields.license_required_hint")}
         </p>
       )}
@@ -277,7 +277,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   const Field = ({ label, children, full = false }) => (
     <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="block text-sm text-text-secondary mb-1">{label}</span>
+      <span className="block text-sm text-muted mb-1">{label}</span>
       {children}
     </label>
   );
@@ -524,7 +524,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               </label>
               {!form.delivery_nationwide && (
                 <div>
-                  <span className="block text-sm text-text-secondary mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
+                  <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_cities_label")}</span>
                   <CitiesAutocomplete
                     value={form.delivery_cities}
                     onChange={(cities) => update("delivery_cities", cities)}
@@ -614,7 +614,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           disabled={uploading}
           className="text-sm"
         />
-        {uploading && <p className="text-sm text-text-secondary mt-2">{t("producers.form.uploading")}</p>}
+        {uploading && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
@@ -665,7 +665,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={`px-4 py-1.5 rounded-full text-sm border transition ${
                 form.availability_state === value
                   ? "bg-primary text-white border-primary"
-                  : "border-border text-site-text hover:border-primary"
+                  : "border-border text-text hover:border-primary"
               }`}
             >
               {t(labelKey)}
@@ -702,7 +702,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
-          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-light transition font-medium disabled:opacity-50"
+          className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
           {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>

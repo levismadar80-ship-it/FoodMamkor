@@ -101,7 +101,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         <HeartStraight
           size={22}
           weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-red-500" : "text-site-text"}
+          className={favorited ? "text-red-500" : "text-text"}
           aria-hidden="true"
         />
       </button>
@@ -113,7 +113,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
             ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-            : "bg-white text-site-text border-border hover:bg-light"
+            : "bg-white text-text border-border hover:bg-green-50"
         }`}
       >
         <HeartStraight
@@ -129,7 +129,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
     button = (
       <button
         {...commonProps}
-        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded p-1"
+        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
       >
         {favorited ? "❤️" : "🤍"}
       </button>

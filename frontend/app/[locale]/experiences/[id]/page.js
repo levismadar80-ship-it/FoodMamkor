@@ -67,7 +67,7 @@ export default function ExperienceDetailPage() {
   return (
     <Suspense
       fallback={
-        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-site-muted">
+        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
           טוענת את החוויה...
         </div>
       }

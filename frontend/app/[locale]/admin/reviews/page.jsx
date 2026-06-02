@@ -87,7 +87,7 @@ export default function AdminReviewsPage() {
             position="bottom"
           />
         </h1>
-        <span className="text-sm text-text-secondary">
+        <span className="text-sm text-muted">
           {t("reviews.count", { filtered: filtered.length, total: reviews.length })}
         </span>
       </div>
@@ -119,25 +119,25 @@ export default function AdminReviewsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.producer")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.user")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.rating")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.content")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.date")}</th>
-                <th className="text-end px-4 py-3 font-medium text-text-secondary">{t("reviews.columns.actions")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.producer")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.user")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.rating")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.content")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.date")}</th>
+                <th className="text-end px-4 py-3 font-medium text-muted">{t("reviews.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-text-secondary">
+                  <td colSpan={6} className="text-center py-8 text-muted">
                     {t("reviews.loading")}
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-text-secondary">
+                  <td colSpan={6} className="text-center py-8 text-muted">
                     {t("reviews.empty")}
                   </td>
                 </tr>
@@ -146,7 +146,7 @@ export default function AdminReviewsPage() {
                 filtered.map((r) => (
                   <tr key={r.id} className="border-t align-top">
                     <td className="px-4 py-3 font-medium">{r.producer_name || "—"}</td>
-                    <td className="px-4 py-3 text-text-secondary">
+                    <td className="px-4 py-3 text-muted">
                       <div>{r.user_name || "—"}</div>
                       {r.user_email && (
                         <div className="text-xs opacity-70">{r.user_email}</div>
@@ -166,15 +166,15 @@ export default function AdminReviewsPage() {
                         <div className="font-medium">{r.title}</div>
                       )}
                       {r.body && (
-                        <div className="text-text-secondary text-xs whitespace-pre-line line-clamp-3">
+                        <div className="text-muted text-xs whitespace-pre-line line-clamp-3">
                           {r.body}
                         </div>
                       )}
                       {!r.title && !r.body && (
-                        <span className="text-text-secondary opacity-60">—</span>
+                        <span className="text-muted opacity-60">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-text-secondary text-xs">
+                    <td className="px-4 py-3 text-muted text-xs">
                       {r.created_at
                         ? new Date(r.created_at).toLocaleDateString("he-IL")
                         : "—"}
@@ -184,7 +184,7 @@ export default function AdminReviewsPage() {
                         type="button"
                         onClick={() => handleDelete(r)}
                         disabled={deletingId === r.id}
-                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
+                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
                         aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                       >
                         <Trash size={14} weight="duotone" />

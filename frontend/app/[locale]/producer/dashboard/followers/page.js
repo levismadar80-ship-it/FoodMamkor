@@ -57,14 +57,14 @@ export default function FollowersPage() {
           <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("back_link")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
       </div>
 
       {followerCount === null ? (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : followerCount === 0 ? (
         <EmptyState
           emoji="🌱"
@@ -76,9 +76,9 @@ export default function FollowersPage() {
       ) : (
         <div className="bg-white rounded-[14px] border border-border p-8 text-center">
           <p className="text-5xl mb-3">🌱</p>
-          <p className="text-3xl font-bold text-site-text mb-1">{followerCount}</p>
-          <p className="text-site-muted mb-6">{t("followers_label")}</p>
-          <p className="text-sm text-site-muted mb-4">
+          <p className="text-3xl font-bold text-text mb-1">{followerCount}</p>
+          <p className="text-fg-muted mb-6">{t("followers_label")}</p>
+          <p className="text-sm text-fg-muted mb-4">
             {t("share_hint")}
           </p>
           {profileUrl && (

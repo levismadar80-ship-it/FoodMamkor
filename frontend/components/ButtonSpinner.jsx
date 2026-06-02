@@ -28,7 +28,7 @@ import { CircleNotch } from "@phosphor-icons/react";
  * Size defaults to 16px which pairs well with text at the typical button
  * font-size (14-16px). Override with `size` prop if needed.
  *
- * Introduced in tasks_for_claude_code.md task 18 (form submit loading state).
+ * Form submit loading state.
  */
 export default function ButtonSpinner({ size = 16, className = "" }) {
   return (

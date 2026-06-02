@@ -10,7 +10,7 @@ export default function StarRating({ avg, count }) {
     <div className="flex items-center gap-1 text-sm">
       <span className="text-yellow-500">⭐</span>
       <span className="font-medium">{avg?.toFixed(1)}</span>
-      <span className="text-text-secondary">{t("count_aria", { count })}</span>
+      <span className="text-muted">{t("count_aria", { count })}</span>
     </div>
   );
 }

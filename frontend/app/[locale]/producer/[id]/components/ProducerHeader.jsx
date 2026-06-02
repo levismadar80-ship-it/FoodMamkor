@@ -33,7 +33,7 @@ export default function ProducerHeader({
     <>
       {/* Header: name + trust badges */}
       <div className="flex items-center flex-wrap gap-2 mb-2">
-        <h1 className="font-headline text-4xl font-bold text-site-text">
+        <h1 className="font-headline-lg text-4xl font-bold text-text">
           {producer.name}
         </h1>
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
@@ -42,7 +42,7 @@ export default function ProducerHeader({
         <TrustBadge tier={producer.trust_tier} />
         {producer.reviews_count > 0 && (
           <span
-            className="bg-light text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
+            className="bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
             title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
           >
             ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
@@ -54,7 +54,7 @@ export default function ProducerHeader({
           </span>
         )}
         {(producer.favorites_count ?? 0) >= 5 && (
-          <span className="inline-flex items-center gap-1 text-[13px] text-site-muted">
+          <span className="inline-flex items-center gap-1 text-[13px] text-fg-muted">
             <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
             {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
           </span>
@@ -70,18 +70,18 @@ export default function ProducerHeader({
       </div>
 
       {producer.short_description && (
-        <p className="text-sm md:text-base text-site-muted line-clamp-1 mt-1">
+        <p className="text-sm md:text-base text-fg-muted line-clamp-1 mt-1">
           {producer.short_description}
         </p>
       )}
 
       {producer.contact_name && (
-        <p className="text-[12px] text-site-muted mt-0.5">
+        <p className="text-[12px] text-fg-muted mt-0.5">
           {t("producer.detail.header.behind", { name: producer.contact_name })}
         </p>
       )}
 
-      <p className="text-site-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
+      <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
         <MapPin size={14} weight="duotone" />
         {producer.city}
         {primaryCategory && (
@@ -95,10 +95,10 @@ export default function ProducerHeader({
       {(producer.top_product_name || producer.starting_price_label) && (
         <p className="mt-1 text-sm mb-3">
           {producer.top_product_name && (
-            <span className="text-site-text">{producer.top_product_name}</span>
+            <span className="text-text">{producer.top_product_name}</span>
           )}
           {producer.top_product_name && producer.starting_price_label && (
-            <span className="text-site-muted"> · </span>
+            <span className="text-fg-muted"> · </span>
           )}
           {producer.starting_price_label && (
             <span className="text-accent font-semibold">{producer.starting_price_label}</span>
@@ -119,22 +119,22 @@ export default function ProducerHeader({
       {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
             </span>
           )}
           {producer.organic_certified && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
-            <span className="bg-light text-site-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
               ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}

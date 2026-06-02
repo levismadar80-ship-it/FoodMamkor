@@ -146,7 +146,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       onSubmit={handleSubmit}
       className="space-y-4 bg-white rounded-[16px] border border-border p-6"
     >
-      <h2 className="font-headline text-lg font-bold text-site-text">
+      <h2 className="font-headline-md text-lg font-bold text-text">
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
@@ -266,7 +266,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
             </button>
           </div>
         ) : (
-          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-light">
+          <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50">
             <input
               type="file"
               accept="image/*"
@@ -282,18 +282,18 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       <div>
         <label className="block text-sm font-medium mb-1">
           {t("related_products_label")}
-          <span className="ms-2 text-xs text-site-muted">
+          <span className="ms-2 text-xs text-fg-muted">
             {t("related_products_hint")}
           </span>
         </label>
         {productsLoading ? (
-          <p className="text-sm text-site-muted">{t("products_loading")}</p>
+          <p className="text-sm text-fg-muted">{t("products_loading")}</p>
         ) : products.length === 0 ? (
-          <p className="text-sm text-site-muted">
+          <p className="text-sm text-fg-muted">
             {t("no_products")}
           </p>
         ) : (
-          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-light">
+          <ul className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-[10px] p-2 bg-green-50">
             {products.map((p) => (
               <li key={p.id}>
                 <label className="flex items-center gap-2 text-sm cursor-pointer py-1">
@@ -329,7 +329,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           <button
             type="button"
             onClick={onCancel}
-            className="text-site-muted hover:text-site-text"
+            className="text-fg-muted hover:text-text"
           >
             {t("cancel")}
           </button>

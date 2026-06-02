@@ -73,7 +73,7 @@ export default function ProducerRecipesPage() {
           >
             {t("back")}
           </Link>
-          <h1 className="font-headline text-2xl font-bold text-site-text mt-1">
+          <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
         </div>
@@ -99,7 +99,7 @@ export default function ProducerRecipesPage() {
       )}
 
       {items === null ? (
-        <div className="text-center py-16 text-site-muted">{t("loading")}</div>
+        <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
           emoji="🍞"
@@ -117,11 +117,11 @@ export default function ProducerRecipesPage() {
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0">
-                  <h2 className="font-semibold text-site-text truncate">
+                  <h2 className="font-semibold text-text truncate">
                     {r.title}
                   </h2>
                   {r.description && (
-                    <p className="text-xs text-site-muted mt-0.5 line-clamp-2">
+                    <p className="text-xs text-fg-muted mt-0.5 line-clamp-2">
                       {r.description}
                     </p>
                   )}
@@ -140,7 +140,7 @@ export default function ProducerRecipesPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-site-muted">
+              <div className="flex items-center gap-4 text-xs text-fg-muted">
                 <span>
                   {r.published ? t("published") : t("not_published")}
                 </span>
