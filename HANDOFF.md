@@ -15,6 +15,22 @@
 
 **Pending:** PR review + merge. (Note: numbered Pass 6, not Pass 5 — Pass 5 is MEH-422 subprocess-bypass.)
 
+## 2026-06-03 — MEH-731: navbar homepage-state (locale-path fix) + verify-banner relocation
+
+**Branch:** `feature/meh-731-navbar-homepage-state` (off staging). **Draft PR #TBD**, base `staging`. Follow-up bug from MEH-643 #891.
+
+**Root cause:** `Header.jsx` used `usePathname` from `next/navigation`, which under next-intl `[locale]` routing returns the locale-prefixed path (`/he`/`/en`) — so `pathname === "/"` was always false → `isHomepage`/`transparent` false → cream pill at top of homepage (should be transparent over-image until scroll>80). Scroll-init + banner ruled out in Phase 0.
+
+**Fix:** swap to next-intl's locale-stripping `usePathname` from `@/i18n/navigation` (returns `/`), same hook `LanguageToggle.jsx` already uses. Fixed **all 3 sites** of the `=== "/"` family: (1) Header `isHomepage`/`transparent`, (2) Header `isActive("/")` (גלי underline), (3) `BottomNav.jsx` home-tab match.
+
+**Verify-banner (option b):** extracted from inside the sticky `<header>` into new `components/VerifyBanner.jsx`, rendered as first child of `<main>` in `app/[locale]/layout.js` → floating pill stays pure on homepage; still shows on all pages + scrolled. Gate unchanged (`user && !email_verified`).
+
+**Files:** `Header.jsx` (import swap + banner removal), `VerifyBanner.jsx` (new), `BottomNav.jsx` (import line), `app/[locale]/layout.js` (mount) + CHANGELOG/HANDOFF/MANUAL_TESTING.
+
+**Notes:** build green; new lines have zero raw-hex/physical-RTL. `lint-feedback` hook blocked further Header edits on **19 warnings (0 errors), all pre-existing** (max-lines, id-length, set-state-in-effect from #891) — per MEH-443 warnings≠gate + meta-pattern #4; my diff removed ~88 lines and added no new violations. Pre-existing-not-mine: `BottomNav.jsx:101` `#2e6853` avatar hex, `layout.js:199` skip-link `focus:right-2`. Out-of-scope siblings with same latent locale-pathname pattern (NOT fixed): `FooterSlot.jsx`, `admin/layout.js` — flag for follow-up.
+
+**Next:** Sapir visual QA on PR preview (homepage top=transparent pill+light logo over hero; scrolled=cream pill; inner=cream; גלי underline on home; BottomNav home tab highlighted; verify-banner below hero for unverified). CC can't screenshot (sandbox) → deferred. Then merge → Closes MEH-731.
+
 ## 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
 
 **Branch:** `feature/meh-643-navbar` (off staging). **Draft PR #891**, base `staging`. Part of MEH-643 (final chunk). **HIGH-RISK** central (`central-components.json:11`) + global chrome (`layout.js:205`, all pages) + auth.

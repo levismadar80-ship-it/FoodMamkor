@@ -18,6 +18,28 @@ block-scalar >1024 (1173 chars) → ה-self-test מאמת את נתיב ה-hard-
 **הערה:** ה-pass ממוספר Pass 6 (ה-Linear קרא לו Pass 5, אבל Pass 5 תפוס ע"י
 MEH-422 subprocess-bypass).
 
+### 2026-06-03 — MEH-731: navbar homepage-state (locale-path fix, 3 sites) + verify-banner relocation
+
+`fix(MEH-731)`: ה-FloatingNavbar הציג cream pill (is-scrolled) בראש העמוד הבית
+לפני גלילה — במקום transparent over-image. **Root cause:** `usePathname`
+מ-`next/navigation` מחזיר נתיב עם prefix של locale (`/he`/`/en`), אז
+`pathname === "/"` תמיד false → `isHomepage` false → `transparent` false → pill
+קבוע. **Fix:** מעבר ל-`usePathname` של next-intl מ-`@/i18n/navigation` (מסיר את
+ה-locale → `/`), כמו ש-`LanguageToggle.jsx` כבר עושה.
+
+**3 אתרים מאותה משפחת באג תוקנו** (אותו root cause, לא משאירים siblings ידועים):
+1. `Header.jsx` `isHomepage`/`transparent` — באג מצב ה-navbar.
+2. `Header.jsx` `isActive("/")` — קו תחתון זהב של `גלי` בעמוד הבית.
+3. `BottomNav.jsx` home-tab `match (p === "/")` — הדגשת tab הבית.
+
+**Verify-banner (option b):** ה-banner של אימות-אימייל הוצא מתוך ה-`<header>`
+הדביק לקומפוננטה חדשה `VerifyBanner.jsx`, ומרונדר כבלוק הראשון של `<main>`
+(`layout.js`) — כך ה-pill הצף נשאר נקי בעמוד הבית. עדיין מוצג בכל עמוד + בגלילה.
+תנאי לא שונה (`user && !email_verified`).
+
+Build ירוק; אפס raw hex / physical-RTL בשורות החדשות; lint = warnings בלבד
+(pre-existing, MEH-443). Visual QA נדחה ל-Vercel preview (CC sandbox). Closes MEH-731.
+
 ### 2026-06-03 — MEH-722: /map legend disables empty-viewport category rows
 
 `feat(MEH-722)`: במקרא הקטגוריות של `/map`, קטגוריה עם **0 בתי עסק ב-viewport
