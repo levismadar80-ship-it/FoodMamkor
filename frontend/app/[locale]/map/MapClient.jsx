@@ -199,6 +199,7 @@ export default function MapPage() {
       toggleCategory={filters.toggleCategory}
       activeCategoryNames={filters.activeCategoryNames}
       setActiveCategoryNames={filters.setActiveCategoryNames}
+      viewportCategoryCounts={filters.viewportCategoryCounts}
     />
   );
 
