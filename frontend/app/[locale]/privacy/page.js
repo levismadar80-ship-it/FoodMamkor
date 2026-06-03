@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
 }
 
 // MEH-653: CONTACT_EMAIL imported from lib/env.client (Vercel env var with fallback).
-const OPERATOR_EMAIL = "noreply@mehamakor.co.il";
+// Operator-block contact uses CONTACT_EMAIL (was noreply@; PII/contact fix, refs MEH-720).
 
 const SECTION_IDS = [
   "operator",
@@ -67,7 +67,7 @@ function renderBody(id, t) {
           </p>
           <p>
             <strong>{t("sections.operator.contact_label")}</strong>{" "}
-            <MailLink email={OPERATOR_EMAIL} />
+            <MailLink email={CONTACT_EMAIL} />
           </p>
         </>
       );
