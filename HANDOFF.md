@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
+
+**Branch:** `feature/meh-643-hero` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (hero is chunk 1 of the homepage redesign).
+
+**What:** restyled `app/[locale]/home/HomeHero.jsx` to Assembly-v2 via existing next-intl i18n. New HE copy (title `אוכל מקומי, במקום אחד`, subtitle `בתי עסק מקומיים בישראל — ישר מהמקור`, submit `חפש`); two NEW elements — primary CTA `גלו עסקים` (reuses `onScrollDown` → `#producers-grid`) and text link `איך זה עובד` (→ `#how-it-works`, id added on `HomeHowItWorks` in `HomeStaticBlocks.jsx`). Consumes MEH-136 tokens: `surface-card` pill, `action-primary`/`-hover` CTA, `.focus-ring`, `.duration-base`/`.ease-quart` (+ ease-quart curve for Framer). No raw content hex (alpha gradient overlay kept). RTL logical-only. HeroSearch (MEH-99) + inline near-me (MEH-41) reused, not redesigned.
+
+**Decisions (Sapir):** CTA → scroll to producers grid (accepted overlap w/ caret, revisit later). `איך זה עובד` → anchor to HomeHowItWorks. EN → new keys HE-mirrored in `en.json` as temp fallback w/ `// TODO i18n EN (extends MEH-472)`; existing EN title/subtitle left (now stale).
+
+**EN checklist for MEH-472 (real translation):** changed `home.hero.title`, `home.hero.subtitle`, `search.hero.submit_aria`; new `home.hero.cta_primary`, `home.hero.how_it_works` (currently HE-mirrored).
+
+**Verify:** `npm run build` ✓ Compiled 15.6s; zero physical RTL props; 4 files (HomeHero, HomeStaticBlocks, he.json, en.json) + CHANGELOG/HANDOFF. Screenshots deferred to Vercel preview (no faithful in-sandbox render — no browser tool + remote bg/fonts egress).
+
+**Next:** Sapir visual review on Vercel preview (desktop 1280 + mobile 375: headline display font, CTA token colors, near-me, how-it-works scroll, RTL) → then later MEH-643 chunks (navbar, etc.).
+
 ## 2026-06-02 — MEH-136 additive S4 design tokens (GREEN — tokens only)
 
 **Branch:** `feature/meh-136-s4-tokens` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-136.

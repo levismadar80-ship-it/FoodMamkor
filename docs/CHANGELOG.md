@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
+
+`feat(MEH-643)`: עיצוב מחדש של ה-Hero בעמוד הבית (`HomeHero.jsx`) לפי
+"Phase 5 Homepage Assembly v2" — דרך מנגנון ה-i18n הקיים (next-intl,
+`messages/he.json`), ללא hardcode. **קופי חדש (HE):** כותרת
+"אוכל מקומי, במקום אחד"; subtitle "בתי עסק מקומיים בישראל — ישר מהמקור";
+כפתור ראשי חדש "גלו עסקים" (→ scroll ל-`#producers-grid` דרך `onScrollDown`
+הקיים); קישור טקסט חדש "איך זה עובד" (→ scroll ל-`#how-it-works`, anchor
+נוסף ל-`HomeHowItWorks`); submit label → "חפש" (`search.hero.submit_aria`).
+placeholder + "קרוב אלי" כבר תאמו. **טוקני MEH-136:** `bg-surface-card`
+(pill), `bg-action-primary`/`hover:bg-action-primary-hover` (CTA),
+`.focus-ring`, `.duration-base`/`.ease-quart` (+ ease-quart ל-Framer);
+ללא raw hex (gradient overlay alpha נשמר — לא tokenizable). RTL: לוגי בלבד
+(אפס physical props חדשים). **HeroSearch (MEH-99) + near-me (MEH-41) —
+reuse, ללא redesign.** EN: מפתחות חדשים מקבלים HE-mirror זמני ב-`en.json`
+(`// TODO i18n EN (extends MEH-472)`); title/subtitle EN נשארו (stale,
+לתרגום בנפרד — checklist ב-PR). `npm run build` ירוק. Part of MEH-643.
+
 ### 2026-06-02 — MEH-136 הוספת טוקני עיצוב additive ל-S4 (motion · semantic · surface-card · spacing · focus-ring)
 
 `feat(MEH-136)`: הוספת קבוצות טוקנים שעמוד הבית החדש (S4, MEH-639) צורך
