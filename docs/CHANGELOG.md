@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
+
+`feat(MEH-733)`: רכיב חדש `EditorialBreath.jsx` — pull-quote עריכתי שקט ברוחב
+מלא בין רצועת הסטטיסטיקות (§05) לבין רשת הקטגוריות (§07). עמודה אחת ממורכזת,
+זהה במובייל ובדסקטופ: ספרה `06` (Cormorant gold, LTR-isolated) → קו זהב 40×1px
+ב-55% opacity → ציטוט "תכירי את מי **שמאחורי האוכל**" (ללא נקודה סופית; מילת
+ההדגשה ב-`text-accent` דרך `t.rich`). רקע cream (`bg-background`) יורש את
+ה-paper-noise הגלובלי, ללא card. מירור של `HomeCategoryGrid.jsx:87/:40`
+לספרה ולכותרת-clamp. **הערה:** spec הניח tokens של CSS-vars
+(`--space-20`/`--accent`/`--fs-h2`) שלא קיימים (MEH-686 הסיר `:root`) — מופו
+ל-Tailwind tokens אמיתיים; `--tracking-h2` נשמט (אין token, כותרות אחיות לא
+מגדירות tracking). en.json = מירור עברית, מסומן ל-i18n wave **MEH-472**.
+
 ### 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
 
 `feat(MEH-714)`: השלמת ה-DoD המלא של ה-Linear מעבר ל-PR #895 (שכיסה רק את

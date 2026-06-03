@@ -350,6 +350,9 @@
       "countrywide": "מכל רחבי הארץ",
       "fallback": "מתחילות עכשיו · בכל רחבי הארץ"
     },
+    "editorial_breath": {
+      "quote": "תכירי את מי <accent>שמאחורי האוכל</accent>"
+    },
     "categories": {
       "eyebrow": "קטגוריות",
       "heading": "גלי לפי קטגוריה",
