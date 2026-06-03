@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+### 2026-06-03 — fix/terms-legal-copy-pii: legal-copy PII removal + MEH-720 deferred "דירקטורי" review (Refs MEH-720)
+
+`fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
+פטורה (ת.ז.) `325120939` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
+בשתי השפות (he+en, terms+privacy) → `שנף טופז (עוסקת פטורה).` השם **נשאר**.
+**(2) contact** — בלוק המפעיל הציג `noreply@mehamakor.co.il` ככתובת ליצירת קשר;
+הוחלף ל-`CONTACT_EMAIL` (fallback `contact@mehamakor.co.il`) ב-`terms/page.js` +
+`privacy/page.js`, וה-const המת `OPERATOR_EMAIL` נמחק. **(3) "דירקטורי"** —
+MEH-720 דחה 5 מופעים בשטחי legal/WhatsApp ל"בדיקה נפרדת"; Sapir אישרה: legal
+מאבד "דירקטורי". בוצע mechanical map (`פלטפורמת דירקטורי`→`פלטפורמה`) על 5 מופעי
+`he.json` (privacy who-body, terms meta+service-body, directory.disclaimer
+split-key, admin WhatsApp share-string) + מופע 6 שהתגלה ב-`HomeProductCard.jsx`
+(hardcoded card disclaimer, scope expansion שאושר ע"י Sapir). terms section-1
+הוחלף verbatim לנוסח "פלטפורמה המציגה מידע בלבד" (המונח `בין המוכרת לקונה` נשמר).
+**en.json:** רק מחיקת ה-PII (אין English verbatim מאושר) — נוסח "directory
+platform" באנגלית **דחוי ל-MEH-472** (en:1461/2540/2678/2793/2807; /en הוא
+noindex). אין עריכת BRAND.md (החלטת brand תועדה כאן במקום ADR). grep 325120939 →
+0; grep דירקטורי → 0; `npm run build` ✓.
+
 ### 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
 
 `feat(MEH-733)`: רכיב חדש `HomeEditorialBreath.jsx` — pull-quote עריכתי שקט ברוחב
