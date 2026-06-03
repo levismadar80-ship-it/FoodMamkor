@@ -28,12 +28,15 @@ jobs:
           echo "since=$TS" >> "$GITHUB_OUTPUT"
 
       # Direct binary install (MEH-497) — orhun/git-cliff-action's Docker
-      # build was failing on ubuntu-latest. Pinned to v2.8.0 musl-linked
-      # binary; no Docker dependency, no runtime deps on the runner.
+      # build was failing on ubuntu-latest. Pinned to a musl-linked binary;
+      # no Docker dependency, no runtime deps on the runner.
+      # NOTE: the asset filename has NO "v" prefix (git-cliff-2.13.1-...),
+      # only the release tag does (v2.13.1). The old v2.8.0 URL used
+      # git-cliff-v2.8.0-... which 404s — that bad prefix broke the job.
       - name: Install git-cliff
         run: |
           curl -sSfL \
-            https://github.com/orhun/git-cliff/releases/download/v2.8.0/git-cliff-v2.8.0-x86_64-unknown-linux-musl.tar.gz \
+            https://github.com/orhun/git-cliff/releases/download/v2.13.1/git-cliff-2.13.1-x86_64-unknown-linux-musl.tar.gz \
             | tar xz --strip-components=1 -C /usr/local/bin
 
       - name: Generate CHANGELOG entries
