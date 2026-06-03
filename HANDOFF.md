@@ -11,7 +11,7 @@
 
 **Root cause:** prod /terms+/privacy exposed osek-patur ID `325120939` in the operator block, used `noreply@` as the shown contact address, and used the brand anti-pattern "דירקטורי". MEH-720 (CHANGELOG 2026-05-27) had deferred the 5 legal/WhatsApp "דירקטורי" occurrences; Sapir reviewed → legal surfaces lose it.
 
-**Done (5 files, 15 lines):** `he.json` 6→0 דירקטורי + PII strip + terms section-1 verbatim rewrite; `en.json` PII strip only; `terms/page.js` + `privacy/page.js` operator contact `OPERATOR_EMAIL`(noreply)→`CONTACT_EMAIL`, dead const removed; `HomeProductCard.jsx:158` hardcoded card disclaimer de-directory'd (Sapir-approved scope expansion). Verified: grep 325120939 → 0, grep דירקטורי → 0, `npm run build` ✓ (terms/privacy SSG).
+**Done (5 files, 15 lines):** `he.json` 6→0 דירקטורי + PII strip + terms section-1 verbatim rewrite; `en.json` PII strip only; `terms/page.js` + `privacy/page.js` operator contact `OPERATOR_EMAIL`(noreply)→`CONTACT_EMAIL`, dead const removed; `HomeProductCard.jsx:158` hardcoded card disclaimer de-directory'd (Sapir-approved scope expansion). **Operator final form (Sapir, follow-up):** `operator_value` → `טופז שנפ.` / `Topaz Schnapp.` — "עוסקת פטורה" descriptor dropped (optional disclosure), name order + regular פ intentional. Verified: grep 325120939 → 0, grep דירקטורי → 0, `npm run build` ✓ (terms/privacy SSG).
 
 **Open threads:**
 - **MEH-472 (en i18n wave):** English "directory platform"/"directory-only" wording left intact (no approved English verbatim) at `en.json` lines 1461 (WhatsApp), 2540 (directory.disclaimer), 2678 (privacy), 2793+2807 (terms). Also broader "real-food directory" copy en:304/395/485/491/503 — separate.

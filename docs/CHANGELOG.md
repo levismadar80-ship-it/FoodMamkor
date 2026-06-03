@@ -8,7 +8,8 @@
 
 `fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
 פטורה (ת.ז.) `325120939` נחשף בבלוק "פרטי מפעיל האתר"; הוסר מ-`operator_value`
-בשתי השפות (he+en, terms+privacy) → `שנף טופז (עוסקת פטורה).` השם **נשאר**.
+בשתי השפות (he+en, terms+privacy). גם ה-descriptor האופציונלי "עוסקת פטורה" הוסר
+והשם תוקן ל-`טופז שנפ.` / `Topaz Schnapp.` (סדר שם + פ רגילה, מכוון).
 **(2) contact** — בלוק המפעיל הציג `noreply@mehamakor.co.il` ככתובת ליצירת קשר;
 הוחלף ל-`CONTACT_EMAIL` (fallback `contact@mehamakor.co.il`) ב-`terms/page.js` +
 `privacy/page.js`, וה-const המת `OPERATOR_EMAIL` נמחק. **(3) "דירקטורי"** —
