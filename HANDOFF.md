@@ -5,6 +5,22 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
+
+**Branch:** `feature/meh-643-navbar` (off staging). **Draft PR #891**, base `staging`. Part of MEH-643 (final chunk). **HIGH-RISK** central (`central-components.json:11`) + global chrome (`layout.js:205`, all pages) + auth.
+
+**Done (Steps 1-3):** `Header.jsx` rewritten MEH-29 bar → floating pill. Desktop: centered pill, two surface states (over-image transparent / cream pill on inner pages), gold-underline active, search + LanguageToggle + ghost `כניסה לחשבון` + green `הוסיפו עסק`. Mobile: warm-dark `green-900` drawer **replacing** the old one (Frank Ruhl links + gold `01·02·03`, CTA row, on-dark ghost, preserved favorites/admin/logout). Sticky-overlap positioning preserved. i18n: `nav.explore`=גלי + `nav.add_business_short`=הוסיפו עסק (EN HE-mirror, MEH-472).
+
+**Auth preserved 1:1:** UserMenu avatar+dropdown, showAddBusinessCta gate (MEH-669), verify banner, `/` shortcut — restyled only, zero behavior change.
+
+**Decisions (Sapir, this session):** global pill all pages · preserve UserMenu+banner · keep search+LanguageToggle · new key nav.explore · reuse /logo.png (not doc SVG) · gold underline · sticky positioning kept · chunked review.
+
+**Sub-fidelity notes:** drawer numerals/active use `text-amber-200` (light gold — no design token for the dark-surface gold `#E7C88A`; flag for a possible token). Desktop globe over-image inherits dark ink (minor; gradient behind). True floating-over-hero overlap intentionally NOT introduced (positioning model preserved per decision).
+
+**Verify:** `npm run build` ✓; zero raw hex; RTL logical-only; he/en parity. Files: Header.jsx, he.json, en.json + CHANGELOG/HANDOFF/MANUAL_TESTING.
+
+**Next:** `/adversarial-review` run (central) → **Sapir mobile+desktop visual QA on the PR #891 preview** (desktop: pill 2 states, gold underline, guest vs logged-in; mobile: warm-dark drawer, hamburger glass over hero, logged-in items). Then mark ready + merge. **MEH-643 closes after this chunk** (Hero+CategoryGrid+ProducerCard+Navbar all shipped).
+
 ## 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED/central)
 
 **Branch:** `feature/meh-643-producer-card` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 3).

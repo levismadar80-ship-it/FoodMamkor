@@ -3,6 +3,28 @@
 
 ---
 
+## MEH-643 chunk 4 — Navbar floating-pill (FloatingNavbar v5)
+
+### Desktop (≥768px)
+- [ ] בית `/` למעלה — navbar שקוף מעל ה-hero, דיו בהיר, לוגו לבן — איך לבדוק: לטעון `/` — תוצאה: pill שקוף, טקסט בהיר קריא
+- [ ] גלילה מעל 80px — navbar הופך ל-cream pill צף (border + צל יחיד, ללא קפיצת-צל ב-hover) — תוצאה: מעבר חלק 420ms
+- [ ] עמוד פנימי (`/about`, `/map`) — cream pill כברירת מחדל (לא שקוף) — תוצאה: pill כהה-דיו על cream
+- [ ] קישור פעיל = קו תחתון זהב (`גלי` ב-`/`, `מפה` ב-`/map`) — תוצאה: underline זהב בלבד
+- [ ] אורח: ghost `כניסה לחשבון` + green `הוסיפו עסק ↗` — תוצאה: שניהם מופיעים
+- [ ] מחובר (consumer): avatar dropdown + green CTA נשאר — תוצאה: dropdown profile/settings/logout
+- [ ] מחובר (producer/admin): **אין** `הוסיפו עסק` (MEH-669) — תוצאה: CTA מוסתר
+- [ ] search icon + `/` shortcut + LanguageToggle עובדים — תוצאה: search נפתח, שפה מתחלפת
+
+### Mobile (375px)
+- [ ] hamburger over-hero = glass יחיד (`bg-white/15 backdrop-blur`) — תוצאה: כפתור מטושטש קריא מעל התמונה
+- [ ] פתיחת drawer = warm-dark (`green-900`) — קישורי Frank Ruhl 24px + ספרות זהב `01·02·03` — תוצאה: drawer כהה, מספרים זהב
+- [ ] drawer: green `הוסיפו עסק` + ghost-on-dark `כניסה לחשבון` (אורח) — תוצאה: שתי כפתורים full-width
+- [ ] drawer מחובר: favorites + admin (אם admin) + logout, restyled כהה — תוצאה: כולם נוכחים וקריאים
+- [ ] search button במובייל עובד — תוצאה: נפתח `/search`
+- [ ] email-verify banner (משתמש לא מאומת) עדיין מופיע מתחת ל-pill — תוצאה: banner צהוב + resend
+
+---
+
 ## MEH-671 — Producer-signup smoke (now automated)
 
 The 5-step producer-signup smoke is now a GitHub Action
