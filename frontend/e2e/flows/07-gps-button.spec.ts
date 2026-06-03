@@ -41,7 +41,7 @@ test.describe("GPS button on /map", () => {
     // :visible scopes to the active map container — MapClient renders twice
     // (desktop lg:grid + mobile lg:hidden); both produce a GPS button in the DOM.
     const gpsBtn = page.locator('[aria-label="מרכזי את המפה על המיקום שלי"]:visible');
-    await expect(gpsBtn).toBeVisible({ timeout: 10_000 });
+    await expect(gpsBtn).toBeVisible({ timeout: 20_000 });
 
     // Clicking should not throw; we verify no JS error is logged.
     const errors: string[] = [];

@@ -83,7 +83,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // round-trip. Playwright's default actionTimeout is 10s, plenty.
     await expect(
       page.getByText(/הסיסמה הזו דלפה ברשת/),
-    ).toBeVisible({ timeout: 10_000 });
+    ).toBeVisible({ timeout: 20_000 });
 
     // Submit (if enabled) must surface the same failure on the form-level
     // error div via the 422-failures path.
@@ -129,7 +129,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // screen. Identical body across new-email / collision branches; no
     // access_token in response, no auto-login.
     await expect(page.getByText(/בדקי את תיבת המייל שלך/)).toBeVisible({
-      timeout: 10_000,
+      timeout: 20_000,
     });
   });
 

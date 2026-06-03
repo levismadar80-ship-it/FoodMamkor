@@ -112,6 +112,33 @@ jobs:
         working-directory: frontend
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
+      # MEH-728 — warm up the Vercel preview before the suite so cold-start
+      # latency doesn't blow the per-wait budgets and trip --fail-on-flaky-tests
+      # (MEH-484). Soft readiness gate: poll the preview (with the same
+      # protection-bypass header the tests use) until it serves 200, capped at
+      # ~90s, then proceed regardless — the raised Playwright budgets cover any
+      # residual latency, so warm-up can never become a new failure source.
+      - name: Warm up Vercel preview
+        run: |
+          url="${TARGET_URL%/}"
+          echo "Warming preview: $url"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}" \
+              -H "x-vercel-skip-toolbar: 1" \
+              "$url/" || echo 000)
+            echo "attempt $i → HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Preview warm after ${i} attempt(s)."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::warning::Preview did not return 200 within ~90s warm-up cap; proceeding (raised budgets cover residual latency)."
+        env:
+          TARGET_URL: ${{ github.event.deployment_status.target_url }}
+          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
       - name: Run E2E tests
         # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
         # failure so flake stops hiding behind the retry. retries: 1 in CI is

@@ -9,15 +9,21 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["html", { open: "never" }], ["list"]]
     : [["list"]],
-  timeout: 30_000,
+  // MEH-728: timing budgets raised for Vercel preview cold-start. The two
+  // documented flakes (PR #885 waitForURL, #886 toBeVisible) hit the 10s
+  // ceiling on attempt 1, then passed on retry in ~4-5s once the preview was
+  // warm. A 20s expect floor + 45s per-test headroom (paired with the e2e.yml
+  // warm-up ping) keeps cold-start latency from tripping --fail-on-flaky-tests
+  // (MEH-484). The flake gate itself is unchanged.
+  timeout: 45_000,
   expect: {
-    timeout: 10_000,
+    timeout: 20_000,
   },
   use: {
     baseURL: process.env.TEST_URL || "http://localhost:3000",
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
-    actionTimeout: 10_000,
+    actionTimeout: 20_000, // MEH-728: 10s→20s for preview cold-start headroom
     navigationTimeout: 30_000,
     reducedMotion: "reduce",
     ignoreHTTPSErrors: true,
