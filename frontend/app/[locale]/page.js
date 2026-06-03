@@ -17,7 +17,7 @@ import {
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
-import { EditorialBreath } from "@/app/[locale]/home/EditorialBreath";
+import { EditorialBreath } from "@/app/[locale]/home/HomeEditorialBreath";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { Sparkle } from "@phosphor-icons/react";
