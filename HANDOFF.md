@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
+
+**Branch:** `feature/meh-714-pass6-fixture-docs` (off staging). Draft PR (base `staging`). LOW-RISK tooling.
+
+**Context:** PR #895 (merged) added the core description-bloat pass to `audit-skills.sh` but covered only a narrowed task spec; the full MEH-714 Linear DoD had unchecked items. This follow-up closes them.
+
+**Done:** Pass 6 now runs in **self-test** too (iterates `$TARGET`); added YAML **block-scalar** parser (`description: |`/`>`); aligned tags to spec (`[DESC-BLOAT-FAIL]` >1024 critical, `[DESC-BLOAT-WARN]` >500 info, `[DESC-FIRST-PERSON]`, `[DESC-VAGUE]`); `bad-skill` fixture given a 1173-char block-scalar description → self-test exits 1 via `DESC-BLOAT-FAIL` (regression test of the hard-fail path). Docs: `.claude/rules/skills.md` Layer 3 + `docs/SECURITY.md` updated. Verified: self-test exit 1 (Critical findings: 2), real audit exit 0, drift dry-run exit 0. Baseline 0>1024 / 44>500.
+
+**Pending:** PR review + merge. (Note: numbered Pass 6, not Pass 5 — Pass 5 is MEH-422 subprocess-bypass.)
+
 ## 2026-06-03 — MEH-731: navbar homepage-state (locale-path fix) + verify-banner relocation
 
 **Branch:** `feature/meh-731-navbar-homepage-state` (off staging). **Draft PR #TBD**, base `staging`. Follow-up bug from MEH-643 #891.

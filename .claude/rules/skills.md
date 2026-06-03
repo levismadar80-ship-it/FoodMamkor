@@ -128,8 +128,10 @@ fails on any combination of ≥2 classes in a single file ("critical
 combo"). Single-class hits are reported as warnings, not failures.
 
 Self-test fixture: `.claude/scripts/test/fixtures/bad-skill/SKILL.md` —
-contains all 4 classes. Running the script with `--self-test` against
-the fixture must exit 1; CI verifies this in step 1 of the workflow.
+contains all 4 classes AND a >1024-char block-scalar description (so the
+Pass 6 `DESC-BLOAT-FAIL` path is exercised too). Running the script with
+`--self-test` against the fixture must exit 1; CI verifies this in step 1
+of the workflow.
 
 ### Pattern set deviation from MEH-397 spec
 
@@ -138,6 +140,27 @@ We chose a more focused set targeting LLM canaries: `ignore previous`,
 `system prompt`, `disregard`, `override.*instruction`, `forget.*above`.
 Pattern set chosen for prompt-injection canaries vs spec's agent-rule
 patterns.
+
+### Pass 6 — description bloat detection (MEH-714)
+
+`audit-skills.sh` also measures each skill's frontmatter `description:`
+length against Anthropic's 1024-char max (the value is loaded into the
+system prompt on every startup, so every char is permanent context
+overhead). Handles single-line, quoted, and YAML block-scalar
+(`description: |` / `>`) forms; runs in both real and self-test modes.
+
+| Finding | Threshold | Effect |
+|---|---|---|
+| `[DESC-BLOAT-FAIL]` | `> 1024` chars | CRITICAL — hard-fails the audit (exit 1) |
+| `[DESC-BLOAT-WARN]` | `> 500` chars | info-only (exit unaffected) |
+| `[DESC-FIRST-PERSON]` | opener `^(I \| I'm \| I can \| You can \| Use me )` | info-only |
+| `[DESC-VAGUE]` | `len < 50` OR vague opener (`Helps with` / `Does ` / `Works with` / …) | info-only |
+
+A **Top 10** longest-offender summary prints when any finding is emitted.
+Numbered "Pass 6" because the MEH-422 subprocess-bypass coverage already
+holds the "Pass 5" slot (the ticket predates that and called it Pass 5).
+Baseline at landing: 0 skills over 1024, 44 over the 500 soft limit
+(longest `directory-submissions`, 824).
 
 ---
 
