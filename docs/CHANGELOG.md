@@ -4,6 +4,30 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
+
+`feat(MEH-643)`: עיצוב מחדש של רשת הקטגוריות (`HomeCategoryGrid.jsx`) לפי
+Assembly v2. **Layout 2+4 אסימטרי:** desktop 4-col (2 כרטיסי hero span-2 +
+4 קטנים), tablet 2×3 אחיד, mobile 2+4 (hero ברוחב מלא + 4 ב-2×2) — **לא**
+1×6 stack. **כרטיס שטוח:** `bg-surface-card`, border 1px `border`, פינות
+חדות (radius 0), ללא shadow-lift; glyph על פאנל `bg-background` (cream),
+מספור 01-06 ב-Cormorant italic זהב (`text-accent`, LTR-isolated), שם ב-FRL.
+**אין counters** (LOCK). **selected prop** חדש — כרטיס נבחר מקבל
+`border-primary` (מקור: `filters.category`, מחווט מ-`page.js`).
+
+**Glyphs — כל 6 מ-Assembly v2 (`:697-702`)**, לא מ-Phase 3 v8: cleaver (01),
+leaf (02), milk-bottle (03), wheat-stalk (04), honey-jar (05), herb-bundle
+(06). תיקון ל-prompt: v8 glyphs דחויים בעיצוב (`v2:1419` "reference only");
+ה-hot-fix (`v2:1924`) צייר מחדש את 01/03/04/05/06 — אושר ע"י Sapir. ה-`Icon`
+wrapper הוסב ל-viewBox 120 + `currentColor` (stroke צבע דרך token, ללא raw hex).
+
+**Routing נשמר:** `onCardClick` → `handleCategoryCardClick` (filter +
+scroll ל-`#producers-grid`). שמות הקטגוריות (hardcoded HE ב-`home-categories.js`)
+כבר תאמו — לא שונו. Copy: eyebrow חדש "קטגוריות", heading "גלו"→"גלי לפי
+קטגוריה", subheading הוסר מה-render (key נשאר). EN: eyebrow HE-mirror זמני
+(MEH-472), parity he/en נשמר. ללא raw hex, RTL לוגי בלבד, `npm run build`
+ירוק. אף עמוד/Hero/Header אחר לא נגע. Part of MEH-643.
+
 ### 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
 
 `feat(MEH-643)`: עיצוב מחדש של ה-Hero בעמוד הבית (`HomeHero.jsx`) לפי
