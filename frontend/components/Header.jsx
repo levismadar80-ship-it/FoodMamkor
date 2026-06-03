@@ -270,64 +270,96 @@ export default function Header() {
         </nav>
       </div>
 
-      {/* Mobile drawer — Step 3 will rebuild this on the warm-dark surface.
-          Kept functional (MEH-29 anatomy) so mobile nav works at the review
-          gate between chunks. */}
+      {/* Mobile drawer — MEH-643 warm-dark (green-900) surface for ghost-on-dark
+          legibility. Replaces the MEH-29 cream drawer; all of its contents are
+          migrated here (nav · CTAs · lang · logged-in items). In normal flow
+          (expands the band) — no overlay z-index. */}
       {menuOpen && (
-        <div className="md:hidden bg-background border-t border-border px-4 py-3 space-y-3">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? "page" : undefined}
-              className={`block text-base ${isActive(item.href) ? "text-primary font-semibold" : "text-text"}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+        <div className="md:hidden px-4 pb-2">
+          <div className="rounded-2xl bg-green-900 border border-white/10 p-6 shadow-[0_12px_40px_rgba(20,50,40,0.45)]">
+            {/* Nav links — Frank Ruhl 700 / 24px / gold editorial numerals. */}
+            <nav className="grid" aria-label={t("nav.main_label")}>
+              {NAV_ITEMS.map((item, i) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                    className={[
+                      "grid grid-cols-[1fr_auto] items-baseline py-4 border-b border-white/10 last:border-b-0",
+                      "font-headline-md font-bold text-[24px] transition-colors duration-fast ease-quart",
+                      active ? "text-amber-200" : "text-background",
+                    ].join(" ")}
+                  >
+                    <span>{item.label}</span>
+                    <span className="text-[14px] font-normal text-amber-200" dir="ltr" aria-hidden="true">
+                      0{i + 1}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-          {showAddBusinessCta && (
-            <Link
-              href="/register/producer"
-              className="block text-primary font-semibold"
-              onClick={() => setMenuOpen(false)}
-            >
-              {t("nav.add_business")}
-            </Link>
-          )}
-
-          <div className="flex items-center gap-2">
-            <LanguageToggle />
-            <span className="text-sm text-fg-muted">
-              {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
-            </span>
-          </div>
-
-          {user ? (
-            <>
-              <Link
-                href="/favorites"
-                className="flex items-center gap-1 text-fg-muted"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Heart size={16} weight="duotone" aria-hidden="true" />
-                {t("nav.favorites")}
-              </Link>
-              {user.role === "admin" && (
-                <Link href="/admin" className="block text-primary" onClick={() => setMenuOpen(false)}>
-                  {t("nav.admin")}
+            {/* CTA row + account/logged-in actions. */}
+            <div className="grid gap-2 mt-4 pt-4 border-t border-white/15">
+              {showAddBusinessCta && (
+                <Link
+                  href="/register/producer"
+                  onClick={() => setMenuOpen(false)}
+                  className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-full bg-action-primary hover:bg-action-primary-hover text-white text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                >
+                  {t("nav.add_business_short")}
+                  <span className="inline-block scale-x-[-1] text-white/70" aria-hidden="true">↗</span>
                 </Link>
               )}
-              <button onClick={() => { logout(); setMenuOpen(false); }} className="block text-red-500">
-                {t("nav.logout")}
-              </button>
-            </>
-          ) : (
-            <Link href="/login" className="block text-fg-muted" onClick={() => setMenuOpen(false)}>
-              {t("nav.login")}
-            </Link>
-          )}
+
+              {user ? (
+                <>
+                  <Link
+                    href="/favorites"
+                    onClick={() => setMenuOpen(false)}
+                    className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                  >
+                    <Heart size={18} weight="duotone" aria-hidden="true" />
+                    {t("nav.favorites")}
+                  </Link>
+                  {user.role === "admin" && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                    >
+                      {t("nav.admin")}
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { logout(); setMenuOpen(false); }}
+                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full border border-red-400/50 text-red-300 hover:bg-red-500/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                  >
+                    {t("nav.logout")}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                >
+                  {t("nav.login")}
+                </Link>
+              )}
+            </div>
+
+            {/* Language toggle — tinted cream for the dark surface. */}
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/15">
+              <LanguageToggle className="text-background hover:bg-white/10" />
+              <span className="text-sm text-background/80">
+                {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
