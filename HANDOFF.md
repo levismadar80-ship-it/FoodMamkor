@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-02 — MEH-136 additive S4 design tokens (GREEN — tokens only)
+
+**Branch:** `feature/meh-136-s4-tokens` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-136.
+
+**What:** added the S4-homepage token groups missing from the repo, additive-only. Split by what `@google/design.md` v0.1.1 can export (6-digit hex / spacing / type only — drops cubic-bezier, ms, rgba, transparent):
+- **Pipeline (`docs/DESIGN.md` → `design:export` → `tailwind.tokens.json`):** `surface-card` + `surface-floating` `#FFFEFB`; semantic aliases `action-primary` (=`primary`) + `action-primary-hover` (=`primary-dark` `#2E4A2E`); spacing `5xl` 96 / `6xl` 128; FRL headline fallback `"David Libre", Georgia, serif` on display/lg/md.
+- **`frontend/app/globals.css` utility layer:** `.duration-fast|base|slow` (180/420/640ms) + `.ease-quart`; `.focus-ring` (`rgba(46,104,83,.40)`); `.action-ghost` + `.action-ghost-on-dark`. Utility layer, NOT a `:root` token authority (686).
+
+**Key decision (Sapir, ADR-019):** hover reuses `primary-dark` `#2E4A2E` — the S4 exploration's `#1F4C3C` was rejected (no third green). `green-700` unchanged. DESIGN.md prose note added flagging the alias + the exporter split.
+
+**Verify:** `git diff tailwind.tokens.json` = additions only (4 colors + 2 spacing) + 3 approved fontFamily fallback edits; `green-700` still `#2e4a2e`, `surface` still `#ffffff`; `npm run build` ✓ Compiled 13.6s. No component touched. Files: `docs/DESIGN.md`, `frontend/tailwind.tokens.json`, `frontend/app/globals.css`, CHANGELOG, HANDOFF.
+
+**Next:** Sapir review at draft PR (esp. globals.css placement of motion/focus/ghost) → squash merge. Consumption is MEH-639 / MEH-602.
+
 ## 2026-06-02 — MEH-680 English→Hebrew wordmark swap (GREEN — asset-only)
 
 **Branch:** `feature/meh-680-en-to-he-wordmark` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-680.

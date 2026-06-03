@@ -23,19 +23,23 @@ colors:
   green-500: "#2E6853"
   green-700: "#2E4A2E"
   green-900: "#143228"
+  surface-card: "#FFFEFB"
+  surface-floating: "#FFFEFB"
+  action-primary: "#2E6853"
+  action-primary-hover: "#2E4A2E"
 typography:
   headline-display:
-    fontFamily: Frank Ruhl Libre
+    fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
     fontSize: 48px
     fontWeight: 900
     lineHeight: 1.2
   headline-lg:
-    fontFamily: Frank Ruhl Libre
+    fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
     fontSize: 32px
     fontWeight: 900
     lineHeight: 1.25
   headline-md:
-    fontFamily: Frank Ruhl Libre
+    fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
     fontSize: 24px
     fontWeight: 700
     lineHeight: 1.3
@@ -73,6 +77,8 @@ spacing:
   "2xl": 32px
   "3xl": 48px
   "4xl": 64px
+  "5xl": 96px
+  "6xl": 128px
   gutter: 16px
 rounded:
   sm: 8px
@@ -312,6 +318,43 @@ If a future state genuinely cannot be served by opacity-on-cream + `fg-muted`
 supersedes ADR-019** — not a token quietly added to `tailwind.config.js`. The
 friction is the feature. This rule is already enforced in code: F1 / PR #831
 implemented the HeartButton with `text-primary`, not a red token.
+
+## S4 design tokens (MEH-136)
+
+The S4 homepage assembly (MEH-639) consumes a small set of **additive** tokens.
+Authoring is split by what the `@google/design.md` exporter can carry — it emits
+only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
+`ms` durations, `rgba`, and `transparent`.
+
+**In the token pipeline (front matter → `tailwind.tokens.json`):**
+
+- `surface-card` / `surface-floating` (`#FFFEFB`) — a faint warm-white one tonal
+  step above pure `surface` (`#FFFFFF`), for cards and floating elements. Fits
+  the flat, shadowless elevation language above.
+- Semantic action aliases: `action-primary` (= `primary` `#2e6853`) and
+  `action-primary-hover` (= `primary-dark` `#2E4A2E`). **No new green** — the
+  hover **reuses the existing palette dark per ADR-019**. The S4 exploration's
+  `#1F4C3C` was rejected to avoid a third green; `green-700` (`#2E4A2E`) is
+  unchanged. This keeps the documented "hover goes darker (`primary-dark`)"
+  rule intact while giving S4 a role-named alias to bind to.
+- Spacing `5xl` (96px) / `6xl` (128px) — editorial section rhythm above `4xl`.
+- Headline fallback: every Frank Ruhl Libre stack
+  (`headline-display`/`-lg`/`-md`) degrades to `"David Libre", Georgia, serif`.
+
+**In the CSS utility layer (`frontend/app/globals.css`):**
+
+The exporter cannot represent these, so they live as utility classes — a
+utility layer, **not** a parallel `:root` token authority (MEH-686 removed
+`:root` vars):
+
+- Motion: `.duration-fast|base|slow` (180/420/640ms) + `.ease-quart`
+  (`cubic-bezier(.25,1,.5,1)` — the same curve already used by `.scroll-hint`).
+- `.focus-ring` — a 2px `rgba(46,104,83,0.40)` ring that tokenizes the existing
+  inline `ring-primary/40` idiom.
+- `.action-ghost` / `.action-ghost-on-dark` — transparent button whose
+  border/text come from `text` (or `background` on dark surfaces).
+
+No component is restyled in MEH-136; consumption is MEH-639 / MEH-602.
 
 ## References
 

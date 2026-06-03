@@ -16,6 +16,33 @@
   @apply bg-[#25D366];
 }
 
+/* ── MEH-136 — S4 design tokens (CSS utility layer) ───────────────────────
+   Motion, focus-ring, and ghost-button primitives the S4 homepage (MEH-639)
+   consumes. These live here — NOT tailwind.tokens.json — because the
+   @google/design.md exporter can only carry 6-digit-hex colors / spacing /
+   type; it drops cubic-bezier, ms durations, rgba, and transparent. This is a
+   utility layer, NOT a :root token authority (MEH-686 removed :root vars).
+   No component is restyled in MEH-136; consumption is MEH-639 / MEH-602. */
+.duration-fast { transition-duration: 180ms; }
+.duration-base { transition-duration: 420ms; }
+.duration-slow { transition-duration: 640ms; }
+.ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
+
+/* Tokenizes the inline `ring-primary/40` idiom (= primary #2e6853 @ 40%). */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(46, 104, 83, 0.40);
+}
+
+/* Ghost button: transparent bg, border/text from the `text` token on cream
+   surfaces, from `background` on dark surfaces. */
+.action-ghost {
+  @apply bg-transparent border border-text text-text;
+}
+.action-ghost-on-dark {
+  @apply bg-transparent border border-background text-background;
+}
+
 html {
   direction: rtl;
 }
