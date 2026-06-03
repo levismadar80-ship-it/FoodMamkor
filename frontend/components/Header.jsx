@@ -216,7 +216,7 @@ export default function Header() {
               <MagnifyingGlass size={20} weight="regular" aria-hidden="true" />
             </button>
             <span className="hidden md:inline-flex">
-              <LanguageToggle />
+              <LanguageToggle className={transparent ? "text-background hover:bg-white/10" : ""} />
             </span>
 
             {user ? (
@@ -278,7 +278,7 @@ export default function Header() {
         <div className="md:hidden px-4 pb-2">
           <div className="rounded-2xl bg-green-900 border border-white/10 p-6 shadow-[0_12px_40px_rgba(20,50,40,0.45)]">
             {/* Nav links — Frank Ruhl 700 / 24px / gold editorial numerals. */}
-            <nav className="grid" aria-label={t("nav.main_label")}>
+            <nav className="grid" aria-label={t("nav.mobile_label")}>
               {NAV_ITEMS.map((item, i) => {
                 const active = isActive(item.href);
                 return (
