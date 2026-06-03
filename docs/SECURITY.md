@@ -821,7 +821,13 @@ Authorship of the 83 skills (after MEH-397):
    detector works. **Pass 4 (MEH-420)** also recomputes every locked
    skill's content hash via `compute-skill-hash.sh` and fails on
    `[HASH-DRIFT]` (content vs lock mismatch) or `[HASH-COMPUTE]`
-   (symlink injection inside skill dir).
+   (symlink injection inside skill dir). **Pass 6 (MEH-714)** measures
+   each `description:` frontmatter length against Anthropic's 1024-char
+   max — `[DESC-BLOAT-FAIL]` (>1024) is critical, `[DESC-BLOAT-WARN]`
+   (>500) plus first-person/vague flags are info-only — curbing
+   per-startup context overhead (every description loads into the system
+   prompt). Top 10 offenders summarised; baseline 0 over 1024 / 44 over
+   500.
 4. **CI gate + lock enforcement** (`.github/workflows/skills-audit.yml`)
    — runs on every PR touching skills, the lock, the audit / hash /
    backfill scripts, or the workflow. Three-stage: self-test must

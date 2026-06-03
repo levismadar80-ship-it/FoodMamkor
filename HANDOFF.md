@@ -5,6 +5,151 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-691 (follow-up): ADR-021 rationale fix + DoD completion
+
+**Branch:** `feature/meh-691-adr-021-rationale-fix` (off staging). Draft PR (base `staging`). LOW-RISK docs.
+
+**Context:** PR #897 (merged) added ADR-021 but, working from a narrowed task prompt, stated the wrong *primary* rationale — "PK = pointer due to size/context budget." The canonical MEH-691 ticket's actual reason is **repo-read capability**: CC + claude.ai Project chat can read repo files (so a pointer resolves → Drive/PK = pointer); non-Project claude.ai chat (web/mobile) cannot (so a pointer would resolve to nothing → Settings = full content).
+
+**Done:** rewrote ADR-021 Context/Decision/Consequences/Alternatives to the repo-read-capability rationale; added a `## Triggers to revisit` section (a: chat gains repo-read; b: drift becomes a LOCK/operational problem); corrected `Source:` to MEH-686 (surfaced) + MEH-689 (sibling pattern); added the `docs/decisions/README.md` index row for ADR-021. Two hard rules now documented (don't duplicate full content into PK; don't replace Settings with a pointer).
+
+**Pending:** PR review + merge. Out of repo scope (Drive/PK surface action for Sapir): update the `personal-preferences-v2.md` pointer note to cite ADR-021 instead of the "follow-up Linear" placeholder.
+
+## 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
+
+**Branch:** `feature/meh-714-pass6-fixture-docs` (off staging). Draft PR (base `staging`). LOW-RISK tooling.
+
+**Context:** PR #895 (merged) added the core description-bloat pass to `audit-skills.sh` but covered only a narrowed task spec; the full MEH-714 Linear DoD had unchecked items. This follow-up closes them.
+
+**Done:** Pass 6 now runs in **self-test** too (iterates `$TARGET`); added YAML **block-scalar** parser (`description: |`/`>`); aligned tags to spec (`[DESC-BLOAT-FAIL]` >1024 critical, `[DESC-BLOAT-WARN]` >500 info, `[DESC-FIRST-PERSON]`, `[DESC-VAGUE]`); `bad-skill` fixture given a 1173-char block-scalar description → self-test exits 1 via `DESC-BLOAT-FAIL` (regression test of the hard-fail path). Docs: `.claude/rules/skills.md` Layer 3 + `docs/SECURITY.md` updated. Verified: self-test exit 1 (Critical findings: 2), real audit exit 0, drift dry-run exit 0. Baseline 0>1024 / 44>500.
+
+**Pending:** PR review + merge. (Note: numbered Pass 6, not Pass 5 — Pass 5 is MEH-422 subprocess-bypass.)
+
+## 2026-06-03 — MEH-731: navbar homepage-state (locale-path fix) + verify-banner relocation
+
+**Branch:** `feature/meh-731-navbar-homepage-state` (off staging). **Draft PR #TBD**, base `staging`. Follow-up bug from MEH-643 #891.
+
+**Root cause:** `Header.jsx` used `usePathname` from `next/navigation`, which under next-intl `[locale]` routing returns the locale-prefixed path (`/he`/`/en`) — so `pathname === "/"` was always false → `isHomepage`/`transparent` false → cream pill at top of homepage (should be transparent over-image until scroll>80). Scroll-init + banner ruled out in Phase 0.
+
+**Fix:** swap to next-intl's locale-stripping `usePathname` from `@/i18n/navigation` (returns `/`), same hook `LanguageToggle.jsx` already uses. Fixed **all 3 sites** of the `=== "/"` family: (1) Header `isHomepage`/`transparent`, (2) Header `isActive("/")` (גלי underline), (3) `BottomNav.jsx` home-tab match.
+
+**Verify-banner (option b):** extracted from inside the sticky `<header>` into new `components/VerifyBanner.jsx`, rendered as first child of `<main>` in `app/[locale]/layout.js` → floating pill stays pure on homepage; still shows on all pages + scrolled. Gate unchanged (`user && !email_verified`).
+
+**Files:** `Header.jsx` (import swap + banner removal), `VerifyBanner.jsx` (new), `BottomNav.jsx` (import line), `app/[locale]/layout.js` (mount) + CHANGELOG/HANDOFF/MANUAL_TESTING.
+
+**Notes:** build green; new lines have zero raw-hex/physical-RTL. `lint-feedback` hook blocked further Header edits on **19 warnings (0 errors), all pre-existing** (max-lines, id-length, set-state-in-effect from #891) — per MEH-443 warnings≠gate + meta-pattern #4; my diff removed ~88 lines and added no new violations. Pre-existing-not-mine: `BottomNav.jsx:101` `#2e6853` avatar hex, `layout.js:199` skip-link `focus:right-2`. Out-of-scope siblings with same latent locale-pathname pattern (NOT fixed): `FooterSlot.jsx`, `admin/layout.js` — flag for follow-up.
+
+**Next:** Sapir visual QA on PR preview (homepage top=transparent pill+light logo over hero; scrolled=cream pill; inner=cream; גלי underline on home; BottomNav home tab highlighted; verify-banner below hero for unverified). CC can't screenshot (sandbox) → deferred. Then merge → Closes MEH-731.
+
+## 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
+
+**Branch:** `feature/meh-643-navbar` (off staging). **Draft PR #891**, base `staging`. Part of MEH-643 (final chunk). **HIGH-RISK** central (`central-components.json:11`) + global chrome (`layout.js:205`, all pages) + auth.
+
+**Done (Steps 1-3):** `Header.jsx` rewritten MEH-29 bar → floating pill. Desktop: centered pill, two surface states (over-image transparent / cream pill on inner pages), gold-underline active, search + LanguageToggle + ghost `כניסה לחשבון` + green `הוסיפו עסק`. Mobile: warm-dark `green-900` drawer **replacing** the old one (Frank Ruhl links + gold `01·02·03`, CTA row, on-dark ghost, preserved favorites/admin/logout). Sticky-overlap positioning preserved. i18n: `nav.explore`=גלי + `nav.add_business_short`=הוסיפו עסק (EN HE-mirror, MEH-472).
+
+**Auth preserved 1:1:** UserMenu avatar+dropdown, showAddBusinessCta gate (MEH-669), verify banner, `/` shortcut — restyled only, zero behavior change.
+
+**Decisions (Sapir, this session):** global pill all pages · preserve UserMenu+banner · keep search+LanguageToggle · new key nav.explore · reuse /logo.png (not doc SVG) · gold underline · sticky positioning kept · chunked review.
+
+**Sub-fidelity notes:** drawer numerals/active use `text-amber-200` (light gold — no design token for the dark-surface gold `#E7C88A`; flag for a possible token). Desktop globe over-image inherits dark ink (minor; gradient behind). True floating-over-hero overlap intentionally NOT introduced (positioning model preserved per decision).
+
+**Verify:** `npm run build` ✓; zero raw hex; RTL logical-only; he/en parity. Files: Header.jsx, he.json, en.json + CHANGELOG/HANDOFF/MANUAL_TESTING.
+
+**Next:** `/adversarial-review` run (central) → **Sapir mobile+desktop visual QA on the PR #891 preview** (desktop: pill 2 states, gold underline, guest vs logged-in; mobile: warm-dark drawer, hamburger glass over hero, logged-in items). Then mark ready + merge. **MEH-643 closes after this chunk** (Hero+CategoryGrid+ProducerCard+Navbar all shipped).
+
+## 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED/central)
+
+**Branch:** `feature/meh-643-producer-card` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 3).
+
+**Central component** (`.claude/central-components.json`) → **`/adversarial-review` required before merge** (rule 20). Blast radius (intended): 7 importers — page.js Featured, HomeProducersGrid, ProducersClient (/producers), SearchClient, FavoritesClient, MapCardList, ProducerSections (detail similar).
+
+**What:** rebuilt `ProducerCard.jsx` to Phase 2 v4 — flat `surface-card`, 1px border, radius 0, **no shadow-lift** (hover = border-color + image scale 1.02); category eyebrow; badge row over image bottom-start; 1:1 mobile / 4:3 desktop; ★ gold rating + fg-muted count; **no-image = cream + Leaf glyph + "מהמקור"** (replaced emoji).
+
+**Heart/favorites (MEH-636) — logic preserved, restyle only:** `CardHeart` auth/API/guest flow untouched; heart green (`text-primary`). **Fixed a LOCK violation:** favorites-count heart was red `#A32D2D` → now `fg-muted`. Heart aria → gerund `שמירה` (MEH-472). **Dots tokenized:** available→`bg-primary`, non-available→`bg-fg-muted` (zero raw hex; continues MEH-717). All `data-testid`s + data wiring + routing + RTL-logical preserved.
+
+**Decisions (Sapir):** dots fully tokenized (fg-muted/primary); count-heart→fg-muted; heart aria→שמירה; **update the stale test** (don't preserve stale assertions).
+
+**⚠️ Drift flagged (separate ticket):** `__tests__/ProducerCard.test.jsx` was stale (expected #4cb08b which MEH-717 removed + old no-image anatomy) AND **vitest is not wired into CI** at all → silent drift. Updated the test to the new anatomy here; **wiring vitest into CI = follow-up ticket** (also fixes the oxc JSX-in-`.js` transform that blocks local runs). Could not execute vitest in-sandbox (that oxc issue); test verified by static review.
+
+**EN:** `producer.card.favorites.aria` = HE-mirror temp (MEH-472); he/en parity holds.
+
+**Verify:** `npm run build` ✓ (19.2s); no raw hex; zero physical RTL; 9 testids preserved; no red. Files: ProducerCard.jsx, ProducerCard.test.jsx, he.json, en.json + CHANGELOG/HANDOFF.
+
+**Next:** Sapir visual review on Vercel preview (homepage Featured + /producers grid, desktop 1280 + mobile 375: flat card, eyebrow, badges-over-image, green heart, no-image leaf, RTL). Then `/adversarial-review` before merge. Remaining MEH-643 chunk: Navbar.
+
+## 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
+
+**Branch:** `feature/meh-728-e2e-flake-hardening` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-728.
+
+**Problem:** Vercel preview cold-start → 10s `waitForURL`/`toBeVisible` budgets miss on attempt 1 → `--fail-on-flaky-tests` (MEH-484) blocks merge → manual retrigger. Hit on PR #885 (search) + #886 (password).
+
+**Measurement (CI-log-derived; sandbox can't curl protected previews):** warm waits ≈ 4-5s (retries passed: #886 4.7s, #885 3.7s); cold attempt-1 ≥10s (true value masked by the 10s cap). 20s budget = ~4× warm / 2× the observed ceiling.
+
+**Changes (gate NOT weakened — `--fail-on-flaky-tests` stays):**
+- `playwright.config.ts`: `expect.timeout` 10→20s, `actionTimeout` 10→20s, per-test `timeout` 30→45s.
+- 7 explicit preview-load/nav waits (`{timeout:10_000}` overrides that bypass global) → 20s across 6 specs (02/03/04/06/07/11). Assertions unchanged — budget only. Short local timeouts (2/3/5s) + 15s page-load waits left as-is.
+- `e2e.yml`: new **Warm up Vercel preview** step before the suite — polls `$TARGET_URL/` with the bypass header until 200, cap ~90s, then proceeds (soft gate; raised budgets are the net). Cost: ≤90s/run (cheaper than a full retrigger; ref MEH-547).
+
+**Verify:** `npm run build` ✓; `npx playwright test --list` ✓ (40 tests, config parses); `e2e.yml` YAML valid. **5×-clean-run soak deferred to CI** — sandbox cannot run Playwright against the protected preview; run 1 fires on PR push.
+
+**Next:** Sapir review at PR. The 5-run soak completes on CI (I can drive 4 retriggers post-push if wanted). Unblocks the remaining MEH-643 chunks (ProducerCard, Navbar) from the retrigger-dance.
+
+## 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
+
+**Branch:** `feature/meh-643-category-grid` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 2).
+
+**What:** rebuilt `HomeCategoryGrid.jsx` to Assembly v2 — 2+4 asymmetric (desktop 4-col hero span-2 + 4 small; tablet 2×3; mobile 2+4 hero-full-width + 4 in 2×2, **not** 1×6). Flat cards: `bg-surface-card`, 1px `border`, radius 0, no shadow; cream glyph panel; gold Cormorant-italic numeral 01-06 (LTR-isolated); FRL name. No counters (LOCK). New `selected` prop (`filters.category`, wired via `page.js`) → selected card gets `border-primary`.
+
+**Glyphs (all 6 from Assembly_v2.html:697-702):** cleaver/leaf/milk-bottle/wheat-stalk/honey-jar/herb-bundle. `CategoryIcons.jsx` Icon wrapper → viewBox 120 + `currentColor` (no raw hex). **Decision (Sapir):** prompt said "02-06 from v8" but v8 glyphs are design-rejected (`v2:1419`) and the hot-fix (`v2:1924`) re-drew 01/03/04/05/06 → all 6 sourced from v2.
+
+**Routing preserved:** `onCardClick` → `handleCategoryCardClick` (filter + scroll `#producers-grid`). Category names hardcoded HE in `home-categories.js` already matched — unchanged. Copy: eyebrow `קטגוריות` (new), heading `גלו`→`גלי לפי קטגוריה`, subheading dropped from render (key kept). EN eyebrow HE-mirrored (MEH-472); he/en parity holds.
+
+**EN checklist for MEH-472:** new `home.categories.eyebrow` (HE-mirror in en.json).
+
+**Verify:** `npm run build` ✓ Compiled 16.7s; no raw hex; zero physical RTL props; `parity` green. Files: HomeCategoryGrid.jsx, CategoryIcons.jsx, page.js, he.json, en.json + CHANGELOG/HANDOFF.
+
+**Next:** Sapir visual review on Vercel preview (desktop 1280 + tablet 768 + mobile 375: 2+4 layout, glyphs match approved screenshot, numerals, selected state, RTL). Then later MEH-643 chunks.
+
+## 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
+
+**Branch:** `feature/meh-643-hero` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (hero is chunk 1 of the homepage redesign).
+
+**What:** restyled `app/[locale]/home/HomeHero.jsx` to Assembly-v2 via existing next-intl i18n. New HE copy (title `אוכל מקומי, במקום אחד`, subtitle `בתי עסק מקומיים בישראל — ישר מהמקור`, submit `חפש`); two NEW elements — primary CTA `גלו עסקים` (reuses `onScrollDown` → `#producers-grid`) and text link `איך זה עובד` (→ `#how-it-works`, id added on `HomeHowItWorks` in `HomeStaticBlocks.jsx`). Consumes MEH-136 tokens: `surface-card` pill, `action-primary`/`-hover` CTA, `.focus-ring`, `.duration-base`/`.ease-quart` (+ ease-quart curve for Framer). No raw content hex (alpha gradient overlay kept). RTL logical-only. HeroSearch (MEH-99) + inline near-me (MEH-41) reused, not redesigned.
+
+**Decisions (Sapir):** CTA → scroll to producers grid (accepted overlap w/ caret, revisit later). `איך זה עובד` → anchor to HomeHowItWorks. EN → new keys HE-mirrored in `en.json` as temp fallback w/ `// TODO i18n EN (extends MEH-472)`; existing EN title/subtitle left (now stale).
+
+**EN checklist for MEH-472 (real translation):** changed `home.hero.title`, `home.hero.subtitle`, `search.hero.submit_aria`; new `home.hero.cta_primary`, `home.hero.how_it_works` (currently HE-mirrored).
+
+**Verify:** `npm run build` ✓ Compiled 15.6s; zero physical RTL props; 4 files (HomeHero, HomeStaticBlocks, he.json, en.json) + CHANGELOG/HANDOFF. Screenshots deferred to Vercel preview (no faithful in-sandbox render — no browser tool + remote bg/fonts egress).
+
+**Next:** Sapir visual review on Vercel preview (desktop 1280 + mobile 375: headline display font, CTA token colors, near-me, how-it-works scroll, RTL) → then later MEH-643 chunks (navbar, etc.).
+
+## 2026-06-02 — MEH-136 additive S4 design tokens (GREEN — tokens only)
+
+**Branch:** `feature/meh-136-s4-tokens` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-136.
+
+**What:** added the S4-homepage token groups missing from the repo, additive-only. Split by what `@google/design.md` v0.1.1 can export (6-digit hex / spacing / type only — drops cubic-bezier, ms, rgba, transparent):
+- **Pipeline (`docs/DESIGN.md` → `design:export` → `tailwind.tokens.json`):** `surface-card` + `surface-floating` `#FFFEFB`; semantic aliases `action-primary` (=`primary`) + `action-primary-hover` (=`primary-dark` `#2E4A2E`); spacing `5xl` 96 / `6xl` 128; FRL headline fallback `"David Libre", Georgia, serif` on display/lg/md.
+- **`frontend/app/globals.css` utility layer:** `.duration-fast|base|slow` (180/420/640ms) + `.ease-quart`; `.focus-ring` (`rgba(46,104,83,.40)`); `.action-ghost` + `.action-ghost-on-dark`. Utility layer, NOT a `:root` token authority (686).
+
+**Key decision (Sapir, ADR-019):** hover reuses `primary-dark` `#2E4A2E` — the S4 exploration's `#1F4C3C` was rejected (no third green). `green-700` unchanged. DESIGN.md prose note added flagging the alias + the exporter split.
+
+**Verify:** `git diff tailwind.tokens.json` = additions only (4 colors + 2 spacing) + 3 approved fontFamily fallback edits; `green-700` still `#2e4a2e`, `surface` still `#ffffff`; `npm run build` ✓ Compiled 13.6s. No component touched. Files: `docs/DESIGN.md`, `frontend/tailwind.tokens.json`, `frontend/app/globals.css`, CHANGELOG, HANDOFF.
+
+**Next:** Sapir review at draft PR (esp. globals.css placement of motion/focus/ghost) → squash merge. Consumption is MEH-639 / MEH-602.
+
+## 2026-06-02 — MEH-680 English→Hebrew wordmark swap (GREEN — asset-only)
+
+**Branch:** `feature/meh-680-en-to-he-wordmark` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-680.
+
+**What:** swapped the English wordmark to a Hebrew `מהמקור` master across all 4 in-code touchpoints — `Header` (`/logo.png` 106×40, dark→white via CSS filter on transparent homepage hero), `Footer` (`/logo-footer.png` 127×48 on dark-green), `error.js` + `not-found.js` (`/logo.png` 120×40, centered). Both deliverables derived from a single 910×230 RGBA master (alpha:true, dark glyphs verified: channel means R=17/G=16/B=12, opaque mean=15.3) via `sharp` in a scratch dir outside the repo; `fit:contain` with transparent letterbox padding, `kernel:lanczos3`, no distortion. Post-derive verify: `logo.png` 106×40 RGBA opaqueMean=16.5, `logo-footer.png` 127×48 RGBA opaqueMean=14.9 — alpha + dark glyphs preserved.
+
+**Constraints honored:** master NOT shipped (rm'd from working tree before commit); `package.json` untouched (sharp installed in `C:/Users/sint1/meh-680-scratch`, separate `node_modules`); diff = `logo.png` + `logo-footer.png` + CHANGELOG + HANDOFF only.
+
+**Build/verify:** `npm run build` green — 27.5s compile, 101/101 static pages.
+
+**Next:** await Vercel preview → Sapir mobile + desktop visual approval (Header transparent→cream, Footer on dark-green, error, 404) → mark ready → squash merge. STOP-after-draft per spec.
+
 ## 2026-05-29 — MEH-726 drop 5 redundant explicit color overrides (GREEN — post-MEH-708 cleanup)
 
 **Branch:** `feature/meh-726-drop-duplicate-colors` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-726.

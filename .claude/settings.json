@@ -162,6 +162,18 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5000,
+            "_comment": "MEH-621 SubagentStop trace hook (derived from MEH-502 audit REC 3). Appends one ndjson line per subagent completion to docs/audits/subagent-trace.log (gitignored). Never blocks (always exit 0). Fail-open on missing jq.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/subagent-trace.sh\""
+          }
+        ]
+      }
     ]
   },
   "permissions": {

@@ -186,6 +186,31 @@ export function useMapFilters({
     });
   }, [filteredByCategory, committedBounds]);
 
+  // MEH-722: per-category producer counts for the CURRENT viewport, computed
+  // PRE category filter (from allProducers ∩ committedBounds, NOT visibleProducers
+  // which is already category-filtered). Lets the legend disable a category with
+  // 0 businesses in view. committedBounds null (initial / post-reset) → count the
+  // whole country. Recomputes on pan via committedBounds change.
+  const viewportCategoryCounts = useMemo(() => {
+    const inView = !committedBounds
+      ? allProducers
+      : allProducers.filter(
+          (p) =>
+            typeof p.lat === "number" &&
+            typeof p.lng === "number" &&
+            p.lat >= committedBounds.south &&
+            p.lat <= committedBounds.north &&
+            p.lng >= committedBounds.west &&
+            p.lng <= committedBounds.east,
+        );
+    const counts = {};
+    for (const p of inView) {
+      const cat = p.categories?.[0]?.name;
+      if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return counts;
+  }, [allProducers, committedBounds]);
+
   // Category chips visible in the current DB (hidden if no matching category loaded yet)
   const visibleCategoryChips = useMemo(
     () =>
@@ -240,6 +265,7 @@ export function useMapFilters({
     // derived
     filteredByCategory,
     visibleProducers,
+    viewportCategoryCounts,
     visibleCategoryChips,
     activeFilterTags,
   };

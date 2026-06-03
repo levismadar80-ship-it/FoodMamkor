@@ -474,3 +474,17 @@ should never have to know what an industry term means.
 **No over-specific examples:** Concrete examples must work across
 producer types. "גבינות עזים תל אביב ב-9 בערב" locks out anyone not
 selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי בגוגל" instead.
+
+## Brand phrasings
+
+Canonical reusable brand phrases. When the same phrase appears across
+multiple surfaces, lock it here so future copy edits stay consistent.
+
+### `בלי לחפש שעות`
+| Field | Value |
+|---|---|
+| **Canonical phrase** | `בלי לחפש שעות` |
+| **Meaning** | "Without searching for hours" — captures the core value prop: everything in one place, no time wasted hunting for local food businesses. |
+| **Status** | ✅ canonical |
+| **Appears in** | `frontend/messages/he.json:534` (SEO/meta description) · `frontend/messages/he.json:2012` (/about page paragraph p5) |
+| **Why** | Recurs as the closing beat across surfaces — pairs the "מקום אחד" (one place) promise with the time-saved payoff. Keep verbatim; do not paraphrase to "בלי לבזבז זמן" or similar. |

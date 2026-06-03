@@ -128,7 +128,7 @@ export default function AdminCategoryRequestsPage() {
                           <button
                             onClick={() => updateStatus(req.id, "approved")}
                             disabled={actionLoading === req.id}
-                            className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-[8px] hover:bg-green-100 transition disabled:opacity-50"
+                            className="text-xs bg-green-50 text-green-700 border border-green-300 px-2 py-1 rounded-[8px] hover:bg-green-100 transition disabled:opacity-50"
                           >
                             {t("category_requests.actions.approve")}
                           </button>

@@ -4,6 +4,213 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
+
+`feat(MEH-714)`: השלמת ה-DoD המלא של ה-Linear מעבר ל-PR #895 (שכיסה רק את
+ליבת ה-pass). `audit-skills.sh` Pass 6 כעת רץ **גם ב-self-test** (איטרציה על
+`$TARGET`), עם פרסר YAML **block-scalar** (`description: |`/`>`) בנוסף ל-single-line/
+quoted. תגיות יושרו ל-spec: `[DESC-BLOAT-FAIL]` (>1024 → CRITICAL/exit 1),
+`[DESC-BLOAT-WARN]` (>500 → info), `[DESC-FIRST-PERSON]`, `[DESC-VAGUE]`
+(len<50 או opener מעורפל). ה-fixture `bad-skill/SKILL.md` קיבל description
+block-scalar >1024 (1173 chars) → ה-self-test מאמת את נתיב ה-hard-fail
+(`Critical findings: 2`, exit 1). docs: `.claude/rules/skills.md` Layer 3 +
+`docs/SECURITY.md` Layer-3 bullet עודכנו. baseline: 0 מעל 1024, 44 מעל 500.
+**הערה:** ה-pass ממוספר Pass 6 (ה-Linear קרא לו Pass 5, אבל Pass 5 תפוס ע"י
+MEH-422 subprocess-bypass).
+
+### 2026-06-03 — MEH-731: navbar homepage-state (locale-path fix, 3 sites) + verify-banner relocation
+
+`fix(MEH-731)`: ה-FloatingNavbar הציג cream pill (is-scrolled) בראש העמוד הבית
+לפני גלילה — במקום transparent over-image. **Root cause:** `usePathname`
+מ-`next/navigation` מחזיר נתיב עם prefix של locale (`/he`/`/en`), אז
+`pathname === "/"` תמיד false → `isHomepage` false → `transparent` false → pill
+קבוע. **Fix:** מעבר ל-`usePathname` של next-intl מ-`@/i18n/navigation` (מסיר את
+ה-locale → `/`), כמו ש-`LanguageToggle.jsx` כבר עושה.
+
+**3 אתרים מאותה משפחת באג תוקנו** (אותו root cause, לא משאירים siblings ידועים):
+1. `Header.jsx` `isHomepage`/`transparent` — באג מצב ה-navbar.
+2. `Header.jsx` `isActive("/")` — קו תחתון זהב של `גלי` בעמוד הבית.
+3. `BottomNav.jsx` home-tab `match (p === "/")` — הדגשת tab הבית.
+
+**Verify-banner (option b):** ה-banner של אימות-אימייל הוצא מתוך ה-`<header>`
+הדביק לקומפוננטה חדשה `VerifyBanner.jsx`, ומרונדר כבלוק הראשון של `<main>`
+(`layout.js`) — כך ה-pill הצף נשאר נקי בעמוד הבית. עדיין מוצג בכל עמוד + בגלילה.
+תנאי לא שונה (`user && !email_verified`).
+
+Build ירוק; אפס raw hex / physical-RTL בשורות החדשות; lint = warnings בלבד
+(pre-existing, MEH-443). Visual QA נדחה ל-Vercel preview (CC sandbox). Closes MEH-731.
+
+### 2026-06-03 — MEH-722: /map legend disables empty-viewport category rows
+
+`feat(MEH-722)`: במקרא הקטגוריות של `/map`, קטגוריה עם **0 בתי עסק ב-viewport
+הנוכחי** מוצגת מושבתת (opacity מופחת + `aria-disabled` + לא ניתנת ללחיצה) במקום
+להוביל למסך ריק. הספירה מחושבת **לפני** סינון הקטגוריה (מתוך
+`allProducers ∩ committedBounds`, לא `visibleProducers` שכבר מסונן-קטגוריה),
+ומתעדכנת על pan דרך `committedBounds`. קטגוריה **פעילה** שצונחת ל-0 נשארת לחיצה
+(כדי שאפשר לכבות אותה ולא להיתקע בפילטר ריק). 3 קבצים:
+`useMapFilters.js` (memo `viewportCategoryCounts`), `MapClient.jsx` (העברת prop),
+`MapPane.jsx` (render מושבת). **Phase 0 עדכון:** ה-spec הניח קובץ יחיד
+(`MapClient.jsx`) — המקרא בפועל ב-`MapPane.jsx`, scope הורחב ל-3 קבצים באישור.
+`npm run build` ירוק.
+
+### 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
+
+`feat(MEH-643)`: עיצוב מחדש של `Header.jsx` (רכיב **מרכזי** + **global chrome** —
+mounted ב-`layout.js:205`, משפיע על **כל** העמודים) ל-Phase 4/Assembly v2 floating
+pill. **HIGH-RISK** (central + global + auth) — chunked review (Step 2 desktop +
+Step 3 mobile).
+
+**Desktop:** הסרגל המלא (MEH-29) → **pill צף** ממורכז (`max-w-[1200px]`,
+`rounded-full`). מודל ה-sticky שומר גובה (אין רגרסיית overlap); רק ה-pill נושא
+מילוי. שני מצבי-משטח (scroll@80px של MEH-29 נשמר verbatim): over-image (שקוף + דיו
+בהיר + gradient + לוגו הפוך) / cream pill (`surface-card` + border + צל יחיד +
+דיו כהה — ברירת מחדל בכל עמוד פנימי). פריסה: לוגו / `גלי·מפה·אודות` (active =
+**קו תחתון זהב**) / search + LanguageToggle + ghost `כניסה לחשבון` + green
+`הוסיפו עסק ↗`.
+
+**Mobile:** drawer **warm-dark** (`bg-green-900`) **שמחליף** את ה-drawer הישן —
+קישורי Frank Ruhl 700/24px + ספרות זהב `01·02·03`, שורת CTA (green + ghost-on-dark),
+LanguageToggle (גוון cream), וכל הפריטים של משתמש מחובר (favorites/admin/logout)
+restyled על רקע כהה. Hamburger over-image = ה-glass היחיד המותר (`bg-white/15
+backdrop-blur`).
+
+**Auth נשמר 1:1** (אפס שינוי התנהגות): `UserMenu` avatar+dropdown, role-gate
+`showAddBusinessCta` (MEH-669), email-verify banner, `/` search shortcut. **LOCKs:**
+ללא hover-shadow, glass רק ב-hamburger over-image, קו תחתון זהב; `bg-primary` token
+החליף את ה-hex `#2e6853` של ה-avatar.
+
+**i18n:** 2 מפתחות חדשים — `nav.explore`="גלי" (קישור navbar; `nav.discover`="גלה"
+לא נגעתי → tab הבית ב-BottomNav לא מושפע) + `nav.add_business_short`="הוסיפו עסק".
+EN = HE-mirror זמני (**MEH-472**). he/en parity מלא. `npm run build` ירוק; אפס raw
+hex; RTL לוגי בלבד. `/adversarial-review` הורץ (central). Part of MEH-643.
+
+
+### 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED card)
+
+`feat(MEH-643)`: עיצוב מחדש של `ProducerCard.jsx` (רכיב **מרכזי** —
+`.claude/central-components.json`) לפי Phase 2 v4. **Blast radius מכוון:** 7
+משטחים (homepage Featured, HomeProducersGrid, /producers, /search, favorites,
+/map sheet, producer-detail similar). **כרטיס שטוח:** `bg-surface-card`, border
+1px, פינות חדות (radius 0), **ללא shadow-lift** — hover = border-color shift +
+image scale(1.02). eyebrow = קטגוריה (uppercase tracked). badge row מעל התמונה
+(bottom-start). image 1:1 mobile / 4:3 desktop. rating ★ זהב + count fg-muted.
+**No-image חדש:** cream + Leaf glyph + "מהמקור" (במקום emoji).
+
+**Heart/favorites (MEH-636):** לוגיקת ה-favorite (auth/API/guest) **נשמרה כפי
+שהיא** — רק restyle. heart = ירוק (`text-primary`), outline→fill. **תוקנה הפרת
+LOCK:** ה-heart של favorites-count היה אדום `#A32D2D` → עכשיו `fg-muted`. aria →
+gerund "שמירה" (MEH-472). **availability dots tokenized:** available_today →
+`bg-primary`, non-available (vacation/full_this_week) → `bg-fg-muted` — אפס raw
+hex (ממשיך את MEH-717). RTL לוגי בלבד, כל ה-data-testids + data wiring + routing
+נשמרו.
+
+**Unit test:** `ProducerCard.test.jsx` היה **stale + לא רץ ב-CI** (vitest לא
+מחווט ל-CI; כבר נכשל מול הקוד הנוכחי — ציפה ל-#4cb08b שה-MEH-717 הסיר, ול-no-image
+שונה). עודכן להתאים ל-anatomy החדש (dots tokenized, leaf no-image). **flag:
+vitest-not-in-CI** = follow-up ticket נפרד. `npm run build` ירוק. `/adversarial-review`
+נדרש לפני merge (central component, rule 20). Part of MEH-643.
+
+
+### 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
+
+`fix(MEH-728)`: ייצוב ה-E2E flake gate מול Vercel preview cold-start — **בלי
+להחליש את `--fail-on-flaky-tests`** (MEH-484 נשאר). מדידה (מתוך לוגים של
+PR #885/#886): warm ≈ 4-5s, אבל attempt-1 על preview קר פגע בתקרת 10s →
+flake → חסימת merge (קרה פעמיים). **שינויים:** (1) `playwright.config.ts` —
+`expect.timeout` 10s→20s, `actionTimeout` 10s→20s, per-test `timeout` 30s→45s.
+(2) 7 waits מפורשים רגישים-ל-preview (`waitForURL`/`toBeVisible` עם
+`{timeout:10_000}` שעוקף את ה-global) הועלו ל-20s ב-6 specs — **אסרציות לא
+שונו, רק תקציב ההמתנה**. timeouts קצרים מקומיים (2/3/5s) ו-page-load 15s לא
+נגעו. (3) `e2e.yml` — step **warm-up** לפני ה-suite: poll ל-preview עם
+bypass header עד 200, cap ~90s, ואז ממשיך (soft gate — לא מקור כשל חדש; ה-budget
+המוגבר הוא רשת הביטחון). build ירוק, config תקין (40 tests). אימות 5-ריצות-נקיות
+רץ ב-CI (sandbox לא יכול להריץ Playwright מול preview מוגן). Closes MEH-728.
+
+### 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
+
+`feat(MEH-643)`: עיצוב מחדש של רשת הקטגוריות (`HomeCategoryGrid.jsx`) לפי
+Assembly v2. **Layout 2+4 אסימטרי:** desktop 4-col (2 כרטיסי hero span-2 +
+4 קטנים), tablet 2×3 אחיד, mobile 2+4 (hero ברוחב מלא + 4 ב-2×2) — **לא**
+1×6 stack. **כרטיס שטוח:** `bg-surface-card`, border 1px `border`, פינות
+חדות (radius 0), ללא shadow-lift; glyph על פאנל `bg-background` (cream),
+מספור 01-06 ב-Cormorant italic זהב (`text-accent`, LTR-isolated), שם ב-FRL.
+**אין counters** (LOCK). **selected prop** חדש — כרטיס נבחר מקבל
+`border-primary` (מקור: `filters.category`, מחווט מ-`page.js`).
+
+**Glyphs — כל 6 מ-Assembly v2 (`:697-702`)**, לא מ-Phase 3 v8: cleaver (01),
+leaf (02), milk-bottle (03), wheat-stalk (04), honey-jar (05), herb-bundle
+(06). תיקון ל-prompt: v8 glyphs דחויים בעיצוב (`v2:1419` "reference only");
+ה-hot-fix (`v2:1924`) צייר מחדש את 01/03/04/05/06 — אושר ע"י Sapir. ה-`Icon`
+wrapper הוסב ל-viewBox 120 + `currentColor` (stroke צבע דרך token, ללא raw hex).
+
+**Routing נשמר:** `onCardClick` → `handleCategoryCardClick` (filter +
+scroll ל-`#producers-grid`). שמות הקטגוריות (hardcoded HE ב-`home-categories.js`)
+כבר תאמו — לא שונו. Copy: eyebrow חדש "קטגוריות", heading "גלו"→"גלי לפי
+קטגוריה", subheading הוסר מה-render (key נשאר). EN: eyebrow HE-mirror זמני
+(MEH-472), parity he/en נשמר. ללא raw hex, RTL לוגי בלבד, `npm run build`
+ירוק. אף עמוד/Hero/Header אחר לא נגע. Part of MEH-643.
+
+### 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
+
+`feat(MEH-643)`: עיצוב מחדש של ה-Hero בעמוד הבית (`HomeHero.jsx`) לפי
+"Phase 5 Homepage Assembly v2" — דרך מנגנון ה-i18n הקיים (next-intl,
+`messages/he.json`), ללא hardcode. **קופי חדש (HE):** כותרת
+"אוכל מקומי, במקום אחד"; subtitle "בתי עסק מקומיים בישראל — ישר מהמקור";
+כפתור ראשי חדש "גלו עסקים" (→ scroll ל-`#producers-grid` דרך `onScrollDown`
+הקיים); קישור טקסט חדש "איך זה עובד" (→ scroll ל-`#how-it-works`, anchor
+נוסף ל-`HomeHowItWorks`); submit label → "חפש" (`search.hero.submit_aria`).
+placeholder + "קרוב אלי" כבר תאמו. **טוקני MEH-136:** `bg-surface-card`
+(pill), `bg-action-primary`/`hover:bg-action-primary-hover` (CTA),
+`.focus-ring`, `.duration-base`/`.ease-quart` (+ ease-quart ל-Framer);
+ללא raw hex (gradient overlay alpha נשמר — לא tokenizable). RTL: לוגי בלבד
+(אפס physical props חדשים). **HeroSearch (MEH-99) + near-me (MEH-41) —
+reuse, ללא redesign.** EN: מפתחות חדשים מקבלים HE-mirror זמני ב-`en.json`
+(`// TODO i18n EN (extends MEH-472)`); title/subtitle EN נשארו (stale,
+לתרגום בנפרד — checklist ב-PR). `npm run build` ירוק. Part of MEH-643.
+
+### 2026-06-02 — MEH-136 הוספת טוקני עיצוב additive ל-S4 (motion · semantic · surface-card · spacing · focus-ring)
+
+`feat(MEH-136)`: הוספת קבוצות טוקנים שעמוד הבית החדש (S4, MEH-639) צורך
+וחסרו ב-repo — additive בלבד, אפס שינוי בערך קיים, אפס regression. **פיצול
+לפי מה שה-exporter יודע לשאת** (`@google/design.md` v0.1.1 תומך רק ב-hex
+6-ספרתי / spacing / type; משמיט `cubic-bezier`, `ms`, `rgba`, `transparent`):
+
+- **דרך ה-pipeline** (`docs/DESIGN.md` → `npm run design:export` →
+  `tailwind.tokens.json`): `surface-card` + `surface-floating` (`#FFFEFB`,
+  מדרגת elevation טונאלית מעל `surface` הלבן); aliases סמנטיים `action-primary`
+  (=`primary` `#2e6853`) ו-`action-primary-hover` (=`primary-dark` `#2E4A2E`);
+  spacing `5xl` 96px / `6xl` 128px; fallback לכל stacks ה-Frank Ruhl Libre
+  (`headline-display`/`-lg`/`-md`) → `"David Libre", Georgia, serif`.
+- **שכבת CSS utility** (`frontend/app/globals.css`): `.duration-fast|base|slow`
+  (180/420/640ms) + `.ease-quart` (`cubic-bezier(.25,1,.5,1)`); `.focus-ring`
+  (`rgba(46,104,83,.40)`, מטוקן את ה-idiom `ring-primary/40`); `.action-ghost`
+  + `.action-ghost-on-dark` (transparent + border/text מ-`text`/`background`).
+  שכבת utility, **לא** `:root` token-authority מקביל (686 הסיר `:root`).
+
+**הכרעת hover (ADR-019):** action-primary-hover = `primary-dark` `#2E4A2E`
+(reuse של ה-dark הקיים) — **לא** `#1F4C3C` מה-S4 exploration; אין ירוק שלישי,
+`green-700` (`#2e4a2e`) ללא שינוי. `git diff tailwind.tokens.json` = הוספות
+בלבד (4 צבעים + 2 spacing) + 3 שינויי fontFamily מאושרים (ה-fallback). `npm run
+build` ירוק (✓ Compiled 13.6s). אף component לא נגע. Closes MEH-136.
+
+### 2026-06-02 — MEH-680 English→Hebrew wordmark swap (Header/Footer/error/404)
+
+`chore(MEH-680)`: החלפת ה-wordmark האנגלי במקור עברי `מהמקור` בכל 4 נקודות
+ה-in-code השירותיות — `Header` (`/logo.png`, 106×40, dark→white via CSS
+filter כשה-header שקוף בעמוד הבית), `Footer` (`/logo-footer.png`, 127×48
+על רקע ירוק כהה), `error.js` + `not-found.js` (`/logo.png` 120×40 ממורכז).
+שני הקבצים נגזרו ממאסטר יחיד 910×230 RGBA (alpha:true, dark glyphs —
+channel means R=17/G=16/B=12, opaque mean=15.3) באמצעות `sharp` ב-scratch
+dir מחוץ ל-repo, `fit:contain` עם letterbox שקוף ו-`kernel:lanczos3`, ללא
+distortion. Post-derive verify: `logo.png` 106×40 RGBA opaqueMean=16.5,
+`logo-footer.png` 127×48 RGBA opaqueMean=14.9 — alpha + dark glyphs נשמרו.
+מאסטר לא נשמר ב-repo (rm לפני commit). `package.json` לא נגעו (sharp הותקן
+ב-`C:/Users/sint1/meh-680-scratch`). Build green (27.5s compile, 101/101
+static pages). Diff = `logo.png` + `logo-footer.png` + CHANGELOG + HANDOFF
+בלבד. אישור ויזואלי ממתין ל-Vercel preview (desktop 1280 + mobile 375:
+Header TOP שקוף→white logo, Header SCROLLED cream→dark logo, Footer on
+dark green, error, 404). Closes MEH-680.
+
 ### 2026-05-29 — Drop 5 redundant explicit color overrides (MEH-726, GREEN — post-MEH-708 cleanup)
 
 `refactor(MEH-726)`: removed the 5 explicit color entries (`primary`,

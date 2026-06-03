@@ -138,6 +138,7 @@ export default function HomePage() {
       <HomeCategoryGrid
         categoryCards={categoryCards}
         onCardClick={handleCategoryCardClick}
+        selectedCategory={filters.category}
       />
 
       <HomeMarquee />

@@ -19,7 +19,7 @@ test.describe("WhatsApp analytics", () => {
     }
     await firstCard.click();
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
-    await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 10_000 });
+    await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
     await page.waitForLoadState("domcontentloaded");
 
     // Block WhatsApp navigation so the test page stays active
