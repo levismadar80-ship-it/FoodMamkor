@@ -1,6 +1,8 @@
 {
   "nav": {
     "discover": "Discover",
+    "explore": "גלי",
+    "add_business_short": "הוסיפו עסק",
     "map": "Map",
     "events": "Events",
     "about": "About",
@@ -327,6 +329,8 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
+      "cta_primary": "גלו עסקים",
+      "how_it_works": "איך זה עובד",
       "friday_subtitle": "Friday is here What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
@@ -347,6 +351,7 @@
       "fallback": "Starting now · across Israel"
     },
     "categories": {
+      "eyebrow": "קטגוריות",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
       "aria": "Show category: {name}"
@@ -629,7 +634,8 @@
         "login_cta": "Log in",
         "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
-        "add": "Add to favorites"
+        "add": "Add to favorites",
+      "aria": "שמירה"
       },
       "aria": {
         "image_missing": "{name} — image missing",

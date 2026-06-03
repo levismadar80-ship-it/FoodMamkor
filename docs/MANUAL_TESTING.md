@@ -3,6 +3,41 @@
 
 ---
 
+## MEH-731 — navbar homepage-state (locale-path) + verify-banner relocation
+
+- [ ] בית `/he` בראש (לפני גלילה) — navbar **שקוף** + לוגו/קישורים בהירים מעל ה-hero — תוצאה: לא cream pill
+- [ ] בית `/en` בראש — אותו מצב transparent (התיקון עובד גם ב-locale השני) — תוצאה: transparent
+- [ ] בית אחרי גלילה >80px — הופך ל-cream pill — תוצאה: מעבר נכון
+- [ ] עמוד פנימי (`/about`, `/map`) — cream pill כברירת מחדל — תוצאה: pill כהה-דיו
+- [ ] קישור `גלי` בעמוד הבית — קו תחתון זהב פעיל — תוצאה: underline מופיע (היה שבור)
+- [ ] BottomNav (מובייל) בעמוד הבית — tab הבית מודגש — תוצאה: highlight מופיע (היה שבור)
+- [ ] verify-banner: משתמש מחובר לא מאומת — banner צהוב מתחת ל-hero (לא בתוך ה-pill הצף) — תוצאה: ה-pill נשאר נקי; banner נראה + כפתור resend עובד
+- [ ] verify-banner בעמוד פנימי + בגלילה — עדיין מוצג — תוצאה: נוכח בכל עמוד
+
+---
+
+## MEH-643 chunk 4 — Navbar floating-pill (FloatingNavbar v5)
+
+### Desktop (≥768px)
+- [ ] בית `/` למעלה — navbar שקוף מעל ה-hero, דיו בהיר, לוגו לבן — איך לבדוק: לטעון `/` — תוצאה: pill שקוף, טקסט בהיר קריא
+- [ ] גלילה מעל 80px — navbar הופך ל-cream pill צף (border + צל יחיד, ללא קפיצת-צל ב-hover) — תוצאה: מעבר חלק 420ms
+- [ ] עמוד פנימי (`/about`, `/map`) — cream pill כברירת מחדל (לא שקוף) — תוצאה: pill כהה-דיו על cream
+- [ ] קישור פעיל = קו תחתון זהב (`גלי` ב-`/`, `מפה` ב-`/map`) — תוצאה: underline זהב בלבד
+- [ ] אורח: ghost `כניסה לחשבון` + green `הוסיפו עסק ↗` — תוצאה: שניהם מופיעים
+- [ ] מחובר (consumer): avatar dropdown + green CTA נשאר — תוצאה: dropdown profile/settings/logout
+- [ ] מחובר (producer/admin): **אין** `הוסיפו עסק` (MEH-669) — תוצאה: CTA מוסתר
+- [ ] search icon + `/` shortcut + LanguageToggle עובדים — תוצאה: search נפתח, שפה מתחלפת
+
+### Mobile (375px)
+- [ ] hamburger over-hero = glass יחיד (`bg-white/15 backdrop-blur`) — תוצאה: כפתור מטושטש קריא מעל התמונה
+- [ ] פתיחת drawer = warm-dark (`green-900`) — קישורי Frank Ruhl 24px + ספרות זהב `01·02·03` — תוצאה: drawer כהה, מספרים זהב
+- [ ] drawer: green `הוסיפו עסק` + ghost-on-dark `כניסה לחשבון` (אורח) — תוצאה: שתי כפתורים full-width
+- [ ] drawer מחובר: favorites + admin (אם admin) + logout, restyled כהה — תוצאה: כולם נוכחים וקריאים
+- [ ] search button במובייל עובד — תוצאה: נפתח `/search`
+- [ ] email-verify banner (משתמש לא מאומת) עדיין מופיע מתחת ל-pill — תוצאה: banner צהוב + resend
+
+---
+
 ## MEH-671 — Producer-signup smoke (now automated)
 
 The 5-step producer-signup smoke is now a GitHub Action
@@ -212,6 +247,17 @@ Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (
 - [ ] Skeleton on first paint — hard-reload `/he` with Network throttled to "Slow 3G" → for the first ~200ms the map slot shows the skeleton (pulsing `bg-light` + `MapTrifold` icon + "טוענת מפה..."). The slot is **the same height** as the rendered map — no layout jump when the live map appears.
 - [ ] Tile preconnect in DOM — DevTools → Elements → `<head>` → 3 lines present: `<link rel="preconnect" href="https://a.tile.openstreetmap.org">` (also `b.`, `c.`). All have `crossOrigin="anonymous"`.
 - [ ] Leaflet load timing — DevTools → Performance → record initial page load → main thread should be free of Leaflet/`react-leaflet` script eval for the first ~200ms after FCP. Map markers appear after the defer window.
+
+---
+
+## /map legend — disable empty-viewport categories (MEH-722)
+
+Desktop only (≥md) — the collapsible category legend at the map's bottom-start corner. A category with 0 businesses in the **current viewport** renders disabled instead of clicking into an empty list. Count is pre-category-filter (`allProducers ∩ committedBounds`), recomputed on pan.
+
+- [ ] Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
+- [ ] Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
+- [ ] Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
+- [ ] Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
 
 ---
 

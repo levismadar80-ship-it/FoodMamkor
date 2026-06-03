@@ -16,17 +16,21 @@
         "green-300": "#6fa284",
         "green-500": "#2e6853",
         "green-700": "#2e4a2e",
-        "green-900": "#143228"
+        "green-900": "#143228",
+        "surface-card": "#fffefb",
+        "surface-floating": "#fffefb",
+        "action-primary": "#2e6853",
+        "action-primary-hover": "#2e4a2e"
       },
       "fontFamily": {
         "headline-display": [
-          "Frank Ruhl Libre"
+          "\"Frank Ruhl Libre\", \"David Libre\", Georgia, serif"
         ],
         "headline-lg": [
-          "Frank Ruhl Libre"
+          "\"Frank Ruhl Libre\", \"David Libre\", Georgia, serif"
         ],
         "headline-md": [
-          "Frank Ruhl Libre"
+          "\"Frank Ruhl Libre\", \"David Libre\", Georgia, serif"
         ],
         "body-lg": [
           "\"DM Sans\", \"Heebo\", sans-serif"
@@ -109,6 +113,8 @@
         "2xl": "32px",
         "3xl": "48px",
         "4xl": "64px",
+        "5xl": "96px",
+        "6xl": "128px",
         "gutter": "16px"
       }
     }

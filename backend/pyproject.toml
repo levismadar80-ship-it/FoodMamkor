@@ -3,12 +3,12 @@ name = "foodmamkor-backend"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi==0.120.1",
-    "uvicorn[standard]==0.30.6",
+    "fastapi==0.136.3",
+    "uvicorn[standard]==0.48.0",
     "sqlalchemy==2.0.35",
     "psycopg2-binary==2.9.12",
     "alembic==1.13.2",
-    "joserfc==1.6.4",
+    "joserfc==1.6.7",
     "passlib[bcrypt]==1.7.4",
     "bcrypt==4.0.1",
     "bleach==6.3.0",
@@ -27,7 +27,7 @@ dependencies = [
     "resend==2.29.0",
     "structlog==24.4.0",
     "asgi-correlation-id==4.3.4",
-    "sentry-sdk[fastapi]==2.18.0",
+    "sentry-sdk[fastapi]==2.60.0",
     "apscheduler~=3.10",
 ]
 
@@ -36,7 +36,7 @@ dev = [
     "mutmut>=2.5.0",
     "pip-audit>=2.10.0",
     "pytest>=8.0",
-    "pytest-cov>=7.0",
+    "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=14.0",
     "pytest-timeout>=2.4.0",
     "ruff>=0.15.0",

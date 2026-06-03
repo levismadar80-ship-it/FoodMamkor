@@ -315,6 +315,97 @@ if [ "$SELF_TEST" -eq 0 ]; then
   done < <(jq -r '.skills | keys_unsorted[]' "$LOCK" | LC_ALL=C sort)
 fi
 
+# ---- Pass 6: description bloat detection (MEH-714) ----
+# Measures each skill's SKILL.md frontmatter `description:` length against
+# Anthropic's 1024-char max (the value is loaded into the system prompt on every
+# startup, so every char is permanent context overhead). Reports the Top 10
+# longest offenders.
+#   > 1024 → [DESC-BLOAT-FAIL] CRITICAL (hard fail, bumps exit 1)
+#   > 500  → [DESC-BLOAT-WARN]  info-only (exit unaffected; kept out of the
+#            Pass-1 "Single-class warnings" counter, whose meaning differs)
+# Bonus discovery (info-only): [DESC-FIRST-PERSON] opener, [DESC-VAGUE] phrasing.
+#
+# Runs in BOTH real and self-test modes (iterates $TARGET): in self-test the
+# bad-skill fixture carries a >1024 block-scalar description, exercising the
+# DESC-BLOAT-FAIL path as a regression test.
+#
+# NOTE (MEH-714): the ticket called this "Pass 5", but Pass 5 above is already
+# the MEH-422 subprocess-bypass coverage. Numbered Pass 6 (next free slot) —
+# thresholds and checks are exactly as specified.
+DESC_MAX=1024
+DESC_WARN=500
+desc_rows=""        # "LEN\tskill" rows for the Top-10 sort
+desc_emitted=0      # whether any warn/fail/info finding was produced
+
+for skill_dir in "$TARGET"/*/; do
+  skill=$(basename "$skill_dir")
+  md="${skill_dir}SKILL.md"
+  [ -f "$md" ] || continue
+
+  # Extract the `description:` value from the first --- frontmatter block.
+  # Handles single-line (`description: text` / quoted) AND YAML block scalars
+  # (`description: |` literal / `description: >` folded): collected indented
+  # lines are joined with spaces for a length estimate, which is what matters
+  # against the 1024 threshold.
+  desc=$(awk '
+    /^---[[:space:]]*$/ { fm++; if (fm >= 2) exit; next }
+    fm == 1 {
+      if (block == 1) {
+        if ($0 ~ /^[[:space:]]/ || $0 ~ /^[[:space:]]*$/) {
+          line = $0; sub(/^[[:space:]]+/, "", line)
+          desc = (desc == "" ? line : desc " " line)
+          next
+        }
+        exit                      # dedent → block scalar ended
+      }
+      if ($0 ~ /^description:/) {
+        val = $0; sub(/^description:[[:space:]]*/, "", val)
+        if (val ~ /^[|>][+-]?[[:space:]]*$/) { block = 1; next }
+        desc = val; exit
+      }
+    }
+    END { print desc }
+  ' "$md")
+  [ -n "$desc" ] || continue
+
+  # Strip one wrapping double-quote (YAML quoted scalar).
+  case "$desc" in
+    '"'*'"') desc=${desc#\"}; desc=${desc%\"} ;;
+  esac
+
+  # wc -m = locale-aware char count (UTF-8 on CI). printf avoids a trailing
+  # newline so the count is exactly the description value.
+  len=$(printf '%s' "$desc" | wc -m | tr -d '[:space:]')
+  desc_rows=$(printf '%s\n%s\t%s' "$desc_rows" "$len" "$skill")
+
+  if [ "$len" -gt "$DESC_MAX" ]; then
+    CRITICAL=$((CRITICAL+1)); desc_emitted=1
+    printf '\n[DESC-BLOAT-FAIL] %s — description %d chars exceeds %d max\n' "$skill" "$len" "$DESC_MAX" >> "$REPORT_TMP"
+  elif [ "$len" -gt "$DESC_WARN" ]; then
+    desc_emitted=1
+    printf '\n[DESC-BLOAT-WARN] %s — description %d chars over %d soft limit (info-only)\n' "$skill" "$len" "$DESC_WARN" >> "$REPORT_TMP"
+  fi
+
+  # Bonus 1: first-person / second-person opener (info-only).
+  if printf '%s' "$desc" | grep -qE "^(I |I'm |I can |You can |Use me )"; then
+    desc_emitted=1
+    printf '\n[DESC-FIRST-PERSON] %s — non-third-person opener: "%.40s..."\n' "$skill" "$desc" >> "$REPORT_TMP"
+  fi
+
+  # Bonus 2: vague phrasing or too-short description (info-only).
+  if [ "$len" -lt 50 ] || printf '%s' "$desc" | grep -qiE "^(Helps with|Does |Works with|Processes data|For .{1,20}$)"; then
+    desc_emitted=1
+    printf '\n[DESC-VAGUE] %s — vague/short description (%d chars): "%.40s..."\n' "$skill" "$len" "$desc" >> "$REPORT_TMP"
+  fi
+done
+
+# Top 10 offenders — only printed if Pass 6 found anything.
+if [ "$desc_emitted" -eq 1 ]; then
+  echo ""
+  echo "=== Pass 6 Top 10 description-length offenders ==="
+  printf '%s\n' "$desc_rows" | grep -v '^$' | sort -rn | head -10 | awk -F'\t' '{ printf "%2d. %s — %s chars\n", NR, $2, $1 }'
+fi
+
 # ---- Output ----
 if [ -s "$REPORT_TMP" ]; then
   cat "$REPORT_TMP"
