@@ -15,7 +15,7 @@ test.describe("Search", () => {
     await page.locator('[data-testid="hero-search-submit"]').click();
 
     // Should land on /producers (with or without query string)
-    await page.waitForURL(/\/producers/, { timeout: 10_000 });
+    await page.waitForURL(/\/producers/, { timeout: 20_000 });
     await page.waitForLoadState("domcontentloaded");
 
     // Either cards or empty state — page must render without crash

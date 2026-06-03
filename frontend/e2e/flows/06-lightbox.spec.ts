@@ -16,7 +16,7 @@ test.describe("Lightbox", () => {
       return;
     }
     await firstCard.click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 10_000 });
+    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 20_000 });
 
     // Gallery image button — only exists when the producer has ≥1 photo
     const imageBtn = page.locator('[aria-label^="הגדלי תמונה"]').first();

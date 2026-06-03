@@ -4,6 +4,21 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
+
+`fix(MEH-728)`: ייצוב ה-E2E flake gate מול Vercel preview cold-start — **בלי
+להחליש את `--fail-on-flaky-tests`** (MEH-484 נשאר). מדידה (מתוך לוגים של
+PR #885/#886): warm ≈ 4-5s, אבל attempt-1 על preview קר פגע בתקרת 10s →
+flake → חסימת merge (קרה פעמיים). **שינויים:** (1) `playwright.config.ts` —
+`expect.timeout` 10s→20s, `actionTimeout` 10s→20s, per-test `timeout` 30s→45s.
+(2) 7 waits מפורשים רגישים-ל-preview (`waitForURL`/`toBeVisible` עם
+`{timeout:10_000}` שעוקף את ה-global) הועלו ל-20s ב-6 specs — **אסרציות לא
+שונו, רק תקציב ההמתנה**. timeouts קצרים מקומיים (2/3/5s) ו-page-load 15s לא
+נגעו. (3) `e2e.yml` — step **warm-up** לפני ה-suite: poll ל-preview עם
+bypass header עד 200, cap ~90s, ואז ממשיך (soft gate — לא מקור כשל חדש; ה-budget
+המוגבר הוא רשת הביטחון). build ירוק, config תקין (40 tests). אימות 5-ריצות-נקיות
+רץ ב-CI (sandbox לא יכול להריץ Playwright מול preview מוגן). Closes MEH-728.
+
 ### 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
 
 `feat(MEH-643)`: עיצוב מחדש של רשת הקטגוריות (`HomeCategoryGrid.jsx`) לפי

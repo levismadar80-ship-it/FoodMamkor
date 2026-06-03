@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
+
+**Branch:** `feature/meh-728-e2e-flake-hardening` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-728.
+
+**Problem:** Vercel preview cold-start → 10s `waitForURL`/`toBeVisible` budgets miss on attempt 1 → `--fail-on-flaky-tests` (MEH-484) blocks merge → manual retrigger. Hit on PR #885 (search) + #886 (password).
+
+**Measurement (CI-log-derived; sandbox can't curl protected previews):** warm waits ≈ 4-5s (retries passed: #886 4.7s, #885 3.7s); cold attempt-1 ≥10s (true value masked by the 10s cap). 20s budget = ~4× warm / 2× the observed ceiling.
+
+**Changes (gate NOT weakened — `--fail-on-flaky-tests` stays):**
+- `playwright.config.ts`: `expect.timeout` 10→20s, `actionTimeout` 10→20s, per-test `timeout` 30→45s.
+- 7 explicit preview-load/nav waits (`{timeout:10_000}` overrides that bypass global) → 20s across 6 specs (02/03/04/06/07/11). Assertions unchanged — budget only. Short local timeouts (2/3/5s) + 15s page-load waits left as-is.
+- `e2e.yml`: new **Warm up Vercel preview** step before the suite — polls `$TARGET_URL/` with the bypass header until 200, cap ~90s, then proceeds (soft gate; raised budgets are the net). Cost: ≤90s/run (cheaper than a full retrigger; ref MEH-547).
+
+**Verify:** `npm run build` ✓; `npx playwright test --list` ✓ (40 tests, config parses); `e2e.yml` YAML valid. **5×-clean-run soak deferred to CI** — sandbox cannot run Playwright against the protected preview; run 1 fires on PR push.
+
+**Next:** Sapir review at PR. The 5-run soak completes on CI (I can drive 4 retriggers post-push if wanted). Unblocks the remaining MEH-643 chunks (ProducerCard, Navbar) from the retrigger-dance.
+
 ## 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
 
 **Branch:** `feature/meh-643-category-grid` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 2).
