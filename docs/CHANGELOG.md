@@ -4,6 +4,38 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
+
+`feat(MEH-643)`: עיצוב מחדש של `Header.jsx` (רכיב **מרכזי** + **global chrome** —
+mounted ב-`layout.js:205`, משפיע על **כל** העמודים) ל-Phase 4/Assembly v2 floating
+pill. **HIGH-RISK** (central + global + auth) — chunked review (Step 2 desktop +
+Step 3 mobile).
+
+**Desktop:** הסרגל המלא (MEH-29) → **pill צף** ממורכז (`max-w-[1200px]`,
+`rounded-full`). מודל ה-sticky שומר גובה (אין רגרסיית overlap); רק ה-pill נושא
+מילוי. שני מצבי-משטח (scroll@80px של MEH-29 נשמר verbatim): over-image (שקוף + דיו
+בהיר + gradient + לוגו הפוך) / cream pill (`surface-card` + border + צל יחיד +
+דיו כהה — ברירת מחדל בכל עמוד פנימי). פריסה: לוגו / `גלי·מפה·אודות` (active =
+**קו תחתון זהב**) / search + LanguageToggle + ghost `כניסה לחשבון` + green
+`הוסיפו עסק ↗`.
+
+**Mobile:** drawer **warm-dark** (`bg-green-900`) **שמחליף** את ה-drawer הישן —
+קישורי Frank Ruhl 700/24px + ספרות זהב `01·02·03`, שורת CTA (green + ghost-on-dark),
+LanguageToggle (גוון cream), וכל הפריטים של משתמש מחובר (favorites/admin/logout)
+restyled על רקע כהה. Hamburger over-image = ה-glass היחיד המותר (`bg-white/15
+backdrop-blur`).
+
+**Auth נשמר 1:1** (אפס שינוי התנהגות): `UserMenu` avatar+dropdown, role-gate
+`showAddBusinessCta` (MEH-669), email-verify banner, `/` search shortcut. **LOCKs:**
+ללא hover-shadow, glass רק ב-hamburger over-image, קו תחתון זהב; `bg-primary` token
+החליף את ה-hex `#2e6853` של ה-avatar.
+
+**i18n:** 2 מפתחות חדשים — `nav.explore`="גלי" (קישור navbar; `nav.discover`="גלה"
+לא נגעתי → tab הבית ב-BottomNav לא מושפע) + `nav.add_business_short`="הוסיפו עסק".
+EN = HE-mirror זמני (**MEH-472**). he/en parity מלא. `npm run build` ירוק; אפס raw
+hex; RTL לוגי בלבד. `/adversarial-review` הורץ (central). Part of MEH-643.
+
+
 ### 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED card)
 
 `feat(MEH-643)`: עיצוב מחדש של `ProducerCard.jsx` (רכיב **מרכזי** —
