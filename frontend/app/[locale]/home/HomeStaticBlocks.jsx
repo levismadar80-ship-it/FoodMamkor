@@ -185,7 +185,8 @@ export function HomeKitchenPreview({ products, onWhatsAppClick }) {
 export function HomeHowItWorks() {
   const t = useTranslations();
   return (
-    <section className="max-w-7xl mx-auto px-4 section-y">
+    // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
+    <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
         <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}

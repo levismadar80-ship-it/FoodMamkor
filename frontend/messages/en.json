@@ -327,6 +327,8 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
+      "cta_primary": "גלו עסקים",
+      "how_it_works": "איך זה עובד",
       "friday_subtitle": "Friday is here What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
