@@ -83,6 +83,7 @@ export default function MapPane({
   toggleCategory,
   activeCategoryNames,
   setActiveCategoryNames,
+  viewportCategoryCounts,
 }) {
   const t = useTranslations();
   return (
@@ -148,8 +149,16 @@ export default function MapPane({
             <div className="space-y-0.5">
               {CATEGORY_LEGEND.map((cat) => {
                 const catActive = isCategoryActive(cat.name);
+                // MEH-722: 0 businesses in the current viewport → dead-end row.
+                // Empty + inactive → fully disabled (no click). Empty + active →
+                // stays clickable so the user can toggle out of an empty filter.
+                const isEmpty = (viewportCategoryCounts?.[cat.name] ?? 0) === 0;
+                const disabled = isEmpty && !catActive;
+                const opacity = catActive
+                  ? (isEmpty ? "opacity-60" : "opacity-100")
+                  : (isEmpty ? "opacity-30" : "opacity-40");
                 return (
-                  <button key={cat.name} type="button" onClick={() => toggleCategory(cat.name)} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${catActive ? "opacity-100" : "opacity-40"} hover:bg-green-50`} aria-pressed={catActive}>
+                  <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
                     <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
                     <span className="text-xs text-text">{cat.emoji} {cat.name.split(",")[0]}</span>
                   </button>
