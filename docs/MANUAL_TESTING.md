@@ -3,6 +3,19 @@
 
 ---
 
+## MEH-731 — navbar homepage-state (locale-path) + verify-banner relocation
+
+- [ ] בית `/he` בראש (לפני גלילה) — navbar **שקוף** + לוגו/קישורים בהירים מעל ה-hero — תוצאה: לא cream pill
+- [ ] בית `/en` בראש — אותו מצב transparent (התיקון עובד גם ב-locale השני) — תוצאה: transparent
+- [ ] בית אחרי גלילה >80px — הופך ל-cream pill — תוצאה: מעבר נכון
+- [ ] עמוד פנימי (`/about`, `/map`) — cream pill כברירת מחדל — תוצאה: pill כהה-דיו
+- [ ] קישור `גלי` בעמוד הבית — קו תחתון זהב פעיל — תוצאה: underline מופיע (היה שבור)
+- [ ] BottomNav (מובייל) בעמוד הבית — tab הבית מודגש — תוצאה: highlight מופיע (היה שבור)
+- [ ] verify-banner: משתמש מחובר לא מאומת — banner צהוב מתחת ל-hero (לא בתוך ה-pill הצף) — תוצאה: ה-pill נשאר נקי; banner נראה + כפתור resend עובד
+- [ ] verify-banner בעמוד פנימי + בגלילה — עדיין מוצג — תוצאה: נוכח בכל עמוד
+
+---
+
 ## MEH-643 chunk 4 — Navbar floating-pill (FloatingNavbar v5)
 
 ### Desktop (≥768px)

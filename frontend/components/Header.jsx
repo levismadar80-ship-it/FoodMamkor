@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/language-context";
 import { useTranslations } from "next-intl";
-import { EnvelopeSimple, Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
-import api from "@/lib/api";
+import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -17,7 +17,11 @@ import LanguageToggle from "@/components/LanguageToggle";
  * mounted once in app/[locale]/layout.js. Replaces the MEH-29 full-width
  * sticky bar with a centered floating pill, while preserving every
  * auth-aware behavior the bar carried (MEH-39 UserMenu, MEH-669 CTA role
- * gate, MEH-475 LanguageToggle, email-verify banner, "/" search shortcut).
+ * gate, MEH-475 LanguageToggle, "/" search shortcut). The email-verify
+ * banner was extracted to VerifyBanner.jsx (MEH-731) so it no longer grows
+ * the floating band. usePathname comes from @/i18n/navigation (locale-
+ * stripped: "/" on /he and /en) — next/navigation's is locale-prefixed and
+ * broke isHomepage/isActive on the homepage (MEH-731).
  *
  * Positioning (unchanged from MEH-29 — preserved by decision): the
  * <header> is `sticky top-0` and reserves its own height, so <main>
@@ -45,28 +49,8 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [resendSent, setResendSent] = useState(false);
-  const [resendSending, setResendSending] = useState(false);
-  const [resendError, setResendError] = useState("");
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
-
-  const handleResend = async () => {
-    if (resendSending) return;
-    setResendSending(true);
-    setResendError("");
-    try {
-      await api.post("/auth/resend-verify");
-      setResendSent(true);
-    } catch (err) {
-      if (err.response?.status === 429) {
-        setResendError(t("auth.verify.rate_limited"));
-      } else {
-        setResendError(t("error.try_again"));
-      }
-    }
-    setResendSending(false);
-  };
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   useEffect(() => {
@@ -360,25 +344,6 @@ export default function Header() {
               </span>
             </div>
           </div>
-        </div>
-      )}
-
-      {user && user.email_verified === false && (
-        <div className="bg-amber-50 border-t border-amber-200 px-4 py-2.5 flex items-center justify-center gap-3 text-sm flex-wrap">
-          <span className="text-amber-800 inline-flex items-center gap-1"><EnvelopeSimple size={16} className="text-current" />{t("auth.verify.banner")}</span>
-          {resendError ? (
-            <span className="text-red-600 text-xs font-medium">{resendError}</span>
-          ) : !resendSent ? (
-            <button
-              onClick={handleResend}
-              disabled={resendSending}
-              className="text-primary hover:underline text-xs font-medium disabled:opacity-50"
-            >
-              {t("auth.verify.resend")}
-            </button>
-          ) : (
-            <span className="text-green-600 text-xs font-medium">{t("auth.verify.sent")}</span>
-          )}
         </div>
       )}
     </header>

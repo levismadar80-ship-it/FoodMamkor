@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import Header from "@/components/Header";
+import VerifyBanner from "@/components/VerifyBanner";
 import FooterSlot from "@/components/FooterSlot";
 import BottomNav from "@/components/BottomNav";
 import Toaster from "@/components/Toaster";
@@ -203,7 +204,10 @@ export default async function LocaleLayout({ children, params }) {
             <LanguageProvider>
               <SmoothScrollProvider>
                 <Header />
-                <main id="main-content" className="flex-1">{children}</main>
+                {/* MEH-731: verify banner relocated out of the sticky <header>
+                    to the top of <main> so the floating navbar pill stays pure
+                    on the homepage. Still shows on every page + when scrolled. */}
+                <main id="main-content" className="flex-1"><VerifyBanner />{children}</main>
                 <FooterSlot />
                 <BottomNav />
                 <Toaster />

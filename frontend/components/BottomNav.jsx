@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+// MEH-731: locale-stripping usePathname (returns "/" on /he and /en) so the
+// home-tab match (p === "/") fires on the localized homepage. next/navigation's
+// is locale-prefixed (/he) and left the home tab permanently unhighlighted.
+import { usePathname } from "@/i18n/navigation";
 import { House, MapTrifold, UserCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
