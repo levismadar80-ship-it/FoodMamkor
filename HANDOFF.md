@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-233: auth/error "viewport clip" → NOT-A-LAYOUT-BUG (scroll-under-sticky)
+
+**Branch:** `feature/meh-233-fix-auth-viewport-clip` (created off staging, **deleted — no PR, no code shipped**).
+
+**Reported:** centered auth/error cards "clip" behind the floating navbar on short viewports (card top / brand-mark hides under the pill); seen on `/login` + error page on deployed staging.
+
+**Diagnosis (live local prod build of staging, Playwright @1366×640):** **scroll-under-sticky, not an overflow clip.** At scroll-top the content sits correctly below the navbar — error `<main>` top = 94px (= header height), logo top = 158px (header bottom = 94px → fully clear). It only slides behind the pill once scrolled (scrollY=120 → logo top 38 < 94). Discriminator (content under pill at scroll-top?) = **NO**.
+- Header is `sticky top-0 z-[1000]` (`Header.jsx:130`); page content scrolls beneath it by design.
+- The band wrapper (`Header.jsx:146`, `pt-4 sm:pt-6 pb-2`) is **transparent** — only the inner pill carries fill (`bg-surface-card`, `Header.jsx:154-155`). Scrolling content shows through the transparent gap above/around the pill → the photographed "clip."
+- `min-h-[calc(100vh-200px)] flex items-center` does **not** clip: `min-height` grows the container to fit a taller card (measured computed height 707px vs min 400px), so the flex item never overflows upward. The classic flex-centering upward-clip needs a **definite** height (verified: forcing `height:400px;min-height:0;align-items:center` → logo top 5px, clipped). None of the 9 candidate containers use a definite height.
+
+**Disproven:** error-boundary layout escape (`headerPresent:true` — Header is present) and a definite-height ancestor.
+
+**Action:** reverted the staged `items-center → [align-items:safe_center]` swap (9 auth/standalone files: login/register/forgot-password/reset-password/verify-email/not-found/error/producer-not-found/rate-token) — it guards overflow-clip, the wrong failure mode, and does not address scroll-under. **No code shipped.** The real fix is DESIGN — a scrolled-state backdrop/scrim on the floating-pill band — tracked in **MEH-732** (pattern owner MEH-655). MEH-233 → NOT-A-BUG.
+
+**Note:** `app/[locale]/error.js` is a plain `error.js` (renders inside `[locale]/layout.js` → Header present), despite its misleading `GlobalError` function name; there is no `global-error.js`.
+
 ## 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
 
 **Branch:** `feature/meh-733-editorial-breath` (off staging). Draft PR #902 (base `staging`). LOW-RISK frontend (presentational).
