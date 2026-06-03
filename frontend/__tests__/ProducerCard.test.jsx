@@ -17,6 +17,7 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.error": "משהו השתבש, נסי שוב",
       "producer.card.favorites.remove": "הסר ממועדפים",
       "producer.card.favorites.add": "הוסף למועדפים",
+      "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "🚚 משלוחים בלבד",
       "producer.card.badges.available_today": "🛒 מגיעה היום",
     };
@@ -231,29 +232,32 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("card-rating")).not.toBeInTheDocument();
   });
 
-  it("renders a green dot when availability_state='available_today'", () => {
+  // MEH-643: availability dots tokenized — available_today → primary (brand
+  // green), non-available (full_this_week / on_vacation) → fg-muted. No raw
+  // hex / inline style (was #4cb08b/#f97316/#EF9F27 pre-redesign).
+  it("renders the primary (green) dot when availability_state='available_today'", () => {
     render(<ProducerCard producer={fullProducer} />);
     const dot = screen.getByTestId("availability-dot");
     expect(dot).toHaveAttribute("data-status", "available_today");
-    expect(dot.style.backgroundColor).toMatch(/rgb\(76, 176, 139\)/);
+    expect(dot.className).toMatch(/bg-primary/);
   });
 
-  it("renders an orange dot when availability_state='full_this_week'", () => {
+  it("renders an fg-muted dot when availability_state='full_this_week'", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, availability_state: "full_this_week" }} />,
     );
     const dot = screen.getByTestId("availability-dot");
     expect(dot).toHaveAttribute("data-status", "full_this_week");
-    expect(dot.style.backgroundColor).toMatch(/rgb\(249, 115, 22\)/);
+    expect(dot.className).toMatch(/bg-fg-muted/);
   });
 
-  it("renders an accent-warm dot when availability_state='on_vacation'", () => {
+  it("renders an fg-muted dot when availability_state='on_vacation'", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, availability_state: "on_vacation" }} />,
     );
     const dot = screen.getByTestId("availability-dot");
     expect(dot).toHaveAttribute("data-status", "on_vacation");
-    expect(dot.style.backgroundColor).toMatch(/rgb\(239, 159, 39\)/);
+    expect(dot.className).toMatch(/bg-fg-muted/);
   });
 
   it("renders no dot when producer is not available and not on vacation", () => {

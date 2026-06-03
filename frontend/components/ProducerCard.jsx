@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   HeartStraight,
-  Heart,
+  Leaf,
   WhatsappLogo,
   Phone,
   Globe,
@@ -22,6 +22,7 @@ import { haversineKm, formatDistance } from "@/lib/distance";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { BRAND_NAME } from "@/lib/constants";
 import { enqueueFavoriteOnLogin } from "@/lib/post-login-action";
 import {
   ensureFavoritesLoaded,
@@ -32,8 +33,6 @@ import {
 import api from "@/lib/api";
 
 // Decorative footer hint for the producer's preferred contact channel.
-// The list DTO doesn't carry phone/website so a link would often dead-
-// end; the icon is a signal, the card itself is the tap target.
 const METHOD_ICON = {
   whatsapp: WhatsappLogo,
   phone: Phone,
@@ -41,9 +40,7 @@ const METHOD_ICON = {
   email: EnvelopeSimple,
 };
 
-// MEH-473: METHOD_LABEL maps to translation keys so the labels resolve
-// per locale. The brand string "WhatsApp" stays as a constant (Q6 brand
-// convention from MEH-471). Resolved at render time via t().
+// MEH-473: METHOD_LABEL maps to translation keys so the labels resolve per locale.
 const METHOD_LABEL_KEY = {
   whatsapp: null, // literal "WhatsApp"
   phone: "producer.card.contact.phone",
@@ -51,46 +48,40 @@ const METHOD_LABEL_KEY = {
   email: "producer.card.contact.email",
 };
 
-// MEH-291 Phase 3 — badge color per the 4-state Decision tree.
-// accepting_orders → no dot, available_today → green, full_this_week → orange,
-// on_vacation → accent-warm. Read source switched from is_available_today +
-// availability_status to the unified availability_state. The legacy fields
-// stay populated by Phase 2's dual-write during the 7-day overlap, so the
-// fallback chain handles any race where the API hasn't caught up yet.
-function availabilityDotColor(producer) {
-  const state = producer.availability_state;
-  if (state === "on_vacation") return "#EF9F27"; // accent-warm
-  if (state === "full_this_week") return "#f97316"; // orange
-  if (state === "available_today") return "#2e6853"; // primary (MEH-717: available-today affordance = brand green per DESIGN.md)
-  if (state === "accepting_orders") return null;
-  // Fallback during overlap if availability_state is missing on a stale row.
-  if (producer.availability_status === "vacation") return "#EF9F27";
-  if (producer.is_available_today) return "#2e6853";
-  return null;
+// MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
+// available_today → primary (brand green); on_vacation / full_this_week →
+// fg-muted (recedes, no separate status color); accepting_orders → no dot.
+// Continues the MEH-717 line (eliminated the multi-color status palette);
+// v4 routes non-available states through fg-muted. Returns a token class.
+function availabilityDot(producer) {
+  const status =
+    producer.availability_state ||
+    (producer.availability_status === "vacation"
+      ? "on_vacation"
+      : producer.is_available_today
+        ? "available_today"
+        : "accepting_orders");
+  let cls = null;
+  if (status === "available_today") cls = "bg-primary";
+  else if (status === "on_vacation" || status === "full_this_week") cls = "bg-fg-muted";
+  return { cls, status };
 }
 
 /**
  * Card-level heart. Distinct from <FavoriteButton> (producer detail):
  *   - No fetch on mount (reads from favorites-cache hydrated once).
- *   - Logged-out guests get optimistic local fill + snackbar-with-link
- *     via showToast({ action }), not a login modal.
- *   - Hidden when the viewer owns this producer (own-card edge case).
+ *   - Logged-out guests get optimistic local fill + snackbar-with-link.
+ *   - Hidden when the viewer owns this producer.
+ * MEH-643: green ink (NEVER red, MEH-636) — outline default, green fill saved.
  */
 function CardHeart({ producer, onCountChange }) {
   const t = useTranslations();
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
-  // Independent "guest tapped" state — preserves visual feedback across
-  // remounts even though the cache doesn't persist guest intent.
   const [guestSaved, setGuestSaved] = useState(false);
 
-  // Hydrate from the module cache. Re-renders on any favorite change.
   useEffect(() => {
     if (!user) return;
-    // Clear guest-tap state on login so filled = favorited, not guestSaved.
-    // Without this, a guest who tapped hearts then logged in would see
-    // filled hearts where toggle computes next = !favorited (false) → POST
-    // instead of DELETE, making the heart appear permanently stuck.
     setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
@@ -105,13 +96,11 @@ function CardHeart({ producer, onCountChange }) {
     };
   }, [user, producer.id]);
 
-  // Hide on the viewer's own producer card.
   if (user && user.producer_id === producer.id) return null;
 
   const filled = favorited || guestSaved;
 
   const toggle = async (e) => {
-    // Don't let the button propagate into the card's Link / onClick.
     e.stopPropagation();
     e.preventDefault();
 
@@ -137,7 +126,6 @@ function CardHeart({ producer, onCountChange }) {
       return;
     }
 
-    // Optimistic fill + count update; revert on error.
     const next = !favorited;
     setFavorited(next);
     setFavoritedLocal(producer.id, next);
@@ -149,10 +137,6 @@ function CardHeart({ producer, onCountChange }) {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
     } catch (err) {
-      // 404 on DELETE means the record was already gone (stale cache /
-      // removed from another device) — desired state achieved (heart already
-      // unfilled). But the user wasn't in the server count, so revert the
-      // optimistic -1 we applied; don't revert the heart UI itself.
       if (!next && err?.response?.status === 404) {
         onCountChange?.(1);
         return;
@@ -164,21 +148,22 @@ function CardHeart({ producer, onCountChange }) {
     }
   };
 
-  const label = filled ? t("producer.card.favorites.remove") : t("producer.card.favorites.add");
+  // MEH-643/MEH-472: single gerund aria "שמירה" (matches the "טעינה" pattern).
   return (
     <button
       type="button"
       onClick={toggle}
-      aria-label={label}
+      aria-label={t("producer.card.favorites.aria")}
       aria-pressed={filled}
-      title={label}
+      title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-3 start-3 z-10 w-11 h-11 bg-white/95 hover:bg-white rounded-full flex items-center justify-center shadow-md transition hover:scale-105 focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="absolute top-3 start-3 z-10 w-11 h-11 bg-surface-card/95 hover:bg-surface-card rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
+      {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
         size={22}
         weight={filled ? "fill" : "regular"}
-        className={filled ? "text-primary" : "text-text"}
+        className="text-primary"
         aria-hidden="true"
       />
     </button>
@@ -189,7 +174,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const t = useTranslations();
   const router = useRouter();
   const [localFavCount, setLocalFavCount] = useState(producer.favorites_count ?? 0);
-  // Keep in sync when the parent re-fetches the list (filter/pagination).
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
@@ -199,6 +183,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
   const priceLabel = producer.price_range || producer.starting_price_label;
+  const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
   const distanceLabel =
@@ -222,7 +207,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       ? rawDescription.slice(0, 80).trimEnd() + "…"
       : rawDescription;
 
-  const dotColor = availabilityDotColor(producer);
+  const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
   const primaryMethod = getPrimaryMethod(producer);
   const MethodIcon = METHOD_ICON[primaryMethod];
 
@@ -240,47 +225,66 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       onClick={handleRootClick}
       data-testid="producer-card"
       className={[
-        "bg-background overflow-hidden border transition flex flex-col rounded-2xl",
-        "hover:shadow-[0_8px_32px_rgba(46,104,83,0.12)] hover:-translate-y-0.5",
-        active ? "border-primary ring-2 ring-primary" : "border-border",
+        // MEH-643 (Assembly v2): flat surface-card, 1px border, sharp corners,
+        // NO shadow-lift on hover — hover = border color shift only.
+        "bg-surface-card overflow-hidden border flex flex-col rounded-none group transition-colors duration-base ease-quart",
+        active ? "border-primary ring-2 ring-primary" : "border-border hover:border-primary",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
     >
       <div className="relative">
         <Link href={producerHref} className="block">
-          <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden rounded-t-2xl bg-background">
+          <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc ? (
               <Image
                 src={imgSrc}
                 alt={producer.name}
                 fill
-                className="object-cover object-center transition duration-300 hover:scale-105"
+                className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               />
             ) : (
+              // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center bg-green-50 px-2"
+                className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
-                <span className="text-5xl leading-none" aria-hidden="true">
-                  {producer.categories?.[0]?.emoji || "🌿"}
+                <Leaf size={40} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
+                <span className="font-headline-md text-sm font-bold text-primary/80">
+                  {BRAND_NAME}
                 </span>
-                {producer.categories?.[0]?.name && (
-                  <span className="font-headline-md text-sm font-bold text-primary mt-2 opacity-80 w-full text-center truncate">
-                    {producer.categories[0].name}
-                  </span>
-                )}
               </div>
             )}
           </div>
         </Link>
+
+        {/* Badge row — bottom-start over the image (Assembly v2), max 2. */}
+        <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
+          <BadgeRow producer={producer} limit={2} />
+          {(producer.trust_tier ?? 1) >= 3 && (
+            <TrustBadge tier={producer.trust_tier} compact />
+          )}
+          {producer.has_physical_location === false && producer.offers_delivery && (
+            <span className="inline-flex items-center rounded-full bg-surface-card border border-border text-text px-2 py-0.5 text-[11px]">
+              {t("producer.card.badges.delivery_only")}
+            </span>
+          )}
+        </div>
+
         <CardHeart producer={producer} onCountChange={(delta) => setLocalFavCount((c) => Math.max(0, c + delta))} />
       </div>
 
-      <div className="p-4 flex-1 flex flex-col">
-        <div className="flex items-baseline gap-2 justify-between">
-          <Link href={producerHref} className="block flex-1 min-w-0">
-            <h3 className="font-headline-md font-bold text-[18px] text-text hover:text-primary transition leading-snug line-clamp-2">
+      <div className="p-4 flex flex-col gap-2">
+        {/* Eyebrow = CATEGORY (uppercase, tracked) — Assembly v2. */}
+        {category && (
+          <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-fg-muted truncate">
+            {category}
+          </p>
+        )}
+
+        <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
+          <Link href={producerHref} className="block min-w-0">
+            <h3 className="font-headline-md font-bold text-[20px] text-text hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
@@ -288,32 +292,24 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </Link>
           {hasRating && (
             <span
-              className="text-sm text-text/80 shrink-0 whitespace-nowrap"
+              className="text-[13px] text-fg-muted shrink-0 whitespace-nowrap"
               dir="ltr"
               data-testid="card-rating"
             >
-              ★ {Number(producer.avg_rating).toFixed(1)} · {producer.reviews_count}
+              <span className="text-accent">★</span> {Number(producer.avg_rating).toFixed(1)} · {producer.reviews_count}
             </span>
           )}
         </div>
 
         <p
-          className="text-[13px] text-fg-muted mt-1 truncate flex items-center gap-1.5"
+          className="text-[13px] text-fg-muted truncate flex items-center gap-1.5"
           data-testid="location-line"
         >
-          {dotColor && (
+          {dotClass && (
             <span
-              className="inline-block w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: dotColor }}
+              className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`}
               data-testid="availability-dot"
-              data-status={
-                producer.availability_state ||
-                (producer.availability_status === "vacation"
-                  ? "on_vacation"
-                  : producer.is_available_today
-                    ? "available_today"
-                    : "accepting_orders")
-              }
+              data-status={dotStatus}
               aria-hidden="true"
             />
           )}
@@ -332,34 +328,23 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         {descriptionText && (
           <p
-            className="text-sm text-text/85 mt-1.5 line-clamp-1"
+            className="text-sm text-text/85 line-clamp-1"
             data-testid="card-description"
           >
             {descriptionText}
           </p>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <BadgeRow producer={producer} limit={2} />
-          {(producer.trust_tier ?? 1) >= 3 && (
-            <TrustBadge tier={producer.trust_tier} compact />
-          )}
-          {/* MEH-213: delivery-only badge — shown when no physical storefront */}
-          {producer.has_physical_location === false && producer.offers_delivery && (
-            <span className="inline-flex items-center rounded-full bg-green-50 border border-border text-text px-2 py-0.5 text-[11px]">
-              {t("producer.card.badges.delivery_only")}
-            </span>
-          )}
-          {fridayMode && producer.is_available_today && (
-            <span className="inline-flex items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
-              {t("producer.card.badges.available_today")}
-            </span>
-          )}
-        </div>
+        {fridayMode && producer.is_available_today && (
+          <span className="inline-flex w-fit items-center rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-semibold">
+            {t("producer.card.badges.available_today")}
+          </span>
+        )}
 
         {localFavCount >= 5 && (
-          <p className="mt-1 flex items-center gap-1 text-[12px] text-fg-muted">
-            <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+          <p className="flex items-center gap-1 text-[12px] text-fg-muted">
+            {/* MEH-643/MEH-636: count heart recedes to fg-muted — never red. */}
+            <HeartStraight size={14} weight="fill" className="text-fg-muted" aria-hidden="true" />
             {t("producer.card.favorites_count_short", { count: localFavCount })}
           </p>
         )}
