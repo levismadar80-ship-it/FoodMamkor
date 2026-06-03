@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — 🚀 RELEASED to production (staging → main, merge `4ef861c`)
+
+**PR #906** (staging → main, merge method to preserve feature SHAs). Backend pytest gate (MEH-672 Postgres) verified green pre-merge; all checks green/skipped. On merge: Vercel prod frontend + `deploy.yml` Railway production redeploy.
+
+**Shipped (since #898 cut):**
+- **MEH-672** (#901 foundation + #903 cutover) — type-safe WhatsApp template cutover. `send_template(to, template: WhatsAppTemplate)`; param mismatch caught at construction/type-check time (kills the MEH-509 Meta-400 class). Byte-equivalent payload + fail-open unchanged. **← the item under production smoke.**
+- **MEH-733** (#902) — homepage §06 editorial "breath" pull-quote.
+- **MEH-720** (#904) — deferred-review executed: PII removal (osek-patur ID) + operator block (`טופז שנפ.` / `Topaz Schnapp.`, contact `noreply@`→`contact@`) + `דירקטורי`→`פלטפורמה` across **6 surfaces** (5 he.json legal/WhatsApp + hardcoded `HomeProductCard.jsx`). grep ID→0, grep דירקטורי→0.
+- **CI** (#907) — changelog workflow git-cliff `v2.8.0` 404 → `v2.13.1` (asset filename has no `v` prefix; that was the 404 cause). Repairs auto-CHANGELOG on every staging push.
+
+**P1 stale-ISR `/terms` — RESOLVED.** Root cause confirmed: prior prod deploys ran `action:redeploy` (reuse existing static artifacts) → the pre-21/5 stale `/terms` artifact survived while source was clean; this release's **fresh git build regenerated `/terms` clean**. Source/config were never the cause (terms & privacy are byte-identical SSG+ISR, no page-level pin — verified in earlier diagnosis). **Systemic note (no ticket yet):** consider a post-deploy `revalidate` hook for changed routes so artifact reuse can't pin stale legal pages again.
+
+**OPEN THREADS:**
+- **Production smoke (Sapir):** WhatsApp welcome + approved on a real device; `/terms`+`/privacy` operator block (`טופז שנפ` / `contact@` / no ID / no `דירקטורי`); `/en/terms` ID gone; homepage §06 on mobile.
+- **Head-meta closure (Sapir):** canonical `/terms`, single `<title>`, `og.png` + re-scrape via FB Sharing Debugger.
+- **MEH-472 (en i18n wave):** `/en` English "directory" wording left intact (no approved English verbatim) — `en.json:1461/2540/2678/2793/2807`. Add this en-wording note to MEH-472.
+- **Linear:** open a retroactive ticket for the #904 scope when a free-issue slot frees (workspace was at limit; shipped under "Refs MEH-720").
+- **OFF-REPO (Sapir):** accountant — business-registration ownership (Topaz vs actual operator); certificate name-spelling fix (`שנף`→`שנפ`) at רשות המסים.
+
 ## 2026-06-03 — MEH-233: auth/error "viewport clip" → NOT-A-LAYOUT-BUG (scroll-under-sticky)
 
 **Branch:** `feature/meh-233-fix-auth-viewport-clip` (created off staging, **deleted — no PR, no code shipped**).
