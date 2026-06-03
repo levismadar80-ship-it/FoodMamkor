@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-691 (follow-up): ADR-021 rationale fix + DoD completion
+
+**Branch:** `feature/meh-691-adr-021-rationale-fix` (off staging). Draft PR (base `staging`). LOW-RISK docs.
+
+**Context:** PR #897 (merged) added ADR-021 but, working from a narrowed task prompt, stated the wrong *primary* rationale — "PK = pointer due to size/context budget." The canonical MEH-691 ticket's actual reason is **repo-read capability**: CC + claude.ai Project chat can read repo files (so a pointer resolves → Drive/PK = pointer); non-Project claude.ai chat (web/mobile) cannot (so a pointer would resolve to nothing → Settings = full content).
+
+**Done:** rewrote ADR-021 Context/Decision/Consequences/Alternatives to the repo-read-capability rationale; added a `## Triggers to revisit` section (a: chat gains repo-read; b: drift becomes a LOCK/operational problem); corrected `Source:` to MEH-686 (surfaced) + MEH-689 (sibling pattern); added the `docs/decisions/README.md` index row for ADR-021. Two hard rules now documented (don't duplicate full content into PK; don't replace Settings with a pointer).
+
+**Pending:** PR review + merge. Out of repo scope (Drive/PK surface action for Sapir): update the `personal-preferences-v2.md` pointer note to cite ADR-021 instead of the "follow-up Linear" placeholder.
+
 ## 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
 
 **Branch:** `feature/meh-714-pass6-fixture-docs` (off staging). Draft PR (base `staging`). LOW-RISK tooling.
