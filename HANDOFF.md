@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-672 PR2: type-safe WhatsApp template cutover (chunks 2-5)
+
+**Branch:** `feature/meh-672-whatsapp-cutover` (off staging; on top of chunk-1 #901). Draft PR, base `staging`. YELLOW.
+
+**Done:** `send_template(to, template: WhatsAppTemplate)` (transport); `auth_notifications.py` welcome/approved → typed instances; `auto_reply_watchdog._decide_template` → `WhatsAppTemplate | None` + `run_watchdog` passes instance; `test_meh_509_pr2b_watchdog.py` updated to typed asserts. Payload kept byte-identical so `test_meh_509_pr1_hooks.py` + `test_whatsapp_notify.py` need no change. Local verify (no Postgres in sandbox): 7 template units, payload byte-equivalence incl empty-components, `_decide_template` dispatch, ruff clean, all-modules import. Full Postgres pytest = CI gate.
+
+**Two deferred items (need a follow-up ticket):**
+1. **mypy gate expansion blocked twice:** (a) `backend/pyproject.toml` editing is permission-blocked in the CC sandbox — the `[tool.mypy] files` addition must be done by Sapir; (b) adding `whatsapp.py` + the 2 caller modules surfaces **13 pre-existing strict errors** unrelated to MEH-672 (bare `dict`, `str | None`, SQLAlchemy `Column` false-positives). `whatsapp_templates.py` is strict-clean and ready to join `files`. Recommend a "mypy strict cleanup: whatsapp services" ticket (mirrors MEH-562 schemas/ deferral).
+2. Pre-existing unused `timezone` import in `tests/test_meh_509_pr2b_watchdog.py:14` (not CI-gated — ruff runs from `backend/`, skips repo-root `tests/`). Left untouched (out of scope).
+
+**Next:** Sapir reviews PR; CI Postgres run is the real green gate. After merge, `Closes MEH-672`.
+
 ## 2026-06-03 — MEH-691 (follow-up): ADR-021 rationale fix + DoD completion
 
 **Branch:** `feature/meh-691-adr-021-rationale-fix` (off staging). Draft PR (base `staging`). LOW-RISK docs.
