@@ -5,6 +5,26 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED/central)
+
+**Branch:** `feature/meh-643-producer-card` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 3).
+
+**Central component** (`.claude/central-components.json`) → **`/adversarial-review` required before merge** (rule 20). Blast radius (intended): 7 importers — page.js Featured, HomeProducersGrid, ProducersClient (/producers), SearchClient, FavoritesClient, MapCardList, ProducerSections (detail similar).
+
+**What:** rebuilt `ProducerCard.jsx` to Phase 2 v4 — flat `surface-card`, 1px border, radius 0, **no shadow-lift** (hover = border-color + image scale 1.02); category eyebrow; badge row over image bottom-start; 1:1 mobile / 4:3 desktop; ★ gold rating + fg-muted count; **no-image = cream + Leaf glyph + "מהמקור"** (replaced emoji).
+
+**Heart/favorites (MEH-636) — logic preserved, restyle only:** `CardHeart` auth/API/guest flow untouched; heart green (`text-primary`). **Fixed a LOCK violation:** favorites-count heart was red `#A32D2D` → now `fg-muted`. Heart aria → gerund `שמירה` (MEH-472). **Dots tokenized:** available→`bg-primary`, non-available→`bg-fg-muted` (zero raw hex; continues MEH-717). All `data-testid`s + data wiring + routing + RTL-logical preserved.
+
+**Decisions (Sapir):** dots fully tokenized (fg-muted/primary); count-heart→fg-muted; heart aria→שמירה; **update the stale test** (don't preserve stale assertions).
+
+**⚠️ Drift flagged (separate ticket):** `__tests__/ProducerCard.test.jsx` was stale (expected #4cb08b which MEH-717 removed + old no-image anatomy) AND **vitest is not wired into CI** at all → silent drift. Updated the test to the new anatomy here; **wiring vitest into CI = follow-up ticket** (also fixes the oxc JSX-in-`.js` transform that blocks local runs). Could not execute vitest in-sandbox (that oxc issue); test verified by static review.
+
+**EN:** `producer.card.favorites.aria` = HE-mirror temp (MEH-472); he/en parity holds.
+
+**Verify:** `npm run build` ✓ (19.2s); no raw hex; zero physical RTL; 9 testids preserved; no red. Files: ProducerCard.jsx, ProducerCard.test.jsx, he.json, en.json + CHANGELOG/HANDOFF.
+
+**Next:** Sapir visual review on Vercel preview (homepage Featured + /producers grid, desktop 1280 + mobile 375: flat card, eyebrow, badges-over-image, green heart, no-image leaf, RTL). Then `/adversarial-review` before merge. Remaining MEH-643 chunk: Navbar.
+
 ## 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
 
 **Branch:** `feature/meh-728-e2e-flake-hardening` (off staging). **PR #TBD** (draft), base `staging`. Closes MEH-728.

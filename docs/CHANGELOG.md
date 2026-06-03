@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-643 chunk 3: ProducerCard redesign (Assembly v2, SHARED card)
+
+`feat(MEH-643)`: עיצוב מחדש של `ProducerCard.jsx` (רכיב **מרכזי** —
+`.claude/central-components.json`) לפי Phase 2 v4. **Blast radius מכוון:** 7
+משטחים (homepage Featured, HomeProducersGrid, /producers, /search, favorites,
+/map sheet, producer-detail similar). **כרטיס שטוח:** `bg-surface-card`, border
+1px, פינות חדות (radius 0), **ללא shadow-lift** — hover = border-color shift +
+image scale(1.02). eyebrow = קטגוריה (uppercase tracked). badge row מעל התמונה
+(bottom-start). image 1:1 mobile / 4:3 desktop. rating ★ זהב + count fg-muted.
+**No-image חדש:** cream + Leaf glyph + "מהמקור" (במקום emoji).
+
+**Heart/favorites (MEH-636):** לוגיקת ה-favorite (auth/API/guest) **נשמרה כפי
+שהיא** — רק restyle. heart = ירוק (`text-primary`), outline→fill. **תוקנה הפרת
+LOCK:** ה-heart של favorites-count היה אדום `#A32D2D` → עכשיו `fg-muted`. aria →
+gerund "שמירה" (MEH-472). **availability dots tokenized:** available_today →
+`bg-primary`, non-available (vacation/full_this_week) → `bg-fg-muted` — אפס raw
+hex (ממשיך את MEH-717). RTL לוגי בלבד, כל ה-data-testids + data wiring + routing
+נשמרו.
+
+**Unit test:** `ProducerCard.test.jsx` היה **stale + לא רץ ב-CI** (vitest לא
+מחווט ל-CI; כבר נכשל מול הקוד הנוכחי — ציפה ל-#4cb08b שה-MEH-717 הסיר, ול-no-image
+שונה). עודכן להתאים ל-anatomy החדש (dots tokenized, leaf no-image). **flag:
+vitest-not-in-CI** = follow-up ticket נפרד. `npm run build` ירוק. `/adversarial-review`
+נדרש לפני merge (central component, rule 20). Part of MEH-643.
+
+
 ### 2026-06-03 — MEH-728 E2E flake-gate hardening (timing budget + preview warm-up)
 
 `fix(MEH-728)`: ייצוב ה-E2E flake gate מול Vercel preview cold-start — **בלי

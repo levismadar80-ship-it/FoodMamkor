@@ -632,7 +632,8 @@
         "login_cta": "Log in",
         "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
-        "add": "Add to favorites"
+        "add": "Add to favorites",
+      "aria": "שמירה"
       },
       "aria": {
         "image_missing": "{name} — image missing",
