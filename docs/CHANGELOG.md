@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
+
+`feat(MEH-714)`: השלמת ה-DoD המלא של ה-Linear מעבר ל-PR #895 (שכיסה רק את
+ליבת ה-pass). `audit-skills.sh` Pass 6 כעת רץ **גם ב-self-test** (איטרציה על
+`$TARGET`), עם פרסר YAML **block-scalar** (`description: |`/`>`) בנוסף ל-single-line/
+quoted. תגיות יושרו ל-spec: `[DESC-BLOAT-FAIL]` (>1024 → CRITICAL/exit 1),
+`[DESC-BLOAT-WARN]` (>500 → info), `[DESC-FIRST-PERSON]`, `[DESC-VAGUE]`
+(len<50 או opener מעורפל). ה-fixture `bad-skill/SKILL.md` קיבל description
+block-scalar >1024 (1173 chars) → ה-self-test מאמת את נתיב ה-hard-fail
+(`Critical findings: 2`, exit 1). docs: `.claude/rules/skills.md` Layer 3 +
+`docs/SECURITY.md` Layer-3 bullet עודכנו. baseline: 0 מעל 1024, 44 מעל 500.
+**הערה:** ה-pass ממוספר Pass 6 (ה-Linear קרא לו Pass 5, אבל Pass 5 תפוס ע"י
+MEH-422 subprocess-bypass).
+
 ### 2026-06-03 — MEH-722: /map legend disables empty-viewport category rows
 
 `feat(MEH-722)`: במקרא הקטגוריות של `/map`, קטגוריה עם **0 בתי עסק ב-viewport
