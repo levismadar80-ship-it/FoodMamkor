@@ -17,6 +17,7 @@ import {
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
 import { HomeHero } from "@/app/[locale]/home/HomeHero";
+import { EditorialBreath } from "@/app/[locale]/home/HomeEditorialBreath";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { Sparkle } from "@phosphor-icons/react";
@@ -134,6 +135,10 @@ export default function HomePage() {
       <div className="mt-4">
         <HolidayBanner />
       </div>
+
+      {/* §06 — MEH-733: editorial "breath" pull-quote between §05 stats and
+          §07 category grid. Calm full-width magazine moment. */}
+      <EditorialBreath />
 
       <HomeCategoryGrid
         categoryCards={categoryCards}
