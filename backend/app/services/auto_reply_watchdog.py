@@ -31,6 +31,11 @@ from app.config import (
 from app.models import InboundMessage
 from app.services.vacation_state import read_vacation_state
 from app.services.whatsapp import send_template
+from app.services.whatsapp_templates import (
+    AfterHoursResponseHe,
+    VacationResponseHeV2,
+    WhatsAppTemplate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -83,15 +88,17 @@ def _decide_template(
     vacation_active: bool,
     vacation_return_date: date | None,
     now: datetime | None = None,
-) -> tuple[str | None, list[str]]:
-    """Return (template_name, params) for the current state, or
-    (None, []) when no auto-reply should fire (within business hours,
-    no vacation). Keeps routing logic pure + unit-testable."""
+) -> WhatsAppTemplate | None:
+    """Return the typed template to send for the current state, or
+    ``None`` when no auto-reply should fire (within business hours, no
+    vacation). Keeps routing logic pure + unit-testable. MEH-672: returns
+    a `WhatsAppTemplate` instance instead of a (name, params) tuple so the
+    param contract is type-checked at the call site."""
     if vacation_active and vacation_return_date is not None:
-        return (TEMPLATE_VACATION, [vacation_return_date.isoformat()])
+        return VacationResponseHeV2(return_date=vacation_return_date.isoformat())
     if not is_within_business_hours(now):
-        return (TEMPLATE_AFTER_HOURS, [])
-    return (None, [])
+        return AfterHoursResponseHe()
+    return None
 
 
 # ---- Watchdog tick (the APScheduler-invoked entry point) -------------------
@@ -140,13 +147,13 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
     # REUSES: app/services/vacation_state.py:read_vacation_state — shared
     # with admin_extra._read_vacation_state (MEH-662 dedup).
     vacation_active, vacation_return_date = read_vacation_state(db)
-    template_name, params = _decide_template(
+    template = _decide_template(
         vacation_active=vacation_active,
         vacation_return_date=vacation_return_date,
         now=now,
     )
 
-    if template_name is None:
+    if template is None:
         counters["skipped_within_hours"] = len(candidates)
         logger.debug(
             "[WATCHDOG] within business hours, no vacation — skipping %d msg(s)",
@@ -161,22 +168,22 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
         db.commit()
 
         try:
-            ok = send_template(msg.from_phone, template_name, params, lang="he")
+            ok = send_template(msg.from_phone, template)
         except Exception as e:  # noqa: BLE001 — fail-open at message level
             logger.warning("[WATCHDOG] send raised for msg=%s: %s", msg.id, e)
             counters["send_failed"] += 1
             continue
 
         if ok:
-            msg.bot_template_sent = template_name
+            msg.bot_template_sent = template.name
             db.commit()
-            if template_name == TEMPLATE_VACATION:
+            if template.name == TEMPLATE_VACATION:
                 counters["sent_vacation"] += 1
             else:
                 counters["sent_after_hours"] += 1
             logger.info(
                 "[WATCHDOG] sent template=%s msg=%s",
-                template_name,
+                template.name,
                 msg.id,
             )
         else:
@@ -184,7 +191,7 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
             logger.warning(
                 "[WATCHDOG] send returned False for msg=%s template=%s",
                 msg.id,
-                template_name,
+                template.name,
             )
 
     return counters

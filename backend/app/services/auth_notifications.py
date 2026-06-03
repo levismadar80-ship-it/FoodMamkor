@@ -22,6 +22,7 @@ from uuid import UUID
 from app.config import settings
 from app.services.email import send_email
 from app.services.whatsapp import send_template, send_text
+from app.services.whatsapp_templates import ProducerApprovedV1, ProducerWelcomeV1
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -71,12 +72,7 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
         return False
     normalized = _normalize_il_phone(phone)
     try:
-        ok = send_template(
-            normalized,
-            "producer_welcome_v1",
-            [name],
-            lang="he",
-        )
+        ok = send_template(normalized, ProducerWelcomeV1(producer_name=name))
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
             f"[WHATSAPP] Producer welcome unexpected error for {mask_phone(normalized)}: {e}"
@@ -110,12 +106,7 @@ def notify_producer_approved(
         return False
     normalized = _normalize_il_phone(phone)
     try:
-        ok = send_template(
-            normalized,
-            "producer_approved_v1",
-            [name],
-            lang="he",
-        )
+        ok = send_template(normalized, ProducerApprovedV1(producer_name=name))
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
             f"[WHATSAPP] Producer approved unexpected error for {mask_phone(normalized)}: {e}"

@@ -26,6 +26,7 @@ from app.services.auto_reply_watchdog import (
     is_within_business_hours,
     run_watchdog,
 )
+from app.services.whatsapp_templates import AfterHoursResponseHe, VacationResponseHeV2
 
 IL = ZoneInfo("Asia/Jerusalem")
 
@@ -74,31 +75,31 @@ def test_is_within_business_hours_naive_treated_as_utc():
 def test_decide_template_vacation_wins_over_business_hours():
     # Sunday 10:00 IL == within hours, but vacation overrides.
     moment = datetime(2026, 5, 24, 10, 0, tzinfo=IL)
-    template, params = _decide_template(
+    template = _decide_template(
         vacation_active=True,
         vacation_return_date=date(2026, 6, 1),
         now=moment,
     )
-    assert template == TEMPLATE_VACATION
-    assert params == ["2026-06-01"]
+    assert isinstance(template, VacationResponseHeV2)
+    assert template.name == TEMPLATE_VACATION
+    assert template.return_date == "2026-06-01"
 
 
 def test_decide_template_after_hours():
     moment = datetime(2026, 5, 24, 22, 0, tzinfo=IL)
-    template, params = _decide_template(
+    template = _decide_template(
         vacation_active=False, vacation_return_date=None, now=moment
     )
-    assert template == TEMPLATE_AFTER_HOURS
-    assert params == []
+    assert isinstance(template, AfterHoursResponseHe)
+    assert template.name == TEMPLATE_AFTER_HOURS
 
 
 def test_decide_template_within_hours_returns_none():
     moment = datetime(2026, 5, 24, 10, 0, tzinfo=IL)
-    template, params = _decide_template(
+    template = _decide_template(
         vacation_active=False, vacation_return_date=None, now=moment
     )
     assert template is None
-    assert params == []
 
 
 # ---- run_watchdog end-to-end -----------------------------------------------
@@ -154,11 +155,12 @@ def test_run_watchdog_vacation_active_sends_vacation_template(db):
         counters = run_watchdog(db, now=_frozen_now_within_hours())
 
     send_mock.assert_called_once()
-    args, kwargs = send_mock.call_args
+    args, _ = send_mock.call_args
     assert args[0] == "+972501112222"
-    assert args[1] == TEMPLATE_VACATION
-    assert args[2] == ["2026-06-05"]
-    assert kwargs.get("lang") == "he"
+    # MEH-672: second positional arg is now a typed template instance.
+    assert isinstance(args[1], VacationResponseHeV2)
+    assert args[1].name == TEMPLATE_VACATION
+    assert args[1].return_date == "2026-06-05"
     assert counters["sent_vacation"] == 1
     db.refresh(msg)
     assert msg.bot_replied is True
@@ -175,8 +177,9 @@ def test_run_watchdog_outside_hours_sends_after_hours_template(db):
 
     send_mock.assert_called_once()
     args, _ = send_mock.call_args
-    assert args[1] == TEMPLATE_AFTER_HOURS
-    assert args[2] == []
+    # MEH-672: second positional arg is now a typed template instance.
+    assert isinstance(args[1], AfterHoursResponseHe)
+    assert args[1].name == TEMPLATE_AFTER_HOURS
     assert counters["sent_after_hours"] == 1
     db.refresh(msg)
     assert msg.bot_replied is True
