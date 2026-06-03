@@ -4,6 +4,31 @@
 
 ## Unreleased
 
+### 2026-06-02 — MEH-136 הוספת טוקני עיצוב additive ל-S4 (motion · semantic · surface-card · spacing · focus-ring)
+
+`feat(MEH-136)`: הוספת קבוצות טוקנים שעמוד הבית החדש (S4, MEH-639) צורך
+וחסרו ב-repo — additive בלבד, אפס שינוי בערך קיים, אפס regression. **פיצול
+לפי מה שה-exporter יודע לשאת** (`@google/design.md` v0.1.1 תומך רק ב-hex
+6-ספרתי / spacing / type; משמיט `cubic-bezier`, `ms`, `rgba`, `transparent`):
+
+- **דרך ה-pipeline** (`docs/DESIGN.md` → `npm run design:export` →
+  `tailwind.tokens.json`): `surface-card` + `surface-floating` (`#FFFEFB`,
+  מדרגת elevation טונאלית מעל `surface` הלבן); aliases סמנטיים `action-primary`
+  (=`primary` `#2e6853`) ו-`action-primary-hover` (=`primary-dark` `#2E4A2E`);
+  spacing `5xl` 96px / `6xl` 128px; fallback לכל stacks ה-Frank Ruhl Libre
+  (`headline-display`/`-lg`/`-md`) → `"David Libre", Georgia, serif`.
+- **שכבת CSS utility** (`frontend/app/globals.css`): `.duration-fast|base|slow`
+  (180/420/640ms) + `.ease-quart` (`cubic-bezier(.25,1,.5,1)`); `.focus-ring`
+  (`rgba(46,104,83,.40)`, מטוקן את ה-idiom `ring-primary/40`); `.action-ghost`
+  + `.action-ghost-on-dark` (transparent + border/text מ-`text`/`background`).
+  שכבת utility, **לא** `:root` token-authority מקביל (686 הסיר `:root`).
+
+**הכרעת hover (ADR-019):** action-primary-hover = `primary-dark` `#2E4A2E`
+(reuse של ה-dark הקיים) — **לא** `#1F4C3C` מה-S4 exploration; אין ירוק שלישי,
+`green-700` (`#2e4a2e`) ללא שינוי. `git diff tailwind.tokens.json` = הוספות
+בלבד (4 צבעים + 2 spacing) + 3 שינויי fontFamily מאושרים (ה-fallback). `npm run
+build` ירוק (✓ Compiled 13.6s). אף component לא נגע. Closes MEH-136.
+
 ### 2026-06-02 — MEH-680 English→Hebrew wordmark swap (Header/Footer/error/404)
 
 `chore(MEH-680)`: החלפת ה-wordmark האנגלי במקור עברי `מהמקור` בכל 4 נקודות
