@@ -349,6 +349,7 @@
       "fallback": "Starting now · across Israel"
     },
     "categories": {
+      "eyebrow": "קטגוריות",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
       "aria": "Show category: {name}"
