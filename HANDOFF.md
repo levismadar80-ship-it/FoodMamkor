@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-733: §06 editorial "breath" pull-quote on homepage
+
+**Branch:** `feature/meh-733-editorial-breath` (off staging). Draft PR #902 (base `staging`). LOW-RISK frontend (presentational).
+
+**Done:** new `frontend/app/[locale]/home/HomeEditorialBreath.jsx` (renamed from `EditorialBreath.jsx` to match the `Home*` sibling convention) — centered single-column pull-quote (numeral `06` → 40×1px gold rule @55% → quote "תכירי את מי **שמאחורי האוכל**", no trailing period, emphasis in `text-accent` via `t.rich`). Inserted in `page.js` between §05 stats and §07 `HomeCategoryGrid`. Added `home.editorial_breath.quote` to `he.json` + `en.json` (en = HE mirror, **flag MEH-472**). `npm run build` ✓ green (Compiled successfully, homepage SSG'd).
+
+**Decision (token mismatch):** spec's CSS-var tokens (`--space-20`/`--accent`/`--fs-h2`/`--tracking-h2`) don't exist — MEH-686 removed `:root` vars. Mapped each to the real Tailwind token system (`accent`/`text`/`background` colors, `font-english`/`font-headline-lg` families, spacing `md`/`3xl`/`4xl`/`6xl`, inline `clamp()` per `HomeCategoryGrid.jsx:40` sibling pattern). `--tracking-h2` omitted — no token, sibling display headings set none.
+
+**Pending:** preview URL → mobile QA → ready-for-review + merge (rule 23: UI work stops at draft PR, human QA before merge).
+
 ## 2026-06-03 — MEH-672 PR2: type-safe WhatsApp template cutover (chunks 2-5)
 
 **Branch:** `feature/meh-672-whatsapp-cutover` (off staging; on top of chunk-1 #901). Draft PR, base `staging`. YELLOW.

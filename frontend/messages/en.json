@@ -350,6 +350,9 @@
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
     },
+    "editorial_breath": {
+      "quote": "תכירי את מי <accent>שמאחורי האוכל</accent>"
+    },
     "categories": {
       "eyebrow": "קטגוריות",
       "heading": "Browse by category",
