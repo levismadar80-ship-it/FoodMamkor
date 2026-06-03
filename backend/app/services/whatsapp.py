@@ -23,6 +23,7 @@ import logging
 import httpx
 
 from app.config import settings
+from app.services.whatsapp_templates import WhatsAppTemplate
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -68,41 +69,29 @@ def send_text(to: str, body: str) -> bool:
     return _post(payload, kind="text", to=to)
 
 
-def send_template(
-    to: str,
-    template_name: str,
-    params: list[str],
-    lang: str = "he",
-) -> bool:
-    """Send a pre-approved WhatsApp template message.
+def send_template(to: str, template: WhatsAppTemplate) -> bool:
+    """Send a pre-approved WhatsApp template message (MEH-672).
 
-    `params` are positional body parameters substituted into `{{1}}`,
-    `{{2}}`, … placeholders defined in the template. An empty list emits
-    no `components` block (templates with no body parameters).
+    `template` is a typed `WhatsAppTemplate` instance — the template name,
+    language code, and body parameters all come from it, so a param
+    mismatch is caught at construction/type-check time instead of by a
+    Meta 400 at runtime. `template.to_components()` emits an empty list
+    for a zero-parameter template (no `components` block), preserving the
+    pre-MEH-672 empty-params output byte-for-byte.
     """
     if not _is_configured():
         logger.debug(
-            "[WHATSAPP] Would send template %s to %s", template_name, mask_phone(to)
+            "[WHATSAPP] Would send template %s to %s", template.name, mask_phone(to)
         )
         return False
-    components = (
-        [
-            {
-                "type": "body",
-                "parameters": [{"type": "text", "text": p} for p in params],
-            }
-        ]
-        if params
-        else []
-    )
     payload = {
         "messaging_product": "whatsapp",
         "to": to.lstrip("+"),
         "type": "template",
         "template": {
-            "name": template_name,
-            "language": {"code": lang},
-            "components": components,
+            "name": template.name,
+            "language": {"code": template.language},
+            "components": template.to_components(),
         },
     }
-    return _post(payload, kind=f"template[{template_name}]", to=to)
+    return _post(payload, kind=f"template[{template.name}]", to=to)

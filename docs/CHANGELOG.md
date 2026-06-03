@@ -4,6 +4,28 @@
 
 ## Unreleased
 
+### 2026-06-03 — MEH-672 PR2: type-safe WhatsApp template invocation (cutover)
+
+`refactor(MEH-672)`: השלמת ה-cutover ל-typed WhatsApp templates (אחרי
+foundation chunk 1, PR #901). `send_template` עכשיו מקבל `WhatsAppTemplate`
+instance במקום `(name_str, [params], lang)` — param mismatch נתפס ב-construction/
+type-check time במקום ב-Meta 400 ב-runtime (ה-failure class של MEH-509).
+**Byte-equivalent output נשמר** (אותם template names, language, components;
+0-field → אין components block) + fail-open ללא שינוי.
+
+- **Transport** (`whatsapp.py`): `send_template(to, template)`; language מ-`template.language`.
+- **Callers** (`auth_notifications.py`): welcome/approved → `ProducerWelcomeV1`/`ProducerApprovedV1(producer_name=...)`.
+- **Watchdog** (`auto_reply_watchdog.py`): `_decide_template` מחזיר `WhatsAppTemplate | None` (vacation→`VacationResponseHeV2`, after-hours→`AfterHoursResponseHe`, else `None`); `run_watchdog` מעביר instance ישירות.
+- **Tests**: `test_meh_509_pr2b_watchdog.py` עודכן ל-typed instances. `test_meh_509_pr1_hooks.py` + `test_whatsapp_notify.py` **ללא שינוי** (asserts על ה-Meta payload שנשמר byte-identical).
+
+**Deferred (out of scope, separate ticket):** הוספת `whatsapp.py` + 2 ה-callers
+ל-`[tool.mypy] files` חשפה **13 שגיאות strict pre-existing** לא קשורות ל-refactor
+(bare `dict`, `str | None` args, SQLAlchemy `Column` false-positives) — same
+pattern כמו MEH-562 schemas/ deferral. `whatsapp_templates.py` נקי. **`pyproject.toml`
+editing חסום הרשאות בסביבה הזו** → שינוי ה-mypy `files` ידני ע"י Sapir.
+**Local verify:** template units (7) + payload-equivalence + `_decide_template`
+dispatch + ruff נקי; full Postgres pytest דרך CI (sandbox ללא Postgres).
+
 ### 2026-06-03 — MEH-714 (follow-up): full DoD for description-bloat audit pass
 
 `feat(MEH-714)`: השלמת ה-DoD המלא של ה-Linear מעבר ל-PR #895 (שכיסה רק את
