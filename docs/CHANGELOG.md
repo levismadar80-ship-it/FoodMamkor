@@ -26,6 +26,18 @@
 Build ירוק; אפס raw hex / physical-RTL בשורות החדשות; lint = warnings בלבד
 (pre-existing, MEH-443). Visual QA נדחה ל-Vercel preview (CC sandbox). Closes MEH-731.
 
+### 2026-06-03 — MEH-722: /map legend disables empty-viewport category rows
+
+`feat(MEH-722)`: במקרא הקטגוריות של `/map`, קטגוריה עם **0 בתי עסק ב-viewport
+הנוכחי** מוצגת מושבתת (opacity מופחת + `aria-disabled` + לא ניתנת ללחיצה) במקום
+להוביל למסך ריק. הספירה מחושבת **לפני** סינון הקטגוריה (מתוך
+`allProducers ∩ committedBounds`, לא `visibleProducers` שכבר מסונן-קטגוריה),
+ומתעדכנת על pan דרך `committedBounds`. קטגוריה **פעילה** שצונחת ל-0 נשארת לחיצה
+(כדי שאפשר לכבות אותה ולא להיתקע בפילטר ריק). 3 קבצים:
+`useMapFilters.js` (memo `viewportCategoryCounts`), `MapClient.jsx` (העברת prop),
+`MapPane.jsx` (render מושבת). **Phase 0 עדכון:** ה-spec הניח קובץ יחיד
+(`MapClient.jsx`) — המקרא בפועל ב-`MapPane.jsx`, scope הורחב ל-3 קבצים באישור.
+`npm run build` ירוק.
 
 ### 2026-06-03 — MEH-643 chunk 4 (LAST): Navbar floating-pill (FloatingNavbar v5)
 

@@ -250,6 +250,17 @@ Moves the mini-map preview from section #7 (after HolidayBanner) to section #2 (
 
 ---
 
+## /map legend — disable empty-viewport categories (MEH-722)
+
+Desktop only (≥md) — the collapsible category legend at the map's bottom-start corner. A category with 0 businesses in the **current viewport** renders disabled instead of clicking into an empty list. Count is pre-category-filter (`allProducers ∩ committedBounds`), recomputed on pan.
+
+- [ ] Empty category grays out — `/he/map` desktop → open the legend (squares button) → pan/zoom to an area where a category has no businesses → that row is **grayed (low opacity) and not clickable** (cursor not-allowed, no hover highlight). תוצאה מצופה: שורה מושבתת, לא מובילה לרשימה ריקה.
+- [ ] Non-empty category unchanged — same legend → a category that **does** have businesses in view stays clickable and filters the map as before. תוצאה מצופה: לחיצה מסננת כרגיל.
+- [ ] Recompute on pan — click a category with results, then pan to an area where it has 0 → row updates to disabled state on the pan (not stuck from first render). תוצאה מצופה: עדכון על תזוזת מפה.
+- [ ] Active category drops to 0 — activate a category, then pan until it has 0 in view → row is muted **but still clickable** (clicking it deactivates / shows all again, so you're not trapped in an empty filter). תוצאה מצופה: עדיין ניתן לכבות, אין מסך-ריק-תקוע, אין קריסה.
+
+---
+
 ## Hide /neighbor pre-launch (MEH-598)
 
 Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen section removed from public surface. Page files preserved per MEH-543 revival path. AI chat + producer dashboard + `HomeProductCard` label LOCK leaks deferred to MEH-599 (see PR description for E1-E6 mapping).
