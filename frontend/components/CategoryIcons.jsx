@@ -1,25 +1,30 @@
 "use client";
 
 /**
- * CategoryIcons — hand-drawn SVG line-art replacing Phosphor icons for
- * homepage category cards. Inspired by gardensweet.com and Graza — the
- * slightly loose strokes feel human and unique instead of generic.
+ * CategoryIcons — hand-drawn SVG line-art for the homepage category cards.
+ * Single-weight line, no fill — warmer and more unique than a generic icon set.
  *
- * Each icon is rendered from a factory so color/size can be overridden
- * at the call-site (e.g. white on green hover, darker on cream bg).
+ * Glyph family: "Assembly v2" corrected set (MEH-643). The Iteration-3 hot-fix
+ * (Assembly_v2.html:1924) re-drew the whole family; the Phase-3 v8 glyphs
+ * (fish, cheese wedge, loaf, oil bottle, soap+sprig) are design-rejected
+ * (Assembly_v2.html:1419 — "reference only, NOT to be iterated on"). Paths are
+ * lifted from Assembly_v2.html:697-702 (viewBox 0 0 120 120, stroke-2).
  *
- * Keys match CATEGORY_CARDS[].key in app/page.js rather than category
- * names, because category names come from the DB and may drift.
+ * Color is set at the call-site via `currentColor` (a `text-*` token on the
+ * wrapper) — never a raw hex here. Keys match CATEGORY_CARDS[].key.
+ *
+ * History: PREMIUM_DESIGN (creation); MEH-643 (Assembly-v2 glyph family, viewBox 120, currentColor).
  */
 
-function Icon({ children, size = 64, stroke = "#2e6853", strokeWidth = 1.5, className = "" }) {
+/* Shared SVG shell — viewBox 120 to match the Assembly-v2 path space. */
+function Svg({ children, size = 80, strokeWidth = 2, className = "" }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 120 120"
       fill="none"
-      stroke={stroke}
+      stroke="currentColor"
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -31,84 +36,85 @@ function Icon({ children, size = 64, stroke = "#2e6853", strokeWidth = 1.5, clas
   );
 }
 
-/* ---------- individual icons ---------- */
+/* ---------- individual icons (Assembly v2 corrected family) ---------- */
 
+// 01 — בשר, עוף ודגים · cleaver + knife crossed (food-prep abstract).
 export function MeatIcon(props) {
-  // Steak cut with a bone poking out. Hand-drawn, asymmetrical curves.
   return (
-    <Icon {...props}>
-      <path d="M12 44 C12 44 8 36 14 28 C20 20 32 18 38 22 C44 26 46 34 42 40 C38 46 28 48 20 46 Z" />
-      <path d="M38 22 L52 10" />
-      <circle cx="50" cy="12" r="4" />
-      <path d="M20 38 C22 35 26 34 29 36" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M22 22 L88 88" />
+      <path d="M22 22 L30 22 L30 30 Z" />
+      <path d="M88 88 q-4 -28 -36 -36" />
+      <path d="M98 22 L32 88" />
+      <path d="M98 22 L90 22 L90 30 Z" />
+      <path d="M32 88 L26 96" />
+    </Svg>
   );
 }
 
+// 02 — ירקות, פירות ומשקים · leaf / produce.
 export function VegIcon(props) {
-  // Leaf with a stem + two smaller side-leaves.
   return (
-    <Icon {...props}>
-      <path d="M32 52 L32 20" />
-      <path d="M32 20 C32 20 18 16 14 28 C18 28 26 26 32 32" />
-      <path d="M32 28 C32 28 44 20 50 30 C46 32 38 30 32 36" />
-      <path d="M28 44 L20 50" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M40 60 q0 -20 20 -20 q20 0 20 20 q0 28 -20 38 q-20 -10 -20 -38 z" />
+      <path d="M60 40 q0 -10 -8 -14" />
+      <path d="M60 40 q0 -10 8 -14" />
+      <path d="M52 26 q4 -6 8 -2" />
+      <path d="M68 26 q-4 -6 -8 -2" />
+    </Svg>
   );
 }
 
+// 03 — חלב וגבינות · milk bottle.
 export function DairyIcon(props) {
-  // Milk bottle with a short neck and two spot details.
   return (
-    <Icon {...props}>
-      <path d="M24 16 L24 12 C24 10 26 8 28 8 L36 8 C38 8 40 10 40 12 L40 16" />
-      <path d="M20 16 L20 52 C20 54 22 56 24 56 L40 56 C42 56 44 54 44 52 L44 16 Z" />
-      <path d="M20 26 L44 26" />
-      <circle cx="30" cy="38" r="2" />
-      <circle cx="36" cy="44" r="2" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z" />
+      <path d="M48 28 h24" />
+    </Svg>
   );
 }
 
+// 04 — לחמים ואפייה · wheat stalk.
 export function BreadIcon(props) {
-  // Round loaf with three steam curls rising.
   return (
-    <Icon {...props}>
-      <path d="M14 40 C14 40 12 32 18 26 C24 20 40 20 46 26 C52 32 50 40 50 40 Z" />
-      <path d="M14 40 L14 48 C14 50 16 52 18 52 L46 52 C48 52 50 50 50 48 L50 40" />
-      <path d="M24 20 C24 16 22 14 24 10" />
-      <path d="M32 20 C32 14 30 12 32 8" />
-      <path d="M40 20 C40 16 38 14 40 10" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M60 18 v84" />
+      <path d="M60 30 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2" />
+      <path d="M60 30 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2" />
+      <path d="M60 50 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2" />
+      <path d="M60 50 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2" />
+      <path d="M60 70 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2" />
+      <path d="M60 70 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2" />
+    </Svg>
   );
 }
 
+// 05 — שמנים ודבש · honey jar with dipper.
 export function OilIcon(props) {
-  // Jar with a lid and an olive/drop motif inside.
   return (
-    <Icon {...props}>
-      <path d="M22 24 L22 52 C22 54 24 56 26 56 L38 56 C40 56 42 54 42 52 L42 24 Z" />
-      <path d="M20 24 L44 24" />
-      <path d="M24 18 L40 18 C42 18 44 20 44 22 L44 24 L20 24 L20 22 C20 20 22 18 24 18 Z" />
-      <path d="M28 36 C30 32 34 32 36 36 C38 40 36 46 32 46 C28 46 26 40 28 36 Z" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M48 24 h24 v8 h-24 z" />
+      <path d="M44 32 h32 v60 a8 8 0 0 1 -8 8 h-16 a8 8 0 0 1 -8 -8 z" />
+      <path d="M60 14 v10" />
+      <path d="M58 14 q2 -4 4 0" />
+      <path d="M52 52 q4 4 8 0 q4 -4 8 0" />
+    </Svg>
   );
 }
 
+// 06 — טיפוח וסבונים · herb bundle.
 export function SoapIcon(props) {
-  // Soap dish with bubbles drifting up.
   return (
-    <Icon {...props}>
-      <rect x="18" y="28" width="28" height="24" rx="4" />
-      <path d="M22 28 L22 22 C22 20 24 18 26 18 L38 18 C40 18 42 20 42 22 L42 28" />
-      <circle cx="26" cy="16" r="3" />
-      <circle cx="34" cy="12" r="2" />
-      <circle cx="40" cy="15" r="2.5" />
-    </Icon>
+    <Svg {...props}>
+      <path d="M60 24 v44" />
+      <path d="M48 38 q4 -10 12 -14 q8 4 12 14" />
+      <path d="M44 54 q6 -8 16 -10 q10 2 16 10" />
+      <path d="M40 70 q8 -6 20 -8 q12 2 20 8" />
+      <path d="M52 88 h16 l-2 14 h-12 z" />
+    </Svg>
   );
 }
-
-/* ---------- key-based lookup for the homepage grid ---------- */
 
 export const CATEGORY_ICONS = {
   meat: MeatIcon,

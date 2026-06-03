@@ -5,6 +5,22 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-643 chunk 2: CategoryGrid redesign (Assembly v2)
+
+**Branch:** `feature/meh-643-category-grid` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (chunk 2).
+
+**What:** rebuilt `HomeCategoryGrid.jsx` to Assembly v2 — 2+4 asymmetric (desktop 4-col hero span-2 + 4 small; tablet 2×3; mobile 2+4 hero-full-width + 4 in 2×2, **not** 1×6). Flat cards: `bg-surface-card`, 1px `border`, radius 0, no shadow; cream glyph panel; gold Cormorant-italic numeral 01-06 (LTR-isolated); FRL name. No counters (LOCK). New `selected` prop (`filters.category`, wired via `page.js`) → selected card gets `border-primary`.
+
+**Glyphs (all 6 from Assembly_v2.html:697-702):** cleaver/leaf/milk-bottle/wheat-stalk/honey-jar/herb-bundle. `CategoryIcons.jsx` Icon wrapper → viewBox 120 + `currentColor` (no raw hex). **Decision (Sapir):** prompt said "02-06 from v8" but v8 glyphs are design-rejected (`v2:1419`) and the hot-fix (`v2:1924`) re-drew 01/03/04/05/06 → all 6 sourced from v2.
+
+**Routing preserved:** `onCardClick` → `handleCategoryCardClick` (filter + scroll `#producers-grid`). Category names hardcoded HE in `home-categories.js` already matched — unchanged. Copy: eyebrow `קטגוריות` (new), heading `גלו`→`גלי לפי קטגוריה`, subheading dropped from render (key kept). EN eyebrow HE-mirrored (MEH-472); he/en parity holds.
+
+**EN checklist for MEH-472:** new `home.categories.eyebrow` (HE-mirror in en.json).
+
+**Verify:** `npm run build` ✓ Compiled 16.7s; no raw hex; zero physical RTL props; `parity` green. Files: HomeCategoryGrid.jsx, CategoryIcons.jsx, page.js, he.json, en.json + CHANGELOG/HANDOFF.
+
+**Next:** Sapir visual review on Vercel preview (desktop 1280 + tablet 768 + mobile 375: 2+4 layout, glyphs match approved screenshot, numerals, selected state, RTL). Then later MEH-643 chunks.
+
 ## 2026-06-02 — MEH-643 chunk 1: Hero redesign (Assembly v2)
 
 **Branch:** `feature/meh-643-hero` (off staging). **PR #TBD** (draft), base `staging`. Part of MEH-643 (hero is chunk 1 of the homepage redesign).
