@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-03 — MEH-732 merged to staging (PR #909, squash `c9b1587`)
+
+**Done:** navbar pill polish on `Header.jsx` — Composition B (flex space-between: lead group [logo + links] · action cluster, max-width 940px), pill-only glass on scrolled/inner (`bg-background/85` + 12px backdrop-blur, solid fallback, threshold 80→60, never transitions padding/backdrop-filter), action hierarchy (search filled-primary · add-business outlined · login quiet text hidden on /login · globe quiet). i18n voice fixes (he.json `nav.explore`/`nav.discover` גלי·גלה→גלו, also the BottomNav home tab; en.json `nav.explore`→Explore). `#E8E0D0` mapped to existing `border` token. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); `/adversarial-review` ran with one fix (dropped `padding` from transition).
+
+**Pending / next:** (a) **mobile QA** on the staging deploy / Vercel preview — verify glass pill + action hierarchy on a real phone (merged on Sapir's explicit "MERGE" ahead of the Rule-23 mobile-QA gate). (b) **Follow-up:** mobile-drawer (hamburger) login link is NOT hidden on `/login` — only the desktop quiet link is; decide whether to gate both for consistency. (c) `#E8E0D0` exact-literal border still MEH-725-deferred.
+
+**Decision this session:** MEH-638 "no glass" lock is superseded by MEH-732 for the pill only (pill-only glass, never a full-width band; hamburger keeps its own glass). Documented in `Header.jsx` header docstring + CHANGELOG.
+
 ## 2026-06-03 — 🚀 RELEASED to production (staging → main, merge `4ef861c`)
 
 **PR #906** (staging → main, merge method to preserve feature SHAs). Backend pytest gate (MEH-672 Postgres) verified green pre-merge; all checks green/skipped. On merge: Vercel prod frontend + `deploy.yml` Railway production redeploy.
