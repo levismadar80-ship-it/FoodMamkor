@@ -1,3 +1,12 @@
+# WARNING: this workflow uses a workflow-level on.pull_request.paths filter
+# (the `on.pull_request.paths:` block below — frontend/messages/** + the
+# validator script). Off-path PRs → the workflow NEVER triggers → the
+# "parity" check is NEVER created → it stays "Expected" forever.
+# NEVER mark "parity" as a required status check: an off-path PR would be
+# blocked from merging permanently. If gating is ever needed, convert to a
+# job-level paths-filter skip (pattern: e2e.yml:54-60) — a skipped job
+# reports `skipped`, which SATISFIES a required check. (Refs MEH-716)
+
 name: ICU plural parity (he ↔ en)
 # MEH-473 reconstruction — gate for HE/EN plural-form drift in
 # next-intl messages. Hebrew has 4 plural categories (zero/one/two/other);

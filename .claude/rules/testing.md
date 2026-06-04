@@ -60,3 +60,24 @@ files. Central component list: `.claude/central-components.json`.
 - [ ] `npm run build` passes
 - [ ] `pytest tests/test_api.py` passes
 - [ ] `/adversarial-review` עבר — all REFEREE verdicts fixed
+
+---
+
+## Required status checks + docs-only merge (MEH-716)
+
+**Staging required checks = 6** (confirmed by Sapir 2026-06; all `pull_request`-triggered):
+`Frontend build (Next.js)`, `Backend tests (pytest)`, `Backend lint (ruff)`,
+`Env drift (.env.example)` (`pr-checks.yml`); `Frontend lint (RTL + Next.js rules)`,
+`API contract audit (static)` (`deploy.yml`). All except env-drift are job-level
+paths-filter gated → on a docs-only diff they report `skipped`, which **satisfies**
+the required check (no manual override needed).
+
+**`Playwright E2E (Vercel preview)` is NOT a required check.** It lives in
+`e2e.yml`, triggered by `deployment_status` (after the Vercel preview deploys),
+and job-skips on docs diffs (`e2e.yml:54-60`). **Docs-only PRs: don't poll E2E.**
+Merge when the **6 `pull_request` required checks** are green.
+
+**Transient "X of 6 expected" right after push** = the required checks are still
+registering (workflow startup), **not** a failure. Let them settle, then retry the
+merge once. (Observed on PR #908 — first merge attempt blocked on `expected`,
+second succeeded with no override.)
