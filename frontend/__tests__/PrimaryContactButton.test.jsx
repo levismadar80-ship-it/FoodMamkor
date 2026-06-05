@@ -2,7 +2,10 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 
-vi.mock("@/lib/utils", () => ({
+// MEH-729: keep the real getWhatsAppHref (PrimaryContactButton uses it) via
+// importOriginal — the prior mock dropped it.
+vi.mock("@/lib/utils", async (importOriginal) => ({
+  ...(await importOriginal()),
   normalizePhone: (p) => (p ? p.replace(/^0/, "972").replace(/\D/g, "") : ""),
 }));
 
