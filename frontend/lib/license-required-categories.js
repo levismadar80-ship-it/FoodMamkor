@@ -22,6 +22,9 @@ export const LICENSE_REQUIRED_CATEGORIES = [
   "חלב וגבינות",
   "שוקולד וממתקים בוטיק",
   "יין, בירה ומשקאות",
+  // MEH-743: honey split off from "שמנים ודבש" — keeper + marketing
+  // licenses required by צו הפיקוח, תשל"ז-1977. "שמנים" alone stays optional.
+  "דבש",
 ];
 
 // MEH-530: client mirror of PRODUCER_LICENSE_REGEX. Used for the inline

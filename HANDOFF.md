@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-743: honey license-required (taxonomy split)
+
+**Branch:** `feature/meh-743-honey-license` off staging — draft PR. Sapir-approved
+**split** (vs sub-flag) of "שמנים ודבש" → "שמנים" + "דבש". Live producer count = 0
+on prod → seed-only, no Alembic. Honey added to `LICENSE_REQUIRED_CATEGORIES` (be+fe
+mirror); olive-oil-only stays optional. Hero card: ONE "שמנים" tile, no honey hero
+(MEH-203 will revisit). `HomeProductForm.jsx` updated for consistency though it's a
+dead surface (MEH-598 burial, MEH-543 revival). +3 honey/oils pytest cases. **Open
+for Sapir:** add "דבש" row + rename "שמנים ודבש" → "שמנים" on **prod `categories`
+table** via direct SQL after staging soak (no Alembic per the seed-only path).
+Until then, honey on prod still registers license-free.
+
 ## 2026-06-05 — 🛠 smoke fixes: MEH-747 (admin delete FK) + MEH-745 (pending_whatsapp dead-end)
 
 **Merged to staging:** PR #937 (MEH-747 — unlink `users_producer_id_fkey` before admin
