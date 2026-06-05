@@ -16,6 +16,7 @@ from app.database import get_db
 from app.models import (
     DeliveryArea,
     HomeProduct,
+    PhoneOtpToken,
     Producer,
     ProducerCategory,
     Product,
@@ -320,6 +321,13 @@ def admin_delete_producer(
         synchronize_session=False,
     )
     db.flush()
+
+    # MEH-755: delete OTP tokens explicitly before db.delete(producer).
+    # phone_otp_tokens.producer_id is NOT NULL, but the ORM relationship
+    # (models.py PhoneOtpToken.producer backref) has no delete cascade, so the
+    # unit-of-work tries to nullify producer_id on delete → NotNullViolation
+    # 500. Mirrors the auth.py::delete_account fix; bulk-delete pre-empts it.
+    db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer.id).delete()
 
     db.delete(producer)
     db.commit()
