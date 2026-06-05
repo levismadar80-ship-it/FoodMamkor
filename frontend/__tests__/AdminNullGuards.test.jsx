@@ -97,9 +97,11 @@ describe("AdminDashboard — null array guards (MEH-147)", () => {
     apiResponseRef.current = { data: minDashboard() };
     const { default: AdminDashboard } = await import("@/app/[locale]/admin/page");
     render(<AdminDashboard />);
-    await waitFor(() => expect(screen.getByText("לוח מחוונים")).toBeInTheDocument());
-    expect(screen.getByText("אין בקשות ממתינות")).toBeInTheDocument();
-    expect(screen.getByText("אין נתונים להצגה")).toBeInTheDocument();
+    // MEH-729: admin/page migrated to next-intl (MEH-475); the identity mock
+    // above renders the i18n *key*, so assert on keys, not the Hebrew literals.
+    await waitFor(() => expect(screen.getByText("dashboard.title")).toBeInTheDocument());
+    expect(screen.getByText("dashboard.pending_panel.empty")).toBeInTheDocument();
+    expect(screen.getByText("dashboard.activity.empty")).toBeInTheDocument();
   });
 
   it("renders pending list when pending_producers is a non-empty array", async () => {
@@ -125,9 +127,10 @@ describe("AdminAnalyticsPage — null array guards (MEH-147)", () => {
     apiResponseRef.current = { data: minAnalytics() };
     const { default: AdminAnalyticsPage } = await import("@/app/[locale]/admin/analytics/page");
     render(<AdminAnalyticsPage />);
-    await waitFor(() => expect(screen.getByText("אנליטיקס")).toBeInTheDocument());
-    // All three null arrays should render the empty state
-    const emptyMsgs = screen.getAllByText("אין נתונים להצגה");
+    await waitFor(() => expect(screen.getByText("analytics.title")).toBeInTheDocument());
+    // All three null arrays should render the empty state (MEH-729: identity
+    // mock → key; top_cities/top_producers/geographic share analytics.no_data_display).
+    const emptyMsgs = screen.getAllByText("analytics.no_data_display");
     expect(emptyMsgs.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -157,7 +160,8 @@ describe("CategoriesEditor — empty state (MEH-147)", () => {
     const { default: AdminContentPage } = await import("@/app/[locale]/admin/content/page");
     render(<AdminContentPage />);
     await waitFor(() =>
-      expect(screen.getByText("אין נתונים להצגה")).toBeInTheDocument(),
+      // MEH-729: content/page migrated to next-intl; identity mock → key.
+      expect(screen.getByText("content.categories.empty")).toBeInTheDocument(),
     );
   });
 

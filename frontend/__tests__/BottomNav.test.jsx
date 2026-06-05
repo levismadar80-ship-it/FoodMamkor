@@ -3,7 +3,11 @@ import { render, screen } from "@testing-library/react";
 import BottomNav from "@/components/BottomNav";
 
 const pathnameRef = { current: "/" };
-vi.mock("next/navigation", () => ({
+// MEH-729: BottomNav reads usePathname from the next-intl wrapper
+// `@/i18n/navigation`, not `next/navigation`. Mocking the wrapper directly
+// avoids loading next-intl's createNavigation (which fails to resolve
+// `next/navigation` under the vitest ESM resolver).
+vi.mock("@/i18n/navigation", () => ({
   usePathname: () => pathnameRef.current,
 }));
 
@@ -45,10 +49,13 @@ describe("BottomNav", () => {
     userRef.current = null;
   });
 
-  it("renders exactly 4 tabs in order: גלה / מפה / מהשכן / פרופיל", () => {
+  // MEH-729: the "מהשכן" (neighbor) tab was dropped from BottomNav
+  // (components/BottomNav.jsx:42-47 now lists only discover/map/profile).
+  // Updated to the current 3-tab nav (component = source of truth).
+  it("renders exactly 3 tabs in order: גלה / מפה / פרופיל", () => {
     render(<BottomNav />);
     const labels = screen.getAllByRole("link").map((a) => a.textContent);
-    expect(labels).toEqual(["גלה", "מפה", "מהשכן", "פרופיל"]);
+    expect(labels).toEqual(["גלה", "מפה", "פרופיל"]);
   });
 
   it("does NOT render an events or favorites link", () => {
