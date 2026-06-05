@@ -21,6 +21,15 @@ admission headline" row, and corrected the stats-row `MEH-654` typo (per MEH-746
 a separate future task (MEH-135). **Verified:** greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0;
 `מאומתים` = 0 in `about.consumer.*`; `npm run build` ✓.
 
+### 2026-06-05 — MEH-747 follow-up: i18n the admin delete-error toast (Refs MEH-747)
+
+`refactor(i18n)`: the delete-failure toast added in PR #937 hardcoded the Hebrew string
+`"מחיקת בית העסק נכשלה. נסי שוב."` in `use-admin-producers.js`. Adversarial-review
+"Should Consider" nit — the hook already uses `t()` for every other string. Replaced with
+`t("producers.table.delete_error")` and added the key to `he.json` + `en.json` under
+`admin.producers.table` (HE↔EN parity preserved, 2543 == 2543). `npm run build` ✓. Nit #2
+(comment-block length) intentionally skipped per Sapir.
+
 ### 2026-06-05 — MEH-747: unlink users_producer_id_fkey before admin producer-delete (Closes MEH-747)
 
 `fix(MEH-747)`: admin "מחק" on the producers list 500'd for any **self-registered**
