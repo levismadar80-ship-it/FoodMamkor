@@ -55,7 +55,7 @@ export default function ProducerHeader({
         )}
         {(producer.favorites_count ?? 0) >= 5 && (
           <span className="inline-flex items-center gap-1 text-[13px] text-fg-muted">
-            <Heart size={14} weight="fill" style={{ color: "#A32D2D" }} aria-hidden="true" />
+            <Heart size={14} weight="fill" className="text-primary" aria-hidden="true" />
             {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
           </span>
         )}
