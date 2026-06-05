@@ -22,13 +22,16 @@ import AddressSearch from "@/components/AddressSearch";
  */
 
 // TODO MEH-543: i18n after /neighbor activation post-launch
+// MEH-743: split for taxonomy consistency. NOTE: this surface is dead
+// (MEH-598 burial; revival path tracked under MEH-543) — consistency-only.
 const CATEGORIES = [
   "בשר ועוף",
   "דגים",
   "ירקות ופירות",
   "חלב וגבינות",
   "לחמים ואפייה",
-  "שמנים ודבש",
+  "שמנים",
+  "דבש",
   "מותססים",
   "טיפוח",
   "אחר",

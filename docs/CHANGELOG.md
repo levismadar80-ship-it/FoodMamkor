@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-743: honey license-required — split "שמנים ודבש" → "שמנים" + "דבש" (Closes MEH-743)
+
+`feat(licensing)`: dedicated regulatory regime for honey per צו הפיקוח על מצרכים
+ושירותים (ייצור דבש ומכירתו), תשל"ז-1977 — keeper license + marketing license +
+business license. Source: legal brief נספח א' (PR #934). **Taxonomy decision
+(Sapir-approved):** split the combined category, not a sub-flag. Rationale:
+keeps `LICENSE_REQUIRED_CATEGORIES` as the single source of truth for the
+regulatory class; matches the legal model (honey + olive oil are separate
+regimes); aligns with MEH-203 category-selector pattern (one chip = one
+regulatory unit). **Live producer count = 0** (verified by Sapir on Railway
+prod) → seed-only migration, no Alembic, no `producer_categories` re-pointing.
+**Files (9):** `backend/app/constants.py` + `backend/seed_data.py` (rename row 5
+→ "שמנים", append "דבש" at end so seed-id slots 1–18 stay stable);
+`frontend/lib/license-required-categories.js` mirror; `home-categories.js` hero
+card stays a single "שמנים" tile (no honey hero — MEH-203 will revisit);
+`map-categories.js` both kept on the same amber/JarLabel styling until S5 map
+redesign; `categoryQuestions.js` generic Q-set duplicated under "דבש";
+`HomeProductForm.jsx` consistency split (NOTE: dead surface, MEH-598 burial,
+MEH-543 revival path); `tests/test_producer_license.py` +3 cases
+(`TestRegisterProducerHoneyLicense`); `docs/MANUAL_TESTING.md` honey/oils
+manual tests. **Verified:** frontend `npm run build` ✓; backend pytest deferred
+to CI (sandbox can't install backend deps). **Deployment note:** prod
+`categories` table currently has the legacy "שמנים ודבש" row with 0 producer
+links — Sapir to add "דבש" row + rename to "שמנים" via direct SQL on prod once
+this lands on staging (no Alembic per the seed-only path).
+
 ### 2026-06-05 — MEH-749: read-only orphan-audit script (Refs MEH-749)
 
 `chore(scripts)`: new `scripts/audit_orphans.py` — read-only DB audit (SELECT/COUNT only,

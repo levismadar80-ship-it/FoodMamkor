@@ -30,7 +30,10 @@ export const CATEGORY_STYLES = {
   "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
   "חלב וגבינות":         { color: "#4a90d9", icon: Cheese,      iconName: "Cheese" },
   "לחמים ואפייה":        { color: "#8B6914", icon: Bread,       iconName: "Bread" },
-  "שמנים ודבש":          { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
+  // MEH-743: honey split into its own DB category. Both kept on the same
+  // amber/JarLabel styling until S5 map redesign assigns a dedicated icon.
+  "שמנים":               { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
+  "דבש":                 { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };
 
