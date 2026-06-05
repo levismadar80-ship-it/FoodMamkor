@@ -34,16 +34,21 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 
 describe("ImageGallery empty state (MEH-25)", () => {
-  it("renders the Hebrew caption when images array is empty", () => {
+  // MEH-729: the v4 redesign (PR #890) replaced the caption + Leaf icon empty
+  // state with a category-emoji + producer-initials placeholder. Assertions
+  // updated to the v4 component (component = source of truth).
+  it("renders the empty-state container when images array is empty", () => {
     render(<ImageGallery images={[]} />);
-    expect(
-      screen.getByText("בית עסק זה טרם הוסיף תמונות"),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("gallery-empty-state")).toBeInTheDocument();
   });
 
-  it("shows the leaf Phosphor icon (no emoji)", () => {
-    render(<ImageGallery images={[]} />);
-    expect(screen.getByTestId("leaf-icon")).toBeInTheDocument();
+  it("shows the category emoji and producer initials (v4), not a leaf icon", () => {
+    render(
+      <ImageGallery images={[]} categoryEmoji="🧀" producerInitials="חש" />,
+    );
+    expect(screen.getByText("🧀")).toBeInTheDocument();
+    expect(screen.getByText("חש")).toBeInTheDocument();
+    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
   });
 
   it("uses #F5F0E8 warm-cream background, not a green gradient", () => {
@@ -57,12 +62,12 @@ describe("ImageGallery empty state (MEH-25)", () => {
     expect(bg).not.toContain("linear-gradient");
   });
 
-  it("has max-h/min-h constraints so it doesn't take over the viewport", () => {
+  it("has fixed-height constraints so it doesn't take over the viewport", () => {
     render(<ImageGallery images={[]} />);
     const wrapper = screen.getByTestId("gallery-empty-state");
-    // Check both classes present — Tailwind min-h-[200px] + max-h-[280px]
-    expect(wrapper.className).toMatch(/min-h-\[200px\]/);
-    expect(wrapper.className).toMatch(/max-h-\[280px\]/);
+    // MEH-729: v4 uses fixed h-[120px] / md:h-[180px] (was min-h/max-h).
+    expect(wrapper.className).toMatch(/h-\[120px\]/);
+    expect(wrapper.className).toMatch(/md:h-\[180px\]/);
   });
 
   it("still shows the gallery-variant FavoriteButton when producerId is passed", () => {

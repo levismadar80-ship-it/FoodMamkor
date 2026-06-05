@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 
-// Mock the utils normalizePhone used by contact-method
-vi.mock("@/lib/utils", () => ({
+// Mock the utils normalizePhone used by contact-method.
+// MEH-729: keep the real getWhatsAppHref (contact-method imports it too) via
+// importOriginal — the prior mock dropped it, breaking the whatsapp href test.
+vi.mock("@/lib/utils", async (importOriginal) => ({
+  ...(await importOriginal()),
   normalizePhone: (p) => (p ? p.replace(/^0/, "972").replace(/\D/g, "") : ""),
 }));
 
