@@ -354,13 +354,17 @@ export default function Header() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                >
-                  {t("nav.login")}
-                </Link>
+                // MEH-B: hide the drawer login entry on /login too — mirrors
+                // the desktop isLoginPage gate (MEH-732 / PR #909).
+                !isLoginPage && (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                  >
+                    {t("nav.login")}
+                  </Link>
+                )
               )}
             </div>
 
