@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-757: /about founder-story copy swap — "בלי לחפש שעות" (Closes MEH-757)
+
+`copy(about)`: replaced the founder-story body (`about.consumer.story.p1`–`p5`,
+he + en) with Sapir's 05/06 rewrite — problem→discovery→insight→solution arc
+closing on the canonical `בלי לחפש שעות` anchor (COPY_BANK / MEH-719). Copy-only
+swap riding tonight's release on top of the MEH-750 wave; the two closing
+captions (`caption1` / `caption3`) and all other /about copy are untouched.
+`greeting` kept period-free (bold heading, EN parity `Hi, I'm Sapir`) per the
+MEH-750 styling decision. **Files:** `frontend/messages/he.json`,
+`frontend/messages/en.json`, `docs/COPY_BANK.md`, `docs/CHANGELOG.md`. No JSX
+touched (keys pre-existed). `npm run build` green.
+
 ### 2026-06-05 — MEH-755: OTP tokens block producer deletion — NotNullViolation on both delete paths (Closes MEH-755)
 
 `fix(producers)`: producer with `phone_otp_tokens` rows was undeletable — both
