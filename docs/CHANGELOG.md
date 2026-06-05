@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-05 — head-meta: per-page openGraph for /terms + /privacy (PR #916)
+
+`feat(seo)`: added per-page `openGraph` to the `generateMetadata` of `/terms` and `/privacy` (no MEH# — retroactive ticket pending, workspace at issue limit). Both routes previously exported only `title`/`description`/`alternates`, so they fell back to the layout's site-level `BASE_METADATA.openGraph` (homepage card on social shares). Each page now emits `og:title` + `og:description` (reusing the MEH-720-cleaned `meta_title`/`meta_description` — HE voice `פלטפורמה`, zero `דירקטורי`), `og:type=website`, and `og:url` via `urlForLocalePath` (host `mehamakor.co.il`). **Why `siteName`/`locale`/`images` are repeated:** Next.js *shallow-merges* the `openGraph` field, so a page-level block replaces the layout's entirely — repeating them preserves the OG image (mirrors the `about`/`contact` siblings). Canonical was already correct (`buildAlternates`→`urlForLocalePath`, host `mehamakor.co.il`) and is unchanged. Scope: the two `page.js` files only — no i18n, layout, or dependency changes. Prod baseline confirmed via Vercel MCP: pre-PR `og:url` = site root, this PR makes it page-specific. `npm run build` green (terms + privacy SSG, 101/101).
+
 ### 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (Refs MEH-672, MEH-562)
 
 `chore(types)`: ניקוי strict-mypy ל-WhatsApp typed-template surface (המשך
