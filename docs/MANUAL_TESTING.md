@@ -278,7 +278,7 @@ Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen sect
 
 ## Producer license number (MEH-530)
 
-Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)**. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
 
 - [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
 - [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
@@ -293,6 +293,8 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
 - [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
+- [ ] **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מספר רישיון יצרן חובה לקטגוריה זו". submit עם 1234567 → 200 OK.
+- [ ] **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ערך → 200 OK.
 
 ---
 

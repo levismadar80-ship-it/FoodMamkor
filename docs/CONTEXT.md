@@ -23,7 +23,7 @@ These rules pass through every product decision. If a design choice violates one
 - **Magazine, not marketplace.** Every design decision passes through this test.
 - **No transaction fees, ever.** No commissions, no checkout. (See ADR-010 for the six pricing LOCKs.)
 - **Manual approval for every business.** No auto-approve at any scale.
-- **Licensed businesses only.** No home cooks — illegal in Israel without Ministry of Health licensing.
+- **Two-tier licensing (ADR-022).** מאומת (license verified, gold badge, free forever) / מוצהר (binding declaration, legally exempt categories only — never negatively labeled). Unlicensed food production where a license is legally required stays out. No home cooks — illegal in Israel.
 - **No "שכנות מבשלות מהבית" / "אוכל ביתי" / "מהמטבח של השכן"** in marketing copy. Ever.
 - **No "יצרן" / "יצרנית"** in UI — always "בית עסק" / "בעלת עסק".
 

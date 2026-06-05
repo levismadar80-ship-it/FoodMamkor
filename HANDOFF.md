@@ -5,6 +5,82 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
+
+**Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
+ADR-022 (Accepted) + synced the 3 canonical docs that carried the old "Licensed
+businesses only" LOCK (CONTEXT.md §2, BRAND.md §3 LOCKs + §7 anti-pattern, README
+index). Brand-book step only — docs-only, no code/schema/UI. PR body uses **Refs**
+MEH-742 (NOT Closes) — decision ticket stays open for 4 children. **Pending post-merge:**
+MEH-742 DoD items 2 (audit columns `declared_at` / `declaration_version`) + 3 (gate-1
+affirmative tier-2 consumer copy) ready to spin up; lawyer brief Q1–Q5 still with counsel.
+
+## 2026-06-05 — MEH-743: honey license-required (taxonomy split)
+
+**Branch:** `feature/meh-743-honey-license` off staging — draft PR. Sapir-approved
+**split** (vs sub-flag) of "שמנים ודבש" → "שמנים" + "דבש". Live producer count = 0
+on prod → seed-only, no Alembic. Honey added to `LICENSE_REQUIRED_CATEGORIES` (be+fe
+mirror); olive-oil-only stays optional. Hero card: ONE "שמנים" tile, no honey hero
+(MEH-203 will revisit). `HomeProductForm.jsx` updated for consistency though it's a
+dead surface (MEH-598 burial, MEH-543 revival). +3 honey/oils pytest cases. **Open
+for Sapir:** add "דבש" row + rename "שמנים ודבש" → "שמנים" on **prod `categories`
+table** via direct SQL after staging soak (no Alembic per the seed-only path).
+Until then, honey on prod still registers license-free.
+
+## 2026-06-05 — 🛠 smoke fixes: MEH-747 (admin delete FK) + MEH-745 (pending_whatsapp dead-end)
+
+**Merged to staging:** PR #937 (MEH-747 — unlink `users_producer_id_fkey` before admin
+producer-delete + Hebrew error toast) · PR #938 (i18n follow-up — `producers.table.delete_error`
+key). Both squashed, CI green.
+
+**MEH-745 (scope (c), two open PRs):**
+- **PR #939** (`feature/meh-745-admin-approve-pw`, *draft*, **Refs** MEH-745) — admin approve
+  button now renders for `pending_whatsapp` (`AdminProducersTable.jsx:115` gate widened); the
+  approve endpoint already had no status guard. +vitest. Frontend-only.
+- **PR2** (`feature/meh-745-otp-self-serve`, **Closes** MEH-745) — backend
+  `confirm_phone_otp` advances `pending_whatsapp → pending`; new `PhoneVerifyCard` dashboard
+  OTP flow replaces the dead `/settings` CTA; `dashboard.producer.phone_verify.*` keys (HE/EN
+  parity 2555). Full pytest 840✓ / vitest 397✓ / build✓. **Next step:** push PR2, verify CI,
+  Sapir mobile-QA the dashboard OTP flow on a `pending_whatsapp` producer, then merge PR#939 +
+  PR2 (PR2's `Closes MEH-745` auto-closes Linear on merge).
+
+**Phase 0 (MEH-745) findings** posted inline this session; canonical file:lines confirmed
+unchanged before edits. No schema/Alembic changes anywhere this session.
+## 2026-06-05 — MEH-750: S8 copy wave /about (he+en+COPY_BANK)
+
+**Branch:** `feature/meh-750-about-copy-wave` off staging — draft PR. Applied the 17 Sapir-locked
+strings from MEH-750 to `about.consumer.*` (he+en) + 4 JSX changes in `AboutClient.jsx` (hero sub
+render under H1; benefits section heading; `story.caption2` removed; `values.closing` removed —
+values card ends after בטיחות). Swallows **MEH-746** (item 13: `benefits.trust.body` drops "מאומתים"
+— MEH-742 gate + MEH-579 over-claim). H1 + greeting lose terminal periods (locked). `parallax.quote`
+→ `אוכל טוב — לא שומרים לעצמנו`. CTA merged: `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.`
+**COPY_BANK:** decision-log rows for every changed key + retired stale "criteria admission headline"
+row + fixed stats-row `MEH-654` typo (per MEH-746). **Out of scope (untouched):** tips.*, values.intro,
+contact.*, nav.*, metadata/OG.
+**Verified:** key parity 2542==2542; greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0; `מאומתים` 0 in
+about.consumer.* (1 remaining hit = `terms.sections.verified.title`, out of scope); `npm run build` ✓.
+**Open for Sapir:** the DoD's "retire old CTA `הוסיפי את העסק שלך 🌿`" — no COPY_BANK row matches that
+text (singular `הוסיפי` absent); nearest is the live homepage `home.cta.button` (`הוסיפו`, plural, §5),
+out of /about scope — left untouched pending confirmation.
+
+## 2026-06-05 — 🧾 SESSION CLOSE (design track closed · legal brief + appendix · MEH-742/743 · port gate)
+
+**1. Design track CLOSED — S5/S6/S7 all FINAL.** S5 (map) + S6 (business page) + S7 (register flow) are FINAL. S7 sits at **v4** in the Claude Design project "S2 — Logo System". S7 now **mirrors shipped product**:
+- **step-00 account gate** (MEH-170) — auto-skips for logged-in users (logged in step).
+- **MEH-530 license field** placed under category in **step 02**.
+- **two success variants** — **06A** logged-in/upgrade (dashboard CTA) · **06B** verify-email, copy **locked to `auth.py` anti-enumeration behavior** ("אם האימייל פנוי...").
+- **CTA variant C "להזמנה באתר"** added (website primary-eligible).
+
+**2. Legal.** `docs/legal/2026-06-lawyer-brief-licensing-tiers.md` **merged** (PR #931). Appendix **נספח א'** (exemption map: 4.6ו plant-based <5t · farm own-produce · תמרוקים regime for soaps · honey sectoral order) **merged** (PR #934, 2026-06-05).
+
+**3. Linear (two created).**
+- **MEH-742** (P2, **LOCK decision**) — two-tier **מאומת/מוצהר** model, 4 launch gates, brand book before code.
+- **MEH-743** (P3) — honey license split; CC prompt ready in ticket; **Phase 0 taxonomy STOP**.
+
+**4. Port scheduling.** S5/S6/S7 port **WAITS for the MEH-742 decision** (verification copy is gate 1). Port CC prompts **MUST include a Phase 0 design-vs-code comparison** — twice this session designs contradicted shipped code (MEH-530 license field; registration auth paths).
+
+**5. Unchanged pending.** Production smoke items (WhatsApp welcome on a real device · `/en/terms` PII · homepage §06 mobile) · FB Sharing Debugger re-scrape after the next prod deploy.
+
 ## 2026-06-05 — MEH-684: ICU plural emoji strip (a11y)
 
 Branch `feature/meh-684-icu-plural-strip` off staging. Stripped trailing ` 🌿` from the

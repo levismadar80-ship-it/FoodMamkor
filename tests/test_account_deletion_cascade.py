@@ -11,9 +11,12 @@ Cloudinary asset with bypass_reserved=True (the asset lives under
 mehamakor/producers/*, which is in RESERVED_PUBLIC_ID_PREFIXES; a plain
 destroy call would be silently rejected).
 """
+from datetime import datetime, timedelta
+
 from app import cloudinary_utils
 from app.models.models import (
     Favorite,
+    PhoneOtpToken,
     Producer,
     ProducerCategory,
     ProducerFollower,
@@ -140,4 +143,72 @@ def test_delete_account_with_no_story_card_still_calls_destroy(
     assert len(none_with_bypass) == 1, (
         f"expected exactly one bypass=True call with url=None for the "
         f"story-card slot; full call list: {calls}"
+    )
+
+
+# --- MEH-755: producer with phone_otp_tokens rows must stay deletable ---
+#
+# phone_otp_tokens.producer_id is NOT NULL. The ORM relationship
+# (PhoneOtpToken.producer backref) has no delete cascade, so before the fix
+# db.delete(producer) issued UPDATE ... SET producer_id=NULL → NotNullViolation
+# 500. Both delete paths (auth.py::delete_account, admin.py::admin_delete_
+# producer) now bulk-delete the tokens first. Direct model insert is used so
+# the regression doesn't depend on the OTP request endpoint.
+
+
+def _add_otp_tokens(db, producer_id, n=3):
+    for i in range(n):
+        db.add(
+            PhoneOtpToken(
+                producer_id=producer_id,
+                phone="0501234567",
+                code=f"{100000 + i}",
+                expires_at=datetime.utcnow() + timedelta(minutes=10),
+            )
+        )
+    db.commit()
+
+
+def test_delete_account_with_otp_tokens(client, db):
+    """delete_account path: producer with OTP rows → 200, tokens gone."""
+    user, producer = _make_producer_user(db)
+    producer_id = producer.id
+    _add_otp_tokens(db, producer_id)
+    assert (
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
+        == 3
+    )
+
+    r = client.delete("/auth/me", headers=auth_header(user))
+    assert r.status_code == 200
+
+    assert db.query(Producer).filter(Producer.id == producer_id).first() is None
+    assert (
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
+        == 0
+    )
+
+
+def test_admin_delete_producer_with_otp_tokens(client, db):
+    """admin_delete_producer path: producer with OTP rows → 200, tokens gone."""
+    producer = make_producer(db, name="OTP Farm", status="approved")
+    producer_id = producer.id
+    _add_otp_tokens(db, producer_id)
+
+    admin = make_user(db, role="admin")
+    r = client.delete(
+        f"/admin/producers/{producer_id}", headers=auth_header(admin)
+    )
+    assert r.status_code == 200
+
+    assert db.query(Producer).filter(Producer.id == producer_id).first() is None
+    assert (
+        db.query(PhoneOtpToken)
+        .filter(PhoneOtpToken.producer_id == producer_id)
+        .count()
+        == 0
     )

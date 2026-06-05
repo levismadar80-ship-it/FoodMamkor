@@ -45,7 +45,7 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 - Magazine, not marketplace
 - No transaction fees, ever (full pricing rules → ADR-010)
 - Manual approval for every business
-- Licensed businesses only — no home cooks
+- Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
 - No `"יצרן"` / `"יצרנית"` in UI — always `"בית עסק"` / `"בעלת עסק"`
 - No `"marketplace"` / `"פלטפורמת מסחר"` copy anywhere
@@ -125,6 +125,7 @@ Phrasings that survived to production once and must be caught in review:
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.
 - Phosphor duotone weight — too playful for editorial; regular weight only.
+- `"מורשה"` / `"מורשים"` in consumer copy — regulatory term consumers don't parse; tier language is מאומת / מוצהר only (ADR-022). Legal surfaces (terms, declaration text) may use it.
 
 ## 8 · How brand decisions are recorded
 

@@ -61,6 +61,9 @@ export default function AboutPage() {
           <h1 className="font-headline-display text-4xl md:text-6xl font-bold mb-6 leading-tight">
             {t("hero.heading")}
           </h1>
+          <p className="font-body-md text-lg md:text-xl text-green-50/90 max-w-2xl mx-auto leading-relaxed">
+            {t("hero.subheading")}
+          </p>
         </div>
       </section>
 
@@ -105,9 +108,6 @@ export default function AboutPage() {
                     {t("story.caption1")}
                   </p>
                   <p className="text-base text-text/85 italic leading-relaxed">
-                    {t("story.caption2")}
-                  </p>
-                  <p className="text-base text-text/85 italic leading-relaxed">
                     {t("story.caption3")}
                   </p>
                 </div>
@@ -128,6 +128,9 @@ export default function AboutPage() {
       {/* ======== Section 3 — 3 columns ======== */}
       <section className="bg-primary text-white section-y">
         <div className="max-w-6xl mx-auto px-4">
+          <h2 className="font-headline-lg text-3xl font-bold mb-12 text-center">
+            {t("benefits.heading")}
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
               <h3 className="font-headline-md text-2xl font-bold mb-4">{t("benefits.local.title")}</h3>
@@ -220,9 +223,6 @@ export default function AboutPage() {
               </article>
             ))}
           </div>
-          <p className="text-text/85 text-right text-lg leading-relaxed mt-12 pt-8 border-t border-border">
-            {t("values.closing")}
-          </p>
         </div>
       </section>
 

@@ -138,10 +138,10 @@
     "login": {
       "loading": "Loading...",
       "title": "Sign in to Mehamakor",
-      "welcome": "Welcome",
+      "welcome": "Good to see you again",
       "value_save": "Save businesses",
-      "value_rate": "Rate",
-      "value_publish": "Publish your home kitchen",
+      "value_rate": "Write reviews",
+      "value_publish": "Add your business",
       "email_label": "Email",
       "email_invalid": "Invalid email",
       "valid": "✓ Valid",
@@ -151,7 +151,7 @@
       "password_hide": "Hide password",
       "forgot_password": "Forgot password?",
       "submit": "Sign in",
-      "submitting": "Signing in...",
+      "submitting": "One moment, signing in…",
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
@@ -481,7 +481,7 @@
       "title": "Sign in to Mehamakor | Mehamakor",
       "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
       "og_title": "Sign in to Mehamakor",
-      "og_description": "Sign in to discover local food businesses, save favorites, and support quality producers."
+      "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
       "title": "Join Mehamakor | Mehamakor",
@@ -1187,7 +1187,8 @@
         },
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
-        "confirm_delete": "Delete \"{name}\"? This action cannot be undone."
+        "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
+        "delete_error": "Deleting the business failed. Please try again."
       },
       "new": {
         "title": "Add new business",
@@ -1813,18 +1814,18 @@
   "events": {
     "list": {
       "title": "Events at farms and local businesses",
-      "subtitle": "Workshops, tours, open days and tastings — straight from the source",
+      "subtitle": "What's on this month — weekend after weekend, straight from the source",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "tab_events": "Farm events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
-      "submit_experience": "Submit experience",
+      "submit_experience": "Add experience",
       "view_mode_label": "View mode",
       "view_list": "List",
       "view_calendar": "Calendar",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
+      "filter_city_label": "Search by city",
+      "filter_city_placeholder": "City or town name",
       "loading_events": "Loading events...",
       "loading_experiences": "Loading experiences...",
       "empty_events": "No events match this filter — yet",
@@ -1886,7 +1887,7 @@
       "submit_cta": "Submit your own experience",
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences",
-      "cross_link_events": "Also looking for farm events? See all events and experiences together ←",
+      "cross_link_events": "Also looking for farm events? All events and experiences together ←",
       "filter_city_label": "Filter by city",
       "filter_city_placeholder": "Search city...",
       "loading": "Loading experiences...",
@@ -2001,36 +2002,37 @@
   "about": {
     "consumer": {
       "hero": {
-        "heading": "You used to need to know who to ask. Not anymore."
+        "heading": "You used to need to know who to ask. Not anymore",
+        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
         "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Hi, I'm Sapir.",
-        "p1": "It was always important to me to know where my food came from. I wanted to buy better — healthier, more local.",
-        "p2": "But I quickly discovered it wasn't accessible. To find truly quality food, I had to search for hours — ask the right people, join WhatsApp groups, search Google and Instagram.",
-        "p3": "Then I realized: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables a few minutes from home. There's someone baking sourdough in the next neighborhood. There are small businesses with incredible products — that most people don't even know about. So people keep shopping at the supermarket — not because it's the best, but because it's the most convenient.",
-        "p5": "And that's how Mehamakor was born. One place that brings together real, local, healthy food for you — close to home. Without searching for hours.",
+        "greeting": "Hi, I'm Sapir",
+        "p1": "It was always important to me to know where my food comes from. I wanted to buy better — healthier, more local.",
+        "p2": "But I quickly discovered that it isn't accessible. To find truly good food, I had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
+        "p3": "And then it hit me: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
+        "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
         "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
-        "caption2": "I'm building the site on my own. I personally vet every business.",
         "caption3": "The criteria — I write them from what I myself look for in food."
       },
       "parallax": {
-        "quote": "Because what you eat matters. And where you buy it matters more"
+        "quote": "Good food — not something we keep to ourselves"
       },
       "benefits": {
+        "heading": "Why Mehamakor",
         "local": {
-          "title": "Real food close to you",
-          "body": "No hour-long drives. No weeks of searching.\nEverything close to you, in one place."
+          "title": "Close to you",
+          "body": "Businesses from your area, with the shortest possible chain. Less distance, more freshness."
         },
         "trust": {
-          "title": "Trust what you eat",
-          "body": "Only verified businesses. We vet each one\nbefore they appear."
+          "title": "Worth your trust",
+          "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Supporting small businesses",
-          "body": "Every local purchase is a choice — to keep money\nin your community, and support the people behind the food."
+          "title": "Local community",
+          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
         }
       },
       "tips": {
@@ -2049,9 +2051,9 @@
         }
       },
       "testimonials": {
-        "heading": "What people say about us",
-        "subtitle": "Stories are coming soon",
-        "cta": "Want to share too? Write to us"
+        "heading": "The stories yet to be written here",
+        "subtitle": "This space is reserved for your stories.",
+        "cta": "Have a story? Tell us"
       },
       "values": {
         "heading": "How we choose",
@@ -2071,11 +2073,10 @@
         "safety": {
           "title": "Safety",
           "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
-        },
-        "closing": "If that's you — a business owner building something you're proud of — we'd love to meet you."
+        }
       },
       "cta": {
-        "heading": "Have a business? Come join us.",
+        "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
         "explore": "Discover businesses near you"
       },
@@ -3183,10 +3184,24 @@
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
-          "body": "Complete your profile to speed up the review — complete profiles are approved faster.",
-          "cta": "Complete profile ←",
-          "companion_link": "Edit profile"
+          "body": "To send your business for team review, verify your business phone number via WhatsApp."
         }
+      },
+      "phone_verify": {
+        "title": "Verify your business phone",
+        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying sends your business for team review.",
+        "send_cta": "Send verification code",
+        "sending": "Sending...",
+        "resend_in": "You can resend a code in {seconds}s",
+        "code_label": "Verification code",
+        "code_placeholder": "6-digit code",
+        "confirm_cta": "Verify",
+        "confirming": "Verifying...",
+        "success": "Phone verified! Your business has been sent for team review.",
+        "error_invalid": "Wrong or expired code. Please try again.",
+        "error_no_phone": "No phone number on your profile. Add one, then verify.",
+        "error_generic": "Something went wrong. Please try again.",
+        "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog ←",
       "availability": {
