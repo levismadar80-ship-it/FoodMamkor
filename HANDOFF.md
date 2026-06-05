@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-04 — MEH-739: register/producer + events metadata (branch `feature/meh-739-seo-meta-batch`, PR #915)
+
+**Draft PR (base staging). LOW-RISK (frontend SEO/metadata).** Task 1 of a 2-task batch (Task 2 = MEH-738 mypy, PR #917 — MERGED).
+
+**Done:** (1) `register/producer` split — new `RegisterProducerClient.jsx` = old `page.js` **byte-identical (move-only)**; new server `page.js` exports `generateMetadata` (`buildAlternates("/register/producer")` + `title.absolute "רישום בית עסק | מהמקור"` + description). Fixes canonical=root + default-title (was a client component; prod-verified 06/05). Form's internal `<Suspense>`/`useSearchParams` untouched → no wrapper Suspense needed; behavior unchanged. (2) `events/page.js` — `export const metadata` → `generateMetadata`; manual `{canonical:"/events"}` → `buildAlternates("/events", locale)`. `npm run build` ✓ (both ●SSG).
+
+**DoD evidence (Sapir decision 06/05):** accepted the green `Playwright E2E (Vercel preview)` CI job as the live evidence — in-session screenshot blocked by Vercel preview-protection (bypass secret correctly unreadable from CC); not fabricated.
+
+**AC3 og:url — STOP/surfaced (follow-up C):** no central openGraph helper; `layout.js:71` hardcodes `openGraph.url: SITE_URL` (root). PR #916 already added per-page og:url to `/terms` + `/privacy` (one slice). Remaining routes still inherit root — to be scoped (question C). Options A/B/C in #915 body.
+
 ## 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (branch `feature/meh-738-mypy-whatsapp`)
 
 **Branch off staging (NOT off MEH-739). Draft PR (base staging). LOW-RISK (backend types).** Task 2 of the 2-task batch (Task 1 = MEH-739 SEO, PR #915).
@@ -13,9 +23,9 @@
 
 **Fixed 7 (type-only, 0 behavior change):** `whatsapp.py:42` `dict`→`dict[str, Any]` (+`Any` import); `auth_notifications.py:73/107` guard `or not phone` (narrows `str|None`→`str`; preflight already rejects falsy phone → runtime no-op); `auto_reply_watchdog.py:166/167/171/178` SQLAlchemy `Column[...]` false-positives → justified `# type: ignore[assignment|arg-type]` (real fix = `Mapped[]` in models.py, out of scope).
 
-**Verify:** `mypy --follow-imports=silent` on the 4 target files (incl. already-clean `whatsapp_templates.py`) → **Success, 0 errors**. pytest NOT runnable in sandbox (no Postgres — MEH-672 limit) → **CI Postgres is the gate**.
+**Verify:** `mypy --follow-imports=silent` on the 4 target files (incl. already-clean `whatsapp_templates.py`) → **Success, 0 errors**. pytest NOT runnable in sandbox (no Postgres — MEH-672 limit) → **CI Postgres is the gate**. **MERGED to staging (PR #917, squash `f87c06e`).**
 
-**⚠️ Sapir action (CC blocked from pyproject.toml):** commit on this branch —
+**⚠️ Sapir action (CC blocked from pyproject.toml):** commit on staging in your terminal —
 `files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
 (Transitive errors in models/database/email/vacation_state stay warn-only — separate cleanup, like the existing schemas/ deferral noted in `[tool.mypy]`.)
 
