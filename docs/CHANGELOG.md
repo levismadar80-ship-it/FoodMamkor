@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral) (Refs MEH-472)
+
+`copy(i18n)`: `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה`.
+Per ADR-014:80 ambiguous-surface fallback — section headings default to UI rules
+(gender-neutral plural), as Sapir adjudicated. Single key in `he.json`; `en.json`
+heading is proper English (`Browse by category`), left untouched. The ~10 other `גלי`
+CTA strings are MEH-472 en-wave territory, out of scope here. Refs MEH-472 (stays open).
+
 ### 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage (Refs MEH-733/MEH-542)
 
 `refactor(home)`: deleted the §06 editorial "breath" pull-quote section pre-launch.
