@@ -4,6 +4,17 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-749: read-only orphan-audit script (Refs MEH-749)
+
+`chore(scripts)`: new `scripts/audit_orphans.py` — read-only DB audit (SELECT/COUNT only,
+zero writes) mapping dangling rows after the 2026-06-05 manual prod SQL deletions. 8 checks
+(ownerless producers, `users.producer_id`/`is_producer` dangling, phone_otp_tokens,
+favorites/reviews/reports/followers, home_products+ratings/clicks, inbound_messages count,
+Cloudinary URL reference counts). Phase 0 note: spec check #1 `producers.user_id` doesn't
+exist in the schema (link is one-directional `users.producer_id`) — implemented as the
+schema-valid inverse "ownerless producers". ruff clean; ran against local dev DB (all
+sections render). Ticket stays open until Sapir runs it against prod and records findings.
+
 ### 2026-06-05 — MEH-745 PR2: OTP self-serve releases pending_whatsapp → pending (Closes MEH-745)
 
 `feat`: self-registered producers were stranded in `status=pending_whatsapp` — nothing in
