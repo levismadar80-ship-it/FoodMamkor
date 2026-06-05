@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-05 — head-meta: per-page openGraph for /terms + /privacy (PR #916)
+
+`feat(seo)`: added per-page `openGraph` to the `generateMetadata` of `/terms` and `/privacy` (no MEH# — retroactive ticket pending, workspace at issue limit). Both routes previously exported only `title`/`description`/`alternates`, so they fell back to the layout's site-level `BASE_METADATA.openGraph` (homepage card on social shares). Each page now emits `og:title` + `og:description` (reusing the MEH-720-cleaned `meta_title`/`meta_description` — HE voice `פלטפורמה`, zero `דירקטורי`), `og:type=website`, and `og:url` via `urlForLocalePath` (host `mehamakor.co.il`). **Why `siteName`/`locale`/`images` are repeated:** Next.js *shallow-merges* the `openGraph` field, so a page-level block replaces the layout's entirely — repeating them preserves the OG image (mirrors the `about`/`contact` siblings). Canonical was already correct (`buildAlternates`→`urlForLocalePath`, host `mehamakor.co.il`) and is unchanged. Scope: the two `page.js` files only — no i18n, layout, or dependency changes. Prod baseline confirmed via Vercel MCP: pre-PR `og:url` = site root, this PR makes it page-specific. `npm run build` green (terms + privacy SSG, 101/101).
+
 ### 2026-06-04 — MEH-739: register/producer + events metadata fallbacks (Refs MEH-214/476/679)
 
 `fix(seo)`: שני תיקוני metadata על routes שלא קיבלו canonical/title עצמיים.
@@ -18,6 +22,23 @@ languages map). `npm run build` ✓ (שני ה-routes כעת ●SSG). **og:url (
 STOP/surfaced:** אין openGraph helper מרכזי; `layout.js:71` מקבע `url: SITE_URL`
 (root) שיורש לכל subpage. תיקון site-wide = >5 קבצים מחוץ ל-scope → לא בוצע;
 אפשרויות הוצגו ל-Sapir ב-PR body.
+
+### 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (Refs MEH-672, MEH-562)
+
+`chore(types)`: ניקוי strict-mypy ל-WhatsApp typed-template surface (המשך
+MEH-672). Phase 0 מצא **7** שגיאות in-scope (לא 13 כפי שה-HANDOFF העריך —
+ה-13 כלל גם שגיאות transitive ב-models/database/email/vacation_state שהן
+**מחוץ ל-scope**). תוקנו 7: `whatsapp.py:42` `dict`→`dict[str, Any]`;
+`auth_notifications.py:73/107` הוספת `or not phone` ל-guard (מצמצם `str|None`→
+`str` ל-`_normalize_il_phone`; preflight כבר מחזיר False ל-phone falsy → no-op
+בזמן ריצה); `auto_reply_watchdog.py:166/167/171/178` — 4 false-positives של
+SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-instance) →
+`# type: ignore[assignment|arg-type]` עם הצדקה (תיקון אמיתי = `Mapped[]` ב-
+`models.py`, מחוץ ל-scope). אפס שינוי התנהגות; type-annotations בלבד.
+`mypy --follow-imports=silent` על 4 קבצי היעד (כולל `whatsapp_templates.py`
+שכבר נקי) → **Success, 0 errors**. pytest = CI gate (אין Postgres ב-sandbox).
+**pyproject `[tool.mypy] files` ש-Sapir תקמיט** (CC חסום מ-pyproject):
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
 
 ### 2026-06-04 — MEH-735: complete skip-to-content link (WCAG 2.4.1) (PR #912)
 
