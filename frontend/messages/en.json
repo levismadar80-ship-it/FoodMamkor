@@ -2282,7 +2282,7 @@
       "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
       "all_count": "{count, plural, one {The only business} other {All {count} businesses}}",
       "showing_count": "Showing {loaded} of {total} businesses",
-      "all_shown": "{count, plural, one {Showed the only business 🌿} other {Showed all {count} businesses 🌿}}",
+      "all_shown": "{count, plural, one {Showed the only business} other {Showed all {count} businesses}}",
       "loading_more_aria": "Loading more businesses"
     },
     "recently_viewed": {

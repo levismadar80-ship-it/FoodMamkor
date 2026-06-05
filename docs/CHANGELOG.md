@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-684: strip emoji from ICU plural patterns (Closes MEH-684; Refs MEH-657)
+
+`fix(MEH-684)`: removed the trailing ` 🌿` (U+1F33F) from every branch of the only
+emoji-bearing ICU plural key — `producers.discovery.all_shown` in both `he.json`
+(`one`/`two`/`other`) and `en.json` (`one`/`other`). Screen readers announced the
+seedling mid-sentence (LOCK v2 a11y flow). **Phase 0:** 13 ICU plural keys total per
+locale; exactly **1** contained an Extended_Pictographic char (below the 5–15 estimate —
+the rest were already clean / non-plural emoji are separate C/D tickets). The 🌿 here is
+the canonical strip example from the ticket intent, not brand-voice copy, so it was
+stripped (not surfaced as an exception). ICU syntax (`{count}`/`#`/plural keywords/curly
+braces) preserved; HE↔EN key parity unchanged (2543 == 2543). Test mock
+`__tests__/PaginationCounter.test.jsx:22` aligned to the stripped source (no assertion
+depended on the emoji). **Verified:** ripgrep `\p{Extended_Pictographic}` inside plural
+keys = 0; JSON valid; `npm run build` ✓. **Out of scope:** `nav.*` (navbar-port track),
+non-ICU emoji strings (categories C/D1/D2/D4 — separate tickets).
+
 ### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
 
 `fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`

@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-684: ICU plural emoji strip (a11y)
+
+Branch `feature/meh-684-icu-plural-strip` off staging. Stripped trailing ` 🌿` from the
+only emoji-bearing ICU plural key (`producers.discovery.all_shown`, he+en) — screen-reader
+mid-sentence announce fix (LOCK v2). Phase 0: 13 plural keys/locale, 1 with emoji (below
+5–15 est; rest clean). Aligned test mock `PaginationCounter.test.jsx:22`. Verified: rg
+`\p{Extended_Pictographic}` in plural keys = 0, key parity 2543==2543, `npm run build` ✓.
+Draft PR opened. **Note:** `PaginationCounter.test.jsx` has a *pre-existing* vitest oxc
+JSX-in-`.js` transform failure on `lib/auth-context.js` (fails identically on clean tree —
+NOT caused by this change; unrelated to MEH-684).
+
 ## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
 
 **SHIPPED 05/06:**
