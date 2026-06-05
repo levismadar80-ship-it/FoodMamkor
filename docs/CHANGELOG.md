@@ -20,6 +20,38 @@ depended on the emoji). **Verified:** ripgrep `\p{Extended_Pictographic}` inside
 keys = 0; JSON valid; `npm run build` ✓. **Out of scope:** `nav.*` (navbar-port track),
 non-ICU emoji strings (categories C/D1/D2/D4 — separate tickets).
 
+### 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral) (Refs MEH-472)
+
+`copy(i18n)`: `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה`.
+Per ADR-014:80 ambiguous-surface fallback — section headings default to UI rules
+(gender-neutral plural), as Sapir adjudicated. Single key in `he.json`; `en.json`
+heading is proper English (`Browse by category`), left untouched. The ~10 other `גלי`
+CTA strings are MEH-472 en-wave territory, out of scope here. Refs MEH-472 (stays open).
+
+### 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage (Refs MEH-733/MEH-542)
+
+`refactor(home)`: deleted the §06 editorial "breath" pull-quote section pre-launch.
+Removed `HomeEditorialBreath.jsx`, its import + mount + `§06` comment from
+`app/[locale]/page.js`, and the `home.editorial_breath` block from `he.json`/`en.json`.
+Rationale: the lone rendered `06` numeral had no visible sibling numerals and collided
+semantically with `HomeCategoryGrid`'s own `01–06`; the quote promised *people* but the
+next section delivers *categories*. Stats strip now flows straight to
+LocationBanner/HolidayBanner/CategoryGrid. Quote (`תכירי את מי שמאחורי האוכל`) shelved in
+`docs/COPY_BANK.md` 🕐 — intended future home is the Producer Stories opener (MEH-542).
+`HomeCategoryGrid` untouched (numerals are index-driven, no renumber). Sapir locked option C.
+
+### 2026-06-05 — MEH-687: ProducerHeader hardcoded red Heart → text-primary (Closes MEH-687; Refs MEH-686)
+
+`fix(brand)`: removed the inline `style={{ color: "#A32D2D" }}` (red) from the favorites-count
+`Heart` icon, replaced with `className="text-primary"` (green) — BRAND.md §3 LOCK (no red heart;
+green/gold only). F1 precedent, PR #831 (CardHeart). **Phase 0 finding:** the violation was filed
+against `ProducerCard.jsx:362` (24/5), but PR #890's v4 redesign removed the Heart from the card —
+the instance relocated to `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx:58`
+(producer-detail header, behind `favorites_count >= 5`). Re-scoped the EDIT file accordingly.
+**Out of scope (untouched):** the two `OpeningHours.jsx` `#A32D2D` reds are "closed now" status
+indicators (red = closed), a different semantic from the heart lock — left as-is. Single-line diff;
+no new tokens, no refactor, CardHeart (PR #831) not touched.
+
 ### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
 
 `fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`
