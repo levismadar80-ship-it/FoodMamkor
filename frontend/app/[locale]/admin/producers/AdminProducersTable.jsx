@@ -107,12 +107,15 @@ function ProducerTags({ producer }) {
   );
 }
 
-function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard }) {
   const t = useTranslations("admin");
   const p = producer;
   return (
     <div className="flex gap-3 flex-wrap">
-      {p.status === "pending" && (
+      {/* MEH-745: self-registered producers sit in pending_whatsapp; the
+          approve endpoint has no status guard, so surface approve for both
+          waiting states (admin fallback alongside the OTP self-serve path). */}
+      {["pending", "pending_whatsapp"].includes(p.status) && (
         <button onClick={() => onQuickApprove(p.id)} className="text-primary hover:underline text-xs font-medium">
           {t("producers.table.actions.approve_short")}
         </button>
