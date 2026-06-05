@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-745 PR1: admin approve action for pending_whatsapp producers (Refs MEH-745)
+
+`fix(admin)`: self-registered producers land in `status=pending_whatsapp` (`auth.py:454`/`:546`)
+but the admin producers table gated the approve button on `p.status === "pending"`
+(`AdminProducersTable.jsx:115`) — so the only producers an admin could approve were
+admin-created ones (`status=pending`). The approve endpoint
+(`POST /admin/producers/{id}/approve`, `admin.py:395`) has no status guard and works on
+`pending_whatsapp` as-is, so this is a pure frontend unhide: gate → `["pending",
+"pending_whatsapp"].includes(p.status)`. New vitest `AdminProducersTableActions.test.jsx`
+(approve renders for `pending_whatsapp` + `pending`, hidden for `approved`); `ProducerActions`
+exported for the unit test. No backend change. Admin fallback half of MEH-745 scope (c) —
+the OTP self-serve path is PR2.
+
 ### 2026-06-05 — MEH-747 follow-up: i18n the admin delete-error toast (Refs MEH-747)
 
 `refactor(i18n)`: the delete-failure toast added in PR #937 hardcoded the Hebrew string
