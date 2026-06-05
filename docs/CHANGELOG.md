@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-747: unlink users_producer_id_fkey before admin producer-delete (Closes MEH-747)
+
+`fix(MEH-747)`: admin "מחק" on the producers list 500'd for any **self-registered**
+producer. `admin.py::admin_delete_producer` did `db.delete(producer); db.commit()` with
+no FK unlink — `User.producer_id` has no `ondelete` (`models.py`), so deleting a producer
+a user still points at violated `users_producer_id_fkey`. Admin-created producers (no
+linked user) deleted fine, so the bug only hit the real onboarding path. **Fix** mirrors
+`auth.py::delete_account`: before `db.delete`, unlink every linked user
+(`producer_id → None`, `is_producer → False`) + `db.flush()`. **Phase 0 `is_producer`
+decision → reset to False:** the user row survives admin-delete (unlike `delete_account`
+which deletes it), so leaving the durable flag True with a NULL `producer_id` re-creates
+the MEH-669 role-lockout (409 at `auth.py:829` blocks re-registration) — resetting
+reflects reality. **Frontend:** `use-admin-producers.js::deleteProducer` previously had no
+`catch`, swallowing the 500 silently — now shows Hebrew error toast
+(`"מחיקת בית העסק נכשלה. נסי שוב."`). **Tests:** `tests/test_admin_delete_producer.py` —
+register producer via API → admin delete → 200 + `user.producer_id IS NULL` +
+`is_producer False`; admin-created no-link path no-regression. **Verified:** `pytest
+tests/test_api.py` (192 passed) + targeted suites + `npm run build` ✓. **Scope:** code-level
+unlink only — no model/schema/Alembic/`ondelete` change.
+
 ### 2026-06-05 — MEH-684: strip emoji from ICU plural patterns (Closes MEH-684; Refs MEH-657)
 
 `fix(MEH-684)`: removed the trailing ` 🌿` (U+1F33F) from every branch of the only

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPage } from "@/lib/pagination";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
@@ -63,8 +64,14 @@ function useProducerActions(loadAllProducers) {
   };
   const deleteProducer = async (id, name) => {
     if (!confirm(t("producers.table.confirm_delete", { name }))) return;
-    await api.delete(`/admin/producers/${id}`);
-    loadAllProducers();
+    // MEH-747: surface delete failures — the 500 was previously swallowed
+    // silently (no catch), so a failed delete looked like a no-op to the admin.
+    try {
+      await api.delete(`/admin/producers/${id}`);
+      loadAllProducers();
+    } catch {
+      showToast("מחיקת בית העסק נכשלה. נסי שוב.", "error");
+    }
   };
   const toggleAmbassador = async (id, current) => {
     await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
