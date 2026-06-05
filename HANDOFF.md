@@ -5,6 +5,26 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — 🛠 smoke fixes: MEH-747 (admin delete FK) + MEH-745 (pending_whatsapp dead-end)
+
+**Merged to staging:** PR #937 (MEH-747 — unlink `users_producer_id_fkey` before admin
+producer-delete + Hebrew error toast) · PR #938 (i18n follow-up — `producers.table.delete_error`
+key). Both squashed, CI green.
+
+**MEH-745 (scope (c), two open PRs):**
+- **PR #939** (`feature/meh-745-admin-approve-pw`, *draft*, **Refs** MEH-745) — admin approve
+  button now renders for `pending_whatsapp` (`AdminProducersTable.jsx:115` gate widened); the
+  approve endpoint already had no status guard. +vitest. Frontend-only.
+- **PR2** (`feature/meh-745-otp-self-serve`, **Closes** MEH-745) — backend
+  `confirm_phone_otp` advances `pending_whatsapp → pending`; new `PhoneVerifyCard` dashboard
+  OTP flow replaces the dead `/settings` CTA; `dashboard.producer.phone_verify.*` keys (HE/EN
+  parity 2555). Full pytest 840✓ / vitest 397✓ / build✓. **Next step:** push PR2, verify CI,
+  Sapir mobile-QA the dashboard OTP flow on a `pending_whatsapp` producer, then merge PR#939 +
+  PR2 (PR2's `Closes MEH-745` auto-closes Linear on merge).
+
+**Phase 0 (MEH-745) findings** posted inline this session; canonical file:lines confirmed
+unchanged before edits. No schema/Alembic changes anywhere this session.
+
 ## 2026-06-05 — 🧾 SESSION CLOSE (design track closed · legal brief + appendix · MEH-742/743 · port gate)
 
 **1. Design track CLOSED — S5/S6/S7 all FINAL.** S5 (map) + S6 (business page) + S7 (register flow) are FINAL. S7 sits at **v4** in the Claude Design project "S2 — Logo System". S7 now **mirrors shipped product**:
