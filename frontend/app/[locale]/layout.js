@@ -207,7 +207,10 @@ export default async function LocaleLayout({ children, params }) {
                 {/* MEH-731: verify banner relocated out of the sticky <header>
                     to the top of <main> so the floating navbar pill stays pure
                     on the homepage. Still shows on every page + when scrolled. */}
-                <main id="main-content" className="flex-1"><VerifyBanner />{children}</main>
+                {/* MEH-735: tabIndex=-1 + focus:outline-none make <main> a
+                    programmatic focus target for the skip-to-content link
+                    (layout.js:199) without a full-width focus ring. */}
+                <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none"><VerifyBanner />{children}</main>
                 <FooterSlot />
                 <BottomNav />
                 <Toaster />
