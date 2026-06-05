@@ -4,7 +4,7 @@ import ProducersClient from "@/components/ProducersClient";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { clampPage } from "@/lib/pagination";
 import { API_URL, SITE_URL } from "@/lib/env";
-import { buildAlternates } from "@/lib/i18n-seo";
+import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME, BRAND_NAME_LATIN } from "@/lib/constants";
 
 /**
@@ -68,13 +68,26 @@ export async function generateMetadata(props) {
     );
   }
 
+  const description =
+    locale === "he"
+      ? "דפדפי בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
+      : "Browse all local food businesses, growers, and farms on Mehamakor.";
+
   return {
     // title.absolute prevents layout's `%s | brand` template double-suffix.
     title: { absolute: title },
-    description:
-      locale === "he"
-        ? "דפדפי בכל בתי העסק, מגדלים וחוות מקומיות על מהמקור."
-        : "Browse all local food businesses, growers, and farms on Mehamakor.",
+    description,
+    // MEH-740: per-page openGraph + self og:url (was inheriting layout root).
+    // url reuses alternates.canonical so paginated ?page=N variants stay self.
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: alternates.canonical,
+      siteName: BRAND_NAME,
+      locale: OG_LOCALE[locale],
+      images: ["/og-image.png"],
+    },
     alternates,
   };
 }

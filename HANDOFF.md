@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (branch `feature/meh-740-og-url-shareable`)
+
+**Off staging. LOW-RISK (frontend SEO). Closes MEH-740; Refs MEH-739 (AC3 follow-up), PR #916.** Executes the og:url scope-decision from MEH-739's surfaced options (Option B, scoped to shareable routes).
+
+**8 routes** got per-page `og:url` (mirror #916 `url: urlForLocalePath(path, locale)` in openGraph): `accessibility`, `producers` (🔴 were inheriting layout root — full openGraph block added); `about`, `contact`, `map`, `events` (🟡 url line added); `experiences`, `group-buys` (static `metadata`→`generateMetadata` for `locale`, then url). `producers` is `ƒ` dynamic → `url: alternates.canonical` (keeps `?page=N` self).
+
+**Scope held:** `[slug]` producer-detail untouched (already self via `lib/seo.js:225`); all noindex auth chrome skipped. og:url only — did NOT change canonical/alternates on the static-converted routes.
+
+**Verify:** 8/8 grep `url:` in openGraph; `npm run build` ✓; rendered HTML `/he/about`+`/en/about` og:url = self (locale-aware), login control = no og:url (model confirmed); ESLint 0 errors. Live = green Playwright E2E CI (preview protected in-sandbox). **DoD evidence = green CI E2E (per 06/05 decision).**
+
 ## 2026-06-04 — MEH-739: register/producer + events metadata (branch `feature/meh-739-seo-meta-batch`, PR #915)
 
 **Draft PR (base staging). LOW-RISK (frontend SEO/metadata).** Task 1 of a 2-task batch (Task 2 = MEH-738 mypy, PR #917 — MERGED).
