@@ -400,7 +400,7 @@ function AnalyticsSection({ analytics, profile }) {
   } = analytics;
 
   const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
-  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
+  const trendColor = weekly_trend === "up" ? "text-green-700" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
   const cityName = profile?.city ? ` ${profile.city}` : "";
   const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 
