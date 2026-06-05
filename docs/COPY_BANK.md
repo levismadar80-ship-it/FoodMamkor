@@ -176,6 +176,20 @@
 | **Why** | S8 review: old quote ranked source over food ("ומאיפה קונים — חשוב יותר" = where you buy matters more), a nutritional contradiction. New line echoes the brand idiom (newsletter heading) — good food is shared, not hoarded. |
 | **MEH** | MEH-750 |
 
+### /about — Founder story (greeting + 5 paragraphs)
+| Field | Value |
+|---|---|
+| **Current** | `greeting` `היי, אני ספיר` · `p1` `תמיד היה לי חשוב לדעת מאיפה האוכל שלי מגיע. רציתי לקנות יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גיליתי שזה לא נגיש. כדי למצוא אוכל איכותי באמת, הייתי צריכה לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנתי: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית. יש מישהי שאופה לחם מחמצת בשכונה ליד. יש בתי עסק קטנים עם מוצרים מדהימים — שרוב האנשים בכלל לא מכירים. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.` |
+| **Previous** | `p1` `לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר…` · `p2` `התחלתי לשאול. חברה הכירה אופה…` · `p3` `וזה בדיוק מה שהפריע לי…` · `p4` `אז התחלתי לבנות את המקום הזה בעצמי…` · `p5` `היום מהמקור הוא בדיוק זה…` (MEH-750 wave) |
+| **Unchanged** | `caption1` `מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.` · `caption3` `את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.` |
+| **Anchor phrase** | `בלי לחפש שעות` (canonical, COPY_BANK / MEH-719) — closes `p5`, echoes the hero sub from MEH-750 |
+| **i18n keys** | `about.consumer.story.greeting` / `.p1`–`.p5` (he + en) |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx:100-105` |
+| **Status** | ✅ (MEH-757) |
+| **Why** | Sapir's 05/06 rewrite — problem→discovery→insight→solution arc, tighter than the MEH-750 narrative, landing on the `בלי לחפש שעות` brand anchor. Copy-only swap; closing captions untouched. |
+| **Note** | `greeting` kept without a terminal period (bold heading, EN parity `Hi, I'm Sapir`), preserving the MEH-750 styling decision; MEH-757's prose block writes it with a period — flip the single char if a period is wanted. |
+| **MEH** | MEH-757 (rides MEH-750 wave) |
+
 ### /about — Sub copy paragraph 1
 | Field | Value |
 |---|---|
