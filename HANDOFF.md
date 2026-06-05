@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
+
+**Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
+ADR-022 (Accepted) + synced the 3 canonical docs that carried the old "Licensed
+businesses only" LOCK (CONTEXT.md §2, BRAND.md §3 LOCKs + §7 anti-pattern, README
+index). Brand-book step only — docs-only, no code/schema/UI. PR body uses **Refs**
+MEH-742 (NOT Closes) — decision ticket stays open for 4 children. **Pending post-merge:**
+MEH-742 DoD items 2 (audit columns `declared_at` / `declaration_version`) + 3 (gate-1
+affirmative tier-2 consumer copy) ready to spin up; lawyer brief Q1–Q5 still with counsel.
+
 ## 2026-06-05 — MEH-743: honey license-required (taxonomy split)
 
 **Branch:** `feature/meh-743-honey-license` off staging — draft PR. Sapir-approved
