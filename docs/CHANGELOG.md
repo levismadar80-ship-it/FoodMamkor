@@ -4,6 +4,23 @@
 
 ## Unreleased
 
+### 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (Refs MEH-672, MEH-562)
+
+`chore(types)`: ניקוי strict-mypy ל-WhatsApp typed-template surface (המשך
+MEH-672). Phase 0 מצא **7** שגיאות in-scope (לא 13 כפי שה-HANDOFF העריך —
+ה-13 כלל גם שגיאות transitive ב-models/database/email/vacation_state שהן
+**מחוץ ל-scope**). תוקנו 7: `whatsapp.py:42` `dict`→`dict[str, Any]`;
+`auth_notifications.py:73/107` הוספת `or not phone` ל-guard (מצמצם `str|None`→
+`str` ל-`_normalize_il_phone`; preflight כבר מחזיר False ל-phone falsy → no-op
+בזמן ריצה); `auto_reply_watchdog.py:166/167/171/178` — 4 false-positives של
+SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-instance) →
+`# type: ignore[assignment|arg-type]` עם הצדקה (תיקון אמיתי = `Mapped[]` ב-
+`models.py`, מחוץ ל-scope). אפס שינוי התנהגות; type-annotations בלבד.
+`mypy --follow-imports=silent` על 4 קבצי היעד (כולל `whatsapp_templates.py`
+שכבר נקי) → **Success, 0 errors**. pytest = CI gate (אין Postgres ב-sandbox).
+**pyproject `[tool.mypy] files` ש-Sapir תקמיט** (CC חסום מ-pyproject):
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+
 ### 2026-06-04 — MEH-735: complete skip-to-content link (WCAG 2.4.1) (PR #912)
 
 `feat(MEH-735)`: Phase 0 found the skip link **already existed** (`layout.js:199` — `sr-only`→`focus:not-sr-only`, first element in `<body>`, `z-10000`, AA green-on-white, `rtl-ok`-annotated) targeting `<main id="main-content">`. Closed the two gaps vs the acceptance criteria instead of re-adding it (avoids a duplicate link). **(1)** `<main id="main-content">` gains `tabIndex={-1}` + `focus:outline-none` → reliable programmatic focus target (verified: Enter→`activeElement === main#main-content` on / + /login). **(2)** reused the existing `sweep_tail.layout.skip_to_main` key (no new namespace key): he `דלג לתוכן הראשי`→**`דילוג לתוכן`** (gender-neutral, ADR-014 voice), en `Skip to main content`→**`Skip to content`**. Scope: layout.js + he.json + en.json. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); squash-merged `9942674`.
