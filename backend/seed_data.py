@@ -11,7 +11,7 @@ CATEGORIES = [
     ("חלב וגבינות", "🥛"),
     ("ביצים", "🥚"),
     ("לחמים ואפייה", "🍞"),
-    ("שמנים ודבש", "🫒"),
+    ("שמנים", "🫒"),
     ("ירקות", "🥬"),
     ("פירות", "🍓"),
     ("מותססים וכבושים", "🥒"),
@@ -25,6 +25,10 @@ CATEGORIES = [
     ("יין, בירה ומשקאות", "🍷"),
     ("תבלינים וצמחי תיבול", "🌶️"),
     ("שוקולד וממתקים בוטיק", "🍫"),
+    # MEH-743: honey split off from "שמנים ודבש" — dedicated license regime
+    # (צו הפיקוח, תשל"ז-1977). Appended at end so existing seed-id slots
+    # (1-18) stay stable; downstream sample-producer category_ids unchanged.
+    ("דבש", "🍯"),
 ]
 
 PRODUCERS = [

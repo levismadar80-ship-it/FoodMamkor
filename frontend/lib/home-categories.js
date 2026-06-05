@@ -12,7 +12,9 @@ export const CATEGORY_CARDS = [
   { key: "veg",   name: "ירקות, פירות ומשקים", match: ["ירקות", "פירות", "משקה"],   image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&fit=crop&auto=format&q=80&fm=webp" },
   { key: "dairy", name: "חלב וגבינות",        match: ["חלב", "גבינה", "גבינות"],  image: "https://images.unsplash.com/photo-1771578742735-36009188c207?w=600&fit=crop&auto=format&q=80&fm=webp" },
   { key: "bread", name: "לחמים ואפייה",       match: ["לחם", "אפייה", "מאפים"],    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&fit=crop&auto=format&q=80&fm=webp" },
-  { key: "oil",   name: "שמנים ודבש",         match: ["שמן", "דבש"],                image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format&q=80&fm=webp" },
+  // MEH-743: honey split off into its own DB category; hero card stays a single
+  // "שמנים" tile, no honey hero (MEH-203 will revisit the selector).
+  { key: "oil",   name: "שמנים",              match: ["שמן"],                       image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&fit=crop&auto=format&q=80&fm=webp" },
   { key: "care",  name: "טיפוח וסבונים",      match: ["טיפוח", "סבון", "קוסמטיקה"], image: "https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&fit=crop&auto=format&q=80&fm=webp" },
 ];
 

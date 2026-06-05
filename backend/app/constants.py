@@ -32,6 +32,11 @@ LICENSE_REQUIRED_CATEGORIES: tuple[str, ...] = (
     # MEH-529 additions — confirmed in seed_data.py at MEH-530 Phase 0:
     "שוקולד וממתקים בוטיק",
     "יין, בירה ומשקאות",
+    # MEH-743: honey split off from "שמנים ודבש". Dedicated regulatory
+    # regime — צו הפיקוח על מצרכים ושירותים (ייצור דבש ומכירתו), תשל"ז-1977
+    # (keeper license + marketing license + business license). Olive-oil
+    # under 5t/yr stays license-optional via the standalone "שמנים" row.
+    "דבש",
 )
 
 # MEH-530: 7-10 digit license number per משרד הבריאות convention.
