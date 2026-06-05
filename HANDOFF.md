@@ -5,6 +5,28 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
+
+**SHIPPED 05/06:**
+- **Prod release `4ef861c`** (staging→main) — PII removal **live + verified**, operator block final (`טופז שנפ` / `Topaz Schnapp`, `contact@`), `דירקטורי`→`פלטפורמה` purge ×6 surfaces. FB debugger re-scraped (root + `/terms`).
+- **SEO arc complete:** #915 (MEH-739 self canonical+title on register/producer+events) · #916 (head-meta og:url terms/privacy) · #921 (MEH-740 og:url on 8 shareable routes). Self canonical + per-page og:url now on all shareable routes.
+- **mypy strict on WhatsApp surface:** #917 (7 type fixes) + #922 (the `[tool.mypy] files` line, Sapir terminal) → **MEH-738 Done**.
+- **CI docs-PR advisory:** #911 (parity workflow-path-filter trap warning + testing.md required-checks rule).
+
+**LINEAR:** MEH-736 Done (retro #904) · MEH-737 Backlog (en "directory" wording) · MEH-738 / MEH-739 / MEH-740 Done · **MEH-214 stays In Progress** — full 9-point audit pending (see issue comment) · MEH-720 commented (deferred review executed).
+
+**OPEN:**
+1. **Sapir:** WhatsApp welcome/approved smoke on a real device → then close **MEH-672**.
+2. **Next staging→main release** packs #915–#922. Post-release DoD tail: FB-debugger og:url on `/he/producers` (MEH-740) — it's `ƒ` dynamic so couldn't be statically grepped in-PR.
+3. **MEH-737** English verbatim — orchestrator drafts the approved copy.
+4. **MEH-214** full-audit decision pre-launch.
+5. **Off-repo (Sapir):** accountant — registration ownership (Topaz vs operator); certificate spelling fix `שנף`→`שנפ`.
+
+**LEARNINGS (route to rules if recurring):**
+- `mehamakor.online` 308-redirects → `.co.il`; curl `.co.il` **directly with `-L`**.
+- `git checkout <branch> -- <file>` **auto-stages** the file — verify via `git diff --cached`, not `git diff`.
+- **settings-level deny correctly survives a prompt-level "exception"** — `backend/pyproject.toml` stayed CC-blocked despite the owner-approved exception; the harness directory/file deny sits below in-conversation authorization. Don't route around it.
+
 ## 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (branch `feature/meh-740-og-url-shareable`)
 
 **Off staging. LOW-RISK (frontend SEO). Closes MEH-740; Refs MEH-739 (AC3 follow-up), PR #916.** Executes the og:url scope-decision from MEH-739's surfaced options (Option B, scoped to shareable routes).
