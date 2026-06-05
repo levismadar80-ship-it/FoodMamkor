@@ -12,6 +12,14 @@
 **Verify:** `npm run build` green; `grep editorial_breath frontend/` = 0; `grep "תכירי את מי" frontend/` = 0; both message JSONs parse.
 **Pending:** Sapir mobile QA on preview → mark PR ready → merge.
 
+## 2026-06-05 — MEH-687: ProducerHeader red Heart fix (PR pending)
+
+Branch `feature/meh-687-red-heart` off staging. Single-line: `ProducerHeader.jsx:58` Heart
+`style={{color:"#A32D2D"}}` → `className="text-primary"` (BRAND §3, F1 precedent PR #831).
+Phase 0 caught that the ticket's `ProducerCard.jsx:362` target was gone (v4 redesign / PR #890) —
+heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2 `OpeningHours.jsx`
+`#A32D2D` reds are "closed now" status (out of scope, left as-is). Closes MEH-687, Refs MEH-686.
+
 ## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
 
 **SHIPPED 05/06:**

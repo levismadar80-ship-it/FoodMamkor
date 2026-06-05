@@ -16,6 +16,18 @@ LocationBanner/HolidayBanner/CategoryGrid. Quote (`תכירי את מי שמאח
 `docs/COPY_BANK.md` 🕐 — intended future home is the Producer Stories opener (MEH-542).
 `HomeCategoryGrid` untouched (numerals are index-driven, no renumber). Sapir locked option C.
 
+### 2026-06-05 — MEH-687: ProducerHeader hardcoded red Heart → text-primary (Closes MEH-687; Refs MEH-686)
+
+`fix(brand)`: removed the inline `style={{ color: "#A32D2D" }}` (red) from the favorites-count
+`Heart` icon, replaced with `className="text-primary"` (green) — BRAND.md §3 LOCK (no red heart;
+green/gold only). F1 precedent, PR #831 (CardHeart). **Phase 0 finding:** the violation was filed
+against `ProducerCard.jsx:362` (24/5), but PR #890's v4 redesign removed the Heart from the card —
+the instance relocated to `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx:58`
+(producer-detail header, behind `favorites_count >= 5`). Re-scoped the EDIT file accordingly.
+**Out of scope (untouched):** the two `OpeningHours.jsx` `#A32D2D` reds are "closed now" status
+indicators (red = closed), a different semantic from the heart lock — left as-is. Single-line diff;
+no new tokens, no refactor, CardHeart (PR #831) not touched.
+
 ### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
 
 `fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`
