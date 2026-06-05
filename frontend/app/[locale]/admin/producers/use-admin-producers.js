@@ -70,7 +70,7 @@ function useProducerActions(loadAllProducers) {
       await api.delete(`/admin/producers/${id}`);
       loadAllProducers();
     } catch {
-      showToast("מחיקת בית העסק נכשלה. נסי שוב.", "error");
+      showToast(t("producers.table.delete_error"), "error");
     }
   };
   const toggleAmbassador = async (id, current) => {
