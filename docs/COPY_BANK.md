@@ -202,6 +202,15 @@
 |---|---|
 | **Current** | 🕐 **PENDING** — not yet implemented |
 
+### EditorialBreath pull-quote (§06) — SHELVED
+| Field | Value |
+|---|---|
+| **Quote** | `תכירי את מי שמאחורי האוכל` |
+| **i18n key** | (removed — was `home.editorial_breath.quote`) |
+| **Status** | 🕐 Shelved (MEH-733, 2026-06-05) |
+| **Why** | Removed pre-launch (lone numeral, semantic mismatch with categories); intended future home: Producer Stories MEH-542 opener. |
+| **MEH** | MEH-733 (refs MEH-542) |
+
 ---
 
 ## Section 4 — Producer-facing copy
