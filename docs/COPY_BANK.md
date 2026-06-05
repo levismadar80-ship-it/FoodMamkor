@@ -76,7 +76,8 @@
 | **Current** | `בתי עסק` |
 | **Previous** | `בתי עסק מאומתים` (deprecated per MEH-579 over-claim guard) |
 | **i18n key** | `home.stats.businesses` |
-| **Status** | ✅ (MEH-654, refs MEH-579) |
+| **Status** | ✅ (refs MEH-579; removed in i18n sweep, likely MEH-472) |
+| **Note** | Prior `MEH-654` reference was a typo (MEH-654 = adversarial-review CI job, unrelated to copy) — corrected per MEH-746/MEH-750. |
 | **Why** | MEH-579 over-claim guard prohibits unsubstantiated trust claims pre-launch. "מאומתים" implied vetting infrastructure that doesn't exist yet. Removed in i18n sweep (likely MEH-472). Doc now matches actual key `home.stats.businesses` in `frontend/messages/he.json`. |
 | **MEH** | MEH-654 (doc sync), MEH-521 (original entry), MEH-579 (over-claim guard) |
 
@@ -167,9 +168,13 @@
 ### Sapir quote — /about page prominent callout
 | Field | Value |
 |---|---|
-| **Current** | `כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Quote component) |
-| **Status** | ✅ |
+| **Current** | `אוכל טוב — לא שומרים לעצמנו` |
+| **Previous** | `כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר` |
+| **i18n key** | `about.consumer.parallax.quote` |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (ParallaxQuote) |
+| **Status** | ✅ (MEH-750) |
+| **Why** | S8 review: old quote ranked source over food ("ומאיפה קונים — חשוב יותר" = where you buy matters more), a nutritional contradiction. New line echoes the brand idiom (newsletter heading) — good food is shared, not hoarded. |
+| **MEH** | MEH-750 |
 
 ### /about — Sub copy paragraph 1
 | Field | Value |
@@ -181,26 +186,37 @@
 | **Why** | Old closer was arrhythmic and passive ("businesses that always existed"). New copy is direct, rhythm-preserving, non-boastful. PR #579 merged 2026-05-10. |
 | **MEH** | MEH-208 / MEH-209 |
 
-### /about — Section 1 H3 titles (3 pillars)
+### /about — Benefits section (heading + 3 pillars)
 | Field | Value |
 |---|---|
-| **Pillar 1** | `אוכל אמיתי קרוב אלייך` |
-| **Pillar 2** | `לסמוך על מה שאת אוכלת` |
-| **Pillar 3** | `לעזור לעסקים הקטנים` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` |
-| **Status** | ✅ |
+| **Heading** | `למה מהמקור` (NEW — `about.consumer.benefits.heading`) |
+| **Pillar 1** | `קרוב אלייך` · body `בתי עסק מהאזור שלך, עם שרשרת קצרה ככל האפשר. פחות דרך, יותר טריות.` |
+| **Pillar 2** | `אפשר לסמוך` · body `כל בית עסק נבדק אישית לפני שהוא עולה לאתר. אנחנו שואלות, מבררות, ולפעמים גם מבקרות — לפני שאומרות כן.` |
+| **Pillar 3** | `קהילה מקומית` · body `כל קנייה תומכת ישירות באנשים מהשכונה — לא ברשת גדולה, אלא בבעלת עסק מהאזור שלך.` |
+| **Previous** | titles `אוכל אמיתי קרוב אלייך` / `לסמוך על מה שאת אוכלת` / `לעזור לעסקים הקטנים`; trust body said `רק בתי עסק מאומתים. אנחנו בודקות כל אחת...` |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Section 3) |
+| **Status** | ✅ (MEH-750 — swallows MEH-746) |
+| **Why** | S8 copy wave: tighter pillar titles + added section heading. `trust.body` drops "מאומתים" — MEH-742 gate (verified/declared lock) + MEH-579 over-claim guard. MEH-746 (same key) swallowed here. |
+| **MEH** | MEH-750 (refs MEH-742, MEH-579, MEH-746) |
 
-### /about — Criteria admission headline
+### /about — Criteria admission headline — 🗑️ RETIRED
 | Field | Value |
 |---|---|
-| **Current** | `לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` |
-| **Status** | ✅ |
+| **Was** | `לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:` |
+| **Status** | 🗑️ Retired (MEH-750) — not present on the live page. The values section uses `about.consumer.values.heading` = `כך אנחנו בוחרות` + `values.intro`. Stale row removed to stop drift. |
+| **MEH** | MEH-750 |
 
-### Testimonials
+### Testimonials — /about placeholder state
 | Field | Value |
 |---|---|
-| **Current** | 🕐 **PENDING** — not yet implemented |
+| **Heading** | `הסיפורים שעוד ייכתבו כאן` |
+| **Subtitle** | `המקום הזה שמור לסיפורים שלכן.` |
+| **CTA** | `יש לך סיפור? ספרי לנו` |
+| **Previous** | `מה אומרים עלינו` / `הסיפורים מגיעים בקרוב` / `גם את רוצה לשתף? כתבי לנו` |
+| **i18n keys** | `about.consumer.testimonials.heading` / `.subtitle` / `.cta` |
+| **Status** | ✅ (MEH-750) |
+| **Why** | S8: old `מה אומרים עלינו` promised testimonial content that doesn't exist yet. Reframed as an honest "stories yet to be written" placeholder. |
+| **MEH** | MEH-750 |
 
 ### EditorialBreath pull-quote (§06) — SHELVED
 | Field | Value |
@@ -341,6 +357,12 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-06-05 | MEH-750 | /about H1 + hero sub | `…עכשיו לא.` | `…עכשיו כבר לא` + NEW sub `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` | S8: drop terminal period on H1; add hero subheading rendered under H1. |
+| 2026-06-05 | MEH-750 | /about Sapir story (greeting + p1–p5, −caption2) | old narrative + greeting `היי, אני ספיר.` | locked S8 narrative (word-of-mouth/whisper arc); greeting `היי, אני ספיר` (no period); `story.caption2` deleted | S8: stronger first-person narrative; greeting loses terminal period; 3rd caption dropped (kept caption1+caption3). |
+| 2026-06-05 | MEH-750 | /about parallax quote | `…ומאיפה קונים — חשוב יותר` | `אוכל טוב — לא שומרים לעצמנו` | S8: old quote ranked source over food (nutritional contradiction); new line echoes brand idiom. |
+| 2026-06-05 | MEH-750 | /about benefits (heading + titles + trust body) | titles `אוכל אמיתי קרוב אלייך`/`לסמוך…`/`לעזור…`; trust `רק בתי עסק מאומתים…` | NEW heading `למה מהמקור`; titles `קרוב אלייך`/`אפשר לסמוך`/`קהילה מקומית`; trust drops "מאומתים" | S8 copy wave; trust.body over-claim removal — swallows MEH-746 (MEH-742 gate + MEH-579). |
+| 2026-06-05 | MEH-750 | /about testimonials | `מה אומרים עלינו` / `הסיפורים מגיעים בקרוב` | `הסיפורים שעוד ייכתבו כאן` / `המקום הזה שמור לסיפורים שלכן.` | S8: stop promising testimonial content that doesn't exist yet. |
+| 2026-06-05 | MEH-750 | /about CTA heading + values.closing | `יש לך בית עסק? בואי אלינו.` + closing `אם זו את — בעלת עסק…` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` (closing DELETED) | S8: merge duplicate business invites (closing+CTA were adjacent); neutral homograph `בנית` echoes tagline (ADR-011); drops gendered `בעלת עסק` exclusion (ADR-014 recruit-neutral). |
 | 2026-06-05 | MEH-472 | Categories heading | `גלי לפי קטגוריה` | `גלו לפי קטגוריה` | ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral). Sapir adjudicated section headings to the UI side → feminine-singular `גלי` → plural `גלו`. EN heading is proper English (`Browse by category`), untouched. |
 | 2026-05-16 | MEH-620 | Hero subtitle | `בתי עסק מקומיים, כולם במקום אחד.` | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` | MEH-522 winner κ — H1↔Sub arc closes ("לא ידעת איפה" → "אנחנו כבר בדקנו"). |
 | 2026-05-16 | MEH-605 | Home CTA body | `...הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` | Removes "דירקטורי" (marketplace word) + partial category list per Brand Hub v1.1 §8. |

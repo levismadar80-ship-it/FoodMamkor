@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-750: S8 copy wave /about (he+en+COPY_BANK)
+
+**Branch:** `feature/meh-750-about-copy-wave` off staging — draft PR. Applied the 17 Sapir-locked
+strings from MEH-750 to `about.consumer.*` (he+en) + 4 JSX changes in `AboutClient.jsx` (hero sub
+render under H1; benefits section heading; `story.caption2` removed; `values.closing` removed —
+values card ends after בטיחות). Swallows **MEH-746** (item 13: `benefits.trust.body` drops "מאומתים"
+— MEH-742 gate + MEH-579 over-claim). H1 + greeting lose terminal periods (locked). `parallax.quote`
+→ `אוכל טוב — לא שומרים לעצמנו`. CTA merged: `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.`
+**COPY_BANK:** decision-log rows for every changed key + retired stale "criteria admission headline"
+row + fixed stats-row `MEH-654` typo (per MEH-746). **Out of scope (untouched):** tips.*, values.intro,
+contact.*, nav.*, metadata/OG.
+**Verified:** key parity 2542==2542; greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0; `מאומתים` 0 in
+about.consumer.* (1 remaining hit = `terms.sections.verified.title`, out of scope); `npm run build` ✓.
+**Open for Sapir:** the DoD's "retire old CTA `הוסיפי את העסק שלך 🌿`" — no COPY_BANK row matches that
+text (singular `הוסיפי` absent); nearest is the live homepage `home.cta.button` (`הוסיפו`, plural, §5),
+out of /about scope — left untouched pending confirmation.
+
 ## 2026-06-05 — 🧾 SESSION CLOSE (design track closed · legal brief + appendix · MEH-742/743 · port gate)
 
 **1. Design track CLOSED — S5/S6/S7 all FINAL.** S5 (map) + S6 (business page) + S7 (register flow) are FINAL. S7 sits at **v4** in the Claude Design project "S2 — Logo System". S7 now **mirrors shipped product**:
@@ -13,7 +30,7 @@
 - **two success variants** — **06A** logged-in/upgrade (dashboard CTA) · **06B** verify-email, copy **locked to `auth.py` anti-enumeration behavior** ("אם האימייל פנוי...").
 - **CTA variant C "להזמנה באתר"** added (website primary-eligible).
 
-**2. Legal.** `docs/legal/2026-06-lawyer-brief-licensing-tiers.md` **merged** (PR #931). Appendix **נספח א'** (exemption map: 4.6ו plant-based <5t · farm own-produce · תמרוקים regime for soaps · honey sectoral order) is in **draft PR #934** — *awaiting Sapir merge*.
+**2. Legal.** `docs/legal/2026-06-lawyer-brief-licensing-tiers.md` **merged** (PR #931). Appendix **נספח א'** (exemption map: 4.6ו plant-based <5t · farm own-produce · תמרוקים regime for soaps · honey sectoral order) **merged** (PR #934, 2026-06-05).
 
 **3. Linear (two created).**
 - **MEH-742** (P2, **LOCK decision**) — two-tier **מאומת/מוצהר** model, 4 launch gates, brand book before code.
