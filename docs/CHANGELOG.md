@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
+
+`fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`
+inside each page's `openGraph`) to 8 shareable routes — the MEH-739 AC3 follow-up.
+**🔴 root-emitting (no per-page openGraph → inherited `layout.js:71` `url: SITE_URL`):**
+`accessibility`, `producers` — given full per-page `openGraph` blocks. **🟡 og:url absent
+(openGraph overridden without `url`):** `about`, `contact`, `map`, `events` — `url` line added;
+`experiences`, `group-buys` — static `export const metadata` → `generateMetadata({params})`
+(needs `locale`), `url` added. `producers` (paginated, `ƒ` dynamic) uses `url: alternates.canonical`
+so `?page=N` variants stay self. **Out of scope (untouched):** `[slug]` producer-detail (already
+self via `lib/seo.js:225`), noindex auth chrome (login/register/forgot/reset/verify-email/
+favorites/messages/upgrade). Verified: all 8 grep `url:` in openGraph; `npm run build` ✓; rendered
+HTML `/he/about`+`/en/about` og:url = self (locale-aware); live = green `Playwright E2E (Vercel preview)` CI.
+
 ### 2026-06-05 — head-meta: per-page openGraph for /terms + /privacy (PR #916)
 
 `feat(seo)`: added per-page `openGraph` to the `generateMetadata` of `/terms` and `/privacy` (no MEH# — retroactive ticket pending, workspace at issue limit). Both routes previously exported only `title`/`description`/`alternates`, so they fell back to the layout's site-level `BASE_METADATA.openGraph` (homepage card on social shares). Each page now emits `og:title` + `og:description` (reusing the MEH-720-cleaned `meta_title`/`meta_description` — HE voice `פלטפורמה`, zero `דירקטורי`), `og:type=website`, and `og:url` via `urlForLocalePath` (host `mehamakor.co.il`). **Why `siteName`/`locale`/`images` are repeated:** Next.js *shallow-merges* the `openGraph` field, so a page-level block replaces the layout's entirely — repeating them preserves the OG image (mirrors the `about`/`contact` siblings). Canonical was already correct (`buildAlternates`→`urlForLocalePath`, host `mehamakor.co.il`) and is unchanged. Scope: the two `page.js` files only — no i18n, layout, or dependency changes. Prod baseline confirmed via Vercel MCP: pre-PR `og:url` = site root, this PR makes it page-specific. `npm run build` green (terms + privacy SSG, 101/101).

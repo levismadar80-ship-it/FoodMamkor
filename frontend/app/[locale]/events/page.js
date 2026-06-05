@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import EventsClient from "./EventsClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates } from "@/lib/i18n-seo";
+import { buildAlternates, urlForLocalePath } from "@/lib/i18n-seo";
 
 // MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
 // hand-built single-canonical entry with no hreflang languages map). Refs MEH-476.
@@ -16,6 +16,8 @@ export async function generateMetadata({ params }) {
       description:
         "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל.",
       type: "website",
+      // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
+      url: urlForLocalePath("/events", locale),
       siteName: BRAND_NAME,
       locale: "he_IL",
       // Next.js replaces openGraph object on override — re-declare image.

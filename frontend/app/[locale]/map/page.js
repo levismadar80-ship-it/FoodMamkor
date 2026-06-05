@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import MapClient from "./MapClient";
 import { API_URL } from "@/lib/env";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: was static metadata const with hardcoded HE. Now per-locale
 // via seo.map.* keys + buildAlternates for hreflang/canonical.
@@ -20,6 +20,8 @@ export async function generateMetadata({ params }) {
       title: t("og_title"),
       description: t("og_description"),
       type: "website",
+      // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
+      url: urlForLocalePath("/map", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       // Include the shared OG image — Next.js REPLACES (not merges) the
