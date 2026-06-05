@@ -19,7 +19,7 @@ vi.mock("next-intl", () => ({
       "discovery.found_count": `נמצאו ${vars?.count ?? 0} בתי עסק`,
       "discovery.all_count": `כל ${vars?.count ?? 0} בתי העסק`,
       "discovery.showing_count": `מציגות ${vars?.loaded ?? 0} מתוך ${vars?.total ?? 0} בתי עסק`,
-      "discovery.all_shown": `הצגנו את כל ${vars?.count ?? 0} בתי העסק 🌿`,
+      "discovery.all_shown": `הצגנו את כל ${vars?.count ?? 0} בתי העסק`,
       "discovery.loading_more_aria": "טוענת עוד בתי עסק",
       "filters.city_chip": "בעיר שלי",
       "filters.filter_by": "מסנן לפי:",
