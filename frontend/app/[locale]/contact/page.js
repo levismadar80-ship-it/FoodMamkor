@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import ContactClient from "./ContactClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-658: server-wrapper pattern (MEH-476 Wave 6 precedent) — client
 // components can't export metadata; the wrapper supplies SEO while
@@ -19,6 +19,8 @@ export async function generateMetadata({ params }) {
       title: t("og_title"),
       description: t("og_description"),
       type: "website",
+      // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
+      url: urlForLocalePath("/contact", locale),
       siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       images: ["/og-image.png"],
