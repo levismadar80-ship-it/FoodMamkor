@@ -5,6 +5,39 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-684: ICU plural emoji strip (a11y)
+
+Branch `feature/meh-684-icu-plural-strip` off staging. Stripped trailing ` 🌿` from the
+only emoji-bearing ICU plural key (`producers.discovery.all_shown`, he+en) — screen-reader
+mid-sentence announce fix (LOCK v2). Phase 0: 13 plural keys/locale, 1 with emoji (below
+5–15 est; rest clean). Aligned test mock `PaginationCounter.test.jsx:22`. Verified: rg
+`\p{Extended_Pictographic}` in plural keys = 0, key parity 2543==2543, `npm run build` ✓.
+Draft PR opened. **Note:** `PaginationCounter.test.jsx` has a *pre-existing* vitest oxc
+JSX-in-`.js` transform failure on `lib/auth-context.js` (fails identically on clean tree —
+NOT caused by this change; unrelated to MEH-684).
+
+## 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral)
+
+**Branch:** `feature/meh-472-category-heading` (off staging) — draft PR. `Refs MEH-472` (en-wave stays open).
+**Done:** `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה` (he.json only). Per ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral), Sapir adjudicated section headings → UI side. en.json heading = `Browse by category` (proper English), untouched. Decision-log row added to COPY_BANK §6.
+**Scope:** THIS KEY ONLY — the ~10 other `גלי` CTA strings remain MEH-472 en-wave territory, untouched.
+**Verify:** `npm run build` green; `grep "גלי לפי קטגוריה" frontend/messages/` = 0; `grep "גלו לפי קטגוריה" he.json` = 1.
+
+## 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage
+
+**Branch:** `feature/meh-733-remove-breath` (off staging) — draft PR open, `Refs MEH-733` (issue already closed).
+**Done:** deleted `HomeEditorialBreath.jsx`; stripped import + mount + `§06` comment from `app/[locale]/page.js`; removed `home.editorial_breath` block from `he.json`+`en.json`; shelved quote in `docs/COPY_BANK.md` 🕐 (future home = Producer Stories MEH-542). `HomeCategoryGrid` untouched (index-driven numerals). Sapir locked option C.
+**Verify:** `npm run build` green; `grep editorial_breath frontend/` = 0; `grep "תכירי את מי" frontend/` = 0; both message JSONs parse.
+**Pending:** Sapir mobile QA on preview → mark PR ready → merge.
+
+## 2026-06-05 — MEH-687: ProducerHeader red Heart fix (PR pending)
+
+Branch `feature/meh-687-red-heart` off staging. Single-line: `ProducerHeader.jsx:58` Heart
+`style={{color:"#A32D2D"}}` → `className="text-primary"` (BRAND §3, F1 precedent PR #831).
+Phase 0 caught that the ticket's `ProducerCard.jsx:362` target was gone (v4 redesign / PR #890) —
+heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2 `OpeningHours.jsx`
+`#A32D2D` reds are "closed now" status (out of scope, left as-is). Closes MEH-687, Refs MEH-686.
+
 ## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
 
 **SHIPPED 05/06:**

@@ -85,7 +85,11 @@ vi.mock("@/i18n/navigation", () => ({
   usePathname: () => "/about",
 }));
 
-describe("Header", () => {
+// MEH-729: Header is mid-redesign in the parallel navbar-port track
+// (MEH-732) — its link/role structure ("גלה" etc.) is in flux. Skipping
+// here per Sapir; re-assert after the MEH-732 port merges. Do NOT update
+// these assertions against a moving target.
+describe.skip("Header", () => {
   beforeEach(() => {
     userRef.current = null;
     pathnameRef.current = "/about";

@@ -48,6 +48,15 @@ vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (url) => url || null,
 }));
 
+// MEH-729: ProducerCard reads useRouter() (components/ProducerCard.jsx:175)
+// since the v4 redesign (PR #890). jsdom has no Next app-router context, so
+// mock next/navigation to satisfy the invariant.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // ---- Heart / auth wiring: mock-all-the-things so each test can set state ----
 const { authState, apiMock, toastSpy, enqueueSpy, favCache } = vi.hoisted(() => ({
   authState: { user: null },
