@@ -16,6 +16,23 @@ MEH-750 styling decision. **Files:** `frontend/messages/he.json`,
 `frontend/messages/en.json`, `docs/COPY_BANK.md`, `docs/CHANGELOG.md`. No JSX
 touched (keys pre-existed). `npm run build` green.
 
+### 2026-06-05 — MEH-755: OTP tokens block producer deletion — NotNullViolation on both delete paths (Closes MEH-755)
+
+`fix(producers)`: producer with `phone_otp_tokens` rows was undeletable — both
+`auth.py::delete_account` (`DELETE /auth/me`) and `admin.py::admin_delete_producer`
+500'd on `NotNullViolation` for `phone_otp_tokens.producer_id`. **Root cause:**
+`db.delete(producer)` triggers an ORM nullify (`UPDATE phone_otp_tokens SET
+producer_id=NULL`) because the `PhoneOtpToken.producer` relationship
+(`models.py:1012`) has no delete cascade, but the column is `NOT NULL`. **Fix
+(code-level, no Alembic, no schema change):** explicit
+`db.query(PhoneOtpToken).filter(...producer_id == producer.id).delete()` before
+`db.delete(producer)` in both paths — joins the existing explicit-delete list in
+`delete_account`. Release blocker for the OTP UI package (PR #941): once OTP
+verification is live in prod, any phone-verified business owner would otherwise
+become undeletable. **Files (4):** `backend/app/routers/auth.py`,
+`backend/app/routers/admin.py`, `tests/test_account_deletion_cascade.py` (+2
+regression tests, direct-model OTP insert), `docs/CHANGELOG.md`.
+
 ### 2026-06-05 — MEH-743: honey license-required — split "שמנים ודבש" → "שמנים" + "דבש" (Closes MEH-743)
 
 `feat(licensing)`: dedicated regulatory regime for honey per צו הפיקוח על מצרכים
