@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-04 — MEH-739: register/producer + events metadata (branch `feature/meh-739-seo-meta-batch`)
+
+**Branch off staging. Draft PR (base staging). LOW-RISK (frontend SEO/metadata).** Task 1 of a 2-task batch (Task 2 = MEH-738 mypy, separate branch/PR).
+
+**Done:** (1) `register/producer` split — new `RegisterProducerClient.jsx` = old `page.js` **byte-identical (move-only)**; new server `page.js` exports `generateMetadata` (`buildAlternates("/register/producer")` + `title.absolute "רישום בית עסק | מהמקור"` + description). Fixes canonical=root + default-title (was a client component; prod-verified 06/05). Form's internal `<Suspense>`/`useSearchParams` untouched → no wrapper Suspense needed; behavior unchanged. (2) `events/page.js` — `export const metadata` → `generateMetadata`; manual `{canonical:"/events"}` → `buildAlternates("/events", locale)`. `npm run build` ✓ (both ●SSG).
+
+**AC3 og:url — STOP/surfaced (not implemented):** no central openGraph helper exists; `layout.js:71` hardcodes `openGraph.url: SITE_URL` (root), inherited by every subpage that doesn't override openGraph; pages that override (map/login/events) drop `url`. Self-url per page needs per-route edits across >5 files (out of scope) OR a 1-line layout change that *removes* the wrong root (but can't emit self from layout — only knows locale, not child path). **Options surfaced in PR body for Sapir to scope as a follow-up.**
+
 ## 2026-06-04 — MEH-735 merged to staging (PR #912, squash `9942674`)
 
 **Done:** completed the WCAG 2.4.1 skip-to-content link. Phase 0 found it already existed (`layout.js:199`); closed two gaps rather than re-adding: `<main id="main-content">` got `tabIndex={-1}` + `focus:outline-none` (reliable focus target), and the existing `sweep_tail.layout.skip_to_main` i18n key updated to spec copy (he `דילוג לתוכן`, en `Skip to content`). Tab→Enter flow verified via Playwright on / + /login (activeElement = main#main-content after Enter). All CI green; no new component/key.

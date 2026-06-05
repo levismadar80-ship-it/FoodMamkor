@@ -4,6 +4,21 @@
 
 ## Unreleased
 
+### 2026-06-04 — MEH-739: register/producer + events metadata fallbacks (Refs MEH-214/476/679)
+
+`fix(seo)`: שני תיקוני metadata על routes שלא קיבלו canonical/title עצמיים.
+**(1) register/producer** היה client component (`"use client"`) ולכן ירש את
+layout fallback (canonical=root, title דיפולטי — אומת בפרודקשן 05/06). פוצל ל-
+server wrapper בתבנית MEH-658 (login): `RegisterProducerClient.jsx` מחזיק את כל
+קוד הטופס **verbatim (move-only)** ו-`page.js` הפך ל-server component עם
+`generateMetadata` (`buildAlternates("/register/producer")`, title.absolute
+"רישום בית עסק | מהמקור", description). **(2) events** השתמש ב-canonical ידני
+ללא hreflang → הוחלף ל-`buildAlternates("/events", locale)` (canonical עצמי +
+languages map). `npm run build` ✓ (שני ה-routes כעת ●SSG). **og:url (AC3) —
+STOP/surfaced:** אין openGraph helper מרכזי; `layout.js:71` מקבע `url: SITE_URL`
+(root) שיורש לכל subpage. תיקון site-wide = >5 קבצים מחוץ ל-scope → לא בוצע;
+אפשרויות הוצגו ל-Sapir ב-PR body.
+
 ### 2026-06-04 — MEH-735: complete skip-to-content link (WCAG 2.4.1) (PR #912)
 
 `feat(MEH-735)`: Phase 0 found the skip link **already existed** (`layout.js:199` — `sr-only`→`focus:not-sr-only`, first element in `<body>`, `z-10000`, AA green-on-white, `rtl-ok`-annotated) targeting `<main id="main-content">`. Closed the two gaps vs the acceptance criteria instead of re-adding it (avoids a duplicate link). **(1)** `<main id="main-content">` gains `tabIndex={-1}` + `focus:outline-none` → reliable programmatic focus target (verified: Enter→`activeElement === main#main-content` on / + /login). **(2)** reused the existing `sweep_tail.layout.skip_to_main` key (no new namespace key): he `דלג לתוכן הראשי`→**`דילוג לתוכן`** (gender-neutral, ADR-014 voice), en `Skip to main content`→**`Skip to content`**. Scope: layout.js + he.json + en.json. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); squash-merged `9942674`.
