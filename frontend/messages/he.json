@@ -2279,7 +2279,7 @@
       "found_count": "{count, plural, =0 {לא נמצאו בתי עסק} one {נמצא בית עסק אחד} two {נמצאו {count} בתי עסק} other {נמצאו {count} בתי עסק}}",
       "all_count": "{count, plural, one {כל בית עסק} two {כל שני בתי העסק} other {כל {count} בתי העסק}}",
       "showing_count": "מציגות {loaded} מתוך {total} בתי עסק",
-      "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד 🌿} two {הצגנו את כל שני בתי העסק 🌿} other {הצגנו את כל {count} בתי העסק 🌿}}",
+      "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד} two {הצגנו את כל שני בתי העסק} other {הצגנו את כל {count} בתי העסק}}",
       "loading_more_aria": "טוענת עוד בתי עסק"
     },
     "recently_viewed": {
