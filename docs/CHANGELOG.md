@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-761: Gate 4 — verification matrix doc (Closes MEH-761)
+
+`docs(MEH-761)`: new `docs/VERIFICATION.md` — operational consolidation of ADR-022
+launch gate 4. Maps each platform category → tier eligibility (מאומת/מוצהר) → qualifying
+document, aligned to `LICENSE_REQUIRED_CATEGORIES` (post-MEH-743 honey split) + נספח א'
+of the lawyer brief. Adds (1) the per-category matrix split into license-required (Tier 1
+only, 8 categories) vs exempt (Tier 1 with exemption/registration doc, or Tier 2
+declaration); (2) admin checklist per document type — issuer, validity, name match —
+for the 3 qualifying docs (license / exemption / cosmetics registration); (3) internal
+audit-record fields per Brief Q5.5; (4) launch submission channel = manual WhatsApp/email
+within the existing manual-approval flow (no upload feature in V1). Honestly flags 3
+unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions — does NOT
+expand the enforcement list. Header carries "לא ייעוץ משפטי, בכפוף לעו"ד". Docs-only — no
+code, schema, UI, or admin feature; decisions/README.md untouched (no new ADR). **Closes
+MEH-761. Refs MEH-742.**
+
 ### 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר (Refs MEH-742)
 
 `docs(MEH-742)`: landed ADR-022 — the "Licensed businesses only" blanket DNA LOCK

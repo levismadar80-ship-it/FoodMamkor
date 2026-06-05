@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-761: Gate 4 — docs/VERIFICATION.md verification matrix
+
+**Branch:** `feature/meh-761-gate4-verification-matrix` off staging — draft PR. New
+`docs/VERIFICATION.md` consolidating ADR-022 launch gate 4: per-category matrix
+(tier eligibility → qualifying doc, aligned to `LICENSE_REQUIRED_CATEGORIES` + נספח א'),
+admin checklist per doc type (license / exemption / cosmetics registration), internal
+audit-record fields (Brief Q5.5), manual launch channel (WhatsApp/email, no upload feature
+V1). Flagged 3 unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions —
+enforcement list untouched. Docs-only; `decisions/README.md` not touched (no new ADR).
+PR body: **Closes MEH-761. Refs MEH-742.**
+
+**Decision arc (MEH-742):** ADR-022 approved+merged (#949 ea42821) after template-05
+research (Yelp +24%/+10%; Google 2.7x = profile completeness, not badge; badge free
+forever; affirmative tier-2 explainer required). 4 gate children opened: MEH-758 (tier
+copy, awaiting Sapir string lock) · MEH-759 (declaration audit columns, HIGH-RISK chunks) ·
+MEH-760 (/terms tiers, awaiting v1 lock) · MEH-761 (this PR). Drive Brand Hub addendum
+created (ADR-022-addendum-two-tier-licensing.md). MEH-742 stays In Progress as anchor.
+S5-S10 ports + MEH-534 UNBLOCKED.
+
 ## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
 
 **Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
