@@ -4,6 +4,161 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר (Refs MEH-742)
+
+`docs(MEH-742)`: landed ADR-022 — the "Licensed businesses only" blanket DNA LOCK
+(MEH-528 option B) is replaced by a two-tier model. **Tier 1 מאומת** = license/exemption
+doc reviewed → gold badge (free forever); **Tier 2 מוצהר** = binding declaration, for
+legally exempt categories only, never negatively labeled. Unlicensed food production
+where a license is legally required stays excluded; home-cook LOCK + manual approval
+unchanged. Consumer-facing tier language is מאומת / מוצהר only — `"מורשה/מורשים"` is
+legal-internal. **Files:** new `docs/decisions/ADR-022-two-tier-licensing-model.md`;
+synced the LOCK line in `docs/CONTEXT.md` §2 + `docs/BRAND.md` §3, added an anti-pattern
+in `docs/BRAND.md` §7, indexed in `docs/decisions/README.md`. Brand-book step only — no
+code, schema, or UI. Decision ticket stays open (4 children pending). **Refs MEH-742.**
+
+### 2026-06-05 — MEH-757: /about founder-story copy swap — "בלי לחפש שעות" (Closes MEH-757)
+
+`copy(about)`: replaced the founder-story body (`about.consumer.story.p1`–`p5`,
+he + en) with Sapir's 05/06 rewrite — problem→discovery→insight→solution arc
+closing on the canonical `בלי לחפש שעות` anchor (COPY_BANK / MEH-719). Copy-only
+swap riding tonight's release on top of the MEH-750 wave; the two closing
+captions (`caption1` / `caption3`) and all other /about copy are untouched.
+`greeting` kept period-free (bold heading, EN parity `Hi, I'm Sapir`) per the
+MEH-750 styling decision. **Files:** `frontend/messages/he.json`,
+`frontend/messages/en.json`, `docs/COPY_BANK.md`, `docs/CHANGELOG.md`. No JSX
+touched (keys pre-existed). `npm run build` green.
+
+### 2026-06-05 — MEH-755: OTP tokens block producer deletion — NotNullViolation on both delete paths (Closes MEH-755)
+
+`fix(producers)`: producer with `phone_otp_tokens` rows was undeletable — both
+`auth.py::delete_account` (`DELETE /auth/me`) and `admin.py::admin_delete_producer`
+500'd on `NotNullViolation` for `phone_otp_tokens.producer_id`. **Root cause:**
+`db.delete(producer)` triggers an ORM nullify (`UPDATE phone_otp_tokens SET
+producer_id=NULL`) because the `PhoneOtpToken.producer` relationship
+(`models.py:1012`) has no delete cascade, but the column is `NOT NULL`. **Fix
+(code-level, no Alembic, no schema change):** explicit
+`db.query(PhoneOtpToken).filter(...producer_id == producer.id).delete()` before
+`db.delete(producer)` in both paths — joins the existing explicit-delete list in
+`delete_account`. Release blocker for the OTP UI package (PR #941): once OTP
+verification is live in prod, any phone-verified business owner would otherwise
+become undeletable. **Files (4):** `backend/app/routers/auth.py`,
+`backend/app/routers/admin.py`, `tests/test_account_deletion_cascade.py` (+2
+regression tests, direct-model OTP insert), `docs/CHANGELOG.md`.
+
+### 2026-06-05 — MEH-743: honey license-required — split "שמנים ודבש" → "שמנים" + "דבש" (Closes MEH-743)
+
+`feat(licensing)`: dedicated regulatory regime for honey per צו הפיקוח על מצרכים
+ושירותים (ייצור דבש ומכירתו), תשל"ז-1977 — keeper license + marketing license +
+business license. Source: legal brief נספח א' (PR #934). **Taxonomy decision
+(Sapir-approved):** split the combined category, not a sub-flag. Rationale:
+keeps `LICENSE_REQUIRED_CATEGORIES` as the single source of truth for the
+regulatory class; matches the legal model (honey + olive oil are separate
+regimes); aligns with MEH-203 category-selector pattern (one chip = one
+regulatory unit). **Live producer count = 0** (verified by Sapir on Railway
+prod) → seed-only migration, no Alembic, no `producer_categories` re-pointing.
+**Files (9):** `backend/app/constants.py` + `backend/seed_data.py` (rename row 5
+→ "שמנים", append "דבש" at end so seed-id slots 1–18 stay stable);
+`frontend/lib/license-required-categories.js` mirror; `home-categories.js` hero
+card stays a single "שמנים" tile (no honey hero — MEH-203 will revisit);
+`map-categories.js` both kept on the same amber/JarLabel styling until S5 map
+redesign; `categoryQuestions.js` generic Q-set duplicated under "דבש";
+`HomeProductForm.jsx` consistency split (NOTE: dead surface, MEH-598 burial,
+MEH-543 revival path); `tests/test_producer_license.py` +3 cases
+(`TestRegisterProducerHoneyLicense`); `docs/MANUAL_TESTING.md` honey/oils
+manual tests. **Verified:** frontend `npm run build` ✓; backend pytest deferred
+to CI (sandbox can't install backend deps). **Deployment note:** prod
+`categories` table currently has the legacy "שמנים ודבש" row with 0 producer
+links — Sapir to add "דבש" row + rename to "שמנים" via direct SQL on prod once
+this lands on staging (no Alembic per the seed-only path).
+
+### 2026-06-05 — MEH-749: read-only orphan-audit script (Refs MEH-749)
+
+`chore(scripts)`: new `scripts/audit_orphans.py` — read-only DB audit (SELECT/COUNT only,
+zero writes) mapping dangling rows after the 2026-06-05 manual prod SQL deletions. 8 checks
+(ownerless producers, `users.producer_id`/`is_producer` dangling, phone_otp_tokens,
+favorites/reviews/reports/followers, home_products+ratings/clicks, inbound_messages count,
+Cloudinary URL reference counts). Phase 0 note: spec check #1 `producers.user_id` doesn't
+exist in the schema (link is one-directional `users.producer_id`) — implemented as the
+schema-valid inverse "ownerless producers". ruff clean; ran against local dev DB (all
+sections render). Ticket stays open until Sapir runs it against prod and records findings.
+
+### 2026-06-05 — MEH-745 PR2: OTP self-serve releases pending_whatsapp → pending (Closes MEH-745)
+
+`feat`: self-registered producers were stranded in `status=pending_whatsapp` — nothing in
+code transitioned them out (Phase 0: `confirm_phone_otp` only set `phone_verified`; the
+dashboard banner CTA pointed at a `/settings` page with no OTP UI; no frontend consumed the
+existing `verify-phone` endpoints). This PR wires the self-serve path:
+- **Backend** (`producer_me.py::confirm_phone_otp`): after `phone_verified=True`, advance
+  `pending_whatsapp → pending` (admin-review gate preserved). Only that status is touched —
+  approved/rejected/inactive are never demoted. Tests
+  (`test_otp_pending_whatsapp_transition.py`): pending_whatsapp→pending on valid code;
+  other status unchanged; invalid code → 400 + status unchanged.
+- **Frontend**: new `components/PhoneVerifyCard.jsx` (send code → 6-digit input → confirm,
+  60s resend cooldown, 429 detail surfaced as toast, no-phone/invalid/expired error states).
+  Rendered in the producer dashboard `pending_whatsapp` banner, replacing the dead
+  `/settings` CTA; a successful confirm flips the local status to `pending` (banner updates,
+  no reload). All copy via `dashboard.producer.phone_verify.*` keys in `he.json` + `en.json`
+  (HE↔EN parity 2555==2555). Combined with PR1 (admin approve fallback), this is MEH-745
+  scope (c). No schema change (status is an existing varchar; no Alembic).
+### 2026-06-05 — MEH-745 PR1: admin approve action for pending_whatsapp producers (Refs MEH-745)
+
+`fix(admin)`: self-registered producers land in `status=pending_whatsapp` (`auth.py:454`/`:546`)
+but the admin producers table gated the approve button on `p.status === "pending"`
+(`AdminProducersTable.jsx:115`) — so the only producers an admin could approve were
+admin-created ones (`status=pending`). The approve endpoint
+(`POST /admin/producers/{id}/approve`, `admin.py:395`) has no status guard and works on
+`pending_whatsapp` as-is, so this is a pure frontend unhide: gate → `["pending",
+"pending_whatsapp"].includes(p.status)`. New vitest `AdminProducersTableActions.test.jsx`
+(approve renders for `pending_whatsapp` + `pending`, hidden for `approved`); `ProducerActions`
+exported for the unit test. No backend change. Admin fallback half of MEH-745 scope (c) —
+the OTP self-serve path is PR2.
+### 2026-06-05 — MEH-750: S8 copy wave /about (Closes MEH-750; swallows MEH-746; Refs MEH-742/MEH-579)
+
+`copy(about)`: applied the 17 Sapir-locked strings from MEH-750 to `about.consumer.*` in
+`he.json` + `en.json` (key parity 2542==2542) plus 4 JSX changes in
+`frontend/app/[locale]/about/AboutClient.jsx`. **Strings:** H1 drops terminal period + NEW
+`hero.subheading` rendered under H1; Sapir story rewritten (`greeting` loses period, `p1`–`p5`
+new word-of-mouth narrative, `caption2` deleted); `parallax.quote` →
+`אוכל טוב — לא שומרים לעצמנו` (old quote ranked source over food); NEW `benefits.heading`
+`למה מהמקור` + tightened pillar titles; `benefits.trust.body` drops "מאומתים" (MEH-742 gate +
+MEH-579 over-claim — **swallows MEH-746**); testimonials reframed as honest placeholder; `cta.heading`
+merged to `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` + `values.closing` deleted (values card ends
+after בטיחות). **COPY_BANK:** decision-log rows for every changed key, retired the stale "criteria
+admission headline" row, and corrected the stats-row `MEH-654` typo (per MEH-746). **Out of scope
+(untouched):** `tips.*`, `values.intro`, `contact.*`, `nav.*`, metadata/OG — the S8/D visual port is
+a separate future task (MEH-135). **Verified:** greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0;
+`מאומתים` = 0 in `about.consumer.*`; `npm run build` ✓.
+
+### 2026-06-05 — MEH-747 follow-up: i18n the admin delete-error toast (Refs MEH-747)
+
+`refactor(i18n)`: the delete-failure toast added in PR #937 hardcoded the Hebrew string
+`"מחיקת בית העסק נכשלה. נסי שוב."` in `use-admin-producers.js`. Adversarial-review
+"Should Consider" nit — the hook already uses `t()` for every other string. Replaced with
+`t("producers.table.delete_error")` and added the key to `he.json` + `en.json` under
+`admin.producers.table` (HE↔EN parity preserved, 2543 == 2543). `npm run build` ✓. Nit #2
+(comment-block length) intentionally skipped per Sapir.
+
+### 2026-06-05 — MEH-747: unlink users_producer_id_fkey before admin producer-delete (Closes MEH-747)
+
+`fix(MEH-747)`: admin "מחק" on the producers list 500'd for any **self-registered**
+producer. `admin.py::admin_delete_producer` did `db.delete(producer); db.commit()` with
+no FK unlink — `User.producer_id` has no `ondelete` (`models.py`), so deleting a producer
+a user still points at violated `users_producer_id_fkey`. Admin-created producers (no
+linked user) deleted fine, so the bug only hit the real onboarding path. **Fix** mirrors
+`auth.py::delete_account`: before `db.delete`, unlink every linked user
+(`producer_id → None`, `is_producer → False`) + `db.flush()`. **Phase 0 `is_producer`
+decision → reset to False:** the user row survives admin-delete (unlike `delete_account`
+which deletes it), so leaving the durable flag True with a NULL `producer_id` re-creates
+the MEH-669 role-lockout (409 at `auth.py:829` blocks re-registration) — resetting
+reflects reality. **Frontend:** `use-admin-producers.js::deleteProducer` previously had no
+`catch`, swallowing the 500 silently — now shows Hebrew error toast
+(`"מחיקת בית העסק נכשלה. נסי שוב."`). **Tests:** `tests/test_admin_delete_producer.py` —
+register producer via API → admin delete → 200 + `user.producer_id IS NULL` +
+`is_producer False`; admin-created no-link path no-regression. **Verified:** `pytest
+tests/test_api.py` (192 passed) + targeted suites + `npm run build` ✓. **Scope:** code-level
+unlink only — no model/schema/Alembic/`ondelete` change.
+
 ### 2026-06-05 — MEH-684: strip emoji from ICU plural patterns (Closes MEH-684; Refs MEH-657)
 
 `fix(MEH-684)`: removed the trailing ` 🌿` (U+1F33F) from every branch of the only

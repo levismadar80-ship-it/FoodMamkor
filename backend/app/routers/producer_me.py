@@ -759,6 +759,12 @@ def confirm_phone_otp(
 
     token.used = True
     producer.phone_verified = True
+    # MEH-745: self-registered producers wait in pending_whatsapp until the
+    # business phone is verified; a successful OTP confirm is the gate that
+    # releases them into the normal admin-review queue (pending). Only advance
+    # from pending_whatsapp — never touch approved / rejected / inactive.
+    if producer.status == "pending_whatsapp":
+        producer.status = "pending"
     db.commit()
     return {"detail": "הטלפון אומת בהצלחה"}
 
