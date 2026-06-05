@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-745 PR2: OTP self-serve releases pending_whatsapp → pending (Closes MEH-745)
+
+`feat`: self-registered producers were stranded in `status=pending_whatsapp` — nothing in
+code transitioned them out (Phase 0: `confirm_phone_otp` only set `phone_verified`; the
+dashboard banner CTA pointed at a `/settings` page with no OTP UI; no frontend consumed the
+existing `verify-phone` endpoints). This PR wires the self-serve path:
+- **Backend** (`producer_me.py::confirm_phone_otp`): after `phone_verified=True`, advance
+  `pending_whatsapp → pending` (admin-review gate preserved). Only that status is touched —
+  approved/rejected/inactive are never demoted. Tests
+  (`test_otp_pending_whatsapp_transition.py`): pending_whatsapp→pending on valid code;
+  other status unchanged; invalid code → 400 + status unchanged.
+- **Frontend**: new `components/PhoneVerifyCard.jsx` (send code → 6-digit input → confirm,
+  60s resend cooldown, 429 detail surfaced as toast, no-phone/invalid/expired error states).
+  Rendered in the producer dashboard `pending_whatsapp` banner, replacing the dead
+  `/settings` CTA; a successful confirm flips the local status to `pending` (banner updates,
+  no reload). All copy via `dashboard.producer.phone_verify.*` keys in `he.json` + `en.json`
+  (HE↔EN parity 2555==2555). Combined with PR1 (admin approve fallback), this is MEH-745
+  scope (c). No schema change (status is an existing varchar; no Alembic).
 ### 2026-06-05 — MEH-745 PR1: admin approve action for pending_whatsapp producers (Refs MEH-745)
 
 `fix(admin)`: self-registered producers land in `status=pending_whatsapp` (`auth.py:454`/`:546`)

@@ -3184,10 +3184,24 @@
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
-          "body": "Complete your profile to speed up the review — complete profiles are approved faster.",
-          "cta": "Complete profile ←",
-          "companion_link": "Edit profile"
+          "body": "To send your business for team review, verify your business phone number via WhatsApp."
         }
+      },
+      "phone_verify": {
+        "title": "Verify your business phone",
+        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying sends your business for team review.",
+        "send_cta": "Send verification code",
+        "sending": "Sending...",
+        "resend_in": "You can resend a code in {seconds}s",
+        "code_label": "Verification code",
+        "code_placeholder": "6-digit code",
+        "confirm_cta": "Verify",
+        "confirming": "Verifying...",
+        "success": "Phone verified! Your business has been sent for team review.",
+        "error_invalid": "Wrong or expired code. Please try again.",
+        "error_no_phone": "No phone number on your profile. Add one, then verify.",
+        "error_generic": "Something went wrong. Please try again.",
+        "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog ←",
       "availability": {
