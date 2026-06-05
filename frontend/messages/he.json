@@ -1,7 +1,7 @@
 {
   "nav": {
-    "discover": "גלה",
-    "explore": "גלי",
+    "discover": "גלו",
+    "explore": "גלו",
     "add_business_short": "הוסיפו עסק",
     "map": "מפה",
     "events": "אירועים",
@@ -3352,7 +3352,7 @@
       "save_error_toast": "שגיאה בשמירה, נסי שוב"
     },
     "layout": {
-      "skip_to_main": "דלג לתוכן הראשי"
+      "skip_to_main": "דילוג לתוכן"
     },
     "event_new": {
       "back_link": "← לוח הבקרה",

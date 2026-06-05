@@ -122,7 +122,7 @@ strict = true
 plugins = ["pydantic.mypy"]
 # STOP-condition (a) triggered: auth.py + schemas/ = 57 errors > 50 threshold.
 # Scoped to auth.py only per MEH-562 spec §STOP-a. schemas/ deferred to follow-up ticket.
-files = ["app/auth.py"]
+files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]
 explicit_package_bases = true
 # Stubs not yet available for these FastAPI-stack libs:
 [[tool.mypy.overrides]]

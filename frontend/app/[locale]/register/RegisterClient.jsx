@@ -183,7 +183,7 @@ export default function RegisterClient() {
 
         {/* MEH-49: referral discount badge */}
         {referralCode && (
-          <div className="mb-4 rounded-[10px] bg-[#EAF3DE] border border-[#2e6853]/20 px-4 py-2 text-sm text-[#2e6853] font-medium">
+          <div className="mb-4 rounded-[10px] bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
             {t("auth.register.consumer.referral_badge")}
           </div>
         )}

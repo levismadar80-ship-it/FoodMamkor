@@ -60,7 +60,7 @@ export default function VerifyBanner() {
           {t("auth.verify.resend")}
         </button>
       ) : (
-        <span className="text-green-600 text-xs font-medium">{t("auth.verify.sent")}</span>
+        <span className="text-green-700 text-xs font-medium">{t("auth.verify.sent")}</span>
       )}
     </div>
   );

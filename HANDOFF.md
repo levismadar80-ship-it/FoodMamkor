@@ -5,6 +5,112 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
+
+**SHIPPED 05/06:**
+- **Prod release `4ef861c`** (staging→main) — PII removal **live + verified**, operator block final (`טופז שנפ` / `Topaz Schnapp`, `contact@`), `דירקטורי`→`פלטפורמה` purge ×6 surfaces. FB debugger re-scraped (root + `/terms`).
+- **SEO arc complete:** #915 (MEH-739 self canonical+title on register/producer+events) · #916 (head-meta og:url terms/privacy) · #921 (MEH-740 og:url on 8 shareable routes). Self canonical + per-page og:url now on all shareable routes.
+- **mypy strict on WhatsApp surface:** #917 (7 type fixes) + #922 (the `[tool.mypy] files` line, Sapir terminal) → **MEH-738 Done**.
+- **CI docs-PR advisory:** #911 (parity workflow-path-filter trap warning + testing.md required-checks rule).
+
+**LINEAR:** MEH-736 Done (retro #904) · MEH-737 Backlog (en "directory" wording) · MEH-738 / MEH-739 / MEH-740 Done · **MEH-214 stays In Progress** — full 9-point audit pending (see issue comment) · MEH-720 commented (deferred review executed).
+
+**OPEN:**
+1. **Sapir:** WhatsApp welcome/approved smoke on a real device → then close **MEH-672**.
+2. **Next staging→main release** packs #915–#922. Post-release DoD tail: FB-debugger og:url on `/he/producers` (MEH-740) — it's `ƒ` dynamic so couldn't be statically grepped in-PR.
+3. **MEH-737** English verbatim — orchestrator drafts the approved copy.
+4. **MEH-214** full-audit decision pre-launch.
+5. **Off-repo (Sapir):** accountant — registration ownership (Topaz vs operator); certificate spelling fix `שנף`→`שנפ`.
+
+**LEARNINGS (route to rules if recurring):**
+- `mehamakor.online` 308-redirects → `.co.il`; curl `.co.il` **directly with `-L`**.
+- `git checkout <branch> -- <file>` **auto-stages** the file — verify via `git diff --cached`, not `git diff`.
+- **settings-level deny correctly survives a prompt-level "exception"** — `backend/pyproject.toml` stayed CC-blocked despite the owner-approved exception; the harness directory/file deny sits below in-conversation authorization. Don't route around it.
+
+## 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (branch `feature/meh-740-og-url-shareable`)
+
+**Off staging. LOW-RISK (frontend SEO). Closes MEH-740; Refs MEH-739 (AC3 follow-up), PR #916.** Executes the og:url scope-decision from MEH-739's surfaced options (Option B, scoped to shareable routes).
+
+**8 routes** got per-page `og:url` (mirror #916 `url: urlForLocalePath(path, locale)` in openGraph): `accessibility`, `producers` (🔴 were inheriting layout root — full openGraph block added); `about`, `contact`, `map`, `events` (🟡 url line added); `experiences`, `group-buys` (static `metadata`→`generateMetadata` for `locale`, then url). `producers` is `ƒ` dynamic → `url: alternates.canonical` (keeps `?page=N` self).
+
+**Scope held:** `[slug]` producer-detail untouched (already self via `lib/seo.js:225`); all noindex auth chrome skipped. og:url only — did NOT change canonical/alternates on the static-converted routes.
+
+**Verify:** 8/8 grep `url:` in openGraph; `npm run build` ✓; rendered HTML `/he/about`+`/en/about` og:url = self (locale-aware), login control = no og:url (model confirmed); ESLint 0 errors. Live = green Playwright E2E CI (preview protected in-sandbox). **DoD evidence = green CI E2E (per 06/05 decision).**
+
+## 2026-06-04 — MEH-739: register/producer + events metadata (branch `feature/meh-739-seo-meta-batch`, PR #915)
+
+**Draft PR (base staging). LOW-RISK (frontend SEO/metadata).** Task 1 of a 2-task batch (Task 2 = MEH-738 mypy, PR #917 — MERGED).
+
+**Done:** (1) `register/producer` split — new `RegisterProducerClient.jsx` = old `page.js` **byte-identical (move-only)**; new server `page.js` exports `generateMetadata` (`buildAlternates("/register/producer")` + `title.absolute "רישום בית עסק | מהמקור"` + description). Fixes canonical=root + default-title (was a client component; prod-verified 06/05). Form's internal `<Suspense>`/`useSearchParams` untouched → no wrapper Suspense needed; behavior unchanged. (2) `events/page.js` — `export const metadata` → `generateMetadata`; manual `{canonical:"/events"}` → `buildAlternates("/events", locale)`. `npm run build` ✓ (both ●SSG).
+
+**DoD evidence (Sapir decision 06/05):** accepted the green `Playwright E2E (Vercel preview)` CI job as the live evidence — in-session screenshot blocked by Vercel preview-protection (bypass secret correctly unreadable from CC); not fabricated.
+
+**AC3 og:url — STOP/surfaced (follow-up C):** no central openGraph helper; `layout.js:71` hardcodes `openGraph.url: SITE_URL` (root). PR #916 already added per-page og:url to `/terms` + `/privacy` (one slice). Remaining routes still inherit root — to be scoped (question C). Options A/B/C in #915 body.
+
+## 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (branch `feature/meh-738-mypy-whatsapp`)
+
+**Branch off staging (NOT off MEH-739). Draft PR (base staging). LOW-RISK (backend types).** Task 2 of the 2-task batch (Task 1 = MEH-739 SEO, PR #915).
+
+**Phase 0 correction (meta-pattern #1):** the MEH-672 HANDOFF estimated "13" strict errors; actual **in-scope = 7**. The other 10 were transitive errors in `models.py`/`database.py`/`email.py`/`vacation_state.py` (imported, **out of MEH-738 scope** — not touched). Also confirmed the mypy gate is warn-only: baseline `mypy app/auth.py` itself reports 15 errors today.
+
+**Fixed 7 (type-only, 0 behavior change):** `whatsapp.py:42` `dict`→`dict[str, Any]` (+`Any` import); `auth_notifications.py:73/107` guard `or not phone` (narrows `str|None`→`str`; preflight already rejects falsy phone → runtime no-op); `auto_reply_watchdog.py:166/167/171/178` SQLAlchemy `Column[...]` false-positives → justified `# type: ignore[assignment|arg-type]` (real fix = `Mapped[]` in models.py, out of scope).
+
+**Verify:** `mypy --follow-imports=silent` on the 4 target files (incl. already-clean `whatsapp_templates.py`) → **Success, 0 errors**. pytest NOT runnable in sandbox (no Postgres — MEH-672 limit) → **CI Postgres is the gate**. **MERGED to staging (PR #917, squash `f87c06e`).**
+
+**⚠️ Sapir action (CC blocked from pyproject.toml):** commit on staging in your terminal —
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+(Transitive errors in models/database/email/vacation_state stay warn-only — separate cleanup, like the existing schemas/ deferral noted in `[tool.mypy]`.)
+
+## 2026-06-04 — MEH-735 merged to staging (PR #912, squash `9942674`)
+
+**Done:** completed the WCAG 2.4.1 skip-to-content link. Phase 0 found it already existed (`layout.js:199`); closed two gaps rather than re-adding: `<main id="main-content">` got `tabIndex={-1}` + `focus:outline-none` (reliable focus target), and the existing `sweep_tail.layout.skip_to_main` i18n key updated to spec copy (he `דילוג לתוכן`, en `Skip to content`). Tab→Enter flow verified via Playwright on / + /login (activeElement = main#main-content after Enter). All CI green; no new component/key.
+
+**Pending / next:** (a) keyboard QA on staging if desired (visual no-op for mouse/mobile users). (b) Still open from MEH-732: the mobile-drawer (hamburger) login link is not hidden on `/login` — decide whether to gate it for consistency. (c) `#E8E0D0` exact-literal border still MEH-725-deferred.
+
+## 2026-06-03 — MEH-732 merged to staging (PR #909, squash `c9b1587`)
+
+**Done:** navbar pill polish on `Header.jsx` — Composition B (flex space-between: lead group [logo + links] · action cluster, max-width 940px), pill-only glass on scrolled/inner (`bg-background/85` + 12px backdrop-blur, solid fallback, threshold 80→60, never transitions padding/backdrop-filter), action hierarchy (search filled-primary · add-business outlined · login quiet text hidden on /login · globe quiet). i18n voice fixes (he.json `nav.explore`/`nav.discover` גלי·גלה→גלו, also the BottomNav home tab; en.json `nav.explore`→Explore). `#E8E0D0` mapped to existing `border` token. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); `/adversarial-review` ran with one fix (dropped `padding` from transition).
+
+**Pending / next:** (a) **mobile QA** on the staging deploy / Vercel preview — verify glass pill + action hierarchy on a real phone (merged on Sapir's explicit "MERGE" ahead of the Rule-23 mobile-QA gate). (b) **Follow-up:** mobile-drawer (hamburger) login link is NOT hidden on `/login` — only the desktop quiet link is; decide whether to gate both for consistency. (c) `#E8E0D0` exact-literal border still MEH-725-deferred.
+
+**Decision this session:** MEH-638 "no glass" lock is superseded by MEH-732 for the pill only (pill-only glass, never a full-width band; hamburger keeps its own glass). Documented in `Header.jsx` header docstring + CHANGELOG.
+
+## 2026-06-03 — 🚀 RELEASED to production (staging → main, merge `4ef861c`)
+
+**PR #906** (staging → main, merge method to preserve feature SHAs). Backend pytest gate (MEH-672 Postgres) verified green pre-merge; all checks green/skipped. On merge: Vercel prod frontend + `deploy.yml` Railway production redeploy.
+
+**Shipped (since #898 cut):**
+- **MEH-672** (#901 foundation + #903 cutover) — type-safe WhatsApp template cutover. `send_template(to, template: WhatsAppTemplate)`; param mismatch caught at construction/type-check time (kills the MEH-509 Meta-400 class). Byte-equivalent payload + fail-open unchanged. **← the item under production smoke.**
+- **MEH-733** (#902) — homepage §06 editorial "breath" pull-quote.
+- **MEH-720** (#904) — deferred-review executed: PII removal (osek-patur ID) + operator block (`טופז שנפ.` / `Topaz Schnapp.`, contact `noreply@`→`contact@`) + `דירקטורי`→`פלטפורמה` across **6 surfaces** (5 he.json legal/WhatsApp + hardcoded `HomeProductCard.jsx`). grep ID→0, grep דירקטורי→0.
+- **CI** (#907) — changelog workflow git-cliff `v2.8.0` 404 → `v2.13.1` (asset filename has no `v` prefix; that was the 404 cause). Repairs auto-CHANGELOG on every staging push.
+
+**P1 stale-ISR `/terms` — RESOLVED.** Root cause confirmed: prior prod deploys ran `action:redeploy` (reuse existing static artifacts) → the pre-21/5 stale `/terms` artifact survived while source was clean; this release's **fresh git build regenerated `/terms` clean**. Source/config were never the cause (terms & privacy are byte-identical SSG+ISR, no page-level pin — verified in earlier diagnosis). **Systemic note (no ticket yet):** consider a post-deploy `revalidate` hook for changed routes so artifact reuse can't pin stale legal pages again.
+
+**OPEN THREADS:**
+- **Production smoke (Sapir):** WhatsApp welcome + approved on a real device; `/terms`+`/privacy` operator block (`טופז שנפ` / `contact@` / no ID / no `דירקטורי`); `/en/terms` ID gone; homepage §06 on mobile.
+- **Head-meta closure (Sapir):** canonical `/terms`, single `<title>`, `og.png` + re-scrape via FB Sharing Debugger.
+- **MEH-472 (en i18n wave):** `/en` English "directory" wording left intact (no approved English verbatim) — `en.json:1461/2540/2678/2793/2807`. Add this en-wording note to MEH-472.
+- **Linear:** open a retroactive ticket for the #904 scope when a free-issue slot frees (workspace was at limit; shipped under "Refs MEH-720").
+- **OFF-REPO (Sapir):** accountant — business-registration ownership (Topaz vs actual operator); certificate name-spelling fix (`שנף`→`שנפ`) at רשות המסים.
+
+## 2026-06-03 — MEH-233: auth/error "viewport clip" → NOT-A-LAYOUT-BUG (scroll-under-sticky)
+
+**Branch:** `feature/meh-233-fix-auth-viewport-clip` (created off staging, **deleted — no PR, no code shipped**).
+
+**Reported:** centered auth/error cards "clip" behind the floating navbar on short viewports (card top / brand-mark hides under the pill); seen on `/login` + error page on deployed staging.
+
+**Diagnosis (live local prod build of staging, Playwright @1366×640):** **scroll-under-sticky, not an overflow clip.** At scroll-top the content sits correctly below the navbar — error `<main>` top = 94px (= header height), logo top = 158px (header bottom = 94px → fully clear). It only slides behind the pill once scrolled (scrollY=120 → logo top 38 < 94). Discriminator (content under pill at scroll-top?) = **NO**.
+- Header is `sticky top-0 z-[1000]` (`Header.jsx:130`); page content scrolls beneath it by design.
+- The band wrapper (`Header.jsx:146`, `pt-4 sm:pt-6 pb-2`) is **transparent** — only the inner pill carries fill (`bg-surface-card`, `Header.jsx:154-155`). Scrolling content shows through the transparent gap above/around the pill → the photographed "clip."
+- `min-h-[calc(100vh-200px)] flex items-center` does **not** clip: `min-height` grows the container to fit a taller card (measured computed height 707px vs min 400px), so the flex item never overflows upward. The classic flex-centering upward-clip needs a **definite** height (verified: forcing `height:400px;min-height:0;align-items:center` → logo top 5px, clipped). None of the 9 candidate containers use a definite height.
+
+**Disproven:** error-boundary layout escape (`headerPresent:true` — Header is present) and a definite-height ancestor.
+
+**Action:** reverted the staged `items-center → [align-items:safe_center]` swap (9 auth/standalone files: login/register/forgot-password/reset-password/verify-email/not-found/error/producer-not-found/rate-token) — it guards overflow-clip, the wrong failure mode, and does not address scroll-under. **No code shipped.** The real fix is DESIGN — a scrolled-state backdrop/scrim on the floating-pill band — tracked in **MEH-732** (pattern owner MEH-655). MEH-233 → NOT-A-BUG.
+
+**Note:** `app/[locale]/error.js` is a plain `error.js` (renders inside `[locale]/layout.js` → Header present), despite its misleading `GlobalError` function name; there is no `global-error.js`.
+
 ## 2026-06-03 — fix/terms-legal-copy-pii: legal PII + MEH-720 deferred "דירקטורי" review
 
 **Branch:** `fix/terms-legal-copy-pii` (off staging). **Draft PR** base `staging`. LOW-RISK copy/i18n. Refs MEH-720 (Linear at free-issue limit → no MEH slot; "Refs" not "Closes").

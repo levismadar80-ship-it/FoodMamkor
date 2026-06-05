@@ -245,7 +245,7 @@ is `API contract audit (static)`.
 
 | Check is… | How to skip on docs-only PRs | Why it's safe |
 |---|---|---|
-| **Required** (any of the 6 above) | **Job-skip pattern** — `needs: changes` + `if: <paths>`, gated by a `dorny/paths-filter` `changes` job. | A skipped job reports `conclusion=success`, which **satisfies** the required check. Worked examples: **#811 (F1)** gated 3 `pr-checks.yml` jobs; **#814 (F2)** gated `deploy.yml`'s `lint` + `api-contract-static`. |
+| **Required** (any of the 6 above) | **Job-skip + docs-only twin (MEH-736)** — keep `needs: changes` + `if: <paths>` on the real job, AND add a no-op twin job with the **identical `name:`** that runs on the exact complement filter and exits 0. | **Under Rulesets a *skipped* required check reports as "Expected" and BLOCKS merge** — it does NOT satisfy the check. This **differs from classic branch protection**, which treated skipped as success; the stale assumption forced admin-merges on 2026-06 (#910/#913 + a near-miss). The twin reports `success` under the same `name:` so docs-only PRs merge with no override. Twins = the `*-noop` jobs in `pr-checks.yml` + `deploy.yml`. Earlier examples **#811/#814** predate the Rulesets migration and relied on the now-false skipped=success assumption. |
 | **Not required** (e.g. `Adversarial review (calibration)`) | **Trigger-level `paths-ignore`** on the `pull_request:` trigger. | The workflow doesn't trigger → no check is expected → nothing to satisfy. Worked example: **#812 (F3)** — `paths-ignore` on `claude-review.yml`. **NEVER** apply `paths-ignore` to a *required* check: the check becomes **absent** and branch protection blocks the PR forever. |
 
 #### Rule 1: `main`
