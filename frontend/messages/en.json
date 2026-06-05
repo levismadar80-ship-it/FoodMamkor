@@ -2001,36 +2001,37 @@
   "about": {
     "consumer": {
       "hero": {
-        "heading": "You used to need to know who to ask. Not anymore."
+        "heading": "You used to need to know who to ask. Not anymore",
+        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
         "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Hi, I'm Sapir.",
-        "p1": "It was always important to me to know where my food came from. I wanted to buy better — healthier, more local.",
-        "p2": "But I quickly discovered it wasn't accessible. To find truly quality food, I had to search for hours — ask the right people, join WhatsApp groups, search Google and Instagram.",
-        "p3": "Then I realized: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables a few minutes from home. There's someone baking sourdough in the next neighborhood. There are small businesses with incredible products — that most people don't even know about. So people keep shopping at the supermarket — not because it's the best, but because it's the most convenient.",
-        "p5": "And that's how Mehamakor was born. One place that brings together real, local, healthy food for you — close to home. Without searching for hours.",
+        "greeting": "Hi, I'm Sapir",
+        "p1": "Two years ago I found myself standing in front of a supermarket shelf, reading an ingredient list I couldn't decipher. I knew that somewhere around me there were people making good food, straight from the source — I just didn't know how to find them.",
+        "p2": "So I started asking. A friend knew a baker, who knew a farmer, who told me about a cheesemaker working three neighborhoods away. Every name arrived in a whisper, by word of mouth, as if it were some secret being kept.",
+        "p3": "And that's exactly what bothered me. Why should something so basic — knowing where your food comes from — depend on luck, on connections, and on whether you happened to know the right person.",
+        "p4": "So I started building this place myself. Business after business, I checked who stands behind every product, where it's made, and what really goes into it — no shortcuts.",
+        "p5": "Today Mehamakor is exactly that: not advertising and not deliveries, but a trustworthy map of real people making real food, right next to you.",
         "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
-        "caption2": "I'm building the site on my own. I personally vet every business.",
         "caption3": "The criteria — I write them from what I myself look for in food."
       },
       "parallax": {
-        "quote": "Because what you eat matters. And where you buy it matters more"
+        "quote": "Good food — not something we keep to ourselves"
       },
       "benefits": {
+        "heading": "Why Mehamakor",
         "local": {
-          "title": "Real food close to you",
-          "body": "No hour-long drives. No weeks of searching.\nEverything close to you, in one place."
+          "title": "Close to you",
+          "body": "Businesses from your area, with the shortest possible chain. Less distance, more freshness."
         },
         "trust": {
-          "title": "Trust what you eat",
-          "body": "Only verified businesses. We vet each one\nbefore they appear."
+          "title": "Worth your trust",
+          "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Supporting small businesses",
-          "body": "Every local purchase is a choice — to keep money\nin your community, and support the people behind the food."
+          "title": "Local community",
+          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
         }
       },
       "tips": {
@@ -2049,9 +2050,9 @@
         }
       },
       "testimonials": {
-        "heading": "What people say about us",
-        "subtitle": "Stories are coming soon",
-        "cta": "Want to share too? Write to us"
+        "heading": "The stories yet to be written here",
+        "subtitle": "This space is reserved for your stories.",
+        "cta": "Have a story? Tell us"
       },
       "values": {
         "heading": "How we choose",
@@ -2071,11 +2072,10 @@
         "safety": {
           "title": "Safety",
           "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
-        },
-        "closing": "If that's you — a business owner building something you're proud of — we'd love to meet you."
+        }
       },
       "cta": {
-        "heading": "Have a business? Come join us.",
+        "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
         "explore": "Discover businesses near you"
       },
