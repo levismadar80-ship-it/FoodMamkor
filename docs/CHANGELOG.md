@@ -4,6 +4,19 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר (Refs MEH-742)
+
+`docs(MEH-742)`: landed ADR-022 — the "Licensed businesses only" blanket DNA LOCK
+(MEH-528 option B) is replaced by a two-tier model. **Tier 1 מאומת** = license/exemption
+doc reviewed → gold badge (free forever); **Tier 2 מוצהר** = binding declaration, for
+legally exempt categories only, never negatively labeled. Unlicensed food production
+where a license is legally required stays excluded; home-cook LOCK + manual approval
+unchanged. Consumer-facing tier language is מאומת / מוצהר only — `"מורשה/מורשים"` is
+legal-internal. **Files:** new `docs/decisions/ADR-022-two-tier-licensing-model.md`;
+synced the LOCK line in `docs/CONTEXT.md` §2 + `docs/BRAND.md` §3, added an anti-pattern
+in `docs/BRAND.md` §7, indexed in `docs/decisions/README.md`. Brand-book step only — no
+code, schema, or UI. Decision ticket stays open (4 children pending). **Refs MEH-742.**
+
 ### 2026-06-05 — MEH-757: /about founder-story copy swap — "בלי לחפש שעות" (Closes MEH-757)
 
 `copy(about)`: replaced the founder-story body (`about.consumer.story.p1`–`p5`,
