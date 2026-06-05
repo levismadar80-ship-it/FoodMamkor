@@ -1814,20 +1814,20 @@
   "events": {
     "list": {
       "title": "אירועים בחוות ואצל בתי עסק",
-      "subtitle": "סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור",
+      "subtitle": "מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור",
       "breadcrumb_home": "בית",
       "breadcrumb_events": "אירועים",
       "tab_events": "אירועים בחוות",
       "tab_experiences": "חוויות וסדנאות",
-      "add_event": "הוסיפי אירוע",
-      "submit_experience": "הגישי חוויה",
+      "add_event": "הוסיפו אירוע",
+      "submit_experience": "הוסיפו חוויה",
       "view_mode_label": "מצב תצוגה",
       "view_list": "רשימה",
       "view_calendar": "לוח שנה",
-      "filter_city_label": "סנן לפי עיר",
-      "filter_city_placeholder": "חפשי עיר...",
-      "loading_events": "טוענת אירועים...",
-      "loading_experiences": "טוענת חוויות...",
+      "filter_city_label": "חיפוש לפי עיר",
+      "filter_city_placeholder": "שם עיר או יישוב",
+      "loading_events": "טוענים אירועים...",
+      "loading_experiences": "טוענים חוויות...",
       "empty_events": "אין אירועים שתואמים לסינון הנוכחי — עדיין",
       "empty_experiences": "לא מצאנו חוויות שתואמות לסינון — עדיין",
       "free": "חינם"
@@ -1852,11 +1852,11 @@
       "other": "אחר"
     },
     "detail": {
-      "loading": "טוענת את האירוע...",
+      "loading": "טוענים את האירוע...",
       "not_found": "לא מצאנו את האירוע הזה",
       "back_to_all": "← חזרה לכל האירועים",
       "register": "להרשמה →",
-      "contact_producer": "צור קשר עם בית העסק",
+      "contact_producer": "יצירת קשר עם בית העסק",
       "all_events": "← כל האירועים",
       "organized_by": "מאורגן על ידי",
       "participants_limit": "עד {n} משתתפים",
@@ -1887,7 +1887,7 @@
       "submit_cta": "הגישי חוויה משלך",
       "breadcrumb_home": "בית",
       "breadcrumb_experiences": "חוויות",
-      "cross_link_events": "מחפשת גם אירועים בחוות? ראי את כל האירועים והחוויות ביחד ←",
+      "cross_link_events": "מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←",
       "filter_city_label": "סנן לפי עיר",
       "filter_city_placeholder": "חפשי עיר...",
       "loading": "טוענת חוויות...",
@@ -3228,7 +3228,7 @@
           "sub": "עדכני פרטי עסק, משלוחים ותמונות"
         },
         "add_event": {
-          "title": "הוסף אירוע",
+          "title": "הוסיפו אירוע",
           "sub": "סדנה, סיור, ימי פתיחה וכו׳"
         },
         "view_business": {
@@ -3388,7 +3388,7 @@
       "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
       "field_registration_url_placeholder": "https://...",
       "submit_publishing": "מפרסמת...",
-      "submit": "פרסם אירוע",
+      "submit": "פרסמו אירוע",
       "cancel": "ביטול",
       "error_generic": "שגיאה ביצירת האירוע — נסי שוב.",
       "crumb_dashboard": "ניהול העסק",
