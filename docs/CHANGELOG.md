@@ -4,6 +4,23 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-750: S8 copy wave /about (Closes MEH-750; swallows MEH-746; Refs MEH-742/MEH-579)
+
+`copy(about)`: applied the 17 Sapir-locked strings from MEH-750 to `about.consumer.*` in
+`he.json` + `en.json` (key parity 2542==2542) plus 4 JSX changes in
+`frontend/app/[locale]/about/AboutClient.jsx`. **Strings:** H1 drops terminal period + NEW
+`hero.subheading` rendered under H1; Sapir story rewritten (`greeting` loses period, `p1`–`p5`
+new word-of-mouth narrative, `caption2` deleted); `parallax.quote` →
+`אוכל טוב — לא שומרים לעצמנו` (old quote ranked source over food); NEW `benefits.heading`
+`למה מהמקור` + tightened pillar titles; `benefits.trust.body` drops "מאומתים" (MEH-742 gate +
+MEH-579 over-claim — **swallows MEH-746**); testimonials reframed as honest placeholder; `cta.heading`
+merged to `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` + `values.closing` deleted (values card ends
+after בטיחות). **COPY_BANK:** decision-log rows for every changed key, retired the stale "criteria
+admission headline" row, and corrected the stats-row `MEH-654` typo (per MEH-746). **Out of scope
+(untouched):** `tips.*`, `values.intro`, `contact.*`, `nav.*`, metadata/OG — the S8/D visual port is
+a separate future task (MEH-135). **Verified:** greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0;
+`מאומתים` = 0 in `about.consumer.*`; `npm run build` ✓.
+
 ### 2026-06-05 — MEH-747 follow-up: i18n the admin delete-error toast (Refs MEH-747)
 
 `refactor(i18n)`: the delete-failure toast added in PR #937 hardcoded the Hebrew string
