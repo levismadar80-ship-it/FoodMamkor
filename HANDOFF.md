@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-04 — MEH-735 merged to staging (PR #912, squash `9942674`)
+
+**Done:** completed the WCAG 2.4.1 skip-to-content link. Phase 0 found it already existed (`layout.js:199`); closed two gaps rather than re-adding: `<main id="main-content">` got `tabIndex={-1}` + `focus:outline-none` (reliable focus target), and the existing `sweep_tail.layout.skip_to_main` i18n key updated to spec copy (he `דילוג לתוכן`, en `Skip to content`). Tab→Enter flow verified via Playwright on / + /login (activeElement = main#main-content after Enter). All CI green; no new component/key.
+
+**Pending / next:** (a) keyboard QA on staging if desired (visual no-op for mouse/mobile users). (b) Still open from MEH-732: the mobile-drawer (hamburger) login link is not hidden on `/login` — decide whether to gate it for consistency. (c) `#E8E0D0` exact-literal border still MEH-725-deferred.
+
 ## 2026-06-03 — MEH-732 merged to staging (PR #909, squash `c9b1587`)
 
 **Done:** navbar pill polish on `Header.jsx` — Composition B (flex space-between: lead group [logo + links] · action cluster, max-width 940px), pill-only glass on scrolled/inner (`bg-background/85` + 12px backdrop-blur, solid fallback, threshold 80→60, never transitions padding/backdrop-filter), action hierarchy (search filled-primary · add-business outlined · login quiet text hidden on /login · globe quiet). i18n voice fixes (he.json `nav.explore`/`nav.discover` גלי·גלה→גלו, also the BottomNav home tab; en.json `nav.explore`→Explore). `#E8E0D0` mapped to existing `border` token. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); `/adversarial-review` ran with one fix (dropped `padding` from transition).
