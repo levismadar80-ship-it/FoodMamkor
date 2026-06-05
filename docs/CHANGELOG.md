@@ -4,6 +4,18 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage (Refs MEH-733/MEH-542)
+
+`refactor(home)`: deleted the §06 editorial "breath" pull-quote section pre-launch.
+Removed `HomeEditorialBreath.jsx`, its import + mount + `§06` comment from
+`app/[locale]/page.js`, and the `home.editorial_breath` block from `he.json`/`en.json`.
+Rationale: the lone rendered `06` numeral had no visible sibling numerals and collided
+semantically with `HomeCategoryGrid`'s own `01–06`; the quote promised *people* but the
+next section delivers *categories*. Stats strip now flows straight to
+LocationBanner/HolidayBanner/CategoryGrid. Quote (`תכירי את מי שמאחורי האוכל`) shelved in
+`docs/COPY_BANK.md` 🕐 — intended future home is the Producer Stories opener (MEH-542).
+`HomeCategoryGrid` untouched (numerals are index-driven, no renumber). Sapir locked option C.
+
 ### 2026-06-05 — MEH-687: ProducerHeader hardcoded red Heart → text-primary (Closes MEH-687; Refs MEH-686)
 
 `fix(brand)`: removed the inline `style={{ color: "#A32D2D" }}` (red) from the favorites-count

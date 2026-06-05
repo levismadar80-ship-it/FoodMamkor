@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage
+
+**Branch:** `feature/meh-733-remove-breath` (off staging) — draft PR open, `Refs MEH-733` (issue already closed).
+**Done:** deleted `HomeEditorialBreath.jsx`; stripped import + mount + `§06` comment from `app/[locale]/page.js`; removed `home.editorial_breath` block from `he.json`+`en.json`; shelved quote in `docs/COPY_BANK.md` 🕐 (future home = Producer Stories MEH-542). `HomeCategoryGrid` untouched (index-driven numerals). Sapir locked option C.
+**Verify:** `npm run build` green; `grep editorial_breath frontend/` = 0; `grep "תכירי את מי" frontend/` = 0; both message JSONs parse.
+**Pending:** Sapir mobile QA on preview → mark PR ready → merge.
+
 ## 2026-06-05 — MEH-687: ProducerHeader red Heart fix (PR pending)
 
 Branch `feature/meh-687-red-heart` off staging. Single-line: `ProducerHeader.jsx:58` Heart
