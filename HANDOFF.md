@@ -5,6 +5,38 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 (evening) — 🚀 SESSION CLOSE: release #936 → production + full prod smoke passed
+
+**Current state — Production = `main` @ `e3e39b9`** (release **#936**, merge-commit;
+21 PRs **#927–#948**). Shipped: OTP fixes (**MEH-745** self-serve `pending_whatsapp`,
+**MEH-747** admin-delete `users_producer_id_fkey` unlink, **MEH-755** OTP-token
+producer-delete `NotNullViolation`), copy waves (**MEH-750** /about S8, **MEH-752**
+/login, **MEH-756** /events, **MEH-757** new founder story "בלי לחפש שעות"), honey
+license split **code** (**MEH-743**), vitest-in-CI (**MEH-729**), orphan-audit script
+(**MEH-749**). Release-blocker conflict on `staging↔main` append-only logs resolved via
+back-merge PR **#950** (`main → staging`, merge-commit `6e70b6e`; founder story = MEH-757
+verbatim, lawyer-brief kept staging's appendix, logs accept-both).
+
+**Prod smoke — PASSED:** admin delete with OTP tokens (MEH-747 + MEH-755) verified live;
+/about new founder story live verbatim; `/he` loads clean; Railway healthy; test remnant
+producer "פ" deleted via admin.
+
+**OPEN / next session:**
+- **MEH-754** — OTP auth-template **blocked**: Sapir creates the Meta AUTHENTICATION
+  template; CC prompt is in the ticket.
+- **MEH-743** — manual **prod SQL** for `categories` (add "דבש" row + rename
+  "שמנים ודבש" → "שמנים"; exact steps in ticket comment). **Until run, honey registers
+  license-free in prod.**
+- **MEH-744** — Anthropic credits exhausted → producer risk-score dead in prod.
+- **`changelog.yml`** workflow disabled in the Actions UI — file deletion still pending;
+  fold into the next CI-touching PR.
+- **MEH-733** — verify the §06 pull-quote removal PR actually merged (prod homepage still
+  shows the pull-quote).
+- **MEH-669** — guard question open: how did "re" register while admin? Suspect the OAuth
+  path (`auth.py:454`).
+- Approved-message sent twice once — idempotency suspect; watch.
+- Stale branch `reconcile-release-936` prunable.
+
 ## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
 
 **Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
