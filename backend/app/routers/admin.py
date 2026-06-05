@@ -327,9 +327,7 @@ def admin_delete_producer(
     # (models.py PhoneOtpToken.producer backref) has no delete cascade, so the
     # unit-of-work tries to nullify producer_id on delete → NotNullViolation
     # 500. Mirrors the auth.py::delete_account fix; bulk-delete pre-empts it.
-    db.query(PhoneOtpToken).filter(
-        PhoneOtpToken.producer_id == producer.id
-    ).delete()
+    db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer.id).delete()
 
     db.delete(producer)
     db.commit()
