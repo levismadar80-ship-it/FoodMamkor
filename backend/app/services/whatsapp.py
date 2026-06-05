@@ -19,6 +19,7 @@ without it (see https://developers.facebook.com/docs/whatsapp/cloud-api/referenc
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import httpx
 
@@ -39,7 +40,7 @@ def _is_configured() -> bool:
     return bool(settings.whatsapp_phone_number_id and settings.whatsapp_access_token)
 
 
-def _post(payload: dict, *, kind: str, to: str) -> bool:
+def _post(payload: dict[str, Any], *, kind: str, to: str) -> bool:
     url = f"{_graph_api_base()}/{settings.whatsapp_phone_number_id}/messages"
     headers = {"Authorization": f"Bearer {settings.whatsapp_access_token}"}
     try:

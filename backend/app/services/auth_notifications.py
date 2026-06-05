@@ -68,7 +68,9 @@ def notify_producer_registered(name: str, phone: str | None) -> bool:
     # original 2-param shape returned 400 from Meta. The earlier dashboard
     # URL construction was removed alongside the param — if a Quick-Reply
     # URL button is added to the template later, reintroduce it then.
-    if not _producer_wa_preflight(name, phone, "welcome"):
+    # `or not phone` narrows str | None → str for _normalize_il_phone below;
+    # preflight already returns False on a falsy phone, so this is defensive.
+    if not _producer_wa_preflight(name, phone, "welcome") or not phone:
         return False
     normalized = _normalize_il_phone(phone)
     try:
@@ -102,7 +104,9 @@ def notify_producer_approved(
     # if a Quick-Reply URL button is added to the template later,
     # reintroduce that branch in the same PR. `slug` + `producer_id` stay
     # in the signature so callers in routers/admin.py don't need to change.
-    if not _producer_wa_preflight(name, phone, "approved"):
+    # `or not phone` narrows str | None → str for _normalize_il_phone below;
+    # preflight already returns False on a falsy phone, so this is defensive.
+    if not _producer_wa_preflight(name, phone, "approved") or not phone:
         return False
     normalized = _normalize_il_phone(phone)
     try:
