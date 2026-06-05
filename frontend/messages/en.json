@@ -1,7 +1,7 @@
 {
   "nav": {
     "discover": "Discover",
-    "explore": "גלי",
+    "explore": "Explore",
     "add_business_short": "הוסיפו עסק",
     "map": "Map",
     "events": "Events",
@@ -3352,7 +3352,7 @@
       "save_error_toast": "Save error, please try again"
     },
     "layout": {
-      "skip_to_main": "Skip to main content"
+      "skip_to_main": "Skip to content"
     },
     "event_new": {
       "back_link": "← Dashboard",

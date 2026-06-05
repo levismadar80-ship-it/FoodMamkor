@@ -30,15 +30,21 @@ import LanguageToggle from "@/components/LanguageToggle";
  * "floating" look without making the header overlap content.
  *
  * Two surface states (reuse MEH-29 scroll machinery verbatim):
- *   - over-image  → `transparent = isHomepage && scrollY < 80`: pill is
+ *   - over-image  → `transparent = isHomepage && scrollY < 60`: pill is
  *     transparent, nav ink light (`text-background`), inner darkening
  *     gradient kept for legibility over the hero photo, logo inverted.
- *   - pill        → scrolled OR any inner page (no hero): cream
- *     `surface-card` fill, 1px border, single resting shadow, dark ink.
+ *   - pill (glass) → scrolled OR any inner page (no hero): MEH-732 pill-only
+ *     glass — translucent cream (`bg-background/85`) + 12px backdrop-blur where
+ *     supported, solid `bg-background` fallback via `supports-[backdrop-filter]`,
+ *     1px `border-border`, green resting shadow, dark ink. Layout is MEH-732
+ *     Composition B (flex space-between: lead group [logo + links] · action
+ *     cluster) across both states.
  *
- * LOCKs (MEH-638): no shadow-lift on hover (hover = color/bg shift only);
- * no glass anywhere except the mobile hamburger over the hero image
- * (single allowed ingredient); active link = gold underline.
+ * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
+ * active link = gold underline. MEH-732 SUPERSEDES the MEH-638 "no glass"
+ * lock for the pill (pill-only glass, never a full-width band); the mobile
+ * hamburger keeps its own glass over the hero. Transition never animates
+ * backdrop-filter (background + shadow only).
  */
 export default function Header() {
   const { user, logout } = useAuth();
@@ -70,12 +76,12 @@ export default function Header() {
     setMenuOpen(false);
   }, [pathname]);
 
-  // MEH-29: rAF-throttled scroll listener — threshold 80px.
+  // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
       rafRef.current = window.requestAnimationFrame(() => {
-        setScrolled(window.scrollY >= 80);
+        setScrolled(window.scrollY >= 60);
         rafRef.current = null;
       });
     };
@@ -107,8 +113,9 @@ export default function Header() {
   const isAdmin = user?.role === "admin";
   const showAddBusinessCta = !isProducer && !isAdmin;
 
-  // MEH-643: navbar uses nav.explore ("גלי", feminine) — NOT nav.discover
-  // ("גלה"), which stays bound to the BottomNav home tab.
+  // MEH-643: navbar uses nav.explore (not nav.discover). MEH-732: both keys
+  // de-masculinized to "גלו" (ADR-014 plural-voice for nav chrome) — nav.explore
+  // here, nav.discover on the BottomNav home tab.
   const NAV_ITEMS = [
     { href: "/", label: t("nav.explore") },
     { href: "/map", label: t("nav.map") },
@@ -116,6 +123,8 @@ export default function Header() {
   ];
 
   const isHomepage = pathname === "/";
+  // MEH-732: hide the guest login link on /login (locale-stripped pathname).
+  const isLoginPage = pathname === "/login";
   const transparent = isHomepage && !scrolled;
 
   const isActive = (href) => {
@@ -143,61 +152,69 @@ export default function Header() {
       )}
 
       {/* Nav-shell — centers the pill; transparent band reserves height. */}
-      <div className="relative flex justify-center px-4 sm:px-6 pt-4 sm:pt-6 pb-2">
+      <div className="relative flex justify-center px-5 sm:px-6 pt-5 sm:pt-8 pb-2">
         <nav
           aria-label={t("nav.main_label")}
           className={[
-            "w-full max-w-[1200px] grid items-center rounded-full border",
-            "grid-cols-[auto_1fr_auto] gap-3 md:gap-8",
-            "transition-[background-color,border-color,box-shadow,padding,color] duration-base ease-quart",
+            // MEH-732 Composition B: flex space-between — lead group (logo +
+            // links) at the start, action cluster at the end, one air gap
+            // between. Replaces the MEH-643 grid-cols-[auto_1fr_auto] layout.
+            "w-full max-w-[940px] flex items-center justify-between rounded-full border",
+            // MEH-732 guardrail: animate background + shadow (+ the ink/border
+            // cross-fade for AA legibility over the hero) — NOT padding (no
+            // layout reflow on scroll) and never backdrop-filter.
+            "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart",
             transparent
-              ? "bg-transparent border-transparent px-3 py-1.5 md:px-6 md:py-2"
-              : "bg-surface-card border-border shadow-[0_2px_20px_rgba(46,104,83,0.06)] px-3 py-1.5 md:px-4 md:py-2",
+              ? "bg-transparent border-transparent py-3 px-5"
+              // MEH-732 pill-only glass: translucent cream + 12px blur where
+              // supported, solid bg-background fallback otherwise. The
+              // transition never animates backdrop-filter (guardrail).
+              : "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-2.5 px-4",
           ].join(" ")}
         >
-          {/* LOGO — start (visual right in RTL). Inverted white over hero. */}
-          <Link href="/" className="shrink-0 inline-flex items-center" aria-label={BRAND_NAME}>
-            <Image
-              src="/logo.png"
-              alt={BRAND_NAME}
-              width={106}
-              height={40}
-              priority
-              style={
-                transparent
-                  ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
-                  : undefined
-              }
-            />
-          </Link>
-
-          {/* NAV LINKS — center (desktop only). */}
-          <div className="hidden md:flex items-center justify-center gap-8">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                active={isActive(item.href)}
-                transparent={transparent}
-                textShadow={textShadow}
+          {/* LEAD GROUP — logo + nav links together (internal gap 36px).
+              start of the row (visual right in RTL). */}
+          <div className="flex items-center gap-9">
+            <Link href="/" className="shrink-0 inline-flex items-center" aria-label={BRAND_NAME}>
+              <Image
+                src="/logo.png"
+                alt={BRAND_NAME}
+                width={106}
+                height={40}
+                priority
+                style={
+                  transparent
+                    ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
+                    : undefined
+                }
               />
-            ))}
+            </Link>
+
+            {/* NAV LINKS — desktop only, part of the lead group. */}
+            <div className="hidden md:flex items-center gap-9">
+              {NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  active={isActive(item.href)}
+                  transparent={transparent}
+                  textShadow={textShadow}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* ACTIONS — end (visual left in RTL). */}
-          <div className="flex items-center gap-1.5 md:gap-2 justify-self-end">
-            {/* Desktop: search + lang + account + CTA */}
+          {/* ACTION CLUSTER — end of the row (visual left in RTL). */}
+          <div className="flex items-center gap-1.5 md:gap-2">
+            {/* Desktop search — MEH-732 single filled-primary action (label + icon). */}
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={[
-                "hidden md:flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-fast ease-quart focus-ring",
-                transparent ? "text-background hover:bg-white/10" : "text-fg-muted hover:bg-primary/5",
-              ].join(" ")}
-              style={textShadow}
+              className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full bg-action-primary hover:bg-action-primary-hover text-white text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
             >
-              <MagnifyingGlass size={20} weight="regular" aria-hidden="true" />
+              <MagnifyingGlass size={18} weight="bold" aria-hidden="true" />
+              {t("nav.search_label")}
             </button>
             <span className="hidden md:inline-flex">
               <LanguageToggle className={transparent ? "text-background hover:bg-white/10" : ""} />
@@ -214,24 +231,35 @@ export default function Header() {
                 textShadow={textShadow}
               />
             ) : (
-              <LoginAccount label={t("nav.login")} transparent={transparent} scrolled={!transparent} textShadow={textShadow} />
+              // MEH-732: quiet text link, hidden on /login.
+              !isLoginPage && (
+                <LoginAccount label={t("nav.login")} transparent={transparent} textShadow={textShadow} />
+              )
             )}
 
             {showAddBusinessCta && (
               <Link
                 href="/register/producer"
-                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full bg-action-primary hover:bg-action-primary-hover text-white text-sm font-medium whitespace-nowrap border border-action-primary transition-colors duration-fast ease-quart focus-ring"
+                // MEH-732: demoted to outlined secondary (search is the one
+                // filled action). Surface-aware border/ink over hero vs pill.
+                className={[
+                  "hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full border text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring",
+                  transparent
+                    ? "border-background/60 text-background hover:bg-white/10"
+                    : "border-action-primary text-action-primary hover:bg-primary/5",
+                ].join(" ")}
+                style={textShadow}
               >
                 {t("nav.add_business_short")}
-                <span className="inline-block scale-x-[-1] text-white/70" aria-hidden="true">↗</span>
+                <span className="inline-block scale-x-[-1] opacity-70" aria-hidden="true">↗</span>
               </Link>
             )}
 
-            {/* Mobile: search + hamburger */}
+            {/* Mobile: search (44px circle) + hamburger */}
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={`md:hidden flex items-center justify-center w-10 h-10 rounded-full ${transparent ? "text-background" : "text-fg-muted"}`}
+              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full ${transparent ? "text-background" : "text-fg-muted"}`}
               style={textShadow}
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
@@ -326,13 +354,17 @@ export default function Header() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                >
-                  {t("nav.login")}
-                </Link>
+                // MEH-B: hide the drawer login entry on /login too — mirrors
+                // the desktop isLoginPage gate (MEH-732 / PR #909).
+                !isLoginPage && (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                  >
+                    {t("nav.login")}
+                  </Link>
+                )
               )}
             </div>
 
@@ -382,20 +414,20 @@ function NavLink({ href, label, active, transparent, textShadow }) {
 }
 
 /**
- * MEH-643 — ghost "כניסה לחשבון" account button (guests). Replaces the
- * MEH-39 outlined-primary pill with the surface-aware ghost CTA: subtle on
- * the cream pill, on-dark variant over the hero. No fill, no shadow-lift —
- * hover = background tint only.
+ * MEH-643/MEH-732 — quiet "כניסה לחשבון" account link (guests). MEH-732
+ * dropped the border → no fill, no border (search is the one bold action);
+ * hover = ink shift only. Hidden on /login (gated at the call site via
+ * isLoginPage). Surface-aware ink: on-dark over the hero, primary on the pill.
  */
-function LoginAccount({ label, transparent, scrolled, textShadow }) {
+function LoginAccount({ label, transparent, textShadow }) {
   const variant = transparent
-    ? "text-background border border-background/50 hover:bg-white/10"
-    : `text-primary border ${scrolled ? "border-border" : "border-transparent"} hover:bg-primary/5`;
+    ? "text-background hover:text-background/80"
+    : "text-primary hover:text-primary-dark";
   return (
     <Link
       href="/login"
       className={[
-        "hidden md:inline-flex items-center justify-center min-h-[44px] px-4 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring",
+        "hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring",
         variant,
       ].join(" ")}
       style={textShadow}

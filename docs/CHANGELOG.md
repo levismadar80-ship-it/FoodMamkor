@@ -4,6 +4,64 @@
 
 ## Unreleased
 
+### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
+
+`fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`
+inside each page's `openGraph`) to 8 shareable routes — the MEH-739 AC3 follow-up.
+**🔴 root-emitting (no per-page openGraph → inherited `layout.js:71` `url: SITE_URL`):**
+`accessibility`, `producers` — given full per-page `openGraph` blocks. **🟡 og:url absent
+(openGraph overridden without `url`):** `about`, `contact`, `map`, `events` — `url` line added;
+`experiences`, `group-buys` — static `export const metadata` → `generateMetadata({params})`
+(needs `locale`), `url` added. `producers` (paginated, `ƒ` dynamic) uses `url: alternates.canonical`
+so `?page=N` variants stay self. **Out of scope (untouched):** `[slug]` producer-detail (already
+self via `lib/seo.js:225`), noindex auth chrome (login/register/forgot/reset/verify-email/
+favorites/messages/upgrade). Verified: all 8 grep `url:` in openGraph; `npm run build` ✓; rendered
+HTML `/he/about`+`/en/about` og:url = self (locale-aware); live = green `Playwright E2E (Vercel preview)` CI.
+
+### 2026-06-05 — head-meta: per-page openGraph for /terms + /privacy (PR #916)
+
+`feat(seo)`: added per-page `openGraph` to the `generateMetadata` of `/terms` and `/privacy` (no MEH# — retroactive ticket pending, workspace at issue limit). Both routes previously exported only `title`/`description`/`alternates`, so they fell back to the layout's site-level `BASE_METADATA.openGraph` (homepage card on social shares). Each page now emits `og:title` + `og:description` (reusing the MEH-720-cleaned `meta_title`/`meta_description` — HE voice `פלטפורמה`, zero `דירקטורי`), `og:type=website`, and `og:url` via `urlForLocalePath` (host `mehamakor.co.il`). **Why `siteName`/`locale`/`images` are repeated:** Next.js *shallow-merges* the `openGraph` field, so a page-level block replaces the layout's entirely — repeating them preserves the OG image (mirrors the `about`/`contact` siblings). Canonical was already correct (`buildAlternates`→`urlForLocalePath`, host `mehamakor.co.il`) and is unchanged. Scope: the two `page.js` files only — no i18n, layout, or dependency changes. Prod baseline confirmed via Vercel MCP: pre-PR `og:url` = site root, this PR makes it page-specific. `npm run build` green (terms + privacy SSG, 101/101).
+
+### 2026-06-04 — MEH-739: register/producer + events metadata fallbacks (Refs MEH-214/476/679)
+
+`fix(seo)`: שני תיקוני metadata על routes שלא קיבלו canonical/title עצמיים.
+**(1) register/producer** היה client component (`"use client"`) ולכן ירש את
+layout fallback (canonical=root, title דיפולטי — אומת בפרודקשן 05/06). פוצל ל-
+server wrapper בתבנית MEH-658 (login): `RegisterProducerClient.jsx` מחזיק את כל
+קוד הטופס **verbatim (move-only)** ו-`page.js` הפך ל-server component עם
+`generateMetadata` (`buildAlternates("/register/producer")`, title.absolute
+"רישום בית עסק | מהמקור", description). **(2) events** השתמש ב-canonical ידני
+ללא hreflang → הוחלף ל-`buildAlternates("/events", locale)` (canonical עצמי +
+languages map). `npm run build` ✓ (שני ה-routes כעת ●SSG). **og:url (AC3) —
+STOP/surfaced:** אין openGraph helper מרכזי; `layout.js:71` מקבע `url: SITE_URL`
+(root) שיורש לכל subpage. תיקון site-wide = >5 קבצים מחוץ ל-scope → לא בוצע;
+אפשרויות הוצגו ל-Sapir ב-PR body.
+
+### 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (Refs MEH-672, MEH-562)
+
+`chore(types)`: ניקוי strict-mypy ל-WhatsApp typed-template surface (המשך
+MEH-672). Phase 0 מצא **7** שגיאות in-scope (לא 13 כפי שה-HANDOFF העריך —
+ה-13 כלל גם שגיאות transitive ב-models/database/email/vacation_state שהן
+**מחוץ ל-scope**). תוקנו 7: `whatsapp.py:42` `dict`→`dict[str, Any]`;
+`auth_notifications.py:73/107` הוספת `or not phone` ל-guard (מצמצם `str|None`→
+`str` ל-`_normalize_il_phone`; preflight כבר מחזיר False ל-phone falsy → no-op
+בזמן ריצה); `auto_reply_watchdog.py:166/167/171/178` — 4 false-positives של
+SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-instance) →
+`# type: ignore[assignment|arg-type]` עם הצדקה (תיקון אמיתי = `Mapped[]` ב-
+`models.py`, מחוץ ל-scope). אפס שינוי התנהגות; type-annotations בלבד.
+`mypy --follow-imports=silent` על 4 קבצי היעד (כולל `whatsapp_templates.py`
+שכבר נקי) → **Success, 0 errors**. pytest = CI gate (אין Postgres ב-sandbox).
+**pyproject `[tool.mypy] files` ש-Sapir תקמיט** (CC חסום מ-pyproject):
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+
+### 2026-06-04 — MEH-735: complete skip-to-content link (WCAG 2.4.1) (PR #912)
+
+`feat(MEH-735)`: Phase 0 found the skip link **already existed** (`layout.js:199` — `sr-only`→`focus:not-sr-only`, first element in `<body>`, `z-10000`, AA green-on-white, `rtl-ok`-annotated) targeting `<main id="main-content">`. Closed the two gaps vs the acceptance criteria instead of re-adding it (avoids a duplicate link). **(1)** `<main id="main-content">` gains `tabIndex={-1}` + `focus:outline-none` → reliable programmatic focus target (verified: Enter→`activeElement === main#main-content` on / + /login). **(2)** reused the existing `sweep_tail.layout.skip_to_main` key (no new namespace key): he `דלג לתוכן הראשי`→**`דילוג לתוכן`** (gender-neutral, ADR-014 voice), en `Skip to main content`→**`Skip to content`**. Scope: layout.js + he.json + en.json. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); squash-merged `9942674`.
+
+### 2026-06-03 — MEH-732: navbar pill polish — Composition B + pill-only glass (PR #909)
+
+`feat(MEH-732)`: ported the MEH-732 freeze onto the floating-pill `Header.jsx`. **Composition B** — nav is now `flex justify-between`: lead group (logo + nav links, 36px internal gap) at the start, action cluster at the end; replaces `grid-cols-[auto_1fr_auto]`, max-width 1200→**940px**. **Pill-only glass** on scrolled/inner state: `bg-background/85` + `backdrop-blur-md` (12px) via `supports-[backdrop-filter]`, solid `bg-background` fallback; `border-border` + green resting shadow `0 8px 30px rgba(46,104,83,.12)`; scroll threshold 80→**60**; transition animates background/shadow + ink/border cross-fade, **never `padding` or `backdrop-filter`** (supersedes the MEH-638 "no glass" lock for the pill only). **Action hierarchy** — search = filled-primary pill (label חיפוש + icon, reuses `/search?focus=1`); הוסיפו עסק = outlined secondary; כניסה לחשבון = quiet text link, hidden on `/login`; globe = quiet icon. Mobile search circle 44px. **i18n voice (ADR-014):** `nav.explore` גלי→**גלו**, `nav.discover` גלה→**גלו** (he.json — also de-masculinizes the BottomNav home tab); `en.json nav.explore` fixed from stray Hebrew גלי→**Explore**. `#E8E0D0` freeze border mapped to the existing `border` token (#e5dfd3); exact literal MEH-725-deferred (no raw hex, no new token). `/adversarial-review` ran — one REFEREE fix applied (dropped `padding` from the transition). All CI green; squash-merged `c9b1587`. Open follow-up: mobile-drawer login link not yet gated on `/login` (desktop link is).
+
 ### 2026-06-03 — fix/terms-legal-copy-pii: legal-copy PII removal + MEH-720 deferred "דירקטורי" review (Refs MEH-720)
 
 `fix`: שלוש בעיות בעמודי /terms + /privacy בפרודקשן. **(1) PII** — מספר עוסקת
