@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (branch `feature/meh-738-mypy-whatsapp`)
+
+**Branch off staging (NOT off MEH-739). Draft PR (base staging). LOW-RISK (backend types).** Task 2 of the 2-task batch (Task 1 = MEH-739 SEO, PR #915).
+
+**Phase 0 correction (meta-pattern #1):** the MEH-672 HANDOFF estimated "13" strict errors; actual **in-scope = 7**. The other 10 were transitive errors in `models.py`/`database.py`/`email.py`/`vacation_state.py` (imported, **out of MEH-738 scope** — not touched). Also confirmed the mypy gate is warn-only: baseline `mypy app/auth.py` itself reports 15 errors today.
+
+**Fixed 7 (type-only, 0 behavior change):** `whatsapp.py:42` `dict`→`dict[str, Any]` (+`Any` import); `auth_notifications.py:73/107` guard `or not phone` (narrows `str|None`→`str`; preflight already rejects falsy phone → runtime no-op); `auto_reply_watchdog.py:166/167/171/178` SQLAlchemy `Column[...]` false-positives → justified `# type: ignore[assignment|arg-type]` (real fix = `Mapped[]` in models.py, out of scope).
+
+**Verify:** `mypy --follow-imports=silent` on the 4 target files (incl. already-clean `whatsapp_templates.py`) → **Success, 0 errors**. pytest NOT runnable in sandbox (no Postgres — MEH-672 limit) → **CI Postgres is the gate**.
+
+**⚠️ Sapir action (CC blocked from pyproject.toml):** commit on this branch —
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+(Transitive errors in models/database/email/vacation_state stay warn-only — separate cleanup, like the existing schemas/ deferral noted in `[tool.mypy]`.)
+
 ## 2026-06-04 — MEH-735 merged to staging (PR #912, squash `9942674`)
 
 **Done:** completed the WCAG 2.4.1 skip-to-content link. Phase 0 found it already existed (`layout.js:199`); closed two gaps rather than re-adding: `<main id="main-content">` got `tabIndex={-1}` + `focus:outline-none` (reliable focus target), and the existing `sweep_tail.layout.skip_to_main` i18n key updated to spec copy (he `דילוג לתוכן`, en `Skip to content`). Tab→Enter flow verified via Playwright on / + /login (activeElement = main#main-content after Enter). All CI green; no new component/key.

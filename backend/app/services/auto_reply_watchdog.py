@@ -163,19 +163,22 @@ def run_watchdog(db: Session, *, now: datetime | None = None) -> dict[str, int]:
 
     for msg in candidates:
         # Mark bot_replied=True BEFORE send (idempotency lock).
-        msg.bot_replied = True
-        msg.bot_replied_at = now
+        # MEH-738: the Column[...] assign/arg false-positives in this loop are
+        # mypy seeing the SQLAlchemy ORM descriptor type, not the instance
+        # value. Real fix = Mapped[] typing in models.py (out of MEH-738 scope).
+        msg.bot_replied = True  # type: ignore[assignment]
+        msg.bot_replied_at = now  # type: ignore[assignment]
         db.commit()
 
         try:
-            ok = send_template(msg.from_phone, template)
+            ok = send_template(msg.from_phone, template)  # type: ignore[arg-type]
         except Exception as e:  # noqa: BLE001 — fail-open at message level
             logger.warning("[WATCHDOG] send raised for msg=%s: %s", msg.id, e)
             counters["send_failed"] += 1
             continue
 
         if ok:
-            msg.bot_template_sent = template.name
+            msg.bot_template_sent = template.name  # type: ignore[assignment]
             db.commit()
             if template.name == TEMPLATE_VACATION:
                 counters["sent_vacation"] += 1
