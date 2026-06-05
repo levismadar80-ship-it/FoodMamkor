@@ -341,6 +341,7 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-06-05 | MEH-472 | Categories heading | `גלי לפי קטגוריה` | `גלו לפי קטגוריה` | ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral). Sapir adjudicated section headings to the UI side → feminine-singular `גלי` → plural `גלו`. EN heading is proper English (`Browse by category`), untouched. |
 | 2026-05-16 | MEH-620 | Hero subtitle | `בתי עסק מקומיים, כולם במקום אחד.` | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` | MEH-522 winner κ — H1↔Sub arc closes ("לא ידעת איפה" → "אנחנו כבר בדקנו"). |
 | 2026-05-16 | MEH-605 | Home CTA body | `...הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` | Removes "דירקטורי" (marketplace word) + partial category list per Brand Hub v1.1 §8. |
 | 2026-05-16 | MEH-606 | Categories subhead | `ישר מבית העסק — בלי מתווכים` | `כל קטגוריה — בית עסק אחר, סיפור אחר.` | Drops saturated formula (5/7 Israeli competitors use a variant per Sub 2 Anti-pattern 1). |

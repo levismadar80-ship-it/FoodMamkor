@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral)
+
+**Branch:** `feature/meh-472-category-heading` (off staging) — draft PR. `Refs MEH-472` (en-wave stays open).
+**Done:** `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה` (he.json only). Per ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral), Sapir adjudicated section headings → UI side. en.json heading = `Browse by category` (proper English), untouched. Decision-log row added to COPY_BANK §6.
+**Scope:** THIS KEY ONLY — the ~10 other `גלי` CTA strings remain MEH-472 en-wave territory, untouched.
+**Verify:** `npm run build` green; `grep "גלי לפי קטגוריה" frontend/messages/` = 0; `grep "גלו לפי קטגוריה" he.json` = 1.
+
 ## 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage
 
 **Branch:** `feature/meh-733-remove-breath` (off staging) — draft PR open, `Refs MEH-733` (issue already closed).
