@@ -141,7 +141,7 @@
       "welcome": "Welcome",
       "value_save": "Save businesses",
       "value_rate": "Rate",
-      "value_publish": "Publish your home kitchen",
+      "value_publish": "Add your business",
       "email_label": "Email",
       "email_invalid": "Invalid email",
       "valid": "✓ Valid",
@@ -481,7 +481,7 @@
       "title": "Sign in to Mehamakor | Mehamakor",
       "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
       "og_title": "Sign in to Mehamakor",
-      "og_description": "Sign in to discover local food businesses, save favorites, and support quality producers."
+      "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
       "title": "Join Mehamakor | Mehamakor",

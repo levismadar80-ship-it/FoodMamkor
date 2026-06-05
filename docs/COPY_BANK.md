@@ -357,6 +357,8 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-06-05 | MEH-751 | /login `auth.login.value_publish` (he+en) | `פרסמי מטבח ביתי` / `Publish your home kitchen` | `הוסיפי את העסק שלך` / `Add your business` | DNA LOCK violation: "מטבח ביתי" = forbidden home-cook framing (legal-exposure family). Hotfix only; full feminine→neutral sweep of `auth.login.*` deferred to S9 copy wave (ADR-014). |
+| 2026-06-05 | MEH-751 | /login `seo.login.og_description` (he+en) | `…ולתמוך ביצרניות איכותיות.` / `…support quality producers.` | `…ולתמוך בעסקים קטנים מהסביבה שלך.` / `…support small local businesses.` | Double LOCK violation: `יצרניות` (must be "בית עסק", not "יצרן") + `איכותיות` (balloon word, MEH-579 over-claim guard). |
 | 2026-06-05 | MEH-750 | /about H1 + hero sub | `…עכשיו לא.` | `…עכשיו כבר לא` + NEW sub `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` | S8: drop terminal period on H1; add hero subheading rendered under H1. |
 | 2026-06-05 | MEH-750 | /about Sapir story (greeting + p1–p5, −caption2) | old narrative + greeting `היי, אני ספיר.` | locked S8 narrative (word-of-mouth/whisper arc); greeting `היי, אני ספיר` (no period); `story.caption2` deleted | S8: stronger first-person narrative; greeting loses terminal period; 3rd caption dropped (kept caption1+caption3). |
 | 2026-06-05 | MEH-750 | /about parallax quote | `…ומאיפה קונים — חשוב יותר` | `אוכל טוב — לא שומרים לעצמנו` | S8: old quote ranked source over food (nutritional contradiction); new line echoes brand idiom. |
