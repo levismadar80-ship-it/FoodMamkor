@@ -507,6 +507,8 @@ DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
 POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
+POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
+POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
 GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes

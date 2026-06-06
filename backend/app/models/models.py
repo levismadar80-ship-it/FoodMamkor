@@ -104,6 +104,19 @@ class Producer(Base):
     # (ProducerAdminOut), never public — MEH-530 privacy-first precedent.
     declared_at = Column(DateTime(timezone=True), nullable=True)
     declaration_version = Column(String(10), nullable=True)
+    # MEH-762 (ADR-022 public tier contract, Chunk 1): tier-1 "מאומת"
+    # verification trail. Both nullable, Expand-only (ADR-007, no backfill).
+    # `verified_at` = when the admin checked the qualifying document
+    # (timezone-aware; Chunk-2 stamping uses now(timezone.utc) like MEH-759,
+    # NOT utcnow). `verification_doc_type` = which document granted the badge —
+    # by-convention 'license' | 'exemption' | 'cosmetics' (1:1 with
+    # VERIFICATION.md §3; no DB enum/CHECK, app-layer enforced like
+    # availability_state). The public `verification_tier` ("verified" |
+    # "declared") is COMPUTED in schemas (Chunk 3) from verified_at + the
+    # category's licensing requirement — NEVER stored. No `verified_by`
+    # column in V1 (single admin — MEH-762 D1). Paired migration: f1c7b9a3e264.
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verification_doc_type = Column(String(20), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     # MEH-509 PR3: Anthropic-Haiku-backed signup risk score.
     # Populated asynchronously by app/services/producer_risk.py via
