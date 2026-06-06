@@ -118,7 +118,7 @@ const fullProducer = {
   slug: "havat-hashikma",
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
-  is_verified: true,
+  verification_tier: "verified",
   // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
   availability_state: "available_today",
   is_available_today: true,
@@ -139,7 +139,7 @@ const minimalProducer = {
   name: "חנות פשוטה",
   city: "תל אביב",
   images: [],
-  is_verified: false,
+  verification_tier: null,
   availability_state: "accepting_orders",
   is_available_today: false,
   reviews_count: 0,
@@ -331,7 +331,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(desc.textContent.length).toBeLessThanOrEqual(81);
   });
 
-  it("renders the verified badge via BadgeRow when is_verified=true", () => {
+  it("renders the verified badge via BadgeRow when verification_tier='verified'", () => {
     render(<ProducerCard producer={fullProducer} />);
     const badge = screen.getByRole("button", { name: /מאומת/ });
     expect(badge).toHaveAttribute("data-badge", "verified");
@@ -342,7 +342,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard
         producer={{
           ...fullProducer,
-          is_verified: true,
+          verification_tier: "verified",
           is_recommended: true,
           days_since_created: 5,
           organic_certified: true,

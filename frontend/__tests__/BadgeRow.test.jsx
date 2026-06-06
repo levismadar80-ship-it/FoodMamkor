@@ -14,7 +14,7 @@ import BadgeRow from "@/components/BadgeRow";
 describe("BadgeRow", () => {
   it("renders nothing when the producer has no earned badges", () => {
     const { container } = render(
-      <BadgeRow producer={{ is_verified: false, products_count: 0 }} />,
+      <BadgeRow producer={{ verification_tier: null, products_count: 0 }} />,
     );
     expect(container.innerHTML).toBe("");
   });
@@ -23,7 +23,7 @@ describe("BadgeRow", () => {
     render(
       <BadgeRow
         producer={{
-          is_verified: true,
+          verification_tier: "verified",
           is_recommended: true,
           days_since_created: 5,
         }}
@@ -39,7 +39,7 @@ describe("BadgeRow", () => {
       <BadgeRow
         limit={2}
         producer={{
-          is_verified: true,
+          verification_tier: "verified",
           is_recommended: true,
           days_since_created: 5,
           has_delivery: true,
@@ -60,7 +60,7 @@ describe("BadgeRow", () => {
     });
 
     it("opens on click, closes on second click", () => {
-      render(<BadgeRow producer={{ is_verified: true }} />);
+      render(<BadgeRow producer={{ verification_tier: "verified" }} />);
       const btn = screen.getByText("מאומת");
       expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
       fireEvent.click(btn);
@@ -70,7 +70,7 @@ describe("BadgeRow", () => {
     });
 
     it("closes on outside click (mousedown on document body)", () => {
-      render(<BadgeRow producer={{ is_verified: true }} />);
+      render(<BadgeRow producer={{ verification_tier: "verified" }} />);
       fireEvent.click(screen.getByText("מאומת"));
       expect(screen.getByTestId("badge-tooltip-verified")).toBeInTheDocument();
       fireEvent.mouseDown(document.body);
@@ -78,7 +78,7 @@ describe("BadgeRow", () => {
     });
 
     it("closes on Escape", () => {
-      render(<BadgeRow producer={{ is_verified: true }} />);
+      render(<BadgeRow producer={{ verification_tier: "verified" }} />);
       fireEvent.click(screen.getByText("מאומת"));
       expect(screen.getByTestId("badge-tooltip-verified")).toBeInTheDocument();
       fireEvent.keyDown(window, { key: "Escape" });
@@ -86,10 +86,10 @@ describe("BadgeRow", () => {
     });
 
     it("badge button has accessible aria-label", () => {
-      render(<BadgeRow producer={{ is_verified: true }} />);
+      render(<BadgeRow producer={{ verification_tier: "verified" }} />);
       const btn = screen.getByRole("button", { name: /מאומת/ });
       expect(btn.getAttribute("aria-label")).toContain("מאומת");
-      expect(btn.getAttribute("aria-label")).toMatch(/אימות/);
+      expect(btn.getAttribute("aria-label")).toMatch(/נבדק/);
     });
   });
 });
