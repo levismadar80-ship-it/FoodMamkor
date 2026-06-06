@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-753: event dates respect locale (kill 4 hardcoded he-IL formatDate helpers)
+
+- **`fix(MEH-753)`**: `/en/events` (and every en event surface) was rendering Hebrew dates because 4 duplicated `formatDate` helpers hardcoded `toLocaleDateString("he-IL", …)`. Extracted one shared `formatEventDate(iso, locale, options)` in `frontend/lib/format-date.js` — `he → "he-IL"` (byte-identical preserved), `en → "en-US"`. Locale threaded from `useLocale()` (next-intl) into `EventsClient.jsx` (card + month-grouping memo, `locale` added to deps), `EventDetailClient.jsx` (year variant), `ExperienceCard.jsx`, `HomeProductCard.jsx`. `formatTime` (HH:MM slice) + price `toLocaleString` left untouched (locale-independent / out of scope). `npm run build` green; both `/he/events` + `/en/events` build. ~30 other he-IL date sites codebase-wide are out of MEH-753 scope (other surfaces / i18n waves) — reported in PR body.
+
 ### 2026-06-06 — MEH-762: ADR-022 public tier contract — chunks 1–3 (verification trail + admin stamping + public exposure)
 
 - **Chunk 1 (schema):** `producers.verified_at` (TIMESTAMPTZ nullable) + `verification_doc_type` (VARCHAR(20) nullable) via Alembic `f1c7b9a3e264` (expand-only, ADR-007; `down_revision a7f3e9c14d28`). ORM mirror in `models.py`; `verification_tier` stays computed in schemas (Chunk 3), never stored. No `verified_by` column (V1, single admin — D1). `EXPECTED_REV` bumped (`EXPECTED_TABLES` stays 35). db-schema diagram + `VERIFICATION.md` §3 updated (D1: result columns move to DB; issuer/name_match/channel/notes/reviewer stay manual). Migration + workflow line Sapir-applied (`b84ceb6`) — CC-denied paths.
