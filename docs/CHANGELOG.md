@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 (night-batch-6) — MEH-434: launch-cohort Sentry tag (client-side slice)
+
+- **`feat(MEH-434)`**: launch-window observability — the Sentry `launch_cohort` tag is now set client-side so month-1 users can be filtered in Replay. New `frontend/lib/launch-cohort.js` (`computeLaunchCohort` + `useLaunchCohortTag`); `auth-context.js` calls the hook (2-line diff: import + call) so the tag stays in sync with the signed-in user and clears on logout. Cohort derived from `user.created_at` (already on `UserOut` → `/auth/me`, `schemas.py:752`) — **no backend/schema change**. setTag only, no PII, no setUser (per MEH-434 Forbidden). vitest 6/6 (boundary cases pinned), `npm run build` + lint (0 errors) green. **Deferred → follow-up:** the server-side `auth.py` helper + `UserOut.launch_cohort` + `test_auth.py` slice from the original plan (documented in `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434.
+
 ### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
 
 `refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`
