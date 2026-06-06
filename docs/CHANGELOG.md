@@ -4,6 +4,14 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-762: ADR-022 tier — Chunk 4 (is_verified badge decouple)
+
+`feat(MEH-762)`: the "מאומת" pill now drives off the ADR-022 public tier, not the legacy admin flag. **Semantics only** — `is_verified` the field is untouched (full retirement + `trust_tier` coupling = **MEH-766**).
+- `lib/badges.js`: `earnsBadge("verified")` → `producer.verification_tier === "verified"` (was the legacy admin flag); tooltip over-claim (`"עבר אימות זהות ורישוי"`) → Sapir copy-lock `"בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."` (terms §5.2-aligned; `/en` gap is inherited legacy — dies when MEH-76 S12 wires the MEH-758 keys). Label `"מאומת"` unchanged.
+- Tests: `badges.test.js` / `BadgeRow.test.jsx` / `ProducerCard.test.jsx` verified-badge fixtures switched to `verification_tier` (vitest 80✓); `npm run build` ✓.
+- **Deferred → MEH-766:** map verified surfaces + filter chips (backend `?verified` param, `producer_listing.py:49`), `AdminProducersTable`/`ProducerForm`, `trust_tier.py:32` coupling, `is_verified` column drop (Expand-Contract).
+- ⚠️ **Transitional:** the pill keys off `verified_at` presence → absent until admins `grant-verify` (intended ADR-022 over-claim correction; pre-launch, no real producers affected).
+
 ### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
 
 `feat(MEH-763)`: visual port of `/map` to S5 FINAL — design-layer only; feed/filter/sync
