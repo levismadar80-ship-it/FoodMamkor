@@ -146,12 +146,12 @@ export default function RegisterClient() {
     // already registered — same UI for both, OWASP-compliant.
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
+        <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
           <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
           <h1 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
-          <Link href="/" className="block w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium text-center">
+          <Link href="/" className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium text-center">
             {t("auth.register.consumer.email_sent.back_home")}
           </Link>
         </div>
@@ -161,7 +161,7 @@ export default function RegisterClient() {
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
+      <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
         {/* Brand mark + heading */}
         <div className="mb-6">
           <div
@@ -175,7 +175,7 @@ export default function RegisterClient() {
         </div>
 
         {/* Value-prop strip */}
-        <div className="flex justify-center gap-5 mb-5 text-fg-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
+        <div className="flex justify-center gap-5 mb-5 text-fg-muted font-headline-md text-sm">
           <span className="inline-flex items-center gap-1"><MapPin size={14} className="text-current" />{t("auth.register.consumer.value_props.discover")}</span>
           <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("auth.register.consumer.value_props.favorites")}</span>
           <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("auth.register.consumer.value_props.rate")}</span>
@@ -183,7 +183,7 @@ export default function RegisterClient() {
 
         {/* MEH-49: referral discount badge */}
         {referralCode && (
-          <div className="mb-4 rounded-[10px] bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
+          <div className="mb-4 rounded-md bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
             {t("auth.register.consumer.referral_badge")}
           </div>
         )}
@@ -198,7 +198,7 @@ export default function RegisterClient() {
               onBlur={() => setNameTouched(true)}
               required
               aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
+              className={`w-full border rounded-md px-3 py-2 text-start transition ${
                 nameInvalid
                   ? "border-red-400"
                   : nameValid
@@ -208,10 +208,10 @@ export default function RegisterClient() {
               dir="rtl"
             />
             {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
+              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
             )}
             {nameValid && (
-              <p className="text-xs text-primary mt-1 text-right">{t("auth.register.consumer.validation.valid_hint")}</p>
+              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
             )}
           </div>
           <div>
@@ -224,7 +224,8 @@ export default function RegisterClient() {
               onBlur={() => setEmailTouched(true)}
               required
               aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[12px] px-3 py-2 text-right transition ${
+              // text-right kept: email input is dir="ltr"; physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
+              className={`w-full border rounded-md px-3 py-2 text-right transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -234,10 +235,10 @@ export default function RegisterClient() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
+              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
             )}
             {emailValid && (
-              <p className="text-xs text-primary mt-1 text-right">{t("auth.register.consumer.validation.valid_hint")}</p>
+              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
             )}
           </div>
           <div>
@@ -278,7 +279,7 @@ export default function RegisterClient() {
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+            className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -289,7 +290,7 @@ export default function RegisterClient() {
               t("auth.register.consumer.actions.submit")
             )}
           </button>
-          <p className="text-center mt-3 text-fg-muted" style={{ fontFamily: "DM Sans, sans-serif", fontSize: "12px" }}>
+          <p className="text-center mt-3 text-fg-muted font-body-md text-xs">
             {t("auth.register.consumer.email_hint")}
           </p>
         </form>

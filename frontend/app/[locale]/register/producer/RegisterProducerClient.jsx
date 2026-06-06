@@ -310,13 +310,13 @@ function RegisterProducerPageBody() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
-      <div className="bg-white rounded-[12px] p-8">
+      <div className="bg-white rounded-md p-8">
         <h1 className="font-headline-md text-2xl font-bold text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
         <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < 3 && (
-          <div className="bg-green-50 border border-primary/30 rounded-[12px] px-4 py-3 mb-4 text-sm text-text flex items-start gap-2">
+          <div className="bg-green-50 border border-primary/30 rounded-md px-4 py-3 mb-4 text-sm text-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <span className="block">{t("auth.register.producer.upgrade_banner.connected_with", { email: user.email })}</span>
@@ -326,7 +326,7 @@ function RegisterProducerPageBody() {
         )}
 
         {showDraftBanner && step < 3 && (
-          <div className="bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-4 flex items-center justify-between text-sm">
+          <div className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
               <button onClick={restoreDraft} className="text-primary font-medium hover:underline">{t("auth.register.producer.draft.continue")}</button>
@@ -338,13 +338,13 @@ function RegisterProducerPageBody() {
         {step < 3 && !isUpgrade && (
           <div className="flex gap-2 mb-8">
             {[1, 2].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-gray-200"}`} />
+              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-border"}`} />
             ))}
           </div>
         )}
 
         {prefillToken && prefillApplied && (
-          <div className="bg-green-50 text-primary border border-primary/30 rounded-[12px] p-3 mb-4 text-sm inline-flex items-center gap-2">
+          <div className="bg-green-50 text-primary border border-primary/30 rounded-md p-3 mb-4 text-sm inline-flex items-center gap-2">
             <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
             {t("auth.register.producer.prefill_notice")}
           </div>
@@ -377,7 +377,7 @@ function RegisterProducerPageBody() {
               placeholder={t("auth.register.producer.fields.name")}
               value={form.name}
               onChange={set("name")}
-              className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
               dir="rtl"
             />
             <input
@@ -385,7 +385,7 @@ function RegisterProducerPageBody() {
               placeholder={t("auth.register.producer.fields.email")}
               value={form.email}
               onChange={set("email")}
-              className="w-full border rounded-[12px] px-3 py-2"
+              className="w-full border rounded-md px-3 py-2"
               dir="ltr"
             />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
@@ -397,7 +397,7 @@ function RegisterProducerPageBody() {
                 placeholder={t("auth.register.producer.fields.password")}
                 value={form.password}
                 onChange={set("password")}
-                className="w-full border rounded-[12px] px-3 py-2"
+                className="w-full border rounded-md px-3 py-2"
                 dir="ltr"
                 minLength={8}
               />
@@ -421,7 +421,7 @@ function RegisterProducerPageBody() {
                 setStepError("");
                 setStep(2);
               }}
-              className="w-full bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition"
+              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition"
             >
               {t("auth.register.producer.actions.next")}
             </button>
@@ -440,7 +440,7 @@ function RegisterProducerPageBody() {
               placeholder={t("auth.register.producer.fields.producer_name")}
               value={form.producer_name}
               onChange={set("producer_name")}
-              className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
               dir="rtl"
             />
 
@@ -453,11 +453,11 @@ function RegisterProducerPageBody() {
             <div>
               <label
                 htmlFor="producer-description"
-                className="block text-sm font-medium text-text mb-1 text-right"
+                className="block text-sm font-medium text-text mb-1 text-start"
               >
                 {t("auth.register.producer.fields.description_label")}
               </label>
-              <p className="text-xs text-fg-muted mb-2 text-right">
+              <p className="text-xs text-fg-muted mb-2 text-start">
                 {t("auth.register.producer.fields.description_hint")}
               </p>
               <textarea
@@ -467,7 +467,7 @@ function RegisterProducerPageBody() {
                 disabled={descriptionDisabled}
                 placeholder={descriptionPlaceholder}
                 rows={6}
-                className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
+                className="w-full border rounded-md ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
                 dir="rtl"
               />
               {!descriptionDisabled ? (
@@ -521,7 +521,7 @@ function RegisterProducerPageBody() {
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
-                className={`w-full border rounded-[12px] px-3 py-2 ${
+                className={`w-full border rounded-md px-3 py-2 ${
                   form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
                 }`}
                 dir="ltr"
@@ -558,11 +558,11 @@ function RegisterProducerPageBody() {
               <div>
                 <label
                   htmlFor="producer-license-required"
-                  className="block text-sm font-medium text-text mb-1 text-right"
+                  className="block text-sm font-medium text-text mb-1 text-start"
                 >
                   {t("auth.register.producer.fields.license_required_label")}
                 </label>
-                <p className="text-xs text-fg-muted mb-2 text-right">
+                <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_required_hint")}
                 </p>
                 <input
@@ -571,11 +571,12 @@ function RegisterProducerPageBody() {
                   onChange={set("producer_license_number")}
                   maxLength={20}
                   inputMode="numeric"
-                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
+                  className="w-full border rounded-md ps-3 pe-3 py-2 text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
-                  <p className="text-xs text-amber-600 mt-1 text-right">
+                  <p className="text-xs text-amber-600 mt-1 text-start">
                     {t("auth.register.producer.validation.license_format")}
                   </p>
                 )}
@@ -602,7 +603,7 @@ function RegisterProducerPageBody() {
                 </button>
                 <label
                   htmlFor="producer-license-optional"
-                  className="block text-sm font-medium text-text mb-1 text-right"
+                  className="block text-sm font-medium text-text mb-1 text-start"
                 >
                   {t("auth.register.producer.fields.license_optional_label")}
                 </label>
@@ -612,11 +613,12 @@ function RegisterProducerPageBody() {
                   onChange={set("producer_license_number")}
                   maxLength={20}
                   inputMode="numeric"
-                  className="w-full border rounded-[12px] ps-3 pe-3 py-2 text-right"
+                  // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
+                  className="w-full border rounded-md ps-3 pe-3 py-2 text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
-                  <p className="text-xs text-amber-600 mt-1 text-right">
+                  <p className="text-xs text-amber-600 mt-1 text-start">
                     {t("auth.register.producer.validation.license_format")}
                   </p>
                 )}
@@ -625,7 +627,7 @@ function RegisterProducerPageBody() {
               <button
                 type="button"
                 onClick={() => setLicenseOptionalExpanded(true)}
-                className="text-xs text-primary underline hover:text-primary-dark text-right"
+                className="text-xs text-primary underline hover:text-primary-dark text-start"
               >
                 {t("auth.register.producer.actions.add_license")}
               </button>
@@ -721,7 +723,7 @@ function RegisterProducerPageBody() {
                   handleSubmit();
                 }}
                 disabled={loading}
-                className="flex-1 bg-primary text-white py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
+                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
               >
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
@@ -762,12 +764,12 @@ function RegisterProducerPageBody() {
             {!whatsappSent && (
               <div
                 role="status"
-                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-[12px] px-4 py-3 mb-6 text-sm text-end"
+                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-md px-4 py-3 mb-6 text-sm text-end"
               >
                 {t("auth.register.producer.success.whatsapp_warning")}
               </div>
             )}
-            <div className="bg-green-50 rounded-[16px] p-5 text-right mb-6">
+            <div className="bg-green-50 rounded-lg p-5 text-start mb-6">
               <h3 className="font-semibold text-text mb-3">{t("auth.register.producer.success.next_heading")}</h3>
               <ul className="text-sm text-fg-muted space-y-2">
                 <li>{t("auth.register.producer.success.next_step1")}</li>
