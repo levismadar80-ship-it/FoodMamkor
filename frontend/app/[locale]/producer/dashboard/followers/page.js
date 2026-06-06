@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { LinkSimple } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default function FollowersPage() {
@@ -45,7 +46,7 @@ export default function FollowersPage() {
     if (!profileUrl) return;
     navigator.clipboard.writeText(profileUrl).then(() => {
       setCopied(true);
-      showToast(t("share_toast"));
+      showToast.success(t("share_toast"), { icon: <LinkSimple size={18} /> });
       setTimeout(() => setCopied(false), 2000);
     });
   };

@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { Leaf } from "@phosphor-icons/react";
 
 const baseInput =
   "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
@@ -98,7 +99,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      showToast(err.response?.data?.detail || t("errors.upload_image_failed"), "error");
+      showToast.error(err.response?.data?.detail || t("errors.upload_image_failed"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -125,7 +126,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         mode === "edit" && initial?.id
           ? await api.patch(`/producers/me/recipes/${initial.id}`, payload)
           : await api.post("/producers/me/recipes", payload);
-      showToast(mode === "edit" ? t("toast_updated") : t("toast_created"));
+      showToast.success(
+        mode === "edit" ? t("toast_updated") : t("toast_created"),
+        mode === "edit" ? undefined : { icon: <Leaf size={18} /> },
+      );
       onSaved?.(res.data);
     } catch (err) {
       const detail = err.response?.data?.detail;

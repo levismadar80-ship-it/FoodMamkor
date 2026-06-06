@@ -17,7 +17,7 @@
  *   try {
  *     await api.post(...);
  *   } catch (err) {
- *     showToast(errorMessage(err), "error");
+ *     showToast.error(errorMessage(err));
  *   }
  */
 
@@ -79,5 +79,5 @@ export function errorMessage(err) {
  * @param {"error"|"info"} [type="error"]
  */
 export function showErrorToast(err, type = "error") {
-  showToast(errorMessage(err), type);
+  showToast[type](errorMessage(err));
 }

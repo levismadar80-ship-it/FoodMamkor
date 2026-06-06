@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin } from "@phosphor-icons/react";
+import { MapPin, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -59,7 +59,7 @@ export default function AdminExperiencesPage() {
     setBusy(true);
     try {
       await api.post(`/admin/experiences/${ex.id}/approve`);
-      showToast(t("experiences.approve_toast"));
+      showToast.success(t("experiences.approve_toast"), { icon: <Leaf size={18} /> });
       load();
     } catch (e) {
       alert(e.response?.data?.detail || t("experiences.approve_error"));
@@ -93,8 +93,8 @@ export default function AdminExperiencesPage() {
       await api.post(`/admin/experiences/${modalEx.id}/${endpoint}`, {
         feedback: feedback.trim(),
       });
-      showToast(
-        modalAction === "changes" ? t("experiences.changes_toast") : t("experiences.reject_toast")
+      showToast.success(
+        modalAction === "changes" ? t("experiences.changes_toast") : t("experiences.reject_toast"),
       );
       closeModal();
       load();

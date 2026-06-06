@@ -75,27 +75,3 @@ describe("toast store — semantic methods (MEH-685)", () => {
     unsub();
   });
 });
-
-describe("toast store — legacy positional shim (backward-compat, removed Chunk 3)", () => {
-  it("showToast(msg) defaults to type=success", () => {
-    toast.showToast("נשמר");
-    expect(toast.getToasts()[0].type).toBe("success");
-  });
-
-  it("showToast(msg, 'error') preserves the positional type", () => {
-    toast.showToast("שגיאה", "error");
-    expect(toast.getToasts()[0].type).toBe("error");
-  });
-
-  it("showToast(msg, 'info', dur, { action }) preserves the action option", () => {
-    toast.showToast("פג", "info", 5000, { action: { label: "כניסה", href: "/login" } });
-    const [t] = toast.getToasts();
-    expect(t.type).toBe("info");
-    expect(t.action).toEqual({ label: "כניסה", href: "/login" });
-  });
-
-  it("legacy calls carry no icon (Toaster supplies the default)", () => {
-    toast.showToast("נשמר", "success");
-    expect(toast.getToasts()[0].icon).toBeNull();
-  });
-});

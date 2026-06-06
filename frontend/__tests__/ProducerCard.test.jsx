@@ -77,8 +77,13 @@ vi.mock("@/lib/api", () => ({
   default: apiMock,
 }));
 
+// MEH-685: methods-only object; spy prefixes the semantic type.
 vi.mock("@/lib/toast", () => ({
-  showToast: (...args) => toastSpy(...args),
+  showToast: {
+    success: (...args) => toastSpy("success", ...args),
+    error: (...args) => toastSpy("error", ...args),
+    info: (...args) => toastSpy("info", ...args),
+  },
 }));
 
 vi.mock("@/lib/post-login-action", () => ({
@@ -414,9 +419,11 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(heart).toHaveAttribute("aria-pressed", "true");
     expect(enqueueSpy).toHaveBeenCalledWith("producer-1");
     expect(toastSpy).toHaveBeenCalled();
-    const [msg, type, duration, opts] = toastSpy.mock.calls[0];
-    expect(msg).toMatch(/שמרתי/);
+    // MEH-685: spy receives ("info", message, { duration, action }).
+    const [type, msg, opts] = toastSpy.mock.calls[0];
     expect(type).toBe("info");
+    expect(msg).toMatch(/שמרתי/);
+    expect(opts.duration).toBe(5000);
     expect(opts.action.label).toBe("התחברי");
     expect(opts.action.href).toMatch(/^\/login\?next=/);
   });
@@ -462,8 +469,8 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(heart).toHaveAttribute("aria-pressed", "true");
     await waitFor(() => expect(heart).toHaveAttribute("aria-pressed", "false"));
     expect(toastSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/השתבש/),
       "error",
+      expect.stringMatching(/השתבש/),
     );
   });
 

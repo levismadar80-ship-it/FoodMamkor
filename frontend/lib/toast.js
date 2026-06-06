@@ -3,18 +3,19 @@
 /**
  * Minimal toast store — module-level pub/sub, no context provider needed.
  *
- * Two ways to call (MEH-685):
- *   - Semantic methods (preferred):
- *       showToast.success("נשמר")
- *       showToast.error("שגיאה")
- *       showToast.info("מידע", { action: { label, href } })
- *     Each method sets a default icon per type, resolved at render time in
- *     Toaster.jsx (success → CheckCircle, error → WarningCircle, info → Info).
- *     Pass `{ icon: <Bell size={16} /> }` to override the default for a
- *     bespoke surface (favorites Heart, follow Bell, link copied, …).
- *   - Legacy positional signature (backward-compat shim, removed in Chunk 3
- *     once every call site has migrated):
- *       showToast(message, type, duration, options)
+ * API (MEH-685 — semantic methods only; the legacy positional
+ * `showToast(message, type, duration, options)` shim was removed once every
+ * call site migrated):
+ *
+ *   showToast.success("נשמר")
+ *   showToast.error("שגיאה")
+ *   showToast.info("מידע", { action: { label, href } })
+ *
+ * Each method sets a default icon per type, resolved at render time in
+ * Toaster.jsx (success → CheckCircle, error → WarningCircle, info → Info).
+ * Pass `{ icon: <Bell size={18} /> }` to override the default for a bespoke
+ * surface (favorites Heart, follow Bell, link copied, …). `{ duration }`
+ * overrides the default TTL.
  *
  * The <Toaster /> component subscribes to this store and renders toasts
  * fixed to the bottom of the viewport. Mount it once in layout.js.
@@ -40,7 +41,7 @@ export function getToasts() {
 }
 
 /**
- * enqueue — shared core for both the semantic methods and the legacy shim.
+ * enqueue — shared core for the semantic methods. Safe on the server (no-op).
  *
  * @param {string} message — Hebrew/English text
  * @param {"success"|"error"|"info"} type
@@ -66,17 +67,6 @@ function enqueue(message, type, duration, options) {
 }
 
 /**
- * showToast — legacy positional signature. Safe on the server (no-op).
- *
- * MEH-685: backward-compat shim. Prefer the `.success` / `.error` / `.info`
- * methods below. This positional form is removed in Chunk 3 after all call
- * sites migrate; until then it keeps the app working mid-migration.
- */
-export function showToast(message, type = "success", duration = DEFAULT_DURATION, options = {}) {
-  enqueue(message, type, duration, options);
-}
-
-/**
  * semantic — builds a `showToast.<type>(message, options)` method. The icon
  * default for the type is applied at render time in Toaster.jsx; an explicit
  * `options.icon` overrides it. `options.duration` overrides the default TTL.
@@ -88,6 +78,11 @@ function semantic(type) {
   };
 }
 
-showToast.success = semantic("success");
-showToast.error = semantic("error");
-showToast.info = semantic("info");
+// MEH-685: methods-only object. There is no bare `showToast(...)` callable —
+// the positional shim was removed after the call-site migration. errors.js
+// dispatches dynamically via `showToast[type](...)`.
+export const showToast = {
+  success: semantic("success"),
+  error: semantic("error"),
+  info: semantic("info"),
+};
