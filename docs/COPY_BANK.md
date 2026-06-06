@@ -602,6 +602,32 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Status** | 🕐 key-only — badge UI port consumes |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
+### Gate 3 — /terms §5 two-tier (MEH-760)
+
+> Legal surface — `מורשה`/`מורשים` anti-pattern does NOT apply here (ADR-022).
+> All five strings: **v1 — pending lawyer (Brief Q1/Q3)**; a lawyer revision is a
+> follow-up edit, launch is not blocked on it. en ⏳ pending Sapir review. Section
+> heading `terms.sections.verified.title` = `5. אימות ושכבות הצגה` (was `5. עסקים מאומתים`).
+> Operator block (`terms.sections.operator`, טופז שנפ / MEH-736) is byte-identical — untouched.
+
+| Key | he | Status |
+|---|---|---|
+| `terms.sections.verified.intro` (5.1) | `כל בית עסק במהמקור עובר בדיקת קבלה ידנית … ואינה מהווה ערובה … לעמידת בית העסק בכל דין.` | 🕐 v1 — pending lawyer (Brief Q1/Q3) |
+| `terms.sections.verified.verified_badge_title` (5.2 h) | `תג ״מאומת״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.verified_badge_body` (5.2) | `בית עסק שהציג … מסמך רישוי או אישור פטור רשמי … יסומן בתג ״מאומת״ … התג ניתן ללא תשלום.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_title` (5.3 h) | `בית עסק ״מוצהר״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_body` (5.3) | `בית עסק הפועל בקטגוריה הפטורה לפי דין … על יסוד הצהרה מחייבת … האחריות … על בית העסק בלבד.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_title` (5.4 h) | `שיפוי` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_body` (5.4) | `בית עסק ישפה את מפעילת האתר בגין כל נזק, הוצאה או דרישה … מבלי לגרוע מכל סעד אחר.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.no_supervision` (5.5) | `אין באמור בסעיף זה כדי להטיל על מפעילת האתר חובת פיקוח מתמשכת על בתי העסק.` | 🕐 v1 — pending lawyer |
+
+**Why:** Brief §3 — the pre-ADR-022 §5 ("בדיקה ראשונית של קריטריוני הפלטפורמה") defined no
+verification scope (Q3.1 over-broad representation) and didn't distinguish tiers (Q3.2).
+v1 defines exact scope per tier (what IS / is NOT checked), a declaration-only disclaimer for
+מוצהר, an indemnity clause (5.4) drafted narrowly to limit תנאי-מקפח exposure (חוק החוזים האחידים),
+and a no-ongoing-supervision carve-out (5.5). Locked verbatim by Sapir 2026-06-06; lawyer opinion
+outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
+
 ## Brand phrasings
 
 Canonical reusable brand phrases. When the same phrase appears across

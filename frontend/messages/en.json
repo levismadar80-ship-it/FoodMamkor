@@ -2827,8 +2827,15 @@
         "body": "Every product listed on the site is the sole responsibility of the seller. Mehamakor is not responsible for product quality, safety, freshness, kashrut, fit to description, delivery times, or any damage — direct or indirect — arising from use or reliance on them. The buyer purchases at her own responsibility directly from the seller."
       },
       "verified": {
-        "title": "5. Verified businesses",
-        "body": "The \"Verified by Mehamakor\" badge indicates that the business passed an initial review of platform criteria (seller identity, active operation, category fit). The verification <b>does not guarantee</b> product quality, license validity, or any specific purchase."
+        "title": "5. Verification & display tiers",
+        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
+        "verified_badge_title": "“Verified” badge",
+        "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. The badge is provided free of charge.",
+        "declared_title": "“Declared” business",
+        "declared_body": "A business operating in a category that is legally exempt from the licensing requirement is displayed on the site on the basis of a binding declaration it provided, stating that it operates lawfully. We do not verify this declaration with the authorities; responsibility for its accuracy and for keeping it up to date rests with the business alone.",
+        "indemnity_title": "Indemnification",
+        "indemnity_body": "A business shall indemnify the site operator for any damage, expense, or claim arising from a breach of its declaration, a breach of its obligations, or the provision of false information, without derogating from any other remedy.",
+        "no_supervision": "Nothing in this section shall impose on the site operator an ongoing duty to supervise the businesses."
       },
       "report": {
         "title": "6. Reporting violations",

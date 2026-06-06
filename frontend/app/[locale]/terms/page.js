@@ -107,9 +107,25 @@ function renderBody(id, t) {
     case "responsibility":
       return t("sections.responsibility.body");
     case "verified":
-      return t.rich("sections.verified.body", {
-        b: (chunks) => <strong>{chunks}</strong>,
-      });
+      // MEH-760: ADR-022 gate 3 — two-tier verification (§5.1–5.5).
+      return (
+        <>
+          <p className="mb-3">{t("sections.verified.intro")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.verified_badge_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.verified_badge_body")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.declared_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.declared_body")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.indemnity_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.indemnity_body")}</p>
+          <p>{t("sections.verified.no_supervision")}</p>
+        </>
+      );
     case "report":
       return (
         <>
