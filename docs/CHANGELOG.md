@@ -7,6 +7,17 @@
 ### 2026-06-06 — MEH-753: event dates respect locale (kill 4 hardcoded he-IL formatDate helpers)
 
 - **`fix(MEH-753)`**: `/en/events` (and every en event surface) was rendering Hebrew dates because 4 duplicated `formatDate` helpers hardcoded `toLocaleDateString("he-IL", …)`. Extracted one shared `formatEventDate(iso, locale, options)` in `frontend/lib/format-date.js` — `he → "he-IL"` (byte-identical preserved), `en → "en-US"`. Locale threaded from `useLocale()` (next-intl) into `EventsClient.jsx` (card + month-grouping memo, `locale` added to deps), `EventDetailClient.jsx` (year variant), `ExperienceCard.jsx`, `HomeProductCard.jsx`. `formatTime` (HH:MM slice) + price `toLocaleString` left untouched (locale-independent / out of scope). `npm run build` green; both `/he/events` + `/en/events` build. ~30 other he-IL date sites codebase-wide are out of MEH-753 scope (other surfaces / i18n waves) — reported in PR body.
+### 2026-06-06 — MEH-741: omit null durations from Recipe JSON-LD
+
+- **`fix(MEH-741)`**: `buildRecipeSchema` (`frontend/components/public/RecipeJsonLd.jsx`) emitted `prepTime: null` / `cookTime: null` for missing/0 durations — invalid `schema.org/Recipe` JSON-LD (a duration must be an ISO-8601 string or absent). Root cause: `minutesToIso8601()` returned `null` while the strip filter only dropped `undefined`. Fix: helper now returns `undefined` (aligns with the `|| undefined` convention every other optional field uses) + filter hardened to drop `null` too (defense for any future duration field). No `totalTime`/sibling duration field exists in this schema. Un-skipped the 2 MEH-729 tests in `RecipeJsonLd.test.jsx` (now green) + translated one Hebrew `it()` description in `BottomNav.test.jsx` to English (rule 5, folded nit). vitest 15/15 green; `npm run build` green.
+
+### 2026-06-06 — MEH-762: ADR-022 tier — Chunk 4 (is_verified badge decouple)
+
+`feat(MEH-762)`: the "מאומת" pill now drives off the ADR-022 public tier, not the legacy admin flag. **Semantics only** — `is_verified` the field is untouched (full retirement + `trust_tier` coupling = **MEH-766**).
+- `lib/badges.js`: `earnsBadge("verified")` → `producer.verification_tier === "verified"` (was the legacy admin flag); tooltip over-claim (`"עבר אימות זהות ורישוי"`) → Sapir copy-lock `"בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."` (terms §5.2-aligned; `/en` gap is inherited legacy — dies when MEH-76 S12 wires the MEH-758 keys). Label `"מאומת"` unchanged.
+- Tests: `badges.test.js` / `BadgeRow.test.jsx` / `ProducerCard.test.jsx` verified-badge fixtures switched to `verification_tier` (vitest 80✓); `npm run build` ✓.
+- **Deferred → MEH-766:** map verified surfaces + filter chips (backend `?verified` param, `producer_listing.py:49`), `AdminProducersTable`/`ProducerForm`, `trust_tier.py:32` coupling, `is_verified` column drop (Expand-Contract).
+- ⚠️ **Transitional:** the pill keys off `verified_at` presence → absent until admins `grant-verify` (intended ADR-022 over-claim correction; pre-launch, no real producers affected).
 
 ### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
 

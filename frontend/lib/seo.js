@@ -80,16 +80,79 @@ export function buildPageUrl(producer) {
     : `${SITE_URL}/producer/${producer.id}`;
 }
 
+// MEH-452: day-axis mapping for openingHoursSpecification. DAY_ABBR matches
+// the backend opening_hours string format ("Sun-Thu 09:00-18:00"); DAY_FULL
+// holds the schema.org canonical dayOfWeek values. Logic is copied (not
+// imported) from components/OpeningHours.jsx::parseHours — that file is a
+// client component with React/next-intl deps and a different output shape
+// (status map for the UI), so this stays a separate pure helper.
+const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_FULL = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+/**
+ * MEH-452 Gap 1: parse the producer.opening_hours string into a schema.org
+ * openingHoursSpecification array. Input format:
+ *   "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+ * Returns one entry per day that has hours (in Sun→Sat order), or null when
+ * the input is empty/unparseable — the caller omits the field entirely
+ * rather than emitting an empty array.
+ */
+function parseOpeningHoursSpec(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const map = {}; // dayIndex → { open, close }
+  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean);
+
+  for (const entry of entries) {
+    const match = entry.match(/^([A-Za-z]+)(?:-([A-Za-z]+))?\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+    if (!match) continue;
+    const [, startDay, endDay, open, close] = match;
+    const startIdx = DAY_ABBR.findIndex((d) => d.toLowerCase() === startDay.toLowerCase());
+    if (startIdx === -1) continue;
+    const endIdx = endDay
+      ? DAY_ABBR.findIndex((d) => d.toLowerCase() === endDay.toLowerCase())
+      : startIdx;
+    if (endIdx === -1) continue;
+    const indices = endIdx >= startIdx
+      ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
+      : [startIdx];
+    for (const i of indices) map[i] = { open, close };
+  }
+
+  const spec = [];
+  for (let i = 0; i < 7; i++) {
+    if (map[i]) {
+      spec.push({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: DAY_FULL[i],
+        opens: map[i].open,
+        closes: map[i].close,
+      });
+    }
+  }
+  return spec.length > 0 ? spec : null;
+}
+
 /**
  * Build schema.org JSON-LD for a producer detail page. Returns a single
- * object with a `@graph` array that Google's parser splits into three
- * entities — FoodEstablishment, BreadcrumbList, and WebPage — from one
- * <script type="application/ld+json"> tag.
+ * object with a `@graph` array that Google's parser splits into five
+ * entities — FoodEstablishment, BreadcrumbList, WebPage, WebSite, and
+ * Organization — from one <script type="application/ld+json"> tag.
  *
  * MEH-9  — baseline LocalBusiness + aggregateRating + priceRange + images.
  * MEH-172 — switch to FoodEstablishment subtype (still a LocalBusiness,
  *           tells Google the page is about food), add BreadcrumbList
  *           (ישראל → קטגוריה → עיר → שם), and a minimal WebPage wrapper.
+ * MEH-452 — AEO enhancements: openingHoursSpecification + servesCuisine on
+ *           the FoodEstablishment, plus WebSite + Organization graph nodes
+ *           (closes the dangling WebPage.isPartOf → #website reference).
  */
 export function buildJsonLd(producer) {
   if (!producer) return null;
@@ -155,6 +218,18 @@ export function buildJsonLd(producer) {
     };
   }
 
+  // MEH-452 Gap 1: openingHoursSpecification — omitted entirely when
+  // opening_hours is null/empty/unparseable (no empty array emitted).
+  const openingHoursSpec = parseOpeningHoursSpec(producer.opening_hours);
+  if (openingHoursSpec) business.openingHoursSpecification = openingHoursSpec;
+
+  // MEH-452 Gap 2: servesCuisine from the producer's categories. Omitted
+  // when there are no categories (or none with a name).
+  if (producer.categories?.length > 0) {
+    const cuisines = producer.categories.map((c) => c.name).filter(Boolean);
+    if (cuisines.length > 0) business.servesCuisine = cuisines;
+  }
+
   // BreadcrumbList -------------------------------------------------------
   // Structure per MEH-172: ישראל → קטגוריה → עיר → שם העסק.
   // Category and city items are skipped when the source data is missing,
@@ -200,9 +275,34 @@ export function buildJsonLd(producer) {
     about: { "@id": `${pageUrl}#business` },
   };
 
+  // WebSite + Organization ----------------------------------------------
+  // MEH-452 Gap 3: these two site-level entities close the dangling
+  // WebPage.isPartOf → `${SITE_URL}#website` reference (previously pointing
+  // at an entity defined nowhere). WebSite.publisher resolves to the
+  // Organization node. logo path confirmed present in /public.
+  const webSite = {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}#website`,
+    url: SITE_URL,
+    name: BRAND_NAME,
+    inLanguage: "he-IL",
+    publisher: { "@id": `${SITE_URL}#organization` },
+  };
+
+  const organization = {
+    "@type": "Organization",
+    "@id": `${SITE_URL}#organization`,
+    name: BRAND_NAME,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+  };
+
   return {
     "@context": "https://schema.org",
-    "@graph": [webPage, breadcrumbList, business],
+    "@graph": [webPage, breadcrumbList, business, webSite, organization],
   };
 }
 
