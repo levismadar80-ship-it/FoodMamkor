@@ -95,6 +95,15 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-759 (ADR-022 gate 2): binding tier-2 declaration audit trail.
+    # Both nullable — existing rows predate the trail; Expand-only (ADR-007,
+    # no backfill). `declared_at` = when the binding declaration was made;
+    # `declaration_version` = which lawyer-locked text version was agreed to
+    # (Brief Q1.4 — timestamp + version strengthen the good-faith reliance
+    # defense). Stamping is Chunk B; raw values are admin-only exposure
+    # (ProducerAdminOut), never public — MEH-530 privacy-first precedent.
+    declared_at = Column(DateTime(timezone=True), nullable=True)
+    declaration_version = Column(String(10), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     # MEH-509 PR3: Anthropic-Haiku-backed signup risk score.
     # Populated asynchronously by app/services/producer_risk.py via

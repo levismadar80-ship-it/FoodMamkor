@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
-from app.services.whatsapp import send_text
+from app.services.whatsapp import send_template
+from app.services.whatsapp_templates import OtpCodeV1
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -681,15 +682,19 @@ def producer_analytics(
 
 
 def _send_whatsapp_otp(phone: str, code: str) -> bool:
-    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508).
+    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508, MEH-754).
 
     Fail-open: returns False if WHATSAPP_* config is missing or the Meta
-    Graph call errors — caller logs and still returns HTTP 200. send_text
-    handles config / HTTP fail-open internally; this function is now a
-    thin wrapper that owns only the OTP message body.
+    Graph call errors — caller logs and still returns HTTP 200.
+
+    MEH-754: switched from `send_text` (free-form) to the Meta
+    AUTHENTICATION template `producer_otp_v1`. Free-form text is only
+    delivered inside Meta's 24h customer-service window, so a brand-new
+    producer who never messaged the business number never received the
+    code. Templates are delivered unconditionally. send_template owns
+    config / HTTP fail-open internally.
     """
-    body = f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות."
-    return send_text(phone, body)
+    return send_template(phone, OtpCodeV1(code=code))
 
 
 @router.post("/verify-phone", status_code=200)

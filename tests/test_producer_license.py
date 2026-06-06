@@ -38,6 +38,7 @@ def _register_payload(category_ids, *, license_number, email="x@example.com"):
         "phone": "0501234567",
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
+        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
     }
     if license_number is not None:
         payload["producer_license_number"] = license_number

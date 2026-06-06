@@ -35,6 +35,7 @@ UPGRADE_BODY = {
     "phone": "0501234567",
     "category_ids": [],
     "primary_contact_method": "whatsapp",
+    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
 }
 
 # 12-char SAFE_PASSWORD per MEH-306 PasswordField floor; matches

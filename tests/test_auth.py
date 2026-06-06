@@ -354,6 +354,7 @@ class TestProducerSignupPolicy:
         "phone": "0501234567",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
+        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
     }
 
     def test_producer_signup_short_password_rejected_422(self, client):
@@ -409,6 +410,7 @@ class TestProducerSignupPolicy:
                 "phone": "0501234567",
                 "category_ids": [],
                 "primary_contact_method": "whatsapp",
+                "declaration_accepted": True,  # MEH-759: mandatory declaration
             },
             headers=auth_header(u),
         )
