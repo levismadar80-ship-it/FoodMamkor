@@ -4,6 +4,19 @@
 > Findings live in this file only. Branch: `feature/audit-2026-06-full` (off `staging`,
 > one branch for all 6 sessions). Raw tool output: [`raw/`](./raw/).
 
+## PROGRESS (resumability checklist)
+
+Overnight autonomous run. Commit + push after every phase. On re-run, skip checked phases.
+
+- [x] **Phase 0** — Tools + skeleton (prev session): AUD-001..008, raw/ committed.
+- [ ] **Phase A** — Backend / Security (7 areas). → Audit-A
+- [ ] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B
+- [ ] **Phase C** — Logic / Data / State (6 areas). → Audit-C
+- [ ] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D
+- [ ] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
+
+_(Checkboxes flipped to [x] as each phase commits. BLOCKED items, if any, listed per section.)_
+
 ## Audit plan (6 sessions)
 
 | Session | Section | Scope |
