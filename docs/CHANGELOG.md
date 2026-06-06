@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
+
+`docs(MEH-761)`: Sapir-spotted inconsistency (2026-06-06) — `docs/VERIFICATION.md` §1א listed
+"מותססים וכבושים" as license-required with rationale "מזון מעובד" attributed to נספח א', but
+the brief's נספח א' has **no row** for fermented/pickled (confirmed: brief only maps "ייצור
+צמחי קטן (ריבות, ממרחים, טחינה)" → 4.6ו → שכבה 2). So pickled cabbage (vegetable+salt+water)
+requiring a license while jam/tahini don't is **unexplained** — possible fermentation/preserving
+food-safety rationale, but **unverified**. Added it to §1ג (open questions) as the *inverse*
+case (in `LICENSE_REQUIRED_CATEGORIES` but absent from נספח א', unlike the de-facto-מוצהר rows);
+§1א rationale now points to §1ג instead of asserting settled law; §1ג intro + footer reconciled
+(3→4 categories, both enforcement directions). **Conservative status preserved — enforcement
+stays license-required; `LICENSE_REQUIRED_CATEGORIES` untouched** (any change = regulatory claim).
+Question routed to lawyer per Brief Q4.5. "אני לא יודע" framing kept. Docs-only.
+
 ### 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C) (Refs MEH-759, Part of MEH-742)
 
 `feat(MEH-759)`: ADR-022 gate 2, Chunk C — the Sapir-locked continuous-commitment
