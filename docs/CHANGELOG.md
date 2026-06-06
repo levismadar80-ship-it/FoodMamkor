@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 — UIS Pattern A (MEH-228): useAdminAction — admin double-submit protection
+
+- **`fix(admin)`**: the 10 CRITICAL admin fire-and-reload handlers (UIS-038/039/040/041 reports, UIS-055 users toggleBlock, UIS-060/061 content restore/delete, UIS-063/064/065 producers approve/toggle-status/ambassador) all shared one hole — `await api.post(...)` with **no in-flight lock and no error surface** → a rapid double-click double-fired the mutation (double moderation / block / delete) and a failed request was swallowed silently. New shared hook `frontend/lib/use-admin-action.js` (`run(key, fn, onError?)` + `isBusy(key)`): a synchronous per-key `inFlight` ref blocks the second call before re-render (genuine double-fire protection), `busyKeys` state disables the in-flight trigger, and errors surface via the central `errorMessage()` Hebrew toast (MEH-251) — **no new i18n keys**. Wired into `reports/page.js`, `users/page.js`, `content/page.js`, and `producers/use-admin-producers.js` (+ `isBusy` threaded through `AdminProducersTable` → `ProducerActions` for the row buttons). New `__tests__/useAdminAction.test.js` (7 cases: busy/reset, same-key double-fire block, concurrent keys, default/string/fn error surfaces). vitest 429✓, `npm run build` green, eslint 0 errors. **DEFER:** none — all 10 sites are the mechanical pattern (no per-site custom logic beyond the hook).
+
 ### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
 
 `refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`

@@ -5,12 +5,14 @@ import { Heart } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useAdminAction } from "@/lib/use-admin-action";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
   const { user: me } = useAuth();
+  const { run, isBusy } = useAdminAction();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
@@ -42,10 +44,11 @@ export default function AdminUsersPage() {
     }
   };
 
-  const toggleBlock = async (id) => {
-    await api.post(`/admin/users/${id}/block`);
-    load();
-  };
+  const toggleBlock = (id) =>
+    run(`block:${id}`, async () => {
+      await api.post(`/admin/users/${id}/block`);
+      load();
+    });
 
   const toggleExpand = async (u) => {
     if (expanded === u.id) {
@@ -181,7 +184,8 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleBlock(u.id)}
-                        className={`text-xs px-2 py-1 rounded-lg ${
+                        disabled={isBusy(`block:${u.id}`)}
+                        className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
                           u.is_blocked
                             ? "bg-red-100 text-red-700"
                             : "text-muted hover:text-red-600"
