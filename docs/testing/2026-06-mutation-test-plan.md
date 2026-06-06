@@ -29,22 +29,30 @@ _(filled at Phase Final — see bottom of file)_
 
 - [x] Phase 0 — Test plan + coverage map + draft PR
 - [x] Phase A — Mutant generation (catalog below)
-- [ ] Phase B — Test generation (per domain)
-  - [ ] B1 Availability state machine (backend)
-  - [ ] B2 Admin authorization guards (backend)
-  - [ ] B3 Auth / JWT (backend)
-  - [ ] B4 Registration flow (backend)
-  - [ ] B5 WhatsApp branching (backend)
-  - [ ] B6 Tier model (backend)
-  - [ ] B7 AvailabilityBadge MEH-291 states (frontend — closed loop)
-- [ ] Phase C — Healer (CI green for backend, vitest green for frontend)
+- [x] Phase B — Test generation (per domain)
+  - [x] B1 Availability state machine (backend) — `tests/test_expansion_availability.py`
+  - [x] B2 Admin authorization guards (backend) — `tests/test_expansion_admin_authz.py`
+  - [x] B3 Auth / JWT (backend) — `tests/test_expansion_auth_jwt.py`
+  - [x] B4 Registration flow (backend) — `tests/test_expansion_registration.py`
+  - [x] B5 WhatsApp branching (backend) — `tests/test_expansion_whatsapp.py`
+  - [x] B6 Tier model (backend) — `tests/test_expansion_tier.py`
+  - [x] B7 AvailabilityBadge MEH-291 states (frontend) — `frontend/__tests__/expansion/availability-badge.test.jsx` ✅ vitest green (local + CI)
+- [ ] Phase C — Healer (frontend vitest green ✅; backend pytest CI in flight)
 - [ ] Phase Final — Report + HANDOFF + PR ready
 
 ---
 
 ## BLOCKED / SKIPPED (log as we go)
 
-_(empty so far)_
+- **WhatsApp 24h-window branching (WA brief domain 5)** — NOT a real
+  surface. The "inside 24h → free-form, outside → template" decision does
+  not exist as runtime logic; every business-initiated path hardcodes
+  `send_template` by design (OTP/welcome/approval), and only the
+  already-24h-delayed rating request uses `send_text`. No mutant to write;
+  re-scoped B5 to the actual send-layer contract.
+- **`verification_tier` resolver (Tier domain)** — the public מאומת/מוצהר
+  resolver (MEH-762 Chunk 3) landed on staging mid-session
+  (`tests/test_meh_762_public_tier_contract.py`); no duplicate written.
 
 ---
 
