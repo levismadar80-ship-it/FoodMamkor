@@ -4,6 +4,22 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5) (Refs MEH-760, Part of MEH-742)
+
+`feat(MEH-760)`: ADR-022 gate 3 — replaced the single-tier terms §5 ("עסקים מאומתים", a vague
+"initial review" + "no guarantee" sentence) with the Sapir-locked two-tier definition, heading
+`5. אימות ושכבות הצגה`. Five sub-parts (he+en): 5.1 manual acceptance review = personal
+introduction, explicitly **not** regulatory; 5.2 `תג ״מאומת״` — document-verified-at-presentation
+scope, no ongoing monitoring, free; 5.3 `בית עסק ״מוצהר״` — legally-exempt categories shown on a
+binding declaration we don't verify; 5.4 `שיפוי` — narrow indemnity (limits תנאי-מקפח exposure);
+5.5 no ongoing-supervision duty. `terms.sections.verified` restructured from `{title,body}` to
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}`; `terms/page.js` `verified` case now renders intro + 3 `<h3>` sub-blocks + closing
+para. Operator block (`טופז שנפ`, MEH-736) byte-identical — untouched. `מורשה`/`מורשים` permitted
+(legal surface). he==en parity; COPY_BANK §7 gate-3 rows, all **v1 — pending lawyer (Brief Q1/Q3)**,
+en ⏳ pending Sapir review. `npm run build` green. **Refs MEH-760, Part of MEH-742** — NOT Closes
+(Sapir closes after /terms render check; post-lawyer revision is a follow-up, launch not blocked).
+
 ### 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys (Refs MEH-758, Part of MEH-742)
 
 `feat(MEH-758)`: Sapir-locked ADR-022 two-tier (מאומת / מוצהר) copy added as i18n keys —

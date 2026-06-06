@@ -5,6 +5,21 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5)
+
+**Branch:** `feature/meh-760-gate3-terms-tiers` off staging — draft PR (Refs MEH-760, Part of
+MEH-742). Replaced terms §5 single-tier text with Sapir-locked two-tier v1 (5.1–5.5), heading
+`5. אימות ושכבות הצגה`. `terms.sections.verified` restructured `{title,body}` →
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}` (he+en); `terms/page.js` `verified` case renders intro + 3 `<h3>` + closing para
+(structure change — Sapir approved option 1). Operator block byte-identical (untouched, git-diff
+verified). he==en parity; COPY_BANK §7 gate-3 rows; `npm run build` green.
+
+**Pending:** Sapir /terms render check on Vercel preview → then Closes. All five strings are
+**v1 — pending lawyer (Brief Q1/Q3)**; en ⏳ pending Sapir review. Post-lawyer terms revision is a
+follow-up edit (not yet a ticket; open one when opinion arrives) — launch not blocked on it.
+The §5.4 שיפוי clause was drafted narrowly for תנאי-מקפח (חוק החוזים האחידים) caution.
+
 ## 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys
 
 **Branch:** `feature/meh-758-gate1-tier-copy` off staging — draft PR (Refs MEH-758, Part of
