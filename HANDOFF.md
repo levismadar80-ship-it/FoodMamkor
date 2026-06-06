@@ -13,11 +13,12 @@
 MEH-763-chunk-3 opt-in props (component back to one shape). Phase 0 found S4 FINAL
 silent on chip shape → BRAND §3 governs. Sapir QA'd all 3 surfaces. Zero logic/copy.
 
-**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) added
-`useLocale()` to `HomeProductCard` without a next-intl test mock → 16 fails, **staging
-silently red on vitest** (non-required check, slipped the gate). Mocked `useLocale`
-per `RecipeCard.test`. **Test-only; 407 → 423 passing.** Production root cause (4
-duplicated `formatDate` helpers) stays in **MEH-753** — confirmed NOT absorbed here.
+**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) unified the 4
+hardcoded `formatDate` helpers into shared `format-date.js` (incl. `HomeProductCard`,
+now using `useLocale()`), but its TEST never got a next-intl mock → 16 fails, **staging
+silently red on vitest** (non-required check, slipped the gate). #988 mocks `useLocale`
+per `RecipeCard.test` — **test-only; 407 → 423 passing.** (The helper dedup itself was
+already done in #976; only the missing test mock remained.)
 
 **Process flags this session (S7 + S5 design tracks):**
 - **5 orchestrator-claim/evidence mismatches** STOP-surfaced (all verified file:line):
@@ -25,10 +26,28 @@ duplicated `formatDate` helpers) stays in **MEH-753** — confirmed NOT absorbed
   built #970), "#971 merged" (was draft → verified + merged on the MERGE instruction),
   and "#987 vitest failure" (pre-existing #976, not MEH-764). → adopted **verify-
   preconditions over asserted premises**.
-- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked),
-  MEH-753 (formatDate helper dedup), and the MEH-764 temporary-prop removal is now DONE.
+- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked).
+  MEH-753 formatDate dedup (#976) + MEH-764 temporary-prop removal are both DONE.
 - **Lint-hook lesson** added to `code-execution.md §8` (batch import+usage moves /
   MultiEdit — the per-edit hook false-3-strikes a transient `no-undef`).
+
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
+
+Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+
+- **MEH-692** → PR **#989** ✅ merged (`Closes`): auto-close forensics. Root cause = the
+  literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
+  #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
+  trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
+- **MEH-688** → PR **#990** ✅ merged (`Refs` — epic NOT closed): he.json emoji LOCK v2.
+  **Sweep BLOCKED** — parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining
+  emoji are deferred (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability
+  dots, kosher). Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
+  (PR #992). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (PR #992).
+  **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
+- ⚠️ **Deviation (accepted):** MEH-688 brief asked to strip+close; delivered Discovery+`Refs`. Epic stays open for Sapir's ADR-021 decision.
 
 ## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
 

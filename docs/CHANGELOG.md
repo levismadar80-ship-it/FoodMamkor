@@ -27,8 +27,8 @@ found", leaving **staging silently red on `Frontend unit tests (vitest)`** — a
 non-required check, so it slipped past the merge gate and every open PR inherited the
 16 failures (surfaced while triaging MEH-764 #987's CI). Mocked `next-intl`'s
 `useLocale` per the `RecipeCard.test` precedent. **Test-only**; 407 → 423 passing.
-The duplicated `formatDate` helper dedup (the production root cause) remains in
-**MEH-753**'s scope — not touched here.
+The `formatDate` helper dedup itself was already done by #976 (MEH-753 — shared
+`format-date.js`, incl. `HomeProductCard`); only the missing test mock remained.
 
 ### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
 
