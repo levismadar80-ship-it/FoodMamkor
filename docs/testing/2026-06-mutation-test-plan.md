@@ -8,7 +8,18 @@
 
 ## תקציר מנהלים (Hebrew exec summary)
 
-_(filled at Phase Final — see bottom of file)_
+1. **מה מוגן עכשיו שלא היה אתמול:** 72 בדיקות חדשות סגרו פערים אמיתיים
+   ב-6 תחומים קריטיים — כולן ירוקות ב-CI.
+2. **הסתרת ספקים בחופשה** (`on_vacation`) מרשימת היצרנים נבדקת לראשונה,
+   כולל גבול התאריך (ספק שחוזר *היום* לא מנוקה בטעות) ושער ה-422 על חופשה
+   ללא תאריך חזרה.
+3. **הרשאות אדמין** — 18 endpoints משנים (approve/reject/delete/block...)
+   מקבלים עכשיו בדיקת 403-לל-אדמין; מוטנט שמסיר `require_admin` מכל אחד
+   מהם נתפס.
+4. **JWT** — משתמש חסום דרך אימות-אופציונלי מקבל 403 (לא מטופל כאנונימי),
+   טוקן פג-תוקף נדחה, וטוקן refresh לא מתקבל כ-access.
+5. **פערים שנותרו (ל-Sapir):** WhatsApp Graph-200-undelivered לא מטופל
+   בקוד — אין מה לבדוק עד שייכתב טיפול. ראו "Survived" למטה.
 
 ---
 
@@ -37,8 +48,9 @@ _(filled at Phase Final — see bottom of file)_
   - [x] B5 WhatsApp branching (backend) — `tests/test_expansion_whatsapp.py`
   - [x] B6 Tier model (backend) — `tests/test_expansion_tier.py`
   - [x] B7 AvailabilityBadge MEH-291 states (frontend) — `frontend/__tests__/expansion/availability-badge.test.jsx` ✅ vitest green (local + CI)
-- [ ] Phase C — Healer (frontend vitest green ✅; backend pytest CI in flight)
-- [ ] Phase Final — Report + HANDOFF + PR ready
+- [x] Phase C — Healer: frontend vitest green ✅ (local + CI); backend pytest
+  green ✅ in CI on first push — **zero heal iterations needed**.
+- [x] Phase Final — Report + HANDOFF + PR ready
 
 ---
 
@@ -153,16 +165,42 @@ DELETE `/admin/outreach/{id}`, POST `/admin/users/{id}/block`.
 
 ---
 
-## Counts table (filled at Phase Final)
+## Counts table (Phase Final — all CI green)
 
-| Domain | Mutants | Killed-verified (FE) | Killed-by-reasoning (BE) | Survived |
-|---|---|---|---|---|
-| B1 Availability | 7 | — | | |
-| B2 Admin authz | ~12 | — | | |
-| B3 Auth/JWT | 4 | — | | |
-| B4 Registration | 3 | — | | |
-| B5 WhatsApp | 5 | — | | |
-| B6 Tier | 4 | — | | |
-| B7 Badge (FE) | 6 | | — | |
+| Domain | New tests | Mutants | Killed-verified (FE) | Killed-by-reasoning (BE, CI-validated) | Survived |
+|---|---|---|---|---|---|
+| B1 Availability | 10 | 7 | — | 7 | 0 |
+| B2 Admin authz | 37 | 19 | — | 19 | 0 |
+| B3 Auth/JWT | 6 | 4 | — | 4 | 0 |
+| B4 Registration | 2 | 3 | — | 3 | 0 |
+| B5 WhatsApp | 5 | 5 | — | 5 | 0 |
+| B6 Tier | 4 | 4 | — | 4 | 0 |
+| B7 Badge (FE) | 8 | 6 | 6 | — | 0 |
+| **Total** | **72** | **48** | **6** | **42** | **0 (catalog)** |
 
-Test count before → after: _(filled at Phase Final)_
+- **Killed-verified** = frontend; mutant applied locally → vitest red → revert
+  → green. **Killed-by-reasoning** = backend; test passes on original code in
+  CI, kill-logic argued per mutant (sandbox can't run mutated backend, MEH-672).
+- **Test count:** frontend **414 → 422** active vitest tests; backend **+64**
+  new tests across 6 new files (exact backend total not measured locally — no
+  sandbox Postgres; full suite confirmed green in CI).
+
+---
+
+## Survived mutants / coverage gaps (findings for Sapir)
+
+These are real holes the catalog could not close cheaply — not test failures,
+but production behavior that doesn't exist to be tested:
+
+1. **WhatsApp Graph-200-undelivered (`whatsapp.py:48`).** `_post` treats any
+   HTTP 200 as success and never inspects the Meta response body for
+   per-message error codes or "queued/undeliverable" states. A "send returns
+   True but the message never arrives" mutant SURVIVES because there is no
+   delivery-status check to mutate. **Fix would need code** (parse response
+   body / persist webhook status receipts) before a test is meaningful.
+2. **Outbound delivery-status persistence (`whatsapp_webhook.py:294-296`).**
+   Status receipts (delivered/read/failed) are counted but not stored, so
+   there's no contract to assert. Same class as #1.
+
+Both are backend-feature gaps, deliberately left as findings rather than
+forced into a weakened test.

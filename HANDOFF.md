@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night) — MEH-214: mutation-guided test expansion (tests-only, PR #975 open)
+
+**Branch:** `feature/test-expansion-2026-06` off staging — draft PR #975 (Refs MEH-214).
+**Tests-only, zero production-code edits.** 7 new files / 72 tests across 6 critical domains;
+all CI green on first push (backend pytest, vitest, ruff, mypy, build, E2E) — **0 heal iterations**.
+- New: `tests/test_expansion_{availability,admin_authz,auth_jwt,registration,whatsapp,tier}.py`
+  (+64 backend), `frontend/__tests__/expansion/availability-badge.test.jsx` (+8, all 6 mutants
+  verified-killed locally), `docs/testing/2026-06-mutation-test-plan.md` (plan + counts + survived).
+- Highest-value closes: `on_vacation` default-listing exclusion (was untested), vacation date
+  boundary `<` vs `<=`, 18 admin endpoints' `require_admin` 403 regression, blocked-user-via-
+  optional-auth 403 re-raise.
+- **SURVIVED gaps for Sapir** (findings, not failures): WhatsApp Graph-200-undelivered and
+  outbound delivery-status persistence are unhandled in code — no behavior to test yet.
+- Re-scoped per discovery: WhatsApp "24h-window branching" doesn't exist as runtime logic;
+  `verification_tier` resolver covered by staging's `test_meh_762_public_tier_contract.py` (not duplicated).
+- **Next:** PR #975 ready-for-review; subscribed to its CI/review activity.
+
 ## 2026-06-06 (PM) — MEH-763: S5 /map port COMPLETE (4 chunks merged + Chunk 4 PR open)
 
 **Branch:** `feature/meh-763-s5-chunk4-states` off staging — draft PR (Refs MEH-763), the FINAL
