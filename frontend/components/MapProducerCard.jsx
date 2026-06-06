@@ -47,17 +47,11 @@ export default function MapProducerCard({ producer, active, onClick }) {
   return (
     <article
       onClick={handleRootClick}
-      // MEH-763: keyboard parity for the mouse-only select-on-map onClick.
-      // Inner links/buttons keep their own focus (guarded by closest("a,button")).
-      onKeyDown={onClick ? (e) => {
-        if ((e.key === "Enter" || e.key === " ") && !e.target.closest("a, button")) {
-          e.preventDefault();
-          onClick(p);
-        }
-      } : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      role={onClick ? "button" : undefined}
-      aria-label={onClick ? p.name : undefined}
+      // MEH-763: card-click is a mouse-only select-on-map affordance (handleCardClick →
+      // highlight + flyTo, NOT navigation). The <article> is deliberately non-focusable
+      // (no role/tabIndex/key handler) so it doesn't wrap its inner profile Link + CTA in a
+      // nested-interactive button — those two links are the keyboard targets. The keyboard
+      // path to select-on-map from the list is tracked in MEH-765.
       className={[
         "flex gap-3 bg-white border rounded-md overflow-hidden transition",
         active ? "border-primary border-2" : "border-border",
