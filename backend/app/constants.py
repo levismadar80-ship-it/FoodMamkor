@@ -59,7 +59,12 @@ PRODUCER_LICENSE_MAX_LENGTH: int = 20
 # timestamp (declared_at) with the exact text version agreed to strengthens
 # the platform's good-faith reliance defense and lets us prove WHICH wording
 # each seller consented to if the lawyer-locked copy changes later.
-# Bump this (e.g. "2026-09-v2") whenever the declaration text materially
-# changes so existing rows stay attributable to the version signed.
-# Must stay within the VARCHAR(10) producers.declaration_version column.
-DECLARATION_VERSION: str = "2026-06-v1"
+# Bump this whenever the declaration text materially changes so existing
+# rows stay attributable to the version signed. Must stay within the
+# VARCHAR(10) producers.declaration_version column.
+#   v1 ("2026-06-v1") — 2026-06-05 launch text ("…כל הרישיונות הנדרשים…
+#     לפי חוק רישוי עסקים"). Stamped by Chunk B (PR #955); rows keep it.
+#   v2 ("2026-06-v2") — MEH-759 Chunk C (ADR-022 gate 2): continuous-
+#     commitment wording ("פועל כדין… ההצהרה תישאר נכונה כל עוד העסק
+#     מופיע במהמקור…") + conditional farmer line. New wording = new version.
+DECLARATION_VERSION: str = "2026-06-v2"
