@@ -16,6 +16,7 @@ colors:
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#8B6914"
+  honey: "#C8821E"
   border: "#E5DFD3"
   green-50: "#EAF3DE"
   green-100: "#C8DCB3"
