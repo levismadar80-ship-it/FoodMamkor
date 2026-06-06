@@ -4,6 +4,32 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
+
+`refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`
++ `state-selected` for **all three consumers** (/home `HomeProducersGrid`, /producers
+`ProducersClient`, /map `FilterChipsBar`), per DESIGN.md §Shapes / BRAND §3 (*no
+`rounded-full` on rectangles*). Flips the temporary default added by MEH-763 chunk 3.
+
+- The /home + /producers `rounded-full` pill chips were a **pre-existing DESIGN
+  violation**; /map already opted in (MEH-763 chunk 3).
+- Removed the temporary `chipShape` / `selectedClassName` opt-in props (component back
+  to one shape) + the redundant `FilterChipsBar` props. Zero logic/copy changes.
+- Phase 0 (read-only): S4 homepage FINAL (MEH-639) is **silent** on chip shape → no
+  design conflict; BRAND §3 / DESIGN §Shapes governs.
+- Verified: build · vitest 423/0 · ESLint 0 errors; Sapir QA on all 3 surfaces.
+
+### 2026-06-06 — fix: HomeProductCard.test next-intl mock — staging vitest green (#988)
+
+`fix(MEH-753)`: `#976` (MEH-753, locale-aware event dates) added `useLocale()` to
+`HomeProductCard` but its test had no next-intl mock → 16 tests threw "No intl context
+found", leaving **staging silently red on `Frontend unit tests (vitest)`** — a
+non-required check, so it slipped past the merge gate and every open PR inherited the
+16 failures (surfaced while triaging MEH-764 #987's CI). Mocked `next-intl`'s
+`useLocale` per the `RecipeCard.test` precedent. **Test-only**; 407 → 423 passing.
+The duplicated `formatDate` helper dedup (the production root cause) remains in
+**MEH-753**'s scope — not touched here.
+
 ### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
 
 - **`fix(MEH-731)`**: `FooterSlot.jsx` + `app/[locale]/admin/layout.js` imported `usePathname` from `next/navigation`, which keeps the `/he` / `/en` prefix under next-intl `[locale]` routing — so `FooterSlot`'s `pathname === "/map"` check failed (footer wrongly rendered on `/map`) and the admin sidebar's `isActive()` (compares against non-prefixed `NAV_HREFS`) never highlighted a tab. Swapped both to the locale-stripping `usePathname` from `@/i18n/navigation` (same fix as Header/BottomNav in PR #894). Phase 0 grep confirmed these were the **only 2** remaining `next/navigation` usePathname sites. `admin/layout.js` `useRouter` left on `next/navigation` (only the path-comparison was buggy; the `/login` redirect is out of scope). `npm run build` green (both locales).
