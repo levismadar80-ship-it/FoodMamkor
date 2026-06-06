@@ -11,7 +11,7 @@ Overnight autonomous run. Commit + push after every phase. On re-run, skip check
 - [x] **Phase 0** — Tools + skeleton (prev session): AUD-001..008, raw/ committed.
 - [x] **Phase A** — Backend / Security (7 areas). → Audit-A (AUD-009..024; no IDOR/secrets, AUD-004 closed-FP)
 - [x] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B (AUD-025..038; AUD-007 closed-FP)
-- [ ] **Phase C** — Logic / Data / State (6 areas). → Audit-C
+- [x] **Phase C** — Logic / Data / State (6 areas). → Audit-C (AUD-039..048; both C1 REDs rejected on verify)
 - [ ] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D
 - [ ] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
 
@@ -604,15 +604,158 @@ i18n: ערכים בעברית בתוך `en.json` (AUD-027), מחרוזות עב�
 
 ---
 
-## Audit-C — Logic / Data
+## Audit-C — Logic / Data / State
 
-_(Session 4 — empty skeleton)_
+Phase C — 6 parallel read-only subagents (availability-state, registration,
+trust-tier, race-conditions, data-integrity, ISR/cache). Orchestrator re-verified;
+**both C1 REDs rejected** on verify (see AUD-041). mypy `union-attr` carry-over
+resolved as SDK-type FP (AUD-048). Numbering continues from AUD-039.
 
-Carry-over from Audit-0: mypy `union-attr`/`assignment` classes where they touch
-models/schemas (`raw/mypy.txt`).
+State machine (confirmed): 4 states — `accepting_orders` (default, `server_default`),
+`available_today`, `full_this_week`, `on_vacation` (excluded from default `/producers`
+listing, requires `vacation_until`); legacy `is_available_today`/`availability_status`
+dual-written during the MEH-291 overlap.
+
+### [AUD-039] Availability-state update: no server-side validation of state/vacation pairing
+AvailabilityState / Input-validation | Severity YELLOW | Confidence high
+Evidence: `backend/app/schemas/schemas.py:1558-1565`
+```python
+class AvailabilityStateUpdate(BaseModel):
+    state: str = Field(...)                 # plain str — no Literal/enum constraint
+    vacation_until: date | None = Field(None, description="Required when state='on_vacation'")
+```
+No `@field_validator`/`@model_validator` enforces (a) `state ∈ AVAILABILITY_STATES`,
+(b) `vacation_until` present when `state=='on_vacation'`, or (c) `vacation_until >=
+today`. The output-side auto-clear (`:568-581`) only masks a passed date on read.
+Issue: a client (or third-party app bypassing the FE `min=`) can persist
+`(on_vacation, null)` or a past `vacation_until`, or an arbitrary `state` string; the
+read-validator silently flips it to `accepting_orders` so the producer's vacation
+never "sticks". Realistic scenario: producer sets vacation via a non-web client with no
+date → API shows them accepting orders → they receive orders they can't fulfil. Fix
+direction: add a `model_validator` enforcing the enum + pairing + future-date.
+Verify: confirmed (groups C1-1/C1-7/C1-9; not RED — read-validator prevents bad output, so UX/contract not data-loss)
+
+### [AUD-040] Vacation auto-clear uses UTC `date.today()`, not Israel tz; no server-side clear job
+AvailabilityState / Timezone | Severity YELLOW | Confidence high
+Evidence: `backend/app/schemas/schemas.py:572-573` — `self.vacation_until < date.today()`
+(container is UTC; Israel is UTC+2/+3); no scheduled job clears expired `vacation_until`
+(only this read-time recompute exists).
+Issue: the auto-clear fires on the UTC date boundary, up to ~3h early relative to
+Jerusalem; and a producer who never re-reads keeps a stale stored `vacation_until`.
+Realistic scenario: producer returns 2026-06-07 but API flips to accepting at
+2026-06-08 00:00 UTC (still evening 06-07 in Israel). Fix direction: compare in
+`Asia/Jerusalem`; optionally a daily clear job (mirror `onboarding_followup.py`).
+Verify: confirmed (groups C1-2/C1-3; bounded 1-day-boundary edge)
+
+### [AUD-041] Availability — two RED claims rejected on verify + minor edges
+AvailabilityState | Severity GREEN | Confidence high
+Evidence: **C1-8 (dual-write drift, claimed RED) → rejected-FP**: `producer_me.py:362-375`
+writes new + legacy columns in a single `db.commit()` — a transaction is atomic, the
+"partial commit" path the subagent posited has no code path. **C1-10 (migration backfill,
+claimed RED) → rejected-FP**: `alembic/versions/20260504_1911_2a74fa41ceb1` DOES backfill
+(`UPDATE producers SET availability_state = CASE WHEN availability_status='vacation' THEN
+'on_vacation' …`, lines 68-76) covering all states. Minor real edges kept low: implicit
+`on_vacation` listing exclusion is undocumented in the API contract (`producer_listing.py:177-179`),
+and the FE admin date `min=` blocks editing rows whose `vacation_until` is already past
+(`ProducerForm.jsx:680`).
+Issue: aggressive-agent REDs did not survive source verification; the surviving edges are
+low-impact. Realistic scenario: n/a. Fix direction: document the implicit filter; relax the
+FE `min=` for existing past values. Verify: rejected-FP (the 2 REDs) / rejected-low-impact (the edges)
+
+### [AUD-042] Check-then-act without a unique constraint / row lock (×3)
+RaceCondition | Severity YELLOW | Confidence high
+Evidence: `backend/app/routers/reports.py:29-49` (no `uq(reporter_id, producer_id)`,
+existence-check then insert); `backend/app/routers/group_buys.py:97-124`
+(`len(gb.commits) >= max_participants` check then manual `+1`, non-atomic); 
+`backend/app/routers/referrals.py:33-48` (no `uq(referee_id)`, check then insert).
+Issue: two near-simultaneous requests both pass the check and both insert → duplicate
+reports, group-buy capacity overshoot, or double-credited referral. (Sibling endpoints
+`producer_follows`/home-product rating ARE guarded by unique constraints — those are fine.)
+Realistic scenario: double-click or two tabs creates a duplicate row / over-fills a
+group buy by one. Fix direction: add the unique constraints + `ON CONFLICT`/get-or-create;
+use `SELECT … FOR UPDATE` for the group-buy capacity check. Verify: confirmed (groups C4-1/C4-2/C4-9)
+
+### [AUD-043] Concurrent admin approval fires duplicate notifications (no status guard)
+RaceCondition | Severity YELLOW | Confidence med
+Evidence: `backend/app/routers/admin.py:269-301` — `producer.status = "approved"` set with
+no `if status != 'pending'` pre-check; `notify_producer_approved()` called unconditionally
+after commit.
+Issue: two admins approving the same pending producer both read `pending`, both approve,
+both send the welcome email/WhatsApp. Realistic scenario: duplicate welcome message to a
+new producer (trust ding), or any once-only side-effect double-firing. Fix direction:
+guard `if producer.status != 'pending': raise 409` before the transition. Verify: confirmed (C4-4)
+
+### [AUD-044] `GroupBuy.deadline` naive datetime compared to `datetime.utcnow()`
+DataIntegrity / Timezone | Severity YELLOW | Confidence med
+Evidence: `backend/app/routers/group_buys.py:95` — `if gb.deadline < datetime.utcnow():`
+(both naive). Works only while `deadline` is consistently stored naive-UTC.
+Issue: latent — a future migration making the column tz-aware (or a tz-aware write
+elsewhere) would silently shift deadlines by the offset. Realistic scenario: deadline
+enforcement off by the UTC↔Israel offset after a schema change. Fix direction: store/compare
+tz-aware consistently (`datetime.now(timezone.utc)`). Verify: confirmed (C5-1; latent, low today)
+
+### [AUD-045] ISR-cached routes have no on-demand revalidation on mutation
+ISR/Cache | Severity YELLOW | Confidence high
+Evidence: `revalidate: 60` on `app/[locale]/producer/[id]/page.js:8`, `producers/page.jsx:27`,
+`[slug]/page.js:22`; `revalidate: 3600` on `map/page.js:44`. Grep for
+`revalidatePath`/`revalidateTag` across `frontend/` = **zero hits**; backend admin
+mutations (`admin.py`) carry no revalidation trigger.
+Issue: after an admin approve/edit/hide, cached pages serve stale content until the
+time-based revalidate (self-heals in 60s for detail/list; **up to 1h for the map** —
+the sharpest, an SEO-crawler staleness window). The repo's known "ISR survives mutation"
+class, bounded here by the short intervals. Realistic scenario: a hidden producer still
+appears on `/producers` for ≤60s, or a newly-approved producer is missing from the SSR
+map for ≤1h. Fix direction: add `revalidatePath` via an on-demand `/api/revalidate` route
+hit by backend mutations; cut the map interval. Verify: confirmed (groups C6-1/2/3/5/7; subagent REDs downgraded — 60s self-heal, not data-loss)
+
+### [AUD-046] Registration: license gate client-only + step-init from stale token
+Registration | Severity YELLOW | Confidence high
+Evidence: `frontend/.../RegisterProducerClient.jsx:699-729` — step-2 submit gate omits
+`licenseRequired && !producer_license_number` (backend `license_validation.py:52-70` DOES
+422, so it's a UX backtrack, not a bypass); `:68-75` initializes `step=2` from
+`localStorage.token` before the auth context resolves, so an expired/forged token lands
+the user on step 2 (backend still rejects → no security gap, but confusing 409/500 surfacing).
+Issue: both are UX/state bugs, not auth bypasses — backend re-enforces. Realistic scenario:
+bakery producer submits without the required license, gets a server error after the success
+transition; or an expired token drops the user mid-flow with a generic error. Fix direction:
+mirror the license requirement in the FE gate; defer step init until `authLoading` resolves.
+Verify: confirmed (groups C2-1/C2-2; backend-enforced, so bounded). Note: declaration IS server-stamped (`declared_at`/`DECLARATION_VERSION` set server-side, guard before write) — see AUD-048.
+
+### [AUD-047] Trust-tier-2 badge uses gray, violating ADR-019 (not negative framing)
+TrustTier / Design | Severity YELLOW | Confidence high
+Evidence: `frontend/components/TrustBadge.jsx:9` — `2: "bg-gray-100 text-gray-600 border-gray-200"`
+while tier-3 uses `primary`, tier-4 `amber`, tier-5 dark-green; `docs/decisions/ADR-019`
+rejects the Tailwind `gray-*` scale as off-brand "SaaS-dashboard signal".
+Issue: tier-2 (מוצהר/declared) is **not** negatively worded (label is the positive
+"✓ מספר מאומת"), and is hidden on cards (shown only ≥ tier-3) — but the gray treatment
+breaches the ADR-019 token lock. Realistic scenario: off-brand neutral-gray badge on the
+producer detail page. Fix direction: switch tier-2 to the `primary/10` or `green-50` muted
+token. Verify: confirmed (C3-1; brand-token violation, not the "negative-labeling" prohibition — that one passed)
+
+### [AUD-048] Phase C positive controls (no finding)
+Logic / Data | Severity GREEN | Confidence high
+Evidence: **Trust-tier model clean** — tier-2 labeled positively in he+en, zero
+"לא מאומת"/"unverified" framing anywhere, tier derived once in
+`backend/app/services/trust_tier.py` (FE only displays), all tier i18n keys present
+(C3-2/3/4/5). **Producer-delete cascade comprehensive** — FK CASCADE + explicit
+PhoneOtpToken bulk-cleanup (`admin.py:330`, `auth.py:1286`) + post-commit Cloudinary
+destroy, no orphans (C5-2). **Timezone correct** — `vacation_until` is a `Date`,
+business hours use `Asia/Jerusalem` ZoneInfo (C5-4). **mypy `union-attr` carry-over =
+FP** — the hits are Anthropic SDK content-block union types (`producer_risk.py:224,226`),
+not nullable DB columns, which are guarded (C5-3). **Declaration server-stamped** —
+`declared_at`/`DECLARATION_VERSION` set server-side with a guard before write (C2-3/4/5).
+Issue: none — recorded so Final Triage doesn't re-open. Verify: confirmed (no finding)
 
 ### תקציר (עברית)
-_(ריק)_
+פאזה C (6 סוכנים): מכונת-המצבים של זמינות תקינה במבנה, אך **חסרה ולידציית-שרת**
+על עדכון-מצב — `state` הוא str חופשי, וזיווג `on_vacation`+`vacation_until`/תאריך-עתיד
+לא נאכף; ה-auto-clear בקריאה מסתיר זאת אך מבטל את החופשה בפועל (AUD-039), וההשוואה
+ב-UTC ולא בשעון-ישראל (AUD-040). מרוצי-תהליכים: check-then-act ללא unique-constraint
+ב-Report/GroupBuy/Referral (AUD-042) ואישור-מנהל כפול ששולח התראה פעמיים (AUD-043).
+ISR ללא revalidation על מוטציה — נרפא ב-60ש׳, אך המפה עד שעה (AUD-045). **שני ה-REDs
+של C1 נדחו** באימות (commit אטומי; ה-backfill קיים — AUD-041). ביקורות חיוביות חזקות:
+מודל-הדרגות נקי ולא-שלילי, מחיקת-יצרן ללא יתומים, אזורי-זמן תקינים, ו-mypy union-attr=FP
+(AUD-048).
 
 ---
 
