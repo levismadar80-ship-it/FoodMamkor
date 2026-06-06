@@ -21,7 +21,7 @@ import { CATEGORY_LEGEND } from "@/lib/map-categories";
 function MapLoadingState() {
   const t = useTranslations();
   return (
-    <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
     </div>
@@ -102,7 +102,7 @@ export default function MapPane({
       {showMapHint && (
         <div
           // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-[10px] bg-primary-dark text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-md bg-primary-dark text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
           role="status"
         >
           {t("map.pane.hint")}
@@ -119,11 +119,11 @@ export default function MapPane({
       )}
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-[16px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]" role="status">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-white rounded-lg p-6 shadow-[0_4px_24px_rgba(0,0,0,0.1)] text-center max-w-[280px]" role="status">
           <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
           <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
-          <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-[8px] text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
+          <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>
         </div>
       )}
 
@@ -141,7 +141,7 @@ export default function MapPane({
         }
       </button>
 
-      {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
+      {/* Collapsible category legend — desktop only (mobile reads identity off the photo markers). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
       <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[800]">
         {legendOpen && (
@@ -157,10 +157,14 @@ export default function MapPane({
                 const opacity = catActive
                   ? (isEmpty ? "opacity-60" : "opacity-100")
                   : (isEmpty ? "opacity-30" : "opacity-40");
+                // F2 (MEH-763): pins no longer carry a category colour, so the
+                // legend leads with the category Phosphor icon (identity); the
+                // colour stays only as the icon's tint (secondary channel).
+                const Icon = cat.icon;
                 return (
-                  <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-right transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                    <span className="text-xs text-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                  <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
+                    <Icon size={14} weight="fill" className="shrink-0" style={{ color: cat.color }} aria-hidden="true" />
+                    <span className="text-xs text-text">{cat.name.split(",")[0]}</span>
                   </button>
                 );
               })}
@@ -175,7 +179,7 @@ export default function MapPane({
           onClick={onLegendToggle}
           aria-label={t("map.pane.aria.categories")}
           aria-expanded={legendOpen}
-          className="w-8 h-8 rounded-full bg-white border border-[#e5e7eb] shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="w-8 h-8 rounded-full bg-white border border-border shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center justify-center hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <SquaresFour size={16} weight="bold" className="text-text" />
         </button>
