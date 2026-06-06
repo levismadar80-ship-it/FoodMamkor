@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night-batch-5) — autonomous implementer: P1/P2 fixes + fuzz layer (DRAFT PRs)
+
+Four sequential tasks off fresh `staging`, all DRAFT (merges = Sapir's). Ledger: [docs/audits/2026-06-night-batch-5.md](./docs/audits/2026-06-night-batch-5.md). Safety net (merged `test_expansion_*` / `__tests__/expansion/`) never modified.
+
+- **AUD-009/010** (WhatsApp Graph parse) — Draft **PR #991**. `whatsapp.py` stops treating any non-error HTTP as delivered; classifies accepted/failed/window_expired, keeps the bool façade. CI: pytest ✅ / ruff ✅ (after format fix). **Sapir-terminal:** Alembic `outbound_messages` revision (verbatim in PR body). Refs MEH-214.
+- **AUD-039/040** (availability validation + Israel tz) — Draft **PR #995**. New `app/utils/clock.py` + `app/services/availability_validation.py`; rejects past `vacation_until` in Asia/Jerusalem on all write paths. Read-path auto-clear left on `date.today()` (preserves merged AV-3 boundary). **DEFER:** admin required-date parity; read-path tz alignment. Refs MEH-214.
+- **UIS Pattern A** (useAdminAction) — Draft **PR #1001**. Shared hook (per-key in-flight lock + `errorMessage()` toast, no new i18n keys) wired into all 10 CRITICAL admin double-submit sites. Local: build ✅ / vitest 443 ✅ / lint 0-err ✅. CI green. Refs MEH-228.
+- **schemathesis fuzz** — Draft **PR #1003**. `tests/test_fuzz_schemathesis.py` (in-process ASGI over openapi; unauth excludes admin DELETEs; authed admin JWT). `importorskip` keeps CI green until the dep lands. **Sapir-terminal:** add `schemathesis` to `pyproject` dev group + `uv lock` (pyproject guard-protected, MEH-442). Findings → morning triage (FUZZ-NNN), not this PR. Refs MEH-214.
+- **Next:** Sapir applies the 2 terminal steps (Task 1 Alembic, Task 4 dep), reviews the 4 draft PRs (Vercel/mobile for UI-facing #1001), then merges. `send_later` unavailable → no scheduled check-in; CI failures arrive via PR webhooks (subscribed to all 4). Re-triggered #991/#995 CI via empty commits (their fixed heads hadn't fired a `pull_request` event).
+
 ## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
 
 Autonomous second-shift session. Ledger: [docs/audits/2026-06-night-batch-6.md](./docs/audits/2026-06-night-batch-6.md).
