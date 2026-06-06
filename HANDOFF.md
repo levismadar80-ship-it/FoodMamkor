@@ -5,6 +5,30 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-214: audit fix-wave (autonomous LOW-RISK lane) — PR #974 + DEFER package
+
+Follow-on overnight wave on the 56 audit findings. Ledger:
+[`docs/audits/2026-06-fix-wave.md`](./docs/audits/2026-06-fix-wave.md).
+**FIXED 1 · DEFER 33 · N/A 22.**
+
+- **Shipped (draft, off `staging`):** **PR #974** `feature/audit-fix-bidi-aud026` —
+  AUD-026 bidi LTR-isolation on ExperienceCard/HomeProductCard/ReviewsSection. `npm run
+  build` ✅. CI green-track at hand-off (frontend build/lint/vitest/adversarial running,
+  backend skipped). NOT merged — morning review. Re-verified vs current staging
+  (`b5d5a0f`): MapProducerCard AUD-026 site was **already fixed** → audit snapshot stale.
+- **DEFER (prepared, not applied):** P1 = `.env.example` 7-day-token (AUD-050, **blocked
+  by env-read hook → apply in your terminal**), WhatsApp 200≠delivered (AUD-009/010),
+  unique-constraint Alembic draft for Report/Referral races (AUD-042, draft revision in
+  the doc). P2 = availability validation+tz, auth (fingerprint/reset-rate-limit), MEH-736
+  twin jobs (**verbatim YAML in the doc — workflows write-denied**, this blocks #969's
+  merge), security-header consolidation, dep bumps. P3 = FE mechanical (RTL/aria/useId —
+  autofix-eligible but need re-verify vs moved staging), copy (needs your approval), design tokens.
+- **Blocked (logged+skipped):** `backend/.env.example` (env-read hook), `.github/workflows/**`
+  (settings deny) — both handed off with exact diffs/YAML. No STOP conditions hit.
+- **Subscribed to PR #974** activity (CI/reviews); self check-in scheduled if `send_later` available.
+- **Next:** Sapir — review #974 → merge; apply the 3 terminal-only fixes (.env.example,
+  MEH-736 twins); triage P1 DEFER items into Linear. #969 (audit) still needs the twins or admin-merge.
+
 ## 2026-06-06 — MEH-214: 2026-06 full-repo audit COMPLETE — PR #969 ready-for-review
 
 **Branch:** `feature/audit-2026-06-full` off staging — draft → **ready-for-review**, PR #969

@@ -974,6 +974,16 @@ _None._ All 6 phases completed; no scope-explosion or blocked-path STOP conditio
 pytest remains deferred (no Postgres in sandbox, MEH-672) — documented in Audit-0, not
 re-attempted here.
 
+### Fix-wave status (2026-06-06, autonomous LOW-RISK lane)
+
+A follow-on autonomous fix-wave triaged all 56 findings into AUTOFIX vs DEFER —
+full ledger in [`2026-06-fix-wave.md`](./2026-06-fix-wave.md). Result: **1 AUTOFIX
+PR shipped** (#974, AUD-026 bidi LTR-isolation, build-verified, draft, off `staging`),
+**33 DEFER** (schema/auth/WhatsApp/workflows/security/copy/deps — prepared with
+file:line + draft Alembic + verbatim MEH-736 twin YAML), **22 N/A** (FP / positive
+controls). `.env.example` fixes (AUD-049/050/051) blocked by the env-read hook →
+exact diffs handed to Sapir. No source edits on this audit branch (docs-only).
+
 ### תקציר (עברית)
 הביקורת הושלמה: 56 ממצאים, **אפס RED**, 33 YELLOW, 23 GREEN. כל ה-REDs שהוצעו ע״י
 תת-הסוכנים נדחו/הורדו באימות-מקור (שיעור-דחייה ~36%, תקין). שלושת ה-carry-overs
