@@ -28,6 +28,13 @@ scope notes: [docs/audits/2026-06-night-batch-2.md](./docs/audits/2026-06-night-
 
 ---
 
+## 2026-06-06 (PM) — MEH-762 Chunk 4: is_verified badge decouple
+
+**Branch `feature/meh-762-tier-public-contract`, draft PR (Refs MEH-762).** The "מאומת" pill driver switched `is_verified` → `verification_tier === "verified"` (`badges.js`); the over-claim tooltip replaced with the Sapir copy-lock (terms §5.2-aligned). `is_verified` field **NOT deleted** (badge role only). 3 test files updated (vitest **80✓**); `npm run build` ✓; `grep is_verified badges.js` = 0 (code; comments reworded to keep the gate clean).
+- **Deferred → MEH-766** (opened): `trust_tier.py:32` coupling (a) · backend `?verified` filter `producer_listing.py:49` (b) · map verified surfaces + Zod `schemas.js` (c) · `AdminProducersTable`/`ProducerForm` (d) · `is_verified` column drop via Expand-Contract (e).
+- ⚠️ **Deploy note:** the pill is absent until admins `grant-verify` a producer (intended ADR-022 over-claim correction; pre-launch, no real producers).
+- **Next — Chunk 5** (likely docs-only): handoff to MEH-76 — the S12 badge consumes the 3 public fields (`verification_tier` / `verified_at` date / `verification_doc_type`) + the MEH-758 keys, with **LTR-isolation on `{date}`** required; `"cosmetics"` has no tooltip key yet (`verified_tooltip_registration` MEH-758 micro-follow-up).
+
 ## 2026-06-06 — MEH-214: audit fix-wave (autonomous LOW-RISK lane) — PR #974 + DEFER package
 
 Follow-on overnight wave on the 56 audit findings. Ledger:
