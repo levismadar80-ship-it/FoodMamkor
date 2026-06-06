@@ -26,7 +26,12 @@ const fullProducer = {
   avg_rating: 4.7,
   reviews_count: 14,
   price_range: "₪40-80",
-  categories: [{ id: 1, name: "חלב וגבינות" }],
+  categories: [
+    { id: 1, name: "חלב וגבינות" },
+    { id: 2, name: "מאפים" },
+  ],
+  // MEH-452: weekly opening hours (backend format, MEH-102).
+  opening_hours: "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
 };
 
 // MEH-172 — helpers for the new @graph structure.
@@ -36,6 +41,11 @@ const getBreadcrumb = (json) =>
   json["@graph"].find((e) => e["@type"] === "BreadcrumbList");
 const getWebPage = (json) =>
   json["@graph"].find((e) => e["@type"] === "WebPage");
+// MEH-452 — helpers for the two new site-level entities.
+const getWebSite = (json) =>
+  json["@graph"].find((e) => e["@type"] === "WebSite");
+const getOrganization = (json) =>
+  json["@graph"].find((e) => e["@type"] === "Organization");
 
 describe("buildTitle", () => {
   it("uses the MEH-9 spec format: [name] — [category] ב[city] | מהמקור", () => {
@@ -130,14 +140,17 @@ describe("buildJsonLd", () => {
     expect(buildJsonLd(null)).toBe(null);
   });
 
-  it("wraps the output in schema.org @graph (MEH-172)", () => {
+  it("wraps the output in schema.org @graph (MEH-172 + MEH-452)", () => {
     const json = buildJsonLd(fullProducer);
     expect(json["@context"]).toBe("https://schema.org");
     expect(Array.isArray(json["@graph"])).toBe(true);
-    expect(json["@graph"].length).toBe(3);
+    // MEH-452 grows the graph from 3 → 5 (adds WebSite + Organization).
+    expect(json["@graph"].length).toBe(5);
     expect(getWebPage(json)).toBeDefined();
     expect(getBreadcrumb(json)).toBeDefined();
     expect(getBusiness(json)).toBeDefined();
+    expect(getWebSite(json)).toBeDefined();
+    expect(getOrganization(json)).toBeDefined();
   });
 
   it("uses @type=FoodEstablishment with required fields", () => {
@@ -260,6 +273,82 @@ describe("buildJsonLd", () => {
     expect(json).toContain("חוות השקמה");
     expect(json).toContain("ישראל");
     expect(json).not.toContain("\\u05");
+  });
+
+  // MEH-452 — Gap 1: openingHoursSpecification ------------------------
+
+  it("emits openingHoursSpecification parsed from opening_hours", () => {
+    const business = getBusiness(buildJsonLd(fullProducer));
+    // "Sun-Thu 09:00-18:00, Fri 09:00-14:00" → 6 days (Sun..Fri), Sat omitted.
+    expect(business.openingHoursSpecification).toHaveLength(6);
+    expect(business.openingHoursSpecification[0]).toEqual({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: "Sunday",
+      opens: "09:00",
+      closes: "18:00",
+    });
+    // Friday has the shorter hours and is the last entry.
+    expect(business.openingHoursSpecification[5]).toEqual({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: "Friday",
+      opens: "09:00",
+      closes: "14:00",
+    });
+  });
+
+  it("omits openingHoursSpecification when opening_hours is null", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, opening_hours: null }),
+    );
+    expect(business.openingHoursSpecification).toBeUndefined();
+  });
+
+  it("omits openingHoursSpecification when opening_hours is unparseable", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, opening_hours: "whenever we feel like it" }),
+    );
+    expect(business.openingHoursSpecification).toBeUndefined();
+  });
+
+  // MEH-452 — Gap 2: servesCuisine ------------------------------------
+
+  it("emits servesCuisine from producer categories", () => {
+    const business = getBusiness(buildJsonLd(fullProducer));
+    expect(business.servesCuisine).toEqual(["חלב וגבינות", "מאפים"]);
+  });
+
+  it("omits servesCuisine when categories is empty", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, categories: [] }),
+    );
+    expect(business.servesCuisine).toBeUndefined();
+  });
+
+  // MEH-452 — Gap 3: WebSite + Organization graph nodes ---------------
+
+  it("emits a WebSite entity whose @id matches WebPage.isPartOf", () => {
+    const json = buildJsonLd(fullProducer);
+    const webSite = getWebSite(json);
+    const webPage = getWebPage(json);
+    expect(webSite["@id"]).toBe(`${SITE_URL}#website`);
+    expect(webSite.url).toBe(SITE_URL);
+    expect(webSite.name).toBe("מהמקור");
+    expect(webSite.inLanguage).toBe("he-IL");
+    // The previously-dangling reference now resolves.
+    expect(webPage.isPartOf["@id"]).toBe(webSite["@id"]);
+    expect(webSite.publisher["@id"]).toBe(`${SITE_URL}#organization`);
+  });
+
+  it("emits an Organization entity referenced by WebSite.publisher", () => {
+    const json = buildJsonLd(fullProducer);
+    const organization = getOrganization(json);
+    expect(organization["@id"]).toBe(`${SITE_URL}#organization`);
+    expect(organization.name).toBe("מהמקור");
+    expect(organization.url).toBe(SITE_URL);
+    expect(organization.logo).toEqual({
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    });
   });
 });
 
