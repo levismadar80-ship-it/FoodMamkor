@@ -236,6 +236,10 @@ function RegisterProducerPageBody() {
         // license_validation._normalize_license — safe to send unconditionally.
         producer_license_number: form.producer_license_number,
         primary_contact_method: "whatsapp",
+        // MEH-759 (ADR-022 gate 2): send the existing consent checkbox value
+        // so the backend can stamp declared_at/declaration_version. Submit is
+        // already gated on agreedToTerms below; declaration COPY is Chunk C.
+        declaration_accepted: agreedToTerms,
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {

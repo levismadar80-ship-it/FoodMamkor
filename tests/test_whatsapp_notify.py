@@ -28,6 +28,7 @@ VALID_PRODUCER_UPGRADE_REG = {
     "phone": "0501234567",
     "category_ids": [],
     "primary_contact_method": "whatsapp",
+    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
 }
 
 

@@ -81,6 +81,13 @@ class ProducerRegister(BaseModel):
     # DB column — boundary defense only (no regex; format warning lives on
     # the frontend per MEH-530 product decision).
     producer_license_number: str | None = Field(default=None, max_length=20)
+    # MEH-759 (ADR-022 gate 2, Chunk B): binding tier-2 licensing declaration.
+    # Default False so an ABSENT field doesn't change Pydantic-layer behaviour
+    # for the existing contact-method negative tests; the handler 422s when
+    # this is falsy (absent OR explicit False), so a producer row is only ever
+    # created with declared_at/declaration_version stamped. The frontend
+    # checkbox (agreedToTerms) feeds this value; declaration COPY is Chunk C.
+    declaration_accepted: bool = False
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -610,6 +617,12 @@ class ProducerAdminOut(ProducerDetailOut):
     # "אין מידע" badge. Never exposed via ProducerDetailOut (public).
     risk_score: int | None = None
     risk_reasoning: str | None = None
+    # MEH-759 (ADR-022 gate 2): declaration audit trail. Admin-only — these
+    # are NOT on ProducerDetailOut/ProducerListOut (public), matching the
+    # MEH-530 privacy-first precedent for producer_license_number. NULL when
+    # no binding declaration was made (admin-created / imported producers).
+    declared_at: datetime | None = None
+    declaration_version: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---

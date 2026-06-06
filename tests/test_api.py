@@ -246,6 +246,7 @@ class TestAuth:
         "phone": "0501234567",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
+        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
     }
 
     def test_register_producer_new_email_returns_ack(self, client, db):
@@ -491,6 +492,7 @@ class TestAuth:
                 "phone": "0521234567",
                 "category_ids": [],
                 "primary_contact_method": "whatsapp",
+                "declaration_accepted": True,  # MEH-759: mandatory declaration
             },
             headers=auth_header(user),
         )
@@ -519,6 +521,7 @@ class TestAuth:
                 "phone": "0521234567",
                 "category_ids": [],
                 "primary_contact_method": "whatsapp",
+                "declaration_accepted": True,  # MEH-759: passes guard → 409
             },
             headers=auth_header(user),
         )
@@ -543,6 +546,7 @@ class TestAuth:
                 "phone": "0521234567",
                 "category_ids": [],
                 "primary_contact_method": "whatsapp",
+                "declaration_accepted": True,  # MEH-759: isolates account-field 422
             },
         )
         assert resp.status_code == 422
@@ -623,6 +627,7 @@ class TestRegisterPerEmailRateLimit:
             "phone": "0501234567",
             "category_ids": [],
             "primary_contact_method": "whatsapp",
+            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         statuses = [
             client.post(
@@ -1040,6 +1045,7 @@ class TestMeh56WhatsAppOnboarding:
             "phone": "0501234567",
             "category_ids": [],
             "primary_contact_method": "whatsapp",
+            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         })
         assert resp.status_code == 200
         from app.models.models import Producer
@@ -2868,6 +2874,7 @@ class TestSanitizationIntegration:
             "phone": "0501234567",
             "category_ids": [],
             "primary_contact_method": "whatsapp",
+            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         resp = client.post("/auth/register/producer", json=payload)
         assert resp.status_code == 200, resp.text

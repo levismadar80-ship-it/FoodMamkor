@@ -5,6 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
+
+**Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).
+**Chunk A merged** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` →
+`producers.declared_at` (TIMESTAMPTZ null) + `declaration_version` (VARCHAR(10) null),
+expand-only; ORM parity; `EXPECTED_REV` bumped (Sapir applied the workflow-file line — CC
+is deny-listed from `.github/workflows/**`).
+
+**Chunk B (this PR):** stamping on `POST /auth/register/producer` (new-account + MEH-143
+upgrade) when the new required `declaration_accepted` body field is truthy; 422 otherwise.
+`DECLARATION_VERSION="2026-06-v1"` in `app/constants.py`. Minimal FE plumbing sends the
+existing `agreedToTerms` checkbox as `declaration_accepted` (no copy/UI). Admin-only
+exposure (`ProducerAdminOut`); admin-create/import leave NULL. New
+`tests/test_producer_declaration.py` + register payloads across the suite updated. Docs:
+DATA.md + db-schema diagram + CHANGELOG. **Decisions (Sapir, this session):** Q1 = explicit
+`declaration_accepted` field (contract change) + minimal FE plumbing this PR; Q2 = register
+flow only (auth.py 443+535) — `POST /producers`/admin/import stay NULL.
+
+**Pending:** local alembic/pytest deferred to CI (no Postgres in sandbox). **Flag for Chunk
+C triage:** `POST /producers` (producers.py:289, authed generic create) does NOT stamp — if
+it's ever a business-owner self-registration surface showing a declaration, revisit. Chunk
+C = frontend declaration copy (continuous-commitment wording) + conditional farmer line
+("תוצרת שגידלתי בחלקתי בלבד"); copy locked by Sapir before Chunk C. **Workflow-comment
+nit:** the `EXPECTED_REV` line's neighbouring comment still misattributes `a7f3e9c14d28` to
+"MEH-509 PR3" — fix needs Sapir's hand (CC deny on workflows).
+
 ## 2026-06-06 — MEH-754: OTP via Meta authentication template
 
 **Branch:** `feature/meh-754-otp-auth-template` off staging — draft PR (Addresses MEH-754).
