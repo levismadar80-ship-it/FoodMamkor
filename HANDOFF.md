@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
+
+Autonomous second-shift session. Ledger: [docs/audits/2026-06-night-batch-6.md](./docs/audits/2026-06-night-batch-6.md).
+
+- **MEH-434** ✅ — client-side `launch_cohort` Sentry tag. Draft **PR #994** off `staging`. New `frontend/lib/launch-cohort.js` + `useLaunchCohortTag` in `auth-context.js` (2-line diff); cohort from `user.created_at` (no backend/schema). vitest 6/6 + full suite + build + lint green. **Backend `auth.py`/`UserOut`/`test_auth.py` slice DEFERRED** (see `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434 (slice only, not Closes).
+- **MEH-290** ⛔ BLOCKED — copy is verbatim, but the 4 tour anchor targets don't exist (Step 1 ProfileCompletenessCard = unshipped MEH-288; Step 3 add-product button absent; Step 4 share button = open Q#2). Building requires invention + design judgment + missing dep. Unblock path in ledger.
+- **B1 (MOB) / B2 (FUZZ)** ⏸ NOT TRIGGERED — `feature/meh-233-mobile-audit` and `feature/schemathesis-fuzz` PRs don't exist yet. Re-check on each wake.
+- **Shepherd:** #987 green; #975 CI re-running; **#991 ruff-format failure** (owning session's whatsapp.py — out of resync scope, logged not touched). `send_later` unavailable → no scheduled check-in; rely on #994 webhooks + per-wake sweeps.
+
 ## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
 
 Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
