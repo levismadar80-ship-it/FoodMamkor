@@ -265,6 +265,30 @@
 | **Why** | Step 2 actually renders 6 fields after MEH-530 (license) + MEH-532 (description) shipped. Count-free wording prevents future drift per synthesis Finding F11. |
 | **MEH** | MEH-608 |
 
+### /register/producer — Licensing declaration (continuous commitment)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` |
+| **en** | `I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.` — **en pending Sapir review** |
+| **Previous (he)** | `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` (v1 launch text, appended to the ToS checkbox) |
+| **i18n key** | `auth.register.producer.terms.declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (own checkbox, `declarationConfirmed`) |
+| **Audit version** | `DECLARATION_VERSION = "2026-06-v2"` (`backend/app/constants.py`) — v1 = old launch text, v2 = this continuous-commitment wording |
+| **Status** | 🟡 **v2 — pending lawyer** (Brief Q1.1–Q1.5 draft; Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | ADR-022 gate 2 / Brief Q1.3 — continuous commitment (not point-in-time) + Q1.4 audit trail. Own first-person checkbox per ADR-014 voice + stronger evidentiary value. |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
+
+### /register/producer — Grower declaration (conditional: ירקות / פירות)
+| Field | Value |
+|---|---|
+| **Current (he)** | `התוצרת שאציע דרך מהמקור היא תוצרת שגידלתי בחלקתי בלבד.` |
+| **en** | `The produce I will offer through Mehamakor is produce that I grew on my own plot only.` — **en pending Sapir review** |
+| **i18n key** | `auth.register.producer.terms.farmer_declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (conditional checkbox `farmerConfirmed`, shown + required only for categories ירקות / פירות) |
+| **Status** | 🟡 **v2 — pending lawyer** (Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | נספח א' / פס"ד קירשנר — "grown on my own plot only" is the legal line between license-exempt and license-required produce. Folds into the same `declaration_accepted` submission (no new API field). |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
+
 ### Welcome email — Consumer
 | Field | Value |
 |---|---|
@@ -534,6 +558,75 @@ should never have to know what an industry term means.
 **No over-specific examples:** Concrete examples must work across
 producer types. "גבינות עזים תל אביב ב-9 בערב" locks out anyone not
 selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי בגוגל" instead.
+
+## Section 7 — ADR-022 two-tier copy (מאומת / מוצהר)
+
+> Source: MEH-758 (gate 1) · ADR-022 (PR #949 `ea42821`) · strings locked
+> 2026-06-06 (S11 FINAL, Sapir). Consumer language is **מאומת / מוצהר only** —
+> `מורשה`/`מורשים` is an anti-pattern (BRAND.md §7). Keys created in this PR;
+> badge UI consumes them in the S6/S534 port (not rendered yet).
+
+### Registration success — tier trust line
+| Field | Value |
+|---|---|
+| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
+| **en** | `Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.` (⏳ en pending Sapir review) |
+| **i18n key** | `auth.register.producer.success.tier_trust` |
+| **Status** | 🕐 key-only — pending S7 register port (06A/06B) to render; Sapir closes after mobile smoke |
+| **Why** | Replaces the pre-ADR-022 "checks every business" over-claim (which no longer existed verbatim in code). Per-tier honest framing: personal vetting for all; the מאומת badge is document-gated. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — license
+| Field | Value |
+|---|---|
+| **Current (he)** | `רישיון הוגש ונבדק בתאריך {date}` |
+| **en** | `License submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_license` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; license variant. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — exemption
+| Field | Value |
+|---|---|
+| **Current (he)** | `אישור פטור הוגש ונבדק בתאריך {date}` |
+| **en** | `Exemption approval submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_exemption` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; exemption variant (legally-exempt categories that still filed an official exemption/registration doc). Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Declared-tier explainer (no badge)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
+| **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.declared_explainer` |
+| **Status** | 🕐 key-only — badge UI port consumes |
+| **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Gate 3 — /terms §5 two-tier (MEH-760)
+
+> Legal surface — `מורשה`/`מורשים` anti-pattern does NOT apply here (ADR-022).
+> All five strings: **v1 — pending lawyer (Brief Q1/Q3)**; a lawyer revision is a
+> follow-up edit, launch is not blocked on it. en ⏳ pending Sapir review. Section
+> heading `terms.sections.verified.title` = `5. אימות ושכבות הצגה` (was `5. עסקים מאומתים`).
+> Operator block (`terms.sections.operator`, טופז שנפ / MEH-736) is byte-identical — untouched.
+
+| Key | he | Status |
+|---|---|---|
+| `terms.sections.verified.intro` (5.1) | `כל בית עסק במהמקור עובר בדיקת קבלה ידנית … ואינה מהווה ערובה … לעמידת בית העסק בכל דין.` | 🕐 v1 — pending lawyer (Brief Q1/Q3) |
+| `terms.sections.verified.verified_badge_title` (5.2 h) | `תג ״מאומת״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.verified_badge_body` (5.2) | `בית עסק שהציג … מסמך רישוי או אישור פטור רשמי … יסומן בתג ״מאומת״ … התג ניתן ללא תשלום.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_title` (5.3 h) | `בית עסק ״מוצהר״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_body` (5.3) | `בית עסק הפועל בקטגוריה הפטורה לפי דין … על יסוד הצהרה מחייבת … האחריות … על בית העסק בלבד.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_title` (5.4 h) | `שיפוי` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_body` (5.4) | `בית עסק ישפה את מפעילת האתר בגין כל נזק, הוצאה או דרישה … מבלי לגרוע מכל סעד אחר.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.no_supervision` (5.5) | `אין באמור בסעיף זה כדי להטיל על מפעילת האתר חובת פיקוח מתמשכת על בתי העסק.` | 🕐 v1 — pending lawyer |
+
+**Why:** Brief §3 — the pre-ADR-022 §5 ("בדיקה ראשונית של קריטריוני הפלטפורמה") defined no
+verification scope (Q3.1 over-broad representation) and didn't distinguish tiers (Q3.2).
+v1 defines exact scope per tier (what IS / is NOT checked), a declaration-only disclaimer for
+מוצהר, an indemnity clause (5.4) drafted narrowly to limit תנאי-מקפח exposure (חוק החוזים האחידים),
+and a no-ongoing-supervision carve-out (5.5). Locked verbatim by Sapir 2026-06-06; lawyer opinion
+outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 
 ## Brand phrasings
 

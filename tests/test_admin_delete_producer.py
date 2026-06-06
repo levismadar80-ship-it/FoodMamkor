@@ -26,6 +26,7 @@ _REGISTER_BODY = {
     "email": "selfreg@example.com",
     "name": "בעלת עסק",
     "password": "Zx7Yp9Mq2Lr4",
+    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
 }
 
 

@@ -4,6 +4,120 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5) (Refs MEH-760, Part of MEH-742)
+
+`feat(MEH-760)`: ADR-022 gate 3 — replaced the single-tier terms §5 ("עסקים מאומתים", a vague
+"initial review" + "no guarantee" sentence) with the Sapir-locked two-tier definition, heading
+`5. אימות ושכבות הצגה`. Five sub-parts (he+en): 5.1 manual acceptance review = personal
+introduction, explicitly **not** regulatory; 5.2 `תג ״מאומת״` — document-verified-at-presentation
+scope, no ongoing monitoring, free; 5.3 `בית עסק ״מוצהר״` — legally-exempt categories shown on a
+binding declaration we don't verify; 5.4 `שיפוי` — narrow indemnity (limits תנאי-מקפח exposure);
+5.5 no ongoing-supervision duty. `terms.sections.verified` restructured from `{title,body}` to
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}`; `terms/page.js` `verified` case now renders intro + 3 `<h3>` sub-blocks + closing
+para. Operator block (`טופז שנפ`, MEH-736) byte-identical — untouched. `מורשה`/`מורשים` permitted
+(legal surface). he==en parity; COPY_BANK §7 gate-3 rows, all **v1 — pending lawyer (Brief Q1/Q3)**,
+en ⏳ pending Sapir review. `npm run build` green. **Refs MEH-760, Part of MEH-742** — NOT Closes
+(Sapir closes after /terms render check; post-lawyer revision is a follow-up, launch not blocked).
+
+### 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys (Refs MEH-758, Part of MEH-742)
+
+`feat(MEH-758)`: Sapir-locked ADR-022 two-tier (מאומת / מוצהר) copy added as i18n keys —
+**key-only**, no rendering (the S7 register port + S6/S534 badge UI consume them later, so we
+don't wire copy into a success screen the port is about to rebuild). New keys (he+en, parity):
+`auth.register.producer.success.tier_trust` (replaces the pre-ADR-022 "checks every business"
+over-claim — honest per-tier framing: personal vetting for all, מאומת badge is document-gated),
+`producer.badge.verified_tooltip_license` + `..._exemption` (both carry the `{date}` ICU param),
+`producer.badge.declared_explainer` (positive no-badge explanation per template-05 research —
+Yelp-FAQ pattern, not silence). Consumer language is מאומת/מוצהר only — zero `מורשה`/`מורשים`
+(grep-verified). COPY_BANK §7 added with a decision-log row per key (en marked ⏳ pending Sapir
+review). Strings verbatim from S11 FINAL. **Refs MEH-758, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke of the rendered surfaces once the port lands).
+
+### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
+
+`docs(MEH-761)`: Sapir-spotted inconsistency (2026-06-06) — `docs/VERIFICATION.md` §1א listed
+"מותססים וכבושים" as license-required with rationale "מזון מעובד" attributed to נספח א', but
+the brief's נספח א' has **no row** for fermented/pickled (confirmed: brief only maps "ייצור
+צמחי קטן (ריבות, ממרחים, טחינה)" → 4.6ו → שכבה 2). So pickled cabbage (vegetable+salt+water)
+requiring a license while jam/tahini don't is **unexplained** — possible fermentation/preserving
+food-safety rationale, but **unverified**. Added it to §1ג (open questions) as the *inverse*
+case (in `LICENSE_REQUIRED_CATEGORIES` but absent from נספח א', unlike the de-facto-מוצהר rows);
+§1א rationale now points to §1ג instead of asserting settled law; §1ג intro + footer reconciled
+(3→4 categories, both enforcement directions). **Conservative status preserved — enforcement
+stays license-required; `LICENSE_REQUIRED_CATEGORIES` untouched** (any change = regulatory claim).
+Question routed to lawyer per Brief Q4.5. "אני לא יודע" framing kept. Docs-only.
+
+### 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2, Chunk C — the Sapir-locked continuous-commitment
+declaration text + conditional grower line. The single ToS-bundled consent checkbox is
+split into three separate affirmative acts (ADR-014 voice): (1) ToS/privacy consent
+(chrome, plural), (2) the binding licensing declaration `auth.register.producer.terms.declaration`
+(first-person — "פועל כדין… ההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור…"), (3) a
+conditional grower declaration `terms.farmer_declaration` ("תוצרת שגידלתי בחלקתי בלבד.")
+shown + required only when an agricultural category (ירקות / פירות) is selected. Both
+declarations fold into the single `declaration_accepted` bool — **no schema change, no new
+API field**: `declaration_accepted = declarationConfirmed && (!farmerRequired || farmerConfirmed)`.
+`DECLARATION_VERSION` bumped `2026-06-v1` → `2026-06-v2` (new wording = new audit version;
+v1 stays the record of the launch text Chunk B stamped); constant test updated. New he/en
+keys + validation messages (key parity); en marked "pending Sapir review" in COPY_BANK.
+Strings are Sapir-locked, lawyer opinion still outstanding (Brief Q1.1–Q1.5). Docs:
+COPY_BANK (v2 — pending lawyer). **Refs MEH-759, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke). `/terms` indemnity = MEH-760, not here.
+
+### 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2 — the binding tier-2 licensing declaration now leaves an
+audit trail. **Chunk A** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` adds
+`producers.declared_at` (TIMESTAMP WITH TIME ZONE, null) + `producers.declaration_version`
+(VARCHAR(10), null), expand-only per ADR-007 (no backfill); ORM parity + `EXPECTED_REV`
+bump. **Chunk B** (this PR): `POST /auth/register/producer` (both new-account and MEH-143
+upgrade paths) stamps `declared_at=now(UTC)` + `declaration_version=DECLARATION_VERSION`
+(`"2026-06-v1"`, `app/constants.py`) when the new required `declaration_accepted` body
+field is truthy; the handler 422s (`יש לאשר את הצהרת הרישוי כדי להמשיך`) when it is
+falsy/absent. Minimal frontend plumbing sends the existing consent checkbox
+(`agreedToTerms`) as `declaration_accepted` — no copy/UI change (declaration COPY = Chunk
+C). Admin-create / Excel-import leave both columns NULL. Admin-only exposure — added to
+`ProducerAdminOut`, never to public `ProducerDetailOut`/`ProducerListOut` (MEH-530
+privacy-first precedent). New `tests/test_producer_declaration.py` (stamp-on-register,
+version constant, 422 on falsy/absent, NULL on non-register create, no public exposure);
+existing register payloads across the suite updated to send the field. Docs: DATA.md +
+db-schema diagram. **Refs MEH-759, Part of MEH-742.** (Chunk C — frontend declaration copy
++ farmer line — remains.)
+
+### 2026-06-06 — MEH-754: OTP via Meta authentication template (Addresses MEH-754)
+
+`fix(MEH-754)`: producer phone-verification OTP now ships through the Meta
+**AUTHENTICATION** template `producer_otp_v1` instead of free-form `send_text`.
+Free-form WhatsApp is delivered only inside Meta's 24h customer-service window, so a
+brand-new producer who never messaged the business number never received the code and
+stayed stuck in `pending_whatsapp` (evidence: staging smoke 05/06). New typed
+`OtpCodeV1(code=...)` class in `whatsapp_templates.py` (MEH-672 pattern) overrides
+`to_components()` to place the code in BOTH the body parameter AND the copy-code
+URL-button component (`sub_type="url"`, `index=0`) — a body-only auth-template payload
+400s at Meta. `_send_whatsapp_otp` (`producer_me.py`) switched to
+`send_template(phone, OtpCodeV1(code=code))`; fail-open contract and phone path
+unchanged (both transports do `to.lstrip("+")`). New `tests/test_meh_754_otp_template.py`
+asserts the dual-code payload shape + wrapper fail-open. Device smoke on a "cold" number
+is manual post-merge (hence Addresses, not Closes).
+
+### 2026-06-05 — MEH-761: Gate 4 — verification matrix doc (Closes MEH-761)
+
+`docs(MEH-761)`: new `docs/VERIFICATION.md` — operational consolidation of ADR-022
+launch gate 4. Maps each platform category → tier eligibility (מאומת/מוצהר) → qualifying
+document, aligned to `LICENSE_REQUIRED_CATEGORIES` (post-MEH-743 honey split) + נספח א'
+of the lawyer brief. Adds (1) the per-category matrix split into license-required (Tier 1
+only, 8 categories) vs exempt (Tier 1 with exemption/registration doc, or Tier 2
+declaration); (2) admin checklist per document type — issuer, validity, name match —
+for the 3 qualifying docs (license / exemption / cosmetics registration); (3) internal
+audit-record fields per Brief Q5.5; (4) launch submission channel = manual WhatsApp/email
+within the existing manual-approval flow (no upload feature in V1). Honestly flags 3
+unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions — does NOT
+expand the enforcement list. Header carries "לא ייעוץ משפטי, בכפוף לעו"ד". Docs-only — no
+code, schema, UI, or admin feature; decisions/README.md untouched (no new ADR). **Closes
+MEH-761. Refs MEH-742.**
+
 ### 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר (Refs MEH-742)
 
 `docs(MEH-742)`: landed ADR-022 — the "Licensed businesses only" blanket DNA LOCK

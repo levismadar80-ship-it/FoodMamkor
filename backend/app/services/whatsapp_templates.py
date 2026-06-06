@@ -14,18 +14,25 @@ Related:  app/services/whatsapp.py:71 (send_template — current
           string+list signature this will replace in chunk 2).
 History:  MEH-672 (creation, chunk 1 — base + 4 subclasses + tests).
 
-The 4 subclasses mirror the 4 live templates exactly (names, languages,
+The subclasses mirror the live templates exactly (names, languages,
 and field order verified against the call sites in Phase 0):
 
     producer_welcome_v1    he  1 param  (producer_name)
     producer_approved_v1   he  1 param  (producer_name)
     after_hours_response_he he 0 params
     vacation_response_he_v2 he 1 param  (return_date, ISO date string)
+    producer_otp_v1        he  1 param  (code) — AUTHENTICATION category,
+                                              copy-code button
 
 `to_components()` reproduces `whatsapp.py:88-97` byte-for-byte: model
 fields become ordered body text-parameters; a class with zero fields
 emits NO `components` block (returns `[]`), matching the current
-empty-params behavior.
+empty-params behavior. `OtpCodeV1` overrides `to_components()` because
+Meta AUTHENTICATION templates need the code in BOTH the body parameter
+AND the copy-code URL-button component — a body-only payload 400s.
+
+History:  MEH-672 (creation, chunk 1); MEH-754 (OtpCodeV1 — OTP via
+          authentication template, copy-code button).
 """
 
 from __future__ import annotations
@@ -94,3 +101,32 @@ class VacationResponseHeV2(WhatsAppTemplate):
 
     name: ClassVar[str] = "vacation_response_he_v2"
     return_date: str
+
+
+class OtpCodeV1(WhatsAppTemplate):
+    """One-time-passcode delivery (MEH-754). One param: the OTP code.
+
+    Meta AUTHENTICATION-category template with a copy-code button. Unlike
+    the body-only templates above, the code must appear TWICE in the
+    payload — once as the body text-parameter and once in the URL-button
+    component (`sub_type="url"`, `index=0`). Sending body-only yields a
+    Meta 400, so `to_components()` is overridden rather than using the
+    base body-only builder.
+    """
+
+    name: ClassVar[str] = "producer_otp_v1"
+    code: str
+
+    def to_components(self) -> list[dict[str, object]]:
+        return [
+            {
+                "type": "body",
+                "parameters": [{"type": "text", "text": self.code}],
+            },
+            {
+                "type": "button",
+                "sub_type": "url",
+                "index": 0,
+                "parameters": [{"type": "text", "text": self.code}],
+            },
+        ]

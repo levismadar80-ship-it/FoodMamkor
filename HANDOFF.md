@@ -5,6 +5,209 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5)
+
+**Branch:** `feature/meh-760-gate3-terms-tiers` off staging — draft PR (Refs MEH-760, Part of
+MEH-742). Replaced terms §5 single-tier text with Sapir-locked two-tier v1 (5.1–5.5), heading
+`5. אימות ושכבות הצגה`. `terms.sections.verified` restructured `{title,body}` →
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}` (he+en); `terms/page.js` `verified` case renders intro + 3 `<h3>` + closing para
+(structure change — Sapir approved option 1). Operator block byte-identical (untouched, git-diff
+verified). he==en parity; COPY_BANK §7 gate-3 rows; `npm run build` green.
+
+**Pending:** Sapir /terms render check on Vercel preview → then Closes. All five strings are
+**v1 — pending lawyer (Brief Q1/Q3)**; en ⏳ pending Sapir review. Post-lawyer terms revision is a
+follow-up edit (not yet a ticket; open one when opinion arrives) — launch not blocked on it.
+The §5.4 שיפוי clause was drafted narrowly for תנאי-מקפח (חוק החוזים האחידים) caution.
+
+## 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys
+
+**Branch:** `feature/meh-758-gate1-tier-copy` off staging — draft PR (Refs MEH-758, Part of
+MEH-742). **Key-only** i18n copy, no rendering. 4 new keys (he+en, parity): success
+`tier_trust` + `producer.badge.{verified_tooltip_license, verified_tooltip_exemption,
+declared_explainer}` (both tooltips carry `{date}`). COPY_BANK §7 + decision-log rows; en ⏳
+pending Sapir review. Zero מורשה/מורשים (grep-clean). `npm run build` green.
+
+**Phase 0 findings worth keeping:**
+- The "בודקות כל עסק" over-claim the prompt referenced **does not exist** in the codebase
+  (grep 0). Sapir decided (this session) → `tier_trust` is a **new key**, rendered later by
+  the S7 register port (06A/06B), NOT wired into the current success screen (avoids copy in a
+  surface the port rebuilds + a throwaway QA cycle).
+- Keys go under **top-level `producer.badge`** (the `producer` ns had only detail/card;
+  `badge_row` at he.json:860 is under `group_buys`, not `producer` — first edit landed there
+  by mistake and was corrected).
+
+**Pending:** S7 register port + S6/S534 badge UI wire these keys (separate tickets). Sapir
+mobile smoke of the rendered surfaces → then Closes. en strings pending Sapir review.
+
+## 2026-06-06 — 🧾 SESSION CLOSE: OTP template + Linear sync audit
+
+**🚨 NEXT-SESSION #1 — staging→main RELEASE is the most urgent task.** Prod is still
+on `send_text` for OTP → **producer phone OTP is undelivered in prod** until the next
+staging→main release ships. Release candidates already on staging: **#953** (MEH-759-A,
+Alembic `a7f3e9c14d28`) + **#954** (MEH-754 OTP template). **#955** (MEH-759-B) awaits
+Sapir review.
+
+**Next-session priority order:**
+1. **staging→main release** (unblocks prod OTP — most urgent).
+2. **#955 review/merge** → then MEH-759 **Chunk C** (frontend declaration copy + farmer line).
+3. **MEH-754** — check Meta template approval + run cold-number device smoke on staging.
+4. **MEH-749** orphan script — Sapir manual run vs prod.
+5. Candidate next code task: **MEH-685** (showToast icon-prop, D2).
+
+**This session's outcomes:**
+- **MEH-754 OTP — PR #954 MERGED to staging @ `5c0dbf2`.** `OtpCodeV1` (MEH-672 pattern;
+  code twice: body param + button `sub_type:"url"` index 0); `_send_whatsapp_otp` →
+  `send_template`; fail-open preserved; 20 new tests + `test_api` 192 green. Meta template
+  `producer_otp_v1` created by Sapir (he, AUTHENTICATION, copy-code, 10-min TTL = backend).
+  **Gates before Done:** (a) Meta approval (pending at close), (b) cold-number staging
+  smoke, (c) ⚠️ prod still on `send_text` until release.
+- **MEH-744 credits — DEFERRED to launch (Sapir).** Don't load Anthropic credits yet
+  (manual approval is the LOCK; risk-score fail-open). `[RISK]` WARNING in Railway logs +
+  "אין מידע" admin badge = **EXPECTED, not a bug**. Reactivation: buy credits + auto-reload
+  → staging smoke shows "[RISK] scored" w/o 400 → archive Sentry MEHAMAKOR-BACKEND-D.
+- **MEH-743 honey — closed WITHOUT SQL.** Prod DB already correct: release #936 boot seed
+  insert-if-missing added שמנים (id 19) + דבש (id 20); combined row gone; orphan=0. License
+  enforcement keys off Hebrew name (`backend/app/constants.py`) → auto-active. Sapir smoke ✓.
+- **MEH-733 — closed.** §06 quote removal (PR #927, release #936) verified against prod HTML:
+  0 occurrences. Night sighting = cache. **LESSON:** Hebrew in fetched JSON is unicode-escaped
+  — `json`-decode BEFORE grepping or you get false negatives.
+- **MEH-732 — closed.** Drawer-login-gate follow-up was ALREADY fixed by PR #914 (drawer
+  reuses `isLoginPage`). CC Phase 0 caught it, stopped (no no-op edit). Cosmetic strike-through
+  PR #956 closed unmerged; local branch deleted. Stale CHANGELOG line `CHANGELOG.md:318` stays
+  (harmless). Orphan remote branch `feature/meh-732-drawer-login-gate` (`8068dad`) — env blocked
+  remote delete; prune from your terminal.
+- **MEH-736 CI gap (to investigate later).** Docs-only PR #956: all 5 path-gated required
+  checks reported *skipped*, MEH-736 twin jobs did NOT fire → under Rulesets, skipped-required =
+  "Expected" = merge blocked without admin override. Repro: a one-line docs diff. Check the
+  twins' `if:` conditions in `pr-checks.yml` / `deploy.yml`.
+- **Linear In Progress audit — 11 sync closures** (evidence comments on each): MEH-738/739/740/735
+  (#924); MEH-747 (#937+#938, #936, prod smoke); MEH-684/687/729 (#932); MEH-579 (merged 14/5,
+  missed Closes); MEH-643 (epic, all 4 chunks #898/#906); MEH-657 (A+B+D4+E via #818/#821; reopen
+  was a same-second relation artifact). Remaining In Progress (justified): 759, 754, 742, 547,
+  214, 233, 130.
+- **Unrelated flag (from MEH-732 Linear thread):** `nav.discover` may render `גלה`
+  (masculine-singular) on the BottomNav home tab — ADR-014 forbids pure masculine. Not yet
+  verified/fixed; out of scope this session.
+
+## 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C)
+
+**Branch:** `feature/meh-759-chunk-c-declaration-copy` off staging — draft PR. Frontend copy
++ constant bump only (no schema, no API field). Chunks A (#953) + B (#955) merged.
+
+**What:** split the single ToS-bundled consent checkbox into 3 separate checkboxes (ADR-014
+voice): ToS/privacy (chrome) · binding licensing declaration (`terms.declaration`,
+first-person, continuous commitment) · conditional grower declaration
+(`terms.farmer_declaration`, shown+required only for ירקות/פירות). Both declarations fold
+into the single `declaration_accepted` bool (`declarationConfirmed && (!farmerRequired ||
+farmerConfirmed)`). `DECLARATION_VERSION` 2026-06-v1 → **2026-06-v2** + test updated. he/en
+keys + validation msgs (parity); en "pending Sapir review" in COPY_BANK.
+
+**Decisions (Sapir, this session):** Q1 = separate checkboxes (verbatim-lock integrity +
+ADR-014 + distinct affirmative act = evidentiary value); Q2 = ship v2 (Linear DoD's "v1"
+line is stale, written pre-Chunk-B; orchestrator reconciles ticket next session).
+
+**Pending:** Sapir mobile smoke on the Vercel preview → then mark Closes. en copy + both
+he strings are **Sapir-locked but lawyer opinion outstanding** (Brief Q1.1–Q1.5) — COPY_BANK
+marks them "v2 — pending lawyer"; a lawyer revision = another version bump + Chunk-C-style PR.
+`/terms` indemnity clause = MEH-760 (separate). Farmer match is by category NAME (ירקות/פירות,
+seed_data.py:15-16) mirroring requiresProducerLicense — kept inline in the component (lib
+out of scope this PR).
+
+## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
+
+**Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).
+**Chunk A merged** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` →
+`producers.declared_at` (TIMESTAMPTZ null) + `declaration_version` (VARCHAR(10) null),
+expand-only; ORM parity; `EXPECTED_REV` bumped (Sapir applied the workflow-file line — CC
+is deny-listed from `.github/workflows/**`).
+
+**Chunk B (this PR):** stamping on `POST /auth/register/producer` (new-account + MEH-143
+upgrade) when the new required `declaration_accepted` body field is truthy; 422 otherwise.
+`DECLARATION_VERSION="2026-06-v1"` in `app/constants.py`. Minimal FE plumbing sends the
+existing `agreedToTerms` checkbox as `declaration_accepted` (no copy/UI). Admin-only
+exposure (`ProducerAdminOut`); admin-create/import leave NULL. New
+`tests/test_producer_declaration.py` + register payloads across the suite updated. Docs:
+DATA.md + db-schema diagram + CHANGELOG. **Decisions (Sapir, this session):** Q1 = explicit
+`declaration_accepted` field (contract change) + minimal FE plumbing this PR; Q2 = register
+flow only (auth.py 443+535) — `POST /producers`/admin/import stay NULL.
+
+**Pending:** local alembic/pytest deferred to CI (no Postgres in sandbox). **Flag for Chunk
+C triage:** `POST /producers` (producers.py:289, authed generic create) does NOT stamp — if
+it's ever a business-owner self-registration surface showing a declaration, revisit. Chunk
+C = frontend declaration copy (continuous-commitment wording) + conditional farmer line
+("תוצרת שגידלתי בחלקתי בלבד"); copy locked by Sapir before Chunk C. **Workflow-comment
+nit:** the `EXPECTED_REV` line's neighbouring comment still misattributes `a7f3e9c14d28` to
+"MEH-509 PR3" — fix needs Sapir's hand (CC deny on workflows).
+
+## 2026-06-06 — MEH-754: OTP via Meta authentication template
+
+**Status: PR #954 MERGED to staging @ `5c0dbf2`** (was draft; Addresses MEH-754 — Done
+gated on Meta approval + cold-number smoke + staging→main release; see session-close block above).
+Migrated producer phone-verification OTP from free-form `send_text` (delivered only inside
+Meta's 24h window → cold numbers never got the code → stuck in `pending_whatsapp`) to the
+Meta AUTHENTICATION template `producer_otp_v1`. New `OtpCodeV1(code=...)` in
+`whatsapp_templates.py` (MEH-672 pattern) overrides `to_components()` → code in BOTH body
+param AND copy-code URL button (`sub_type="url"`, `index=0`; body-only 400s at Meta).
+`_send_whatsapp_otp` → `send_template`. Fail-open + phone path unchanged. Tests:
+`tests/test_meh_754_otp_template.py` (dual-code shape + fail-open) + existing OTP/template
+suites green; `test_api.py` 192 passed; ruff clean.
+
+**OPEN / next session:**
+- **MEH-754 device smoke (manual, Sapir):** register/resend on a "cold" business number
+  that never messaged the line — confirm the OTP arrives via the template with copy-code
+  button. Only then mark Closes. Requires `producer_otp_v1` approved in Meta (auth category).
+
+## 2026-06-05 (evening) — 🚀 SESSION CLOSE: release #936 → production + full prod smoke passed
+
+**Current state — Production = `main` @ `e3e39b9`** (release **#936**, merge-commit;
+21 PRs **#927–#948**). Shipped: OTP fixes (**MEH-745** self-serve `pending_whatsapp`,
+**MEH-747** admin-delete `users_producer_id_fkey` unlink, **MEH-755** OTP-token
+producer-delete `NotNullViolation`), copy waves (**MEH-750** /about S8, **MEH-752**
+/login, **MEH-756** /events, **MEH-757** new founder story "בלי לחפש שעות"), honey
+license split **code** (**MEH-743**), vitest-in-CI (**MEH-729**), orphan-audit script
+(**MEH-749**). Release-blocker conflict on `staging↔main` append-only logs resolved via
+back-merge PR **#950** (`main → staging`, merge-commit `6e70b6e`; founder story = MEH-757
+verbatim, lawyer-brief kept staging's appendix, logs accept-both).
+
+**Prod smoke — PASSED:** admin delete with OTP tokens (MEH-747 + MEH-755) verified live;
+/about new founder story live verbatim; `/he` loads clean; Railway healthy; test remnant
+producer "פ" deleted via admin.
+
+**OPEN / next session:**
+- **MEH-754** — OTP auth-template **blocked**: Sapir creates the Meta AUTHENTICATION
+  template; CC prompt is in the ticket.
+- **MEH-743** — manual **prod SQL** for `categories` (add "דבש" row + rename
+  "שמנים ודבש" → "שמנים"; exact steps in ticket comment). **Until run, honey registers
+  license-free in prod.**
+- **MEH-744** — Anthropic credits exhausted → producer risk-score dead in prod.
+- **`changelog.yml`** workflow disabled in the Actions UI — file deletion still pending;
+  fold into the next CI-touching PR.
+- **MEH-733** — verify the §06 pull-quote removal PR actually merged (prod homepage still
+  shows the pull-quote).
+- **MEH-669** — guard question open: how did "re" register while admin? Suspect the OAuth
+  path (`auth.py:454`).
+- Approved-message sent twice once — idempotency suspect; watch.
+- Stale branch `reconcile-release-936` prunable.
+## 2026-06-05 — MEH-761: Gate 4 — docs/VERIFICATION.md verification matrix
+
+**Branch:** `feature/meh-761-gate4-verification-matrix` off staging — draft PR. New
+`docs/VERIFICATION.md` consolidating ADR-022 launch gate 4: per-category matrix
+(tier eligibility → qualifying doc, aligned to `LICENSE_REQUIRED_CATEGORIES` + נספח א'),
+admin checklist per doc type (license / exemption / cosmetics registration), internal
+audit-record fields (Brief Q5.5), manual launch channel (WhatsApp/email, no upload feature
+V1). Flagged 3 unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions —
+enforcement list untouched. Docs-only; `decisions/README.md` not touched (no new ADR).
+PR body: **Closes MEH-761. Refs MEH-742.**
+
+**Decision arc (MEH-742):** ADR-022 approved+merged (#949 ea42821) after template-05
+research (Yelp +24%/+10%; Google 2.7x = profile completeness, not badge; badge free
+forever; affirmative tier-2 explainer required). 4 gate children opened: MEH-758 (tier
+copy, awaiting Sapir string lock) · MEH-759 (declaration audit columns, HIGH-RISK chunks) ·
+MEH-760 (/terms tiers, awaiting v1 lock) · MEH-761 (this PR). Drive Brand Hub addendum
+created (ADR-022-addendum-two-tier-licensing.md). MEH-742 stays In Progress as anchor.
+S5-S10 ports + MEH-534 UNBLOCKED.
+
 ## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
 
 **Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
