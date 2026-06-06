@@ -5,6 +5,29 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
+
+Autonomous 4-issue batch, one branch + draft PR each off staging. Full table +
+scope notes: [docs/audits/2026-06-night-batch-2.md](./docs/audits/2026-06-night-batch-2.md).
+
+- **MEH-452** → PR **#978** (`Closes`): JSON-LD `openingHoursSpecification` +
+  `servesCuisine` + WebSite/Organization graph nodes in `lib/seo.js` (graph 3→5,
+  closes dangling `isPartOf #website`). 42/42 vitest, build green.
+- **MEH-405** → PR **#980** (`Closes`): workflow Rules — PR-scope verification +
+  Linear duplicate-check. ⚠️ Specced as 22/23 but those numbers are taken
+  (MEH-579/585); slotted at **26/27**, bodies verbatim. Renumber decision flagged.
+- **MEH-258** → PR **#982** (`Refs`, draft): `SECURITY-CHECKLIST.md` already
+  existed (8 TRAPs) — appended a draft "2026-06 audit watch items" section
+  (AUD-002/003/004/007 + MEH-265). Not wired into CLAUDE.md/template (per scope).
+- **MEH-228** → this PR (`Refs`, read-only audit): `docs/audits/2026-06-ui-states-audit.md`
+  — ~100 findings, **13 CRITICAL** in 4 root patterns (Pattern A = admin
+  fire-and-reload handlers, ~10), Top-10 with file:line, Hebrew summary. No code changed.
+
+**Next:** review the 3 scope notes in the batch doc, then triage MEH-228 Top-10
+(start with a shared `useAdminAction` helper → closes ~10 CRITICAL at once).
+
+---
+
 ## 2026-06-06 (PM) — MEH-763: S5 /map port COMPLETE (4 chunks merged + Chunk 4 PR open)
 
 **Branch:** `feature/meh-763-s5-chunk4-states` off staging — draft PR (Refs MEH-763), the FINAL
