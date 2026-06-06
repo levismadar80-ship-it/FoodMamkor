@@ -5,6 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
+
+**MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
+`ChipScrollRow` default to `rounded-md` + `state-selected` for all 3 consumers
+(/home, /producers, /map), per DESIGN §Shapes / BRAND §3; removed the temporary
+MEH-763-chunk-3 opt-in props (component back to one shape). Phase 0 found S4 FINAL
+silent on chip shape → BRAND §3 governs. Sapir QA'd all 3 surfaces. Zero logic/copy.
+
+**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) unified the 4
+hardcoded `formatDate` helpers into shared `format-date.js` (incl. `HomeProductCard`,
+now using `useLocale()`), but its TEST never got a next-intl mock → 16 fails, **staging
+silently red on vitest** (non-required check, slipped the gate). #988 mocks `useLocale`
+per `RecipeCard.test` — **test-only; 407 → 423 passing.** (The helper dedup itself was
+already done in #976; only the missing test mock remained.)
+
+**Process flags this session (S7 + S5 design tracks):**
+- **5 orchestrator-claim/evidence mismatches** STOP-surfaced (all verified file:line):
+  2 RTL Phase-0 flags (MEH-763 #967), the `state-selected` token ("merged" but absent →
+  built #970), "#971 merged" (was draft → verified + merged on the MERGE instruction),
+  and "#987 vitest failure" (pre-existing #976, not MEH-764). → adopted **verify-
+  preconditions over asserted premises**.
+- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked).
+  MEH-753 formatDate dedup (#976) + MEH-764 temporary-prop removal are both DONE.
+- **Lint-hook lesson** added to `code-execution.md §8` (batch import+usage moves /
+  MultiEdit — the per-edit hook false-3-strikes a transient `no-undef`).
+
 ## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
 
 Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
