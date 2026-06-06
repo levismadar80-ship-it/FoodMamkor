@@ -9,7 +9,7 @@
 Overnight autonomous run. Commit + push after every phase. On re-run, skip checked phases.
 
 - [x] **Phase 0** — Tools + skeleton (prev session): AUD-001..008, raw/ committed.
-- [ ] **Phase A** — Backend / Security (7 areas). → Audit-A
+- [x] **Phase A** — Backend / Security (7 areas). → Audit-A (AUD-009..024; no IDOR/secrets, AUD-004 closed-FP)
 - [ ] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B
 - [ ] **Phase C** — Logic / Data / State (6 areas). → Audit-C
 - [ ] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D
@@ -239,15 +239,208 @@ Verify: rejected-low-impact
 
 ## Audit-A — Backend / Security
 
-_(Session 2 — empty skeleton)_
+Phase A — 7 parallel read-only subagents (auth, authz/IDOR, input-validation,
+secrets, CORS/rate/errors, WhatsApp, alembic). Orchestrator merged + re-verified.
+Carry-over resolved: **AUD-004 → rejected-FP** (see AUD-019). Bandit AUD-001/005
+cross-checked. Numbering continues from AUD-009.
 
-Carry-over from Audit-0: AUD-001 (silent-except cluster, confirm vs MEH-325),
-AUD-004 (confirm whether `middleware.py` gates on `request.url.path`),
-mypy real-signal classes (`union-attr` ×33, `arg-type` ×110, `assignment` ×127 —
-`raw/mypy.txt`).
+### [AUD-009] WhatsApp Graph 200 treated as delivered — response body never parsed
+WhatsApp / Reliability | Severity YELLOW | Confidence high
+Evidence: `backend/app/services/whatsapp.py:46-52`
+```python
+r = httpx.post(url, json=payload, headers=headers, timeout=_TIMEOUT_SECONDS)
+r.raise_for_status()        # only raises on 4xx/5xx
+return True                 # 200 → "sent", body never inspected
+```
+Issue: Graph API returns HTTP 200 with an `error` object or empty `messages: []`
+when a number is invalid/unreachable; `_post()` only checks the status code, so a
+queued-but-undelivered message is reported as success (no retry, watchdog records
+`sent`). Realistic scenario: admin/alert sends to a bad/stale number, Graph 200s with
+an error body, user never receives it, logs say success — silent delivery loss.
+Fix direction: after `raise_for_status()`, parse `r.json()` and return False on an
+`error` key or empty `messages` array.
+Verify: confirmed (not RED — reliability/observability, not exploit/data-loss; subagent's RED downgraded per severity rubric)
+
+### [AUD-010] `send_text()` 24h customer-service window not enforced client-side
+WhatsApp / Reliability | Severity YELLOW | Confidence high
+Evidence: `backend/app/services/whatsapp.py:55-70` docstring claims "only works
+inside the 24h window"; callers `routers/alerts.py:~208` and `routers/admin.py:~742`
+invoke `send_text()` with no last-inbound elapsed check.
+Issue: Meta rejects free-form text outside the 24h window, but the client never
+checks it; combined with AUD-009 the call returns True and the failure is invisible.
+Realistic scenario: reminder to a user last seen 25h ago → Meta drops it, code logs
+success. Fix direction: track `last_inbound_at` and gate `send_text` on window-open,
+or rename to make "best-effort" explicit and have callers branch to a template.
+Verify: confirmed (compounds AUD-009; depends on AUD-009 for the silent-success half)
+
+### [AUD-011] MEH-555 free-text letter-validation gaps across producer/product/experience schemas
+Input-validation | Severity YELLOW | Confidence high
+Evidence: `backend/app/schemas/schemas.py` — `producer_name:66`, admin `name/contact_name/top_product_name/whatsapp_group:290,291,305,300`, `ProducerUpdate.contact_name/top_product_name/whatsapp_group:380,394,389`, `HomeProduct category/storage_type/kosher:727,730,732`, `Experience category/recurring_schedule:898,911`.
+Issue: ~13 free-text `str`/`str|None` fields feeding admin queues or public display
+accept punctuation-only values (`"???"`, `"!!!"`) — the exact MEH-555 pattern
+(`[א-תa-zA-Z]` ≥3 letters after `strip()`) that workflow.md already lists as the
+unfixed sibling set (`ProducerCreate.name`, `HomeProductCreate.title`,
+`ExperienceCreate.title`). Realistic scenario: producer/admin saves junk-string
+fields that render as garbage in admin lists and public detail pages.
+Fix direction: add a shared `@field_validator` applying the MEH-555 letter check to
+each field (one ticket, mirrors the existing validated fields).
+Verify: confirmed (matches documented MEH-555 backlog — known, not novel)
+
+### [AUD-012] `admin_notes` stored with no sanitization, length cap, or validation
+Input-validation | Severity YELLOW | Confidence med
+Evidence: `backend/app/schemas/schemas.py:316` (ProducerAdminCreate), `:407` (ProducerUpdate) — `admin_notes: str | None` with zero validators, unlike `description`/`short_description` which call `sanitize_text`.
+Issue: Raw admin input persisted and returned in admin GET responses with no HTML
+sanitization or length bound. Realistic scenario: stored `<script>`/oversized blob;
+server-side stored XSS only if an admin surface renders it unescaped (React escapes
+by default → bounded), but the unbounded length is a real gap. Fix direction: run
+`sanitize_text(v, max_length=2000)` in a validator, consistent with sibling fields.
+Verify: confirmed (XSS bounded by frontend escaping; length/sanitization gap real)
+
+### [AUD-013] Unbounded `list[str]` fields accept arbitrarily large arrays
+Input-validation / DoS | Severity GREEN | Confidence high
+Evidence: `backend/app/schemas/schemas.py:322,327,424` — `delivery_area_cities`,
+`delivery_cities`, `custom_questions` have no `max_items`; `routers/admin.py:~92`
+iterates `delivery_cities` into per-row DB inserts.
+Issue: API accepts thousands of entries per list → amplified DB-insert work on a
+single request. Realistic scenario: authenticated admin/producer POSTs a 10k-element
+list, slow request. Fix direction: `Field(..., max_length=50)` (Pydantic v2 list cap)
+per field. Verify: rejected-low-impact (auth-gated, no public reach; bounded amplification)
+
+### [AUD-014] Fingerprint-claim comparison not constant-time
+Auth | Severity YELLOW | Confidence med
+Evidence: `backend/app/auth.py:193` — `if hash_fingerprint(cookie_fp) != fp_claim:`
+(plain `!=`), whereas the WhatsApp HMAC path correctly uses `hmac.compare_digest`
+(`routers/whatsapp_webhook.py:~192`).
+Issue: Byte-wise `!=` on the SHA-256 fingerprint is a timing oracle. Realistic
+scenario: low — attacker must already hold a valid 15-min access token and the
+fingerprint is a 50-byte random value per login, so the side-channel is largely
+academic. Fix direction: `not hmac.compare_digest(hash_fingerprint(cookie_fp), fp_claim)`.
+Verify: confirmed (real divergence from the codebase's own constant-time standard; low practical risk)
+
+### [AUD-015] `/reset-password` not rate-limited per-email; 404-vs-410 token oracle
+Auth | Severity YELLOW | Confidence low
+Evidence: `backend/app/routers/auth.py:~1090-1101` — `/reset-password` carries only
+the per-IP limit (10/15m); unlike `/forgot-password` (`:1065-1066`) it has no
+`key_func=email_from_body` second key. Token lookup `User.reset_token == data.token`
+returns 404 (not found) vs 410 (expired), a distinguishable response.
+Issue: No per-email throttle on the consume step, and the 404/410 split is a weak
+oracle once a token is held. Realistic scenario: brute-forcing the token is infeasible
+**if** `reset_token` is high-entropy (entropy not verified here — flagged), so impact
+hinges on token generation. Fix direction: add the per-email dual-key limit to
+`/reset-password` and collapse 404/410 to one generic response.
+Verify: confirmed-conditional (downgrade to rejected-low-impact if reset_token is a 32B+ urlsafe token — Audit-C to confirm entropy at generation site)
+
+### [AUD-016] Apple JWKS cache TTL uses wall-clock `time.time()` not `monotonic()`
+Auth | Severity GREEN | Confidence med
+Evidence: `backend/app/services/oauth_verifiers.py:~151,171-176` — cache freshness
+compares `time.time()` against `_APPLE_JWKS_TTL_SECONDS` (3600).
+Issue: A backward NTP/clock adjustment could keep a stale keyset "fresh". Realistic
+scenario: negligible — Apple rotates keys on a weeks/months cadence and a kid-miss
+forces a refetch anyway. Fix direction: use `time.monotonic()` for the TTL delta.
+Verify: rejected-low-impact
+
+### [AUD-017] Contact-form logs full name + email unmasked
+Secrets / PII-in-logs | Severity GREEN | Confidence high
+Evidence: `backend/app/routers/marketing.py:182` — `logger.info("New contact message: name=%s email=%s", msg.name, msg.email)`; contrast `services/email.py:53` which masks (`local***`).
+Issue: Inconsistent redaction — public contact submissions land in Railway/Sentry
+logs as cleartext PII. Realistic scenario: log access yields a harvestable name/email
+list over time. Fix direction: add a `mask_email()` to `utils/pii.py` and apply it here.
+Verify: confirmed (real privacy gap, low severity — internal log surface only)
+
+### [AUD-018] Sentry PII scrubbing not set explicitly (`send_default_pii` / `before_send`)
+Secrets / Observability | Severity GREEN | Confidence med
+Evidence: `backend/app/sentry.py:51-57` — `sentry_sdk.init(...)` omits
+`send_default_pii=` and `before_send=`.
+Issue: Subagent flagged as YELLOW; orchestrator verify: the Sentry SDK **defaults
+`send_default_pii=False`**, so request bodies/headers/cookies are not captured by
+default, and `middleware.py:29-42` already redacts the email before `scope.set_user`.
+Realistic scenario: low — only matters if a future edit flips `send_default_pii=True`.
+Fix direction: set `send_default_pii=False` explicitly + a `before_send` redactor as
+defense-in-depth. Verify: rejected-low-impact (SDK default already PII-off)
+
+### [AUD-019] AUD-004 resolution — starlette Host-header `request.url` desync NOT reachable
+Security / Dependencies | Severity GREEN | Confidence high
+Evidence: `backend/app/middleware.py:112` — the **only** `request.url.path` use in
+the backend is `scope.set_tag("route", request.url.path)` (Sentry telemetry). No
+auth/routing/access decision reads `request.url`; FastAPI routing uses ASGI
+`scope["path"]`; auth is JWT-from-header via `Depends`.
+Issue: Resolves the Audit-0 carry-over: the PYSEC-2026-161 path-desync class has no
+security-decision sink in this codebase. Realistic scenario: none — worst case is a
+mislabeled Sentry tag. Fix direction: still bump starlette on the next dep refresh
+(hygiene), but no reachable exploit. Verify: rejected-FP (closes AUD-004 reachability question)
+
+### [AUD-020] Backend responses omit HSTS + CSP headers
+Security headers | Severity GREEN | Confidence high
+Evidence: `backend/app/middleware.py:44-52` sets X-Content-Type-Options,
+X-Frame-Options, Referrer-Policy, Permissions-Policy — but no `Strict-Transport-Security`
+and no `Content-Security-Policy`. `docs/SECURITY.md:302-315` documents both.
+Issue: Backend is a JSON API behind Railway TLS (edge enforces HSTS) and the frontend
+Next.js config carries CSP; the API itself returns no HTML in normal flow. Realistic
+scenario: low — defense-in-depth/parity gap, not an exploit. Fix direction: add both
+headers in `add_security_headers` for backend/frontend parity. Verify: rejected-low-impact
+
+### [AUD-021] IDOR / authorization sweep — no gaps found (positive control)
+Authorization/IDOR | Severity GREEN | Confidence high
+Evidence: full per-endpoint map of all mutating routes across `producers.py`,
+`producer_me.py`, `producer_recipes.py`, all `admin_*.py`, `users_me.py`, `reviews.py`
+(`:320-323` owner-or-admin), `home_products.py` (`:281,326` owner-or-admin),
+`experiences.py` (`:305` host-or-admin), `events.py` (`:166,180` producer-scoped),
+`category_requests.py` (`:35-38` JWT-bound producer_id, MEH-386), `group_buys.py`,
+`favorites.py`.
+Issue: Every mutation enforces `owner_id == current_user.id` OR `role == "admin"`, or
+is scoped to `user.producer_id`; admin routers gate on `require_admin`. No unscoped
+object fetch found. Realistic scenario: none. Fix direction: none — recorded as a
+verified positive control so Final Triage doesn't re-open it. Verify: confirmed (no finding)
+
+### [AUD-022] CORS allows credentials with env-driven origin list (operational risk)
+CORS | Severity GREEN | Confidence high
+Evidence: `backend/app/middleware.py:206-218` — `allow_credentials=True` with
+`allow_origins=settings.cors_origins_list()` (`config.py:43,121`); dev default is
+localhost only, no wildcard in code.
+Issue: Code is correct (no `*`); risk is purely operational — a prod env setting
+`CORS_ORIGINS=*` would pair credentials with any origin. Realistic scenario:
+misconfig, not a code bug. Fix direction: add a deploy-checklist assertion that prod
+`CORS_ORIGINS` is an exact allowlist. Verify: confirmed (code GREEN; operational note)
+
+### [AUD-023] Alembic chain integrity + model/table sync — clean (positive control)
+Alembic/Schema | Severity GREEN | Confidence high
+Evidence: 17 versions trace a single linear chain `ef8fb1858f5b` (baseline, 34 tables)
+→ … → `a7f3e9c14d28` (HEAD), each with exactly one `down_revision`, no forks/orphans.
+Net table delta: −2 (MEH-587 drop recipes/recipe_ingredients) +2 (MEH-588 producer_recipes)
++1 (MEH-509 inbound_messages) = **35**, matching CI `EXPECTED_REV=a7f3e9c14d28`
+`EXPECTED_TABLES=35` (`.github/workflows/pr-checks.yml`) and 35 ORM entities in
+`models/models.py`. Drops verified empty/post-overlap; non-null adds carry
+`server_default`; FK ondelete actions intentional (MEH-311 SET NULL, MEH-313 CASCADE).
+Issue: none — chain, table count, and ORM are in sync; expand-contract (ADR-007)
+correctly applied. Realistic scenario: none. Fix direction: none. Verify: confirmed (no finding)
+
+### [AUD-024] `create_all()` on boot is a second schema path (dev/CI only)
+Alembic/Schema | Severity GREEN | Confidence high
+Evidence: `backend/app/startup.py:74-76`
+```python
+Base.metadata.create_all(bind=engine)  # MEH-352: dev/CI safety net;
+# checkfirst=True → no-op when tables exist (prod uses Alembic)
+```
+Issue: A documented residual of the MEH-265/267 "two parallel schema mechanisms"
+smell — `_migrate_columns` was removed but `create_all` on boot remains. `checkfirst`
+no-ops in prod (tables already exist via Alembic), so prod is single-authority; the
+real (low) risk is dev/CI: tests run against a `create_all`-built schema and could
+pass even if a migration is missing. The `EXPECTED_REV`/`EXPECTED_TABLES` CI gate
+mitigates this. Realistic scenario: a model column added without a migration passes
+local tests, caught only by the drift gate. Fix direction: gate `create_all` behind
+an explicit dev-only flag, or run CI against `alembic upgrade head` not `create_all`.
+Verify: rejected-low-impact (mitigated by CI drift gate; documented MEH-352 decision)
 
 ### תקציר (עברית)
-_(ריק)_
+פאזה A (7 סוכנים מקבילים, קריאה-בלבד): **לא נמצאו פרצות IDOR/הרשאות** — כל
+מוטציה נבדקת מול בעלות-או-אדמין (AUD-021). הממצא הפעיל המרכזי: WhatsApp מתייחס
+ל-HTTP 200 כ"נשלח" בלי לקרוא את גוף-התשובה של Graph, כך שהודעות שלא נמסרו
+נרשמות כהצלחה (AUD-009/010, YELLOW). פערי ולידציה של טקסט-חופשי לפי MEH-555
+על מספר סכמות (AUD-011/012, YELLOW — כבר בבק-לוג). השוואת fingerprint לא
+קבועת-זמן (AUD-014). **AUD-004 נדחה** — אין שימוש ב-`request.url` להחלטת אבטחה
+(AUD-019). סודות קשיחים: אין. CORS/rate-limit/headers תקינים ברובם (GREEN).
+שרשרת Alembic נקייה ולינארית (17 גרסאות, 35 טבלאות, אפס דריפט מול המודלים —
+AUD-023); `create_all` בבוט נשאר כרשת-ביטחון ל-dev/CI בלבד (AUD-024).
 
 ---
 
