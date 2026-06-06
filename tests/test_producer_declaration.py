@@ -38,7 +38,8 @@ def _valid_payload():
 
 def test_declaration_version_constant_value():
     # Locked value + must fit the producers.declaration_version VARCHAR(10).
-    assert DECLARATION_VERSION == "2026-06-v1"
+    # MEH-759 Chunk C bumped v1 → v2 (continuous-commitment wording).
+    assert DECLARATION_VERSION == "2026-06-v2"
     assert len(DECLARATION_VERSION) <= 10
 
 
