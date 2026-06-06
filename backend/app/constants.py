@@ -52,3 +52,14 @@ PRODUCER_LICENSE_REGEX: str = r"^\d{7,10}$"
 # Pydantic max_length on the 4 input schemas mirrors this — boundary defense
 # so 200-char garbage produces a clean 422 instead of a Postgres 500.
 PRODUCER_LICENSE_MAX_LENGTH: int = 20
+
+# MEH-759 (ADR-022 gate 2, Chunk B): the version string stamped into
+# producers.declaration_version when a business owner makes the binding
+# tier-2 licensing declaration at registration. Brief Q1.4 — pairing a
+# timestamp (declared_at) with the exact text version agreed to strengthens
+# the platform's good-faith reliance defense and lets us prove WHICH wording
+# each seller consented to if the lawyer-locked copy changes later.
+# Bump this (e.g. "2026-09-v2") whenever the declaration text materially
+# changes so existing rows stay attributable to the version signed.
+# Must stay within the VARCHAR(10) producers.declaration_version column.
+DECLARATION_VERSION: str = "2026-06-v1"

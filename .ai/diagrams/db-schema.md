@@ -59,6 +59,8 @@ erDiagram
         string kosher
         int risk_score "nullable — MEH-509 PR3, Anthropic Haiku 0-100, fail-open NULL"
         text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
+        timestamp declared_at "nullable — MEH-759, tz-aware; binding tier-2 declaration timestamp"
+        string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
         timestamp created_at
     }
 

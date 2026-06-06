@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2 — the binding tier-2 licensing declaration now leaves an
+audit trail. **Chunk A** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` adds
+`producers.declared_at` (TIMESTAMP WITH TIME ZONE, null) + `producers.declaration_version`
+(VARCHAR(10), null), expand-only per ADR-007 (no backfill); ORM parity + `EXPECTED_REV`
+bump. **Chunk B** (this PR): `POST /auth/register/producer` (both new-account and MEH-143
+upgrade paths) stamps `declared_at=now(UTC)` + `declaration_version=DECLARATION_VERSION`
+(`"2026-06-v1"`, `app/constants.py`) when the new required `declaration_accepted` body
+field is truthy; the handler 422s (`יש לאשר את הצהרת הרישוי כדי להמשיך`) when it is
+falsy/absent. Minimal frontend plumbing sends the existing consent checkbox
+(`agreedToTerms`) as `declaration_accepted` — no copy/UI change (declaration COPY = Chunk
+C). Admin-create / Excel-import leave both columns NULL. Admin-only exposure — added to
+`ProducerAdminOut`, never to public `ProducerDetailOut`/`ProducerListOut` (MEH-530
+privacy-first precedent). New `tests/test_producer_declaration.py` (stamp-on-register,
+version constant, 422 on falsy/absent, NULL on non-register create, no public exposure);
+existing register payloads across the suite updated to send the field. Docs: DATA.md +
+db-schema diagram. **Refs MEH-759, Part of MEH-742.** (Chunk C — frontend declaration copy
++ farmer line — remains.)
+
 ### 2026-06-05 — MEH-761: Gate 4 — verification matrix doc (Closes MEH-761)
 
 `docs(MEH-761)`: new `docs/VERIFICATION.md` — operational consolidation of ADR-022
