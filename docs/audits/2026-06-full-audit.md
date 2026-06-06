@@ -10,7 +10,7 @@ Overnight autonomous run. Commit + push after every phase. On re-run, skip check
 
 - [x] **Phase 0** — Tools + skeleton (prev session): AUD-001..008, raw/ committed.
 - [x] **Phase A** — Backend / Security (7 areas). → Audit-A (AUD-009..024; no IDOR/secrets, AUD-004 closed-FP)
-- [ ] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B
+- [x] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B (AUD-025..038; AUD-007 closed-FP)
 - [ ] **Phase C** — Logic / Data / State (6 areas). → Audit-C
 - [ ] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D
 - [ ] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
@@ -444,16 +444,163 @@ AUD-023); `create_all` בבוט נשאר כרשת-ביטחון ל-dev/CI בלב�
 
 ---
 
-## Audit-B — Frontend / RTL / i18n
+## Audit-B — Frontend / RTL / i18n / a11y
 
-_(Session 3 — empty skeleton)_
+Phase B — 6 parallel read-only subagents (RTL, bidi, i18n, hydration, a11y,
+token-drift/eslint). Carry-over **AUD-007 resolved** (see AUD-037). Numbering
+continues from AUD-025.
 
-Carry-over from Audit-0: AUD-007 (eslint `security/detect-object-injection` ×122,
-`react-hooks/set-state-in-effect` ×40 — line-level triage), AUD-006 (Next.js
-upgrade tracking).
+### [AUD-025] RTL physical `text-right` instead of logical `text-end` (~30 sites)
+RTL | Severity YELLOW | Confidence high
+Evidence: 88 physical-class hits total; ~30 genuine violations (rest are documented
+`rtl-ok` exceptions). Representative: `components/SmartSearch.jsx:194`,
+`components/HeroSearch.jsx:258,337`, `components/CategoryRequestModal.jsx:62,76,89`,
+`app/[locale]/about/AboutClient.jsx:95,168,211`, `app/[locale]/producer/dashboard/group-buys/page.js:70,81,92`.
+Issue: `text-right` on inputs/headings/modals that inherit `dir="rtl"` should be the
+logical `text-end` per `.claude/rules/rtl.md` (breaks if direction flips; the LTR
+numeric-input exception does not apply to these). Realistic scenario: an EN/LTR
+render mis-aligns these elements. Fix direction: mechanical `text-right → text-end`
+on the non-exception sites. Verify: confirmed
+
+### [AUD-026] Bidi: numeric/price/date rendered in RTL without LTR isolation (×8)
+Bidi | Severity YELLOW | Confidence high
+Evidence: `components/ExperienceCard.jsx:105` (price), `components/HomeProductCard.jsx:131`
+(₪+unit), `components/ReviewsSection.jsx:186` (avg rating), `:306` (he-IL date),
+`app/[locale]/group-buys/[id]/GroupBuyDetailClient.jsx:279` (deadline in `t()`),
+`app/[locale]/admin/group-buys/page.js:124-125` (prices), `components/MapProducerCard.jsx:29,105`
+(⭐ rating+count). Correct isolation exists at `components/ProducerCard.jsx:292` /
+`OpeningHours.jsx:135` (reference).
+Issue: numbers/dates from `toFixed`/`toLocaleString` inline in Hebrew without
+`dir="ltr"`/`<bdi>` reorder (e.g. "⭐ 4.5 (12)" → "(12) 5.4 ⭐"). The repo's known
+incident class. Realistic scenario: prices/ratings/dates display scrambled on
+mobile cards. Fix direction: wrap each numeric span in `dir="ltr"` or `<bdi>`. Verify: confirmed
+
+### [AUD-027] `en.json` contains untranslated Hebrew values (×6-8)
+i18n | Severity YELLOW | Confidence high
+Evidence: subagent diff of `messages/en.json` vs `he.json` — e.g. `nav.add_business_short`
+= "הוסיפו עסק", `home.hero.cta_primary` = "גלו עסקים", `home.hero.how_it_works`
+= "איך זה עובד", `home.categories.eyebrow` = "קטגוריות", `producer.card.favorites.aria`
+= "שמירה". `robots.txt` does **not** disallow `/en/` (verified) — EN pages are crawlable.
+Issue: English users (and crawlers) see Hebrew strings in nav/hero/categories. Key
+parity is otherwise clean (0 missing keys). Realistic scenario: EN locale is reachable
+and renders mixed-language UI. Fix direction: translate the offending `en.json` values.
+Verify: confirmed
+
+### [AUD-028] Hardcoded Hebrew strings in `ChatWidget.jsx` (outside catalog)
+i18n | Severity YELLOW | Confidence high
+Evidence: `components/ChatWidget.jsx:27` (OPENING_MESSAGE), `:42-49` (8 SUGGESTED_PROMPTS),
+`:71-76` (HARDCODED_ANSWERS), aria-labels `:209,235,289`. A `TODO` at `:24` already notes it.
+Issue: ~20 user-facing Hebrew strings bypass next-intl, so they're untranslatable and
+inconsistent with the catalog approach. Realistic scenario: EN locale shows Hebrew
+chat copy; copy edits require code changes. Fix direction: move to `messages/*.json`
+under a `chatbot` key + `useTranslations`. Verify: confirmed
+
+### [AUD-029] Forbidden brand term "יצרן" in trust-badge copy
+i18n / Brand | Severity YELLOW | Confidence high
+Evidence: `frontend/lib/badges.js:43-44` — `label: "רישיון יצרן"`, `tooltip: "בית העסק
+מחזיק ברישיון יצרן ממשרד הבריאות."`
+Issue: brand voice (BRAND.md / MEH-720 lineage) forbids "יצרן" in user-facing copy
+(prefers "עסק"/"בית עסק"). Surfaces in a public trust badge. Realistic scenario:
+off-brand term shown on producer cards/detail. Fix direction: reword to e.g.
+"רישיון ייצור" / "אישור משרד הבריאות". Verify: confirmed (copy-approval gate applies — needs Smadar sign-off per workflow rule 22)
+
+### [AUD-030] Date computed in render body → hydration mismatch risk (×3)
+Hydration | Severity GREEN | Confidence med
+Evidence: `components/Footer.jsx:221` `© {new Date().getFullYear()}`;
+`components/admin/ProducerForm.jsx:680` and `app/[locale]/producer/dashboard/page.js:293`
+`min={new Date().toISOString().slice(0,10)}`.
+Issue: server-build vs client-load time can differ → React hydration warning. The
+Footer year only diverges across a year boundary (negligible); the date-input `min`
+diverges across a day boundary but those are client-rendered dashboard/admin views,
+so SSR mismatch is bounded. Realistic scenario: a console hydration warning at a
+date boundary; no functional break. Fix direction: compute via `useEffect`/`useId`-stable
+value or pass as prop. Verify: rejected-low-impact (subagent's RED downgraded — narrow window + client-render context)
+
+### [AUD-031] `Math.random()` DOM id in `CitiesAutocomplete` → hydration + a11y mismatch
+Hydration / a11y | Severity YELLOW | Confidence high
+Evidence: `components/CitiesAutocomplete.jsx:26` — `useRef(\`cities-listbox-${Math.random()...}\`).current`.
+Issue: random id differs server vs client → `id`/`aria-controls` mismatch (hydration
+warning + broken listbox association for AT). Realistic scenario: screen-reader
+`aria-controls` points at a non-existent id after hydration. Fix direction: React
+`useId()`. Verify: confirmed
+
+### [AUD-032] `useSearchParams()` without a `<Suspense>` boundary (×2)
+Hydration / Build | Severity YELLOW | Confidence med
+Evidence: `app/[locale]/admin/producers/use-admin-producers.js:17`,
+`components/ProducersClient.jsx:51` call `useSearchParams()` with no Suspense wrapper;
+`app/[locale]/search/page.js` does it correctly (reference).
+Issue: Next.js app-router requires a Suspense boundary around `useSearchParams` or the
+page is forced fully dynamic / can error at prerender. Realistic scenario: build
+warning or loss of static optimization on these routes. Fix direction: wrap callers in
+`<Suspense>` per the search-page pattern. Verify: confirmed
+
+### [AUD-033] a11y: form inputs without associated labels (×3)
+a11y | Severity YELLOW | Confidence high
+Evidence: `components/CategoryRequestModal.jsx:69-77` (name), `:83-91` (textarea),
+`components/CategorySelector.jsx:31-38` (search) — placeholder only, no `<label>`/`aria-label`.
+Issue: placeholders are not labels for screen readers (IS-5568 / WCAG 2.1 AA).
+Realistic scenario: AT users can't identify these fields. Fix direction: add
+`<label htmlFor>` or `aria-label`. Verify: confirmed
+
+### [AUD-034] a11y: low contrast — `fg-muted` on cream background
+a11y | Severity YELLOW | Confidence med
+Evidence: tokens `fg-muted=#5c584f` on `background=#f5f0e8` ≈ 4.1:1 (below 4.5:1 AA for
+small text); applied at `components/ProducerCard.jsx:276,301`, `components/CategoryTag.jsx:3`.
+Issue: small muted text on cream fails WCAG AA / IS-5568. Realistic scenario:
+low-vision users can't read category/location eyebrow text. Fix direction: darken the
+muted token for small text or use `text-text`. Verify: confirmed (ratio approximate — final ratio check at fix time)
+
+### [AUD-035] a11y: modal focus trap missing (×2)
+a11y | Severity YELLOW | Confidence high
+Evidence: `components/CategoryRequestModal.jsx:54-114` and `components/LocationModal.jsx:76-150`
+have `role="dialog"`+`aria-modal`+Esc but no Tab focus trap; `LoginPromptModal.jsx:49-63`
+and `Lightbox.jsx:42-63` implement it correctly (reference).
+Issue: keyboard users can Tab out of the dialog into background content. Realistic
+scenario: focus escapes the modal, AT users lost behind the overlay. Fix direction:
+add the existing Tab-trap pattern from `LoginPromptModal`. Verify: confirmed
+
+### [AUD-036] Hardcoded color drift beyond the documented exceptions (~50 hex / 65 files)
+TokenDrift | Severity YELLOW | Confidence high
+Evidence: beyond expected `#C8821E`/`#2E4A2E` (DESIGN.md) — `components/AvailabilityBadge.jsx:32-39`
+(`#22c55e`/`#f97316`/`#A32D2D`), `Skeleton.jsx` (`#e8e0d0`), `lib/holidays.js:18-78`,
+`lib/map-categories.js:29-42`, WhatsApp brand `#25D366` in `globals.css`.
+Issue: design colors (status/placeholder) bypass tokens; semantic colors (holiday/category/
+brand) are arguably non-token but still scattered. Realistic scenario: theme changes
+miss these literals → visual drift. Fix direction: migrate design colors to Tailwind
+theme; keep semantic maps in `lib/` but centralized. Verify: rejected-low-impact (hygiene; no functional/security impact)
+
+### [AUD-037] AUD-007 resolution — eslint security/logic clusters triaged
+eslint / Security | Severity GREEN | Confidence high
+Evidence: `raw/eslint.txt` (3020 warnings). Top rules: `id-length` 1130,
+`no-magic-numbers` 511, `complexity` 199, `unicorn/prefer-global-this` 183,
+`max-lines` 174, `security/detect-object-injection` 122, `set-state-in-effect` 40.
+Spot-check of 5 `detect-object-injection` hits (`AdminReviews.test.jsx:45`,
+`BottomNav.test.jsx:22`, `ProducerCard.test.jsx:24,27`) → **100% false positive** —
+all are test-mock objects indexed by hardcoded/app-controlled keys, no user-controlled
+sink. `set-state-in-effect` ×40 (e.g. `LocationSelector.jsx:89`) = sub-optimal React
+(extra render), not exploitable.
+Issue: resolves the AUD-007 carry-over — no genuine object-injection sink among the
+122; the remaining clusters are pure style. Realistic scenario: none security-relevant.
+Fix direction: scope `detect-object-injection` off `__tests__/**`; `eslint --fix` the
+style bulk; optionally refactor the ~5 set-state-in-effect components. Verify: rejected-FP (object-injection cluster) / rejected-low-impact (set-state-in-effect)
+
+### [AUD-038] Frontend positive controls (no finding)
+i18n / a11y | Severity GREEN | Confidence high
+Evidence: he/en key parity = 0 gaps; ICU plurals use correct Hebrew categories
+(`one`/`two`/`other`/`=0`, no misapplied `few`/`many`) across ~15 sampled keys;
+`<Image>`/`<img>` alt coverage clean (decorative use `aria-hidden`, fallbacks use
+`role="img"`+`aria-label`); modal body-scroll-lock present on `LoginPromptModal`/`Lightbox`
+(missing only on the 2 modals in AUD-035, minor).
+Issue: none — recorded so Final Triage doesn't re-open these. Verify: confirmed (no finding)
 
 ### תקציר (עברית)
-_(ריק)_
+פאזה B (6 סוכנים מקבילים): ~30 הפרות RTL (`text-right`→`text-end`, AUD-025) ופערי
+בידי במספרים/תאריכים/מחירים ללא בידוד LTR (AUD-026) — שניהם מחלקות-תקלה מוכרות.
+i18n: ערכים בעברית בתוך `en.json` (AUD-027), מחרוזות עברית קשיחות ב-ChatWidget
+(AUD-028), והמונח האסור "יצרן" בתג-אמון (AUD-029, דורש אישור-קופי). נגישות (IS-5568):
+תוויות-טופס חסרות (AUD-033), ניגודיות נמוכה של `fg-muted` על קרם (AUD-034), ומלכודת-
+פוקוס חסרה ב-2 מודאלים (AUD-035). **AUD-007 נסגר** — 122 ה-detect-object-injection
+כולם FP בקבצי-טסט (AUD-037). פריון: parity נקי, ICU תקין, alt תקין (AUD-038).
 
 ---
 
