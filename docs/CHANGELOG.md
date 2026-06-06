@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
+
+- **`fix(MEH-731)`**: `FooterSlot.jsx` + `app/[locale]/admin/layout.js` imported `usePathname` from `next/navigation`, which keeps the `/he` / `/en` prefix under next-intl `[locale]` routing — so `FooterSlot`'s `pathname === "/map"` check failed (footer wrongly rendered on `/map`) and the admin sidebar's `isActive()` (compares against non-prefixed `NAV_HREFS`) never highlighted a tab. Swapped both to the locale-stripping `usePathname` from `@/i18n/navigation` (same fix as Header/BottomNav in PR #894). Phase 0 grep confirmed these were the **only 2** remaining `next/navigation` usePathname sites. `admin/layout.js` `useRouter` left on `next/navigation` (only the path-comparison was buggy; the `/login` redirect is out of scope). `npm run build` green (both locales).
+
 ### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
 
 `feat(MEH-763)`: visual port of `/map` to S5 FINAL — design-layer only; feed/filter/sync
