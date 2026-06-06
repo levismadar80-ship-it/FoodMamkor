@@ -4,6 +4,24 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2, Chunk C — the Sapir-locked continuous-commitment
+declaration text + conditional grower line. The single ToS-bundled consent checkbox is
+split into three separate affirmative acts (ADR-014 voice): (1) ToS/privacy consent
+(chrome, plural), (2) the binding licensing declaration `auth.register.producer.terms.declaration`
+(first-person — "פועל כדין… ההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור…"), (3) a
+conditional grower declaration `terms.farmer_declaration` ("תוצרת שגידלתי בחלקתי בלבד.")
+shown + required only when an agricultural category (ירקות / פירות) is selected. Both
+declarations fold into the single `declaration_accepted` bool — **no schema change, no new
+API field**: `declaration_accepted = declarationConfirmed && (!farmerRequired || farmerConfirmed)`.
+`DECLARATION_VERSION` bumped `2026-06-v1` → `2026-06-v2` (new wording = new audit version;
+v1 stays the record of the launch text Chunk B stamped); constant test updated. New he/en
+keys + validation messages (key parity); en marked "pending Sapir review" in COPY_BANK.
+Strings are Sapir-locked, lawyer opinion still outstanding (Brief Q1.1–Q1.5). Docs:
+COPY_BANK (v2 — pending lawyer). **Refs MEH-759, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke). `/terms` indemnity = MEH-760, not here.
+
 ### 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B) (Refs MEH-759, Part of MEH-742)
 
 `feat(MEH-759)`: ADR-022 gate 2 — the binding tier-2 licensing declaration now leaves an
