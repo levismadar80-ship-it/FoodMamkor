@@ -41,7 +41,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
     <article
       onClick={handleRootClick}
       className={[
-        "flex gap-3 bg-white border rounded-[12px] overflow-hidden transition",
+        "flex gap-3 bg-white border rounded-md overflow-hidden transition",
         "hover:shadow-[0_4px_16px_rgba(46,104,83,0.08)]",
         active ? "border-primary border-2" : "border-border",
         onClick ? "cursor-pointer" : "",
@@ -50,8 +50,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
     >
       {/* Thumbnail — RIGHT in RTL (first child) */}
       <div
-        className="shrink-0 w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative"
-        style={{ backgroundColor: "#EAF3DE" }}
+        className="shrink-0 w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative bg-green-50"
       >
         {imgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -85,7 +84,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </p>
           )}
           {priceLabel && (
-            <p className="font-english italic line-clamp-1 mt-0.5" style={{ fontSize: "13px", color: "#8B6914" }}>
+            <p className="font-english italic line-clamp-1 mt-0.5 text-accent" style={{ fontSize: "13px" }}>
               {priceLabel}
             </p>
           )}

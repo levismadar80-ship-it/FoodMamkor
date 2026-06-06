@@ -45,7 +45,7 @@ export default function MiniMap({ lat, lng, name }) {
     <section className="mt-8 border-t border-border pt-8">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("default_label")}</h2>
       {hasCoords && (
-        <div className="rounded-[16px] overflow-hidden border border-border" style={{ height: 300 }}>
+        <div className="rounded-lg overflow-hidden border border-border" style={{ height: 300 }}>
           <MapContainer
             key={`${lat}-${lng}`}
             center={[Number(lat), Number(lng)]}
@@ -72,7 +72,7 @@ export default function MiniMap({ lat, lng, name }) {
               href={wazeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 border border-[#1C1A17] text-text px-4 py-2 rounded-[6px] text-sm hover:bg-green-50 transition"
+              className="flex items-center gap-1.5 border border-text text-text px-4 py-2 rounded-sm text-sm hover:bg-green-50 transition"
             >
               <NavigationArrow size={16} weight="regular" aria-hidden="true" />
               {t("open_in_waze")}-Waze
@@ -82,7 +82,7 @@ export default function MiniMap({ lat, lng, name }) {
             href={gmapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 border border-[#1C1A17] text-text px-4 py-2 rounded-[6px] text-sm hover:bg-green-50 transition"
+            className="flex items-center gap-1.5 border border-text text-text px-4 py-2 rounded-sm text-sm hover:bg-green-50 transition"
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
             {t("open_in_google")}-Google Maps
