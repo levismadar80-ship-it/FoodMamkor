@@ -21,6 +21,13 @@ all CI green on first push (backend pytest, vitest, ruff, mypy, build, E2E) — 
 - Re-scoped per discovery: WhatsApp "24h-window branching" doesn't exist as runtime logic;
   `verification_tier` resolver covered by staging's `test_meh_762_public_tier_contract.py` (not duplicated).
 - **Next:** PR #975 ready-for-review; subscribed to its CI/review activity.
+- **CI note (infra, not code):** all 6 required checks GREEN on `4a50c74` (full
+  test logic). Post-merge heads (`8e7ad2f` staging-sync, `fd9b28e` re-trigger)
+  are not dispatching the `pull_request` workflows (pr-checks/deploy) — a GitHub
+  dispatch quirk (`deployment_status` E2E still runs fine). To clear before
+  merge: "Re-run all jobs" / fresh push / close+reopen. Details in the plan doc
+  "CI-dispatch note".
+
 ## 2026-06-06 — MEH-214: audit fix-wave (autonomous LOW-RISK lane) — PR #974 + DEFER package
 
 Follow-on overnight wave on the 56 audit findings. Ledger:

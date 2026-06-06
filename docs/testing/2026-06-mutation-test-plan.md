@@ -66,6 +66,23 @@
   resolver (MEH-762 Chunk 3) landed on staging mid-session
   (`tests/test_meh_762_public_tier_contract.py`); no duplicate written.
 
+### CI-dispatch note (infra, not test code) — for the morning reviewer
+
+All 6 required checks ran **green on commit `4a50c74`** (the commit that
+contains 100% of the new test logic): PR Checks (build/pytest/ruff/env-drift),
+Deploy (FE lint/API audit), vitest, and E2E — all ✅. After that, the branch
+got a staging-sync merge (`8e7ad2f`, Accept-Both HANDOFF resolution, no test
+logic changed) and a CI re-trigger empty commit (`fd9b28e`). The
+**`pull_request`-triggered workflows (pr-checks.yml + deploy.yml) stopped
+dispatching** on these post-merge heads — verified across 3 pushes over ~12
+min. `deployment_status` E2E still dispatches normally on the same commits, so
+Actions is not globally down; this is a `pull_request`-event dispatch quirk
+(transient GitHub dispatch backlog or a repo Actions spending/concurrency
+state — cf. workflow rule 21 budget note). **Not test-code related.** To clear
+it at review time: "Re-run all jobs", or a fresh push, or close+reopen the PR
+will re-dispatch; or it self-resolves once the backlog clears. The required
+checks must show green on HEAD before merge (Rulesets: "Expected" blocks).
+
 ---
 
 ## Coverage map (what exists today)
