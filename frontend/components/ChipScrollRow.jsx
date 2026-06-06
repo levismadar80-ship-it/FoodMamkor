@@ -27,11 +27,6 @@ export default function ChipScrollRow({
   onChipClick,
   fadeBg = "#ffffff",
   className = "",
-  // MEH-763 F3: /map opts into rounded-md chips + state-selected. Defaults keep
-  // the legacy rounded-full + bg-primary for /home + /producers (no regression).
-  // TEMPORARY — the global flip (default → rounded-md, remove these props) is MEH-764.
-  chipShape = "rounded-full",
-  selectedClassName = "bg-primary text-white border-primary",
 }) {
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
@@ -118,9 +113,11 @@ export default function ChipScrollRow({
               type="button"
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 ${chipShape} text-sm font-medium border transition shrink-0 ${
+              // MEH-764: chips are rounded-md + state-selected on ALL surfaces
+              // (/home, /producers, /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
                 active
-                  ? selectedClassName
+                  ? "bg-state-selected text-white border-state-selected"
                   : "bg-white text-text border-border hover:border-primary hover:text-primary"
               }`}
             >
