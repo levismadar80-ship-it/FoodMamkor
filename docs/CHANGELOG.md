@@ -4,6 +4,36 @@
 
 ## Unreleased
 
+### 2026-06-06 (night-batch-6) — MEH-434: launch-cohort Sentry tag (client-side slice)
+
+- **`feat(MEH-434)`**: launch-window observability — the Sentry `launch_cohort` tag is now set client-side so month-1 users can be filtered in Replay. New `frontend/lib/launch-cohort.js` (`computeLaunchCohort` + `useLaunchCohortTag`); `auth-context.js` calls the hook (2-line diff: import + call) so the tag stays in sync with the signed-in user and clears on logout. Cohort derived from `user.created_at` (already on `UserOut` → `/auth/me`, `schemas.py:752`) — **no backend/schema change**. setTag only, no PII, no setUser (per MEH-434 Forbidden). vitest 6/6 (boundary cases pinned), `npm run build` + lint (0 errors) green. **Deferred → follow-up:** the server-side `auth.py` helper + `UserOut.launch_cohort` + `test_auth.py` slice from the original plan (documented in `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434.
+
+### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
+
+`refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`
++ `state-selected` for **all three consumers** (/home `HomeProducersGrid`, /producers
+`ProducersClient`, /map `FilterChipsBar`), per DESIGN.md §Shapes / BRAND §3 (*no
+`rounded-full` on rectangles*). Flips the temporary default added by MEH-763 chunk 3.
+
+- The /home + /producers `rounded-full` pill chips were a **pre-existing DESIGN
+  violation**; /map already opted in (MEH-763 chunk 3).
+- Removed the temporary `chipShape` / `selectedClassName` opt-in props (component back
+  to one shape) + the redundant `FilterChipsBar` props. Zero logic/copy changes.
+- Phase 0 (read-only): S4 homepage FINAL (MEH-639) is **silent** on chip shape → no
+  design conflict; BRAND §3 / DESIGN §Shapes governs.
+- Verified: build · vitest 423/0 · ESLint 0 errors; Sapir QA on all 3 surfaces.
+
+### 2026-06-06 — fix: HomeProductCard.test next-intl mock — staging vitest green (#988)
+
+`fix(MEH-753)`: `#976` (MEH-753, locale-aware event dates) added `useLocale()` to
+`HomeProductCard` but its test had no next-intl mock → 16 tests threw "No intl context
+found", leaving **staging silently red on `Frontend unit tests (vitest)`** — a
+non-required check, so it slipped past the merge gate and every open PR inherited the
+16 failures (surfaced while triaging MEH-764 #987's CI). Mocked `next-intl`'s
+`useLocale` per the `RecipeCard.test` precedent. **Test-only**; 407 → 423 passing.
+The `formatDate` helper dedup itself was already done by #976 (MEH-753 — shared
+`format-date.js`, incl. `HomeProductCard`); only the missing test mock remained.
+
 ### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
 
 - **`fix(MEH-731)`**: `FooterSlot.jsx` + `app/[locale]/admin/layout.js` imported `usePathname` from `next/navigation`, which keeps the `/he` / `/en` prefix under next-intl `[locale]` routing — so `FooterSlot`'s `pathname === "/map"` check failed (footer wrongly rendered on `/map`) and the admin sidebar's `isActive()` (compares against non-prefixed `NAV_HREFS`) never highlighted a tab. Swapped both to the locale-stripping `usePathname` from `@/i18n/navigation` (same fix as Header/BottomNav in PR #894). Phase 0 grep confirmed these were the **only 2** remaining `next/navigation` usePathname sites. `admin/layout.js` `useRouter` left on `next/navigation` (only the path-comparison was buggy; the `/login` redirect is out of scope). `npm run build` green (both locales).
