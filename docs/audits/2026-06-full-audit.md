@@ -12,7 +12,7 @@ Overnight autonomous run. Commit + push after every phase. On re-run, skip check
 - [x] **Phase A** — Backend / Security (7 areas). → Audit-A (AUD-009..024; no IDOR/secrets, AUD-004 closed-FP)
 - [x] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B (AUD-025..038; AUD-007 closed-FP)
 - [x] **Phase C** — Logic / Data / State (6 areas). → Audit-C (AUD-039..048; both C1 REDs rejected on verify)
-- [ ] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D
+- [x] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D (AUD-049..056; mypy carry-over closed)
 - [ ] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
 
 _(Checkboxes flipped to [x] as each phase commits. BLOCKED items, if any, listed per section.)_
@@ -759,12 +759,122 @@ ISR ללא revalidation על מוטציה — נרפא ב-60ש׳, אך המפה 
 
 ---
 
-## Audit-D — Infra / Config
+## Audit-D — Infra / Config / CI / Deps
 
-_(Session 5 — empty skeleton)_
+Phase D — 5 parallel read-only subagents (env-vars, CI, next/vercel config, deps+mypy,
+dead-code+restore). Deps deduped to Audit-0 (AUD-002/003/006/008). mypy carry-over
+fully resolved (AUD-055). Numbering continues from AUD-049.
+
+### [AUD-049] Undocumented env vars read in code (incl. security-relevant `TRUSTED_PROXY`)
+EnvVars | Severity YELLOW | Confidence high
+Evidence: read in code, absent from `.env.example`/`docs/DEPLOYMENT.md`:
+`TRUSTED_PROXY` (`rate_limit.py:53`, gates real-client-IP for rate limiting — MEH-256),
+`LOG_LEVEL`/`LOG_FORMAT` (`logging_config.py:40,46`), `BACKEND_SENTRY_DSN` (`sentry.py:31`),
+`APP_VERSION`/`RAILWAY_GIT_COMMIT_SHA` (`sentry.py:41-42`), FE `VERCEL_ENV`/`SENTRY_ORG`/`SENTRY_PROJECT`.
+Issue: operators can't discover the rate-limit proxy flag or logging/observability knobs
+from docs; `TRUSTED_PROXY` misconfig silently weakens per-IP rate limiting. Realistic
+scenario: a fresh deploy omits `TRUSTED_PROXY`, rate limits key on the Railway proxy IP
+instead of the client. Fix direction: add these to `.env.example` + DEPLOYMENT.md (per
+workflow regression-rule 8, env-var additions are listed explicitly). Verify: confirmed
+
+### [AUD-050] `.env.example` sets `ACCESS_TOKEN_EXPIRE_MINUTES=10080` — overrides 15-min to 7 days
+EnvVars / Auth | Severity YELLOW | Confidence high
+Evidence: `Settings(BaseSettings)` (`config.py:18`) auto-maps env by field name, and
+`access_token_expire_minutes: int = 15` (`config.py:35`, MEH-326 short-TTL design) is a
+real field; `backend/.env.example` lists `ACCESS_TOKEN_EXPIRE_MINUTES=10080` (7 days).
+Issue: copying the example into Railway/`.env` lengthens the access token from 15 min to
+**7 days**, defeating the short-access+refresh rotation (the FE 401→/refresh interceptor
+never fires) and widening the stolen-token window. Verified: BaseSettings *does* map this
+var (unlike the subagent's `ALGORITHM` claim — that's also mapped). Realistic scenario:
+an operator follows `.env.example` verbatim and ships 7-day access tokens unknowingly.
+Fix direction: set the example to `15` (or delete the line) + a comment pinning the pairing.
+Verify: confirmed (security-adjacent; the example is the trap, not the code)
+
+### [AUD-051] Env-config hygiene: stale/unused vars + dual secret-name fragility
+EnvVars | Severity GREEN | Confidence high
+Evidence: `WHATSAPP_BUSINESS_ID` (`config.py:62`) defined + documented but never read;
+`ALGORITHM` in `.env.example` is overridable but shouldn't be tuned (HS256 is required);
+`SECRET_KEY`/`JWT_SECRET_KEY` both accepted via a manual `_load_settings()` map
+(`config.py:117`) with no pydantic alias — if both set, `SECRET_KEY` silently wins.
+Issue: cosmetic/operational — misleading knobs and a fragile dual-name precedence.
+Realistic scenario: env set under the non-winning name → unexpected secret. Fix direction:
+remove unused/unwired example entries; add a proper `Field(alias=...)` for the secret.
+Verify: rejected-low-impact
+
+### [AUD-052] MEH-736 docs-only twin jobs absent → docs-only PRs block on required checks
+CI | Severity YELLOW | Confidence high
+Evidence: `.github/workflows/pr-checks.yml` — the 5 path-gated jobs (Frontend build:62,
+Backend tests:108, Backend lint:265, mypy:340, etc.) carry `if: needs.changes.outputs.X
+== 'true' || workflows == 'true'` with **no complementary `exit 0` twin**; only `Env drift`
+(:309) is unconditional. `.claude/rules/testing.md:76` documents the twins as required,
+but the YAML half was never appended (commit `6daf670` = "pre-twin half").
+Issue: under Rulesets a skipped required check reports "Expected" and **blocks merge**, so
+docs-only PRs (including **this audit PR #969**) need an admin merge — the exact MEH-736
+gap that forced admin merges on #910/#913. Realistic scenario: #969 can't auto-merge once
+ready. Fix direction: add the no-op docs-only twins (identical `name:`, complement `if:`,
+`exit 0`) to `pr-checks.yml` + `deploy.yml`. Verify: confirmed (operational; affects this PR's merge path)
+
+### [AUD-053] Conflicting security headers across `next.config.js` and `vercel.json`
+Config / Security headers | Severity YELLOW | Confidence high
+Evidence: `frontend/next.config.js:60` sets `X-Frame-Options: DENY`;
+`frontend/vercel.json:10` sets `X-Frame-Options: SAMEORIGIN`. `vercel.json:5-14` also
+re-declares a partial header set (X-Content-Type-Options, Referrer-Policy) but **no CSP**,
+while `next.config.js:80-97` owns the full CSP+HSTS.
+Issue: two header authorities for the same responses — the duplicate/conflicting
+`X-Frame-Options` resolves implementation-dependently, weakening the clickjacking guarantee;
+the split risks a future edit dropping CSP on one path. (This is the AUD-020 counterpart:
+the FE *does* carry CSP+HSTS, confirming the backend omission is low-impact.) Realistic
+scenario: ambiguous frame policy in prod. Fix direction: single source — drop headers from
+`vercel.json`, keep `next.config.js`. Verify: confirmed
+
+### [AUD-054] CSP `script-src` allows `'unsafe-inline'` + `'unsafe-eval'`
+Config / Security headers | Severity GREEN | Confidence high
+Evidence: `frontend/next.config.js:84` — `script-src 'self' 'unsafe-inline' 'unsafe-eval'
+https://accounts.google.com …`. Comment justifies `unsafe-inline` (Next.js runtime +
+Tailwind) but not `unsafe-eval`.
+Issue: both directives materially weaken CSP's XSS protection, though they're a common
+Next.js/Sentry-replay requirement and the rest of the policy is strict (Cloudinary img-only,
+OAuth allowlist, Vercel-Live preview-gated). Realistic scenario: CSP would not stop an
+inline-script XSS if one were introduced. Fix direction: move toward nonce/hash-based CSP
+to drop `unsafe-inline`; document the `unsafe-eval` need. Verify: rejected-low-impact (framework-driven, documented partial)
+
+### [AUD-055] mypy 639 errors — grouped; ~80% ORM/stub noise, ~20% annotation gaps, 0 runtime crashes
+mypy | Severity GREEN | Confidence high
+Evidence: `raw/mypy.txt` grouped by code — `no-untyped-def` 265 (real but stylistic
+annotation gaps, e.g. Pydantic validators in `schemas.py`), `assignment` 127 (~90%
+SQLAlchemy `Column[T]`-vs-`T` ORM pattern), `arg-type` 110 (~70% ORM `Column` boundary,
+~30% untyped SDK stubs), `union-attr` 33 (**100% Anthropic SDK content-block FP**, e.g.
+`producer_risk.py:224` guarded by `isinstance` at :226), plus `type-arg`/`no-untyped-call`/
+stdlib-shadow noise.
+Issue: resolves the Audit-0 mypy carry-over — none of the real-signal classes are
+None-deref/runtime crashes; they're ORM typing patterns, missing third-party stubs, or
+annotation debt (tracked separately). Realistic scenario: none. Fix direction: incremental
+`no-untyped-def` cleanup in `schemas.py`; no blocking action. Verify: confirmed (no finding; closes the mypy carry-over)
+
+### [AUD-056] Phase D positive controls (no finding)
+Infra / CI / Config | Severity GREEN | Confidence high
+Evidence: **CI** — migration drift gate `EXPECTED_REV="a7f3e9c14d28"` + `EXPECTED_TABLES=35`
+(`pr-checks.yml:153-177`) matches the live HEAD (confirms AUD-023); `continue-on-error` used
+only on non-gates (mypy/Knip/tsc warn-only, Smokeshow upload), api-contract gates hard-fail,
+skills-audit path-gated. **next/vercel** — CSP locks Cloudinary to `img-src`, Vercel-Live
+hosts appended only when `VERCEL_ENV=='preview'`, `images.remotePatterns` allowlisted
+(cloudinary/unsplash), rewrites read `BACKEND_URL` (no user-controlled target), Sentry
+report-uri fails open. **Backup** — `restore_from_backup.py` delegates to `pg_restore`
+(full schema from dump); its `ROW_COUNT_TABLES` is a best-effort post-restore *subset*, not
+a stale 34-table assumption. **Dead code** — none found (conservative; `/neighbor` correctly
+excluded as intentionally deferred). **Deps** — no new vulns beyond AUD-002/003/006/008.
+Issue: none — recorded so Final Triage doesn't re-open. Verify: confirmed (no finding)
 
 ### תקציר (עברית)
-_(ריק)_
+פאזה D (5 סוכנים): הממצא החד ביותר — `.env.example` קובע
+`ACCESS_TOKEN_EXPIRE_MINUTES=10080` שדורס את ברירת-המחדל (15 דק׳) ל-7 ימים ומבטל
+את עיצוב ה-short-token של MEH-326 (AUD-050, אומת ש-BaseSettings ממפה את המשתנה).
+משתני-סביבה לא-מתועדים כולל `TRUSTED_PROXY` הרגיש (AUD-049). **תאומי docs-only של
+MEH-736 חסרים** ב-YAML — PRים של תיעוד (כולל #969 הזה) ייחסמו על "Expected" (AUD-052).
+כותרות-אבטחה מתנגשות בין next.config ל-vercel.json (AUD-053). CSP מאפשר unsafe-inline+
+unsafe-eval (AUD-054, GREEN). **mypy 639 נסגר** — ~80% רעש ORM/stubs, אפס קריסות-ריצה
+(AUD-055). ביקורות חיוביות: שער-מיגרציות תואם HEAD, CSP מחמיר, restore_from_backup בטוח,
+אין dead-code (AUD-056).
 
 ---
 
