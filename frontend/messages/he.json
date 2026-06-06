@@ -73,7 +73,7 @@
       "rate_limited": "הגעת למגבלה — נסו שוב בעוד שעה"
     },
     "toasts": {
-      "favoriteSaved": "נשמר למועדפים ❤️",
+      "favoriteSaved": "נשמר למועדפים",
       "sessionExpired": "פג תוקף ההתחברות — נא להתחבר מחדש",
       "loginAgainCta": "התחברי"
     },
@@ -706,7 +706,7 @@
       "submit": "שמירת מתכון",
       "cancel": "ביטול",
       "toast_updated": "המתכון עודכן",
-      "toast_created": "המתכון נשלח לאישור 🌿",
+      "toast_created": "המתכון נשלח לאישור",
       "errors": {
         "upload_image_failed": "שגיאה בהעלאת תמונה",
         "rejected_default": "התוכן אינו עומד בקריטריונים שלנו",
@@ -861,7 +861,7 @@
       "following": "עוקבת",
       "follow_aria": "עקבי אחרי עסק זה",
       "unfollowed_toast": "הפסקת לעקוב",
-      "followed_toast": "מעכשיו תקבלי עדכונים על מוצרים חדשים 🔔"
+      "followed_toast": "מעכשיו תקבלי עדכונים על מוצרים חדשים"
     },
     "badge_row": {
       "aria": "תגיות בית עסק"
@@ -1364,7 +1364,7 @@
         "reject": "דחי",
         "view": "צפי"
       },
-      "approve_toast": "החוויה אושרה 🌿",
+      "approve_toast": "החוויה אושרה",
       "approve_error": "שגיאה באישור",
       "validate_feedback": "יש למלא הערה",
       "changes_toast": "נשלחה בקשה לשינויים",
@@ -1483,7 +1483,7 @@
       },
       "load_error": "שגיאה בטעינת הבקשות",
       "no_requests": "אין בקשות",
-      "approved_toast": "Badge אושר ✅",
+      "approved_toast": "Badge אושר",
       "rejected_toast": "בקשה נדחתה",
       "columns": {
         "producer": "בית עסק",
@@ -1979,7 +1979,7 @@
       "submitting": "שולחת...",
       "cannot_publish": "לא ניתן לפרסם",
       "submit_cta": "שלחי לאישור",
-      "toast_submitted": "החוויה נשלחה לאישור 🌿",
+      "toast_submitted": "החוויה נשלחה לאישור",
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
@@ -2351,7 +2351,7 @@
     "error_invalid_stars": "בחרי דירוג בין 1 ל-5 כוכבים",
     "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
     "error_generic": "משהו השתבש, נסי שוב",
-    "saved_toast": "הביקורת שלך נשמרה ⭐",
+    "saved_toast": "הביקורת שלך נשמרה",
     "wa_gate_message": "לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת",
     "login_prompt": "<login>התחברי</login> כדי לכתוב ביקורת",
     "loading": "טוענת ביקורות...",
@@ -2476,8 +2476,8 @@
     "empty_cta": "גלי עסקים",
     "list_alerts_hint": "לחצי על בכל כרטיס כדי לקבל התראות על אירועים ומוצרים חדשים",
     "button": {
-      "saved_toast_first_time": "נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית",
-      "saved_toast": "נשמר למועדפים ❤️",
+      "saved_toast_first_time": "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט",
+      "saved_toast": "נשמר למועדפים",
       "removed_toast": "הוסר מהמועדפים",
       "error_generic": "משהו השתבש, נסי שוב",
       "add_aria": "הוסף למועדפים",
@@ -2515,7 +2515,7 @@
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
     "wa_meta_separator": " • ",
-    "copied_toast": "הקישור הועתק ✓"
+    "copied_toast": "הקישור הועתק"
   },
   "gallery": {
     "open_aria": "הגדלי תמונה {current}",
@@ -3358,7 +3358,7 @@
       "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ.",
       "share_cta": "העתיקי קישור לשיתוף",
       "share_cta_copied": "הועתק! ✓",
-      "share_toast": "הקישור הועתק! 🔗",
+      "share_toast": "הקישור הועתק!",
       "followers_label": "עוקבות",
       "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות."
     },
@@ -3376,7 +3376,7 @@
       "push_active": "התראות דחיפה פעילות",
       "save_cta": "שמור הגדרות",
       "saving": "שומר...",
-      "save_success_toast": "הגדרות עודכנו ✓",
+      "save_success_toast": "הגדרות עודכנו",
       "save_error_toast": "שגיאה בשמירה, נסי שוב"
     },
     "layout": {

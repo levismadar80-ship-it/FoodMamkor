@@ -38,7 +38,7 @@ Import schema from `lib/schemas.js`. Call `safeParse()` before any
 `api.get` / `api.post` or Leaflet mutation. On failure:
 
 ```js
-showToast(error.issues[0].message, "info");
+showToast.info(error.issues[0].message);
 return;
 ```
 

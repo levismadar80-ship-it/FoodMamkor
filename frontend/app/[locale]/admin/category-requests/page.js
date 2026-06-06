@@ -29,7 +29,7 @@ export default function AdminCategoryRequestsPage() {
     api
       .get("/admin/category-requests")
       .then((r) => setGroups(r.data))
-      .catch(() => showToast(t("category_requests.load_error"), "error"))
+      .catch(() => showToast.error(t("category_requests.load_error")))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -46,9 +46,9 @@ export default function AdminCategoryRequestsPage() {
           ),
         }))
       );
-      showToast(t("category_requests.status_updated"), "success");
+      showToast.success(t("category_requests.status_updated"));
     } catch {
-      showToast(t("category_requests.update_error"), "error");
+      showToast.error(t("category_requests.update_error"));
     } finally {
       setActionLoading(null);
     }

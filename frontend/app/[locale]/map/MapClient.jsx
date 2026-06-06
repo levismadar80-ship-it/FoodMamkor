@@ -93,7 +93,7 @@ export default function MapPage() {
   const handleGpsClick = useCallback(() => {
     if (gpsLoading) return;
     if (!navigator.geolocation) {
-      showToast(t("map.client.errors.no_gps"), "error");
+      showToast.error(t("map.client.errors.no_gps"));
       return;
     }
     setGpsLoading(true);
@@ -117,7 +117,7 @@ export default function MapPage() {
           2: t("map.client.errors.position_unavailable"),
           3: t("map.client.errors.timeout"),
         };
-        showToast(msgs[err.code] ?? t("map.client.errors.gps_unknown"), "error");
+        showToast.error(msgs[err.code] ?? t("map.client.errors.gps_unknown"));
       },
       { timeout: 8000, enableHighAccuracy: true }
     );

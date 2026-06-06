@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { Camera, Warning } from "@phosphor-icons/react";
+import { Camera, Warning, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
 import CitySearch from "@/components/CitySearch";
 import AddressSearch from "@/components/AddressSearch";
 
@@ -132,7 +132,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (images.length >= MAX_IMAGES) {
-      showToast(`אפשר להעלות עד ${MAX_IMAGES} תמונות`, "error");
+      showToast.error(`אפשר להעלות עד ${MAX_IMAGES} תמונות`);
       return;
     }
     setUploading(true);
@@ -142,7 +142,7 @@ export default function HomeProductForm({ onCreated, onCancel }) {
       const res = await api.post("/upload/image", formData);
       setImages([...images, res.data.url]);
     } catch (err) {
-      showToast(err.response?.data?.detail || "שגיאה בהעלאת תמונה", "error");
+      showToast.error(err.response?.data?.detail || "שגיאה בהעלאת תמונה");
     }
     setUploading(false);
     e.target.value = "";
@@ -189,9 +189,11 @@ export default function HomeProductForm({ onCreated, onCancel }) {
       };
       const r = await api.post("/home-products", payload);
       if (r.data.moderation_status === "FLAGGED") {
-        showToast("המוצר פורסם עם תגית 'בבדיקה' 🔍");
+        showToast.success("המוצר פורסם עם תגית 'בבדיקה'", {
+          icon: <MagnifyingGlass size={18} />,
+        });
       } else {
-        showToast("המוצר פורסם! 🌿");
+        showToast.success("המוצר פורסם!", { icon: <Leaf size={18} /> });
       }
       onCreated?.(r.data);
     } catch (err) {
