@@ -5,6 +5,27 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night) — Overnight batch #7: 6 deferred items → 2 PRs, 4 already-done
+
+Autonomous batch of 6 documented-deferred items (HANDOFF/memory). Every premise
+verified against `staging` with file:line before acting (meta-pattern #1) —
+**4 of 6 were already complete**, surfaced as no-ops, no empty PRs. Full ledger:
+[`docs/audits/2026-06-night-batch-7.md`](./docs/audits/2026-06-night-batch-7.md).
+
+- **#996 (draft)** — events/new EN category labels: flat `CATEGORIES` → `CATEGORY_KEYS`
+  + `events.categories` `t()` (EventsClient pattern). 0 new keys. Refs MEH-475.
+- **#998 (draft)** — Wave 6 metadata tail: 4 static routes (events/experiences/group-buys
+  lists + register/producer) → `getTranslations` (`seo.*`). New keys parity 2584/2584.
+  Fixed 2 hreflang leftovers + a double-brand. Scope corrected: sitemap.js has 0 strings;
+  detail routes already done in MEH-476 3b2. Refs MEH-475.
+- **No-ops (already on staging):** (2) robots.txt has no `/en` disallow to lift — EN
+  already crawlable (hreflang gate live, 30 routes). (4) all 8 auth routes already split
+  + `robots:noindex` (#915 precedent applied prior). (5) **PR #934 was merged** (not
+  closed-before-merge) — appendix present at `docs/legal/…licensing-tiers.md:179`.
+  (6) MEH-475 S2 SecurityTab already i18n'd (#766/767/768; `settings.security` 32 keys parity).
+- **Recommendation:** HANDOFF cleanup pass — retire the closed deferred items (Wave 6
+  detail routes, auth splits, S2) so they aren't re-dispatched in future batches.
+
 ## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
 
 **MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
