@@ -5,6 +5,7 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+<<<<<<< HEAD
 ## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
 
 **Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).
@@ -30,6 +31,24 @@ C = frontend declaration copy (continuous-commitment wording) + conditional farm
 ("תוצרת שגידלתי בחלקתי בלבד"); copy locked by Sapir before Chunk C. **Workflow-comment
 nit:** the `EXPECTED_REV` line's neighbouring comment still misattributes `a7f3e9c14d28` to
 "MEH-509 PR3" — fix needs Sapir's hand (CC deny on workflows).
+=======
+## 2026-06-06 — MEH-754: OTP via Meta authentication template
+
+**Branch:** `feature/meh-754-otp-auth-template` off staging — draft PR (Addresses MEH-754).
+Migrated producer phone-verification OTP from free-form `send_text` (delivered only inside
+Meta's 24h window → cold numbers never got the code → stuck in `pending_whatsapp`) to the
+Meta AUTHENTICATION template `producer_otp_v1`. New `OtpCodeV1(code=...)` in
+`whatsapp_templates.py` (MEH-672 pattern) overrides `to_components()` → code in BOTH body
+param AND copy-code URL button (`sub_type="url"`, `index=0`; body-only 400s at Meta).
+`_send_whatsapp_otp` → `send_template`. Fail-open + phone path unchanged. Tests:
+`tests/test_meh_754_otp_template.py` (dual-code shape + fail-open) + existing OTP/template
+suites green; `test_api.py` 192 passed; ruff clean.
+
+**OPEN / next session:**
+- **MEH-754 device smoke (manual, Sapir):** register/resend on a "cold" business number
+  that never messaged the line — confirm the OTP arrives via the template with copy-code
+  button. Only then mark Closes. Requires `producer_otp_v1` approved in Meta (auth category).
+>>>>>>> origin/staging
 
 ## 2026-06-05 (evening) — 🚀 SESSION CLOSE: release #936 → production + full prod smoke passed
 

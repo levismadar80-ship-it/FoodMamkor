@@ -24,6 +24,18 @@ from tests.conftest import (
 )
 
 
+DECLARATION_DETAIL = "יש לאשר את הצהרת הרישוי כדי להמשיך"
+
+
+def _valid_payload():
+    # valid_producer_register_payload() omits phone, but primary_contact_method
+    # "whatsapp" requires one (handler 422s otherwise, BEFORE the declaration
+    # guard) — add it so these tests isolate the declaration behaviour.
+    payload = valid_producer_register_payload()
+    payload["phone"] = "0501234567"
+    return payload
+
+
 def test_declaration_version_constant_value():
     # Locked value + must fit the producers.declaration_version VARCHAR(10).
     assert DECLARATION_VERSION == "2026-06-v1"
@@ -32,7 +44,7 @@ def test_declaration_version_constant_value():
 
 def test_register_stamps_declared_at_and_version(client, db):
     before = datetime.now(timezone.utc)
-    payload = valid_producer_register_payload()
+    payload = _valid_payload()
     resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 200, resp.text
 
@@ -48,17 +60,20 @@ def test_register_stamps_declared_at_and_version(client, db):
 
 
 def test_register_rejects_false_declaration(client):
-    payload = valid_producer_register_payload()
+    payload = _valid_payload()
     payload["declaration_accepted"] = False
     resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 422
+    # Confirm it's the declaration guard, not an upstream contact-method 422.
+    assert resp.json()["detail"] == DECLARATION_DETAIL
 
 
 def test_register_rejects_absent_declaration(client):
-    payload = valid_producer_register_payload()
+    payload = _valid_payload()
     payload.pop("declaration_accepted", None)
     resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 422
+    assert resp.json()["detail"] == DECLARATION_DETAIL
 
 
 def test_no_declaration_leaves_columns_null(db):

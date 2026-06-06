@@ -4,6 +4,7 @@
 
 ## Unreleased
 
+<<<<<<< HEAD
 ### 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B) (Refs MEH-759, Part of MEH-742)
 
 `feat(MEH-759)`: ADR-022 gate 2 — the binding tier-2 licensing declaration now leaves an
@@ -23,6 +24,23 @@ version constant, 422 on falsy/absent, NULL on non-register create, no public ex
 existing register payloads across the suite updated to send the field. Docs: DATA.md +
 db-schema diagram. **Refs MEH-759, Part of MEH-742.** (Chunk C — frontend declaration copy
 + farmer line — remains.)
+=======
+### 2026-06-06 — MEH-754: OTP via Meta authentication template (Addresses MEH-754)
+
+`fix(MEH-754)`: producer phone-verification OTP now ships through the Meta
+**AUTHENTICATION** template `producer_otp_v1` instead of free-form `send_text`.
+Free-form WhatsApp is delivered only inside Meta's 24h customer-service window, so a
+brand-new producer who never messaged the business number never received the code and
+stayed stuck in `pending_whatsapp` (evidence: staging smoke 05/06). New typed
+`OtpCodeV1(code=...)` class in `whatsapp_templates.py` (MEH-672 pattern) overrides
+`to_components()` to place the code in BOTH the body parameter AND the copy-code
+URL-button component (`sub_type="url"`, `index=0`) — a body-only auth-template payload
+400s at Meta. `_send_whatsapp_otp` (`producer_me.py`) switched to
+`send_template(phone, OtpCodeV1(code=code))`; fail-open contract and phone path
+unchanged (both transports do `to.lstrip("+")`). New `tests/test_meh_754_otp_template.py`
+asserts the dual-code payload shape + wrapper fail-open. Device smoke on a "cold" number
+is manual post-merge (hence Addresses, not Closes).
+>>>>>>> origin/staging
 
 ### 2026-06-05 — MEH-761: Gate 4 — verification matrix doc (Closes MEH-761)
 
