@@ -32,6 +32,35 @@ them with Phosphor icons. Closes the LOCK v2 temporary KEEP on toast emojis.
   (2096) are inline labels, not toasts → possible MEH-657 misses, flagged.
 - Tests: new `toast.test.js` + `Toaster.test.jsx`, updated 6 call-site mocks to
   the methods-only shape. vitest green; `npm run build` green.
+### 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5) (Refs MEH-760, Part of MEH-742)
+
+`feat(MEH-760)`: ADR-022 gate 3 — replaced the single-tier terms §5 ("עסקים מאומתים", a vague
+"initial review" + "no guarantee" sentence) with the Sapir-locked two-tier definition, heading
+`5. אימות ושכבות הצגה`. Five sub-parts (he+en): 5.1 manual acceptance review = personal
+introduction, explicitly **not** regulatory; 5.2 `תג ״מאומת״` — document-verified-at-presentation
+scope, no ongoing monitoring, free; 5.3 `בית עסק ״מוצהר״` — legally-exempt categories shown on a
+binding declaration we don't verify; 5.4 `שיפוי` — narrow indemnity (limits תנאי-מקפח exposure);
+5.5 no ongoing-supervision duty. `terms.sections.verified` restructured from `{title,body}` to
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}`; `terms/page.js` `verified` case now renders intro + 3 `<h3>` sub-blocks + closing
+para. Operator block (`טופז שנפ`, MEH-736) byte-identical — untouched. `מורשה`/`מורשים` permitted
+(legal surface). he==en parity; COPY_BANK §7 gate-3 rows, all **v1 — pending lawyer (Brief Q1/Q3)**,
+en ⏳ pending Sapir review. `npm run build` green. **Refs MEH-760, Part of MEH-742** — NOT Closes
+(Sapir closes after /terms render check; post-lawyer revision is a follow-up, launch not blocked).
+
+### 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys (Refs MEH-758, Part of MEH-742)
+
+`feat(MEH-758)`: Sapir-locked ADR-022 two-tier (מאומת / מוצהר) copy added as i18n keys —
+**key-only**, no rendering (the S7 register port + S6/S534 badge UI consume them later, so we
+don't wire copy into a success screen the port is about to rebuild). New keys (he+en, parity):
+`auth.register.producer.success.tier_trust` (replaces the pre-ADR-022 "checks every business"
+over-claim — honest per-tier framing: personal vetting for all, מאומת badge is document-gated),
+`producer.badge.verified_tooltip_license` + `..._exemption` (both carry the `{date}` ICU param),
+`producer.badge.declared_explainer` (positive no-badge explanation per template-05 research —
+Yelp-FAQ pattern, not silence). Consumer language is מאומת/מוצהר only — zero `מורשה`/`מורשים`
+(grep-verified). COPY_BANK §7 added with a decision-log row per key (en marked ⏳ pending Sapir
+review). Strings verbatim from S11 FINAL. **Refs MEH-758, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke of the rendered surfaces once the port lands).
 
 ### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
 

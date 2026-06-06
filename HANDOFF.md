@@ -37,6 +37,40 @@ the menu". Declarative (gender-neutral) — neighbors keep feminine נסי (out 
 **State:** vitest green, `npm run build` green, `/adversarial-review` on central
 components (ProducerCard/MapClient/HomeProductForm). **Next:** Sapir device QA on the preview
 (toast icon + RTL position) → mark ready → merge (`Closes MEH-685`).
+## 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5)
+
+**Branch:** `feature/meh-760-gate3-terms-tiers` off staging — draft PR (Refs MEH-760, Part of
+MEH-742). Replaced terms §5 single-tier text with Sapir-locked two-tier v1 (5.1–5.5), heading
+`5. אימות ושכבות הצגה`. `terms.sections.verified` restructured `{title,body}` →
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}` (he+en); `terms/page.js` `verified` case renders intro + 3 `<h3>` + closing para
+(structure change — Sapir approved option 1). Operator block byte-identical (untouched, git-diff
+verified). he==en parity; COPY_BANK §7 gate-3 rows; `npm run build` green.
+
+**Pending:** Sapir /terms render check on Vercel preview → then Closes. All five strings are
+**v1 — pending lawyer (Brief Q1/Q3)**; en ⏳ pending Sapir review. Post-lawyer terms revision is a
+follow-up edit (not yet a ticket; open one when opinion arrives) — launch not blocked on it.
+The §5.4 שיפוי clause was drafted narrowly for תנאי-מקפח (חוק החוזים האחידים) caution.
+
+## 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys
+
+**Branch:** `feature/meh-758-gate1-tier-copy` off staging — draft PR (Refs MEH-758, Part of
+MEH-742). **Key-only** i18n copy, no rendering. 4 new keys (he+en, parity): success
+`tier_trust` + `producer.badge.{verified_tooltip_license, verified_tooltip_exemption,
+declared_explainer}` (both tooltips carry `{date}`). COPY_BANK §7 + decision-log rows; en ⏳
+pending Sapir review. Zero מורשה/מורשים (grep-clean). `npm run build` green.
+
+**Phase 0 findings worth keeping:**
+- The "בודקות כל עסק" over-claim the prompt referenced **does not exist** in the codebase
+  (grep 0). Sapir decided (this session) → `tier_trust` is a **new key**, rendered later by
+  the S7 register port (06A/06B), NOT wired into the current success screen (avoids copy in a
+  surface the port rebuilds + a throwaway QA cycle).
+- Keys go under **top-level `producer.badge`** (the `producer` ns had only detail/card;
+  `badge_row` at he.json:860 is under `group_buys`, not `producer` — first edit landed there
+  by mistake and was corrected).
+
+**Pending:** S7 register port + S6/S534 badge UI wire these keys (separate tickets). Sapir
+mobile smoke of the rendered surfaces → then Closes. en strings pending Sapir review.
 
 ## 2026-06-06 — 🧾 SESSION CLOSE: OTP template + Linear sync audit
 
