@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 — AUD-009/010 (MEH-214): WhatsApp — parse Graph response, stop 200=delivered
+
+- **`fix(whatsapp)`**: `app/services/whatsapp.py` `_post` treated any non-error HTTP status as "delivered" and discarded the response body. A Graph `200` only means *accepted/queued* (true delivery is a later MEH-509 webhook) and an `error` object can ride inside a `200`. New `WhatsAppSendResult` + `_classify`/`_result_from_error`/`_safe_json` parse the body: extract the `wamid` on success, the `error.code`/`error.message` on failure, classify outcomes `accepted`/`failed`/`window_expired` (24h-window codes `{470, 131047, 131051}`), and log per outcome. `send_text`/`send_template` keep the **bool** façade (`result.ok`) so every call site (watchdog `auto_reply_watchdog.py:174`, `rating_dispatcher`, `auth_notifications`, admin/alerts/OTP routers) is byte-compatible. New `tests/test_whatsapp_delivery_parsing.py` (pure unit, no DB). **Schema-free slice** — outbound delivery-status persistence column is a Sapir-terminal Alembic step in the PR body. Phase 0: `docs/discovery/2026-06-whatsapp-delivery-phase0.md`.
+
 ### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
 
 - **`fix(MEH-731)`**: `FooterSlot.jsx` + `app/[locale]/admin/layout.js` imported `usePathname` from `next/navigation`, which keeps the `/he` / `/en` prefix under next-intl `[locale]` routing — so `FooterSlot`'s `pathname === "/map"` check failed (footer wrongly rendered on `/map`) and the admin sidebar's `isActive()` (compares against non-prefixed `NAV_HREFS`) never highlighted a tab. Swapped both to the locale-stripping `usePathname` from `@/i18n/navigation` (same fix as Header/BottomNav in PR #894). Phase 0 grep confirmed these were the **only 2** remaining `next/navigation` usePathname sites. `admin/layout.js` `useRouter` left on `next/navigation` (only the path-comparison was buggy; the `/login` redirect is out of scope). `npm run build` green (both locales).
