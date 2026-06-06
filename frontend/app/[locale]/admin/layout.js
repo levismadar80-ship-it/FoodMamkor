@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+// MEH-731: locale-stripping usePathname so isActive() matches the
+// non-prefixed NAV_HREFS ("/admin", …) under next-intl [locale] routing.
+// next/navigation's usePathname keeps the "/he" / "/en" prefix, so no
+// sidebar tab ever highlighted. useRouter stays on next/navigation —
+// only the path-comparison was buggy (router.push redirect unchanged).
+import { usePathname } from "@/i18n/navigation";
 import Link from "next/link";
 import {
   Gauge,

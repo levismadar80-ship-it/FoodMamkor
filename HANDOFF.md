@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
+
+Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
+
+- **MEH-753** — event dates respect locale: shared `frontend/lib/format-date.js` replaces 4 hardcoded `he-IL` formatDate helpers (EventsClient, EventDetailClient, ExperienceCard, HomeProductCard). PR **#976** ✅ merged.
+- **MEH-741** — Recipe JSON-LD: `minutesToIso8601` → `undefined` (not `null`) + filter drops null; un-skipped 2 MEH-729 tests + EN'd one BottomNav `it()`. vitest 15/15. PR **#979** ✅ merged.
+- **MEH-731** — locale-aware `usePathname`: FooterSlot + admin/layout swapped `next/navigation` → `@/i18n/navigation` (only 2 remaining sites; useRouter untouched). PR **#984** ✅ merged.
+
 ## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
 
 Autonomous 4-issue batch, one branch + draft PR each off staging. Full table +
