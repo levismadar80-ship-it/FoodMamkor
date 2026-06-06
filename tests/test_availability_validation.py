@@ -10,6 +10,7 @@ Does NOT modify the merged mutation suite (test_expansion_availability.py)
 — the read-path auto-clear boundary it pins (`< date.today()`) is left
 untouched (see docs/discovery/2026-06-availability-phase0.md).
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
@@ -30,6 +31,7 @@ ISRAEL = ZoneInfo("Asia/Jerusalem")
 
 
 # ---------- clock primitive ----------
+
 
 def test_israel_today_follows_israel_now(monkeypatch):
     frozen = datetime(2026, 6, 5, 23, 30, tzinfo=ISRAEL)  # Fri 23:30 Israel
@@ -57,6 +59,7 @@ def test_utc_friday_can_be_israel_saturday():
 
 # ---------- transition matrix ----------
 
+
 @pytest.mark.parametrize("from_state", list(av.ALLOWED_TRANSITIONS))
 @pytest.mark.parametrize(
     "to_state",
@@ -83,6 +86,7 @@ def test_transition_from_legacy_unknown_state_not_locked_out():
 
 
 # ---------- vacation return-date guard ----------
+
 
 def test_non_vacation_state_clears_vacation_until():
     assert resolve_vacation_until("accepting_orders", date(2099, 1, 1)) is None
@@ -113,6 +117,7 @@ def test_on_vacation_accepts_future_return_date(monkeypatch):
 
 
 # ---------- API write paths (Postgres / CI) ----------
+
 
 def _producer_user(db):
     from tests.conftest import make_producer, make_user
