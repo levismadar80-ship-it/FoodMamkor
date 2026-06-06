@@ -14,6 +14,7 @@ import {
   resetFavoritesCache,
   setFavoritedLocal,
 } from "./favorites-cache";
+import { useLaunchCohortTag } from "./launch-cohort";
 
 const AuthContext = createContext(null);
 
@@ -46,6 +47,10 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const t = useTranslations("auth.toasts");
+
+  // MEH-434 — keep the Sentry launch_cohort tag in sync with the signed-in
+  // user (derived client-side from user.created_at). Observability only.
+  useLaunchCohortTag(user);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
