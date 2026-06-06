@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { Star, Truck, Leaf, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
-import { getWhatsAppHref } from "@/lib/utils";
+import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -24,9 +25,15 @@ export default function MapProducerCard({ producer, active, onClick }) {
     ? p.delivery_areas.find((d) => d.city === userCity)
     : null;
 
-  const trustItems = [];
-  if (isVerified) trustItems.push(t("verified"));
-  if (rating > 0) trustItems.push(`⭐ ${rating.toFixed(1)} (${reviewsCount})`);
+  // MEH-296/MEH-17: dynamic CTA — href + icon follow the producer's chosen
+  // primary_contact_method (whatsapp/phone/website/email). Null href → hide
+  // the button (the "full profile" link below still reaches the producer).
+  const primaryHref = getPrimaryContactHref(p);
+  const primaryMethod = getPrimaryMethod(p);
+  const ctaExternal = primaryMethod === "whatsapp" || isPrimaryExternal(p);
+  const CtaIcon =
+    { whatsapp: WhatsappLogo, phone: Phone, website: Globe, email: EnvelopeSimple }[primaryMethod] ||
+    WhatsappLogo;
 
   const handleRootClick = (e) => {
     if (onClick) {
@@ -42,7 +49,6 @@ export default function MapProducerCard({ producer, active, onClick }) {
       onClick={handleRootClick}
       className={[
         "flex gap-3 bg-white border rounded-md overflow-hidden transition",
-        "hover:shadow-[0_4px_16px_rgba(46,104,83,0.08)]",
         active ? "border-primary border-2" : "border-border",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
@@ -61,7 +67,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-2xl" aria-hidden="true">🌿</div>
+          <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} weight="duotone" className="text-primary/40" /></div>
         )}
         {/* Category color dot — bottom-end corner of thumbnail */}
         <span
@@ -93,31 +99,40 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Pills row */}
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
           {deliveryMatch && (
-            <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-0.5">
-              🚚 {t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
+            <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-1">
+              <Truck size={12} className="text-current" aria-hidden="true" />{t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
             </span>
           )}
         </div>
 
-        {/* Trust strip — max 2 items */}
-        {trustItems.length > 0 && (
-          <p className="text-[12px] text-fg-muted mt-1">
-            {trustItems.slice(0, 2).join(" · ")}
+        {/* Trust strip — verified + rating (Star icon; number LTR-isolated) */}
+        {(isVerified || rating > 0) && (
+          <p className="text-[12px] text-fg-muted mt-1 inline-flex items-center gap-1 flex-wrap">
+            {isVerified && <span>{t("verified")}</span>}
+            {isVerified && rating > 0 && <span aria-hidden="true">·</span>}
+            {rating > 0 && (
+              <span className="inline-flex items-center gap-0.5">
+                <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
+                <span dir="ltr">{rating.toFixed(1)} ({reviewsCount})</span>
+              </span>
+            )}
           </p>
         )}
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-1.5">
-          <a
-            href={waPhone ? getWhatsAppHref(waPhone, t("wa_message", { name: p.name || "" })) : baseHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => { e.stopPropagation(); if (waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
-            className="bg-whatsapp w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-            aria-label="WhatsApp"
-          >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
-          </a>
+          {primaryHref && (
+            <a
+              href={primaryHref}
+              target={ctaExternal ? "_blank" : undefined}
+              rel={ctaExternal ? "noopener noreferrer" : undefined}
+              onClick={(e) => { e.stopPropagation(); if (primaryMethod === "whatsapp" && waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
+              className={`${primaryMethod === "whatsapp" ? "bg-whatsapp" : "bg-primary"} text-white w-7 h-7 rounded-full flex items-center justify-center shrink-0`}
+              aria-label={getPrimaryContactLabel(p)}
+            >
+              <CtaIcon size={14} weight="fill" aria-hidden="true" />
+            </a>
+          )}
           <Link
             href={baseHref}
             className="text-primary text-[13px] font-medium hover:underline"

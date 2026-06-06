@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { X } from "@phosphor-icons/react";
+import { Leaf, X } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -42,13 +42,13 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
   const spPhone = normalizePhone(sp.phone);
   return (
-    <div className="mb-3 bg-white rounded-md border border-primary overflow-hidden shadow-sm">
+    <div className="mb-3 bg-surface-floating rounded-md border border-primary overflow-hidden">
       <div className="relative w-full h-[140px]">
         {spImg ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl bg-green-50" aria-hidden="true">🌿</div>
+          <div className="w-full h-full flex items-center justify-center bg-green-50" aria-hidden="true"><Leaf size={40} weight="duotone" className="text-primary/40" /></div>
         )}
         {spImg && (
           <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
