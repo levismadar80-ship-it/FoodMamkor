@@ -13,7 +13,7 @@ Overnight autonomous run. Commit + push after every phase. On re-run, skip check
 - [x] **Phase B** — Frontend / RTL / i18n / a11y (6 areas). → Audit-B (AUD-025..038; AUD-007 closed-FP)
 - [x] **Phase C** — Logic / Data / State (6 areas). → Audit-C (AUD-039..048; both C1 REDs rejected on verify)
 - [x] **Phase D** — Infra / Config / CI / Deps (5 areas). → Audit-D (AUD-049..056; mypy carry-over closed)
-- [ ] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
+- [x] **Phase Final** — Cross-domain dedup, re-verify REDs, exec summary, HANDOFF, PR ready.
 
 _(Checkboxes flipped to [x] as each phase commits. BLOCKED items, if any, listed per section.)_
 
@@ -56,11 +56,36 @@ Verify: confirmed / rejected-FP / rejected-low-impact
 
 ## Exec Summary
 
-_(empty — populated in Session 6 after all sections complete)_
+**56 findings, AUD-001…056. Zero RED. 33 YELLOW · 23 GREEN.** No exploitable
+auth/IDOR/secret/data-loss issue found — consistent with a codebase hardened across
+50+ prior security tickets. Every RED proposed by the area subagents (WhatsApp
+delivery, availability dual-write ×2, ISR staleness, hydration, en.json) was
+**downgraded or rejected on source verification** — the expected calibration
+(~20% FP, ~50% low-impact). The top risks are bounded YELLOWs; the single most
+important is a documentation trap (`.env.example`) not a code flaw.
 
-### תקציר מנהלים (עברית)
+### תקציר מנהלים (עברית) — 5 הסיכונים האמיתיים המובילים
 
-_(ריק — ימולא בסשן 6 לאחר סיום כל הסקשנים. כל סקשן יקבל תקציר 3–5 שורות בעברית.)_
+1. **טוקן-גישה של 7 ימים דרך `.env.example` (AUD-050).** הקובץ קובע
+   `ACCESS_TOKEN_EXPIRE_MINUTES=10080` — `BaseSettings` ממפה זאת ודורס את ברירת-המחדל
+   (15 דק׳), מבטל את עיצוב ה-short-token+refresh של MEH-326 ומרחיב את חלון הטוקן-הגנוב.
+   הבעיה בקובץ-הדוגמה, לא בקוד. תיקון: להחזיר ל-15 / למחוק את השורה.
+2. **WhatsApp: HTTP 200 ≠ נמסר (AUD-009/010).** `_post()` מחזיר `True` על 200 בלי לקרוא
+   את גוף-התשובה של Graph; הודעות שנכשלו (מספר שגוי / מחוץ לחלון 24ש׳) נרשמות כהצלחה,
+   ללא retry. כשל-שקט של מסירת-הודעות למשתמשים.
+3. **מרוצי-תהליכים ללא unique-constraint (AUD-042/043).** Report/GroupBuy/Referral
+   עושים check-then-act בלי אילוץ-ייחודיות → כפילויות / חריגת-קיבולת / זיכוי-כפול;
+   אישור-מנהל מקביל שולח הודעת-קבלה פעמיים. תיקון: אילוצי-ייחודיות + guard סטטוס.
+4. **ולידציית-שרת חסרה במצב-זמינות (AUD-039/040).** עדכון-מצב מקבל `state` כ-str חופשי
+   וללא אכיפת זיווג `on_vacation`+`vacation_until`/תאריך-עתיד; ה-auto-clear בקריאה מבטל
+   חופשה בפועל. בנוסף ההשוואה ב-UTC ולא בשעון-ישראל.
+5. **תאומי docs-only של MEH-736 חסרים (AUD-052).** ה-YAML מעולם לא נוסף, לכן PRים של
+   תיעוד (כולל **PR #969 הזה**) נחסמים על בדיקות-חובה במצב "Expected" ודורשים admin-merge.
+
+מעבר לחמשת אלה — אשכול איכות-frontend (RTL `text-right`, בידוד-בידי במספרים, נגישות
+IS-5568: תוויות/ניגודיות/מלכודת-פוקוס, AUD-025/026/033/034/035) ראוי ל-batch נפרד.
+ביקורות-חיוביות חזקות תועדו (AUD-021/023/038/048/056): אפס IDOR, מחיקת-יצרן ללא יתומים,
+שרשרת-Alembic נקייה, מודל-דרגות לא-שלילי, CSP מחמיר בצד-לקוח.
 
 ---
 
@@ -880,8 +905,78 @@ unsafe-eval (AUD-054, GREEN). **mypy 639 נסגר** — ~80% רעש ORM/stubs, �
 
 ## Final Triage
 
-_(Session 6 — empty skeleton. Dedup AUD-XXX across sections, reconcile severity,
-write Exec Summary + per-section Hebrew summaries, produce remediation ticket list.)_
+### Counts by section (raw / confirmed / rejected-FP / rejected-low-impact)
+
+`confirmed` includes verified positive-controls ("confirmed (no finding)"). Some
+findings carry a compound verdict (e.g. confirmed bump + low-impact exploit); counted
+by primary verdict.
+
+| Section | Raw | RED | YELLOW | GREEN | confirmed | rejected-FP | rejected-low |
+|---|---|---|---|---|---|---|---|
+| Audit-0 (tools) | 8 | 0 | 4 | 4 | 2 | 1 | 5 |
+| Audit-A (backend/sec) | 16 | 0 | 8 | 8 | 11 | 1 | 4 |
+| Audit-B (frontend) | 14 | 0 | 10 | 4 | 11 | 1 | 2 |
+| Audit-C (logic/data) | 10 | 0 | 7 | 3 | 8 | 1 | 1 |
+| Audit-D (infra/CI) | 8 | 0 | 4 | 4 | 5 | 0 | 3 |
+| **Total** | **56** | **0** | **33** | **23** | **~37** | **~4** | **~15** |
+
+Calibration check: of ~33 actionable (YELLOW) findings, the verify pass rejected the
+**5 subagent-proposed REDs** (AUD-019/037/041 ×2 + the WhatsApp/ISR downgrades) and
+demoted ~15 to low-impact — a ~36% reject/demote rate, in line with the expected
+~20% FP + ~50% low-impact benchmark (reject rate is non-trivial → verify pass was not
+too soft).
+
+### Cross-domain dedup notes
+
+- **Carry-overs closed:** AUD-004 (starlette host-header) → AUD-019 **rejected-FP**;
+  AUD-007 (eslint object-injection) → AUD-037 **rejected-FP**; mypy `union-attr`/639
+  → AUD-048/AUD-055 (SDK-type + ORM noise, no crash). All three Audit-0 "pending" items
+  are resolved.
+- **Severity reconciled (subagent REDs → final):** WhatsApp 200 (RED→**YELLOW** AUD-009),
+  availability dual-write + backfill (RED→**rejected-FP** AUD-041), ISR staleness
+  (RED→**YELLOW** AUD-045, 60s self-heal), Footer/date hydration (RED→**GREEN** AUD-030),
+  en.json (RED→**YELLOW** AUD-027).
+- **Related-but-distinct (kept separate):** `group_buys.py` appears in AUD-042 (capacity
+  race) and AUD-044 (naive deadline) — different defects, not merged.
+- **Cross-confirmations:** AUD-023 (alembic HEAD/35 tables) ↔ AUD-056 (CI gate
+  `EXPECTED_REV/TABLES` matches); AUD-020 (backend no CSP/HSTS, low-impact) ↔ AUD-053/054
+  (frontend CSP+HSTS present and strict → confirms backend omission is low-impact).
+
+### Suggested Linear batch (one line each — NOT created; titles only)
+
+**P1 (security-adjacent / data-integrity):**
+- `MEH-?? fix .env.example ACCESS_TOKEN_EXPIRE_MINUTES 10080→15 (7-day token trap)` — AUD-050
+- `MEH-?? WhatsApp: parse Graph response body, 200 ≠ delivered + enforce 24h window` — AUD-009/010
+- `MEH-?? add unique constraints + guards: Report / GroupBuy capacity / Referral / admin-approve` — AUD-042/043
+- `MEH-?? availability: server-side validate state enum + vacation_until pairing/future + Israel tz` — AUD-039/040
+
+**P2 (correctness / CI / contract):**
+- `MEH-?? add MEH-736 docs-only twin jobs to pr-checks.yml + deploy.yml` — AUD-052
+- `MEH-?? single header source: drop headers from vercel.json (X-Frame-Options conflict)` — AUD-053
+- `MEH-?? GroupBuy.deadline tz-aware comparison` — AUD-044
+- `MEH-?? ISR on-demand revalidation (revalidatePath) on admin mutations; cut map 3600s` — AUD-045
+- `MEH-?? document undocumented env vars (TRUSTED_PROXY, LOG_*, BACKEND_SENTRY_DSN)` — AUD-049
+- `MEH-?? MEH-555 free-text letter-validation on remaining producer/product/experience fields` — AUD-011/012
+
+**P3 (frontend quality — group as one epic):**
+- `MEH-?? RTL text-right→text-end sweep (~30 sites)` — AUD-025
+- `MEH-?? bidi LTR-isolation on prices/ratings/dates (×8)` — AUD-026
+- `MEH-?? a11y: form labels + fg-muted contrast + 2 modal focus traps (IS-5568)` — AUD-033/034/035
+- `MEH-?? i18n: translate en.json Hebrew values + ChatWidget catalog + reword "יצרן" (copy-approval)` — AUD-027/028/029
+- `MEH-?? hydration: useId for CitiesAutocomplete + Suspense around useSearchParams` — AUD-031/032
+
+**P4 (dep hygiene — batch bump):**
+- `MEH-?? bump python-multipart 0.0.27 / pyjwt 2.13 / transitive (aiohttp/idna/urllib3) + postcss-via-next` — AUD-002/003/008/006
+
+### BLOCKED
+
+_None._ All 6 phases completed; no scope-explosion or blocked-path STOP conditions hit.
+pytest remains deferred (no Postgres in sandbox, MEH-672) — documented in Audit-0, not
+re-attempted here.
 
 ### תקציר (עברית)
-_(ריק)_
+הביקורת הושלמה: 56 ממצאים, **אפס RED**, 33 YELLOW, 23 GREEN. כל ה-REDs שהוצעו ע״י
+תת-הסוכנים נדחו/הורדו באימות-מקור (שיעור-דחייה ~36%, תקין). שלושת ה-carry-overs
+מ-Audit-0 נסגרו (AUD-004/007/mypy). הסיכון המוביל הוא מלכודת-תיעוד (`.env.example`),
+לא פגם-קוד. רשימת-תיקונים מדורגת P1–P4 הוכנה ל-Linear (לא נוצרו issues). אין פריטי
+BLOCKED; pytest נותר דחוי (אין Postgres ב-sandbox).

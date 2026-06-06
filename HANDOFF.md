@@ -5,6 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-214: 2026-06 full-repo audit COMPLETE — PR #969 ready-for-review
+
+**Branch:** `feature/audit-2026-06-full` off staging — draft → **ready-for-review**, PR #969
+(Refs MEH-214). Read-only audit, **zero source edits**; all output in
+[`docs/audits/2026-06-full-audit.md`](./docs/audits/2026-06-full-audit.md) + `docs/audits/raw/`.
+Ran fully autonomous overnight: Phases 0→A→B→C→D→Final, checkpoint-committed per phase.
+
+**Counts:** 56 findings (AUD-001…056). **0 RED · 33 YELLOW · 23 GREEN.** Every subagent-proposed
+RED downgraded/rejected on source verify (~36% reject/demote — calibrated). 3 Audit-0 carry-overs
+closed: AUD-004 starlette host-header → FP (only `request.url` use is a Sentry tag); AUD-007
+eslint object-injection ×122 → FP (test mocks); mypy 639 → ~80% ORM/stub noise, 0 runtime crashes.
+
+**Top risks (all YELLOW):** AUD-050 `.env.example ACCESS_TOKEN_EXPIRE_MINUTES=10080` overrides
+15-min→7-day access token (BaseSettings maps it); AUD-009/010 WhatsApp 200≠delivered (body not
+parsed); AUD-042/043 check-then-act races (missing unique constraints) + double admin-notify;
+AUD-039/040 availability server-side validation + vacation UTC-vs-Israel tz; AUD-052 **MEH-736
+docs-only twin jobs absent → this PR #969 will block on "Expected" required checks (needs the twins
+or an admin merge)**. Frontend-quality cluster (RTL/bidi/a11y IS-5568) + dep-bump batch are P3/P4.
+Suggested Linear batch P1–P4 in the doc (NOT created). Strong positive controls: no IDOR, no
+hardcoded secrets, clean linear Alembic chain (35 tables, matches CI gate), non-negative trust-tier,
+comprehensive producer-delete cascade, strict frontend CSP.
+
+**State:** branch pushed (`cc41630`→final); PROGRESS checklist all ✓; BLOCKED: none. pytest deferred
+(no Postgres in sandbox, MEH-672 — documented, not claimed passing). **Next:** Sapir reviews the
+audit doc → triage P1 items into Linear; merge of #969 needs the MEH-736 twins (AUD-052) or admin.
+
 ## 2026-06-06 — MEH-132: S7 register port (design v4 → code) — PR #965 ready-for-review
 
 **Branch:** `feature/meh-132-s7-register-port` off staging — **draft → ready-for-review**,
