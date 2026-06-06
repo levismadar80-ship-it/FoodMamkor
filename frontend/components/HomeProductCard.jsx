@@ -128,7 +128,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             {isFree
               ? "🎁 במתנה"
               : priceNum != null
-                ? `₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`
+                ? <span dir="ltr">{`₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`}</span>
                 : ""}
           </span>
         </div>
