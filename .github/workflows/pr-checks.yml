@@ -173,7 +173,7 @@ jobs:
           # PR2c webhook receiver).
           # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
-          EXPECTED_REV="a7f3e9c14d28"
+          EXPECTED_REV="f1c7b9a3e264"
           EXPECTED_TABLES=35
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \

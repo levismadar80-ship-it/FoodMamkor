@@ -55,6 +55,54 @@ comprehensive producer-delete cascade, strict frontend CSP.
 (no Postgres in sandbox, MEH-672 — documented, not claimed passing). **Next:** Sapir reviews the
 audit doc → triage P1 items into Linear; merge of #969 needs the MEH-736 twins (AUD-052) or admin.
 
+## 2026-06-06 (PM) — MEH-763: S5 /map port COMPLETE (4 chunks merged + Chunk 4 PR open)
+
+**Branch:** `feature/meh-763-s5-chunk4-states` off staging — draft PR (Refs MEH-763), the FINAL
+chunk. **Chunks 1–3 + the state-selected token are all merged to staging** (#967 `42a2056`,
+#968 `ed04af8`, #970 `125da96`, #971 `b5d5a0f`). Chunk 4 = states + `.numeric` bidi + card a11y
++ this docs commit.
+
+**Chunk 4 done:** skeleton `bg-green-50`→`bg-background` (ADR-019 cream); geo-denied already
+neutral (opens LocationModal city-picker, zero negative labeling) + disabled states already
+opacity-on-cream → no restyle needed; `.numeric { unicode-bidi: isolate }` added + applied to
+sheet count (`MapBottomSheet`), card price + rating (`MapProducerCard`); `<article>` got
+keyboard parity (role=button / tabIndex / Enter-Space, guarded against inner a/button).
+
+**Decisions / flags for Sapir at the FINAL gate (full mobile QA before merge):**
+- **`<article role="button">` contains inner `<a>`/`<Link>`** → technically nested-interactive.
+  Implemented per the ticket's explicit ask + `aria-label`; flag for your a11y call (the inner
+  profile Link is independently keyboard-reachable, so the card onClick is a select-on-map
+  convenience).
+- **`business_count`** (MapClient:250) is an ICU plural — `#` can't be span-wrapped; a standalone
+  integer is bidi-safe, so it's left intact (documented, not forced).
+- **MEH-765** (marker keyboard-a11y, Leaflet limitation) opened — NOT absorbed here.
+- **MEH-764** — global chip convergence (remove the temporary `ChipScrollRow` opt-in props).
+
+**⚠️ Process this session (route to rules if recurring):** four orchestrator claims were
+contradicted by file:line evidence and STOP-surfaced — two RTL Phase-0 flags (#967), the
+`state-selected` token ("merged" but absent → built #970), and **"#971 merged"** (it was
+`open`/`draft`; CC verified, then merged on the explicit MERGE instruction before basing Chunk 4).
+Lesson added to `code-execution.md` §8: batch import+usage moves (MultiEdit) — the per-edit
+`lint-feedback` hook false-3-strikes a mid-refactor transient `no-undef`.
+
+**Next:** Sapir full mobile QA of the whole port (markers+honey, sheet, flat overlays, chips,
+states) on the Chunk-4 preview → merge. Then MEH-763 done; MEH-762 Chunk 4 (verified-badge
+semantics) hands off to the now-frozen map sites.
+
+## 2026-06-06 (PM) — MEH-762 chunks 1–3 + session-close digest
+
+**MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`.**
+- **Chunks 1+2 MERGED to staging** (PR #966, squash `7a52e77`). Chunk 1 = verified_at + verification_doc_type (expand-only; migration `f1c7b9a3e264` + `EXPECTED_REV` Sapir-applied `b84ceb6` — `alembic/versions/**`, `.github/workflows/**`, `.claude/settings.json` all CC-denied + self-sealing, MEH-738). Chunk 2 = admin `grant-verified`/`revoke-verified` (`require_admin`, `GrantVerifiedIn` Literal, tz-aware `now(timezone.utc)`, ISO response, re-grant overwrite, 13-case tests).
+- **Chunk 3 (new PR — public exposure + resolver):** `ProducerListOut` exposes `verification_tier` (computed, never stored), `verified_at` (**date-only**, `field_validator` truncates the TIMESTAMPTZ), `verification_doc_type`. Resolver mirrors MEH-530 `categories_require_license` name-membership (`constants.LICENSE_REQUIRED_CATEGORIES` SoT, no DB in serialization). `trust_tier` untouched. **AdminOut decision:** the 3 fields reach admin via inheritance at **date granularity** — I did NOT add a full-timestamp admin override (it would fight the inherited date-truncation `field_validator`; flag at gate if admin wants `declared_at`-style precision). 9-case test file; pytest deferred to CI.
+- **LOCKED D1–D4** in ticket top block. **Remaining:** 4 = `is_verified` badge decouple (badges.js relabel; `trust_tier.py:32` coupling → follow-up ticket); 5 = handoff to MEH-76 Chunk 4 (S12 badge consumes these fields + MEH-758 keys w/ LTR-isolation).
+
+**Session-close digest (06/06 PM):**
+- MEH-132 S7 port DONE (#965 → staging) · MEH-763 S5 chunk 1 merged (#967); F1 flat/`surface-floating` · F2 markers carry no category colors (photo/monogram, honey `#C8821E`+icon in categories lib) · F3 chips `rounded-md` — all locked evidence-based, recorded in MEH-763.
+- MEH-762 LOCKED D1-D4 (ticket top block); chunk 1 = #966 (models/docs by CC + migration Sapir-applied `b84ceb6`); chunks 2-5 per plan.
+- MEH-76 S6: Phase 0 done, chunk order 1-vacation 2-CTA 3-monogram 4-badge; Stage 2 blocked ONLY on Sapir pasting S6 FINAL + S12 spec; variant C = relabel (D4).
+- Follow-ups to open later: `verified_tooltip_registration` key (MEH-758 micro) · `trust_tier` `is_verified` decoupling · map marker keyboard a11y.
+- Process: terminal blocks for Sapir must be fully executable (heredoc/sed) — comment-line instructions get pasted verbatim and fail (proven 06/06).
+
 ## 2026-06-06 — MEH-132: S7 register port (design v4 → code) — PR #965 ready-for-review
 
 **Branch:** `feature/meh-132-s7-register-port` off staging — **draft → ready-for-review**,
