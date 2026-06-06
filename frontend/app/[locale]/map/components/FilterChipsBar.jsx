@@ -27,6 +27,8 @@ export default function FilterChipsBar({
         chips={visibleCategoryChips}
         activeKey={chipState.categoryKey}
         onChipClick={onCategoryChipClick}
+        chipShape="rounded-md"
+        selectedClassName="bg-state-selected text-white border-state-selected"
       />
       <ChipScrollRow
         variant="toggle"
@@ -34,6 +36,8 @@ export default function FilterChipsBar({
         activeKeys={chipState}
         onChipClick={onToggleChipClick}
         className="mt-2"
+        chipShape="rounded-md"
+        selectedClassName="bg-state-selected text-white border-state-selected"
       />
       {activeFilterTags.length > 0 && (
         <div
@@ -51,7 +55,7 @@ export default function FilterChipsBar({
                   : onToggleChipClick(tag.key)
               }
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
-              className="inline-flex items-center gap-1 rounded-[20px] bg-green-50 text-primary px-2 py-0.5 text-[11px] hover:bg-green-50/80 transition"
+              className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-0.5 text-[11px] hover:bg-green-50/80 transition"
             >
               <span aria-hidden="true">×</span>
               {tag.label}

@@ -91,10 +91,9 @@ function createCategoryMarker(
       ">✓</div>`
     : "";
 
-  // Border: 2px primary default; selected (active) → 3px primary-dark.
-  // NOTE: S5 FINAL calls for `--state-selected`, but that token doesn't exist
-  // (MEH-686 removed :root vars) — primary-dark 3px is the concrete stand-in,
-  // flagged at the WAIT gate pending a real token.
+  // Border: 2px primary default; selected (active) → 3px state-selected.
+  // The hex stays inline (Leaflet divIcon = raw HTML string); #2E4A2E equals
+  // the `state-selected` token (= primary-dark, MEH-763 #970) by design.
   const borderWidth = active ? 3 : 2;
   const borderColor = active ? "#2E4A2E" : "#2e6853";
 

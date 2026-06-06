@@ -31,7 +31,7 @@ export default function DesktopMiniPopup({ selectedProducer, onClose }) {
   const imageUrl = optimizeCloudinary(p.images?.[0]);
   return (
     // eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay, physically pinned to corner
-    <div className="absolute bottom-4 right-4 z-[600] bg-white rounded-lg border border-border shadow-[0_4px_24px_rgba(0,0,0,0.12)] w-[300px] overflow-hidden">
+    <div className="absolute bottom-4 right-4 z-[600] bg-surface-floating rounded-lg border border-border w-[300px] overflow-hidden">
       {imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={p.name || ""} className="w-full h-[100px] object-cover" />
