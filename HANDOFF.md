@@ -5,6 +5,26 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys
+
+**Branch:** `feature/meh-758-gate1-tier-copy` off staging — draft PR (Refs MEH-758, Part of
+MEH-742). **Key-only** i18n copy, no rendering. 4 new keys (he+en, parity): success
+`tier_trust` + `producer.badge.{verified_tooltip_license, verified_tooltip_exemption,
+declared_explainer}` (both tooltips carry `{date}`). COPY_BANK §7 + decision-log rows; en ⏳
+pending Sapir review. Zero מורשה/מורשים (grep-clean). `npm run build` green.
+
+**Phase 0 findings worth keeping:**
+- The "בודקות כל עסק" over-claim the prompt referenced **does not exist** in the codebase
+  (grep 0). Sapir decided (this session) → `tier_trust` is a **new key**, rendered later by
+  the S7 register port (06A/06B), NOT wired into the current success screen (avoids copy in a
+  surface the port rebuilds + a throwaway QA cycle).
+- Keys go under **top-level `producer.badge`** (the `producer` ns had only detail/card;
+  `badge_row` at he.json:860 is under `group_buys`, not `producer` — first edit landed there
+  by mistake and was corrected).
+
+**Pending:** S7 register port + S6/S534 badge UI wire these keys (separate tickets). Sapir
+mobile smoke of the rendered surfaces → then Closes. en strings pending Sapir review.
+
 ## 2026-06-06 — 🧾 SESSION CLOSE: OTP template + Linear sync audit
 
 **🚨 NEXT-SESSION #1 — staging→main RELEASE is the most urgent task.** Prod is still
