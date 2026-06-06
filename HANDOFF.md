@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (PM) — MEH-762 chunks 1+2 + session-close digest
+
+**MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`, PR #966.**
+- **Chunk 1** (verified_at + verification_doc_type, expand-only): models/docs by CC; migration `f1c7b9a3e264` + `EXPECTED_REV` Sapir-applied (`b84ceb6`) — `alembic/versions/**`, `.github/workflows/**`, and `.claude/settings.json` are all CC-denied (self-sealing; a conversational lift can't override — MEH-738).
+- **Chunk 2** (admin stamping): `grant-verified` / `revoke-verified` in `admin.py` (`require_admin`); `GrantVerifiedIn` Literal; tz-aware `now(timezone.utc)` (D1); ISO in response; re-grant overwrites; `is_verified` untouched (Chunk 4); 13-case test file. pytest deferred to CI (no sandbox Postgres); ruff clean.
+- **LOCKED D1–D4** in ticket top block. **Chunks 3-5 per plan:** 3 = `verification_tier` resolver + public exposure (verified_at **date-only**, doc_type) + **fold `ProducerAdminOut.verified_at/verification_doc_type` admin visibility here** + contract pytest; 4 = `is_verified` badge decouple (badges.js relabel; `trust_tier.py:32` coupling → follow-up ticket); 5 = handoff to MEH-76.
+
+**Session-close digest (06/06 PM):**
+- MEH-132 S7 port DONE (#965 → staging) · MEH-763 S5 chunk 1 merged (#967); F1 flat/`surface-floating` · F2 markers carry no category colors (photo/monogram, honey `#C8821E`+icon in categories lib) · F3 chips `rounded-md` — all locked evidence-based, recorded in MEH-763.
+- MEH-762 LOCKED D1-D4 (ticket top block); chunk 1 = #966 (models/docs by CC + migration Sapir-applied `b84ceb6`); chunks 2-5 per plan.
+- MEH-76 S6: Phase 0 done, chunk order 1-vacation 2-CTA 3-monogram 4-badge; Stage 2 blocked ONLY on Sapir pasting S6 FINAL + S12 spec; variant C = relabel (D4).
+- Follow-ups to open later: `verified_tooltip_registration` key (MEH-758 micro) · `trust_tier` `is_verified` decoupling · map marker keyboard a11y.
+- Process: terminal blocks for Sapir must be fully executable (heredoc/sed) — comment-line instructions get pasted verbatim and fail (proven 06/06).
+
 ## 2026-06-06 — MEH-132: S7 register port (design v4 → code) — PR #965 ready-for-review
 
 **Branch:** `feature/meh-132-s7-register-port` off staging — **draft → ready-for-review**,
