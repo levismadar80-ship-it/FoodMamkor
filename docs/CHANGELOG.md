@@ -4,11 +4,12 @@
 
 ## Unreleased
 
-### 2026-06-06 — MEH-762: ADR-022 public tier contract — chunks 1+2 (verification trail + admin stamping)
+### 2026-06-06 — MEH-762: ADR-022 public tier contract — chunks 1–3 (verification trail + admin stamping + public exposure)
 
 - **Chunk 1 (schema):** `producers.verified_at` (TIMESTAMPTZ nullable) + `verification_doc_type` (VARCHAR(20) nullable) via Alembic `f1c7b9a3e264` (expand-only, ADR-007; `down_revision a7f3e9c14d28`). ORM mirror in `models.py`; `verification_tier` stays computed in schemas (Chunk 3), never stored. No `verified_by` column (V1, single admin — D1). `EXPECTED_REV` bumped (`EXPECTED_TABLES` stays 35). db-schema diagram + `VERIFICATION.md` §3 updated (D1: result columns move to DB; issuer/name_match/channel/notes/reviewer stay manual). Migration + workflow line Sapir-applied (`b84ceb6`) — CC-denied paths.
 - **Chunk 2 (admin stamping):** `POST /admin/producers/{id}/grant-verified` (`{doc_type: license|exemption|cosmetics}` → `verified_at = now(timezone.utc)` + doc_type; ISO in response) + `/revoke-verified` (clears both, idempotent). Mirrors `admin_kashrut` approve; `require_admin`. Re-grant overwrites (correction path). Legacy `is_verified` untouched (decoupling = Chunk 4); no auto-stamp on admin-create/import. `GrantVerifiedIn` Literal schema (invalid → 422). New `tests/test_meh_762_verification_stamping.py` (13 cases; pytest deferred to CI — no sandbox Postgres).
-- ADR-022 D1–D4 locked in MEH-762. Blocks MEH-76 S6 badge (Chunk 4 handoff). Chunks 3–5 per plan.
+- **Chunk 3 (public exposure + resolver):** `ProducerListOut` (inherited by `ProducerDetailOut`/`ProducerAdminOut`) now exposes `verification_tier` (`"verified"`|`"declared"`|`null`, computed in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — `field_validator` truncates the TIMESTAMPTZ, no time leak), `verification_doc_type`. Resolver (D2/D3): verified_at set → verified; elif no category in `LICENSE_REQUIRED_CATEGORIES` → declared; else None (no badge, no negative label); one license-required category excludes "declared". Mirrors MEH-530 `categories_require_license` name-membership (same SoT, no DB round-trip in serialization). `trust_tier` untouched (Chunk 4). Admin sees the 3 fields via inheritance (date granularity). New `tests/test_meh_762_public_tier_contract.py` (9 cases incl. date-only + privacy regression; pytest deferred to CI).
+- ADR-022 D1–D4 locked in MEH-762. Blocks MEH-76 S6 badge (Chunk 4 handoff). Chunks 4–5 per plan.
 
 ### 2026-06-06 — MEH-132: S7 port — /register + /register/producer (design v4 → code)
 
