@@ -5,6 +5,24 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 draft PRs)
+
+Autonomous batch, branches off staging. Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+
+- **MEH-692** → PR **#989** (`Closes`, draft): auto-close forensics. Root cause = the
+  literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
+  #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
+  trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
+- **MEH-688** → PR **#990** (`Refs`, draft): he.json emoji LOCK v2. **Sweep BLOCKED** —
+  parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining emoji are deferred
+  (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability dots, kosher).
+  Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
+  (this PR). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (this PR).
+  **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
+- ⚠️ **Deviation:** MEH-688 brief asked to strip+close; delivered Discovery+`Refs` (rationale in ledger). Sapir review needed.
+
 ## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
 
 Autonomous 4-issue batch, one branch + draft PR each off staging. Full table +
