@@ -141,7 +141,7 @@ export default function MapPane({
         }
       </button>
 
-      {/* Collapsible category legend — desktop only; mobile sees emoji on markers */}
+      {/* Collapsible category legend — desktop only (mobile reads identity off the photo markers). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
       <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[800]">
         {legendOpen && (
@@ -157,10 +157,14 @@ export default function MapPane({
                 const opacity = catActive
                   ? (isEmpty ? "opacity-60" : "opacity-100")
                   : (isEmpty ? "opacity-30" : "opacity-40");
+                // F2 (MEH-763): pins no longer carry a category colour, so the
+                // legend leads with the category Phosphor icon (identity); the
+                // colour stays only as the icon's tint (secondary channel).
+                const Icon = cat.icon;
                 return (
                   <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ background: cat.color }} aria-hidden="true" />
-                    <span className="text-xs text-text">{cat.emoji} {cat.name.split(",")[0]}</span>
+                    <Icon size={14} weight="fill" className="shrink-0" style={{ color: cat.color }} aria-hidden="true" />
+                    <span className="text-xs text-text">{cat.name.split(",")[0]}</span>
                   </button>
                 );
               })}
