@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
@@ -187,7 +188,7 @@ export default function NewExperienceClient() {
     setSubmitting(true);
     try {
       const r = await api.post("/experiences", payload);
-      showToast(t("toast_submitted"));
+      showToast.success(t("toast_submitted"), { icon: <Leaf size={18} /> });
       router.push(`/experiences/${r.data.id}?pending=1`);
     } catch (err) {
       const detail = err.response?.data?.detail;

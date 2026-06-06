@@ -221,7 +221,7 @@ export default function MapComponent({
           (pos) => {
             const { latitude, longitude } = pos.coords;
             if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-              showToast(t("geo_invalid"), "error");
+              showToast.error(t("geo_invalid"));
               return;
             }
             const latlng = [latitude, longitude];
@@ -248,7 +248,7 @@ export default function MapComponent({
               onPermissionDenied?.();
               return;
             }
-            showToast(t("geo_failure"), "error");
+            showToast.error(t("geo_failure"));
           },
         );
       },

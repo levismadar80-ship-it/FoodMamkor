@@ -45,7 +45,7 @@ export default function AdminKashrutPage() {
     api
       .get("/admin/kashrut", { params: { status: statusFilter } })
       .then((r) => setRows(r.data))
-      .catch(() => showToast(t("kashrut.load_error"), "error"))
+      .catch(() => showToast.error(t("kashrut.load_error")))
       .finally(() => setLoading(false));
   }, [statusFilter, t]);
 
@@ -55,10 +55,10 @@ export default function AdminKashrutPage() {
     setBusy(true);
     try {
       await api.post(`/admin/kashrut/${id}/approve`);
-      showToast(t("kashrut.approved_toast"), "success");
+      showToast.success(t("kashrut.approved_toast"));
       load();
     } catch (e) {
-      showToast(e.response?.data?.detail || t("common.error_generic"), "error");
+      showToast.error(e.response?.data?.detail || t("common.error_generic"));
     }
     setBusy(false);
   }
@@ -67,12 +67,12 @@ export default function AdminKashrutPage() {
     setBusy(true);
     try {
       await api.post(`/admin/kashrut/${id}/reject`, { notes: rejectNotes });
-      showToast(t("kashrut.rejected_toast"), "success");
+      showToast.success(t("kashrut.rejected_toast"));
       setRejectModal(null);
       setRejectNotes("");
       load();
     } catch (e) {
-      showToast(e.response?.data?.detail || t("common.error_generic"), "error");
+      showToast.error(e.response?.data?.detail || t("common.error_generic"));
     }
     setBusy(false);
   }

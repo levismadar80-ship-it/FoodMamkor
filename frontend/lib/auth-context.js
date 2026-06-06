@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "./api";
 import {
@@ -30,7 +31,9 @@ async function replayPostLoginAction(t) {
     try {
       await api.post(`/users/me/favorites/${pending.payload}`);
       setFavoritedLocal(pending.payload, true);
-      showToast(t("favoriteSaved"));
+      showToast.success(t("favoriteSaved"), {
+        icon: <HeartStraight size={18} weight="fill" />,
+      });
     } catch {
       // Best-effort — if the API rejects we don't re-show the heart;
       // the next mount will read the real favorite state from the
@@ -70,12 +73,10 @@ export function AuthProvider({ children }) {
       resetFavoritesCache();
       setUser(null);
       const redirect = encodeURIComponent(window.location.pathname);
-      showToast(
-        t("sessionExpired"),
-        "info",
-        5000,
-        { action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` } },
-      );
+      showToast.info(t("sessionExpired"), {
+        duration: 5000,
+        action: { label: t("loginAgainCta"), href: `/login?redirect=${redirect}` },
+      });
     };
     window.addEventListener("auth:expired", handle);
     return () => window.removeEventListener("auth:expired", handle);

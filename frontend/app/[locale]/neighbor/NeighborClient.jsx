@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, X, House } from "@phosphor-icons/react";
+import { Plus, X, House, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import HomeProductCard from "@/components/HomeProductCard";
 import HomeProductForm from "@/components/HomeProductForm";
@@ -70,9 +70,11 @@ export default function NeighborClient() {
   const handleCreated = (created) => {
     setShowForm(false);
     if (created?.moderation_status === "FLAGGED") {
-      showToast("המוצר פורסם עם תגית 'בבדיקה' 🔍");
+      showToast.success("המוצר פורסם עם תגית 'בבדיקה'", {
+        icon: <MagnifyingGlass size={18} />,
+      });
     } else {
-      showToast("המוצר פורסם! 🌿");
+      showToast.success("המוצר פורסם!", { icon: <Leaf size={18} /> });
     }
     loadListings();
   };

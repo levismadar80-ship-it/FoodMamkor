@@ -56,20 +56,25 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         await api.delete(`/users/me/favorites/${producerId}`);
         setFavorited(false);
         setShowAlertPanel(false);
-        showToast(t("removed_toast"));
+        showToast.success(t("removed_toast"));
       } else {
         await api.post(`/users/me/favorites/${producerId}`);
         setFavorited(true);
         if (variant !== "gallery") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
-          showToast(t("saved_toast_first_time"), "success", 4000);
+          showToast.success(t("saved_toast_first_time"), {
+            icon: <HeartStraight size={18} weight="fill" />,
+            duration: 4000,
+          });
         } else {
-          showToast(t("saved_toast"));
+          showToast.success(t("saved_toast"), {
+            icon: <HeartStraight size={18} weight="fill" />,
+          });
         }
       }
     } catch {
-      showToast(t("error_generic"), "error");
+      showToast.error(t("error_generic"));
     }
     setLoading(false);
   };

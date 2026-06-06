@@ -55,9 +55,9 @@ export default function AdminReviewsPage() {
     try {
       await api.delete(`/reviews/${review.id}`);
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
-      showToast(t("reviews.deleted_toast"));
+      showToast.success(t("reviews.deleted_toast"));
     } catch {
-      showToast(t("reviews.delete_error"), "error");
+      showToast.error(t("reviews.delete_error"));
     } finally {
       setDeletingId(null);
     }

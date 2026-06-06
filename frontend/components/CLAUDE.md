@@ -26,8 +26,10 @@ behavior see `frontend/components/Header.jsx`.
   center idiom, map controls).
 - **Cloudinary**: image URLs flow through `lib/cloudinary.js` —
   `f_auto,q_auto` injected centrally (`.claude/rules/frontend.md`).
-- **Toasts**: `showToast(message, "info" | "error" | "success", ms?)`
-  from `@/lib/toast`.
+- **Toasts** (MEH-685): `showToast.success | error | info(message, { icon?,
+  duration?, action? })` from `@/lib/toast`. Default icon per type is rendered
+  by `Toaster.jsx`; pass `icon` to override (bespoke surfaces). There is no
+  bare `showToast(message, type)` — the positional form was removed.
 
 ## Gotchas
 - **Central components require `/adversarial-review`** even on a green
@@ -39,7 +41,7 @@ behavior see `frontend/components/Header.jsx`.
   `useLanguage().t(...)`. Match the pattern of the file you're editing
   — do not bulk-rewrite.
 - **Zod before every map API call** (workflow rule 19) — `lib/schemas.js`
-  `safeParse()`, then `showToast(error.issues[0].message, "info")`.
+  `safeParse()`, then `showToast.info(error.issues[0].message)`.
 - **RTL hook + allowlist** (`.claude/hooks/check-rtl.sh`): physical
   classes are blocked unless within ±1 line of an `rtl-ok` marker, or
   the file is path-exempted in `.claude/hooks/rtl-allowlist.txt`.

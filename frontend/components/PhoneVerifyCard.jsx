@@ -47,7 +47,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
-      else if (sc === 429) showToast(err.response?.data?.detail || t("error_rate_limited"), "error");
+      else if (sc === 429) showToast.error(err.response?.data?.detail || t("error_rate_limited"));
       else setError(t("error_generic"));
     } finally {
       setSending(false);
@@ -60,12 +60,12 @@ export default function PhoneVerifyCard({ onVerified }) {
     setError("");
     try {
       await api.post("/producers/me/verify-phone/confirm", { code });
-      showToast(t("success"), "success");
+      showToast.success(t("success"));
       onVerified?.();
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_invalid"));
-      else if (sc === 429) showToast(err.response?.data?.detail || t("error_rate_limited"), "error");
+      else if (sc === 429) showToast.error(err.response?.data?.detail || t("error_rate_limited"));
       else setError(t("error_generic"));
     } finally {
       setConfirming(false);

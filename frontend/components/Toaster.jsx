@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle, Info, WarningCircle } from "@phosphor-icons/react";
 import { getToasts, subscribe } from "@/lib/toast";
+
+const ICON_SIZE = 18;
+
+// MEH-685: default icon per semantic type. A toast's own `icon` (passed via
+// showToast.success(msg, { icon })) overrides this. Icons inherit the toast's
+// white text via currentColor — no explicit color needed.
+const DEFAULT_ICONS = {
+  success: <CheckCircle size={ICON_SIZE} weight="fill" />,
+  error: <WarningCircle size={ICON_SIZE} weight="fill" />,
+  info: <Info size={ICON_SIZE} weight="fill" />,
+};
 
 /**
  * Renders the toast queue fixed to the bottom-center of the viewport.
@@ -26,7 +38,12 @@ export default function Toaster() {
       aria-live="polite"
       aria-atomic="true"
     >
-      {toasts.map((t) => (
+      {toasts.map((t) => {
+        // MEH-685: bespoke icon wins; otherwise default for the type.
+        // start-of-row position is handled by the flex `gap-3` (RTL-safe — no
+        // physical margin). aria-hidden: the message text carries meaning.
+        const icon = t.icon ?? DEFAULT_ICONS[t.type] ?? null;
+        return (
         <div
           key={t.id}
           className={[
@@ -39,6 +56,11 @@ export default function Toaster() {
                 : "bg-primary text-white",
           ].join(" ")}
         >
+          {icon && (
+            <span className="shrink-0 flex items-center" aria-hidden="true">
+              {icon}
+            </span>
+          )}
           <span>{t.message}</span>
           {t.action && (
             <a
@@ -50,7 +72,8 @@ export default function Toaster() {
             </a>
           )}
         </div>
-      ))}
+        );
+      })}
       <style jsx>{`
         @keyframes toast-in {
           from {

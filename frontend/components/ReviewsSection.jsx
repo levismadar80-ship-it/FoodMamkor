@@ -156,7 +156,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
       setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
       setShowForm(false);
-      showToast(t("saved_toast"));
+      showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
       setError(err.response?.data?.detail || t("error_generic"));
     } finally {

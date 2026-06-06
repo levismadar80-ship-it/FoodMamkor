@@ -5,6 +5,38 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-685: Toast API refactor → semantic icon API (Category D2)
+
+**Branch:** `levismadar80/meh-685-toast-api-refactor-showtoast-icon-prop-category-d2-post-meh`
+off staging — **draft PR (Chunk 4), awaiting Sapir device QA before merge.** MEDIUM-risk,
+ran chunk-by-chunk with WAIT gates.
+
+**Done:** `showToast()` plain-string API → semantic methods-only object
+`showToast.success/error/info(message, { icon?, duration?, action? })`. `Toaster.jsx`
+renders a default icon per type (success→CheckCircle, error→WarningCircle, info→Info),
+bespoke `icon` overrides. Migrated **all ~40 call sites** across ~28 files (Chunks 2+3),
+stripped emoji from **12 toast i18n keys × he/en**, removed the backward-compat shim.
+Bespoke: HeartStraight (favorites, echoes the tapped control) · Bell (follow) · Leaf
+(published) · MagnifyingGlass (under-review) · Star (review saved) · Check (copied/settings)
+· LinkSimple (share). errors.js `showErrorToast` guarded: `(showToast[type] ?? showToast.info)`.
+
+**⭐ Phase 0 LESSON (route to a rule if recurring):** `reviews.saved_toast` carried a
+**⭐ (U+2B50)** that a hand-rolled emoji regex range missed entirely — it sits in the
+`\x{2700}–\x{1F000}` gap. **Emoji scans must use `\p{Extended_Pictographic}` (rg/Rust
+regex), never a hand-assembled codepoint range.** Same family as the MEH-733 "decode JSON
+before grep" miss. The no-regression count used Unicode `So`-category (caught the 12-per-locale
+delta exactly).
+
+**Flags (Sapir-confirmed, left untouched — possible MEH-657 misses):** `copied` (he/en 2564
++ 3170) → inline labels via `StoryCardCanvas.jsx:263` + share-card, NOT toasts.
+`contact.success_toast` (2096) → `AboutClient.jsx:31` `setContactMsg`, inline, NOT a toast.
+**`saved_toast_first_time` reworded** (Sapir-approved): the bottom favorites tab it pointed to
+was removed (MEH-643 BottomNav) → now "…בעמוד המועדפים שבתפריט" / "…on the Favorites page in
+the menu". Declarative (gender-neutral) — neighbors keep feminine נסי (out of scope).
+
+**State:** vitest green, `npm run build` green, `/adversarial-review` on central
+components (ProducerCard/MapClient/HomeProductForm). **Next:** Sapir device QA on the preview
+(toast icon + RTL position) → mark ready → merge (`Closes MEH-685`).
 ## 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5)
 
 **Branch:** `feature/meh-760-gate3-terms-tiers` off staging — draft PR (Refs MEH-760, Part of

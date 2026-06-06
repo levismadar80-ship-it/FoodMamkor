@@ -77,10 +77,10 @@ export default function AdminOutreachPage() {
     await api
       .patch(`/admin/outreach/${id}`, { status })
       .then(() => {
-        showToast(t("outreach.toasts.status_updated"));
+        showToast.success(t("outreach.toasts.status_updated"));
         load();
       })
-      .catch(() => showToast(t("outreach.toasts.status_failed"), "error"));
+      .catch(() => showToast.error(t("outreach.toasts.status_failed")));
   };
 
   const handleMintToken = async (id) => {
@@ -91,9 +91,9 @@ export default function AdminOutreachPage() {
       // it into WhatsApp / the phone call.
       const url = `${window.location.origin}/register/producer?prefill=${r.data.prefill_token}`;
       await navigator.clipboard?.writeText?.(url).catch(() => {});
-      showToast(t("outreach.toasts.link_copied"));
+      showToast.success(t("outreach.toasts.link_copied"));
     } catch {
-      showToast(t("outreach.toasts.prefill_failed"), "error");
+      showToast.error(t("outreach.toasts.prefill_failed"));
     }
   };
 
@@ -101,10 +101,10 @@ export default function AdminOutreachPage() {
     if (!window.confirm(t("outreach.confirm_delete"))) return;
     try {
       await api.delete(`/admin/outreach/${id}`);
-      showToast(t("outreach.toasts.lead_deleted"));
+      showToast.success(t("outreach.toasts.lead_deleted"));
       load();
     } catch {
-      showToast(t("outreach.toasts.delete_failed"), "error");
+      showToast.error(t("outreach.toasts.delete_failed"));
     }
   };
 
@@ -336,7 +336,7 @@ function AddLeadModal({ onClose, onCreated }) {
     setSaving(true);
     try {
       await api.post("/admin/outreach", form);
-      showToast(t("outreach.toasts.lead_added"));
+      showToast.success(t("outreach.toasts.lead_added"));
       onCreated();
     } catch (err) {
       const detail = err?.response?.data?.detail;
@@ -503,9 +503,9 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
       .replaceAll("{prefillUrl}", url);
     try {
       await navigator.clipboard.writeText(body);
-      showToast(t("outreach.toasts.copied"));
+      showToast.success(t("outreach.toasts.copied"));
     } catch {
-      showToast(t("outreach.toasts.copy_failed"), "error");
+      showToast.error(t("outreach.toasts.copy_failed"));
     }
   };
 

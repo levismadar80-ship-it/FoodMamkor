@@ -70,7 +70,7 @@ function useProducerActions(loadAllProducers) {
       await api.delete(`/admin/producers/${id}`);
       loadAllProducers();
     } catch {
-      showToast(t("producers.table.delete_error"), "error");
+      showToast.error(t("producers.table.delete_error"));
     }
   };
   const toggleAmbassador = async (id, current) => {

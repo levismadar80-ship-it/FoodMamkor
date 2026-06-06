@@ -38,14 +38,14 @@ export default function FollowButton({ producerId }) {
       if (following) {
         await api.delete(`/producers/${producerId}/follow`);
         setFollowing(false);
-        showToast(t("unfollowed_toast"));
+        showToast.success(t("unfollowed_toast"));
       } else {
         await api.post(`/producers/${producerId}/follow`);
         setFollowing(true);
-        showToast(t("followed_toast"));
+        showToast.success(t("followed_toast"), { icon: <Bell size={18} weight="fill" /> });
       }
     } catch {
-      showToast(t("error_generic"), "error");
+      showToast.error(t("error_generic"));
     }
     setLoading(false);
   };
