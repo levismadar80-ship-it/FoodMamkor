@@ -5,23 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 draft PRs)
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
 
-Autonomous batch, branches off staging. Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
 
-- **MEH-692** → PR **#989** (`Closes`, draft): auto-close forensics. Root cause = the
+- **MEH-692** → PR **#989** ✅ merged (`Closes`): auto-close forensics. Root cause = the
   literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
   #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
   trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
-- **MEH-688** → PR **#990** (`Refs`, draft): he.json emoji LOCK v2. **Sweep BLOCKED** —
-  parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining emoji are deferred
-  (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability dots, kosher).
-  Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **MEH-688** → PR **#990** ✅ merged (`Refs` — epic NOT closed): he.json emoji LOCK v2.
+  **Sweep BLOCKED** — parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining
+  emoji are deferred (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability
+  dots, kosher). Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
 - **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
-  (this PR). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
-- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (this PR).
+  (PR #992). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (PR #992).
   **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
-- ⚠️ **Deviation:** MEH-688 brief asked to strip+close; delivered Discovery+`Refs` (rationale in ledger). Sapir review needed.
+- ⚠️ **Deviation (accepted):** MEH-688 brief asked to strip+close; delivered Discovery+`Refs`. Epic stays open for Sapir's ADR-021 decision.
+
+## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
+
+Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
+
+- **MEH-753** — event dates respect locale: shared `frontend/lib/format-date.js` replaces 4 hardcoded `he-IL` formatDate helpers (EventsClient, EventDetailClient, ExperienceCard, HomeProductCard). PR **#976** ✅ merged.
+- **MEH-741** — Recipe JSON-LD: `minutesToIso8601` → `undefined` (not `null`) + filter drops null; un-skipped 2 MEH-729 tests + EN'd one BottomNav `it()`. vitest 15/15. PR **#979** ✅ merged.
+- **MEH-731** — locale-aware `usePathname`: FooterSlot + admin/layout swapped `next/navigation` → `@/i18n/navigation` (only 2 remaining sites; useRouter untouched). PR **#984** ✅ merged.
+>>>>>>> origin/staging
 
 ## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
 
