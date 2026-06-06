@@ -57,6 +57,9 @@ import { CoordSchema } from "@/lib/schemas";
  * Phosphor fill icons via renderToStaticMarkup produce crisp, uniform
  * glyphs at any DPR.
  */
+// Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
+// string, so Tailwind tokens can't apply. Values map to design tokens:
+// #2e6853 = primary, #fff = surface, #8B6914 = accent. (MEH-763 Chunk 1)
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
@@ -427,6 +430,6 @@ export default function MapComponent({
   }, [producers, visitedIds]);
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
+    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-lg" />
   );
 }
