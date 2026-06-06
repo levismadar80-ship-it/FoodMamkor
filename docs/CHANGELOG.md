@@ -4,6 +4,10 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-741: omit null durations from Recipe JSON-LD
+
+- **`fix(MEH-741)`**: `buildRecipeSchema` (`frontend/components/public/RecipeJsonLd.jsx`) emitted `prepTime: null` / `cookTime: null` for missing/0 durations — invalid `schema.org/Recipe` JSON-LD (a duration must be an ISO-8601 string or absent). Root cause: `minutesToIso8601()` returned `null` while the strip filter only dropped `undefined`. Fix: helper now returns `undefined` (aligns with the `|| undefined` convention every other optional field uses) + filter hardened to drop `null` too (defense for any future duration field). No `totalTime`/sibling duration field exists in this schema. Un-skipped the 2 MEH-729 tests in `RecipeJsonLd.test.jsx` (now green) + translated one Hebrew `it()` description in `BottomNav.test.jsx` to English (rule 5, folded nit). vitest 15/15 green; `npm run build` green.
+
 ### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
 
 `feat(MEH-763)`: visual port of `/map` to S5 FINAL — design-layer only; feed/filter/sync
