@@ -1,0 +1,134 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@sentry/nextjs": {
+      "name": "@sentry/nextjs",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "next"
+      ],
+      "effects": [],
+      "range": ">=6.3.6",
+      "nodes": [
+        "node_modules/@sentry/nextjs"
+      ],
+      "fixAvailable": {
+        "name": "@sentry/nextjs",
+        "version": "6.3.5",
+        "isSemVerMajor": true
+      }
+    },
+    "@vercel/speed-insights": {
+      "name": "@vercel/speed-insights",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "next"
+      ],
+      "effects": [],
+      "range": ">=1.0.5-beta.1",
+      "nodes": [
+        "node_modules/@vercel/speed-insights"
+      ],
+      "fixAvailable": {
+        "name": "@vercel/speed-insights",
+        "version": "1.0.4",
+        "isSemVerMajor": true
+      }
+    },
+    "next": {
+      "name": "next",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "postcss"
+      ],
+      "effects": [
+        "@sentry/nextjs",
+        "@vercel/speed-insights",
+        "next-intl"
+      ],
+      "range": "9.3.4-canary.0 - 16.3.0-canary.5",
+      "nodes": [
+        "node_modules/next"
+      ],
+      "fixAvailable": {
+        "name": "next",
+        "version": "9.3.3",
+        "isSemVerMajor": true
+      }
+    },
+    "next-intl": {
+      "name": "next-intl",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "next"
+      ],
+      "effects": [],
+      "range": "<=0.0.0-package-boundaries-1 || >=0.0.2",
+      "nodes": [
+        "node_modules/next-intl"
+      ],
+      "fixAvailable": {
+        "name": "next-intl",
+        "version": "0.0.1",
+        "isSemVerMajor": true
+      }
+    },
+    "postcss": {
+      "name": "postcss",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1117015,
+          "name": "postcss",
+          "dependency": "postcss",
+          "title": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
+          "url": "https://github.com/advisories/GHSA-qx2v-qp2m-jg93",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-79"
+          ],
+          "cvss": {
+            "score": 6.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+          },
+          "range": "<8.5.10"
+        }
+      ],
+      "effects": [
+        "next"
+      ],
+      "range": "<8.5.10",
+      "nodes": [
+        "node_modules/next/node_modules/postcss"
+      ],
+      "fixAvailable": {
+        "name": "next",
+        "version": "9.3.3",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 5,
+      "high": 0,
+      "critical": 0,
+      "total": 5
+    },
+    "dependencies": {
+      "prod": 243,
+      "dev": 653,
+      "optional": 189,
+      "peer": 65,
+      "peerOptional": 0,
+      "total": 1045
+    }
+  }
+}
