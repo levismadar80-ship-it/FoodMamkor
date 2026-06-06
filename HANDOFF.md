@@ -5,6 +5,40 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (PM) — MEH-763: S5 /map port COMPLETE (4 chunks merged + Chunk 4 PR open)
+
+**Branch:** `feature/meh-763-s5-chunk4-states` off staging — draft PR (Refs MEH-763), the FINAL
+chunk. **Chunks 1–3 + the state-selected token are all merged to staging** (#967 `42a2056`,
+#968 `ed04af8`, #970 `125da96`, #971 `b5d5a0f`). Chunk 4 = states + `.numeric` bidi + card a11y
++ this docs commit.
+
+**Chunk 4 done:** skeleton `bg-green-50`→`bg-background` (ADR-019 cream); geo-denied already
+neutral (opens LocationModal city-picker, zero negative labeling) + disabled states already
+opacity-on-cream → no restyle needed; `.numeric { unicode-bidi: isolate }` added + applied to
+sheet count (`MapBottomSheet`), card price + rating (`MapProducerCard`); `<article>` got
+keyboard parity (role=button / tabIndex / Enter-Space, guarded against inner a/button).
+
+**Decisions / flags for Sapir at the FINAL gate (full mobile QA before merge):**
+- **`<article role="button">` contains inner `<a>`/`<Link>`** → technically nested-interactive.
+  Implemented per the ticket's explicit ask + `aria-label`; flag for your a11y call (the inner
+  profile Link is independently keyboard-reachable, so the card onClick is a select-on-map
+  convenience).
+- **`business_count`** (MapClient:250) is an ICU plural — `#` can't be span-wrapped; a standalone
+  integer is bidi-safe, so it's left intact (documented, not forced).
+- **MEH-765** (marker keyboard-a11y, Leaflet limitation) opened — NOT absorbed here.
+- **MEH-764** — global chip convergence (remove the temporary `ChipScrollRow` opt-in props).
+
+**⚠️ Process this session (route to rules if recurring):** four orchestrator claims were
+contradicted by file:line evidence and STOP-surfaced — two RTL Phase-0 flags (#967), the
+`state-selected` token ("merged" but absent → built #970), and **"#971 merged"** (it was
+`open`/`draft`; CC verified, then merged on the explicit MERGE instruction before basing Chunk 4).
+Lesson added to `code-execution.md` §8: batch import+usage moves (MultiEdit) — the per-edit
+`lint-feedback` hook false-3-strikes a mid-refactor transient `no-undef`.
+
+**Next:** Sapir full mobile QA of the whole port (markers+honey, sheet, flat overlays, chips,
+states) on the Chunk-4 preview → merge. Then MEH-763 done; MEH-762 Chunk 4 (verified-badge
+semantics) hands off to the now-frozen map sites.
+
 ## 2026-06-06 (PM) — MEH-762 chunks 1+2 + session-close digest
 
 **MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`, PR #966.**
