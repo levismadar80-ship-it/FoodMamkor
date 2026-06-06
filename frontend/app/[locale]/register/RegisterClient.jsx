@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Heart, Leaf, MapPin, Star } from "@phosphor-icons/react";
+import { EnvelopeSimple, Heart, Leaf, MapPin, Star } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -147,8 +147,13 @@ export default function RegisterClient() {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
         <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
-          <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-          <h1 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
+          <div
+            className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center"
+            aria-hidden="true"
+          >
+            <EnvelopeSimple size={32} className="text-fg-muted" aria-hidden="true" />
+          </div>
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.consumer.email_sent.title")}</h1>
           <p className="text-fg-muted text-sm mb-3">{t("auth.register.consumer.email_sent.body")}</p>
           <p className="text-fg-muted text-xs mb-6">{t("auth.register.consumer.email_sent.hint")}</p>
           <Link href="/" className="block w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium text-center">
@@ -170,7 +175,7 @@ export default function RegisterClient() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline-md text-2xl font-bold text-text mb-1">{t("auth.register.consumer.heading")}</h1>
+          <h1 className="font-headline-lg text-3xl font-black text-text mb-1">{t("auth.register.consumer.heading")}</h1>
           <p className="text-fg-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
         </div>
 
