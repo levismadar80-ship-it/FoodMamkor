@@ -38,7 +38,16 @@ vi.mock("../lib/post-login-action.js", () => ({
 }));
 
 const toastSpy = vi.fn();
-vi.mock("../lib/toast.js", () => ({ showToast: (...args) => toastSpy(...args) }));
+// MEH-685: showToast gained semantic methods. AuthProvider now calls
+// showToast.info(message, { duration, action }). The spy prefixes the call
+// with the semantic type so assertions can verify both the type and the args.
+vi.mock("../lib/toast.js", () => {
+  const showToast = (...args) => toastSpy(...args);
+  showToast.success = (...args) => toastSpy("success", ...args);
+  showToast.error = (...args) => toastSpy("error", ...args);
+  showToast.info = (...args) => toastSpy("info", ...args);
+  return { showToast };
+});
 
 function UserDisplay() {
   const { user, loading } = useAuth();
@@ -66,10 +75,12 @@ describe("auth:expired event (MEH-156)", () => {
     });
 
     expect(toastSpy).toHaveBeenCalledWith(
-      expect.stringContaining("פג תוקף"),
       "info",
-      5000,
-      expect.objectContaining({ action: expect.objectContaining({ label: "התחברי" }) }),
+      expect.stringContaining("פג תוקף"),
+      expect.objectContaining({
+        duration: 5000,
+        action: expect.objectContaining({ label: "התחברי" }),
+      }),
     );
   });
 
@@ -86,8 +97,9 @@ describe("auth:expired event (MEH-156)", () => {
       window.dispatchEvent(new CustomEvent("auth:expired"));
     });
 
+    // call = ["info", message, { duration, action }]
     const call = toastSpy.mock.calls[0];
-    expect(call[3].action.href).toContain("/login");
+    expect(call[2].action.href).toContain("/login");
   });
 
   it("does not show toast when no token was present (unauthenticated 401)", async () => {
