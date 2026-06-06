@@ -5,6 +5,56 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — 🧾 SESSION CLOSE: OTP template + Linear sync audit
+
+**🚨 NEXT-SESSION #1 — staging→main RELEASE is the most urgent task.** Prod is still
+on `send_text` for OTP → **producer phone OTP is undelivered in prod** until the next
+staging→main release ships. Release candidates already on staging: **#953** (MEH-759-A,
+Alembic `a7f3e9c14d28`) + **#954** (MEH-754 OTP template). **#955** (MEH-759-B) awaits
+Sapir review.
+
+**Next-session priority order:**
+1. **staging→main release** (unblocks prod OTP — most urgent).
+2. **#955 review/merge** → then MEH-759 **Chunk C** (frontend declaration copy + farmer line).
+3. **MEH-754** — check Meta template approval + run cold-number device smoke on staging.
+4. **MEH-749** orphan script — Sapir manual run vs prod.
+5. Candidate next code task: **MEH-685** (showToast icon-prop, D2).
+
+**This session's outcomes:**
+- **MEH-754 OTP — PR #954 MERGED to staging @ `5c0dbf2`.** `OtpCodeV1` (MEH-672 pattern;
+  code twice: body param + button `sub_type:"url"` index 0); `_send_whatsapp_otp` →
+  `send_template`; fail-open preserved; 20 new tests + `test_api` 192 green. Meta template
+  `producer_otp_v1` created by Sapir (he, AUTHENTICATION, copy-code, 10-min TTL = backend).
+  **Gates before Done:** (a) Meta approval (pending at close), (b) cold-number staging
+  smoke, (c) ⚠️ prod still on `send_text` until release.
+- **MEH-744 credits — DEFERRED to launch (Sapir).** Don't load Anthropic credits yet
+  (manual approval is the LOCK; risk-score fail-open). `[RISK]` WARNING in Railway logs +
+  "אין מידע" admin badge = **EXPECTED, not a bug**. Reactivation: buy credits + auto-reload
+  → staging smoke shows "[RISK] scored" w/o 400 → archive Sentry MEHAMAKOR-BACKEND-D.
+- **MEH-743 honey — closed WITHOUT SQL.** Prod DB already correct: release #936 boot seed
+  insert-if-missing added שמנים (id 19) + דבש (id 20); combined row gone; orphan=0. License
+  enforcement keys off Hebrew name (`backend/app/constants.py`) → auto-active. Sapir smoke ✓.
+- **MEH-733 — closed.** §06 quote removal (PR #927, release #936) verified against prod HTML:
+  0 occurrences. Night sighting = cache. **LESSON:** Hebrew in fetched JSON is unicode-escaped
+  — `json`-decode BEFORE grepping or you get false negatives.
+- **MEH-732 — closed.** Drawer-login-gate follow-up was ALREADY fixed by PR #914 (drawer
+  reuses `isLoginPage`). CC Phase 0 caught it, stopped (no no-op edit). Cosmetic strike-through
+  PR #956 closed unmerged; local branch deleted. Stale CHANGELOG line `CHANGELOG.md:318` stays
+  (harmless). Orphan remote branch `feature/meh-732-drawer-login-gate` (`8068dad`) — env blocked
+  remote delete; prune from your terminal.
+- **MEH-736 CI gap (to investigate later).** Docs-only PR #956: all 5 path-gated required
+  checks reported *skipped*, MEH-736 twin jobs did NOT fire → under Rulesets, skipped-required =
+  "Expected" = merge blocked without admin override. Repro: a one-line docs diff. Check the
+  twins' `if:` conditions in `pr-checks.yml` / `deploy.yml`.
+- **Linear In Progress audit — 11 sync closures** (evidence comments on each): MEH-738/739/740/735
+  (#924); MEH-747 (#937+#938, #936, prod smoke); MEH-684/687/729 (#932); MEH-579 (merged 14/5,
+  missed Closes); MEH-643 (epic, all 4 chunks #898/#906); MEH-657 (A+B+D4+E via #818/#821; reopen
+  was a same-second relation artifact). Remaining In Progress (justified): 759, 754, 742, 547,
+  214, 233, 130.
+- **Unrelated flag (from MEH-732 Linear thread):** `nav.discover` may render `גלה`
+  (masculine-singular) on the BottomNav home tab — ADR-014 forbids pure masculine. Not yet
+  verified/fixed; out of scope this session.
+
 ## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
 
 **Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).
@@ -33,7 +83,8 @@ nit:** the `EXPECTED_REV` line's neighbouring comment still misattributes `a7f3e
 
 ## 2026-06-06 — MEH-754: OTP via Meta authentication template
 
-**Branch:** `feature/meh-754-otp-auth-template` off staging — draft PR (Addresses MEH-754).
+**Status: PR #954 MERGED to staging @ `5c0dbf2`** (was draft; Addresses MEH-754 — Done
+gated on Meta approval + cold-number smoke + staging→main release; see session-close block above).
 Migrated producer phone-verification OTP from free-form `send_text` (delivered only inside
 Meta's 24h window → cold numbers never got the code → stuck in `pending_whatsapp`) to the
 Meta AUTHENTICATION template `producer_otp_v1`. New `OtpCodeV1(code=...)` in
