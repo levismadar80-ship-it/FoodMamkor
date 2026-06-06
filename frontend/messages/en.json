@@ -296,6 +296,7 @@
         },
         "success": {
           "heading": "You're in!",
+          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
           "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
@@ -554,6 +555,11 @@
     }
   },
   "producer": {
+    "badge": {
+      "verified_tooltip_license": "License submitted and reviewed on {date}",
+      "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
+      "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else."
+    },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",

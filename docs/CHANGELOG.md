@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys (Refs MEH-758, Part of MEH-742)
+
+`feat(MEH-758)`: Sapir-locked ADR-022 two-tier (מאומת / מוצהר) copy added as i18n keys —
+**key-only**, no rendering (the S7 register port + S6/S534 badge UI consume them later, so we
+don't wire copy into a success screen the port is about to rebuild). New keys (he+en, parity):
+`auth.register.producer.success.tier_trust` (replaces the pre-ADR-022 "checks every business"
+over-claim — honest per-tier framing: personal vetting for all, מאומת badge is document-gated),
+`producer.badge.verified_tooltip_license` + `..._exemption` (both carry the `{date}` ICU param),
+`producer.badge.declared_explainer` (positive no-badge explanation per template-05 research —
+Yelp-FAQ pattern, not silence). Consumer language is מאומת/מוצהר only — zero `מורשה`/`מורשים`
+(grep-verified). COPY_BANK §7 added with a decision-log row per key (en marked ⏳ pending Sapir
+review). Strings verbatim from S11 FINAL. **Refs MEH-758, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke of the rendered surfaces once the port lands).
+
 ### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
 
 `docs(MEH-761)`: Sapir-spotted inconsistency (2026-06-06) — `docs/VERIFICATION.md` §1א listed

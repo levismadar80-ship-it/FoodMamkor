@@ -559,6 +559,49 @@ should never have to know what an industry term means.
 producer types. "גבינות עזים תל אביב ב-9 בערב" locks out anyone not
 selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי בגוגל" instead.
 
+## Section 7 — ADR-022 two-tier copy (מאומת / מוצהר)
+
+> Source: MEH-758 (gate 1) · ADR-022 (PR #949 `ea42821`) · strings locked
+> 2026-06-06 (S11 FINAL, Sapir). Consumer language is **מאומת / מוצהר only** —
+> `מורשה`/`מורשים` is an anti-pattern (BRAND.md §7). Keys created in this PR;
+> badge UI consumes them in the S6/S534 port (not rendered yet).
+
+### Registration success — tier trust line
+| Field | Value |
+|---|---|
+| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
+| **en** | `Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.` (⏳ en pending Sapir review) |
+| **i18n key** | `auth.register.producer.success.tier_trust` |
+| **Status** | 🕐 key-only — pending S7 register port (06A/06B) to render; Sapir closes after mobile smoke |
+| **Why** | Replaces the pre-ADR-022 "checks every business" over-claim (which no longer existed verbatim in code). Per-tier honest framing: personal vetting for all; the מאומת badge is document-gated. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — license
+| Field | Value |
+|---|---|
+| **Current (he)** | `רישיון הוגש ונבדק בתאריך {date}` |
+| **en** | `License submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_license` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; license variant. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — exemption
+| Field | Value |
+|---|---|
+| **Current (he)** | `אישור פטור הוגש ונבדק בתאריך {date}` |
+| **en** | `Exemption approval submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_exemption` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; exemption variant (legally-exempt categories that still filed an official exemption/registration doc). Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Declared-tier explainer (no badge)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
+| **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.declared_explainer` |
+| **Status** | 🕐 key-only — badge UI port consumes |
+| **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
+
 ## Brand phrasings
 
 Canonical reusable brand phrases. When the same phrase appears across
