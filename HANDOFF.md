@@ -5,6 +5,31 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 — MEH-132: S7 register port (design v4 → code) — PR #965 ready-for-review
+
+**Branch:** `feature/meh-132-s7-register-port` off staging — **draft → ready-for-review**,
+PR #965 (Refs MEH-132). Visual port of `/register` + `/register/producer` to S7 v4;
+design-layer only, functional freeze verified each chunk. 4 commits (chunks 1, 2+2b, 3, 4).
+
+**Done (per chunk):** (1) token/class cleanup — `rounded-[..]`→tokens, removed 2 inline
+shadows, tokenized inline fontFamily, `bg-gray-200`→`bg-border`, `text-right`→`text-start`
+sweep (3 `dir=ltr` exceptions documented). (2/2b) consumer — FRL-900 headings, 📬→Phosphor
+`EnvelopeSimple` + amber→ADR-019 (neutral cream/`fg-muted`), dark-outlined CTAs. (3) producer
+steps — progress→Cormorant numerals (producer-only), FRL-900 headings, license amber→`fg-muted`,
+dark-outlined step CTAs. (4) success 06A/06B — `tier_trust` wired into both, FRL-900 headings,
+06B 📬→Phosphor, dashboard/back-home dark-outlined + share `btn-whatsapp-outline`, WhatsApp-
+fallback amber box→ADR-019. **No variant C** (→ S6/MEH-76).
+
+**Decisions (Sapir, this batch):** amber → neutral ADR-019 (not green); consumer CTA pulled
+into Chunk 2b (locked plan had it in 3); CTA reading = dark-outlined (border-`primary-dark`,
+transparent, hover fills dark/white); batch authority to run chunks 2b+3+4 without per-chunk gate.
+
+**State:** build (both SSG) ✓ · vitest 414/0 ✓ · ESLint 0 errors ✓ · i18n parity 2569==2569
+(message files untouched) ✓ · Playwright `/register` → CI preview. **Freeze verified:** OAuth,
+`access_token` branch, 3-checkbox composition, MEH-530 wiring, E2E selectors/labels/ids, 3
+documented `dir=ltr` `text-right` exceptions. **Next:** Sapir ONE mobile QA on the preview →
+merge (`Refs MEH-132`; MEH-132 stays open until S6 takes variant C — confirm closure intent).
+
 ## 2026-06-06 — MEH-685: Toast API refactor → semantic icon API (Category D2)
 
 **Branch:** `levismadar80/meh-685-toast-api-refactor-showtoast-icon-prop-category-d2-post-meh`
