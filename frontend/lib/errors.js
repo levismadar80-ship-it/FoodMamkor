@@ -79,5 +79,9 @@ export function errorMessage(err) {
  * @param {"error"|"info"} [type="error"]
  */
 export function showErrorToast(err, type = "error") {
-  showToast[type](errorMessage(err));
+  // MEH-685: guard the dynamic dispatch — an unexpected `type` (anything
+  // other than success/error/info) would be `undefined` post-shim and throw.
+  // Fall back to `info` so a bad caller degrades gracefully instead of
+  // crashing the catch branch it lives in.
+  (showToast[type] ?? showToast.info)(errorMessage(err));
 }

@@ -2470,7 +2470,7 @@
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap on any card to get alerts about new events and products",
     "button": {
-      "saved_toast_first_time": "Saved! All your favorites are waiting on the Favorites page",
+      "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
       "removed_toast": "Removed from favorites",
       "error_generic": "Something went wrong, please try again",

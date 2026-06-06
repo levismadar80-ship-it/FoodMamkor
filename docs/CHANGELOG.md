@@ -4,6 +4,35 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-685: Toast API refactor — showToast() → semantic icon API (Category D2)
+
+`feat(MEH-685)`: refactor `showToast()` from a plain-string positional signature
+to a **semantic methods-only API** + strip Category D2 (toast) emojis, replacing
+them with Phosphor icons. Closes the LOCK v2 temporary KEEP on toast emojis.
+
+- **API (variant 2 hybrid):** `showToast.success | error | info(message, { icon?,
+  duration?, action? })`. `lib/toast.js` is now a methods-only object — the
+  legacy positional `showToast(message, type, duration, options)` shim was
+  removed after migrating all ~40 call sites. The store stays
+  presentation-agnostic (opaque `icon` node, no React import); `Toaster.jsx`
+  resolves a **default icon per type** (success→CheckCircle, error→WarningCircle,
+  info→Info) and renders it as the first flex child of the existing `gap-3` row
+  (RTL-safe, no physical margin).
+- **Bespoke icons:** favorites/saved → `HeartStraight` (fill, echoes the tapped
+  control), follow → `Bell`, recipe/experience published → `Leaf`, under-review
+  → `MagnifyingGlass`, review saved → `Star`, copied/settings → `Check`, share
+  link → `LinkSimple`. Kashrut badge approved (✅) maps to the default
+  `CheckCircle` (no bespoke).
+- **i18n:** stripped emoji from 12 toast keys × he/en (parity 2558==2558).
+  `saved_toast_first_time` reworded — the bottom favorites tab it pointed to was
+  removed (`BottomNav` MEH-643); now points to the Favorites page in the menu.
+- **errors.js** `showErrorToast` dispatches via `(showToast[type] ?? showToast.info)`
+  (guarded against an unexpected type).
+- **Out of scope (left as-is):** `copied` (2564/3170) + `contact.success_toast`
+  (2096) are inline labels, not toasts → possible MEH-657 misses, flagged.
+- Tests: new `toast.test.js` + `Toaster.test.jsx`, updated 6 call-site mocks to
+  the methods-only shape. vitest green; `npm run build` green.
+
 ### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
 
 `docs(MEH-761)`: Sapir-spotted inconsistency (2026-06-06) — `docs/VERIFICATION.md` §1א listed
