@@ -171,9 +171,9 @@ jobs:
           # MEH-509 PR2b: d4046deb0dc1 adds the inbound_messages table for
           # the after-hours watchdog (tables 34 → 35; populated by the future
           # PR2c webhook receiver).
-          # MEH-509 PR3: 92afa3cb76e2 adds 2 nullable columns (risk_score,
+          # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
-          EXPECTED_REV="92afa3cb76e2"
+          EXPECTED_REV="a7f3e9c14d28"
           EXPECTED_TABLES=35
 
           ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
