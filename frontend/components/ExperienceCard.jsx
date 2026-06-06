@@ -40,7 +40,7 @@ export default function ExperienceCard({ experience: ex }) {
 
   const formatPrice = (p) => {
     if (p == null || Number(p) === 0) return t("free");
-    return `₪${Number(p).toLocaleString("he-IL")}`;
+    return <span dir="ltr">{`₪${Number(p).toLocaleString("he-IL")}`}</span>;
   };
 
   const spotsBadge =

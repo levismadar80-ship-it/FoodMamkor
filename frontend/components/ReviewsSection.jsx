@@ -182,6 +182,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           <p
             className="font-headline-display font-black leading-none text-text mb-2"
             style={{ fontSize: 48 }}
+            dir="ltr"
           >
             {Number(avgRating).toFixed(1)}
           </p>
@@ -302,7 +303,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
                     {review.created_at && (
-                      <p className="text-[13px] text-fg-muted mt-0.5">
+                      <p className="text-[13px] text-fg-muted mt-0.5" dir="ltr">
                         {new Date(review.created_at).toLocaleDateString("he-IL")}
                       </p>
                     )}
