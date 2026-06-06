@@ -8,6 +8,32 @@
 
 - **`fix(MEH-753)`**: `/en/events` (and every en event surface) was rendering Hebrew dates because 4 duplicated `formatDate` helpers hardcoded `toLocaleDateString("he-IL", …)`. Extracted one shared `formatEventDate(iso, locale, options)` in `frontend/lib/format-date.js` — `he → "he-IL"` (byte-identical preserved), `en → "en-US"`. Locale threaded from `useLocale()` (next-intl) into `EventsClient.jsx` (card + month-grouping memo, `locale` added to deps), `EventDetailClient.jsx` (year variant), `ExperienceCard.jsx`, `HomeProductCard.jsx`. `formatTime` (HH:MM slice) + price `toLocaleString` left untouched (locale-independent / out of scope). `npm run build` green; both `/he/events` + `/en/events` build. ~30 other he-IL date sites codebase-wide are out of MEH-753 scope (other surfaces / i18n waves) — reported in PR body.
 
+### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
+
+`feat(MEH-763)`: visual port of `/map` to S5 FINAL — design-layer only; feed/filter/sync
+logic and `is_verified` render sites + verified ✓ glyph frozen (MEH-762 handoff). Shipped
+across 4 chunk PRs (#967, #968, #971, this) + a token micro-PR (#970):
+
+- **Chunk 1 (#967)** — token/class cleanup: `rounded-[..px]`→tokens, token-valued inline
+  hex→classes, `text-right`→`text-start` (map/components).
+- **Chunk 2 (#968)** — markers v2: `MapComponent` divIcon → 36px circular **photo** marker
+  (Cloudinary square thumb / MEH-638 monogram fallback on primary), 2px primary border, no
+  category colour on pins (Kare ≤4 holds by construction); honey `דבש` → `#C8821E` + `Hexagon`;
+  legend leads with the tinted category icon.
+- **`state-selected` token (#970)** — semantic alias = `primary-dark` `#2E4A2E` (DESIGN.md →
+  `design:export`); single selected/active affordance for markers + chips.
+- **Chunk 3 (#971)** — sheet + cards + flat overlays: `MapBottomSheet` two-snap 45vh, handle
+  32×4 `#D4C5A9`, radius-16, cream, shadow→border (**F1**); `MapProducerCard` ⭐→Star, 🚚→Truck,
+  🌿→Leaf, dynamic MEH-296 CTA, hover-shadow deleted; **F1** flattened 8 overlay shadows →
+  `surface-floating` + border; **F3** /map chips → `rounded-md` + `state-selected` via additive
+  `ChipScrollRow` props (defaults preserve /home + /producers; temporary, MEH-764).
+- **Chunk 4 (this)** — states + bidi + a11y: skeleton → cream (ADR-019; geo-denied already a
+  neutral city-picker fallback, disabled states already opacity-on-cream); `.numeric`
+  (`unicode-bidi: isolate`) utility + applied to sheet count, card price, rating;
+  `MapProducerCard` `<article>` keyboard affordance (role/tabIndex/Enter-Space). Marker
+  keyboard-a11y deferred to **MEH-765**. `business_count` is an ICU plural (`#` not
+  span-wrappable; standalone integer is bidi-safe).
+
 ### 2026-06-06 — MEH-762: ADR-022 public tier contract — chunks 1–3 (verification trail + admin stamping + public exposure)
 
 - **Chunk 1 (schema):** `producers.verified_at` (TIMESTAMPTZ nullable) + `verification_doc_type` (VARCHAR(20) nullable) via Alembic `f1c7b9a3e264` (expand-only, ADR-007; `down_revision a7f3e9c14d28`). ORM mirror in `models.py`; `verification_tier` stays computed in schemas (Chunk 3), never stored. No `verified_by` column (V1, single admin — D1). `EXPECTED_REV` bumped (`EXPECTED_TABLES` stays 35). db-schema diagram + `VERIFICATION.md` §3 updated (D1: result columns move to DB; issuer/name_match/channel/notes/reviewer stay manual). Migration + workflow line Sapir-applied (`b84ceb6`) — CC-denied paths.

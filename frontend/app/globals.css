@@ -28,6 +28,10 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
+/* MEH-763: LTR-isolate numerals/ranges on RTL surfaces (counts, prices,
+   distances, ratings) so digits + separators don't reorder under bidi. */
+.numeric { unicode-bidi: isolate; }
+
 /* Tokenizes the inline `ring-primary/40` idiom (= primary #2e6853 @ 40%). */
 .focus-ring:focus-visible {
   outline: none;
