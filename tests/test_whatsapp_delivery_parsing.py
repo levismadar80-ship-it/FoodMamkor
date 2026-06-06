@@ -9,6 +9,7 @@ result and the back-compat boolean.
 
 Pure unit tests: `httpx.post` is stubbed, no network and no DB.
 """
+
 from __future__ import annotations
 
 import httpx
@@ -51,6 +52,7 @@ _NO_JSON = object()
 
 # --- _classify (2xx body) -------------------------------------------------
 
+
 def test_classify_accepted_extracts_wamid():
     body = {"messages": [{"id": "wamid.ABC123"}], "messaging_product": "whatsapp"}
     result = _classify(200, body)
@@ -79,6 +81,7 @@ def test_classify_200_no_body_is_accepted_backcompat():
 
 # --- _result_from_error (window classification) ---------------------------
 
+
 @pytest.mark.parametrize("code", [470, 131047, 131051])
 def test_window_expired_codes_classified(code):
     result = _result_from_error(400, {"code": code, "message": "window closed"})
@@ -102,6 +105,7 @@ def test_error_without_int_code():
 
 # --- _safe_json -----------------------------------------------------------
 
+
 def test_safe_json_non_dict_returns_none():
     assert _safe_json(_FakeResponse(200, ["not", "a", "dict"])) is None
 
@@ -111,6 +115,7 @@ def test_safe_json_decode_failure_returns_none():
 
 
 # --- public bool façade (send_text) ---------------------------------------
+
 
 def test_send_text_fail_open_when_unconfigured(monkeypatch):
     monkeypatch.setattr(wa.settings, "whatsapp_phone_number_id", "")
@@ -126,7 +131,8 @@ def _configure(monkeypatch):
 def test_send_text_accepted_returns_true(monkeypatch):
     _configure(monkeypatch)
     monkeypatch.setattr(
-        wa.httpx, "post",
+        wa.httpx,
+        "post",
         lambda *a, **k: _FakeResponse(200, {"messages": [{"id": "wamid.OK"}]}),
     )
     assert wa.send_text("+972501234567", "hi") is True
@@ -136,7 +142,8 @@ def test_send_text_window_expired_returns_false(monkeypatch):
     _configure(monkeypatch)
     err_body = {"error": {"code": 131047, "message": "re-engagement"}}
     monkeypatch.setattr(
-        wa.httpx, "post",
+        wa.httpx,
+        "post",
         lambda *a, **k: _FakeResponse(400, err_body, raise_status=True),
     )
     assert wa.send_text("+972501234567", "late reply") is False
@@ -156,7 +163,8 @@ def test_post_result_surfaces_rich_outcome(monkeypatch):
     """The internal result carries the wamid the watchdog/admin path can log."""
     _configure(monkeypatch)
     monkeypatch.setattr(
-        wa.httpx, "post",
+        wa.httpx,
+        "post",
         lambda *a, **k: _FakeResponse(200, {"messages": [{"id": "wamid.RICH"}]}),
     )
     result = wa._post_result({"to": "x"}, kind="text", to="+972501234567")

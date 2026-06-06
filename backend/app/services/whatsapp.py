@@ -141,13 +141,21 @@ def _log_result(kind: str, to: str, result: WhatsAppSendResult) -> None:
     if result.ok:
         logger.info(
             "[WHATSAPP] %s outcome=%s wamid=%s to=%s http=%s",
-            kind, result.outcome, result.message_id, masked, result.http_status,
+            kind,
+            result.outcome,
+            result.message_id,
+            masked,
+            result.http_status,
         )
     else:
         logger.warning(
             "[WHATSAPP] %s outcome=%s err_code=%s err=%s to=%s http=%s",
-            kind, result.outcome, result.error_code,
-            result.error_message, masked, result.http_status,
+            kind,
+            result.outcome,
+            result.error_code,
+            result.error_message,
+            masked,
+            result.http_status,
         )
 
 
