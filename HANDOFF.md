@@ -28,6 +28,24 @@ all CI green on first push (backend pytest, vitest, ruff, mypy, build, E2E) — 
   merge: "Re-run all jobs" / fresh push / close+reopen. Details in the plan doc
   "CI-dispatch note".
 
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
+
+Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+
+- **MEH-692** → PR **#989** ✅ merged (`Closes`): auto-close forensics. Root cause = the
+  literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
+  #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
+  trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
+- **MEH-688** → PR **#990** ✅ merged (`Refs` — epic NOT closed): he.json emoji LOCK v2.
+  **Sweep BLOCKED** — parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining
+  emoji are deferred (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability
+  dots, kosher). Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
+  (PR #992). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (PR #992).
+  **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
+- ⚠️ **Deviation (accepted):** MEH-688 brief asked to strip+close; delivered Discovery+`Refs`. Epic stays open for Sapir's ADR-021 decision.
+
 ## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
 
 Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
