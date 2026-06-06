@@ -4,6 +4,36 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-132: S7 port — /register + /register/producer (design v4 → code)
+
+`refactor(MEH-132)`: visual port of the two register clients to S7 v4 FINAL —
+design-layer only, all auth/registration/declaration logic bit-identical
+(functional-freeze inventory verified each chunk). 4 chunks on PR #965:
+
+- **Chunk 1 — token/class cleanup (both files):** arbitrary `rounded-[..px]` →
+  DESIGN.md radius tokens; removed 2 inline card shadows in RegisterClient
+  (flat-tonal; the 3 sibling auth files left for S9/MEH-131); tokenized 2 inline
+  `style={{fontFamily}}`; progress-track `bg-gray-200` → `bg-border`; swept
+  `text-right` → `text-start` on `dir=rtl`/no-dir elements (3 `dir=ltr` numeric/
+  email inputs keep physical `text-right` with inline comment).
+- **Chunk 2 + 2b — consumer RegisterClient:** headings → Frank Ruhl Libre 900
+  scale; inbox 📬 → Phosphor `EnvelopeSimple` + amber circle → ADR-019 (neutral
+  cream + `fg-muted`, anti-enum semantics); primary CTAs (submit, back-home) →
+  dark-outlined.
+- **Chunk 3 — producer steps 1+2:** progress flat-bars → Cormorant italic
+  numerals (producer-only; `font-english` + `dir=ltr` isolation, active
+  `text-accent`, inactive `fg-muted` opacity-40); headings FRL 900; license-format
+  amber warning → `fg-muted` (ADR-019); step CTAs → dark-outlined.
+- **Chunk 4 — success 06A/06B:** wired existing `success.tier_trust` key into both
+  variants; success headings FRL 900; 06B 📬 → `EnvelopeSimple` (cream/`fg-muted`);
+  dashboard + back-home CTAs → dark-outlined (`rounded-full` → `rounded-md`),
+  WhatsApp share → `btn-whatsapp-outline` (ghost); WhatsApp-fallback amber box →
+  ADR-019 cream/hairline/`fg-muted`. No variant C (moved to S6/MEH-76).
+- **Verified:** `npm run build` (both routes SSG), vitest 414/0, ESLint 0 errors,
+  i18n parity 2569==2569 (message files untouched — 📬 was hardcoded JSX). Freeze
+  intact: OAuth, `"access_token" in res.data` branch, 3-checkbox composition,
+  MEH-530 wiring, E2E selectors/labels/ids. Playwright `/register` on CI preview.
+
 ### 2026-06-06 — MEH-685: Toast API refactor — showToast() → semantic icon API (Category D2)
 
 `feat(MEH-685)`: refactor `showToast()` from a plain-string positional signature
