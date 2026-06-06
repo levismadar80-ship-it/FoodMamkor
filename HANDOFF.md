@@ -5,28 +5,31 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-06 (night) — MEH-214: mutation-guided test expansion (tests-only, PR #975 open)
+## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
 
-**Branch:** `feature/test-expansion-2026-06` off staging — draft PR #975 (Refs MEH-214).
-**Tests-only, zero production-code edits.** 7 new files / 72 tests across 6 critical domains;
-all CI green on first push (backend pytest, vitest, ruff, mypy, build, E2E) — **0 heal iterations**.
-- New: `tests/test_expansion_{availability,admin_authz,auth_jwt,registration,whatsapp,tier}.py`
-  (+64 backend), `frontend/__tests__/expansion/availability-badge.test.jsx` (+8, all 6 mutants
-  verified-killed locally), `docs/testing/2026-06-mutation-test-plan.md` (plan + counts + survived).
-- Highest-value closes: `on_vacation` default-listing exclusion (was untested), vacation date
-  boundary `<` vs `<=`, 18 admin endpoints' `require_admin` 403 regression, blocked-user-via-
-  optional-auth 403 re-raise.
-- **SURVIVED gaps for Sapir** (findings, not failures): WhatsApp Graph-200-undelivered and
-  outbound delivery-status persistence are unhandled in code — no behavior to test yet.
-- Re-scoped per discovery: WhatsApp "24h-window branching" doesn't exist as runtime logic;
-  `verification_tier` resolver covered by staging's `test_meh_762_public_tier_contract.py` (not duplicated).
-- **Next:** PR #975 ready-for-review; subscribed to its CI/review activity.
-- **CI note (infra, not code):** all 6 required checks GREEN on `4a50c74` (full
-  test logic). Post-merge heads (`8e7ad2f` staging-sync, `fd9b28e` re-trigger)
-  are not dispatching the `pull_request` workflows (pr-checks/deploy) — a GitHub
-  dispatch quirk (`deployment_status` E2E still runs fine). To clear before
-  merge: "Re-run all jobs" / fresh push / close+reopen. Details in the plan doc
-  "CI-dispatch note".
+**MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
+`ChipScrollRow` default to `rounded-md` + `state-selected` for all 3 consumers
+(/home, /producers, /map), per DESIGN §Shapes / BRAND §3; removed the temporary
+MEH-763-chunk-3 opt-in props (component back to one shape). Phase 0 found S4 FINAL
+silent on chip shape → BRAND §3 governs. Sapir QA'd all 3 surfaces. Zero logic/copy.
+
+**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) unified the 4
+hardcoded `formatDate` helpers into shared `format-date.js` (incl. `HomeProductCard`,
+now using `useLocale()`), but its TEST never got a next-intl mock → 16 fails, **staging
+silently red on vitest** (non-required check, slipped the gate). #988 mocks `useLocale`
+per `RecipeCard.test` — **test-only; 407 → 423 passing.** (The helper dedup itself was
+already done in #976; only the missing test mock remained.)
+
+**Process flags this session (S7 + S5 design tracks):**
+- **5 orchestrator-claim/evidence mismatches** STOP-surfaced (all verified file:line):
+  2 RTL Phase-0 flags (MEH-763 #967), the `state-selected` token ("merged" but absent →
+  built #970), "#971 merged" (was draft → verified + merged on the MERGE instruction),
+  and "#987 vitest failure" (pre-existing #976, not MEH-764). → adopted **verify-
+  preconditions over asserted premises**.
+- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked).
+  MEH-753 formatDate dedup (#976) + MEH-764 temporary-prop removal are both DONE.
+- **Lint-hook lesson** added to `code-execution.md §8` (batch import+usage moves /
+  MultiEdit — the per-edit hook false-3-strikes a transient `no-undef`).
 
 ## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
 
