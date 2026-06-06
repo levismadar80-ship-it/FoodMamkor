@@ -52,7 +52,7 @@ describe("BottomNav", () => {
   // MEH-729: the "מהשכן" (neighbor) tab was dropped from BottomNav
   // (components/BottomNav.jsx:42-47 now lists only discover/map/profile).
   // Updated to the current 3-tab nav (component = source of truth).
-  it("renders exactly 3 tabs in order: גלה / מפה / פרופיל", () => {
+  it("renders exactly 3 tabs in order: Discover / Map / Profile", () => {
     render(<BottomNav />);
     const labels = screen.getAllByRole("link").map((a) => a.textContent);
     expect(labels).toEqual(["גלה", "מפה", "פרופיל"]);

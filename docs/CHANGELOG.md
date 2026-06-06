@@ -4,6 +4,9 @@
 
 ## Unreleased
 
+### 2026-06-06 — MEH-741: omit null durations from Recipe JSON-LD
+
+- **`fix(MEH-741)`**: `buildRecipeSchema` (`frontend/components/public/RecipeJsonLd.jsx`) emitted `prepTime: null` / `cookTime: null` for missing/0 durations — invalid `schema.org/Recipe` JSON-LD (a duration must be an ISO-8601 string or absent). Root cause: `minutesToIso8601()` returned `null` while the strip filter only dropped `undefined`. Fix: helper now returns `undefined` (aligns with the `|| undefined` convention every other optional field uses) + filter hardened to drop `null` too (defense for any future duration field). No `totalTime`/sibling duration field exists in this schema. Un-skipped the 2 MEH-729 tests in `RecipeJsonLd.test.jsx` (now green) + translated one Hebrew `it()` description in `BottomNav.test.jsx` to English (rule 5, folded nit). vitest 15/15 green; `npm run build` green.
 ### 2026-06-06 — MEH-762: ADR-022 tier — Chunk 4 (is_verified badge decouple)
 
 `feat(MEH-762)`: the "מאומת" pill now drives off the ADR-022 public tier, not the legacy admin flag. **Semantics only** — `is_verified` the field is untouched (full retirement + `trust_tier` coupling = **MEH-766**).
