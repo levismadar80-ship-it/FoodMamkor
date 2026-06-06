@@ -27,8 +27,6 @@ export default function FilterChipsBar({
         chips={visibleCategoryChips}
         activeKey={chipState.categoryKey}
         onChipClick={onCategoryChipClick}
-        chipShape="rounded-md"
-        selectedClassName="bg-state-selected text-white border-state-selected"
       />
       <ChipScrollRow
         variant="toggle"
@@ -36,8 +34,6 @@ export default function FilterChipsBar({
         activeKeys={chipState}
         onChipClick={onToggleChipClick}
         className="mt-2"
-        chipShape="rounded-md"
-        selectedClassName="bg-state-selected text-white border-state-selected"
       />
       {activeFilterTags.length > 0 && (
         <div
