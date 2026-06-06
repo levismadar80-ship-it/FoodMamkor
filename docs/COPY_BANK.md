@@ -265,6 +265,30 @@
 | **Why** | Step 2 actually renders 6 fields after MEH-530 (license) + MEH-532 (description) shipped. Count-free wording prevents future drift per synthesis Finding F11. |
 | **MEH** | MEH-608 |
 
+### /register/producer — Licensing declaration (continuous commitment)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` |
+| **en** | `I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.` — **en pending Sapir review** |
+| **Previous (he)** | `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` (v1 launch text, appended to the ToS checkbox) |
+| **i18n key** | `auth.register.producer.terms.declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (own checkbox, `declarationConfirmed`) |
+| **Audit version** | `DECLARATION_VERSION = "2026-06-v2"` (`backend/app/constants.py`) — v1 = old launch text, v2 = this continuous-commitment wording |
+| **Status** | 🟡 **v2 — pending lawyer** (Brief Q1.1–Q1.5 draft; Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | ADR-022 gate 2 / Brief Q1.3 — continuous commitment (not point-in-time) + Q1.4 audit trail. Own first-person checkbox per ADR-014 voice + stronger evidentiary value. |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
+
+### /register/producer — Grower declaration (conditional: ירקות / פירות)
+| Field | Value |
+|---|---|
+| **Current (he)** | `התוצרת שאציע דרך מהמקור היא תוצרת שגידלתי בחלקתי בלבד.` |
+| **en** | `The produce I will offer through Mehamakor is produce that I grew on my own plot only.` — **en pending Sapir review** |
+| **i18n key** | `auth.register.producer.terms.farmer_declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (conditional checkbox `farmerConfirmed`, shown + required only for categories ירקות / פירות) |
+| **Status** | 🟡 **v2 — pending lawyer** (Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | נספח א' / פס"ד קירשנר — "grown on my own plot only" is the legal line between license-exempt and license-required produce. Folds into the same `declaration_accepted` submission (no new API field). |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
+
 ### Welcome email — Consumer
 | Field | Value |
 |---|---|

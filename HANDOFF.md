@@ -55,6 +55,30 @@ Sapir review.
   (masculine-singular) on the BottomNav home tab — ADR-014 forbids pure masculine. Not yet
   verified/fixed; out of scope this session.
 
+## 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C)
+
+**Branch:** `feature/meh-759-chunk-c-declaration-copy` off staging — draft PR. Frontend copy
++ constant bump only (no schema, no API field). Chunks A (#953) + B (#955) merged.
+
+**What:** split the single ToS-bundled consent checkbox into 3 separate checkboxes (ADR-014
+voice): ToS/privacy (chrome) · binding licensing declaration (`terms.declaration`,
+first-person, continuous commitment) · conditional grower declaration
+(`terms.farmer_declaration`, shown+required only for ירקות/פירות). Both declarations fold
+into the single `declaration_accepted` bool (`declarationConfirmed && (!farmerRequired ||
+farmerConfirmed)`). `DECLARATION_VERSION` 2026-06-v1 → **2026-06-v2** + test updated. he/en
+keys + validation msgs (parity); en "pending Sapir review" in COPY_BANK.
+
+**Decisions (Sapir, this session):** Q1 = separate checkboxes (verbatim-lock integrity +
+ADR-014 + distinct affirmative act = evidentiary value); Q2 = ship v2 (Linear DoD's "v1"
+line is stale, written pre-Chunk-B; orchestrator reconciles ticket next session).
+
+**Pending:** Sapir mobile smoke on the Vercel preview → then mark Closes. en copy + both
+he strings are **Sapir-locked but lawyer opinion outstanding** (Brief Q1.1–Q1.5) — COPY_BANK
+marks them "v2 — pending lawyer"; a lawyer revision = another version bump + Chunk-C-style PR.
+`/terms` indemnity clause = MEH-760 (separate). Farmer match is by category NAME (ירקות/פירות,
+seed_data.py:15-16) mirroring requiresProducerLicense — kept inline in the component (lib
+out of scope this PR).
+
 ## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
 
 **Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).

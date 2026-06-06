@@ -268,6 +268,8 @@
           "phone_valid": "✓ Valid number",
           "category_required": "Please select at least one category",
           "terms_required": "Please accept the Terms of Use before joining",
+          "declaration_required": "Please confirm the declaration before joining",
+          "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits"
         },
         "terms": {
@@ -275,7 +277,8 @@
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
-          "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
+          "declaration": "I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.",
+          "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
         "actions": {
           "next": "Next →",

@@ -22,6 +22,10 @@ import {
 const DRAFT_KEY = "producer_registration_draft";
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
+// MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
+// conditional grower declaration ("תוצרת שגידלתי בחלקתי בלבד"). Hebrew NAMES
+// (IDs are seed-ordering-dependent) — must match backend/seed_data.py:15-16.
+const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 
 const EMPTY_FORM = {
   email: "", name: "", password: "",
@@ -77,6 +81,13 @@ function RegisterProducerPageBody() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
+  // the conditional grower declaration are separate affirmative acts from the
+  // ToS/privacy consent above (ADR-014 voice: first-person legal vs plural
+  // chrome). Both fold into the single declaration_accepted bool — no new API
+  // field. A distinct affirmative act = stronger evidentiary value (Brief Q1.4).
+  const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
+  const [farmerConfirmed, setFarmerConfirmed] = useState(false);
   // MEH-328 Chunks C+D: emailExistsWarning (onBlur) + emailExistsSubmitError
   // (409 on submit) state both removed. Backend's non-upgrade path no longer
   // returns 409 (collisions return identical 200 ack); the duplicate-attempt
@@ -108,6 +119,12 @@ function RegisterProducerPageBody() {
   const [licenseOptionalExpanded, setLicenseOptionalExpanded] = useState(false);
   const licenseRequired = requiresProducerLicense(categories, form.category_ids);
   const licenseWarning = hasLicenseFormatWarning(form.producer_license_number);
+  // MEH-759 Chunk C: the grower declaration line is shown (and required) only
+  // for the two agricultural categories. Name-match mirrors requiresProducerLicense
+  // (IDs are seed-ordering-dependent; names are stable). Source: seed_data.py:15-16.
+  const farmerDeclarationRequired = categories
+    .filter((c) => form.category_ids.includes(c.id))
+    .some((c) => FARMER_DECLARATION_CATEGORIES.includes(c.name));
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
@@ -236,10 +253,12 @@ function RegisterProducerPageBody() {
         // license_validation._normalize_license — safe to send unconditionally.
         producer_license_number: form.producer_license_number,
         primary_contact_method: "whatsapp",
-        // MEH-759 (ADR-022 gate 2): send the existing consent checkbox value
-        // so the backend can stamp declared_at/declaration_version. Submit is
-        // already gated on agreedToTerms below; declaration COPY is Chunk C.
-        declaration_accepted: agreedToTerms,
+        // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
+        // grower declaration when an agricultural category is selected) folds
+        // into the single declaration_accepted bool the backend stamps. ToS
+        // consent (agreedToTerms) is a separate gate enforced at submit.
+        declaration_accepted:
+          declarationConfirmed && (!farmerDeclarationRequired || farmerConfirmed),
       };
       // MEH-143: logged-in users upgrade; account fields not needed.
       if (!isUpgrade) {
@@ -612,7 +631,10 @@ function RegisterProducerPageBody() {
               </button>
             )}
 
-            {/* Legal consent — Israeli Consumer Protection Law + food license declaration */}
+            {/* MEH-759 Chunk C: three separate affirmative acts — ToS/privacy
+                consent (chrome, plural), the binding licensing declaration
+                (first-person), and the conditional grower declaration. ADR-014
+                voice separation; each locked string is its own verbatim key. */}
             <label className="flex items-start gap-2 text-sm cursor-pointer">
               <input
                 type="checkbox"
@@ -624,9 +646,37 @@ function RegisterProducerPageBody() {
               <span className="leading-relaxed text-fg-muted">
                 {t("auth.register.producer.terms.intro")}{" "}
                 <a href="/terms" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.tos_link")}</a>{" "}
-                {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>{t("auth.register.producer.terms.license_declaration")}
+                {t("auth.register.producer.terms.and")}<a href="/privacy" target="_blank" className="text-primary hover:underline">{t("auth.register.producer.terms.privacy_link")}</a>
               </span>
             </label>
+
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={declarationConfirmed}
+                onChange={(e) => setDeclarationConfirmed(e.target.checked)}
+                className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                required
+              />
+              <span className="leading-relaxed text-fg-muted">
+                {t("auth.register.producer.terms.declaration")}
+              </span>
+            </label>
+
+            {farmerDeclarationRequired && (
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={farmerConfirmed}
+                  onChange={(e) => setFarmerConfirmed(e.target.checked)}
+                  className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                  required
+                />
+                <span className="leading-relaxed text-fg-muted">
+                  {t("auth.register.producer.terms.farmer_declaration")}
+                </span>
+              </label>
+            )}
 
             {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
                 Non-upgrade collisions return identical 200 ack → step 3
@@ -658,6 +708,14 @@ function RegisterProducerPageBody() {
                   }
                   if (!agreedToTerms) {
                     setError(t("auth.register.producer.validation.terms_required"));
+                    return;
+                  }
+                  if (!declarationConfirmed) {
+                    setError(t("auth.register.producer.validation.declaration_required"));
+                    return;
+                  }
+                  if (farmerDeclarationRequired && !farmerConfirmed) {
+                    setError(t("auth.register.producer.validation.farmer_required"));
                     return;
                   }
                   handleSubmit();
