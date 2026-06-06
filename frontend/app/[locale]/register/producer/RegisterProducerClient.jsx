@@ -311,7 +311,7 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-md p-8">
-        <h1 className="font-headline-md text-2xl font-bold text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+        <h1 className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
         <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
@@ -336,9 +336,15 @@ function RegisterProducerPageBody() {
         )}
 
         {step < 3 && !isUpgrade && (
-          <div className="flex gap-2 mb-8">
+          <div className="flex justify-center gap-4 mb-8">
             {[1, 2].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-border"}`} />
+              <span
+                key={s}
+                dir="ltr"
+                className={`font-english italic text-2xl leading-none ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
+              >
+                {String(s).padStart(2, "0")}
+              </span>
             ))}
           </div>
         )}
@@ -353,7 +359,7 @@ function RegisterProducerPageBody() {
         {/* Step 1: Account */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.account.title")}</h2>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
                 no Google/Apple client_id is configured. */}
@@ -421,7 +427,7 @@ function RegisterProducerPageBody() {
                 setStepError("");
                 setStep(2);
               }}
-              className="w-full bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition"
+              className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition"
             >
               {t("auth.register.producer.actions.next")}
             </button>
@@ -431,7 +437,7 @@ function RegisterProducerPageBody() {
         {/* Step 2: Business basics */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
@@ -576,7 +582,7 @@ function RegisterProducerPageBody() {
                   dir="ltr"
                 />
                 {licenseWarning && (
-                  <p className="text-xs text-amber-600 mt-1 text-start">
+                  <p className="text-xs text-fg-muted mt-1 text-start">
                     {t("auth.register.producer.validation.license_format")}
                   </p>
                 )}
@@ -618,7 +624,7 @@ function RegisterProducerPageBody() {
                   dir="ltr"
                 />
                 {licenseWarning && (
-                  <p className="text-xs text-amber-600 mt-1 text-start">
+                  <p className="text-xs text-fg-muted mt-1 text-start">
                     {t("auth.register.producer.validation.license_format")}
                   </p>
                 )}
@@ -723,7 +729,7 @@ function RegisterProducerPageBody() {
                   handleSubmit();
                 }}
                 disabled={loading}
-                className="flex-1 bg-primary text-white py-3 rounded-md hover:bg-primary-dark transition font-medium disabled:opacity-50"
+                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium disabled:opacity-50"
               >
                 {loading ? (
                   <span className="inline-flex items-center gap-2">
