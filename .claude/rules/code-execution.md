@@ -23,7 +23,11 @@ Sources: Cursor · Devin · V0 · Manus · Windsurf (2026).
 7. **Lazy Edit (Cursor)** — changed lines + `// ... existing code ...`
    markers only. Never return a full file.
 8. **Atomic Edits (Cursor)** — 3 changes in one file = 1 edit call,
-   not 3. All-or-nothing.
+   not 3. All-or-nothing. **When a refactor relocates an import + its
+   usage, batch them (MultiEdit) or remove the usage before the import** —
+   sequential edits otherwise leave a transient `no-undef` that the
+   per-edit `lint-feedback` hook scores as a (false) 3-strike block
+   (MEH-763 chunk 3, 2026-06-06).
 9. **Skeptic Mode (Devin)** — "Haven't verified X" > "X probably
    works". Declare uncertainty explicitly.
 10. **File:Line Evidence (Devin)** — every code claim needs
