@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CheckCircle, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
@@ -761,7 +761,7 @@ function RegisterProducerPageBody() {
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
             </div>
-            <h2 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
+            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.heading")}</h2>
             <p className="text-fg-muted mb-6">
               {whatsappSent
                 ? t("auth.register.producer.success.body_with_whatsapp")
@@ -770,7 +770,7 @@ function RegisterProducerPageBody() {
             {!whatsappSent && (
               <div
                 role="status"
-                className="bg-amber-50 border border-amber-200 text-amber-900 rounded-md px-4 py-3 mb-6 text-sm text-end"
+                className="bg-background border border-border text-fg-muted rounded-md px-4 py-3 mb-6 text-sm text-end"
               >
                 {t("auth.register.producer.success.whatsapp_warning")}
               </div>
@@ -783,10 +783,11 @@ function RegisterProducerPageBody() {
                 <li>{t("auth.register.producer.success.next_step3")}</li>
               </ul>
             </div>
+            <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => router.push("/producer/dashboard")}
-                className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
+                className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
               >
                 {t("auth.register.producer.success.dashboard_cta")}
               </button>
@@ -794,7 +795,7 @@ function RegisterProducerPageBody() {
                 href={`https://wa.me/?text=${encodeURIComponent(t("auth.register.producer.success.share_msg"))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-whatsapp inline-flex items-center gap-2 px-6 py-3 rounded-full font-medium text-sm"
+                className="btn-whatsapp-outline inline-flex items-center gap-2 px-6 py-3 rounded-md font-medium text-sm"
               >
                 <WhatsappLogo size={20} weight="fill" aria-hidden="true" />
                 {t("auth.register.producer.success.share_cta")}
@@ -804,13 +805,16 @@ function RegisterProducerPageBody() {
         )}
         {step === 3 && !didUpgrade && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-full bg-amber-50 mx-auto mb-4 flex items-center justify-center text-3xl">📬</div>
-            <h2 className="font-headline-md text-2xl font-bold text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
+            <div className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
+              <EnvelopeSimple size={32} className="text-fg-muted" aria-hidden="true" />
+            </div>
+            <h2 className="font-headline-lg text-3xl font-black text-text mb-2">{t("auth.register.producer.success.inbox_title")}</h2>
             <p className="text-fg-muted text-sm mb-3">{t("auth.register.producer.success.inbox_body")}</p>
             <p className="text-fg-muted text-xs mb-6">{t("auth.register.producer.success.inbox_hint")}</p>
+            <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <button
               onClick={() => router.push("/")}
-              className="bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium text-sm"
+              className="border-2 border-primary-dark text-primary-dark bg-transparent px-6 py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium text-sm"
             >
               {t("auth.register.producer.success.back_home")}
             </button>
