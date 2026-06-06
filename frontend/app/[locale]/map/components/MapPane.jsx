@@ -21,7 +21,7 @@ import { CATEGORY_LEGEND } from "@/lib/map-categories";
 function MapLoadingState() {
   const t = useTranslations();
   return (
-    <div className="w-full h-full rounded-md bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-full rounded-md bg-background animate-pulse flex flex-col items-center justify-center gap-3">
       <MapTrifold size={48} weight="duotone" className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
     </div>

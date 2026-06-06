@@ -47,6 +47,17 @@ export default function MapProducerCard({ producer, active, onClick }) {
   return (
     <article
       onClick={handleRootClick}
+      // MEH-763: keyboard parity for the mouse-only select-on-map onClick.
+      // Inner links/buttons keep their own focus (guarded by closest("a,button")).
+      onKeyDown={onClick ? (e) => {
+        if ((e.key === "Enter" || e.key === " ") && !e.target.closest("a, button")) {
+          e.preventDefault();
+          onClick(p);
+        }
+      } : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      role={onClick ? "button" : undefined}
+      aria-label={onClick ? p.name : undefined}
       className={[
         "flex gap-3 bg-white border rounded-md overflow-hidden transition",
         active ? "border-primary border-2" : "border-border",
@@ -90,7 +101,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </p>
           )}
           {priceLabel && (
-            <p className="font-english italic line-clamp-1 mt-0.5 text-accent" style={{ fontSize: "13px" }}>
+            <p className="font-english italic line-clamp-1 mt-0.5 text-accent numeric" style={{ fontSize: "13px" }}>
               {priceLabel}
             </p>
           )}
