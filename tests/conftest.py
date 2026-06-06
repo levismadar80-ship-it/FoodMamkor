@@ -235,6 +235,9 @@ def valid_producer_register_payload() -> dict:
         "producer_name": "חוות הבדיקה",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
+        # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a
+        # successful registration; the handler 422s when falsy.
+        "declaration_accepted": True,
     }
 
 

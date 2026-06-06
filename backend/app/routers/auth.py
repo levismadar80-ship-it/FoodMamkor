@@ -51,6 +51,7 @@ from app.services.oauth_verifiers import (
     verify_apple_token as _verify_apple_token,
     verify_google_token as _verify_google_token,
 )
+from app.constants import DECLARATION_VERSION
 from app.services.license_validation import ensure_license_for_categories
 from app.services.password_policy import validate_password
 from app.database import get_db
@@ -413,6 +414,19 @@ async def register_producer(
             detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
         )
 
+    # MEH-759 (ADR-022 gate 2): the binding licensing declaration is
+    # mandatory on both paths (new registration + MEH-143 upgrade). 422 is
+    # body-shape validation — it runs before the enumeration branch and is
+    # identical regardless of email existence, so it leaks nothing (same
+    # class as the contact-method guards above). Producer rows below are
+    # therefore only ever created with declared_at/declaration_version
+    # stamped.
+    if not data.declaration_accepted:
+        raise HTTPException(
+            status_code=422,
+            detail="יש לאשר את הצהרת הרישוי כדי להמשיך",
+        )
+
     # MEH-530: 422s with Hebrew copy if any selected category requires a
     # license and the body didn't supply one. Same input-validation
     # classification as the contact-method checks above.
@@ -452,6 +466,10 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
+            # above guarantees declaration_accepted is True here.
+            declared_at=datetime.now(timezone.utc),
+            declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
         )
         db.add(producer)
@@ -544,6 +562,10 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
+            # above guarantees declaration_accepted is True here.
+            declared_at=datetime.now(timezone.utc),
+            declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
         )
         db.add(producer)
