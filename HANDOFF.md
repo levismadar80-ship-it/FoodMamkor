@@ -28,6 +28,44 @@ all CI green on first push (backend pytest, vitest, ruff, mypy, build, E2E) — 
   merge: "Re-run all jobs" / fresh push / close+reopen. Details in the plan doc
   "CI-dispatch note".
 
+## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
+
+Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
+
+- **MEH-753** — event dates respect locale: shared `frontend/lib/format-date.js` replaces 4 hardcoded `he-IL` formatDate helpers (EventsClient, EventDetailClient, ExperienceCard, HomeProductCard). PR **#976** ✅ merged.
+- **MEH-741** — Recipe JSON-LD: `minutesToIso8601` → `undefined` (not `null`) + filter drops null; un-skipped 2 MEH-729 tests + EN'd one BottomNav `it()`. vitest 15/15. PR **#979** ✅ merged.
+- **MEH-731** — locale-aware `usePathname`: FooterSlot + admin/layout swapped `next/navigation` → `@/i18n/navigation` (only 2 remaining sites; useRouter untouched). PR **#984** ✅ merged.
+
+## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
+
+Autonomous 4-issue batch, one branch + draft PR each off staging. Full table +
+scope notes: [docs/audits/2026-06-night-batch-2.md](./docs/audits/2026-06-night-batch-2.md).
+
+- **MEH-452** → PR **#978** (`Closes`): JSON-LD `openingHoursSpecification` +
+  `servesCuisine` + WebSite/Organization graph nodes in `lib/seo.js` (graph 3→5,
+  closes dangling `isPartOf #website`). 42/42 vitest, build green.
+- **MEH-405** → PR **#980** (`Closes`): workflow Rules — PR-scope verification +
+  Linear duplicate-check. ⚠️ Specced as 22/23 but those numbers are taken
+  (MEH-579/585); slotted at **26/27**, bodies verbatim. Renumber decision flagged.
+- **MEH-258** → PR **#982** (`Refs`, draft): `SECURITY-CHECKLIST.md` already
+  existed (8 TRAPs) — appended a draft "2026-06 audit watch items" section
+  (AUD-002/003/004/007 + MEH-265). Not wired into CLAUDE.md/template (per scope).
+- **MEH-228** → this PR (`Refs`, read-only audit): `docs/audits/2026-06-ui-states-audit.md`
+  — ~100 findings, **13 CRITICAL** in 4 root patterns (Pattern A = admin
+  fire-and-reload handlers, ~10), Top-10 with file:line, Hebrew summary. No code changed.
+
+**Next:** review the 3 scope notes in the batch doc, then triage MEH-228 Top-10
+(start with a shared `useAdminAction` helper → closes ~10 CRITICAL at once).
+
+---
+
+## 2026-06-06 (PM) — MEH-762 Chunk 4: is_verified badge decouple
+
+**Branch `feature/meh-762-tier-public-contract`, draft PR (Refs MEH-762).** The "מאומת" pill driver switched `is_verified` → `verification_tier === "verified"` (`badges.js`); the over-claim tooltip replaced with the Sapir copy-lock (terms §5.2-aligned). `is_verified` field **NOT deleted** (badge role only). 3 test files updated (vitest **80✓**); `npm run build` ✓; `grep is_verified badges.js` = 0 (code; comments reworded to keep the gate clean).
+- **Deferred → MEH-766** (opened): `trust_tier.py:32` coupling (a) · backend `?verified` filter `producer_listing.py:49` (b) · map verified surfaces + Zod `schemas.js` (c) · `AdminProducersTable`/`ProducerForm` (d) · `is_verified` column drop via Expand-Contract (e).
+- ⚠️ **Deploy note:** the pill is absent until admins `grant-verify` a producer (intended ADR-022 over-claim correction; pre-launch, no real producers).
+- **Next — Chunk 5** (likely docs-only): handoff to MEH-76 — the S12 badge consumes the 3 public fields (`verification_tier` / `verified_at` date / `verification_doc_type`) + the MEH-758 keys, with **LTR-isolation on `{date}`** required; `"cosmetics"` has no tooltip key yet (`verified_tooltip_registration` MEH-758 micro-follow-up).
+
 ## 2026-06-06 — MEH-214: audit fix-wave (autonomous LOW-RISK lane) — PR #974 + DEFER package
 
 Follow-on overnight wave on the 56 audit findings. Ledger:

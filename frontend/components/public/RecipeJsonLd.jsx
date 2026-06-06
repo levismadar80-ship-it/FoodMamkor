@@ -18,13 +18,16 @@ function minutesToIso8601(minutes) {
   // emit PT<H>H<M>M because recipes don't span days. Drop zero parts so
   // PT30M (not PT0H30M) — validator accepts both, the shorter form is
   // friendlier to crawlers.
-  if (!minutes || minutes <= 0 || minutes > ISO_MIN_LIMIT) return null;
+  // MEH-741: return undefined (not null) for absent/invalid durations so the
+  // key is stripped — `"prepTime": null` is invalid schema.org/Recipe JSON-LD
+  // (a duration must be an ISO-8601 string or absent entirely).
+  if (!minutes || minutes <= 0 || minutes > ISO_MIN_LIMIT) return undefined;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   let out = "PT";
   if (h) out += `${h}H`;
   if (m) out += `${m}M`;
-  return out === "PT" ? null : out;
+  return out === "PT" ? undefined : out;
 }
 
 function splitLines(text) {
@@ -56,9 +59,11 @@ export function buildRecipeSchema({ recipe, producerName, canonicalUrl }) {
     url: canonicalUrl,
     inLanguage: "he-IL",
   };
-  // Strip undefined keys for a clean serialization.
+  // Strip absent keys for a clean serialization. MEH-741: drop null too, so
+  // no duration (or future optional) field can ever emit an invalid
+  // `"key": null` into the JSON-LD.
   return Object.fromEntries(
-    Object.entries(schema).filter(([, v]) => v !== undefined)
+    Object.entries(schema).filter(([, v]) => v !== undefined && v !== null)
   );
 }
 

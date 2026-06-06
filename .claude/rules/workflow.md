@@ -647,3 +647,37 @@ Tasks auto-expire after 7 days.
     (MEH-481) merged between branch creation and push. Three merges in a
     one-hour window made the 4th branch stale. Forward-only convention;
     no retrofit of open feature branches._
+
+26. **Verify PR scope before migration or close-without-merge.** A PR
+    title containing "docs", "HANDOFF", or "session" does NOT mean the
+    diff is docs-only. Before approving migration to staging or
+    close-without-merge:
+    a. Run `gh pr view #N --json files` to list every changed file
+    b. If file count > 1 OR any file is outside `*.md` / `docs/` paths,
+       treat as code/config change requiring full scope-match
+    c. Surface every non-docs file explicitly to the human before
+       proceeding — never silent abandonment
+    (Root cause: 2026-04-30 PR #343 triage — would have abandoned Rule
+    21, .gitignore *.db, and 2 Playwright fixes if not caught.)
+
+27. **Search Linear before opening any new issue.** Before calling
+    save_issue with no `id` (i.e., creating new), run list_issues with
+    a query covering the proposed title's content nouns + 1-2
+    synonyms. For every result in Backlog/In Progress, scope-match:
+    a. If existing issue covers the same scope → recommend extending
+       its description instead of opening new
+    b. If existing issue partially overlaps → surface to human, ask:
+       fold / sibling / open as new
+    c. Never open silently when an overlap exists in active states
+    Skip duplicate-check only when the human explicitly says "skip
+    duplicate-check" or "open as sibling — I already verified".
+    (Root cause: 2026-05-01 session opened MEH-428/430 without check.
+    Self-audit on 3 follow-up proposals found MEH-310/384/215 as
+    pre-existing overlaps for all 3 — backlog inflation prevented
+    only by retroactive search. See also: MEH-307 same pattern.)
+
+    _Source: MEH-405. Specced (2026-04-30) as Rules 22 + 23 — back then
+    Rule 21 was the tail of the list. Rules 22–25 (MEH-579 ×3, MEH-585)
+    landed in the interim, so these slot at 26 + 27 to preserve sequential
+    numbering with no gaps and no collision. Rule bodies are verbatim from
+    the MEH-405 spec; only the leading numbers changed._
