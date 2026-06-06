@@ -39,12 +39,12 @@ Lesson added to `code-execution.md` §8: batch import+usage moves (MultiEdit) �
 states) on the Chunk-4 preview → merge. Then MEH-763 done; MEH-762 Chunk 4 (verified-badge
 semantics) hands off to the now-frozen map sites.
 
-## 2026-06-06 (PM) — MEH-762 chunks 1+2 + session-close digest
+## 2026-06-06 (PM) — MEH-762 chunks 1–3 + session-close digest
 
-**MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`, PR #966.**
-- **Chunk 1** (verified_at + verification_doc_type, expand-only): models/docs by CC; migration `f1c7b9a3e264` + `EXPECTED_REV` Sapir-applied (`b84ceb6`) — `alembic/versions/**`, `.github/workflows/**`, and `.claude/settings.json` are all CC-denied (self-sealing; a conversational lift can't override — MEH-738).
-- **Chunk 2** (admin stamping): `grant-verified` / `revoke-verified` in `admin.py` (`require_admin`); `GrantVerifiedIn` Literal; tz-aware `now(timezone.utc)` (D1); ISO in response; re-grant overwrites; `is_verified` untouched (Chunk 4); 13-case test file. pytest deferred to CI (no sandbox Postgres); ruff clean.
-- **LOCKED D1–D4** in ticket top block. **Chunks 3-5 per plan:** 3 = `verification_tier` resolver + public exposure (verified_at **date-only**, doc_type) + **fold `ProducerAdminOut.verified_at/verification_doc_type` admin visibility here** + contract pytest; 4 = `is_verified` badge decouple (badges.js relabel; `trust_tier.py:32` coupling → follow-up ticket); 5 = handoff to MEH-76.
+**MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`.**
+- **Chunks 1+2 MERGED to staging** (PR #966, squash `7a52e77`). Chunk 1 = verified_at + verification_doc_type (expand-only; migration `f1c7b9a3e264` + `EXPECTED_REV` Sapir-applied `b84ceb6` — `alembic/versions/**`, `.github/workflows/**`, `.claude/settings.json` all CC-denied + self-sealing, MEH-738). Chunk 2 = admin `grant-verified`/`revoke-verified` (`require_admin`, `GrantVerifiedIn` Literal, tz-aware `now(timezone.utc)`, ISO response, re-grant overwrite, 13-case tests).
+- **Chunk 3 (new PR — public exposure + resolver):** `ProducerListOut` exposes `verification_tier` (computed, never stored), `verified_at` (**date-only**, `field_validator` truncates the TIMESTAMPTZ), `verification_doc_type`. Resolver mirrors MEH-530 `categories_require_license` name-membership (`constants.LICENSE_REQUIRED_CATEGORIES` SoT, no DB in serialization). `trust_tier` untouched. **AdminOut decision:** the 3 fields reach admin via inheritance at **date granularity** — I did NOT add a full-timestamp admin override (it would fight the inherited date-truncation `field_validator`; flag at gate if admin wants `declared_at`-style precision). 9-case test file; pytest deferred to CI.
+- **LOCKED D1–D4** in ticket top block. **Remaining:** 4 = `is_verified` badge decouple (badges.js relabel; `trust_tier.py:32` coupling → follow-up ticket); 5 = handoff to MEH-76 Chunk 4 (S12 badge consumes these fields + MEH-758 keys w/ LTR-isolation).
 
 **Session-close digest (06/06 PM):**
 - MEH-132 S7 port DONE (#965 → staging) · MEH-763 S5 chunk 1 merged (#967); F1 flat/`surface-floating` · F2 markers carry no category colors (photo/monogram, honey `#C8821E`+icon in categories lib) · F3 chips `rounded-md` — all locked evidence-based, recorded in MEH-763.
