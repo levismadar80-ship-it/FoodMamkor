@@ -42,11 +42,19 @@ for local dev and any directly-exposed deploy.
 import json
 import os
 
+import structlog
 from fastapi import Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+logger = structlog.get_logger("mehamakor.rate_limit")
+
 _TRUTHY = frozenset({"1", "true", "yes", "on"})
+
+# SEN-004 (MEH-775): slowapi SKIPS a limit when key_func returns a falsy
+# value, so an empty per-email key left auth routes unprotected. Key-less
+# requests bucket here together instead — never an empty key.
+NO_EMAIL_BUCKET = "__no_email__"
 
 
 def _trusted_proxy_enabled() -> bool:
@@ -82,8 +90,27 @@ def get_real_client_ip(request: Request) -> str:
     return get_remote_address(request)
 
 
+def _no_email_fallback(request: Request, reason: str) -> str:
+    """SEN-004 (MEH-775): return the shared key-less bucket, never "".
+
+    A falsy key makes slowapi skip the limit, so a missing/undecodable email
+    would otherwise disable per-email rate limiting on the auth route. All
+    key-less requests share NO_EMAIL_BUCKET (the per-IP limit on the same
+    route is the second layer). Logged so the fallback is observable without
+    re-creating the slowapi "Empty value" error noise.
+    """
+    path = getattr(getattr(request, "url", None), "path", "<unknown>")
+    logger.info(
+        "rate_limit.email_key_fallback",
+        reason=reason,
+        route=path,
+    )
+    return NO_EMAIL_BUCKET
+
+
 def email_from_body(request: Request) -> str:
-    """MEH-306: per-email rate-limit key for /auth/forgot-password.
+    """MEH-306: per-email rate-limit key for /auth/forgot-password,
+    /auth/register, /auth/register/producer.
 
     FastAPI parses the JSON body to validate against the Pydantic model
     BEFORE slowapi's @limiter.limit wrapper invokes key_func, so by the
@@ -91,22 +118,23 @@ def email_from_body(request: Request) -> str:
     non-blocking; await is unnecessary (slowapi key_func is sync).
 
     Returns the lower-cased email so case-only differences cannot bypass
-    the per-email bucket. Empty string on any decode failure — slowapi
-    treats that as a single shared bucket, which is acceptable because
-    the per-IP bucket on the same endpoint already caps malformed-body
-    abuse.
+    the per-email bucket. On any missing/empty/undecodable email, falls back
+    to NO_EMAIL_BUCKET (SEN-004) — a non-empty shared bucket — so slowapi
+    still enforces the limit instead of skipping it.
     """
     body = getattr(request, "_body", None)
     if not body:
-        return ""
+        return _no_email_fallback(request, "no_body")
     try:
         decoded = json.loads(body)
         if not isinstance(decoded, dict):
-            return ""
+            return _no_email_fallback(request, "non_dict_body")
         email = decoded.get("email", "")
-        return email.strip().lower() if isinstance(email, str) else ""
+        if isinstance(email, str) and email.strip():
+            return email.strip().lower()
+        return _no_email_fallback(request, "missing_email")
     except (json.JSONDecodeError, AttributeError, UnicodeDecodeError):
-        return ""
+        return _no_email_fallback(request, "decode_error")
 
 
 limiter = Limiter(key_func=get_real_client_ip)
