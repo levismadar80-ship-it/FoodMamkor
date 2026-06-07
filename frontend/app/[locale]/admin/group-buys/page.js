@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 
 // Status class map; labels resolved via t() in render
@@ -17,6 +18,7 @@ const STATUS_OPTIONS = ["open", "funded", "cancelled", "fulfilled"];
 
 export default function AdminGroupBuysPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [items, setItems] = useState(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [updating, setUpdating] = useState(null);
@@ -129,7 +131,7 @@ export default function AdminGroupBuysPage() {
                   </span>
                   <span className="text-fg-muted">|</span>
                   <span className="text-fg-muted text-xs">
-                    {t("group_buys.until", { date: new Date(gb.deadline).toLocaleDateString("he-IL") })}
+                    {t("group_buys.until", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                 </div>
 

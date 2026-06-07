@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const { run, isBusy } = useAdminAction();
   const [tab, setTab] = useState("reports");
   const [reports, setReports] = useState([]);
@@ -116,7 +118,7 @@ export default function AdminReportsPage() {
                         <li key={rep.id} className="bg-red-50 rounded-[8px] p-2 text-xs">
                           <p>{rep.reason}</p>
                           <p className="text-fg-muted mt-1">
-                            {new Date(rep.created_at).toLocaleDateString("he-IL")}
+                            {formatEventDate(rep.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                           </p>
                         </li>
                       ))}

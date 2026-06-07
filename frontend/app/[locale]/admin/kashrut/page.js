@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -18,21 +19,14 @@ const BADGE_KEYS = {
   "artisan-dairy": "artisan_dairy",
 };
 
-function formatDate(iso) {
+function formatDate(iso, locale) {
   if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
+  return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export default function AdminKashrutPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("pending");
@@ -146,7 +140,7 @@ export default function AdminKashrutPage() {
                       <span className="text-fg-muted text-xs">{t("kashrut.no_cert")}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-fg-muted">{formatDate(row.created_at)}</td>
+                  <td className="px-4 py-3 text-fg-muted">{formatDate(row.created_at, locale)}</td>
                   <td className="px-4 py-3 text-fg-muted text-xs">{row.notes || "—"}</td>
                   {statusFilter === "pending" && (
                     <td className="px-4 py-3">

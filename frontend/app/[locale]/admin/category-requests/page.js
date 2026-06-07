@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
 export default function AdminCategoryRequestsPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -110,7 +112,7 @@ export default function AdminCategoryRequestsPage() {
                     {req.producer_id ? req.producer_id.slice(0, 8) + "…" : "—"}
                   </td>
                   <td className="px-5 py-3 text-xs text-fg-muted">
-                    {new Date(req.created_at).toLocaleDateString("he-IL")}
+                    {formatEventDate(req.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                   </td>
                   <td className="px-5 py-3">
                     <span
