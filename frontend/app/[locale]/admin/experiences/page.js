@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { MapPin, Leaf } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -11,21 +12,14 @@ import InfoTooltip from "@/components/InfoTooltip";
 // Tab values map to admin.experiences.tabs.* keys; labels resolved in render
 const TAB_VALUES = ["pending", "changes_requested", "approved", "rejected", "all"];
 
-function formatDate(iso) {
+function formatDate(iso, locale) {
   if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
+  return formatEventDate(iso, locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 export default function AdminExperiencesPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [tab, setTab] = useState("pending");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -181,6 +175,7 @@ export default function AdminExperiencesPage() {
                   ex={ex}
                   busy={busy}
                   t={t}
+                  locale={locale}
                   onApprove={approve}
                   onChanges={(row) => openModal(row, "changes")}
                   onReject={(row) => openModal(row, "reject")}
@@ -242,7 +237,7 @@ export default function AdminExperiencesPage() {
   );
 }
 
-function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
+function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) {
   const [expanded, setExpanded] = useState(false);
   const modBadge =
     ex.moderation_status === "FLAGGED"
@@ -263,7 +258,7 @@ function ExperienceRow({ ex, busy, t, onApprove, onChanges, onReject }) {
           </button>
         </td>
         <td className="p-3 text-fg-muted">{ex.host?.name || "—"}</td>
-        <td className="p-3 text-fg-muted">{formatDate(ex.event_date)}</td>
+        <td className="p-3 text-fg-muted">{formatDate(ex.event_date, locale)}</td>
         <td className="p-3 text-fg-muted">{ex.city || "—"}</td>
         <td className="p-3">
           <span className={`text-xs px-2 py-1 rounded-full ${modBadge}`}>
