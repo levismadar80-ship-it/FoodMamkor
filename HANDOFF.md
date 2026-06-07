@@ -5,6 +5,7 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+<<<<<<< HEAD
 ## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
 
 **Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
@@ -43,6 +44,37 @@ No code fixes shipped (Phase C deferred — rationale in doc).
 First two low-risk fix PRs to action: HOT-017 (SEO `sameAs`/OG guards), HOT-018 (reviews date/pagination).
 
 ---
+
+## 2026-06-06 (night) — Overnight batch #7: 6 deferred items → 2 PRs, 4 already-done
+
+Autonomous batch of 6 documented-deferred items (HANDOFF/memory). Every premise
+verified against `staging` with file:line before acting (meta-pattern #1) —
+**4 of 6 were already complete**, surfaced as no-ops, no empty PRs. Full ledger:
+[`docs/audits/2026-06-night-batch-7.md`](./docs/audits/2026-06-night-batch-7.md).
+
+- **#996 (draft)** — events/new EN category labels: flat `CATEGORIES` → `CATEGORY_KEYS`
+  + `events.categories` `t()` (EventsClient pattern). 0 new keys. Refs MEH-475.
+- **#998 (draft)** — Wave 6 metadata tail: 4 static routes (events/experiences/group-buys
+  lists + register/producer) → `getTranslations` (`seo.*`). New keys parity 2584/2584.
+  Fixed 2 hreflang leftovers + a double-brand. Scope corrected: sitemap.js has 0 strings;
+  detail routes already done in MEH-476 3b2. Refs MEH-475.
+- **No-ops (already on staging):** (2) robots.txt has no `/en` disallow to lift — EN
+  already crawlable (hreflang gate live, 30 routes). (4) all 8 auth routes already split
+  + `robots:noindex` (#915 precedent applied prior). (5) **PR #934 was merged** (not
+  closed-before-merge) — appendix present at `docs/legal/…licensing-tiers.md:179`.
+  (6) MEH-475 S2 SecurityTab already i18n'd (#766/767/768; `settings.security` 32 keys parity).
+- **Recommendation:** HANDOFF cleanup pass — retire the closed deferred items (Wave 6
+  detail routes, auth splits, S2) so they aren't re-dispatched in future batches.
+
+
+## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
+
+Autonomous second-shift session. Ledger: [docs/audits/2026-06-night-batch-6.md](./docs/audits/2026-06-night-batch-6.md).
+
+- **MEH-434** ✅ — client-side `launch_cohort` Sentry tag. Draft **PR #994** off `staging`. New `frontend/lib/launch-cohort.js` + `useLaunchCohortTag` in `auth-context.js` (2-line diff); cohort from `user.created_at` (no backend/schema). vitest 6/6 + full suite + build + lint green. **Backend `auth.py`/`UserOut`/`test_auth.py` slice DEFERRED** (see `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434 (slice only, not Closes).
+- **MEH-290** ⛔ BLOCKED — copy is verbatim, but the 4 tour anchor targets don't exist (Step 1 ProfileCompletenessCard = unshipped MEH-288; Step 3 add-product button absent; Step 4 share button = open Q#2). Building requires invention + design judgment + missing dep. Unblock path in ledger.
+- **B1 (MOB) / B2 (FUZZ)** ⏸ NOT TRIGGERED — `feature/meh-233-mobile-audit` and `feature/schemathesis-fuzz` PRs don't exist yet. Re-check on each wake.
+- **Shepherd:** #987 green; #975 CI re-running; **#991 ruff-format failure** (owning session's whatsapp.py — out of resync scope, logged not touched). `send_later` unavailable → no scheduled check-in; rely on #994 webhooks + per-wake sweeps.
 
 ## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
 
