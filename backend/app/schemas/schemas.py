@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
+from app.utils.clock import israel_today
 
 _LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
 
@@ -482,6 +483,21 @@ class ProducerUpdate(BaseModel):
         dc = self.delivery_cities
         if dn and dc and len(dc) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_vacation_until(self):
+        # AUD-039: the admin write path must not persist an already-past
+        # return date. Israel-tz "today" (not server UTC) so an admin in
+        # Israel isn't blocked on a date that's still today locally. Only
+        # guards the vacation intent — a stale date on a non-vacation update
+        # is ignored (the router/serializer already clears it).
+        if (
+            self.availability_state == "on_vacation"
+            and self.vacation_until is not None
+            and self.vacation_until < israel_today()
+        ):
+            raise ValueError("תאריך החזרה לחופשה חייב להיות עתידי")
         return self
 
 
