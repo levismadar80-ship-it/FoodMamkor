@@ -5,7 +5,6 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-<<<<<<< HEAD
 ## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
 
 **Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
