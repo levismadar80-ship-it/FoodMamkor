@@ -18,6 +18,16 @@ import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
 export { SITE_URL };
 
+// HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
+// always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org
+// convention) — mirrors lib/i18n-seo.js OG_LOCALE (underscore form) and
+// format-date.js LOCALE_TAG. COUNTRY_LABEL localizes the one hardcoded
+// breadcrumb constant ("ישראל"). Producer name/description and DB category
+// names are user content with no message-key translation, so they stay as-is
+// (locale-invariant), per the issue's "name/address unchanged" rule.
+const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
+const COUNTRY_LABEL = { he: "ישראל", en: "Israel" };
+
 /**
  * Build the <title> per the MEH-9 spec:
  *   [name] — [category] ב[city] | מהמקור
@@ -154,7 +164,7 @@ function parseOpeningHoursSpec(raw) {
  *           the FoodEstablishment, plus WebSite + Organization graph nodes
  *           (closes the dangling WebPage.isPartOf → #website reference).
  */
-export function buildJsonLd(producer) {
+export function buildJsonLd(producer, locale = "he") {
   if (!producer) return null;
 
   const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
@@ -235,7 +245,7 @@ export function buildJsonLd(producer) {
   // Category and city items are skipped when the source data is missing,
   // so the list stays valid (Google rejects breadcrumbs with gaps).
   const crumbs = [
-    { name: "ישראל", item: SITE_URL },
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
   ];
   if (category) {
     crumbs.push({
@@ -268,7 +278,7 @@ export function buildJsonLd(producer) {
     "@id": `${pageUrl}#webpage`,
     url: pageUrl,
     name: title,
-    inLanguage: "he-IL",
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
     isPartOf: { "@id": `${SITE_URL}#website` },
     primaryImageOfPage: producer.images?.[0] || undefined,
     breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
@@ -285,7 +295,7 @@ export function buildJsonLd(producer) {
     "@id": `${SITE_URL}#website`,
     url: SITE_URL,
     name: BRAND_NAME,
-    inLanguage: "he-IL",
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
     publisher: { "@id": `${SITE_URL}#organization` },
   };
 
