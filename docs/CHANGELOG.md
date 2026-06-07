@@ -7,6 +7,38 @@
 ### 2026-06-06 — AUD-039/040 (MEH-214): availability server-side validation + Israel tz
 
 - **`fix(availability)`**: every `availability_state` write path now rejects a **past** `vacation_until`, determined in **Asia/Jerusalem** time (not the server's UTC `date.today()`). New `app/utils/clock.py` (`israel_now`/`israel_today`, reusing the watchdog's `BUSINESS_HOURS_TIMEZONE`) + `app/services/availability_validation.py` (explicit-but-permissive transition matrix `ALLOWED_TRANSITIONS`, `validate_transition`, `resolve_vacation_until`). Wired into `set_availability_state` (new endpoint — value→400, missing/past return-date→422, status codes preserved), the legacy `set_availability_status` (past-date→422), and a narrow `ProducerUpdate._validate_vacation_until` model-validator (admin path). **Read-path auto-clear (`schemas.py:591`) intentionally left on `date.today()`** — the merged mutation suite's `test_vacation_ending_today_is_not_auto_cleared` (AV-3) pins that boundary, and Israel-ahead-of-UTC would flakily break it; tz correctness lands on the write path where no test conflicts (full alignment is a follow-up that ships with the expansion-test update). New `tests/test_availability_validation.py` (unit: clock + Fri-23:30-Israel boundary + matrix + return-date guard; API: past-date rejection on both endpoints). Phase 0: `docs/discovery/2026-06-availability-phase0.md`.
+### 2026-06-06 — UIS Pattern A (MEH-228): useAdminAction — admin double-submit protection
+
+- **`fix(admin)`**: the 10 CRITICAL admin fire-and-reload handlers (UIS-038/039/040/041 reports, UIS-055 users toggleBlock, UIS-060/061 content restore/delete, UIS-063/064/065 producers approve/toggle-status/ambassador) all shared one hole — `await api.post(...)` with **no in-flight lock and no error surface** → a rapid double-click double-fired the mutation (double moderation / block / delete) and a failed request was swallowed silently. New shared hook `frontend/lib/use-admin-action.js` (`run(key, fn, onError?)` + `isBusy(key)`): a synchronous per-key `inFlight` ref blocks the second call before re-render (genuine double-fire protection), `busyKeys` state disables the in-flight trigger, and errors surface via the central `errorMessage()` Hebrew toast (MEH-251) — **no new i18n keys**. Wired into `reports/page.js`, `users/page.js`, `content/page.js`, and `producers/use-admin-producers.js` (+ `isBusy` threaded through `AdminProducersTable` → `ProducerActions` for the row buttons). New `__tests__/useAdminAction.test.js` (7 cases: busy/reset, same-key double-fire block, concurrent keys, default/string/fn error surfaces). vitest 429✓, `npm run build` green, eslint 0 errors. **DEFER:** none — all 10 sites are the mechanical pattern (no per-site custom logic beyond the hook).
+### 2026-06-06 (night-batch-6) — MEH-434: launch-cohort Sentry tag (client-side slice)
+
+- **`feat(MEH-434)`**: launch-window observability — the Sentry `launch_cohort` tag is now set client-side so month-1 users can be filtered in Replay. New `frontend/lib/launch-cohort.js` (`computeLaunchCohort` + `useLaunchCohortTag`); `auth-context.js` calls the hook (2-line diff: import + call) so the tag stays in sync with the signed-in user and clears on logout. Cohort derived from `user.created_at` (already on `UserOut` → `/auth/me`, `schemas.py:752`) — **no backend/schema change**. setTag only, no PII, no setUser (per MEH-434 Forbidden). vitest 6/6 (boundary cases pinned), `npm run build` + lint (0 errors) green. **Deferred → follow-up:** the server-side `auth.py` helper + `UserOut.launch_cohort` + `test_auth.py` slice from the original plan (documented in `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434.
+
+### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
+
+`refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`
++ `state-selected` for **all three consumers** (/home `HomeProducersGrid`, /producers
+`ProducersClient`, /map `FilterChipsBar`), per DESIGN.md §Shapes / BRAND §3 (*no
+`rounded-full` on rectangles*). Flips the temporary default added by MEH-763 chunk 3.
+
+- The /home + /producers `rounded-full` pill chips were a **pre-existing DESIGN
+  violation**; /map already opted in (MEH-763 chunk 3).
+- Removed the temporary `chipShape` / `selectedClassName` opt-in props (component back
+  to one shape) + the redundant `FilterChipsBar` props. Zero logic/copy changes.
+- Phase 0 (read-only): S4 homepage FINAL (MEH-639) is **silent** on chip shape → no
+  design conflict; BRAND §3 / DESIGN §Shapes governs.
+- Verified: build · vitest 423/0 · ESLint 0 errors; Sapir QA on all 3 surfaces.
+
+### 2026-06-06 — fix: HomeProductCard.test next-intl mock — staging vitest green (#988)
+
+`fix(MEH-753)`: `#976` (MEH-753, locale-aware event dates) added `useLocale()` to
+`HomeProductCard` but its test had no next-intl mock → 16 tests threw "No intl context
+found", leaving **staging silently red on `Frontend unit tests (vitest)`** — a
+non-required check, so it slipped past the merge gate and every open PR inherited the
+16 failures (surfaced while triaging MEH-764 #987's CI). Mocked `next-intl`'s
+`useLocale` per the `RecipeCard.test` precedent. **Test-only**; 407 → 423 passing.
+The `formatDate` helper dedup itself was already done by #976 (MEH-753 — shared
+`format-date.js`, incl. `HomeProductCard`); only the missing test mock remained.
 
 ### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
 
