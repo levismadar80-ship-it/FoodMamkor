@@ -5,6 +5,45 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
+
+**Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
+Branch `claude/friendly-fermat-CSzTr` (harness-assigned). Docs-only diff; **DRAFT PR**.
+No code fixes shipped (Phase C deferred — rationale in doc).
+
+**Sentry (org `df7d71a2ad7a`):** frontend 0 unresolved; backend 19.
+- **SEN-001** QueuePool exhaustion (~500 events, one burst 23d ago, every endpoint) —
+  `database.py` engine has no `pool_size`/`max_overflow`/`pool_recycle` → config/infra → Sapir.
+- **SEN-002/003 (ACTIVE)** FK + NotNull on producer delete — **already fixed in code**
+  (PR #946 MEH-747/755) but **not in prod release `4ab691a`** (verified via
+  `git merge-base --is-ancestor`). → deploy staging→main + resolve in Sentry.
+- **SEN-004 (ACTIVE)** slowapi skips per-email limit on empty key (`/auth/register/producer`) → auth → Sapir.
+- **SEN-005 (ACTIVE)** Anthropic credit-too-low — fail-open catches it (no user impact);
+  Sentry anthropic integration reports `handled:no` → config (add credits) + noise.
+- **SEN-007/008** noise (lifespan CancelledError; MEH-500 verification issue) → ignore/resolve.
+
+**Hotspot deep review (top-10 churn×LOC, 10 read-only subagents):**
+- **HOT-001 CRITICAL (verified by me):** `GET/PUT /producers/me` returns `ProducerAdminOut`
+  which carries `risk_score`/`risk_reasoning` (`schemas.py:659-660`) → producer reads their own
+  AI risk score + reasoning. Needs a self-serve response model w/o risk fields. Schema → Sapir.
+- **HOT-002 HIGH:** `admin.py:281 toggle_producer_status` force-approves any non-approved
+  producer (incl. `rejected`) → goes public, bypasses approval notifications.
+- **HOT-003 HIGH:** stacked title validators (`sanitize`→`None`→`.strip()`) → 500 on
+  punctuation/HTML-only title (HomeProduct/Experience/Recipe).
+- **HOT-004 HIGH (prod-confirmed by SEN-002/003):** schema FK gaps remain (router-only patch);
+  `KashrutBadgeRequest.producer_id` is an un-fixed sibling.
+- **HOT-005 HIGH:** no Zod validation before `/producers` map fetch (rule 19) → string-coord → blank map.
+- **HOT-006 HIGH:** locale-blind JSON-LD → EN pages emit HE `@id`/`url` → duplicate structured-data identity.
+- MED/LOW: HOT-007..018 (map selection staleness, form stale-closure, reviews optimistic-update,
+  delete_account non-atomic, push_subscription dict DoS, map ref leaks, etc.). Full table in doc.
+
+**Dedup:** producer_name/list-caps/admin_notes/reset-oracle folded into AUD-011/013/012/015.
+
+**For MORNING-BRIEF:** new findings doc — incorporate `SEN-`/`HOT-` alongside `AUD-`/`UIS-`.
+First two low-risk fix PRs to action: HOT-017 (SEO `sameAs`/OG guards), HOT-018 (reviews date/pagination).
+
+---
+
 ## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
 
 **MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
