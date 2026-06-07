@@ -5,6 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
+
+**Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per
+issue off fresh `staging`; **none merged — Sapir's merge is the gate.**
+
+- **MEH-767** (HOT-001 CRITICAL) → **PR #1005** `fix(MEH-767): owner-scoped schema
+  for /producers/me`. New `ProducerOwnerOut` drops `risk_score`/`risk_reasoning`
+  (+ declaration audit) from the owner endpoint; keeps `producer_license_number`.
+  Serialization-only.
+- **MEH-769** (HOT-002 HIGH) → **PR #1006** `fix(MEH-769): enforce producer-approval
+  state machine`. `toggle-status` guarded to approved⇄inactive; else → 409. New
+  msg key `admin.producers.toggle.invalid_transition` (he+en). Off fresh staging
+  (no overlap with #767).
+- **MEH-770** (SEN-001) → **PR #1008** `fix(MEH-770): tune + harden SQLAlchemy
+  engine pool`. Explicit env-overridable pool config + `_ObservableQueuePool`
+  structured exhaustion log. **New env vars (Sapir → Railway, not in any env
+  file):** `DB_POOL_SIZE=10 DB_MAX_OVERFLOW=5 DB_POOL_TIMEOUT=30 DB_POOL_RECYCLE=1800`.
+  Scope note: env read in `database.py` (config.py permission-protected).
+- **MEH-771** (RED) → **⛔ BLOCKED.** Precondition unmet: no `outbound_messages`
+  migration in `alembic/versions/`, `EXPECTED_REV` still `f1c7b9a3e264` (MEH-762),
+  no `OutboundMessage` model. PR #991's Alembic (Sapir terminal) not yet applied.
+  **Unblock:** apply + commit the migration, bump `EXPECTED_REV`, re-run from Chunk A.
+
+**Next:** Sapir reviews/merges #1005/#1006/#1008 (each a YELLOW WAIT gate);
+sets the MEH-770 Railway env vars before the MEH-768 release; then unblocks MEH-771.
+
 ## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
 
 **Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
