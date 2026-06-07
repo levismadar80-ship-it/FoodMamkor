@@ -26,7 +26,9 @@ def _int_env(name: str, default: int, *, minimum: int = 0) -> int:
         log.warning("invalid %s=%r (not an int) — using default %s", name, raw, default)
         return default
     if value < minimum:
-        log.warning("invalid %s=%s (< %s) — using default %s", name, value, minimum, default)
+        log.warning(
+            "invalid %s=%s (< %s) — using default %s", name, value, minimum, default
+        )
         return default
     return value
 
@@ -99,7 +101,9 @@ def _engine_kwargs_for(database_url: str) -> dict:
     return kwargs
 
 
-engine = create_engine(settings.database_url, **_engine_kwargs_for(settings.database_url))
+engine = create_engine(
+    settings.database_url, **_engine_kwargs_for(settings.database_url)
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
