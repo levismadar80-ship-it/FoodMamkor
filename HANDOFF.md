@@ -5,6 +5,59 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
+
+Autonomous second-shift session. Ledger: [docs/audits/2026-06-night-batch-6.md](./docs/audits/2026-06-night-batch-6.md).
+
+- **MEH-434** ✅ — client-side `launch_cohort` Sentry tag. Draft **PR #994** off `staging`. New `frontend/lib/launch-cohort.js` + `useLaunchCohortTag` in `auth-context.js` (2-line diff); cohort from `user.created_at` (no backend/schema). vitest 6/6 + full suite + build + lint green. **Backend `auth.py`/`UserOut`/`test_auth.py` slice DEFERRED** (see `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434 (slice only, not Closes).
+- **MEH-290** ⛔ BLOCKED — copy is verbatim, but the 4 tour anchor targets don't exist (Step 1 ProfileCompletenessCard = unshipped MEH-288; Step 3 add-product button absent; Step 4 share button = open Q#2). Building requires invention + design judgment + missing dep. Unblock path in ledger.
+- **B1 (MOB) / B2 (FUZZ)** ⏸ NOT TRIGGERED — `feature/meh-233-mobile-audit` and `feature/schemathesis-fuzz` PRs don't exist yet. Re-check on each wake.
+- **Shepherd:** #987 green; #975 CI re-running; **#991 ruff-format failure** (owning session's whatsapp.py — out of resync scope, logged not touched). `send_later` unavailable → no scheduled check-in; rely on #994 webhooks + per-wake sweeps.
+
+## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
+
+**MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
+`ChipScrollRow` default to `rounded-md` + `state-selected` for all 3 consumers
+(/home, /producers, /map), per DESIGN §Shapes / BRAND §3; removed the temporary
+MEH-763-chunk-3 opt-in props (component back to one shape). Phase 0 found S4 FINAL
+silent on chip shape → BRAND §3 governs. Sapir QA'd all 3 surfaces. Zero logic/copy.
+
+**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) unified the 4
+hardcoded `formatDate` helpers into shared `format-date.js` (incl. `HomeProductCard`,
+now using `useLocale()`), but its TEST never got a next-intl mock → 16 fails, **staging
+silently red on vitest** (non-required check, slipped the gate). #988 mocks `useLocale`
+per `RecipeCard.test` — **test-only; 407 → 423 passing.** (The helper dedup itself was
+already done in #976; only the missing test mock remained.)
+
+**Process flags this session (S7 + S5 design tracks):**
+- **5 orchestrator-claim/evidence mismatches** STOP-surfaced (all verified file:line):
+  2 RTL Phase-0 flags (MEH-763 #967), the `state-selected` token ("merged" but absent →
+  built #970), "#971 merged" (was draft → verified + merged on the MERGE instruction),
+  and "#987 vitest failure" (pre-existing #976, not MEH-764). → adopted **verify-
+  preconditions over asserted premises**.
+- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked).
+  MEH-753 formatDate dedup (#976) + MEH-764 temporary-prop removal are both DONE.
+- **Lint-hook lesson** added to `code-execution.md §8` (batch import+usage moves /
+  MultiEdit — the per-edit hook false-3-strikes a transient `no-undef`).
+
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
+
+Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+
+- **MEH-692** → PR **#989** ✅ merged (`Closes`): auto-close forensics. Root cause = the
+  literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
+  #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
+  trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
+- **MEH-688** → PR **#990** ✅ merged (`Refs` — epic NOT closed): he.json emoji LOCK v2.
+  **Sweep BLOCKED** — parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining
+  emoji are deferred (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability
+  dots, kosher). Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
+  (PR #992). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (PR #992).
+  **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
+- ⚠️ **Deviation (accepted):** MEH-688 brief asked to strip+close; delivered Discovery+`Refs`. Epic stays open for Sapir's ADR-021 decision.
+
 ## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
 
 Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
