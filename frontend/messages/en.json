@@ -1222,6 +1222,9 @@
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again."
       },
+      "toggle": {
+        "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
+      },
       "new": {
         "title": "Add new business",
         "subtitle": "The business will be saved immediately as approved (status=approved) and appear on the site."
