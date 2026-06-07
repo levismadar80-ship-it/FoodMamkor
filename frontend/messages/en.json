@@ -552,6 +552,28 @@
     "event": {
       "title_fallback": "Culinary event — Mehamakor",
       "description_fallback": "Culinary events at local food businesses."
+    },
+    "events": {
+      "title": "Events at farms and local food businesses | Mehamakor",
+      "description": "Workshops, tours, open days, and tastings at local food businesses across Israel. Discover upcoming events by city, category, and date.",
+      "og_title": "Events at farms and local food businesses | Mehamakor",
+      "og_description": "Workshops, tours, open days, and tastings at local food businesses across Israel."
+    },
+    "experiences": {
+      "title": "Community experiences and workshops | Mehamakor",
+      "description": "Cooking workshops, food tours, and nutrition classes hosted by locals across Israel. Find an experience by city and category, or submit your own.",
+      "og_title": "Community experiences and workshops | Mehamakor",
+      "og_description": "Cooking workshops, food tours, and nutrition classes — local hosts, real experiences."
+    },
+    "group_buys": {
+      "title": "Group purchases | Mehamakor",
+      "description": "Buy together and save — group purchases from local producers across Israel.",
+      "og_title": "Group purchases | Mehamakor",
+      "og_description": "Buy together and save — group purchases from local producers."
+    },
+    "register_producer": {
+      "title": "Register your business | Mehamakor",
+      "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     }
   },
   "producer": {
