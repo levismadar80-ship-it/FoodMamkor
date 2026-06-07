@@ -89,3 +89,31 @@ required-`vacation_until` gap. Flag for Sapir.
 5. Should the legacy toggle/status endpoints (paths 2/3) be deprecated as part of this, or left in the dual-write window?
 
 _Zero edits made. Nothing locked — for the morning decision._
+
+---
+
+## 9. Implementation decisions — AUD-039/040 (what shipped)
+
+Resolves §7/§8 against the immovable merged mutation suite
+(`tests/test_expansion_availability.py`, PR #975):
+
+- **Option chosen ≈ B, tz on the WRITE path only.** §7 Option A (change
+  `schemas.py:591` read-path auto-clear to Israel tz) was **rejected**:
+  the expansion suite's `test_vacation_ending_today_is_not_auto_cleared`
+  (AV-3) pins that boundary to `date.today()`, and since Israel is *ahead*
+  of UTC, swapping to `israel_today()` would flakily break it in the
+  late-UTC window. tz correctness therefore lands on the write path
+  (reject a **past** `vacation_until` via `israel_today()`), where no test
+  conflicts. Full read-path alignment = follow-up shipped together with an
+  expansion-test update.
+- **Transition table = fully permissive** (§6 verdict — "any→any
+  acceptable"). Encoded explicitly in
+  `availability_validation.ALLOWED_TRANSITIONS` (self-transitions allowed,
+  unlike the §6 sketch's `–` diagonal) so an out-of-enum current state
+  can't silently pass and future narrowing is one line.
+- **Admin required-`vacation_until`-when-`on_vacation` (§8 Q3 / Option B
+  gap, path 4): DEFERRED.** This PR adds only the narrow past-date guard
+  to `ProducerUpdate`; the required-date parity with path 1 is left for a
+  follow-up to avoid touching untested admin on_vacation flows.
+- Helper: `app/utils/clock.py` reuses `config.BUSINESS_HOURS_TIMEZONE`
+  (§3's "correct constant exists but unused" — now used).
