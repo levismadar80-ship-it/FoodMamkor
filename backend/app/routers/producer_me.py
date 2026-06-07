@@ -43,7 +43,7 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
-    ProducerAdminOut,
+    ProducerOwnerOut,
     ProducerUpdate,
     ProductCreate,
     ProductOut,
@@ -58,7 +58,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 
 
-@router.get("", response_model=ProducerAdminOut)
+@router.get("", response_model=ProducerOwnerOut)
 def get_my_producer(
     user: User = Depends(require_producer), db: Session = Depends(get_db)
 ):
@@ -112,7 +112,7 @@ def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
         counter += 1
 
 
-@router.put("", response_model=ProducerAdminOut)
+@router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
     request: Request,

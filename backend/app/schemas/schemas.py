@@ -682,6 +682,21 @@ class ProducerAdminOut(ProducerDetailOut):
     declaration_version: str | None = None
 
 
+# MEH-767 (HOT-001): owner-facing self-serve response shape for
+# GET/PUT /producers/me. Extends the public ProducerDetailOut with ONLY
+# the owner's own license number (MEH-530 — admins AND owners see the
+# value they themselves submitted; the owner edits it via the PUT
+# writable-fields whitelist in producer_me.py). It intentionally does
+# NOT inherit ProducerAdminOut, so the AI risk surface (risk_score /
+# risk_reasoning, MEH-509 PR3) and the declaration audit trail
+# (declared_at / declaration_version, MEH-759) — both admin-only — never
+# serialize back to the producer being scored. Those fields have zero
+# producer-side frontend consumers (the RiskBadge lives only in the
+# admin table, AdminProducersTable.jsx:181).
+class ProducerOwnerOut(ProducerDetailOut):
+    producer_license_number: str | None = None
+
+
 # --- MEH-51: Kashrut badge requests ---
 class KashrutRequestCreate(BaseModel):
     badge_code: str
