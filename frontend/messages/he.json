@@ -577,6 +577,9 @@
     }
   },
   "producer": {
+    "badge_row": {
+      "aria": "תגיות בית עסק"
+    },
     "badge": {
       "verified_tooltip_license": "רישיון הוגש ונבדק בתאריך {date}",
       "verified_tooltip_exemption": "אישור פטור הוגש ונבדק בתאריך {date}",
@@ -885,9 +888,6 @@
       "follow_aria": "עקבי אחרי עסק זה",
       "unfollowed_toast": "הפסקת לעקוב",
       "followed_toast": "מעכשיו תקבלי עדכונים על מוצרים חדשים"
-    },
-    "badge_row": {
-      "aria": "תגיות בית עסק"
     },
     "friday_delivery": {
       "today": "היום",
