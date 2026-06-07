@@ -5,6 +5,45 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
+
+**Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
+Branch `claude/friendly-fermat-CSzTr` (harness-assigned). Docs-only diff; **DRAFT PR**.
+No code fixes shipped (Phase C deferred — rationale in doc).
+
+**Sentry (org `df7d71a2ad7a`):** frontend 0 unresolved; backend 19.
+- **SEN-001** QueuePool exhaustion (~500 events, one burst 23d ago, every endpoint) —
+  `database.py` engine has no `pool_size`/`max_overflow`/`pool_recycle` → config/infra → Sapir.
+- **SEN-002/003 (ACTIVE)** FK + NotNull on producer delete — **already fixed in code**
+  (PR #946 MEH-747/755) but **not in prod release `4ab691a`** (verified via
+  `git merge-base --is-ancestor`). → deploy staging→main + resolve in Sentry.
+- **SEN-004 (ACTIVE)** slowapi skips per-email limit on empty key (`/auth/register/producer`) → auth → Sapir.
+- **SEN-005 (ACTIVE)** Anthropic credit-too-low — fail-open catches it (no user impact);
+  Sentry anthropic integration reports `handled:no` → config (add credits) + noise.
+- **SEN-007/008** noise (lifespan CancelledError; MEH-500 verification issue) → ignore/resolve.
+
+**Hotspot deep review (top-10 churn×LOC, 10 read-only subagents):**
+- **HOT-001 CRITICAL (verified by me):** `GET/PUT /producers/me` returns `ProducerAdminOut`
+  which carries `risk_score`/`risk_reasoning` (`schemas.py:659-660`) → producer reads their own
+  AI risk score + reasoning. Needs a self-serve response model w/o risk fields. Schema → Sapir.
+- **HOT-002 HIGH:** `admin.py:281 toggle_producer_status` force-approves any non-approved
+  producer (incl. `rejected`) → goes public, bypasses approval notifications.
+- **HOT-003 HIGH:** stacked title validators (`sanitize`→`None`→`.strip()`) → 500 on
+  punctuation/HTML-only title (HomeProduct/Experience/Recipe).
+- **HOT-004 HIGH (prod-confirmed by SEN-002/003):** schema FK gaps remain (router-only patch);
+  `KashrutBadgeRequest.producer_id` is an un-fixed sibling.
+- **HOT-005 HIGH:** no Zod validation before `/producers` map fetch (rule 19) → string-coord → blank map.
+- **HOT-006 HIGH:** locale-blind JSON-LD → EN pages emit HE `@id`/`url` → duplicate structured-data identity.
+- MED/LOW: HOT-007..018 (map selection staleness, form stale-closure, reviews optimistic-update,
+  delete_account non-atomic, push_subscription dict DoS, map ref leaks, etc.). Full table in doc.
+
+**Dedup:** producer_name/list-caps/admin_notes/reset-oracle folded into AUD-011/013/012/015.
+
+**For MORNING-BRIEF:** new findings doc — incorporate `SEN-`/`HOT-` alongside `AUD-`/`UIS-`.
+First two low-risk fix PRs to action: HOT-017 (SEO `sameAs`/OG guards), HOT-018 (reviews date/pagination).
+
+---
+
 ## 2026-06-06 (night-batch-5) — autonomous implementer: P1/P2 fixes + fuzz layer (DRAFT PRs)
 
 Four sequential tasks off fresh `staging`, all DRAFT (merges = Sapir's). Ledger: [docs/audits/2026-06-night-batch-5.md](./docs/audits/2026-06-night-batch-5.md). Safety net (merged `test_expansion_*` / `__tests__/expansion/`) never modified.
@@ -14,6 +53,7 @@ Four sequential tasks off fresh `staging`, all DRAFT (merges = Sapir's). Ledger:
 - **UIS Pattern A** (useAdminAction) — Draft **PR #1001**. Shared hook (per-key in-flight lock + `errorMessage()` toast, no new i18n keys) wired into all 10 CRITICAL admin double-submit sites. Local: build ✅ / vitest 443 ✅ / lint 0-err ✅. CI green. Refs MEH-228.
 - **schemathesis fuzz** — Draft **PR #1003**. `tests/test_fuzz_schemathesis.py` (in-process ASGI over openapi; unauth excludes admin DELETEs; authed admin JWT). `importorskip` keeps CI green until the dep lands. **Sapir-terminal:** add `schemathesis` to `pyproject` dev group + `uv lock` (pyproject guard-protected, MEH-442). Findings → morning triage (FUZZ-NNN), not this PR. Refs MEH-214.
 - **Next:** Sapir applies the 2 terminal steps (Task 1 Alembic, Task 4 dep), reviews the 4 draft PRs (Vercel/mobile for UI-facing #1001), then merges. `send_later` unavailable → no scheduled check-in; CI failures arrive via PR webhooks (subscribed to all 4). Re-triggered #991/#995 CI via empty commits (their fixed heads hadn't fired a `pull_request` event).
+
 ## 2026-06-06 (night) — Overnight batch #7: 6 deferred items → 2 PRs, 4 already-done
 
 Autonomous batch of 6 documented-deferred items (HANDOFF/memory). Every premise
@@ -34,6 +74,7 @@ verified against `staging` with file:line before acting (meta-pattern #1) —
   (6) MEH-475 S2 SecurityTab already i18n'd (#766/767/768; `settings.security` 32 keys parity).
 - **Recommendation:** HANDOFF cleanup pass — retire the closed deferred items (Wave 6
   detail routes, auth splits, S2) so they aren't re-dispatched in future batches.
+
 
 ## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
 
