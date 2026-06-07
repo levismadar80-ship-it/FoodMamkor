@@ -577,6 +577,9 @@
     }
   },
   "producer": {
+    "badge_row": {
+      "aria": "Business badges"
+    },
     "badge": {
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
@@ -885,9 +888,6 @@
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
       "followed_toast": "You'll now get updates about new products"
-    },
-    "badge_row": {
-      "aria": "Business badges"
     },
     "friday_delivery": {
       "today": "today",
