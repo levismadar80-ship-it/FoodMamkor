@@ -1,25 +1,29 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import EventsClient from "./EventsClient";
 import { BRAND_NAME } from "@/lib/constants";
-import { buildAlternates, urlForLocalePath } from "@/lib/i18n-seo";
+import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-739: per-locale hreflang + self canonical via buildAlternates (was a
-// hand-built single-canonical entry with no hreflang languages map). Refs MEH-476.
+// hand-built single-canonical entry with no hreflang languages map).
+// MEH-475 Wave 6: metadata strings → seo.events.* (was hardcoded HE). Refs MEH-476.
 export async function generateMetadata({ params }) {
   const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "seo.events" });
   return {
-    title: "אירועים בחוות ואצל בתי עסק",
-    description:
-      "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל. גלי אירועים קרובים לפי עיר, קטגוריה ותאריך.",
+    // title.absolute — key carries the brand suffix per locale (mirrors
+    // seo.about / seo.map), so the layout `%s | brand` template doesn't
+    // append a second (Hebrew) brand on /en.
+    title: { absolute: t("title") },
+    description: t("description"),
     openGraph: {
-      title: "אירועים בחוות ואצל בתי עסק | מהמקור",
-      description:
-        "סדנאות, סיורים, ימים פתוחים וטעימות אצל בתי עסק מקומיים בישראל.",
+      title: t("og_title"),
+      description: t("og_description"),
       type: "website",
       // MEH-740: per-page og:url = self (mirrors #916 terms/privacy).
       url: urlForLocalePath("/events", locale),
       siteName: BRAND_NAME,
-      locale: "he_IL",
+      locale: OG_LOCALE[locale],
       // Next.js replaces openGraph object on override — re-declare image.
       images: ["/og-image.png"],
     },

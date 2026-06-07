@@ -14,6 +14,26 @@ Four sequential tasks off fresh `staging`, all DRAFT (merges = Sapir's). Ledger:
 - **UIS Pattern A** (useAdminAction) — Draft **PR #1001**. Shared hook (per-key in-flight lock + `errorMessage()` toast, no new i18n keys) wired into all 10 CRITICAL admin double-submit sites. Local: build ✅ / vitest 443 ✅ / lint 0-err ✅. CI green. Refs MEH-228.
 - **schemathesis fuzz** — Draft **PR #1003**. `tests/test_fuzz_schemathesis.py` (in-process ASGI over openapi; unauth excludes admin DELETEs; authed admin JWT). `importorskip` keeps CI green until the dep lands. **Sapir-terminal:** add `schemathesis` to `pyproject` dev group + `uv lock` (pyproject guard-protected, MEH-442). Findings → morning triage (FUZZ-NNN), not this PR. Refs MEH-214.
 - **Next:** Sapir applies the 2 terminal steps (Task 1 Alembic, Task 4 dep), reviews the 4 draft PRs (Vercel/mobile for UI-facing #1001), then merges. `send_later` unavailable → no scheduled check-in; CI failures arrive via PR webhooks (subscribed to all 4). Re-triggered #991/#995 CI via empty commits (their fixed heads hadn't fired a `pull_request` event).
+## 2026-06-06 (night) — Overnight batch #7: 6 deferred items → 2 PRs, 4 already-done
+
+Autonomous batch of 6 documented-deferred items (HANDOFF/memory). Every premise
+verified against `staging` with file:line before acting (meta-pattern #1) —
+**4 of 6 were already complete**, surfaced as no-ops, no empty PRs. Full ledger:
+[`docs/audits/2026-06-night-batch-7.md`](./docs/audits/2026-06-night-batch-7.md).
+
+- **#996 (draft)** — events/new EN category labels: flat `CATEGORIES` → `CATEGORY_KEYS`
+  + `events.categories` `t()` (EventsClient pattern). 0 new keys. Refs MEH-475.
+- **#998 (draft)** — Wave 6 metadata tail: 4 static routes (events/experiences/group-buys
+  lists + register/producer) → `getTranslations` (`seo.*`). New keys parity 2584/2584.
+  Fixed 2 hreflang leftovers + a double-brand. Scope corrected: sitemap.js has 0 strings;
+  detail routes already done in MEH-476 3b2. Refs MEH-475.
+- **No-ops (already on staging):** (2) robots.txt has no `/en` disallow to lift — EN
+  already crawlable (hreflang gate live, 30 routes). (4) all 8 auth routes already split
+  + `robots:noindex` (#915 precedent applied prior). (5) **PR #934 was merged** (not
+  closed-before-merge) — appendix present at `docs/legal/…licensing-tiers.md:179`.
+  (6) MEH-475 S2 SecurityTab already i18n'd (#766/767/768; `settings.security` 32 keys parity).
+- **Recommendation:** HANDOFF cleanup pass — retire the closed deferred items (Wave 6
+  detail routes, auth splits, S2) so they aren't re-dispatched in future batches.
 
 ## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
 
