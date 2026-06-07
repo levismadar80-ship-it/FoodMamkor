@@ -836,6 +836,9 @@ function ProductsSection() {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
+  // UIS-026 (MEH-776): in-flight delete guard — blocks rapid-click
+  // double-delete of the same product and disables the row's trash button.
+  const [deletingId, setDeletingId] = useState(null);
   const [editUploading, setEditUploading] = useState(false);
 
   useEffect(() => {
@@ -989,11 +992,16 @@ function ProductsSection() {
   };
 
   const handleDelete = async (id) => {
+    if (deletingId) return; // UIS-026: drop overlapping delete clicks
+    setDeletingId(id);
+    setError("");
     try {
       await api.delete(`/producers/me/products/${id}`);
       setProducts((p) => p.filter((pr) => pr.id !== id));
     } catch {
       setError(tErr("delete_failed"));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -1199,8 +1207,9 @@ function ProductsSection() {
               </button>
               <button
                 onClick={() => handleDelete(product.id)}
+                disabled={deletingId === product.id}
                 aria-label={t("card.delete_aria_template", { name: product.name })}
-                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition"
+                className="p-1.5 rounded-[6px] text-fg-muted hover:text-red-500 hover:bg-red-50 transition disabled:opacity-40"
               >
                 <Trash size={16} aria-hidden="true" />
               </button>
