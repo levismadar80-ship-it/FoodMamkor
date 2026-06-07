@@ -13,8 +13,14 @@ from app.utils.clock import israel_today
 _LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
 
 
-def _min_letters_validator(value: str, min_count: int = 3) -> str:
-    stripped = value.strip()
+def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
+    # HOT-003 (MEH-772): a stacked `_sanitize_title` validator runs first and
+    # returns None when bleach reduces the input to empty (e.g. "<b></b>" or a
+    # whitespace-only title). Treat None as empty so the letter check fails with
+    # a clean ValueError (→422) instead of `None.strip()` → AttributeError
+    # (→500). Non-stacked callers (ProducerCreate.name, requested_name) always
+    # receive a real str, so this is a no-op for them.
+    stripped = (value or "").strip()
     if len(_LETTER_REGEX.sub("", stripped)) < min_count:
         raise ValueError("שדה זה חייב להכיל לפחות 3 תווים")
     return stripped
