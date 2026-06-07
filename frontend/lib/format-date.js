@@ -31,7 +31,12 @@ const DEFAULT_OPTIONS = { weekday: "long", day: "numeric", month: "long" };
 export function formatEventDate(iso, locale, options = DEFAULT_OPTIONS) {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
+    const d = new Date(iso);
+    // HOT-018 (MEH-782): a malformed-but-non-empty string yields an Invalid
+    // Date, whose toLocaleDateString returns the literal "Invalid Date" (it
+    // does not throw). Guard it so callers render nothing instead of garbage.
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString(LOCALE_TAG[locale] ?? "he-IL", options);
   } catch {
     return iso;
   }

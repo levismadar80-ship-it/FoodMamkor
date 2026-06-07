@@ -371,8 +371,33 @@ describe("buildProducerMetadata", () => {
     expect(meta.openGraph.images[0].height).toBe(630);
   });
 
-  it("empties openGraph.images when producer has no images", () => {
+  // HOT-017 (MEH-782): omit, never emit an empty array (MEH-741 precedent).
+  it("omits openGraph.images when producer has no images", () => {
     const meta = buildProducerMetadata({ ...fullProducer, images: [] });
-    expect(meta.openGraph.images).toEqual([]);
+    expect(meta.openGraph.images).toBeUndefined();
+  });
+});
+
+describe("buildJsonLd — sameAs guard (HOT-017)", () => {
+  it("prefixes https:// for a bare domain", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, website: "example.co.il" }),
+    );
+    expect(business.sameAs).toEqual(["https://example.co.il"]);
+  });
+
+  it("prefixes https:// for a typo that merely starts with 'http' (not a protocol)", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, website: "httpfoo.co.il" }),
+    );
+    // old startsWith("http") emitted "httpfoo.co.il" verbatim — now normalized.
+    expect(business.sameAs).toEqual(["https://httpfoo.co.il"]);
+  });
+
+  it("omits sameAs when website is whitespace-only", () => {
+    const business = getBusiness(
+      buildJsonLd({ ...fullProducer, website: "   " }),
+    );
+    expect(business.sameAs).toBeUndefined();
   });
 });

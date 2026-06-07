@@ -200,11 +200,15 @@ export function buildJsonLd(producer) {
   if (producer.phone) business.telephone = producer.phone;
 
   if (producer.website) {
-    business.sameAs = [
-      producer.website.startsWith("http")
-        ? producer.website
-        : `https://${producer.website}`,
-    ];
+    // HOT-017 (MEH-782): the old `startsWith("http")` check let a typo that
+    // merely starts with "http" (e.g. "httpfoo.co.il") through verbatim,
+    // emitting a non-absolute URL into JSON-LD `sameAs`. Require a real
+    // `http(s)://` protocol; a bare domain gets an https:// prefix. Valid URLs
+    // pass through byte-for-byte (no URL re-normalization / trailing slash).
+    const raw = producer.website.trim();
+    if (raw) {
+      business.sameAs = [/^https?:\/\//i.test(raw) ? raw : `https://${raw}`];
+    }
   }
 
   if (producer.images?.length > 0) business.image = producer.images;
@@ -323,7 +327,10 @@ export function buildProducerMetadata(producer) {
       title: producer.name,
       description,
       url: pageUrl,
-      images: img ? [{ url: img, width: 1200, height: 630 }] : [],
+      // HOT-017 (MEH-782): omit `images` when there's no image rather than
+      // emitting an empty array — Next.js drops the undefined key, so no empty
+      // `og:image` is rendered (omit, never null/empty — MEH-741 precedent).
+      images: img ? [{ url: img, width: 1200, height: 630 }] : undefined,
       type: "website",
       locale: "he_IL",
       siteName: BRAND_NAME,
