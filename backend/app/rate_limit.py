@@ -101,7 +101,9 @@ def _no_email_fallback(request: Request, reason: str) -> str:
     """
     path = getattr(getattr(request, "url", None), "path", "<unknown>")
     logger.info(
-        "rate_limit.email_key_fallback", reason=reason, route=path,
+        "rate_limit.email_key_fallback",
+        reason=reason,
+        route=path,
     )
     return NO_EMAIL_BUCKET
 

@@ -9,6 +9,7 @@ production via Sentry (SEN-004). The key now falls back to a single shared
 bucket instead of skipping; the per-IP limit on the same route is the second
 layer.
 """
+
 from types import SimpleNamespace
 
 from app.rate_limit import NO_EMAIL_BUCKET, email_from_body
@@ -50,7 +51,10 @@ def test_undecodable_body_returns_fallback():
 
 # --- normal traffic unchanged: real email → normalized per-email key ---
 def test_valid_email_normalized():
-    assert email_from_body(_req(b'{"email": "  Alice@Example.COM "}')) == "alice@example.com"
+    assert (
+        email_from_body(_req(b'{"email": "  Alice@Example.COM "}'))
+        == "alice@example.com"
+    )
 
 
 def test_fallback_bucket_is_non_empty():
