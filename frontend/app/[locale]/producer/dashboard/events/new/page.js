@@ -8,13 +8,22 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
 
-// API filter values are Hebrew strings (server-side enum). Keep keys
-// as the wire format; localize labels via t() at render time.
-const CATEGORIES = ["סדנה", "סיור", "שוק", "קטיף", "טעימות", "אחר"];
+// API category values are Hebrew strings (server-side enum). Keep keys
+// as the wire format; localize labels via t() at render time. Mirrors
+// EventsClient.jsx's CATEGORY_KEYS so /en shows English option text.
+const CATEGORY_KEYS = [
+  { key: "סדנה", labelKey: "workshop" },
+  { key: "סיור", labelKey: "tour" },
+  { key: "שוק", labelKey: "market" },
+  { key: "קטיף", labelKey: "harvest" },
+  { key: "טעימות", labelKey: "tasting" },
+  { key: "אחר", labelKey: "other" },
+];
 
 export default function NewEventPage() {
   const router = useRouter();
   const t = useTranslations("sweep_tail.event_new");
+  const tCat = useTranslations("events.categories");
   const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState({
     title: "",
@@ -157,9 +166,9 @@ export default function NewEventPage() {
             className="input-base"
             required
           >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {CATEGORY_KEYS.map((c) => (
+              <option key={c.key} value={c.key}>
+                {tCat(c.labelKey)}
               </option>
             ))}
           </select>
