@@ -376,3 +376,34 @@ describe("buildProducerMetadata", () => {
     expect(meta.openGraph.images).toEqual([]);
   });
 });
+
+describe("buildJsonLd — locale (HOT-006 / MEH-778)", () => {
+  it("defaults to Hebrew when no locale is passed (no regression)", () => {
+    const json = buildJsonLd(fullProducer);
+    expect(getWebPage(json).inLanguage).toBe("he-IL");
+    expect(getWebSite(json).inLanguage).toBe("he-IL");
+    expect(getBreadcrumb(json).itemListElement[0].name).toBe("ישראל");
+  });
+
+  it("emits en-US inLanguage + 'Israel' breadcrumb under the en locale", () => {
+    const json = buildJsonLd(fullProducer, "en");
+    expect(getWebPage(json).inLanguage).toBe("en-US");
+    expect(getWebSite(json).inLanguage).toBe("en-US");
+    expect(getBreadcrumb(json).itemListElement[0].name).toBe("Israel");
+  });
+
+  it("keeps locale-invariant data unchanged across locales (name, URLs, address)", () => {
+    const he = buildJsonLd(fullProducer, "he");
+    const en = buildJsonLd(fullProducer, "en");
+    expect(getBusiness(en).name).toBe(getBusiness(he).name);
+    expect(getBusiness(en).url).toBe(getBusiness(he).url);
+    expect(getWebPage(en).url).toBe(getWebPage(he).url);
+    expect(getBusiness(en).address).toEqual(getBusiness(he).address);
+  });
+
+  it("falls back to Hebrew for an unknown locale", () => {
+    const json = buildJsonLd(fullProducer, "fr");
+    expect(getWebPage(json).inLanguage).toBe("he-IL");
+    expect(getBreadcrumb(json).itemListElement[0].name).toBe("ישראל");
+  });
+});
