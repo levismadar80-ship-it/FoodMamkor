@@ -28,6 +28,7 @@ vi.mock("@phosphor-icons/react", () => ({
 // MEH-475 PR-A1: admin/page now reads useTranslations() from next-intl.
 // Identity mock — tests assert on null-guard behavior, not copy.
 vi.mock("next-intl", () => ({
+  useLocale: () => "he",
   useTranslations: () => (key, values = {}) => {
     if (values && Object.keys(values).length > 0) {
       let s = key;

@@ -40,6 +40,7 @@ vi.mock("next-intl", () => {
     "admin.reviews.columns.actions": "פעולות",
   };
   return {
+    useLocale: () => "he",
     useTranslations: (scope) => (key, values = {}) => {
       const fullKey = scope ? `${scope}.${key}` : key;
       const raw = flat[fullKey] ?? fullKey;

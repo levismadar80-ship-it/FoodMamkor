@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Heart } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
@@ -11,6 +12,7 @@ const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
 export default function AdminUsersPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const { user: me } = useAuth();
   const { run, isBusy } = useAdminAction();
   const [users, setUsers] = useState([]);
@@ -179,7 +181,7 @@ export default function AdminUsersPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
-                      {new Date(u.created_at).toLocaleDateString("he-IL")}
+                      {formatEventDate(u.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                     </td>
                     <td className="px-4 py-3">
                       <button

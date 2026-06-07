@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 
@@ -72,6 +73,7 @@ function progressPct(commits, min, max) {
 
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
+  const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [gb, setGb] = useState(null);
@@ -276,7 +278,7 @@ export default function GroupBuyDetailClient({ id }) {
               </p>
             )}
             <p className="text-xs text-fg-muted mt-1">
-              {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL", { day: "numeric", month: "long", year: "numeric" }) })}
+              {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "long", year: "numeric" }) })}
             </p>
           </div>
 
