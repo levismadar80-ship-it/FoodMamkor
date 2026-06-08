@@ -1243,3 +1243,41 @@ class InboundMessage(Base):
         default=False,
         server_default=text("false"),
     )
+
+
+class OutboundMessage(Base):
+    """MEH-771 / AUD-009/010 — durable record of OUTBOUND WhatsApp sends.
+
+    Written by app/services/whatsapp.py per send (template + freeform).
+    A Graph 200 only means *accepted* (queued); true delivery arrives
+    later via the Meta status webhook (MEH-771 Chunk B), which flips
+    `status` to 'delivered'/'failed' and sets `updated_at`.
+
+    `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
+    (Meta delivers at-least-once). `status` is app-enforced (no DB
+    enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
+    'window_expired', consistent with availability_state.
+    """
+
+    __tablename__ = "outbound_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    to_phone = Column(String(20), nullable=False, index=True)
+    kind = Column(String(64), nullable=False)
+    meta_message_id = Column(String(100), unique=True, nullable=True)
+    status = Column(
+        String(20),
+        nullable=False,
+        default="accepted",
+        server_default=text("'accepted'"),
+        index=True,
+    )
+    error_code = Column(Integer, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=text("now()"),
+    )
+    updated_at = Column(DateTime, nullable=True)
