@@ -32,6 +32,16 @@ import pytest
 
 schemathesis = pytest.importorskip("schemathesis")
 
+# MEH-780: opt-in even once schemathesis lands in uv.lock (#1030). The
+# default `pytest tests/` job must NOT run this finder suite — it would red
+# the required pytest gate for every PR (first run: 297 failures, mostly
+# spec-completeness + the FUZZ-001..004 ledger). Run it on demand / nightly
+# with RUN_FUZZ=1. The importorskip above still skips when the dep is absent.
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("RUN_FUZZ"),
+    reason="opt-in property-based fuzz; run with RUN_FUZZ=1",
+)
+
 from hypothesis import HealthCheck, settings  # noqa: E402
 
 from app.main import app  # noqa: E402
