@@ -54,6 +54,50 @@ fresh `staging`. Safety net (merged mutation suite `test_expansion_*` /
   populate `FUZZ-001..` here. Per MEH-214: findings only, fixes are morning
   triage — do NOT weaken a check to make the suite pass.
 
+### FUZZ findings — first real run (MEH-780, 2026-06-08)
+
+Dep landed on branch `feature/meh-214-schemathesis-dep` (PR #1030,
+`schemathesis 4.21.1` + `hypothesis 6.155.2`). First real execution in CI
+(`Backend tests (pytest)`, run 27145084105): **297 failed, 1085 passed, 2
+skipped, 1 xfailed — 781s**. Finder-not-fixer per MEH-214: captured only,
+nothing fixed, nothing silenced.
+
+**5xx findings** (the `ServerError` class — 16 occurrences → 4 distinct ops,
+all `503 Service Unavailable`):
+
+| ID | Method | Path | Status |
+|---|---|---|---|
+| FUZZ-001 | GET | `/health/readiness` | 503 |
+| FUZZ-002 | POST | `/auth/google` | 503 |
+| FUZZ-003 | POST | `/auth/apple` | 503 |
+| FUZZ-004 | POST | `/auth/register/producer/oauth` | 503 |
+
+**Triage note (post-release):**
+- **FUZZ-001** — likely *expected* readiness behaviour (503 when a
+  dependency probe is not ready); **verify before fixing**, do not assume a bug.
+- **FUZZ-002/003/004** — the real item: the OAuth verify paths return `503`
+  instead of a `4xx` on an invalid/empty `id_token`. Should be a client-error
+  status. Fix in a separate post-release PR.
+
+**Category summary** (schemathesis check occurrences, not distinct ops; one
+failing test can group several checks):
+
+| Check | Occurrences | Nature |
+|---|---|---|
+| `UndefinedStatusCode` | 492 | spec-completeness — status codes (422/429/503) not declared in OpenAPI responses |
+| `RejectedPositiveData` | 50 | API rejected a schema-compliant request |
+| `JsonSchemaError` | 22 | FastAPI `HTTPValidationError.detail` ↔ `ValidationError` schema mismatch |
+| `ServerError` | 16 | genuine 5xx → FUZZ-001..004 above |
+
+No genuine timeout / hypothesis-deadline failures (the "timeout" log hits were
+log-body noise, not failures).
+
+**#1030 PARKED — not merged.** The suite runs in the *required* `pytest
+tests/` job with no `-m "not fuzz"` filter (`pr-checks.yml:223`), so merging
+the dep would red the gate for every future PR. The fuzz-exclusion (pytest
+marker opt-out in CI + a separate non-required `-m fuzz` job) and the
+FUZZ-001..004 fixes are the MEH-780 post-release follow-up.
+
 ## BLOCKED
 - None of the four tasks fully blocked. Two guard-driven hand-offs (Alembic
   in Task 1, pyproject in Task 4) routed to Sapir-terminal steps rather than
