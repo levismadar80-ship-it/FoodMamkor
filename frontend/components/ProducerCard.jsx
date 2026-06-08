@@ -112,17 +112,13 @@ function CardHeart({ producer, onCountChange }) {
         typeof window !== "undefined"
           ? window.location.pathname + window.location.search
           : "/";
-      showToast(
-        t("producer.card.favorites.saved_login_prompt"),
-        "info",
-        5000,
-        {
-          action: {
-            label: t("producer.card.favorites.login_cta"),
-            href: `/login?next=${encodeURIComponent(nextPath)}`,
-          },
+      showToast.info(t("producer.card.favorites.saved_login_prompt"), {
+        duration: 5000,
+        action: {
+          label: t("producer.card.favorites.login_cta"),
+          href: `/login?next=${encodeURIComponent(nextPath)}`,
         },
-      );
+      });
       return;
     }
 
@@ -144,7 +140,7 @@ function CardHeart({ producer, onCountChange }) {
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
-      showToast(t("producer.card.favorites.error"), "error");
+      showToast.error(t("producer.card.favorites.error"));
     }
   };
 

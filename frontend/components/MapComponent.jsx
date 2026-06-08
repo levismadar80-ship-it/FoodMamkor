@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
@@ -10,7 +9,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useTranslations } from "next-intl";
-import { styleForProducer } from "@/lib/map-categories";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
 
@@ -39,42 +38,48 @@ import { CoordSchema } from "@/lib/schemas";
 // dynamically loaded with ssr:false).
 
 /**
- * Circle map pin — design system v2 (map page redesign).
+ * Circle map pin — S5 FINAL (MEH-763 Chunk 2).
  *
- * Anatomy:
- *   - Solid colored circle, category color background
- *   - White Phosphor icon (weight="fill") centered inside
- *   - 2px white border, subtle box-shadow
+ * Anatomy (uniform 36px circle — identity lives in the photo, NOT a category
+ * colour; category colour/icon now appear only in the legend + card dots, so the
+ * "≤4 category colours, deuteranopia-safe" rule holds by construction — F2):
+ *   - Round photo: producer's first image, square Cloudinary crop, lazy.
+ *   - No-photo fallback: MEH-638 monogram — first name letter, white on primary.
+ *   - Border: 2px primary; selected (active) → 3px primary-dark.
+ *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
+ *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
+ *   - Visited: opacity 0.4 (dimmed).
  *
- * Sizes:
- *   default  → 28×28px
- *   hovered  → 32×32px (desktop hover)
- *   selected → 36×36px + larger glow ring
- *   visited  → opacity 0.4 (dimmed)
- *
- * Replaces the teardrop+emoji design. Emoji rendered inconsistently
- * in SVG <text> nodes across platforms (Android, Chrome on Windows).
- * Phosphor fill icons via renderToStaticMarkup produce crisp, uniform
- * glyphs at any DPR.
+ * Was a category-colour circle + white Phosphor icon sized 28/32/36 by state.
  */
+// Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
+// string, so Tailwind tokens can't apply. Values map to design tokens:
+// #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #8B6914 = accent.
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
 ) {
-  const { color, icon: IconComponent } = styleForProducer(producer);
-  const size = active ? 36 : hovered ? 32 : 28;
-  const iconSize = Math.round(size * 0.5); // 14px default, 16px selected
+  // S5 FINAL: all markers are uniform 36px circles; state shows via border +
+  // rings, not size (drops the old 28/32/36 size jump).
+  const size = 36;
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.4 : 1;
   const isPremium = producer.plan === "premium";
   const isVerified = producer.is_verified;
 
-  const iconSvg = renderToStaticMarkup(
-    <IconComponent size={iconSize} weight="fill" color="#ffffff" />,
-  );
+  // Round photo (square crop) or MEH-638 monogram fallback. No onerror→monogram
+  // swap: strict CSP blocks inline handlers, so we branch on image presence.
+  const imgUrl = producer.images?.[0]
+    ? optimizeCloudinary(producer.images[0], { aspectRatio: "1:1" })
+    : null;
+  const monogram = (producer.name || "").trim().charAt(0).toUpperCase();
+  const inner = imgUrl
+    ? `<img src="${imgUrl}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2e6853;color:#fff;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;line-height:1;">${monogram}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.
   // pointer-events:none prevents intercepting marker clicks.
+  // FROZEN (MEH-762 handoff): glyph + semantics kept byte-identical.
   const verifiedBadge = isVerified
     ? `<div style="
         position:absolute;bottom:-2px;right:-2px;z-index:1;
@@ -86,27 +91,29 @@ function createCategoryMarker(
       ">✓</div>`
     : "";
 
-  // Build box-shadow as a single value — avoids the CSS cascade overwrite
-  // that would occur if premiumStyle used a separate "box-shadow:" property.
-  // Active glow ring uses 4px spread; premium gold ring uses 6px so it
-  // appears outside and is visible when both states are true.
-  const baseShadow = active
-    ? "0 4px 14px rgba(0,0,0,0.28),0 0 0 4px rgba(46,104,83,0.18)"
-    : "0 2px 8px rgba(0,0,0,0.2)";
-  const boxShadow = isPremium ? `${baseShadow},0 0 0 6px #8B6914` : baseShadow;
+  // Border: 2px primary default; selected (active) → 3px state-selected.
+  // The hex stays inline (Leaflet divIcon = raw HTML string); #2E4A2E equals
+  // the `state-selected` token (= primary-dark, MEH-763 #970) by design.
+  const borderWidth = active ? 3 : 2;
+  const borderColor = active ? "#2E4A2E" : "#2e6853";
+
+  // Single box-shadow value (avoids cascade overwrite): drop shadow + state ring
+  // (active glow / hover ring) + premium gold ring (6px, outside the others).
+  const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
+  const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
+  const premiumRing = isPremium ? ",0 0 0 6px #8B6914" : "";
+  const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}`;
 
   const html = `
     <div style="position:relative;width:${size}px;height:${size}px;">
       <div style="
-        width:${size}px;height:${size}px;border-radius:50%;
-        background:${color};
-        border:2px solid #fff;
-        display:flex;align-items:center;justify-content:center;
+        width:${size}px;height:${size}px;border-radius:50%;overflow:hidden;
+        border:${borderWidth}px solid ${borderColor};
         box-shadow:${boxShadow};
         opacity:${opacity};
         transition:all 0.18s ease-out;
       ">
-        ${iconSvg}
+        ${inner}
       </div>
       ${verifiedBadge}
     </div>`;
@@ -221,7 +228,7 @@ export default function MapComponent({
           (pos) => {
             const { latitude, longitude } = pos.coords;
             if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
-              showToast(t("geo_invalid"), "error");
+              showToast.error(t("geo_invalid"));
               return;
             }
             const latlng = [latitude, longitude];
@@ -248,7 +255,7 @@ export default function MapComponent({
               onPermissionDenied?.();
               return;
             }
-            showToast(t("geo_failure"), "error");
+            showToast.error(t("geo_failure"));
           },
         );
       },
@@ -427,6 +434,6 @@ export default function MapComponent({
   }, [producers, visitedIds]);
 
   return (
-    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-[16px]" />
+    <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-lg" />
   );
 }

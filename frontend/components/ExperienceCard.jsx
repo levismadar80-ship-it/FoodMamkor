@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 
 /**
  * Card for an experience (community workshop).
@@ -17,19 +18,6 @@ import { useTranslations } from "next-intl";
  * a dedicated status pill in its own client file.
  */
 
-function formatDate(iso) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-  } catch {
-    return iso;
-  }
-}
-
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
@@ -37,10 +25,11 @@ function formatTime(t) {
 
 export default function ExperienceCard({ experience: ex }) {
   const t = useTranslations("experiences.card");
+  const locale = useLocale();
 
   const formatPrice = (p) => {
     if (p == null || Number(p) === 0) return t("free");
-    return `₪${Number(p).toLocaleString("he-IL")}`;
+    return <span dir="ltr">{`₪${Number(p).toLocaleString("he-IL")}`}</span>;
   };
 
   const spotsBadge =
@@ -80,7 +69,7 @@ export default function ExperienceCard({ experience: ex }) {
       )}
       <div className="p-4 flex-1 flex flex-col">
         <p className="text-primary text-sm font-semibold mb-1">
-          {formatDate(ex.event_date)}
+          {formatEventDate(ex.event_date, locale)}
           {ex.event_time && ` · ${formatTime(ex.event_time)}`}
         </p>
         <h3 className="font-headline-md text-xl font-bold text-text mb-1">

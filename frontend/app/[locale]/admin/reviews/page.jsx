@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import { Star, Trash } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -21,6 +22,7 @@ import InfoTooltip from "@/components/InfoTooltip";
  */
 export default function AdminReviewsPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -55,9 +57,9 @@ export default function AdminReviewsPage() {
     try {
       await api.delete(`/reviews/${review.id}`);
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
-      showToast(t("reviews.deleted_toast"));
+      showToast.success(t("reviews.deleted_toast"));
     } catch {
-      showToast(t("reviews.delete_error"), "error");
+      showToast.error(t("reviews.delete_error"));
     } finally {
       setDeletingId(null);
     }
@@ -176,7 +178,7 @@ export default function AdminReviewsPage() {
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
                       {r.created_at
-                        ? new Date(r.created_at).toLocaleDateString("he-IL")
+                        ? formatEventDate(r.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })
                         : "—"}
                     </td>
                     <td className="px-4 py-3">

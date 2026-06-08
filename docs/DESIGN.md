@@ -16,6 +16,7 @@ colors:
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#8B6914"
+  honey: "#C8821E"
   border: "#E5DFD3"
   green-50: "#EAF3DE"
   green-100: "#C8DCB3"
@@ -27,6 +28,7 @@ colors:
   surface-floating: "#FFFEFB"
   action-primary: "#2E6853"
   action-primary-hover: "#2E4A2E"
+  state-selected: "#2E4A2E"
 typography:
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
@@ -337,6 +339,12 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   `#1F4C3C` was rejected to avoid a third green; `green-700` (`#2E4A2E`) is
   unchanged. This keeps the documented "hover goes darker (`primary-dark`)"
   rule intact while giving S4 a role-named alias to bind to.
+- Semantic selected-state alias: `state-selected` (= `primary-dark` `#2E4A2E`).
+  The single "selected/active" affordance across the design system — map markers
+  (selected pin border, MEH-763) and filter chips (active chip). **No new green**
+  — selection reuses the existing palette dark per ADR-019, same precedent as
+  `action-primary-hover`. Components bind to this role name so a future tweak to
+  the selected colour is one token edit, not a grep across `/map`.
 - Spacing `5xl` (96px) / `6xl` (128px) — editorial section rhythm above `4xl`.
 - Headline fallback: every Frank Ruhl Libre stack
   (`headline-display`/`-lg`/`-md`) degrades to `"David Libre", Georgia, serif`.

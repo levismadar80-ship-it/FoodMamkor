@@ -112,6 +112,8 @@ graph TD
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
+    Producers --> GrantVerified[POST /admin/producers/{id}/grant-verified<br/>🛡️ MEH-762 stamp verified_at + doc_type]
+    Producers --> RevokeVerified[POST /admin/producers/{id}/revoke-verified<br/>🛡️ MEH-762 clear verified tier]
 
     Users[/admin/users page] --> AdminUsers[GET /admin/users<br/>🛡️ search + role filter]
     Users --> Role[PUT /admin/users/{id}/role<br/>🛡️]

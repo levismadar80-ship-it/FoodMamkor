@@ -73,7 +73,7 @@
       "rate_limited": "Rate limited — try again in an hour"
     },
     "toasts": {
-      "favoriteSaved": "Saved to favorites ❤️",
+      "favoriteSaved": "Saved to favorites",
       "sessionExpired": "Your session expired — please sign in again",
       "loginAgainCta": "Sign in"
     },
@@ -552,12 +552,38 @@
     "event": {
       "title_fallback": "Culinary event — Mehamakor",
       "description_fallback": "Culinary events at local food businesses."
+    },
+    "events": {
+      "title": "Events at farms and local food businesses | Mehamakor",
+      "description": "Workshops, tours, open days, and tastings at local food businesses across Israel. Discover upcoming events by city, category, and date.",
+      "og_title": "Events at farms and local food businesses | Mehamakor",
+      "og_description": "Workshops, tours, open days, and tastings at local food businesses across Israel."
+    },
+    "experiences": {
+      "title": "Community experiences and workshops | Mehamakor",
+      "description": "Cooking workshops, food tours, and nutrition classes hosted by locals across Israel. Find an experience by city and category, or submit your own.",
+      "og_title": "Community experiences and workshops | Mehamakor",
+      "og_description": "Cooking workshops, food tours, and nutrition classes — local hosts, real experiences."
+    },
+    "group_buys": {
+      "title": "Group purchases | Mehamakor",
+      "description": "Buy together and save — group purchases from local producers across Israel.",
+      "og_title": "Group purchases | Mehamakor",
+      "og_description": "Buy together and save — group purchases from local producers."
+    },
+    "register_producer": {
+      "title": "Register your business | Mehamakor",
+      "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     }
   },
   "producer": {
+    "badge_row": {
+      "aria": "Business badges"
+    },
     "badge": {
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
+      "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else."
     },
     "detail": {
@@ -706,7 +732,7 @@
       "submit": "Save recipe",
       "cancel": "Cancel",
       "toast_updated": "Recipe updated",
-      "toast_created": "Recipe sent for approval 🌿",
+      "toast_created": "Recipe sent for approval",
       "errors": {
         "upload_image_failed": "Image upload failed",
         "rejected_default": "Content does not meet our criteria",
@@ -861,10 +887,7 @@
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
-      "followed_toast": "You'll now get updates about new products 🔔"
-    },
-    "badge_row": {
-      "aria": "Business badges"
+      "followed_toast": "You'll now get updates about new products"
     },
     "friday_delivery": {
       "today": "today",
@@ -1199,6 +1222,9 @@
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again."
       },
+      "toggle": {
+        "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
+      },
       "new": {
         "title": "Add new business",
         "subtitle": "The business will be saved immediately as approved (status=approved) and appear on the site."
@@ -1364,7 +1390,7 @@
         "reject": "Reject",
         "view": "View"
       },
-      "approve_toast": "Experience approved 🌿",
+      "approve_toast": "Experience approved",
       "approve_error": "Approval error",
       "validate_feedback": "Please fill in a note",
       "changes_toast": "Change request sent",
@@ -1483,7 +1509,7 @@
       },
       "load_error": "Error loading requests",
       "no_requests": "No requests",
-      "approved_toast": "Badge approved ✅",
+      "approved_toast": "Badge approved",
       "rejected_toast": "Request rejected",
       "columns": {
         "producer": "Business",
@@ -1979,7 +2005,7 @@
       "submitting": "Submitting...",
       "cannot_publish": "Cannot publish",
       "submit_cta": "Submit for review",
-      "toast_submitted": "Experience submitted for review 🌿",
+      "toast_submitted": "Experience submitted for review",
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
@@ -2351,7 +2377,7 @@
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "error_generic": "Something went wrong, please try again",
-    "saved_toast": "Your review was saved ⭐",
+    "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
     "login_prompt": "<login>Sign in</login> to write a review",
     "loading": "Loading reviews...",
@@ -2476,8 +2502,8 @@
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap on any card to get alerts about new events and products",
     "button": {
-      "saved_toast_first_time": "Saved! You'll find favorites under the ❤️ tab at the bottom",
-      "saved_toast": "Saved to favorites ❤️",
+      "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
+      "saved_toast": "Saved to favorites",
       "removed_toast": "Removed from favorites",
       "error_generic": "Something went wrong, please try again",
       "add_aria": "Add to favorites",
@@ -2515,7 +2541,7 @@
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
-    "copied_toast": "Link copied ✓"
+    "copied_toast": "Link copied"
   },
   "gallery": {
     "open_aria": "Enlarge image {current}",
@@ -3358,7 +3384,7 @@
       "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — share your profile link on WhatsApp.",
       "share_cta": "Copy share link",
       "share_cta_copied": "Copied! ✓",
-      "share_toast": "Link copied! 🔗",
+      "share_toast": "Link copied!",
       "followers_label": "followers",
       "share_hint": "A detailed list of followers is coming soon — share your profile to reach more customers."
     },
@@ -3376,7 +3402,7 @@
       "push_active": "Push notifications active",
       "save_cta": "Save settings",
       "saving": "Saving…",
-      "save_success_toast": "Settings updated ✓",
+      "save_success_toast": "Settings updated",
       "save_error_toast": "Save error, please try again"
     },
     "layout": {

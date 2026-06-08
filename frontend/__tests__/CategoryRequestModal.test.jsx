@@ -25,7 +25,10 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("@/lib/use-focus-return", () => ({ useFocusReturn: vi.fn() }));
-vi.mock("@/lib/toast", () => ({ showToast: vi.fn() }));
+// MEH-685: methods-only object.
+vi.mock("@/lib/toast", () => ({
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
 
 const apiPostSpy = vi.fn();
 vi.mock("@/lib/api", () => ({
@@ -67,10 +70,9 @@ describe("CategoryRequestModal (MEH-141)", () => {
       "/category-requests",
       expect.objectContaining({ requested_name: "משקאות מותססים" })
     );
-    expect(showToast).toHaveBeenCalledWith(
+    expect(showToast.success).toHaveBeenCalledWith(
       expect.stringContaining("תודה"),
-      "success",
-      expect.any(Number)
+      expect.objectContaining({ duration: expect.any(Number) }),
     );
     expect(onClose).toHaveBeenCalled();
   });
@@ -87,7 +89,7 @@ describe("CategoryRequestModal (MEH-141)", () => {
       fireEvent.submit(screen.getByRole("dialog").querySelector("form"));
     });
 
-    expect(showToast).toHaveBeenCalledWith(expect.any(String), "error");
+    expect(showToast.error).toHaveBeenCalledWith(expect.any(String));
   });
 
   it("calls onClose when backdrop clicked", () => {

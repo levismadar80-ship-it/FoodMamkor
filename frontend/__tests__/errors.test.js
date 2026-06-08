@@ -2,10 +2,17 @@
  * MEH-251 — errorMessage() mapper contract.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { errorMessage } from "../lib/errors";
+import { errorMessage, showErrorToast } from "../lib/errors";
+import { showToast } from "../lib/toast";
+
+// MEH-685: methods-only toast object.
+vi.mock("../lib/toast", () => ({
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.clearAllMocks();
 });
 
 describe("errorMessage", () => {
@@ -52,5 +59,24 @@ describe("errorMessage", () => {
     expect(errorMessage({})).toBeTruthy();
     expect(errorMessage(null)).toBeTruthy();
     expect(errorMessage(new Error("boom"))).toBeTruthy();
+  });
+});
+
+describe("showErrorToast — semantic dispatch (MEH-685)", () => {
+  it("routes a known type to that toast method", () => {
+    showErrorToast({ response: { status: 500, data: {} } }, "error");
+    expect(showToast.error).toHaveBeenCalledWith(expect.stringContaining("לא זמין"));
+  });
+
+  it("defaults to error when no type is passed", () => {
+    showErrorToast({ response: { status: 429, data: {} } });
+    expect(showToast.error).toHaveBeenCalledWith(expect.stringContaining("יותר מדי"));
+  });
+
+  it("falls back to info for an unexpected type (no crash)", () => {
+    expect(() =>
+      showErrorToast({ response: { status: 500, data: {} } }, "warning"),
+    ).not.toThrow();
+    expect(showToast.info).toHaveBeenCalledWith(expect.any(String));
   });
 });

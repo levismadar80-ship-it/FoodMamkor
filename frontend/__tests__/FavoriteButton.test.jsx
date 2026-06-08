@@ -43,10 +43,15 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-// Mock toast
-vi.mock("@/lib/toast", () => ({
-  showToast: vi.fn(),
-}));
+// Mock toast — MEH-685: showToast is a function with .success/.error/.info
+// semantic methods. FavoriteButton now calls showToast.success/.error.
+vi.mock("@/lib/toast", () => {
+  const showToast = vi.fn();
+  showToast.success = vi.fn();
+  showToast.error = vi.fn();
+  showToast.info = vi.fn();
+  return { showToast };
+});
 
 // Mock Phosphor HeartStraight — rendered as a span so we can assert presence
 vi.mock("@phosphor-icons/react", () => ({

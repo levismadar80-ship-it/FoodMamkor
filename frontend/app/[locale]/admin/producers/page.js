@@ -74,6 +74,7 @@ function ProducersAdminPage() {
         onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
         onUploadStoryCard={h.handleStoryCardUpload}
+        isBusy={h.isBusy}
         page={h.safePage}
         totalPages={h.totalPages}
         perPage={h.perPage}

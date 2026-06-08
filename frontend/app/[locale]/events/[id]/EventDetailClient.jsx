@@ -4,29 +4,24 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Leaf, MapPin } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import Breadcrumb from "@/components/Breadcrumb";
 
-function formatDate(iso) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
+const DETAIL_DATE_OPTIONS = {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+};
 
 // MEH-476 PR 3b2: extracted from app/[locale]/events/[id]/page.js so the
 // route can export generateMetadata (Client Components cannot). page.js
 // renders this component; logic + state unchanged from pre-3b2 behavior.
 export default function EventDetailClient() {
   const t = useTranslations("events.detail");
+  const locale = useLocale();
   const { id } = useParams();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,7 +88,7 @@ export default function EventDetailClient() {
         <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
             <span aria-hidden>📅</span>
-            {formatDate(event.event_date)}
+            {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
             {event.event_time && ` · ${event.event_time.slice(0, 5)}`}
           </p>
           {event.location && (

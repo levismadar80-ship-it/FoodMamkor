@@ -18,6 +18,16 @@ import { SITE_URL } from "./env";
 import { BRAND_NAME } from "./constants";
 export { SITE_URL };
 
+// HOT-006 (MEH-778): JSON-LD must declare the page's actual locale instead of
+// always claiming Hebrew. `inLanguage` uses hyphenated BCP-47 (schema.org
+// convention) — mirrors lib/i18n-seo.js OG_LOCALE (underscore form) and
+// format-date.js LOCALE_TAG. COUNTRY_LABEL localizes the one hardcoded
+// breadcrumb constant ("ישראל"). Producer name/description and DB category
+// names are user content with no message-key translation, so they stay as-is
+// (locale-invariant), per the issue's "name/address unchanged" rule.
+const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
+const COUNTRY_LABEL = { he: "ישראל", en: "Israel" };
+
 /**
  * Build the <title> per the MEH-9 spec:
  *   [name] — [category] ב[city] | מהמקור
@@ -80,18 +90,81 @@ export function buildPageUrl(producer) {
     : `${SITE_URL}/producer/${producer.id}`;
 }
 
+// MEH-452: day-axis mapping for openingHoursSpecification. DAY_ABBR matches
+// the backend opening_hours string format ("Sun-Thu 09:00-18:00"); DAY_FULL
+// holds the schema.org canonical dayOfWeek values. Logic is copied (not
+// imported) from components/OpeningHours.jsx::parseHours — that file is a
+// client component with React/next-intl deps and a different output shape
+// (status map for the UI), so this stays a separate pure helper.
+const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_FULL = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+/**
+ * MEH-452 Gap 1: parse the producer.opening_hours string into a schema.org
+ * openingHoursSpecification array. Input format:
+ *   "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
+ * Returns one entry per day that has hours (in Sun→Sat order), or null when
+ * the input is empty/unparseable — the caller omits the field entirely
+ * rather than emitting an empty array.
+ */
+function parseOpeningHoursSpec(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  const map = {}; // dayIndex → { open, close }
+  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean);
+
+  for (const entry of entries) {
+    const match = entry.match(/^([A-Za-z]+)(?:-([A-Za-z]+))?\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
+    if (!match) continue;
+    const [, startDay, endDay, open, close] = match;
+    const startIdx = DAY_ABBR.findIndex((d) => d.toLowerCase() === startDay.toLowerCase());
+    if (startIdx === -1) continue;
+    const endIdx = endDay
+      ? DAY_ABBR.findIndex((d) => d.toLowerCase() === endDay.toLowerCase())
+      : startIdx;
+    if (endIdx === -1) continue;
+    const indices = endIdx >= startIdx
+      ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
+      : [startIdx];
+    for (const i of indices) map[i] = { open, close };
+  }
+
+  const spec = [];
+  for (let i = 0; i < 7; i++) {
+    if (map[i]) {
+      spec.push({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: DAY_FULL[i],
+        opens: map[i].open,
+        closes: map[i].close,
+      });
+    }
+  }
+  return spec.length > 0 ? spec : null;
+}
+
 /**
  * Build schema.org JSON-LD for a producer detail page. Returns a single
- * object with a `@graph` array that Google's parser splits into three
- * entities — FoodEstablishment, BreadcrumbList, and WebPage — from one
- * <script type="application/ld+json"> tag.
+ * object with a `@graph` array that Google's parser splits into five
+ * entities — FoodEstablishment, BreadcrumbList, WebPage, WebSite, and
+ * Organization — from one <script type="application/ld+json"> tag.
  *
  * MEH-9  — baseline LocalBusiness + aggregateRating + priceRange + images.
  * MEH-172 — switch to FoodEstablishment subtype (still a LocalBusiness,
  *           tells Google the page is about food), add BreadcrumbList
  *           (ישראל → קטגוריה → עיר → שם), and a minimal WebPage wrapper.
+ * MEH-452 — AEO enhancements: openingHoursSpecification + servesCuisine on
+ *           the FoodEstablishment, plus WebSite + Organization graph nodes
+ *           (closes the dangling WebPage.isPartOf → #website reference).
  */
-export function buildJsonLd(producer) {
+export function buildJsonLd(producer, locale = "he") {
   if (!producer) return null;
 
   const isDeliveryOnly = producer.has_physical_location === false && producer.offers_delivery;
@@ -137,11 +210,15 @@ export function buildJsonLd(producer) {
   if (producer.phone) business.telephone = producer.phone;
 
   if (producer.website) {
-    business.sameAs = [
-      producer.website.startsWith("http")
-        ? producer.website
-        : `https://${producer.website}`,
-    ];
+    // HOT-017 (MEH-782): the old `startsWith("http")` check let a typo that
+    // merely starts with "http" (e.g. "httpfoo.co.il") through verbatim,
+    // emitting a non-absolute URL into JSON-LD `sameAs`. Require a real
+    // `http(s)://` protocol; a bare domain gets an https:// prefix. Valid URLs
+    // pass through byte-for-byte (no URL re-normalization / trailing slash).
+    const raw = producer.website.trim();
+    if (raw) {
+      business.sameAs = [/^https?:\/\//i.test(raw) ? raw : `https://${raw}`];
+    }
   }
 
   if (producer.images?.length > 0) business.image = producer.images;
@@ -155,12 +232,24 @@ export function buildJsonLd(producer) {
     };
   }
 
+  // MEH-452 Gap 1: openingHoursSpecification — omitted entirely when
+  // opening_hours is null/empty/unparseable (no empty array emitted).
+  const openingHoursSpec = parseOpeningHoursSpec(producer.opening_hours);
+  if (openingHoursSpec) business.openingHoursSpecification = openingHoursSpec;
+
+  // MEH-452 Gap 2: servesCuisine from the producer's categories. Omitted
+  // when there are no categories (or none with a name).
+  if (producer.categories?.length > 0) {
+    const cuisines = producer.categories.map((c) => c.name).filter(Boolean);
+    if (cuisines.length > 0) business.servesCuisine = cuisines;
+  }
+
   // BreadcrumbList -------------------------------------------------------
   // Structure per MEH-172: ישראל → קטגוריה → עיר → שם העסק.
   // Category and city items are skipped when the source data is missing,
   // so the list stays valid (Google rejects breadcrumbs with gaps).
   const crumbs = [
-    { name: "ישראל", item: SITE_URL },
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
   ];
   if (category) {
     crumbs.push({
@@ -193,16 +282,41 @@ export function buildJsonLd(producer) {
     "@id": `${pageUrl}#webpage`,
     url: pageUrl,
     name: title,
-    inLanguage: "he-IL",
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
     isPartOf: { "@id": `${SITE_URL}#website` },
     primaryImageOfPage: producer.images?.[0] || undefined,
     breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
     about: { "@id": `${pageUrl}#business` },
   };
 
+  // WebSite + Organization ----------------------------------------------
+  // MEH-452 Gap 3: these two site-level entities close the dangling
+  // WebPage.isPartOf → `${SITE_URL}#website` reference (previously pointing
+  // at an entity defined nowhere). WebSite.publisher resolves to the
+  // Organization node. logo path confirmed present in /public.
+  const webSite = {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}#website`,
+    url: SITE_URL,
+    name: BRAND_NAME,
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
+    publisher: { "@id": `${SITE_URL}#organization` },
+  };
+
+  const organization = {
+    "@type": "Organization",
+    "@id": `${SITE_URL}#organization`,
+    name: BRAND_NAME,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+  };
+
   return {
     "@context": "https://schema.org",
-    "@graph": [webPage, breadcrumbList, business],
+    "@graph": [webPage, breadcrumbList, business, webSite, organization],
   };
 }
 
@@ -223,7 +337,10 @@ export function buildProducerMetadata(producer) {
       title: producer.name,
       description,
       url: pageUrl,
-      images: img ? [{ url: img, width: 1200, height: 630 }] : [],
+      // HOT-017 (MEH-782): omit `images` when there's no image rather than
+      // emitting an empty array — Next.js drops the undefined key, so no empty
+      // `og:image` is rendered (omit, never null/empty — MEH-741 precedent).
+      images: img ? [{ url: img, width: 1200, height: 630 }] : undefined,
       type: "website",
       locale: "he_IL",
       siteName: BRAND_NAME,

@@ -59,7 +59,7 @@ function LoginPageBody() {
 
   useEffect(() => {
     if (params.get("reset") === "1") {
-      showToast(t("reset_success"), "success");
+      showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
