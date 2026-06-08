@@ -39,6 +39,8 @@ dev = [
     "pytest-cov>=7.1.0",
     "pytest-rerunfailures>=14.0",
     "pytest-timeout>=2.4.0",
+    # MEH-214: property-based API fuzzing (pulls hypothesis transitively).
+    "schemathesis>=4.0",
     "ruff>=0.15.0",
 ]
 
