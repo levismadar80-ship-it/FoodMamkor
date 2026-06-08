@@ -3,6 +3,26 @@
 
 ---
 
+## MEH-685 — Toast semantic icon API (Category D2 emoji strip)
+
+All toasts now render a Phosphor icon (no emoji). Icon sits at the **start** of
+the toast (right side in he/RTL), inheriting the white text color.
+
+- [ ] **Favorite — save (first time)** — לחצי ❤ על עסק (פעם ראשונה במכשיר) — toast עם
+  אייקון לב מלא (HeartStraight) + "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט", בלי אימוג'י
+- [ ] **Favorite — save (repeat)** — שמירה נוספת — toast לב מלא + "נשמר למועדפים"
+- [ ] **Favorite — remove** — הסרה ממועדפים — toast אייקון ✓ ברירת־מחדל + "הוסר מהמועדפים"
+- [ ] **Follow** — מעקב אחרי עסק — toast פעמון (Bell) + "מעכשיו תקבלי עדכונים…", בלי 🔔
+- [ ] **Share / copy link** — העתקת קישור (ShareButton) — toast אייקון Check + "הקישור הועתק"
+- [ ] **Review saved** — שליחת ביקורת — toast כוכב (Star) + "הביקורת שלך נשמרה", בלי ⭐
+- [ ] **Publish neighbor product** — פרסום מוצר שכן — toast עלה (Leaf) + "המוצר פורסם!", בלי 🌿
+- [ ] **Under review** — מוצר שסומן בבדיקה — toast זכוכית מגדלת (MagnifyingGlass) + "…בבדיקה", בלי 🔍
+- [ ] **Error toast** — כשל רשת/פעולה — toast אדום + אייקון WarningCircle
+- [ ] **Info + action (session expiry)** — אחרי פג תוקף JWT — toast info + אייקון Info +
+  לינק "התחברי" שעובד
+- [ ] **RTL position (he)** — בכל ה־toasts: האייקון בצד ימין (start), צמוד לטקסט עם gap, לבן
+- [ ] **EN locale** — אותם toasts ב־/en — אייקונים זהים, טקסט אנגלי בלי אימוג'י
+
 ## MEH-731 — navbar homepage-state (locale-path) + verify-banner relocation
 
 - [ ] בית `/he` בראש (לפני גלילה) — navbar **שקוף** + לוגו/קישורים בהירים מעל ה-hero — תוצאה: לא cream pill
@@ -1691,3 +1711,11 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - `favorites_unauth` is expected to return 401 on every request — measures auth-rejection latency.
 - p99 > 5s or `X-Railway-Fallback: true` headers = Railway throttling; consider plan upgrade before launch.
 | 4 — Documentation | THIS PR | — |
+
+## UIS Pattern A (MEH-228) — admin double-submit protection
+
+- [ ] `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
+- [ ] `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
+- [ ] `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת
+- [ ] `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
+- [ ] כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)

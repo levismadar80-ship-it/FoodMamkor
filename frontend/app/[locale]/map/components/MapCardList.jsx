@@ -40,7 +40,7 @@ export default function MapCardList({
           ref={(el) => { if (el) cardRefs.current.set(p.id, el); else cardRefs.current.delete(p.id); }}
           onMouseEnter={() => onCardMouseEnter(p.id)}
           onMouseLeave={onCardMouseLeave}
-          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-[16px]" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-[16px] bg-green-50/[6%]" : ""} transition`}
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-lg" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-lg bg-green-50/[6%]" : ""} transition`}
         >
           <MapProducerCard
             producer={p}

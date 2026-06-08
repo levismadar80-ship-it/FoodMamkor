@@ -49,6 +49,13 @@ async def add_security_headers(request: Request, call_next) -> Response:
     response.headers["Permissions-Policy"] = (
         "camera=(), microphone=(), geolocation=(self)"
     )
+    # MEH-783: HSTS for parity with the frontend origin (next.config.js
+    # securityHeaders). Browsers honor it only over HTTPS, which is how the
+    # API is served in production (Railway); harmless over plain HTTP in dev.
+    # CSP intentionally NOT set here — it stays a frontend-only concern.
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=63072000; includeSubDomains; preload"
+    )
     return response
 
 

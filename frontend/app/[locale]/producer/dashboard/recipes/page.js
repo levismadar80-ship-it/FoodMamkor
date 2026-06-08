@@ -54,10 +54,10 @@ export default function ProducerRecipesPage() {
     if (!window.confirm(t("delete_confirm"))) return;
     try {
       await api.delete(`/producers/me/recipes/${recipeId}`);
-      showToast(t("toast_deleted"));
+      showToast.success(t("toast_deleted"));
       load();
     } catch (err) {
-      showToast(err.response?.data?.detail || t("toast_delete_error"), "error");
+      showToast.error(err.response?.data?.detail || t("toast_delete_error"));
     }
   };
 

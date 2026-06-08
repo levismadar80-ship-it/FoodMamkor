@@ -20,8 +20,9 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
+// MEH-685: methods-only object.
 vi.mock("@/lib/toast", () => ({
-  showToast: vi.fn(),
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 // MEH-475 PR-B: outreach page reads useTranslations("admin") with PR-B's

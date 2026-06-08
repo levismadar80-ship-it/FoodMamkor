@@ -31,7 +31,7 @@ export default function DesktopMiniPopup({ selectedProducer, onClose }) {
   const imageUrl = optimizeCloudinary(p.images?.[0]);
   return (
     // eslint-disable-next-line no-restricted-syntax -- rtl-ok: map overlay, physically pinned to corner
-    <div className="absolute bottom-4 right-4 z-[600] bg-white rounded-[16px] border border-border shadow-[0_4px_24px_rgba(0,0,0,0.12)] w-[300px] overflow-hidden">
+    <div className="absolute bottom-4 right-4 z-[600] bg-surface-floating rounded-lg border border-border w-[300px] overflow-hidden">
       {imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={p.name || ""} className="w-full h-[100px] object-cover" />
@@ -47,7 +47,7 @@ export default function DesktopMiniPopup({ selectedProducer, onClose }) {
           {[p.categories?.[0]?.name, p.city, p.starting_price_label || p.price_range].filter(Boolean).join(" · ")}
         </p>
         {normalizePhone(p.phone) && (
-          <a href={getWhatsAppHref(normalizePhone(p.phone), t("map.popup.whatsapp_greeting", { name: p.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(p.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-[8px] py-2 font-medium text-sm">
+          <a href={getWhatsAppHref(normalizePhone(p.phone), t("map.popup.whatsapp_greeting", { name: p.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(p.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2 font-medium text-sm">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
             WhatsApp
           </a>

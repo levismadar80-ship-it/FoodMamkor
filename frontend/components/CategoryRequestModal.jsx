@@ -40,12 +40,12 @@ export default function CategoryRequestModal({ open, onClose, producerId }) {
         examples: examples.trim() || null,
         producer_id: producerId || null,
       });
-      showToast(t("toasts.success"), "success", 4000);
+      showToast.success(t("toasts.success"), { duration: 4000 });
       setName("");
       setExamples("");
       onClose();
     } catch {
-      showToast(t("toasts.error"), "error");
+      showToast.error(t("toasts.error"));
     } finally {
       setLoading(false);
     }

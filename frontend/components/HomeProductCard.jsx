@@ -1,20 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import { useLocale } from "next-intl";
 import { CalendarBlank, House, Leaf, MagnifyingGlass, MapPin, Warning } from "@phosphor-icons/react";
 import StarRating from "./StarRating";
 import WhatsAppButton from "./WhatsAppButton";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { formatEventDate } from "@/lib/format-date";
 import { BRAND_NAME } from "@/lib/constants";
 
-function formatDate(iso) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", { day: "numeric", month: "short" });
-  } catch {
-    return iso;
-  }
-}
+// Short-form date for the home product card (e.g. "6 ביוני" / "Jun 6").
+const SHORT_DATE_OPTIONS = { day: "numeric", month: "short" };
 
 // TODO MEH-543: i18n after /neighbor activation post-launch
 function storageEmoji(type) {
@@ -25,6 +21,7 @@ function storageEmoji(type) {
 }
 
 export default function HomeProductCard({ product, onWhatsAppClick }) {
+  const locale = useLocale();
   // FINAL_AUDIT: Cloudinary f_auto,q_auto for automatic WebP/AVIF.
   const imgSrc = optimizeCloudinary(
     (product.images && product.images[0]) || product.photo
@@ -106,9 +103,9 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
         {/* Dates */}
         {(product.prep_date || product.expiry_date) && (
           <p className="text-xs text-fg-muted mb-2">
-            {product.prep_date && <><CalendarBlank size={13} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> הוכן: {formatDate(product.prep_date)}</>}
+            {product.prep_date && <><CalendarBlank size={13} weight="duotone" aria-hidden="true" className="inline align-[-2px]" /> הוכן: {formatEventDate(product.prep_date, locale, SHORT_DATE_OPTIONS)}</>}
             {product.prep_date && product.expiry_date && " · "}
-            {product.expiry_date && <>עד: {formatDate(product.expiry_date)}</>}
+            {product.expiry_date && <>עד: {formatEventDate(product.expiry_date, locale, SHORT_DATE_OPTIONS)}</>}
           </p>
         )}
 
@@ -128,7 +125,7 @@ export default function HomeProductCard({ product, onWhatsAppClick }) {
             {isFree
               ? "🎁 במתנה"
               : priceNum != null
-                ? `₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`
+                ? <span dir="ltr">{`₪${priceNum.toFixed(0)}${product.unit ? ` / ${product.unit}` : ""}`}</span>
                 : ""}
           </span>
         </div>

@@ -29,7 +29,7 @@ describe("allBadges", () => {
   it("returns [] for a producer with nothing earned", () => {
     expect(
       allBadges({
-        is_verified: false,
+        verification_tier: null,
         is_recommended: false,
         days_since_created: 365,
         delivery_count: 0,
@@ -50,8 +50,8 @@ describe("allBadges", () => {
     expect(allBadges(undefined)).toEqual([]);
   });
 
-  it("verified — when is_verified is true", () => {
-    const badges = allBadges({ is_verified: true });
+  it("verified — when verification_tier is 'verified'", () => {
+    const badges = allBadges({ verification_tier: "verified" });
     expect(badges.map((b) => b.key)).toEqual(["verified"]);
   });
 
@@ -170,7 +170,7 @@ describe("allBadges", () => {
       days_since_created: 5,
       has_producer_license: true,
       is_recommended: true,
-      is_verified: true,
+      verification_tier: "verified",
     });
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
@@ -189,15 +189,15 @@ describe("allBadges", () => {
   });
 
   it("each returned badge carries label + tooltip", () => {
-    const [badge] = allBadges({ is_verified: true });
+    const [badge] = allBadges({ verification_tier: "verified" });
     expect(badge.label).toBe("מאומת");
-    expect(badge.tooltip).toMatch(/אימות/);
+    expect(badge.tooltip).toMatch(/נבדק/);
   });
 });
 
 describe("topBadges", () => {
   const producer = {
-    is_verified: true,
+    verification_tier: "verified",
     is_recommended: true,
     days_since_created: 10,
     has_delivery: true,
@@ -219,7 +219,7 @@ describe("topBadges", () => {
   });
 
   it("returns all when limit exceeds earned count", () => {
-    expect(topBadges({ is_verified: true }, 5).map((b) => b.key)).toEqual([
+    expect(topBadges({ verification_tier: "verified" }, 5).map((b) => b.key)).toEqual([
       "verified",
     ]);
   });
@@ -232,7 +232,7 @@ describe("topBadges", () => {
   it("picks organic over delivery when both earned and limit=2 with verified", () => {
     // verified (priority 0) + organic (priority 3) win over delivery (priority 6)
     const p = {
-      is_verified: true,
+      verification_tier: "verified",
       organic_certified: true,
       has_delivery: true,
     };
@@ -260,7 +260,7 @@ describe("badgeCount", () => {
   it("counts all earned badges", () => {
     expect(
       badgeCount({
-        is_verified: true,
+        verification_tier: "verified",
         is_recommended: true,
         days_since_created: 5,
         has_delivery: true,

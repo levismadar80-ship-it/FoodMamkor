@@ -61,6 +61,8 @@ erDiagram
         text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
         timestamp declared_at "nullable — MEH-759, tz-aware; binding tier-2 declaration timestamp"
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
+        timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
+        string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
         timestamp created_at
     }
 

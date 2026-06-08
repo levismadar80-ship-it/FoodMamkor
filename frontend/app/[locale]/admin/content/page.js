@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -122,19 +123,23 @@ function CategoryRow({ cat, onSave, onDelete }) {
 
 function HiddenHomeProducts() {
   const t = useTranslations("admin");
+  const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   useEffect(() => {
     api.get("/admin/home-products/hidden").then((r) => setItems(r.data)).catch(() => setItems([]));
   }, []);
 
-  const restore = async (id) => {
-    await api.post(`/admin/home-products/${id}/restore`);
-    setItems(items.filter((i) => i.id !== id));
-  };
-  const remove = async (id) => {
+  const restore = (id) =>
+    run(`restore:${id}`, async () => {
+      await api.post(`/admin/home-products/${id}/restore`);
+      setItems(items.filter((i) => i.id !== id));
+    });
+  const remove = (id) => {
     if (!confirm(t("content.home_products.confirm_delete"))) return;
-    await api.delete(`/admin/home-products/${id}`);
-    setItems(items.filter((i) => i.id !== id));
+    return run(`delete:${id}`, async () => {
+      await api.delete(`/admin/home-products/${id}`);
+      setItems(items.filter((i) => i.id !== id));
+    });
   };
 
   return (
@@ -151,8 +156,8 @@ function HiddenHomeProducts() {
                 <p className="text-xs text-muted">{hp.seller_name} · {hp.city}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => restore(hp.id)} className="bg-primary text-white px-3 py-1 rounded-lg text-xs">{t("content.home_products.restore")}</button>
-                <button onClick={() => remove(hp.id)} className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs">{t("content.home_products.delete")}</button>
+                <button onClick={() => restore(hp.id)} disabled={isBusy(`restore:${hp.id}`)} className="bg-primary text-white px-3 py-1 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed">{t("content.home_products.restore")}</button>
+                <button onClick={() => remove(hp.id)} disabled={isBusy(`delete:${hp.id}`)} className="bg-red-500 text-white px-3 py-1 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed">{t("content.home_products.delete")}</button>
               </div>
             </li>
           ))}

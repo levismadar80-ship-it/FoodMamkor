@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CookingPot, Grains } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ExperienceCard from "@/components/ExperienceCard";
@@ -36,19 +37,6 @@ const EXPERIENCE_CATEGORY_KEYS = [
   { key: "אחר", labelKey: "other" },
 ];
 
-function formatDate(iso) {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString("he-IL", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-  } catch {
-    return iso;
-  }
-}
-
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
@@ -58,6 +46,7 @@ export default function EventsPage() {
   const t = useTranslations("events.list");
   const tCat = useTranslations("events.categories");
   const tExpCat = useTranslations("events.experience_categories");
+  const locale = useLocale();
   const search = useSearchParams();
   const router = useRouter();
   // Tab state lives in the URL so /events?tab=experiences is a real
@@ -117,13 +106,12 @@ export default function EventsPage() {
   const groupedByMonth = useMemo(() => {
     const groups = {};
     for (const ev of events) {
-      const d = new Date(ev.event_date);
-      const key = d.toLocaleDateString("he-IL", { month: "long", year: "numeric" });
+      const key = formatEventDate(ev.event_date, locale, { month: "long", year: "numeric" });
       if (!groups[key]) groups[key] = [];
       groups[key].push(ev);
     }
     return groups;
-  }, [events]);
+  }, [events, locale]);
 
   return (
     <div>
@@ -306,6 +294,7 @@ export default function EventsPage() {
 }
 
 function EventCard({ event, freeLabel }) {
+  const locale = useLocale();
   return (
     <Link
       href={`/events/${event.id}`}
@@ -323,7 +312,7 @@ function EventCard({ event, freeLabel }) {
       )}
       <div className="p-4 flex-1 flex flex-col">
         <p className="text-primary text-sm font-semibold mb-1">
-          {formatDate(event.event_date)}
+          {formatEventDate(event.event_date, locale)}
           {event.event_time && ` · ${formatTime(event.event_time)}`}
         </p>
         <h3 className="font-headline-md text-xl font-bold text-text mb-1">

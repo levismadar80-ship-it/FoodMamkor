@@ -63,8 +63,8 @@ export async function generateMetadata(props) {
   };
 }
 
-function ProducerJsonLd({ producer }) {
-  const jsonLd = buildJsonLd(producer);
+function ProducerJsonLd({ producer, locale }) {
+  const jsonLd = buildJsonLd(producer, locale);
   if (!jsonLd) return null;
   return (
     <script
@@ -81,7 +81,7 @@ export default async function ProducerSlugPage(props) {
 
   return (
     <>
-      <ProducerJsonLd producer={producer} />
+      <ProducerJsonLd producer={producer} locale={params.locale} />
       <ProducerDetail
         initialProducer={producer}
         fetchPath={`/producers/by-slug/${encodeURIComponent(params.slug)}`}

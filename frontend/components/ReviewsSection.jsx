@@ -2,11 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { formatEventDate } from "@/lib/format-date";
 import EmptyState from "@/components/ui/EmptyState";
+
+// HOT-018 (MEH-782): numeric short date (e.g. 7.6.2026) — preserves the prior
+// `toLocaleDateString` default while routing through the Invalid-Date-guarded,
+// locale-aware helper so /en no longer renders Hebrew review dates.
+const REVIEW_DATE_OPTIONS = { year: "numeric", month: "numeric", day: "numeric" };
 
 // "Sapir L." — first name + last initial (privacy)
 function formatName(fullName, fallback) {
@@ -74,6 +80,7 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
  */
 export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
   const t = useTranslations("reviews");
+  const locale = useLocale();
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
   const [total, setTotal] = useState(reviewCount);
@@ -87,6 +94,10 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   const [error, setError] = useState("");
   const [hasClickedWa, setHasClickedWa] = useState(false);
   const sectionRef = useRef(null);
+  // HOT-018 (MEH-782): synchronous in-flight lock — blocks a second fetch
+  // before React re-renders, so rapid pagination clicks can't fire overlapping
+  // requests whose responses resolve out of order (displayed page ≠ state).
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -97,6 +108,8 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
   }, [producerId]);
 
   const fetchPage = (p) => {
+    if (inFlightRef.current) return; // HOT-018: drop overlapping requests
+    inFlightRef.current = true;
     setLoading(true);
     api
       .get(`/producers/${producerId}/reviews`, { params: { page: p } })
@@ -107,7 +120,10 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         setPage(p);
       })
       .catch(() => setReviews([]))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        inFlightRef.current = false;
+        setLoading(false);
+      });
   };
 
   // Lazy-load via IntersectionObserver — only fetch when section is visible.
@@ -156,7 +172,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setReviews((prev) => [r.data, ...prev.filter((x) => x.user_id !== r.data.user_id)]);
       setTotal((tt) => tt + (reviews.some((x) => x.user_id === r.data.user_id) ? 0 : 1));
       setShowForm(false);
-      showToast(t("saved_toast"));
+      showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
       setError(err.response?.data?.detail || t("error_generic"));
     } finally {
@@ -182,6 +198,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           <p
             className="font-headline-display font-black leading-none text-text mb-2"
             style={{ fontSize: 48 }}
+            dir="ltr"
           >
             {Number(avgRating).toFixed(1)}
           </p>
@@ -301,9 +318,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                     <p className="font-body-md font-semibold text-[15px] text-text leading-snug">
                       {formatName(review.user_name, anonymousFallback)}
                     </p>
-                    {review.created_at && (
-                      <p className="text-[13px] text-fg-muted mt-0.5">
-                        {new Date(review.created_at).toLocaleDateString("he-IL")}
+                    {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS) && (
+                      <p className="text-[13px] text-fg-muted mt-0.5" dir="ltr">
+                        {formatEventDate(review.created_at, locale, REVIEW_DATE_OPTIONS)}
                       </p>
                     )}
                   </div>
@@ -326,7 +343,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             <div className="flex items-center justify-center gap-3 mt-6">
               <button
                 onClick={() => fetchPage(page - 1)}
-                disabled={page <= 1}
+                disabled={page <= 1 || loading}
                 aria-label={t("pagination.prev_aria")}
                 className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >
@@ -337,7 +354,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               </span>
               <button
                 onClick={() => fetchPage(page + 1)}
-                disabled={page >= pages}
+                disabled={page >= pages || loading}
                 aria-label={t("pagination.next_aria")}
                 className="p-2 rounded-full hover:bg-green-50 transition disabled:opacity-30"
               >

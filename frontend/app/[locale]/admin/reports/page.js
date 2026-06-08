@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminReportsPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
+  const { run, isBusy } = useAdminAction();
   const [tab, setTab] = useState("reports");
   const [reports, setReports] = useState([]);
   const [flagged, setFlagged] = useState([]);
@@ -24,21 +28,25 @@ export default function AdminReportsPage() {
     api.get("/admin/home-products/flagged").then((r) => setFlagged(r.data)).catch(() => setFlagged([]));
   }, []);
 
-  const suspendProducer = async (id) => {
-    await api.post(`/admin/producers/${id}/toggle-status`);
-    setReports(reports.map((r) => (r.producer_id === id ? { ...r, _suspended: true } : r)));
-  };
+  const suspendProducer = (id) =>
+    run(`suspend:${id}`, async () => {
+      await api.post(`/admin/producers/${id}/toggle-status`);
+      setReports(reports.map((r) => (r.producer_id === id ? { ...r, _suspended: true } : r)));
+    });
 
-  const approveFlagged = async (id) => {
-    await api.post(`/admin/home-products/${id}/approve`);
-    setFlagged(flagged.filter((hp) => hp.id !== id));
-  };
+  const approveFlagged = (id) =>
+    run(`approve:${id}`, async () => {
+      await api.post(`/admin/home-products/${id}/approve`);
+      setFlagged(flagged.filter((hp) => hp.id !== id));
+    });
 
-  const removeFlagged = async (id) => {
+  const removeFlagged = (id) => {
     const reason = window.prompt(t("reports.remove_reason_prompt"), "");
     if (reason === null) return;
-    await api.post(`/admin/home-products/${id}/remove`, { reason });
-    setFlagged(flagged.filter((hp) => hp.id !== id));
+    return run(`remove:${id}`, async () => {
+      await api.post(`/admin/home-products/${id}/remove`, { reason });
+      setFlagged(flagged.filter((hp) => hp.id !== id));
+    });
   };
 
   return (
@@ -92,7 +100,8 @@ export default function AdminReportsPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => suspendProducer(r.producer_id)}
-                          className="bg-yellow-500 text-white px-3 py-1.5 rounded-[12px] text-xs"
+                          disabled={isBusy(`suspend:${r.producer_id}`)}
+                          className="bg-yellow-500 text-white px-3 py-1.5 rounded-[12px] text-xs disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {t("reports.actions.suspend")}
                         </button>
@@ -109,7 +118,7 @@ export default function AdminReportsPage() {
                         <li key={rep.id} className="bg-red-50 rounded-[8px] p-2 text-xs">
                           <p>{rep.reason}</p>
                           <p className="text-fg-muted mt-1">
-                            {new Date(rep.created_at).toLocaleDateString("he-IL")}
+                            {formatEventDate(rep.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                           </p>
                         </li>
                       ))}
@@ -159,13 +168,15 @@ export default function AdminReportsPage() {
                     <div className="flex flex-col gap-2 shrink-0">
                       <button
                         onClick={() => approveFlagged(hp.id)}
-                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-dark transition"
+                        disabled={isBusy(`approve:${hp.id}`)}
+                        className="bg-primary text-white px-3 py-1.5 rounded-[8px] text-xs hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <CheckCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {t("reports.flagged.approve")}
                       </button>
                       <button
                         onClick={() => removeFlagged(hp.id)}
-                        className="bg-white border border-red-400 text-red-600 px-3 py-1.5 rounded-[8px] text-xs hover:bg-red-50 transition"
+                        disabled={isBusy(`remove:${hp.id}`)}
+                        className="bg-white border border-red-400 text-red-600 px-3 py-1.5 rounded-[8px] text-xs hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {t("reports.flagged.remove")}
                       </button>
@@ -195,11 +206,14 @@ export default function AdminReportsPage() {
                     <p className="text-xs text-fg-muted">{hp.seller_name} · {hp.city}</p>
                   </div>
                   <button
-                    onClick={async () => {
-                      await api.post(`/admin/home-products/${hp.id}/restore`);
-                      setHidden(hidden.filter((x) => x.id !== hp.id));
-                    }}
-                    className="text-xs bg-primary text-white px-3 py-1.5 rounded-[12px]"
+                    onClick={() =>
+                      run(`restore:${hp.id}`, async () => {
+                        await api.post(`/admin/home-products/${hp.id}/restore`);
+                        setHidden(hidden.filter((x) => x.id !== hp.id));
+                      })
+                    }
+                    disabled={isBusy(`restore:${hp.id}`)}
+                    className="text-xs bg-primary text-white px-3 py-1.5 rounded-[12px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t("reports.hidden.restore")}
                   </button>

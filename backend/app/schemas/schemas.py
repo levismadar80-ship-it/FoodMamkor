@@ -8,12 +8,19 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 
 from app.schemas.password import PasswordField
 from app.services.sanitization import sanitize_text
+from app.utils.clock import israel_today
 
 _LETTER_REGEX = re.compile(r"[^א-תa-zA-Z]")
 
 
-def _min_letters_validator(value: str, min_count: int = 3) -> str:
-    stripped = value.strip()
+def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
+    # HOT-003 (MEH-772): a stacked `_sanitize_title` validator runs first and
+    # returns None when bleach reduces the input to empty (e.g. "<b></b>" or a
+    # whitespace-only title). Treat None as empty so the letter check fails with
+    # a clean ValueError (→422) instead of `None.strip()` → AttributeError
+    # (→500). Non-stacked callers (ProducerCreate.name, requested_name) always
+    # receive a real str, so this is a no-op for them.
+    stripped = (value or "").strip()
     if len(_LETTER_REGEX.sub("", stripped)) < min_count:
         raise ValueError("שדה זה חייב להכיל לפחות 3 תווים")
     return stripped
@@ -484,6 +491,21 @@ class ProducerUpdate(BaseModel):
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         return self
 
+    @model_validator(mode="after")
+    def _validate_vacation_until(self):
+        # AUD-039: the admin write path must not persist an already-past
+        # return date. Israel-tz "today" (not server UTC) so an admin in
+        # Israel isn't blocked on a date that's still today locally. Only
+        # guards the vacation intent — a stale date on a non-vacation update
+        # is ignored (the router/serializer already clears it).
+        if (
+            self.availability_state == "on_vacation"
+            and self.vacation_until is not None
+            and self.vacation_until < israel_today()
+        ):
+            raise ValueError("תאריך החזרה לחופשה חייב להיות עתידי")
+        return self
+
 
 class ProducerListOut(BaseModel):
     id: UUID
@@ -559,6 +581,24 @@ class ProducerListOut(BaseModel):
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.
     has_producer_license: bool = False
+    # MEH-762 (ADR-022 public tier contract, Chunk 3): public verification
+    # surface for the S12 badge. `verification_tier` is COMPUTED below in
+    # `_compute_verification_tier` — never a stored column. `verified_at` is
+    # exposed at DATE granularity only: the `date | None` annotation plus the
+    # before-validator truncate the TIMESTAMPTZ so no time component leaks
+    # (locked privacy table). `verification_doc_type` picks the badge tooltip
+    # key. Admin-only declared_at / declaration_version / producer_license_number
+    # stay OFF the public contract (MEH-530 / MEH-759 privacy-first precedent).
+    verification_tier: Literal["verified", "declared"] | None = None
+    verified_at: date | None = None
+    verification_doc_type: Literal["license", "exemption", "cosmetics"] | None = None
+
+    @field_validator("verified_at", mode="before")
+    @classmethod
+    def _verified_at_date_only(cls, v):
+        # MEH-762: collapse the producers.verified_at TIMESTAMPTZ to a pure
+        # date so no time component ever reaches the public payload.
+        return v.date() if isinstance(v, datetime) else v
 
     @model_validator(mode="after")
     def _compute_trust_tier(self):
@@ -579,6 +619,29 @@ class ProducerListOut(BaseModel):
             self.availability_status = "available"
             self.availability_state = "accepting_orders"
             self.vacation_until = None
+        return self
+
+    @model_validator(mode="after")
+    def _compute_verification_tier(self):
+        # MEH-762 (ADR-022 D2/D3): resolve the public tier from verified_at +
+        # the category licensing requirement. Mirrors the MEH-530 name-
+        # membership predicate (license_validation.categories_require_license)
+        # against the already-loaded categories — same single source of truth
+        # (constants.LICENSE_REQUIRED_CATEGORIES), no DB round-trip in the
+        # serialization layer. One license-required category is enough to
+        # exclude "declared"; an unverified license-required producer resolves
+        # to None (no badge, no negative label — D3). Does NOT touch
+        # trust_tier (MEH-51, separate axis — Chunk-4 decoupling).
+        from app.constants import LICENSE_REQUIRED_CATEGORIES
+
+        if self.verified_at is not None:
+            self.verification_tier = "verified"
+        elif not any(
+            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
+        ):
+            self.verification_tier = "declared"
+        else:
+            self.verification_tier = None
         return self
 
     model_config = {"from_attributes": True}
@@ -625,6 +688,21 @@ class ProducerAdminOut(ProducerDetailOut):
     declaration_version: str | None = None
 
 
+# MEH-767 (HOT-001): owner-facing self-serve response shape for
+# GET/PUT /producers/me. Extends the public ProducerDetailOut with ONLY
+# the owner's own license number (MEH-530 — admins AND owners see the
+# value they themselves submitted; the owner edits it via the PUT
+# writable-fields whitelist in producer_me.py). It intentionally does
+# NOT inherit ProducerAdminOut, so the AI risk surface (risk_score /
+# risk_reasoning, MEH-509 PR3) and the declaration audit trail
+# (declared_at / declaration_version, MEH-759) — both admin-only — never
+# serialize back to the producer being scored. Those fields have zero
+# producer-side frontend consumers (the RiskBadge lives only in the
+# admin table, AdminProducersTable.jsx:181).
+class ProducerOwnerOut(ProducerDetailOut):
+    producer_license_number: str | None = None
+
+
 # --- MEH-51: Kashrut badge requests ---
 class KashrutRequestCreate(BaseModel):
     badge_code: str
@@ -665,6 +743,14 @@ class OtpConfirmIn(BaseModel):
 
 class SetAmbassadorIn(BaseModel):
     ambassador: bool
+
+
+class GrantVerifiedIn(BaseModel):
+    # MEH-762 (ADR-022 Chunk 2): which document the admin checked to grant
+    # the tier-1 "מאומת" badge. Literal → an invalid value 422s before the
+    # handler. 1:1 with VERIFICATION.md §3 document_type. "cosmetics" has no
+    # tooltip key yet (MEH-758 micro-follow-up); the Chunk-3 resolver maps it.
+    doc_type: Literal["license", "exemption", "cosmetics"]
 
 
 # --- User ---

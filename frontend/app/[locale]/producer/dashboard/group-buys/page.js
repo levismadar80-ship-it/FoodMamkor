@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
@@ -194,6 +195,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
 export default function ProducerGroupBuysPage() {
   const t = useTranslations("group_buys.dashboard");
+  const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState(null);
@@ -324,7 +326,7 @@ export default function ProducerGroupBuysPage() {
 
                 <div className="flex items-center justify-between text-xs text-fg-muted">
                   <span>
-                    {t("deadline_prefix", { date: new Date(gb.deadline).toLocaleDateString("he-IL") })}
+                    {t("deadline_prefix", { date: formatEventDate(gb.deadline, locale, { day: "numeric", month: "numeric", year: "numeric" }) })}
                   </span>
                   <Link
                     href={`/group-buys/${gb.id}`}

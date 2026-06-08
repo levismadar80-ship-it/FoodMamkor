@@ -2,7 +2,7 @@
  * Badge system (MEH-18). Pure functions — no React, no DOM.
  *
  * Badges (Phase B fold, April 2026; license added MEH-531):
- *   verified     (manual)  — producer.is_verified
+ *   verified     (manual)  — producer.verification_tier === "verified"   (MEH-762; ADR-022 tier — replaced the legacy admin-verified flag)
  *   recommended  (manual)  — producer.is_recommended
  *   license      (manual)  — producer.has_producer_license       (MEH-531)
  *   new          (auto)    — producer.days_since_created <= 30
@@ -26,7 +26,10 @@ export const BADGE_CONFIG = {
   verified: {
     key: "verified",
     label: "מאומת",
-    tooltip: "העסק עבר אימות זהות ורישוי — צוות מהמקור בדק.",
+    // MEH-762: ADR-022 tier-1 copy lock (terms §5.2-aligned). Replaces the
+    // pre-ADR-022 over-claim ("עבר אימות זהות ורישוי"). en gap is inherited
+    // legacy — dies when MEH-76 S12 wires the MEH-758 keys.
+    tooltip: "בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית.",
     color: "primary",
   },
   recommended: {
@@ -123,7 +126,12 @@ function earnsBadge(producer, key) {
   if (!producer) return false;
   switch (key) {
     case "verified":
-      return !!producer.is_verified;
+      // MEH-762: drive off the ADR-022 public tier, NOT the legacy admin-
+      // verified flag (which over-claimed). verification_tier is computed in
+      // ProducerListOut (schemas.py); "verified" === a checked license/exemption
+      // document. The legacy field stays (Chunk 4 = badge role only) — its full
+      // retirement + the trust_tier coupling are MEH-766.
+      return producer.verification_tier === "verified";
     case "recommended":
       return !!producer.is_recommended;
     case "license":

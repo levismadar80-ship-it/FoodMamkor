@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import {
   CalendarBlank,
   CookingPot,
@@ -19,6 +20,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 
 export default function AdminDashboard() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
@@ -216,7 +218,7 @@ export default function AdminDashboard() {
                 <span className="text-xs text-muted">({getProducerStatusLabel(a.status)})</span>
               </div>
               <span className="text-xs text-muted">
-                {a.created_at ? new Date(a.created_at).toLocaleDateString("he-IL") : ""}
+                {a.created_at ? formatEventDate(a.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" }) : ""}
               </span>
             </li>
           ))}

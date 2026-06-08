@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timezone
 from uuid import UUID
 
 import httpx
@@ -23,6 +24,7 @@ from app.models import (
     User,
 )
 from app.schemas.schemas import (
+    GrantVerifiedIn,
     ProducerAdminCreate,
     ProducerAdminOut,
     ProducerUpdate,
@@ -266,16 +268,38 @@ def admin_update_producer(
     return producer
 
 
+# MEH-769 (HOT-002): the toggle is purely the visibility switch for an
+# already-decided business — approved ⇄ inactive only. Any other source
+# status (pending / pending_whatsapp / rejected) must go through the real
+# approve_producer flow, which fires the MEH-509 side-effects (approval
+# email, producer_approved_v1 WhatsApp, admin WhatsApp). Before this guard
+# the bare `else` branch silently force-approved a REJECTED producer onto
+# the public map, skipping every validation and notification.
+_TOGGLEABLE_STATUSES = {"approved", "inactive"}
+
+
 @router.post("/producers/{producer_id}/toggle-status")
 def toggle_producer_status(
     producer_id: UUID,
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Toggle approved <-> inactive (hides from public listings)."""
+    """Toggle approved <-> inactive (hides from public listings).
+
+    Refuses any other source status with 409 — use the approve/reject flow.
+    """
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-769: block the rejected/pending → approved force-flip. Final user-
+    # facing Hebrew lives in the frontend message key
+    # (admin.producers.toggle.invalid_transition); this detail is the API
+    # contract / fallback.
+    if producer.status not in _TOGGLEABLE_STATUSES:
+        raise HTTPException(
+            status_code=409,
+            detail="לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך מסלול האישור.",
+        )
     producer.status = "inactive" if producer.status == "approved" else "approved"
     db.commit()
     return {"detail": "Status toggled", "status": producer.status}
@@ -477,6 +501,59 @@ def reject_producer(
         )
 
     return {"detail": "Producer rejected"}
+
+
+# MEH-762 (ADR-022 public tier contract, Chunk 2): admin stamping for the
+# tier-1 "מאומת" badge. The document review itself stays manual off-platform
+# (VERIFICATION.md §2/§4) — these endpoints only record the OUTCOME in the DB.
+# No auto-stamp on admin-create/import; legacy is_verified is untouched
+# (decoupling = Chunk 4). The public verification_tier resolver + exposure
+# land in Chunk 3.
+@router.post("/producers/{producer_id}/grant-verified")
+def grant_verified(
+    producer_id: UUID,
+    body: GrantVerifiedIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Stamp the tier-1 verification result after the admin checks the
+    qualifying document (license / exemption / cosmetics — VERIFICATION.md
+    §2). Re-grant overwrites verified_at + verification_doc_type (the legit
+    correction path alongside revoke-verified).
+    # REUSES: admin_kashrut.py:75 — admin stamps a verification timestamp.
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # tz-aware (MEH-762 D1, mirrors MEH-759) — NOT naive utcnow; the column
+    # is TIMESTAMPTZ. Public exposure is date-granularity only (Chunk 3).
+    producer.verified_at = datetime.now(timezone.utc)
+    producer.verification_doc_type = body.doc_type
+    db.commit()
+    return {
+        "detail": "תג מאומת הוענק",
+        "verified_at": producer.verified_at.isoformat(),
+        "verification_doc_type": producer.verification_doc_type,
+    }
+
+
+@router.post("/producers/{producer_id}/revoke-verified")
+def revoke_verified(
+    producer_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Clear the tier-1 "מאומת" stamp (mistake correction). Idempotent —
+    clearing an already-unverified producer is a no-op success. Leaves the
+    legacy is_verified axis untouched (Chunk 4).
+    """
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    producer.verified_at = None
+    producer.verification_doc_type = None
+    db.commit()
+    return {"detail": "תג מאומת הוסר"}
 
 
 # --- Hidden Home Listings ---

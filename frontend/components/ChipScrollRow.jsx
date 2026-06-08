@@ -113,9 +113,11 @@ export default function ChipScrollRow({
               type="button"
               onClick={() => onChipClick(chip.key)}
               aria-pressed={active}
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-medium border transition shrink-0 ${
+              // MEH-764: chips are rounded-md + state-selected on ALL surfaces
+              // (/home, /producers, /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
                 active
-                  ? "bg-primary text-white border-primary"
+                  ? "bg-state-selected text-white border-state-selected"
                   : "bg-white text-text border-border hover:border-primary hover:text-primary"
               }`}
             >

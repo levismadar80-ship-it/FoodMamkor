@@ -30,7 +30,7 @@ export function useProducersFeed() {
       .catch((err) => {
         console.error("[חפשי באזור זה] GET /producers failed:", err);
         setAllProducers([]);
-        showToast(t("map.errors.load_failed"), "error");
+        showToast.error(t("map.errors.load_failed"));
       });
   };
 

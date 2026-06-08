@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, BellSlash } from "@phosphor-icons/react";
+import { Bell, BellSlash, Check } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -60,7 +60,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     const granted = await requestPushPermission();
     if (!granted) {
       setPushStatus("denied");
-      showToast(t("push_denied_toast"), "error");
+      showToast.error(t("push_denied_toast"));
       return;
     }
     setPushStatus("granted");
@@ -87,10 +87,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         whatsapp_opt_in: prefs.whatsapp_opt_in,
         push_subscription,
       });
-      showToast(t("save_success_toast"), "success");
+      showToast.success(t("save_success_toast"), { icon: <Check size={18} /> });
       onClose?.();
     } catch {
-      showToast(t("save_error_toast"), "error");
+      showToast.error(t("save_error_toast"));
     } finally {
       setSaving(false);
     }
