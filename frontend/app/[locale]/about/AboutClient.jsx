@@ -159,7 +159,37 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 04 — Tips accordion ======== */}
+      {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
+      <section className="bg-background section-y scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <Rule />
+          <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+              {t("values.heading")}
+            </h2>
+            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[54ch]">
+              {t("values.intro")}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-7 md:gap-x-14 md:gap-y-9 mt-8">
+              {VALUES.map(({ key, n }) => (
+                <article key={key}>
+                  <span aria-hidden className="font-english italic font-semibold text-accent text-2xl block mb-1">
+                    {n}<span className="opacity-55">—</span>
+                  </span>
+                  <h3 className="font-headline-md font-bold text-text text-[21px]">
+                    {t(`values.${key}.title`)}
+                  </h3>
+                  <p className="font-body-md text-fg-muted text-base leading-relaxed mt-2">
+                    {t(`values.${key}.body`)}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ======== 05 — Tips accordion ======== */}
       <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Rule />
@@ -200,7 +230,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 05 — Testimonials (slim invitation band) ======== */}
+      {/* ======== 06 — Testimonials (slim invitation band) ======== */}
       <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
           <div className="border-y border-border py-12 md:py-14">
@@ -221,57 +251,27 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 06 — Values (bordered editorial container · gold numerals) ======== */}
-      <section className="bg-background section-y scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Rule />
-          <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
-              {t("values.heading")}
-            </h2>
-            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[54ch]">
-              {t("values.intro")}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-7 md:gap-x-14 md:gap-y-9 mt-8">
-              {VALUES.map(({ key, n }) => (
-                <article key={key}>
-                  <span aria-hidden className="font-english italic font-semibold text-accent text-2xl block mb-1">
-                    {n}<span className="opacity-55">—</span>
-                  </span>
-                  <h3 className="font-headline-md font-bold text-text text-[21px]">
-                    {t(`values.${key}.title`)}
-                  </h3>
-                  <p className="font-body-md text-fg-muted text-base leading-relaxed mt-2">
-                    {t(`values.${key}.body`)}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ======== 07 — CTA for businesses ======== */}
-      <section className="bg-background section-y border-t border-border scroll-mt-24">
+      {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
+      <section className="bg-green-50 border-y border-border section-y scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[16ch] mx-auto">
-            {t("cta.heading")}
-          </h2>
-          <div className="flex flex-wrap gap-3.5 justify-center mt-8">
+          {/* single primary CTA — consumer */}
+          <Link
+            href="/map"
+            className="inline-flex items-center gap-2 min-h-[56px] px-9 py-4 bg-primary text-white rounded-lg font-semibold text-lg hover:bg-primary-dark transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+          >
+            {t("cta.explore")}
+            <ArrowLeft size={20} aria-hidden="true" />
+          </Link>
+          {/* demoted business action → business hub (cta.heading kept verbatim) */}
+          <p className="mt-6 font-body-md text-sm text-fg-muted max-w-[44ch] mx-auto leading-relaxed">
+            {t("cta.heading")}{" "}
             <Link
-              href="/register/producer"
-              className="inline-flex items-center gap-2 min-h-[52px] px-7 py-3.5 bg-primary text-white rounded-lg font-semibold text-base hover:bg-primary-dark transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+              href="/about/for-businesses"
+              className="text-primary font-semibold underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("cta.register")}
-              <Leaf size={19} weight="fill" aria-hidden="true" />
             </Link>
-            <Link
-              href="/map"
-              className="inline-flex items-center min-h-[52px] px-7 py-3.5 bg-white text-primary border border-primary rounded-lg font-semibold text-base hover:bg-primary hover:text-white transition-colors duration-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
-            >
-              {t("cta.explore")}
-            </Link>
-          </div>
+          </p>
         </div>
       </section>
 

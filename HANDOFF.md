@@ -17,6 +17,13 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **IA round (same PR #1037):** section reorder — Values moved after Benefits / before
+  Tips (new order: Hero → Story → Pull-quote → Benefits → Values → Tips → Testimonials
+  → Close → Contact). Close restructured to consumer-primary: single primary CTA =
+  `cta.explore` → `/map`; business `cta.register` demoted to underlined link → **`/about/for-businesses`**;
+  `cta.heading` kept verbatim, demoted to muted lead-in; close is now a tinted `bg-green-50`
+  band (distinct from the plain Contact form). **AboutClient.jsx only — no he/en.json this round.**
+  Gates green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
 - **Refinement round (after visual review, same PR #1037):** editorial type scale ↓,
   Hebrew faux-italic removed (upright FRL/DM Sans; italic now only on Latin numerals),
   hero anchored (gold rule + tighter padding), `scroll-mt-24` on all 9 sections,
