@@ -10,16 +10,20 @@
  *   npm run build && npm run start
  *   npx playwright test --config=playwright.mobile-audit.config.ts
  *
- * Browser: the sandbox blocks Playwright's CDN, so we point `executablePath`
- * at the pre-provisioned Chromium under /opt/pw-browsers (overridable via
- * AUDIT_CHROME_PATH). Findings + screenshots are emitted by the spec into
- * ../docs/audits/screenshots/MEH-233/ and ../docs/audits/MEH-233-findings.json.
+ * Browser: where Playwright's browser CDN is blocked (e.g. the sandbox), we
+ * point `executablePath` at the pre-provisioned Chromium under /opt/pw-browsers
+ * IF it exists; otherwise we leave it undefined so Playwright uses its own
+ * managed browser (the normal `npx playwright install` path). Findings +
+ * screenshots are emitted by the spec into ../docs/audits/screenshots/MEH-233/
+ * and ../docs/audits/MEH-233-findings__<viewport>.json.
  */
 import { defineConfig } from "@playwright/test";
+import * as fs from "fs";
 
-const CHROME =
-  process.env.AUDIT_CHROME_PATH ||
-  "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+// Pre-provisioned Chromium (sandbox / CI image). Used only when present —
+// no env var (keeps the .env-drift check clean), portable everywhere else.
+const SANDBOX_CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
+const CHROME = fs.existsSync(SANDBOX_CHROME) ? SANDBOX_CHROME : undefined;
 
 // 3 mobile viewports per the MEH-233 spec.
 const VIEWPORTS = {

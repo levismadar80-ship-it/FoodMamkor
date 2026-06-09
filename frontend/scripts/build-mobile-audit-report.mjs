@@ -145,5 +145,4 @@ lines.push("band overlaps `<main>`'s top/bottom edge. Severity follows the MEH-2
 lines.push("");
 
 fs.writeFileSync(REPORT, lines.join("\n"));
-// eslint-disable-next-line no-console
 console.log(`Report written → ${REPORT} (${realFindings.length} findings, ${sevCount.CRITICAL} CRITICAL)`);

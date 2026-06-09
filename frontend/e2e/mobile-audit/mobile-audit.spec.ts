@@ -74,7 +74,6 @@ test.afterAll(() => {
   const project = test.info().project.name;
   const file = path.join(OUT_DIR, `MEH-233-findings__${project}.json`);
   fs.writeFileSync(file, JSON.stringify(findings, null, 2));
-  // eslint-disable-next-line no-console
   console.log(`\n=== ${findings.length} findings (${project}) → ${file} ===`);
 });
 
