@@ -63,25 +63,26 @@ export default function AboutPage() {
 
   return (
     <div className="bg-background">
-      {/* ======== 01 — Hero (cream editorial) ======== */}
-      <section className="bg-background section-y">
+      {/* ======== 01 — Hero (cream editorial · anchored) ======== */}
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.02] text-[clamp(33px,9vw,72px)] max-w-[15ch]">
+          <Rule />
+          <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.05] text-[clamp(28px,5vw,52px)] max-w-[15ch]">
             {t("hero.heading")}
           </h1>
-          <p className="mt-6 font-body-md text-lg md:text-xl text-text/90 leading-relaxed max-w-[46ch]">
+          <p className="mt-4 font-body-md text-[17px] md:text-lg text-text/90 leading-relaxed max-w-[46ch]">
             {t("hero.subheading")}
           </p>
         </div>
       </section>
 
       {/* ======== 02 — Sapir's story (prose start · portrait standfirst end) ======== */}
-      <section className="bg-background section-y">
+      <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-12 md:gap-[72px] items-start">
             {/* prose — sits at start edge in RTL */}
-            <div className="font-body-md text-lg text-text/90 leading-[1.8] space-y-5">
-              <p className="font-headline-md font-bold text-text text-2xl md:text-[32px] !mb-2">
+            <div className="font-body-md text-[17px] text-text/90 leading-[1.75] space-y-5 max-w-[64ch]">
+              <p className="font-headline-md font-bold text-text text-2xl md:text-[25px] !mb-2">
                 {t("story.greeting")}
               </p>
               <p className="text-fg-muted">{t("story.p1")}</p>
@@ -104,17 +105,17 @@ export default function AboutPage() {
                     alt={t("story.image_alt")}
                     fill
                     sizes="(min-width: 768px) 360px, 280px"
-                    className="object-cover"
+                    className="object-cover object-[center_30%]"
                     priority={false}
                     onError={() => setImgFailed(true)}
                   />
                 )}
               </div>
               <figcaption className="mt-5 border-s-2 border-accent ps-5 max-w-[360px] space-y-2">
-                <p className="font-english italic text-lg text-text leading-snug">
+                <p className="font-body-md text-base text-fg-muted leading-snug">
                   {t("story.caption1")}
                 </p>
-                <p className="font-english italic text-lg text-text leading-snug">
+                <p className="font-body-md text-base text-fg-muted leading-snug">
                   {t("story.caption3")}
                 </p>
               </figcaption>
@@ -123,18 +124,18 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== Pull-quote divider (cream · offset to start edge) ======== */}
-      <section className="bg-background py-20 md:py-28">
+      {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
+      <section className="bg-background py-16 md:py-24 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
-          <blockquote className="font-headline-display italic font-medium text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(29px,8vw,54px)] leading-[1.18] tracking-tight">
+          <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
         </div>
       </section>
 
       {/* ======== 03 — Benefits (cream canvas · gold numerals) ======== */}
-      <section className="bg-background section-y">
+      <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
           <h2 className="font-headline-md font-bold text-fg-muted text-xs tracking-[0.18em] uppercase mb-8">
@@ -159,10 +160,10 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 04 — Tips accordion ======== */}
-      <section className="bg-background section-y">
+      <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Rule />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(28px,5vw,32px)] leading-tight">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("tips.heading")}
           </h2>
           <div className="mt-8 border-t border-border">
@@ -200,13 +201,13 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 05 — Testimonials (slim invitation band) ======== */}
-      <section className="bg-background section-y">
+      <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
           <div className="border-y border-border py-12 md:py-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(28px,5vw,32px)] leading-tight max-w-[18ch] mx-auto">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
               {t("testimonials.heading")}
             </h2>
-            <p className="font-english italic text-fg-muted text-lg md:text-xl mt-4 max-w-[42ch] mx-auto">
+            <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
               {t("testimonials.subtitle")}
             </p>
             <Link
@@ -221,11 +222,11 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 06 — Values (bordered editorial container · gold numerals) ======== */}
-      <section className="bg-background section-y">
+      <section className="bg-background section-y scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Rule />
-          <div className="border border-border rounded-3xl bg-white/40 p-8 md:p-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(28px,5vw,32px)] leading-tight">
+          <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
               {t("values.heading")}
             </h2>
             <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[54ch]">
@@ -251,9 +252,9 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 07 — CTA for businesses ======== */}
-      <section className="bg-background section-y border-t border-border">
+      <section className="bg-background section-y border-t border-border scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(28px,5vw,32px)] leading-tight max-w-[16ch] mx-auto">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[16ch] mx-auto">
             {t("cta.heading")}
           </h2>
           <div className="flex flex-wrap gap-3.5 justify-center mt-8">
@@ -275,10 +276,10 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 08 — Contact form ======== */}
-      <section className="bg-background section-y border-t border-border">
+      <section className="bg-background section-y border-t border-border scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <Rule />
-          <h2 className="font-headline-lg font-bold text-text text-[clamp(28px,5vw,32px)] leading-tight">
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
           </h2>
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">

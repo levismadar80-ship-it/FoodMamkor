@@ -17,10 +17,16 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Refinement round (after visual review, same PR #1037):** editorial type scale ↓,
+  Hebrew faux-italic removed (upright FRL/DM Sans; italic now only on Latin numerals),
+  hero anchored (gold rule + tighter padding), `scroll-mt-24` on all 9 sections,
+  Values box `border-2 border-accent/30`, portrait `object-[center_30%]` crop, and the
+  **one** copy edit `cta.explore` `גלי`→`גלו` (he.json only; en.json untouched).
+  Gates re-run green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
 - **Pending / next:** Sapir mobile QA (375/360/390) on the Vercel preview, then
   **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
-  + `fill` not visually verified — confirm in mobile QA. `/about/for-businesses`
-  is a separate page, out of scope.
+  + `fill` + `object-[center_30%]` not visually verified — confirm in mobile QA.
+  `/about/for-businesses` is a separate page, out of scope.
 
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 
