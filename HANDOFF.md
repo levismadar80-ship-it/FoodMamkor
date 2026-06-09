@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
+  `frontend/app/[locale]/about/AboutClient.jsx` restyled to S8 Direction D
+  ("Feature Standfirst"), reference `design-reference/about-s8.html`. **Done:**
+  build green (/about ● SSG), lint 0 errors, RTL grep 0, hex grep 0,
+  adversarial-review 0 blocking. CHANGELOG updated.
+- **Decisions:** (a) cream typographic pull-quote **replaces** the image/kenburns
+  `ParallaxQuote` on /about (component left untouched — still used on home); (b)
+  S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
+  (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
+  `t("contact.heading")` reused for those section eyebrows.
+- **Pending / next:** Sapir mobile QA (375/360/390) on the Vercel preview, then
+  **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
+  + `fill` not visually verified — confirm in mobile QA. `/about/for-businesses`
+  is a separate page, out of scope.
+
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 
 **Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per
