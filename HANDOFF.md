@@ -5,6 +5,27 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-08 — MEH-233 mobile responsiveness audit (Audit 7/7, AUDIT-ONLY)
+
+**Report:** [`docs/audits/2026-06-mobile-audit-MEH-233.md`](./docs/audits/2026-06-mobile-audit-MEH-233.md).
+Branch `feature/meh-233-audit-mobile` off staging → DRAFT PR. **No layout code
+touched** — findings are for Sapir to triage into per-route sub-MEHs.
+
+- **What ran:** new isolated Playwright config `frontend/playwright.mobile-audit.config.ts`
+  + spec `frontend/e2e/mobile-audit/mobile-audit.spec.ts` + merge script
+  `frontend/scripts/build-mobile-audit-report.mjs`. 11 routes × 3 mobile viewports
+  (iPhone SE 375×667 · Galaxy 360×640 · iPhone 14 390×844), 33 full-page screenshots
+  in `docs/audits/screenshots/MEH-233/`. All 33 passed. Existing e2e specs untouched.
+- **Result:** 9 CRITICAL (overflow:hidden clipping on `/` location-banner text + `/about`
+  & `/events` hero sections, consistent across all 3 viewports), 33 HIGH (tap targets
+  < 44px). No horizontal-overflow / nav-cutoff / header-overlap / modal-fit findings.
+- **CAVEAT (load-bearing):** ran against a LOCAL build with **no backend** — API content
+  rendered empty/loading; external CDNs blocked. Content-density overflow (long Hebrew
+  names, real card grids/images) is a KNOWN BLIND SPOT → recommend a follow-up run on a
+  seeded staging/preview env. `@playwright/test` was already a dep; browser via the
+  pre-provisioned `/opt/pw-browsers` Chromium (CDN blocked in sandbox).
+- **Next:** Sapir triages Top 10 CRITICAL → opens per-route fix sub-MEHs.
+
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 
 **Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per

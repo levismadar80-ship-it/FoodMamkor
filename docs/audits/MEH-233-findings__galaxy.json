@@ -1,0 +1,128 @@
+[
+  {
+    "route": "/",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "33 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | input#hero-search-input.flex-1.min-w-0 (217×24) | button.bg-action-primary.hover:bg-action-primary-hover \"גלו עסקים\" (107×40) | button.inline-flex.items-center \"קרוב אלי\" (119×42) | button.text-green-50.hover:text-white \"איך זה עובד\" (68×20) | button.absolute.text-white/70 (28×28)",
+    "screenshot": "home__galaxy.png"
+  },
+  {
+    "route": "/",
+    "viewport": "galaxy",
+    "check": 4,
+    "checkName": "Clipped by overflow:hidden",
+    "severity": "CRITICAL",
+    "detail": "4 element(s) clip horizontal content: p.text-sm.font-medium \"איפה את? נמצא עסקים קרובים אלי\" (content 213px > box 136px) | div.bg-primary.overflow-hidden \"🌿 ללא מעובד🥩 ממרעה🧀 אורגני\ud83c\" (content 2072px > box 360px) | section.relative.w-full \"“אחרי שיודעים מאיפה לקנות — אי\" (content 379px > box 360px) | section.relative.w-full \"“כל עונה — טעם אחר”\" (content 379px > box 360px)",
+    "screenshot": "home__galaxy.png"
+  },
+  {
+    "route": "/map",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "25 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | input#map-city-search-mobile.flex-1.min-w-0 (238×24) | button.cursor-pointer.shrink-0 (40×40) | button.inline-flex.items-center \"כל\" (49×42) | button.inline-flex.items-center \"בשר ועוף\" (88×42) | button.inline-flex.items-center \"ירקות ופירות\" (107×42)",
+    "screenshot": "map__galaxy.png"
+  },
+  {
+    "route": "/login",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "18 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | button.absolute.right-3 (28×28) | a.text-xs.text-fg-muted \"שכחת סיסמה?\" (76×14) | a.text-primary.hover:underline \"הצטרפו →\" (63×16) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15)",
+    "screenshot": "login__galaxy.png"
+  },
+  {
+    "route": "/register",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "24 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | input#register-name.w-full.border (262×42) | input#register-email.w-full.border (262×42) | input#pw-password.w-full.border (262×42) | button.absolute.right-3 (28×28) | input.w-4.h-4 (16×16)",
+    "screenshot": "register__galaxy.png"
+  },
+  {
+    "route": "/register/producer",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "18 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | input.w-full.border (264×42) | input.w-full.border (264×42) | input.w-full.border (264×42) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15)",
+    "screenshot": "register-producer__galaxy.png"
+  },
+  {
+    "route": "/producer/1",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "15 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15) | a.hover:text-white.transition \"מפה\" (25×15) | a.hover:text-white.transition \"אירועים\" (41×15) | a.hover:text-white.transition \"אודות\" (31×15)",
+    "screenshot": "producer-detail__galaxy.png"
+  },
+  {
+    "route": "/favorites",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "18 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | button.absolute.right-3 (28×28) | a.text-xs.text-fg-muted \"שכחת סיסמה?\" (76×14) | a.text-primary.hover:underline \"הצטרפו →\" (63×16) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15)",
+    "screenshot": "favorites__galaxy.png"
+  },
+  {
+    "route": "/settings",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "18 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | button.absolute.right-3 (28×28) | a.text-xs.text-fg-muted \"שכחת סיסמה?\" (76×14) | a.text-primary.hover:underline \"הצטרפו →\" (63×16) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15)",
+    "screenshot": "settings__galaxy.png"
+  },
+  {
+    "route": "/admin",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "18 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | button.absolute.right-3 (28×28) | a.text-xs.text-fg-muted \"שכחת סיסמה?\" (76×14) | a.text-primary.hover:underline \"הצטרפו →\" (63×16) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15)",
+    "screenshot": "admin__galaxy.png"
+  },
+  {
+    "route": "/events",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "27 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | a.hover:text-primary.transition \"בית\" (21×20) | a.ms-auto.text-sm \"הוסיפו אירוע ←\" (75×40) | button.px-4.py-2 \"רשימה\" (72×36) | button.px-4.py-2 \"לוח שנה\" (81×36) | input#events-city.flex-1.min-w-0 (278×24)",
+    "screenshot": "events__galaxy.png"
+  },
+  {
+    "route": "/events",
+    "viewport": "galaxy",
+    "check": 4,
+    "checkName": "Clipped by overflow:hidden",
+    "severity": "CRITICAL",
+    "detail": "1 element(s) clip horizontal content: section.relative.text-white \"אירועים בחוות ואצל בתי עסקמה ק\" (content 379px > box 360px)",
+    "screenshot": "events__galaxy.png"
+  },
+  {
+    "route": "/about",
+    "viewport": "galaxy",
+    "check": 3,
+    "checkName": "Tap target < 44px",
+    "severity": "HIGH",
+    "detail": "16 interactive element(s) below 44×44px. Samples: a.shrink-0.inline-flex (106×40) | a.inline-flex.items-center \"יש לך סיפור? ספרי לנו\" (148×24) | a.inline-flex.items-center \"@meha_makor\" (138×24) | a.hover:text-white.transition \"גלה עסקים\" (59×15) | a.hover:text-white.transition \"מפה\" (25×15) | a.hover:text-white.transition \"אירועים\" (41×15)",
+    "screenshot": "about__galaxy.png"
+  },
+  {
+    "route": "/about",
+    "viewport": "galaxy",
+    "check": 4,
+    "checkName": "Clipped by overflow:hidden",
+    "severity": "CRITICAL",
+    "detail": "2 element(s) clip horizontal content: section.relative.text-white \"פעם היית צריכה לדעת את מי לשאו\" (content 380px > box 360px) | section.relative.w-full \"“אוכל טוב — לא שומרים לעצמנו”\" (content 378px > box 360px)",
+    "screenshot": "about__galaxy.png"
+  }
+]
