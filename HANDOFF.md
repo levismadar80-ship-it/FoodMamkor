@@ -17,6 +17,12 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Spacing + caption round (same PR #1037):** section vertical padding cut ~30%
+  (`section-y`→`py-9 md:py-14`, pull-quote `py-12 md:py-20`; AboutClient-scoped, globals
+  untouched); founder byline captions restyled into a hierarchy (caption1 = small muted
+  `text-sm` credit, caption3 = `text-[15px]` `text-text` `font-medium` accent, tighter gap,
+  gold rule kept). AboutClient.jsx only, no copy edits. Gates green (build /about ● SSG,
+  lint 0, RTL 0, hex 0, adversarial 0).
 - **IA round (same PR #1037):** section reorder — Values moved after Benefits / before
   Tips (new order: Hero → Story → Pull-quote → Benefits → Values → Tips → Testimonials
   → Close → Contact). Close restructured to consumer-primary: single primary CTA =

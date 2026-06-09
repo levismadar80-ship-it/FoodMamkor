@@ -77,7 +77,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 02 — Sapir's story (prose start · portrait standfirst end) ======== */}
-      <section className="bg-background section-y scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-12 md:gap-[72px] items-start">
             {/* prose — sits at start edge in RTL */}
@@ -111,11 +111,13 @@ export default function AboutPage() {
                   />
                 )}
               </div>
-              <figcaption className="mt-5 border-s-2 border-accent ps-5 max-w-[360px] space-y-2">
-                <p className="font-body-md text-base text-fg-muted leading-snug">
+              <figcaption className="mt-4 border-s-2 border-accent ps-4 max-w-[320px] space-y-1.5">
+                {/* credit — small muted role line */}
+                <p className="font-body-md text-sm text-fg-muted leading-snug">
                   {t("story.caption1")}
                 </p>
-                <p className="font-body-md text-base text-fg-muted leading-snug">
+                {/* personal accent — distinct role, slightly larger, full text color */}
+                <p className="font-body-md text-[15px] text-text font-medium leading-snug">
                   {t("story.caption3")}
                 </p>
               </figcaption>
@@ -125,7 +127,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
-      <section className="bg-background py-16 md:py-24 scroll-mt-24">
+      <section className="bg-background py-12 md:py-20 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
@@ -135,7 +137,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 03 — Benefits (cream canvas · gold numerals) ======== */}
-      <section className="bg-background section-y scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
           <h2 className="font-headline-md font-bold text-fg-muted text-xs tracking-[0.18em] uppercase mb-8">
@@ -160,7 +162,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
-      <section className="bg-background section-y scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Rule />
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
@@ -190,7 +192,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 05 — Tips accordion ======== */}
-      <section className="bg-background section-y scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Rule />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
@@ -231,7 +233,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 06 — Testimonials (slim invitation band) ======== */}
-      <section className="bg-background section-y scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
           <div className="border-y border-border py-12 md:py-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
@@ -252,7 +254,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
-      <section className="bg-green-50 border-y border-border section-y scroll-mt-24">
+      <section className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 text-center">
           {/* single primary CTA — consumer */}
           <Link
@@ -276,7 +278,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 08 — Contact form ======== */}
-      <section className="bg-background section-y border-t border-border scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 border-t border-border scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <Rule />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
