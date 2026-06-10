@@ -5,6 +5,33 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-10 — MEH-734: smart-sticky navbar (DRAFT PR #1039 — Sapir QA + merges)
+
+- **Branch:** `feature/meh-734-smart-sticky-navbar` off **clean `staging`** (divergence 0,
+  synced before push — no MEH-135 carryover). **DRAFT PR #1039** (`Closes MEH-734`).
+  **Scope:** `frontend/components/Header.jsx` only — **32-line diff** + this HANDOFF +
+  CHANGELOG entry (DoD docs, Sapir-approved scope extension).
+- **What landed:** the MEH-732 floating pill now hides on scroll-down past the existing
+  `scrollY >= 60` threshold, reveals on **any** scroll-up, stays visible at scroll-top.
+  Reuses the MEH-29 rAF passive listener (same callback direction-tracks via `lastYRef`,
+  drives a `hidden` flag) — no library, no second listener, inline `60` reused (no new
+  constant). **Transform-only** `translateY` slide on the `<header>` wrapper — no layout
+  shift, never animates `backdrop-filter`. `motion-reduce:transition-none` → instant
+  toggle. focus-trap guard (`onFocusCapture` reveal + no-rehide-while-focused). drawer-open
+  + at-top pin visible; `lastYRef` seeded with restored scroll offset. All MEH-732 surface
+  states preserved.
+- **adversarial-review** (central component, run on green build): **1 real finding fixed** —
+  spurious hide-on-mount when the page loads at a restored scroll position (`lastYRef`
+  seeded with `window.scrollY`); all other candidates disproved.
+- **Gates green:** `npm run build` (101/101 SSG), ESLint 0 errors, RTL 0, hex 0.
+- **Pending:** Sapir visual QA on the Vercel preview — desktop 1280 + mobile 375
+  (down-hide / up-reveal / top-pinned), reduced-motion (DevTools emulation), BottomNav
+  no-conflict (it's `fixed bottom-0`, top pill independent). **PR stays DRAFT** — Sapir
+  marks ready + merges after QA (Rule 23).
+- **Parked:** band-gap bleed-through (transparent nav-shell gutter around the pill in the
+  over-image state — **not** the glass bg, which is already solid) → its own design issue,
+  untouched here (no scrim).
+
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 
 **Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per
