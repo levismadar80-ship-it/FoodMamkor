@@ -5,6 +5,31 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-10 — MEH-789: bottom nav system PR-A (DRAFT — Sapir QA + merges)
+
+- **Branch:** `feature/meh-789-nav-bottom-pill` off clean `staging`, in an **isolated git
+  worktree** (`../meh-789-worktree`) — the main checkout had branch-slip + multi-feature
+  WIP contamination (EventsClient/Footer/about-process), so the work was re-applied fresh
+  in the worktree. **DRAFT PR off staging, body "Part of MEH-789" (NOT Closes).**
+- **Scope (verified clean, Rule 26):** `components/BottomNav.jsx` (rewrite) + new
+  `components/AccountSheet.jsx` + `messages/{he,en}.json` (+6 keys/locale) + CHANGELOG +
+  HANDOFF. No EventsClient/Footer/about-process/events-i18n.
+- **What landed:** Phase 6 "Cream Signature" port (Direction A, mobile only). Floating cream
+  pill, 4 destinations (גלו·מפה·אודות·חשבון), pill-in-pill green active + fill-on-active +
+  11px DM Sans labels. Account tab toggles the warm-dark account sheet (favorites/settings/
+  language[embedded `<LanguageToggle>`]/logout + MEH-669-gated "יש לך בית עסק?" + gold ↗).
+  Avatar tokenized (raw-hex → `bg-primary`). OnboardingTip preserved.
+- **Adversarial-review (central):** 2 real fixes — (1) unstable `onClose` re-fired the sheet
+  focus effect each re-render → memoized with `useCallback`; (2) guest account `aria-label`
+  → `nav.account`. All other candidates disproved.
+- **Gates green:** build (101/101 SSG), lint 0 errors, RTL 0, hex 0, forbidden-copy 0,
+  i18n parity 2593==2593.
+- **Pending:** Sapir mobile QA (375/360/390) + desktop on the Vercel preview, then **she**
+  marks ready + merges (PR stays DRAFT). **Deferred / next:** PR-B = Header minimal-top +
+  retire the hamburger drawer (transitional overlap until then — secondary items reachable
+  from both); bottom-pill hide-on-scroll (reuse MEH-734). Biz CTA href is `/register/producer`
+  for now (`/about/for-businesses` = MEH-721).
+
 ## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
 
 - **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file

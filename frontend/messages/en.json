@@ -13,6 +13,8 @@
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
+    "account": "Account",
+    "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
     "menu_close": "Close menu",
@@ -323,6 +325,12 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out"
+    },
+    "sheet": {
+      "connected": "Signed in",
+      "guest_name": "Guest",
+      "guest_sub": "Not signed in yet",
+      "biz_cta": "Have a business?"
     }
   },
   "error": {
