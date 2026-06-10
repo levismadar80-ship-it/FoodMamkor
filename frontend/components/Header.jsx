@@ -55,8 +55,12 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // MEH-734: smart-sticky hide-on-scroll-down / reveal-on-scroll-up.
+  const [hidden, setHidden] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
+  const lastYRef = useRef(0);
+  const headerRef = useRef(null);
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   useEffect(() => {
@@ -77,21 +81,37 @@ export default function Header() {
   }, [pathname]);
 
   // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
+  // MEH-734: same callback also drives the smart-sticky hide flag —
+  // direction-tracked off the existing 60px threshold (no second constant,
+  // no second listener). At/above the threshold, while the mobile drawer is
+  // open, or while focus is inside the header, the pill stays visible; past
+  // it, scrolling down hides and any scroll up reveals.
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
       rafRef.current = window.requestAnimationFrame(() => {
-        setScrolled(window.scrollY >= 60);
+        const y = window.scrollY;
+        const past = y >= 60;
+        setScrolled(past);
+        const focusWithin = headerRef.current?.contains(document.activeElement);
+        if (!past || menuOpen || focusWithin) setHidden(false);
+        else if (y > lastYRef.current) setHidden(true);
+        else if (y < lastYRef.current) setHidden(false);
+        lastYRef.current = y;
         rafRef.current = null;
       });
     };
+    // MEH-734: seed last-Y with the restored position so a reload / back-
+    // forward at a scrolled offset isn't read as a downward delta (which
+    // would hide the bar on mount with no user gesture).
+    lastYRef.current = window.scrollY;
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [menuOpen]);
 
   // Press "/" outside an input to open search.
   useEffect(() => {
@@ -136,7 +156,20 @@ export default function Header() {
   const textShadow = transparent ? { textShadow: "0 1px 4px rgba(0,0,0,0.6)" } : undefined;
 
   return (
-    <header className="sticky top-0 z-[1000]">
+    <header
+      ref={headerRef}
+      // MEH-734: a descendant gaining focus reveals the pill — a hidden nav
+      // must never hold focus on an off-screen control (focus-trap guard).
+      onFocusCapture={() => setHidden(false)}
+      className={[
+        "sticky top-0 z-[1000]",
+        // MEH-734: transform-only slide (no layout shift, never backdrop-
+        // filter). motion-reduce → instant toggle, no slide. -120% clears the
+        // pill plus its drop-shadow.
+        "transition-transform duration-base ease-quart motion-reduce:transition-none",
+        hidden ? "-translate-y-[120%]" : "translate-y-0",
+      ].join(" ")}
+    >
       {/* Local darkening gradient — only over the hero (transparent). Keeps
           light nav ink legible regardless of the hero crop. pointer-events
           off so taps pass to the pill. */}
