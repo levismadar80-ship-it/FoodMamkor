@@ -5,14 +5,83 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR)
+## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR #1040)
 
 - **Branch:** `feature/meh-131-login-s9-port` off fresh `origin/staging`.
 - **Scope:** visual/structural restyle of `frontend/app/[locale]/login/LoginClient.jsx` ONLY (GREEN). No JSON, no shared components, no auth logic touched.
 - **Done:** S9 Direction-C port — no white card (open fields on cream), gold eyebrow + FRL-900 welcome headline, **social-first** order (supersedes old form-first), mail/lock adornments + eye-toggle (logical RTL), forgot link in label-row, register "door" panel on green-50. Copy 100% from locked keys (0 JSON edits). build green, lint 0-errors, RTL grep 0, hex grep 0, /adversarial-review = 0 blocking.
+- **Headline-scale follow-up (same PR #1040):** welcome headline was at hero scale (raw `text-[40px] md:text-[52px]`); swapped to the `headline-lg` token (32px/900, FRL-900 kept) so it reads as a utility-login head, not an /about hero. Token-driven (no raw px on the headline). build green (/login ● SSG), lint 0 errors.
 - **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
-- **Flags for QA:** (1) submit is site-standard rounded-[10px], not the mock's pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow uses `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm this is the intended order.
-- **Note:** design-reference/ is gitignored; S9 mock provided in-chat, not committed.
+- **Flags for QA:** (1) submit is site-standard rounded-[10px], not the mock's pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow uses `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm this is the intended order; (5) headline now 32px both breakpoints (token) vs the ~40/30 ask — closest 900-weight token.
+- **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
+## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
+  `frontend/app/[locale]/about/AboutClient.jsx` restyled to S8 Direction D
+  ("Feature Standfirst"), reference `design-reference/about-s8.html`. **Done:**
+  build green (/about ● SSG), lint 0 errors, RTL grep 0, hex grep 0,
+  adversarial-review 0 blocking. CHANGELOG updated.
+- **Decisions:** (a) cream typographic pull-quote **replaces** the image/kenburns
+  `ParallaxQuote` on /about (component left untouched — still used on home); (b)
+  S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
+  (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
+  `t("contact.heading")` reused for those section eyebrows.
+- **Grain-texture round (same PR #1037):** added a ~3.5% film-grain overlay over /about
+  (inline SVG feTurbulence, monochrome, data-URI, pointer-events-none, aria-hidden,
+  absolute inset-0 on the relative root). Top film (tonal fills are opaque). AboutClient.jsx
+  only. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Tonal-block round (same PR #1037):** separation by tone, not lines (Sapir picked option B).
+  Added additive `background-alt` (#EDE4D2) to DESIGN.md + tailwind.tokens.json (no existing
+  token changed; `design.md` CLI absent in sandbox → generated file hand-synced to the
+  DESIGN.md source). Benefits + Values now share one continuous `bg-background-alt` block
+  (AboutClient.jsx:144,:166); all narrative sections stay base cream. All horizontal gold rules
+  removed; Eyebrow is now text-only (fg-muted, AA on both tones). Pull-quote vertical rule +
+  Values box kept. Files: AboutClient.jsx, DESIGN.md, tailwind.tokens.json. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0 in component, adversarial 0). **NOTE on branch
+  hygiene:** session resumed on the wrong branch (`feature/meh-734-smart-sticky-navbar`);
+  switched back to `feature/meh-135-about-s8-port` before any edit. A local `wip` commit
+  c499d3d (design-reference/*.html assets only, no code) sits under this round's commit.
+- **Eyebrow-label round (same PR #1037):** restored S8 section eyebrow labels. Added 2 new
+  keys/locale (`tips.eyebrow`, `values.eyebrow`; he/en +2 each, no other string). New `Eyebrow`
+  unit = tracked muted-accent label + thin gold rule toward line-end; applied to Benefits
+  (`as="h2"`), Tips, Values (above the box). Bare `<Rule />` removed entirely (incl. Hero) — a
+  rule now only appears inside an eyebrow unit. Note: hit the per-edit lint-feedback 3-strike
+  hook mid-refactor (renamed Rule→Eyebrow before removing the last Tips usage → transient
+  no-undef; exec §8). Resolved by completing the usage swap; final lint 0 errors.
+  Files: AboutClient.jsx + he.json + en.json. Gates green (build /about ● SSG, RTL 0, hex 0, adversarial 0).
+- **Rule/divider cleanup round (same PR #1037):** gold `<Rule />` kicker now single-purpose,
+  kept only on Hero/Benefits/Tips (3); removed from Pull-quote (blockquote already has a gold
+  start-rule), Values (box border frames it), Contact. Dropped Contact's section `border-t`
+  (stacked under the CTA band's bottom border) — CTA `bg-green-50 border-y` is the single
+  separator. AboutClient.jsx only, no copy. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Pull-quote + numeral round (same PR #1037):** closed the L-shaped void around the
+  pull-quote (padding `pt-9 md:pt-14 pb-4 md:pb-6`; Benefits top trimmed to `pt-4 md:pt-6`);
+  benefit numerals centered over each column with the em-dash removed; Values numerals
+  em-dash removed (alignment unchanged). AboutClient.jsx only, no copy edits. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Spacing + caption round (same PR #1037):** section vertical padding cut ~30%
+  (`section-y`→`py-9 md:py-14`, pull-quote `py-12 md:py-20`; AboutClient-scoped, globals
+  untouched); founder byline captions restyled into a hierarchy (caption1 = small muted
+  `text-sm` credit, caption3 = `text-[15px]` `text-text` `font-medium` accent, tighter gap,
+  gold rule kept). AboutClient.jsx only, no copy edits. Gates green (build /about ● SSG,
+  lint 0, RTL 0, hex 0, adversarial 0).
+- **IA round (same PR #1037):** section reorder — Values moved after Benefits / before
+  Tips (new order: Hero → Story → Pull-quote → Benefits → Values → Tips → Testimonials
+  → Close → Contact). Close restructured to consumer-primary: single primary CTA =
+  `cta.explore` → `/map`; business `cta.register` demoted to underlined link → **`/about/for-businesses`**;
+  `cta.heading` kept verbatim, demoted to muted lead-in; close is now a tinted `bg-green-50`
+  band (distinct from the plain Contact form). **AboutClient.jsx only — no he/en.json this round.**
+  Gates green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
+- **Refinement round (after visual review, same PR #1037):** editorial type scale ↓,
+  Hebrew faux-italic removed (upright FRL/DM Sans; italic now only on Latin numerals),
+  hero anchored (gold rule + tighter padding), `scroll-mt-24` on all 9 sections,
+  Values box `border-2 border-accent/30`, portrait `object-[center_30%]` crop, and the
+  **one** copy edit `cta.explore` `גלי`→`גלו` (he.json only; en.json untouched).
+  Gates re-run green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
+- **Pending / next:** Sapir mobile QA (375/360/390) on the Vercel preview, then
+  **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
+  + `fill` + `object-[center_30%]` not visually verified — confirm in mobile QA.
+  `/about/for-businesses` is a separate page, out of scope.
 
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 

@@ -119,7 +119,8 @@ function LoginPageBody() {
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("title")}
           </span>
-          <h1 className="font-headline-display font-black text-[40px] md:text-[52px] leading-[1.02] text-text">
+          {/* MEH-131: utility-login scale, not /about hero — headline-lg token (32px/900) */}
+          <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
             {t("welcome")}
           </h1>
         </div>
