@@ -51,6 +51,8 @@ Checks (Phase C): 1 horizontal-overflow · 2 unintentional-truncation · 3 tap-t
 | 8 | `/events` | galaxy | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 379px > box 360px) | [img](screenshots/MEH-233/events__galaxy.png) |
 | 9 | `/events` | iphone-14 | Clipped by overflow:hidden | 1 element(s) clip horizontal content: section.relative.text-white "אירועים בחוות ואצל בתי עסקמה ק" (content 411px > box 390px) | [img](screenshots/MEH-233/events__iphone-14.png) |
 
+> **TRIAGE (MEH-233, 2026-06-10):** of the 9 CRITICAL above, only the `/` **LocationBanner** `<p>` ("איפה את?…", `components/LocationBanner.jsx`) is a real clip — fixed by dropping `truncate` so the Hebrew wraps. **FALSE POSITIVES — intentional bleed, do NOT re-flag:** the home **HomeMarquee** (`HomeStaticBlocks.jsx` — `whitespace-nowrap` scrolling ticker), the **2× home ParallaxQuote** and the **/events kenburns hero** (`ParallaxQuote.jsx` / `EventsClient.jsx` — `kenburns-* absolute inset:-5%` decorative image deliberately oversized 5%/side and clipped by `overflow-hidden`). The **/about** rows (#4–6) are **STALE** — that hero was redesigned by MEH-135 (merged after this snapshot); current /about shows 0 CRITICAL.
+
 ## Findings by route
 
 ### `/` — HTTP 200
