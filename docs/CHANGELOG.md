@@ -3,6 +3,7 @@
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
 ## Unreleased
+- **MEH-131 — /login S9 "Two Doors" port (visual/structural only):** restyled `frontend/app/[locale]/login/LoginClient.jsx` to the S9 design (Direction C). Removed the floating white auth card → open fields directly on `bg-background` cream; gold eyebrow rule (`auth.login.title`) + Frank Ruhl 900 welcome headline (`auth.login.welcome`); **flipped to social-first order** (Google → Apple → "או" → email/password), superseding the old form-first FEEDBACK_FIXES fix 2 (S9 re-synced 2026-06-05); leading mail/lock adornments inside `dir="ltr"` field wrappers (logical `start`/`end`, eye-toggle on logical `end`); forgot-password link moved into the password label-row; register CTA restyled as the demoted `--light` (green-50) "door" panel with leaf glyph. **Zero copy changes** — all strings resolve from existing locked `auth.login.*`/`auth.oauth.*` keys (MEH-751/752); he.json/en.json untouched. Tokens-only (0 raw hex), RTL logical props only (0 physical). Removed the value-prop strip (`value_save/rate/publish` — not in S9; keys retained in JSON). Submit uses site-standard `rounded-[10px]` primary, not the mock's pill (per "NOT green pill" constraint). Auth logic (JWT/OAuth/validation/error-handling) untouched. `npm run build` green, `/login` still SSG.
 
 ### 2026-06-08 — MEH-214 + MEH-780: fuzz chain unblock (combine — supersedes #1030 + #1034)
 

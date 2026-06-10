@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR)
+
+- **Branch:** `feature/meh-131-login-s9-port` off fresh `origin/staging`.
+- **Scope:** visual/structural restyle of `frontend/app/[locale]/login/LoginClient.jsx` ONLY (GREEN). No JSON, no shared components, no auth logic touched.
+- **Done:** S9 Direction-C port — no white card (open fields on cream), gold eyebrow + FRL-900 welcome headline, **social-first** order (supersedes old form-first), mail/lock adornments + eye-toggle (logical RTL), forgot link in label-row, register "door" panel on green-50. Copy 100% from locked keys (0 JSON edits). build green, lint 0-errors, RTL grep 0, hex grep 0, /adversarial-review = 0 blocking.
+- **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
+- **Flags for QA:** (1) submit is site-standard rounded-[10px], not the mock's pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow uses `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm this is the intended order.
+- **Note:** design-reference/ is gitignored; S9 mock provided in-chat, not committed.
+
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 
 **Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per
