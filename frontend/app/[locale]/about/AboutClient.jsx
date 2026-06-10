@@ -127,7 +127,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
-      <section className="bg-background py-12 md:py-20 scroll-mt-24">
+      <section className="bg-background pt-9 md:pt-14 pb-4 md:pb-6 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
@@ -136,8 +136,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 03 — Benefits (cream canvas · gold numerals) ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      {/* ======== 03 — Benefits (cream canvas · centered gold numerals) ======== */}
+      <section className="bg-background pt-4 md:pt-6 pb-9 md:pb-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Rule />
           <h2 className="font-headline-md font-bold text-fg-muted text-xs tracking-[0.18em] uppercase mb-8">
@@ -145,9 +145,9 @@ export default function AboutPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
             {BENEFITS.map(({ key, n }) => (
-              <div key={key}>
+              <div key={key} className="text-center">
                 <span aria-hidden className="font-english italic font-semibold text-accent text-3xl md:text-[34px] block mb-3.5">
-                  {n}<span className="opacity-55">—</span>
+                  {n}
                 </span>
                 <h3 className="font-headline-md font-bold text-text text-[22px] leading-tight mb-2.5">
                   {t(`benefits.${key}.title`)}
@@ -176,7 +176,7 @@ export default function AboutPage() {
               {VALUES.map(({ key, n }) => (
                 <article key={key}>
                   <span aria-hidden className="font-english italic font-semibold text-accent text-2xl block mb-1">
-                    {n}<span className="opacity-55">—</span>
+                    {n}
                   </span>
                   <h3 className="font-headline-md font-bold text-text text-[21px]">
                     {t(`values.${key}.title`)}

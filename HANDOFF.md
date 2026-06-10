@@ -17,6 +17,11 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Pull-quote + numeral round (same PR #1037):** closed the L-shaped void around the
+  pull-quote (padding `pt-9 md:pt-14 pb-4 md:pb-6`; Benefits top trimmed to `pt-4 md:pt-6`);
+  benefit numerals centered over each column with the em-dash removed; Values numerals
+  em-dash removed (alignment unchanged). AboutClient.jsx only, no copy edits. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
 - **Spacing + caption round (same PR #1037):** section vertical padding cut ~30%
   (`section-y`→`py-9 md:py-14`, pull-quote `py-12 md:py-20`; AboutClient-scoped, globals
   untouched); founder byline captions restyled into a hierarchy (caption1 = small muted
