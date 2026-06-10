@@ -56,9 +56,18 @@ export default function AboutPage() {
     }
   };
 
-  // thin gold top-rule — editorial section marker (decorative)
-  const Rule = () => (
-    <div aria-hidden className="h-px w-12 bg-accent/70 mb-5" />
+  // section marker — small tracked eyebrow label paired with a thin gold rule
+  // extending toward the line-end. Start-aligned (RTL-safe). Label is a <p> by
+  // default so it never outranks the section h2; pass as="h2" where the label IS
+  // the section heading (Benefits).
+  const Eyebrow = ({ children, as: Tag = "p" }) => (
+    <div className="flex items-center gap-3 mb-3 md:mb-4">
+      {/* label in fg-muted for AA (gold-on-cream fails 4.5:1 at this size); gold lives in the rule */}
+      <Tag className="font-body-md text-[13px] font-semibold tracking-[0.15em] text-fg-muted uppercase whitespace-nowrap">
+        {children}
+      </Tag>
+      <span aria-hidden className="h-px flex-1 bg-accent/40" />
+    </div>
   );
 
   return (
@@ -66,7 +75,6 @@ export default function AboutPage() {
       {/* ======== 01 — Hero (cream editorial · anchored) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
-          <Rule />
           <h1 className="font-headline-display font-black text-text tracking-tight leading-[1.05] text-[clamp(28px,5vw,52px)] max-w-[15ch]">
             {t("hero.heading")}
           </h1>
@@ -138,10 +146,7 @@ export default function AboutPage() {
       {/* ======== 03 — Benefits (cream canvas · centered gold numerals) ======== */}
       <section className="bg-background pt-4 md:pt-6 pb-9 md:pb-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <Rule />
-          <h2 className="font-headline-md font-bold text-fg-muted text-xs tracking-[0.18em] uppercase mb-8">
-            {t("benefits.heading")}
-          </h2>
+          <Eyebrow as="h2">{t("benefits.heading")}</Eyebrow>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
             {BENEFITS.map(({ key, n }) => (
               <div key={key} className="text-center">
@@ -163,6 +168,7 @@ export default function AboutPage() {
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <Eyebrow>{t("values.eyebrow")}</Eyebrow>
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
               {t("values.heading")}
@@ -192,7 +198,7 @@ export default function AboutPage() {
       {/* ======== 05 — Tips accordion ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Rule />
+          <Eyebrow>{t("tips.eyebrow")}</Eyebrow>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("tips.heading")}
           </h2>

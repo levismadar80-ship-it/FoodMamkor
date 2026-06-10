@@ -17,6 +17,14 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Eyebrow-label round (same PR #1037):** restored S8 section eyebrow labels. Added 2 new
+  keys/locale (`tips.eyebrow`, `values.eyebrow`; he/en +2 each, no other string). New `Eyebrow`
+  unit = tracked muted-accent label + thin gold rule toward line-end; applied to Benefits
+  (`as="h2"`), Tips, Values (above the box). Bare `<Rule />` removed entirely (incl. Hero) — a
+  rule now only appears inside an eyebrow unit. Note: hit the per-edit lint-feedback 3-strike
+  hook mid-refactor (renamed Rule→Eyebrow before removing the last Tips usage → transient
+  no-undef; exec §8). Resolved by completing the usage swap; final lint 0 errors.
+  Files: AboutClient.jsx + he.json + en.json. Gates green (build /about ● SSG, RTL 0, hex 0, adversarial 0).
 - **Rule/divider cleanup round (same PR #1037):** gold `<Rule />` kicker now single-purpose,
   kept only on Hero/Benefits/Tips (3); removed from Pull-quote (blockquote already has a gold
   start-rule), Values (box border frames it), Contact. Dropped Contact's section `border-t`
