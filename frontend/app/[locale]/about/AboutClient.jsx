@@ -129,7 +129,6 @@ export default function AboutPage() {
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
       <section className="bg-background pt-9 md:pt-14 pb-4 md:pb-6 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
-          <Rule />
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
@@ -164,7 +163,6 @@ export default function AboutPage() {
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
-          <Rule />
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
               {t("values.heading")}
@@ -278,9 +276,8 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 08 — Contact form ======== */}
-      <section className="bg-background py-9 md:py-14 border-t border-border scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
-          <Rule />
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
           </h2>

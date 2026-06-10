@@ -17,6 +17,11 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Rule/divider cleanup round (same PR #1037):** gold `<Rule />` kicker now single-purpose,
+  kept only on Hero/Benefits/Tips (3); removed from Pull-quote (blockquote already has a gold
+  start-rule), Values (box border frames it), Contact. Dropped Contact's section `border-t`
+  (stacked under the CTA band's bottom border) — CTA `bg-green-50 border-y` is the single
+  separator. AboutClient.jsx only, no copy. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
 - **Pull-quote + numeral round (same PR #1037):** closed the L-shaped void around the
   pull-quote (padding `pt-9 md:pt-14 pb-4 md:pb-6`; Benefits top trimmed to `pt-4 md:pt-6`);
   benefit numerals centered over each column with the em-dash removed; Values numerals
