@@ -17,6 +17,17 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Tonal-block round (same PR #1037):** separation by tone, not lines (Sapir picked option B).
+  Added additive `background-alt` (#EDE4D2) to DESIGN.md + tailwind.tokens.json (no existing
+  token changed; `design.md` CLI absent in sandbox → generated file hand-synced to the
+  DESIGN.md source). Benefits + Values now share one continuous `bg-background-alt` block
+  (AboutClient.jsx:144,:166); all narrative sections stay base cream. All horizontal gold rules
+  removed; Eyebrow is now text-only (fg-muted, AA on both tones). Pull-quote vertical rule +
+  Values box kept. Files: AboutClient.jsx, DESIGN.md, tailwind.tokens.json. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0 in component, adversarial 0). **NOTE on branch
+  hygiene:** session resumed on the wrong branch (`feature/meh-734-smart-sticky-navbar`);
+  switched back to `feature/meh-135-about-s8-port` before any edit. A local `wip` commit
+  c499d3d (design-reference/*.html assets only, no code) sits under this round's commit.
 - **Eyebrow-label round (same PR #1037):** restored S8 section eyebrow labels. Added 2 new
   keys/locale (`tips.eyebrow`, `values.eyebrow`; he/en +2 each, no other string). New `Eyebrow`
   unit = tracked muted-accent label + thin gold rule toward line-end; applied to Benefits

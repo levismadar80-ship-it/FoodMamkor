@@ -56,18 +56,15 @@ export default function AboutPage() {
     }
   };
 
-  // section marker — small tracked eyebrow label paired with a thin gold rule
-  // extending toward the line-end. Start-aligned (RTL-safe). Label is a <p> by
-  // default so it never outranks the section h2; pass as="h2" where the label IS
-  // the section heading (Benefits).
+  // text-only section marker label, start-aligned (RTL-safe). No rule — tonal
+  // blocks (bg-background-alt) do the separation now. fg-muted keeps AA on BOTH
+  // cream and background-alt (accent gold fails 4.5:1 at this size). Label is a
+  // <p> by default so it never outranks the section h2; pass as="h2" where the
+  // label IS the section heading (Benefits).
   const Eyebrow = ({ children, as: Tag = "p" }) => (
-    <div className="flex items-center gap-3 mb-3 md:mb-4">
-      {/* label in fg-muted for AA (gold-on-cream fails 4.5:1 at this size); gold lives in the rule */}
-      <Tag className="font-body-md text-[13px] font-semibold tracking-[0.15em] text-fg-muted uppercase whitespace-nowrap">
-        {children}
-      </Tag>
-      <span aria-hidden className="h-px flex-1 bg-accent/40" />
-    </div>
+    <Tag className="block font-body-md text-[13px] font-semibold tracking-[0.15em] text-fg-muted uppercase mb-3 md:mb-4">
+      {children}
+    </Tag>
   );
 
   return (
@@ -135,7 +132,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
-      <section className="bg-background pt-9 md:pt-14 pb-4 md:pb-6 scroll-mt-24">
+      <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
@@ -143,8 +140,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ======== 03 — Benefits (cream canvas · centered gold numerals) ======== */}
-      <section className="bg-background pt-4 md:pt-6 pb-9 md:pb-14 scroll-mt-24">
+      {/* ======== 03 — Benefits (alt-tone block w/ Values · centered gold numerals) ======== */}
+      <section className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Eyebrow as="h2">{t("benefits.heading")}</Eyebrow>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
@@ -166,7 +163,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <section className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Eyebrow>{t("values.eyebrow")}</Eyebrow>
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
