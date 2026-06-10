@@ -17,6 +17,10 @@
   S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
   (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
   `t("contact.heading")` reused for those section eyebrows.
+- **Grain-texture round (same PR #1037):** added a ~3.5% film-grain overlay over /about
+  (inline SVG feTurbulence, monochrome, data-URI, pointer-events-none, aria-hidden,
+  absolute inset-0 on the relative root). Top film (tonal fills are opaque). AboutClient.jsx
+  only. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
 - **Tonal-block round (same PR #1037):** separation by tone, not lines (Sapir picked option B).
   Added additive `background-alt` (#EDE4D2) to DESIGN.md + tailwind.tokens.json (no existing
   token changed; `design.md` CLI absent in sandbox → generated file hand-synced to the

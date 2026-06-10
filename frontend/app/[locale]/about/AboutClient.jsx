@@ -68,7 +68,7 @@ export default function AboutPage() {
   );
 
   return (
-    <div className="bg-background">
+    <div className="relative bg-background">
       {/* ======== 01 — Hero (cream editorial · anchored) ======== */}
       <section className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-4 md:px-12">
@@ -364,6 +364,21 @@ export default function AboutPage() {
           </form>
         </div>
       </section>
+
+      {/* Subtle film grain — tactile warmth over the cream. Inline SVG feTurbulence
+          (monochrome, data-URI, LCP-safe), pointer-events-none, ~3.5% so it reads as
+          depth, not visible noise. Top film (not a behind-bg layer) because the tonal
+          section fills are opaque — a layer behind them wouldn't show through. Scoped
+          to /about via absolute inset-0 on this relative root; full-bleed, RTL-neutral. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[1] opacity-[0.035]"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='aboutGrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23aboutGrain)'/%3E%3C/svg%3E\")",
+          backgroundRepeat: "repeat",
+        }}
+      />
     </div>
   );
 }
