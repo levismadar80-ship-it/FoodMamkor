@@ -2071,6 +2071,7 @@
         }
       },
       "tips": {
+        "eyebrow": "First steps",
         "heading": "Worth knowing",
         "eggs": {
           "question": "Why are organic eggs worth the price?",
@@ -2091,6 +2092,7 @@
         "cta": "Have a story? Tell us"
       },
       "values": {
+        "eyebrow": "Our criteria",
         "heading": "How we choose",
         "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
         "transparency": {
