@@ -26,13 +26,15 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
 
   return (
     <div
-      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-center justify-between gap-3 rounded-[10px] px-4 py-3"
+      className="mx-4 md:mx-auto max-w-3xl mb-6 flex items-start justify-between gap-3 rounded-[10px] px-4 py-3"
       style={{ backgroundColor: "#EAF3DE", color: "#2e6853" }}
       role="status"
     >
-      <div className="flex items-center gap-2 min-w-0">
-        <MapPin size={20} weight="fill" className="shrink-0" aria-hidden="true" />
-        <p className="text-sm font-medium truncate">
+      <div className="flex items-start gap-2 min-w-0">
+        <MapPin size={20} weight="fill" className="shrink-0 mt-0.5" aria-hidden="true" />
+        {/* MEH-233: was `truncate` — clipped the Hebrew prompt next to the
+            shrink-0 CTA on mobile (≤390px). Wrap to 2 lines instead. */}
+        <p className="text-sm font-medium">
           {t("message")}
         </p>
       </div>
