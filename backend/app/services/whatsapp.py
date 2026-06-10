@@ -24,6 +24,12 @@ the response body into a `WhatsAppSendResult` — extracting the `wamid`
 — classifies the outcome (`accepted` / `failed` / `window_expired`), and
 logs per outcome. `send_text` / `send_template` still return `bool`
 (`result.ok`) so every call site stays byte-compatible.
+
+MEH-771 (Chunk A): `_post` now also persists one `outbound_messages` row
+per real send (`to_phone`, `kind`, `status` from the classification, and
+the `wamid` as `meta_message_id`). Best-effort / fail-open via a
+short-lived session — a DB error never breaks a send. The delivery-status
+webhook that flips `accepted` → `delivered`/`failed` is Chunk B (not here).
 """
 
 from __future__ import annotations
@@ -159,13 +165,56 @@ def _log_result(kind: str, to: str, result: WhatsAppSendResult) -> None:
         )
 
 
+def _persist_outbound(kind: str, to: str, result: WhatsAppSendResult) -> None:
+    """Persist one `outbound_messages` row per real send (MEH-771 Chunk A).
+
+    Best-effort / fail-open: a DB error must NEVER turn a real WhatsApp
+    send into an exception at the call site — that is the whole-module
+    contract (see `_safe_json`). `status` is taken straight from the
+    AUD-009/010 classification (`result.outcome`); `meta_message_id`
+    (the wamid) is the idempotency key the MEH-509 delivery webhook
+    (Chunk B) will reconcile against to flip the row to delivered/failed.
+
+    Opens its own short-lived session (the send layer is stateless, called
+    from request handlers, background tasks, and the watchdog alike) —
+    same pattern as `app/services/producer_risk.py:265`.
+    """
+    try:
+        # REUSES: app/services/producer_risk.py:265 — service-layer own session.
+        from app.database import SessionLocal
+        from app.models.models import OutboundMessage
+
+        with SessionLocal() as db:
+            db.add(
+                OutboundMessage(
+                    to_phone=to.lstrip("+")[:20],
+                    kind=kind[:64],
+                    meta_message_id=result.message_id,
+                    status=result.outcome,
+                    error_code=result.error_code,
+                    error_message=result.error_message,
+                )
+            )
+            db.commit()
+    except Exception as exc:  # noqa: BLE001 — persistence is best-effort, fail-open
+        logger.warning(
+            "[WHATSAPP] outbound persist failed kind=%s to=%s: %s",
+            kind,
+            mask_phone(to),
+            exc,
+        )
+
+
 def _post(payload: dict[str, Any], *, kind: str, to: str) -> bool:
     """POST to Graph and return the back-compat `ok` bool.
 
-    Delegates parsing/classification/logging to `_post_result`; callers
-    that only need the boolean keep their existing contract.
+    Delegates parsing/classification/logging to `_post_result`, persists
+    the outbound row (MEH-771 Chunk A), then returns the boolean so
+    callers keep their existing contract.
     """
-    return _post_result(payload, kind=kind, to=to).ok
+    result = _post_result(payload, kind=kind, to=to)
+    _persist_outbound(kind, to, result)
+    return result.ok
 
 
 def _post_result(payload: dict[str, Any], *, kind: str, to: str) -> WhatsAppSendResult:
