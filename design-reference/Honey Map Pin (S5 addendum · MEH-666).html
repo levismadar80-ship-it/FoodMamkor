@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S5 addendum · MEH-666 · Honey map pin — color + hand-drawn glyph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --primary:#2e6853; --primary-dark:#2E4A2E; --background:#F5F0E8;
+  --site-text:#1C1A17; --site-muted:#5c584f; --accent:#8B6914; --border:#e8e0d0;
+  /* NEW — honey category (post-MEH-743 split from "שמנים ודבש") */
+  --honey:#C8821E; --honey-deep:#A8690F;
+  --font-headline:'Frank Ruhl Libre','Heebo',serif;
+  --font-english:'Cormorant Garamond',serif;
+  --font-body:'DM Sans','Heebo',system-ui,sans-serif;
+  --doc-bg:#e7e1d6; --doc-ink:#2a2620; --doc-mute:#6f695e; --doc-rule:rgba(42,38,32,0.16);
+  --doc-mono:ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{background:var(--doc-bg); color:var(--doc-ink); font-family:var(--font-body);
+  font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased;}
+body{padding:48px 40px 90px; min-width:900px;}
+.num{font-variant-numeric:tabular-nums lining-nums; direction:ltr; unicode-bidi:isolate;}
+.doc{max-width:1180px; margin:0 auto;}
+
+/* masthead */
+.masthead{display:grid; grid-template-columns:1fr auto; align-items:end;
+  border-bottom:1px solid var(--doc-rule); padding-bottom:24px; margin-bottom:34px; gap:32px;}
+.phase-nav{display:inline-flex; gap:7px; align-items:center; margin-bottom:13px;
+  font-family:var(--doc-mono); font-size:11px; letter-spacing:.06em; color:var(--doc-mute);}
+.pip{display:inline-flex; align-items:center; gap:4px;}
+.pip i{width:7px; height:7px; border:1px solid rgba(42,38,32,.32); display:inline-block; border-radius:50%;}
+.pip.on i{background:var(--primary); border-color:var(--primary);}
+.pip.now i{background:var(--honey); border-color:var(--honey); outline:2px solid rgba(200,130,30,.25); outline-offset:2px;}
+.masthead h1{font-family:var(--font-headline); font-weight:900; font-size:38px; line-height:1.05; color:var(--doc-ink);}
+.masthead h1 em{font-family:var(--font-english); font-style:italic; font-weight:600; color:var(--honey-deep);}
+.masthead .sub{font-family:var(--font-english); font-style:italic; font-size:17px; color:var(--doc-mute); margin-top:8px; max-width:74ch; line-height:1.5;}
+.masthead .sub code{font-family:var(--doc-mono); font-style:normal; font-size:12px; color:var(--primary-dark);}
+.stamp{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--doc-mute); text-align:right; line-height:1.95;}
+.stamp strong{color:var(--doc-ink); font-weight:700;} .stamp .dot{color:var(--honey);}
+
+.cap{font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-mute);
+  display:flex; align-items:baseline; gap:12px; margin-bottom:16px;}
+.cap .num-i{font-family:var(--font-english); font-style:italic; font-size:20px; color:var(--honey-deep); text-transform:none;}
+.cap .label{color:var(--doc-ink); font-size:13px; letter-spacing:.1em;}
+
+.layout{display:grid; grid-template-columns:1.05fr 1fr; gap:40px; align-items:start;}
+
+/* specimen panel — sits on warm cream (the brand surface) */
+.panel{background:var(--background); border:1px solid var(--border); border-radius:18px; padding:34px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+
+.glyph-hero{display:flex; align-items:center; gap:28px; margin-bottom:30px;}
+.glyph-hero .gbox{width:118px; height:118px; flex:none; border:1px solid var(--border); border-radius:16px;
+  display:grid; place-items:center; background:#fffdf9;}
+.glyph-hero .gmeta .gt{font-family:var(--font-headline); font-weight:700; font-size:24px; color:var(--site-text); margin-bottom:4px;}
+.glyph-hero .gmeta .gs{font-family:var(--font-english); font-style:italic; font-size:16px; color:var(--site-muted);}
+.glyph-hero .gmeta .fam{display:inline-flex; align-items:center; gap:7px; margin-top:12px; font-family:var(--doc-mono);
+  font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--honey-deep);
+  border:1px dashed rgba(200,130,30,.55); border-radius:6px; padding:4px 9px; background:rgba(200,130,30,.07);}
+
+/* color row */
+.colors{display:flex; gap:16px; flex-wrap:wrap;}
+.swatch{display:flex; align-items:center; gap:12px; border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:#fffdf9;}
+.swatch .chip{width:40px; height:40px; border-radius:9px; flex:none; border:1px solid rgba(0,0,0,.08);}
+.swatch .sm .role{font-weight:600; font-size:13.5px; color:var(--site-text);}
+.swatch .sm .hex{font-family:var(--doc-mono); font-size:12px; color:var(--site-muted); margin-top:2px;}
+
+/* pin mockups */
+.pins-wrap{margin-top:6px;}
+.pinrow{display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap; padding:26px 24px; border:1px solid var(--border);
+  border-radius:16px; background:
+    linear-gradient(0deg, rgba(46,104,83,.05), rgba(46,104,83,.05)),
+    var(--background);}
+.pin{display:flex; flex-direction:column; align-items:center; gap:9px;}
+.pin .pname{font-size:11px; color:var(--site-muted); font-weight:500; letter-spacing:.01em;}
+.pin.is-honey .pname{color:var(--honey-deep); font-weight:700;}
+.dot{width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  box-shadow:0 1px 0 rgba(0,0,0,.08), 0 4px 10px rgba(46,74,46,.16); border:2px solid #fffefb;}
+.legendnote{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--site-muted); margin-top:16px; max-width:52ch; line-height:1.5;}
+
+/* spec list */
+.spec{margin-top:34px; padding-top:28px; border-top:1px solid var(--doc-rule);}
+.spec h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:16px;}
+.spec ul{list-style:none; display:grid; gap:13px; max-width:96ch;}
+.spec li{font-size:13.5px; line-height:1.55; color:var(--doc-mute); padding-inline-start:26px; position:relative;}
+.spec li::before{content:""; position:absolute; inset-inline-start:4px; top:8px; width:7px; height:7px; border-radius:2px; background:var(--honey); transform:rotate(45deg);}
+.spec li b{color:var(--doc-ink); font-weight:600;}
+.spec li code{font-family:var(--doc-mono); font-size:11.5px; color:var(--primary-dark);}
+.spec li .he{direction:rtl; unicode-bidi:isolate;}
+
+.guard{margin-top:22px; display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start;
+  background:rgba(168,105,15,.07); border:1px solid rgba(168,105,15,.28); border-radius:13px; padding:15px 18px; max-width:760px;}
+.guard .gi{font-family:var(--doc-mono); font-weight:700; color:var(--honey-deep); font-size:13px; letter-spacing:.06em;}
+.guard p{font-size:13px; line-height:1.55; color:var(--doc-ink);}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S5</span><span>·</span>
+        <span class="pip on"><i></i>S11</span><span>·</span>
+        <span class="pip now"><i></i>S5+</span>
+      </nav>
+      <h1>Honey map pin — <em>color + hand-drawn glyph</em></h1>
+      <p class="sub">S5 addendum warm-down. The <span dir="rtl">דבש</span> category split out of <span dir="rtl">"שמנים ודבש"</span> (<code>MEH-743</code>) needs its own pin. Color + glyph below; glyph drawn in the Tier-2 hand-drawn family (<code>MEH-666</code> / <code>CategoryIcons.jsx</code>), not Phosphor.</p>
+    </div>
+    <div class="stamp">
+      S5&nbsp;addendum <span class="dot">·</span> <strong>MEH-666</strong><br>
+      Tier-2 hand-drawn <span class="dot">·</span> <strong>no Phosphor</strong><br>
+      <strong>no tier mixing</strong>
+    </div>
+  </header>
+
+  <div class="cap"><span class="num-i">a</span><span class="label">Glyph · color · pin</span></div>
+
+  <div class="layout">
+
+    <!-- LEFT — glyph + color -->
+    <div class="panel">
+      <div class="glyph-hero">
+        <div class="gbox">
+          <!-- HONEY DIPPER — 64 viewBox, Tier-2 hand-drawn (stroke 1.5, round, loose) -->
+          <svg width="86" height="86" viewBox="0 0 64 64" fill="none" stroke="var(--honey)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-label="honey dipper glyph">
+            <circle cx="32" cy="11" r="3.4"/>
+            <path d="M32 14.6 L32 30"/>
+            <path d="M23 33 C23 30.4 41 30.4 41 33 C41 41 37 53 32 55 C27 53 23 41 23 33 Z"/>
+            <path d="M24.6 39 C29 41 35 41 39.4 39"/>
+            <path d="M25 45 C29 46.4 35 46.4 39 45"/>
+            <path d="M27 51 C30 52 34 52 37 51"/>
+            <path d="M32 57.6 C32 57.6 29.4 61 32 62.6 C34.6 61 32 57.6 32 57.6 Z"/>
+          </svg>
+        </div>
+        <div class="gmeta">
+          <div class="gt" dir="rtl">דבש</div>
+          <div class="gs">honey dipper — drip below</div>
+          <span class="fam">Tier-2 hand-drawn · matches CategoryIcons</span>
+        </div>
+      </div>
+
+      <div class="colors">
+        <div class="swatch">
+          <span class="chip" style="background:var(--honey);"></span>
+          <div class="sm"><div class="role">Honey · pin fill</div><div class="hex num">#C8821E</div></div>
+        </div>
+        <div class="swatch">
+          <span class="chip" style="background:var(--honey-deep);"></span>
+          <div class="sm"><div class="role">Honey · ink / label</div><div class="hex num">#A8690F</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT — pin mockups in map context -->
+    <div class="pins-wrap">
+      <div class="pinrow">
+        <!-- HONEY pin: hand-drawn dipper, white, on honey circle -->
+        <div class="pin is-honey">
+          <svg width="40" height="52" viewBox="0 0 40 52" aria-label="honey map pin">
+            <path d="M20 2 C30 2 38 10 38 20 C38 33 24 44 20 50 C16 44 2 33 2 20 C2 10 10 2 20 2 Z" fill="var(--honey)" stroke="#fffefb" stroke-width="1.5"/>
+            <g transform="translate(7.2 4.2) scale(0.40)" fill="none" stroke="#fffefb" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke">
+              <circle cx="32" cy="11" r="3.4"/>
+              <path d="M32 14.6 L32 30"/>
+              <path d="M23 33 C23 30.4 41 30.4 41 33 C41 41 37 53 32 55 C27 53 23 41 23 33 Z"/>
+              <path d="M24.6 40 C29 42 35 42 39.4 40"/>
+              <path d="M26 47 C29.5 48.5 34 48.5 38 47"/>
+              <path d="M32 57.6 C32 57.6 29.4 61 32 62.6 C34.6 61 32 57.6 32 57.6 Z"/>
+            </g>
+          </svg>
+          <span class="pname" dir="rtl">דבש</span>
+        </div>
+
+        <!-- context: existing Phosphor Tier-1 pins (color dots only, for adjacency) -->
+        <div class="pin"><span class="dot" style="background:#e8a020;"></span><span class="pname" dir="rtl">שמנים</span></div>
+        <div class="pin"><span class="dot" style="background:#2e6853;"></span><span class="pname" dir="rtl">ירקות</span></div>
+        <div class="pin"><span class="dot" style="background:#4a90d9;"></span><span class="pname" dir="rtl">חלב וגבינות</span></div>
+        <div class="pin"><span class="dot" style="background:#8B6914;"></span><span class="pname" dir="rtl">לחמים</span></div>
+        <div class="pin"><span class="dot" style="background:#c04040;"></span><span class="pname" dir="rtl">בשר ודגים</span></div>
+      </div>
+      <p class="legendnote">Honey <span class="num" style="font-style:normal">#C8821E</span> sits warmer and deeper than the oils amber it split from (<span class="num" style="font-style:normal">#e8a020</span>) — adjacent on the map but never confused. Context dots show existing Tier-1 pins; only the honey pin is detailed here.</p>
+    </div>
+
+  </div>
+
+  <!-- SPEC -->
+  <div class="spec">
+    <h4>Spec — for the map team</h4>
+    <ul>
+      <li><b>Color.</b> <code>--honey: #C8821E</code> (pin fill), <code>--honey-deep: #A8690F</code> (label / active ink). New token; semantically distinct from oils <code>#e8a020</code>, which keeps its jar pin after the <span class="he">דבש</span> split (<code>MEH-743</code>).</li>
+      <li><b>Glyph.</b> Honey dipper with a drip, drawn in the <b>Tier-2 hand-drawn family</b> (64 viewBox, <code>stroke-width 1.5</code>, round caps, loose asymmetric curves) so it sits with the six homepage <code>CategoryIcons</code> — <span class="he">בשר · ירקות · חלב · לחם · שמן · סבון</span> — not against them.</li>
+      <li><b>Pin rendering.</b> White glyph on the honey circle, <code>vector-effect:non-scaling-stroke</code> at ~2px so the line-art stays crisp down to map scale (28–30px). Distinct silhouette from the oils jar.</li>
+      <li><b>No tier mixing.</b> Honey's map glyph is hand-drawn end-to-end — it does <i>not</i> borrow a Phosphor icon (the current Tier-1 map set) the way <code>map-categories.js</code> resolves other pins. Keep the two icon tiers separate within honey's treatment; if the map later unifies on hand-drawn, that's a separate decision.</li>
+    </ul>
+    <div class="guard">
+      <span class="gi">LOCK</span>
+      <p>No Phosphor duotone anywhere on this glyph; no blending of the hand-drawn (Tier-2) and Phosphor (Tier-1) icon systems inside the honey pin. Color is a new token, not a re-use of <span class="num" style="font-style:normal">#e8a020</span>.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

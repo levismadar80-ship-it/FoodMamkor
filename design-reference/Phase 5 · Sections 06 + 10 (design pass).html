@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Phase 5 · Sections 06 + 10 — Design Pass</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@400;500;700;900&display=swap');
+
+:root{
+  --green:#2E6853; --green-light:#3A7D64; --green-dark:#1F4A38;
+  --primary-dark:#2E4A2E;
+  --background:#F5F0E8; --bg-card:#FFFEFB;
+  --text:#1C1A17; --fg-muted:#57524A;
+  --gold:#8B6914; --light:#EAF3DE; --border:#E8E0D0;
+  --font-display:"Frank Ruhl Libre","David Libre",Georgia,serif;
+  --font-body:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-italic:"Cormorant Garamond","Frank Ruhl Libre",Georgia,serif;
+  /* doc chrome */
+  --doc-ink:#2A2620; --doc-ink-mute:#7C756A; --doc-line:#E2D9C7;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body.review{
+  background:var(--background);
+  color:var(--doc-ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+  padding:56px 40px 120px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.review-wrap{max-width:1240px;margin:0 auto;}
+
+/* ───── doc header ───── */
+.doc-head{border-bottom:1px solid var(--doc-line);padding-bottom:28px;margin-bottom:64px;}
+.doc-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;display:flex;gap:12px;align-items:center;}
+.doc-eyebrow .rule{width:32px;height:1px;background:var(--gold);opacity:.7;}
+.doc-title{font-family:var(--font-display);font-weight:900;font-size:46px;line-height:1.04;letter-spacing:-.01em;color:var(--text);margin:18px 0 0;}
+.doc-title em{font-family:var(--font-italic);font-style:italic;font-weight:500;color:var(--gold);}
+.doc-sub{max-width:62ch;margin-top:16px;font-size:15px;line-height:1.7;color:var(--fg-muted);}
+.doc-sub strong{color:var(--doc-ink);font-weight:600;}
+
+/* ───── section block ───── */
+.block{margin-bottom:96px;}
+.block-head{display:flex;align-items:baseline;gap:18px;margin-bottom:28px;}
+.block-num{font-family:var(--font-italic);font-style:italic;font-weight:500;font-size:40px;line-height:1;color:var(--gold);}
+.block-titles{display:flex;flex-direction:column;gap:4px;}
+.block-kind{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;}
+.block-title{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1.1;color:var(--text);}
+.block-purpose{max-width:64ch;font-size:14.5px;line-height:1.7;color:var(--fg-muted);margin:14px 0 0;}
+
+/* ───── copy + flags panel ───── */
+.panel{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+  padding:28px 30px;margin:32px 0;
+}
+.panel-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:20px;}
+.opt{display:grid;grid-template-columns:30px 1fr;gap:16px;padding:18px 0;border-top:1px solid var(--doc-line);}
+.opt:first-of-type{border-top:none;padding-top:4px;}
+.opt-n{font-family:var(--font-italic);font-style:italic;font-size:22px;color:var(--gold);line-height:1.4;}
+.opt-he{font-family:var(--font-display);font-weight:500;font-size:23px;line-height:1.45;color:var(--text);}
+.opt-he .mk{color:var(--gold);}
+.opt-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:9px;}
+.opt-gloss{font-family:var(--font-italic);font-style:italic;font-size:14px;color:var(--doc-ink-mute);direction:ltr;}
+.tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:3px 9px;border-radius:999px;}
+.tag--rec{background:var(--light);color:var(--green-dark);}
+.tag--alt{background:#F3ECDD;color:var(--gold);}
+
+.flags{list-style:none;margin:0;padding:0;display:grid;gap:11px;}
+.flag{display:grid;grid-template-columns:20px 1fr;gap:12px;font-size:13.5px;line-height:1.6;color:var(--fg-muted);}
+.flag .ic{font-weight:700;line-height:1.5;}
+.flag--ok .ic{color:var(--green);}
+.flag--watch .ic{color:var(--gold);}
+.flag strong{color:var(--doc-ink);font-weight:600;}
+.flag .he{font-family:var(--font-display);font-weight:500;color:var(--text);}
+.panel-split{display:grid;grid-template-columns:1.15fr 1fr;gap:36px;align-items:start;}
+@media(max-width:900px){.panel-split{grid-template-columns:1fr;gap:24px;}}
+
+/* ───── device frames ───── */
+.frames{display:flex;flex-direction:column;gap:36px;margin-top:8px;}
+.frame{}
+.frame-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.frame-bar .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);opacity:.65;}
+.frame-bar .nm{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;}
+.frame-bar .dim{font-size:11px;color:var(--doc-ink-mute);font-variant-numeric:tabular-nums;margin-inline-start:auto;letter-spacing:.04em;}
+.view{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg-card);box-shadow:0 8px 32px rgba(46,104,83,.06);}
+.view--mobile{width:max-content;margin:0 auto;border-radius:30px;padding:0;}
+
+/* the rendered screens — scaled via zoom so the frame box collapses cleanly */
+.screen{font-family:var(--font-body);color:var(--text);}
+.screen--desktop{width:1440px;zoom:.80;}
+.screen--mobile{width:390px;zoom:1;border-radius:30px;overflow:hidden;}
+
+/* ═══════════ MOCKUP STYLES (port targets) ═══════════ */
+.hp-section{position:relative;}
+.hp--cream{background:var(--background);}
+.hp--warm{background:var(--bg-card);}
+.hp-container{max-width:1280px;margin:0 auto;padding:0 64px;}
+.screen--mobile .hp-container{padding:0 24px;}
+
+.hp-head{display:grid;gap:12px;margin-bottom:44px;}
+.screen--mobile .hp-head{margin-bottom:28px;gap:8px;}
+.hp-eyebrow{font-family:var(--font-body);font-weight:500;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);display:inline-flex;align-items:center;gap:12px;}
+.hp-eyebrow .rule{width:32px;height:1px;background:var(--gold);opacity:.7;}
+.hp-h2{font-family:var(--font-display);font-weight:700;font-size:52px;letter-spacing:0;line-height:1.1;color:var(--text);margin:0;}
+.screen--mobile .hp-h2{font-size:34px;}
+
+/* ── 06 Editorial Breath ── */
+.breath{text-align:center;padding:120px 48px;}
+.screen--mobile .breath{padding:72px 24px;}
+.breath-num{font-family:var(--font-italic);font-style:italic;font-weight:500;font-size:18px;letter-spacing:.1em;color:var(--gold);display:block;}
+.breath-rule{width:40px;height:1px;background:var(--gold);opacity:.55;margin:22px auto 34px;}
+.screen--mobile .breath-rule{margin:18px auto 26px;}
+.breath-quote{font-family:var(--font-display);font-weight:500;font-style:normal;font-size:54px;line-height:1.28;letter-spacing:-.01em;color:var(--text);max-width:18ch;margin:0 auto;}
+.screen--mobile .breath-quote{font-size:32px;max-width:14ch;}
+.breath-quote .em{color:var(--gold);}
+.breath-quote .mark{color:var(--gold);font-size:1.1em;}
+.breath-foot{margin-top:34px;font-family:var(--font-body);font-size:12px;letter-spacing:.04em;color:var(--fg-muted);}
+.screen--mobile .breath-foot{margin-top:24px;}
+
+/* ── 10 Meet — Direction A (split) ── */
+.meet{display:grid;grid-template-columns:5fr 6fr;gap:64px;align-items:center;}
+.screen--mobile .meet{grid-template-columns:1fr;gap:26px;}
+.meet-figure{position:relative;}
+.meet-figure image-slot{display:block;width:100%;height:600px;border-radius:16px;overflow:hidden;}
+.screen--mobile .meet-figure image-slot{height:440px;}
+.meet-figcap{position:absolute;inset-block-end:14px;inset-inline-start:14px;background:rgba(31,74,56,.88);color:#EAF3DE;font-size:11px;letter-spacing:.05em;padding:6px 12px;border-radius:999px;backdrop-filter:blur(4px);}
+.meet-body{display:grid;gap:22px;}
+.meet-kicker{font-family:var(--font-display);font-weight:700;font-size:38px;line-height:1.14;letter-spacing:-.01em;color:var(--text);margin:0;}
+.screen--mobile .meet-kicker{font-size:28px;}
+.meet-narr{font-family:var(--font-body);font-weight:400;font-size:17px;line-height:1.8;color:var(--fg-muted);margin:0;max-width:46ch;text-wrap:pretty;}
+.screen--mobile .meet-narr{font-size:15.5px;}
+.meet-attr{font-family:var(--font-body);font-weight:500;font-size:13px;color:var(--fg-muted);letter-spacing:.01em;}
+.meet-attr strong{color:var(--text);font-weight:700;}
+.meet-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.screen--mobile .meet-actions{margin-top:2px;}
+
+.btn{font-family:var(--font-body);font-weight:600;font-size:15px;border-radius:999px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:9px;padding:13px 26px;text-decoration:none;transition:all .3s ease;min-height:44px;}
+.btn-primary{background:var(--green);color:#fff;}
+.btn-primary:hover{background:var(--green-light);}
+.btn-ghost{background:transparent;color:var(--green);border-color:var(--border);}
+.btn-ghost:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.btn svg{width:18px;height:18px;}
+
+/* ── 10 Meet — Direction B (full-bleed editorial) ── */
+.meetb{max-width:1180px;margin:0 auto;}
+.meetb-figure{position:relative;}
+.meetb-figure image-slot{display:block;width:100%;height:400px;border-radius:20px;overflow:hidden;}
+.screen--mobile .meetb-figure image-slot{height:264px;border-radius:14px;}
+.meetb-figcap{position:absolute;inset-block-end:18px;inset-inline-start:18px;background:rgba(31,74,56,.88);color:#EAF3DE;font-size:11px;letter-spacing:.05em;padding:7px 13px;border-radius:999px;backdrop-filter:blur(4px);}
+.meetb-lower{display:grid;grid-template-columns:7fr 5fr;gap:56px;margin-top:38px;align-items:start;}
+.screen--mobile .meetb-lower{grid-template-columns:1fr;gap:22px;margin-top:24px;}
+.meetb-kicker{font-family:var(--font-display);font-weight:700;font-size:42px;line-height:1.1;letter-spacing:-.01em;color:var(--text);margin:0;}
+.screen--mobile .meetb-kicker{font-size:28px;}
+.meetb-side{display:grid;gap:20px;padding-top:8px;}
+.meetb-narr{font-family:var(--font-body);font-size:16.5px;line-height:1.8;color:var(--fg-muted);margin:0;text-wrap:pretty;}
+.screen--mobile .meetb-narr{font-size:15.5px;}
+.meetb-attr{font-family:var(--font-body);font-weight:500;font-size:13px;color:var(--fg-muted);}
+.meetb-attr strong{color:var(--text);font-weight:700;}
+
+/* small note under frames */
+.layout-note{font-family:var(--font-italic);font-style:italic;font-size:14px;color:var(--doc-ink-mute);margin:14px 2px 0;direction:rtl;}
+.layout-note b{font-family:var(--font-body);font-style:normal;font-weight:600;color:var(--doc-ink);font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin-inline-end:8px;}
+</style>
+</head>
+<body class="review">
+<div class="review-wrap">
+
+  <!-- ════════ DOC HEADER ════════ -->
+  <header class="doc-head">
+    <div class="doc-eyebrow"><span class="rule"></span>Phase 5 · Homepage Assembly · Design Pass</div>
+    <h1 class="doc-title">Sections 06 + 10 — <em>editorial breath &amp; the feature.</em></h1>
+    <p class="doc-sub"><strong>Design only — not a handoff.</strong> Two new homepage surfaces given a focused pass before they're ported. Each is rendered desktop + mobile, with copy options and brand-LOCK flags surfaced for your review. Mockup chrome uses the locked tokens, type scale, and <code>hp-</code> section pattern from Assembly v2.</p>
+  </header>
+
+  <!-- ════════════════════ SECTION 06 ════════════════════ -->
+  <section class="block">
+    <div class="block-head">
+      <span class="block-num">06</span>
+      <div class="block-titles">
+        <span class="block-kind">New surface · pull-quote</span>
+        <span class="block-title">Editorial Breath</span>
+      </div>
+    </div>
+    <p class="block-purpose">An editorial pause between the category grid (07) and featured producers (08). One resonant pull-quote on open cream — a food magazine's section divider, never a banner. Reader-voice; reinforces the magazine thesis without selling.</p>
+
+    <!-- locked copy + flags -->
+    <div class="panel panel-split">
+      <div>
+        <div class="panel-label">Quote copy — <span style="color:var(--green-dark);">locked</span></div>
+        <div class="opt" style="grid-template-columns:1fr;">
+          <div>
+            <div class="opt-he" style="font-size:28px;">תכירי את מי <span class="mk">שמאחורי האוכל</span></div>
+            <div class="opt-meta">
+              <span class="tag tag--rec">Locked</span>
+              <span class="opt-gloss">“Meet the people behind the food”</span>
+            </div>
+            <p style="font-family:var(--font-body);font-size:13.5px;line-height:1.7;color:var(--fg-muted);margin:16px 0 0;">One idea, sharp. The Hebrew “meet the maker” pattern — direct, not artisanal-precious. No <span class="he" style="color:var(--text);">שלך / מקומי</span> additions; single-idea display lines land hardest.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-label">Brand-LOCK check</div>
+        <ul class="flags">
+          <li class="flag flag--ok"><span class="ic">✓</span><span>Clear of every forbidden string — no <span class="he">בית / מטבח / ביתי / אוכל אמיתי / מהמטבח של השכן</span>, no <span class="he">יצרן</span>, no “marketplace”.</span></li>
+          <li class="flag flag--ok"><span class="ic">✓</span><span>Lands on the locked thesis — a <strong>person</strong> behind the food (anti-anonymous), not a place or a kitchen.</span></li>
+          <li class="flag flag--ok"><span class="ic">✓</span><span>Covers <strong>all</strong> business types — baker, farmer, cheesemaker. No grower-specific verb.</span></li>
+          <li class="flag flag--ok"><span class="ic">✓</span><span>Feminine imperative <span class="he">תכירי</span> — on-voice. No terminal period (display rule).</span></li>
+          <li class="flag flag--ok"><span class="ic">✓</span><span>Replaces the v2 producer-facing draft <span class="he">“מהמקור הוא הבית הראשון של העסק שלך”</span> (read more CTA than editorial).</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- renders -->
+    <div class="frames">
+      <div class="frame">
+        <div class="frame-bar"><span class="dot"></span><span class="nm">Desktop · locked</span><span class="dim">1440 × auto</span></div>
+        <div class="view">
+          <div class="screen screen--desktop">
+            <section class="hp-section hp--cream breath" data-screen-label="06 Editorial Breath · Desktop">
+              <span class="breath-num">06</span>
+              <span class="breath-rule"></span>
+              <p class="breath-quote">תכירי את מי <span class="em">שמאחורי האוכל</span></p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="frame">
+        <div class="frame-bar"><span class="dot"></span><span class="nm">Mobile · locked</span><span class="dim">390 × auto</span></div>
+        <div class="view view--mobile">
+          <div class="screen screen--mobile">
+            <section class="hp-section hp--cream breath" data-screen-label="06 Editorial Breath · Mobile">
+              <span class="breath-num">06</span>
+              <span class="breath-rule"></span>
+              <p class="breath-quote">תכירי את מי <span class="em">שמאחורי האוכל</span></p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="layout-note"><b>Layout</b>גובה נדיב, יישור מרכזי, פתח נשימה של קרם. נומרל זהב <span class="he">06</span> וקו דק מסמנים את ה“מגזין” בלי לצעוק.</p>
+  </section>
+
+  <!-- ════════════════════ SECTION 10 ════════════════════ -->
+  <section class="block">
+    <div class="block-head">
+      <span class="block-num">10</span>
+      <div class="block-titles">
+        <span class="block-kind">New surface · editorial feature</span>
+        <span class="block-title">Meet a Producer</span>
+      </div>
+    </div>
+    <p class="block-purpose">A magazine feature on one <span style="font-family:var(--font-display);">בית עסק</span> — photo, headline, a short editorial story, a link to the business. Larger and warmer than a ProducerCard (that's the grid unit). Layout locked to <strong>Direction A · split</strong>; copy shown for Michal, with a Hadar swap below.</p>
+
+    <!-- copy direction + flags -->
+    <div class="panel">
+      <div class="panel-split">
+        <div>
+          <div class="panel-label">Copy direction — Michal (farmer)</div>
+          <div style="display:grid;gap:16px;">
+            <div>
+              <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;margin-bottom:6px;">Eyebrow · H2</div>
+              <div class="opt-he" style="font-size:20px;"><span class="mk">היכרות</span> · מאחורי הקלעים</div>
+            </div>
+            <div>
+              <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;margin-bottom:6px;">Feature headline</div>
+              <div class="opt-he">מיכל מגדלת עגבניות שזוכרות איך הן אמורות לטעום</div>
+              <div class="opt-gloss" style="margin-top:5px;">“Michal grows tomatoes that remember how they're meant to taste”</div>
+            </div>
+            <div>
+              <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;margin-bottom:6px;">Narrative</div>
+              <p style="font-family:var(--font-body);font-size:15.5px;line-height:1.75;color:var(--fg-muted);margin:0;">בכל בוקר, הרבה לפני שהשוק מתעורר, מיכל כבר בין השורות בחווה הקטנה שלה בעמק. היא מאמינה שעגבנייה צריכה זמן — שמש, סבלנות, ואדמה שמכירים בשמה. מה שנקטף אצלה עם אור ראשון מגיע אלייך כשהוא עדיין חם מהשדה.</p>
+            </div>
+            <div>
+              <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--doc-ink-mute);font-weight:600;margin-bottom:6px;">Attribution · CTA</div>
+              <div style="font-family:var(--font-body);font-size:14px;color:var(--text);"><strong>מיכל לוי</strong> · חוות שורשים, כפר יחזקאל, עמק יזרעאל</div>
+              <div style="margin-top:7px;"><span class="tag tag--rec">להכיר את מיכל</span> <span class="tag tag--alt">לכתוב למיכל</span></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="panel-label">Brand-LOCK check</div>
+          <ul class="flags">
+            <li class="flag flag--ok"><span class="ic">✓</span><span>Framed as a <span class="he">בית עסק</span> feature — never <span class="he">יצרן</span>. Persona is <strong>Michal</strong> (Dana / Yael retired).</span></li>
+            <li class="flag flag--ok"><span class="ic">✓</span><span>Attribution uses the middle-dot <span class="he">·</span> meta separator (brand rhythm device).</span></li>
+            <li class="flag flag--ok"><span class="ic">✓</span><span>Narrative keeps terminal periods (body prose — per the Section 13 precedent); headline carries none.</span></li>
+            <li class="flag flag--watch"><span class="ic">!</span><span>WhatsApp CTA worded <span class="he">לכתוב למיכל</span> (“write to”), kept relational — <strong>not</strong> <span class="he">הזמיני / קני</span>, to stay clear of a marketplace tone.</span></li>
+            <li class="flag flag--watch"><span class="ic">!</span><span>Eyebrow <span class="he">היכרות</span> is a section-type, not a category — a multi-category business stays correct.</span></li>
+          </ul>
+          <div class="panel-label" style="margin-top:26px;">Swap copy — Hadar (bakery)</div>
+          <div style="display:grid;gap:8px;">
+            <div class="opt-he" style="font-size:19px;">הדר מתחילה ללוש כשבחוץ עוד חושך</div>
+            <p style="font-family:var(--font-body);font-size:14px;line-height:1.7;color:var(--fg-muted);margin:0;">ארבע לפנות בוקר, ורמת השרון עוד ישנה. הדר כבר מקמחת את השיש, מקפלת בצק מחמצת שתפח כל הלילה. בשבע, כשאת יוצאת מהבית, הכיכרות שלה כבר פושרות על המדף.</p>
+            <div style="font-family:var(--font-body);font-size:13px;color:var(--text);"><strong>הדר כהן</strong> · מאפיית בוקר, רמת השרון</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Direction A ── -->
+    <div class="frames">
+      <div class="frame">
+        <div class="frame-bar"><span class="dot"></span><span class="nm">Direction A · Split — Desktop</span><span class="dim">1440 × auto</span></div>
+        <div class="view">
+          <div class="screen screen--desktop">
+            <section class="hp-section hp--warm" data-screen-label="10 Meet · Direction A · Desktop" style="padding:96px 0;">
+              <div class="hp-container">
+                <header class="hp-head"><span class="hp-eyebrow"><span class="rule"></span>היכרות</span><h2 class="hp-h2">מאחורי הקלעים</h2></header>
+                <div class="meet">
+                  <div class="meet-figure">
+                    <image-slot id="meetA-d" shape="rounded" radius="16" placeholder="גררי לכאן תמונה של מיכל בשדה"></image-slot>
+                    <span class="meet-figcap">מיכל · חוות שורשים, עמק יזרעאל</span>
+                  </div>
+                  <div class="meet-body">
+                    <h3 class="meet-kicker">מיכל מגדלת עגבניות שזוכרות איך הן אמורות לטעום</h3>
+                    <p class="meet-narr">בכל בוקר, הרבה לפני שהשוק מתעורר, מיכל כבר בין השורות בחווה הקטנה שלה בעמק. היא מאמינה שעגבנייה צריכה זמן — שמש, סבלנות, ואדמה שמכירים בשמה. מה שנקטף אצלה עם אור ראשון מגיע אלייך כשהוא עדיין חם מהשדה.</p>
+                    <p class="meet-attr"><strong>מיכל לוי</strong> · חוות שורשים, כפר יחזקאל, עמק יזרעאל</p>
+                    <div class="meet-actions">
+                      <a class="btn btn-primary" href="#">להכיר את מיכל</a>
+                      <a class="btn btn-ghost" href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.5-6c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c2 .8 2 .5 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>לכתוב למיכל</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <div class="frame">
+        <div class="frame-bar"><span class="dot"></span><span class="nm">Direction A · Split — Mobile</span><span class="dim">390 × auto</span></div>
+        <div class="view view--mobile">
+          <div class="screen screen--mobile">
+            <section class="hp-section hp--warm" data-screen-label="10 Meet · Direction A · Mobile" style="padding:56px 0;">
+              <div class="hp-container">
+                <header class="hp-head"><span class="hp-eyebrow"><span class="rule"></span>היכרות</span><h2 class="hp-h2">מאחורי הקלעים</h2></header>
+                <div class="meet">
+                  <div class="meet-figure">
+                    <image-slot id="meetA-m" shape="rounded" radius="16" placeholder="תמונה של מיכל"></image-slot>
+                    <span class="meet-figcap">מיכל · חוות שורשים</span>
+                  </div>
+                  <div class="meet-body">
+                    <h3 class="meet-kicker">מיכל מגדלת עגבניות שזוכרות איך הן אמורות לטעום</h3>
+                    <p class="meet-narr">בכל בוקר, הרבה לפני שהשוק מתעורר, מיכל כבר בין השורות בחווה הקטנה שלה בעמק. היא מאמינה שעגבנייה צריכה זמן — שמש, סבלנות, ואדמה שמכירים בשמה. מה שנקטף אצלה עם אור ראשון מגיע אלייך כשהוא עדיין חם מהשדה.</p>
+                    <p class="meet-attr"><strong>מיכל לוי</strong> · חוות שורשים, כפר יחזקאל, עמק יזרעאל</p>
+                    <div class="meet-actions">
+                      <a class="btn btn-primary" href="#">להכיר את מיכל</a>
+                      <a class="btn btn-ghost" href="#"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.9.8.8-2.8-.2-.3A8 8 0 1 1 12 20zm4.5-6c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.5.1-.6.8-.8 1-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c2 .8 2 .5 2.4.5a2.6 2.6 0 0 0 1.7-1.2 2.1 2.1 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>לכתוב למיכל</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="layout-note"><b>Direction A · final</b>פיצול קלאסי — תמונה לצד טקסט (5:6), תמונה מובילה מימין. שקט, קריא, יושב טוב בין הגריד לסקשנים הבאים.</p>
+  </section>
+
+</div>
+<script src="image-slot.js"></script>
+</body>
+</html>

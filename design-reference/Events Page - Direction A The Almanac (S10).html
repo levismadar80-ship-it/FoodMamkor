@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S10 · MEH-744 · /events · Direction A "The Almanac" — FINAL build · mobile + desktop + states</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0 (S2→S9 lineage).
+   No new tokens. Doc chrome (--doc-*) never reaches mock surfaces.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --primary:      #2E6853;
+  --primary-light:#3A7D64;
+  --primary-dark: #2E4A2E;
+  --secondary:    #4CB08B;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --gold-soft:    #E7C88A;
+  --accent-warm:  #E8823A;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg); color: var(--doc-ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+body { padding: 48px 40px 120px; min-width: 1360px; }
+
+.numeric, .tnum { font-variant-numeric: tabular-nums lining-nums; }
+.docpage { max-width: 1360px; margin: 0 auto; }
+
+/* ── MASTHEAD ─────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(42,38,32,0.18); padding-bottom: 26px; margin-bottom: 22px; gap: 24px; }
+.masthead .phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.masthead .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.masthead .pip.is-on  { background: var(--primary); border-color: var(--primary); }
+.masthead .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+.masthead h1 { font-family: var(--font-display); font-weight: 900; font-size: 46px; line-height: 1.04; color: var(--doc-ink); }
+.masthead h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.masthead .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 10px; max-width: 92ch; line-height: 1.5; }
+.masthead .sub b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); }
+.masthead .sub code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--primary-dark); }
+.masthead .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.95; white-space: nowrap; }
+.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.masthead .stamp .dot { color: var(--gold); }
+
+.draft-band { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 11px 18px; background: color-mix(in oklab, var(--gold) 9%, var(--doc-bg)); border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--border)); border-radius: 4px; font-family: var(--font-body); font-size: 12px; letter-spacing: 0.03em; color: #6b4f0f; }
+.draft-band b { font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10.5px; }
+
+/* ── SECTION HEAD ─────────────────── */
+.section-head { border-top: 1px solid rgba(42,38,32,0.30); padding: 40px 0 22px; margin: 44px 0 24px; display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline; }
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 92px; color: var(--gold); line-height: 0.85; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 38px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 92ch; line-height: 1.55; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── FRAME CAPTION ─────────────────── */
+.bp-cap { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); display: flex; gap: 12px; align-items: baseline; margin: 34px 0 16px; }
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; letter-spacing: 0; }
+.bp-cap .label { color: var(--doc-ink); }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); letter-spacing: 0; }
+.bp-cap .rule { flex: 1; height: 1px; background: rgba(42,38,32,0.16); align-self: center; }
+.cap-note { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin: 0 0 16px; max-width: 88ch; line-height: 1.55; }
+.cap-note b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); font-size: 12px; }
+.cap-note code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--primary-dark); }
+
+.frame-row { display: flex; flex-wrap: wrap; gap: 30px; align-items: flex-start; }
+
+/* viewport frames */
+.vp { background: var(--background); border: 1px solid rgba(42,38,32,0.18); overflow: hidden; position: relative; box-shadow: 0 18px 50px rgba(42,38,32,0.13); }
+.vp.mobile { width: 375px; border-radius: 16px; }
+.vp.mobile.fixed { height: 812px; }
+.vp.desktop { width: 1280px; border-radius: 10px; }
+.vp::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.022 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+.vp .scroll { height: 100%; overflow: hidden; position: relative; z-index: 1; }
+
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR MOCK SURFACE — Direction A
+   ══════════════════════════════════════════════════════════════ */
+.mh { direction: rtl; font-family: var(--font-body); color: var(--text); position: relative; }
+
+/* status bar (mobile chrome hint) */
+.statusbar { display: flex; align-items: center; justify-content: space-between; padding: 9px 20px 4px; font-size: 12px; font-weight: 600; color: var(--text); }
+.statusbar .ic { display: inline-flex; gap: 5px; align-items: center; font-size: 12px; }
+
+/* compact app header (Header/Footer are MEH-732 — shown minimal) */
+.appbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 18px 10px; border-bottom: 1px solid var(--border); }
+.appbar .logo { font-family: var(--font-display); font-weight: 900; font-size: 18px; color: var(--primary); display: inline-flex; align-items: baseline; gap: 5px; }
+.appbar .logo .en { font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.18em; color: var(--text); }
+.appbar .acts { display: inline-flex; gap: 4px; color: var(--primary); }
+.appbar .acts .ib { width: 40px; height: 40px; display: grid; place-items: center; font-size: 20px; border-radius: 9999px; }
+.appbar.refonly { background: repeating-linear-gradient(45deg, color-mix(in oklab, var(--border) 34%, var(--background)) 0 6px, color-mix(in oklab, var(--border) 18%, var(--background)) 6px 12px); border-bottom: 1px dashed color-mix(in oklab, var(--fg-muted) 40%, var(--border)); padding: 11px 18px; }
+.appbar.refonly .greek-logo { width: 84px; height: 13px; border-radius: 3px; background: color-mix(in oklab, var(--fg-muted) 28%, var(--background)); }
+.appbar.refonly .reflabel { font-family: var(--font-body); font-size: 8.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: color-mix(in oklab, var(--fg-muted) 72%, transparent); }
+.appbar.refonly .greek-acts { display: inline-flex; gap: 8px; }
+.appbar.refonly .greek-acts .gb { width: 24px; height: 24px; border-radius: 9999px; background: color-mix(in oklab, var(--fg-muted) 20%, var(--background)); }
+.crumb .sep, .dk .dhero .crumb2 .sep { opacity: 0.45; margin: 0 1px; }
+.empty h4 .still { white-space: nowrap; }
+.changelog { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; margin: 0 0 8px; padding: 14px 18px; background: color-mix(in oklab, var(--primary) 6%, var(--doc-bg)); border: 1px solid color-mix(in oklab, var(--primary) 22%, var(--border)); border-radius: 4px; }
+.changelog .cl-tag { font-family: var(--font-body); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary-dark); background: color-mix(in oklab, var(--primary) 14%, var(--background)); padding: 5px 11px; border-radius: 9999px; white-space: nowrap; height: fit-content; }
+.changelog ol { margin: 0; padding-inline-start: 18px; columns: 2; column-gap: 30px; font-size: 11.5px; color: var(--doc-ink); line-height: 1.5; }
+.changelog ol li { margin-bottom: 4px; break-inside: avoid; }
+.changelog ol li b { color: #6b4f0f; }
+
+/* breadcrumb */
+.crumb { padding: 12px 18px 0; font-size: 11.5px; color: var(--fg-muted); display: flex; align-items: center; gap: 6px; }
+.crumb i { font-size: 12px; opacity: 0.6; }
+.crumb .here { color: var(--text); font-weight: 600; }
+
+/* page title block */
+.ptitle { padding: 10px 18px 4px; }
+.ptitle .eyebrow { font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.ptitle h1 { font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; margin-top: 6px; }
+.ptitle p { font-family: var(--font-italic); font-style: italic; font-size: 16px; color: var(--fg-muted); margin-top: 6px; line-height: 1.4; }
+
+/* tabs */
+.tabs { display: flex; gap: 0; padding: 16px 18px 0; }
+.tabs .tab { flex: 1; text-align: center; padding: 11px 4px 12px; font-size: 14.5px; font-weight: 600; color: var(--fg-muted); border-bottom: 2px solid var(--border); position: relative; }
+.tabs .tab.on { color: var(--primary); border-color: var(--primary); }
+.tabs .tab .add { display: block; font-size: 10.5px; font-weight: 500; color: var(--gold); margin-top: 3px; }
+.tabs .tab.on .add { color: var(--gold); }
+
+/* toolbar: view toggle + search */
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 14px 18px 2px; }
+.search { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 10px 15px; color: var(--fg-muted); font-size: 13px; }
+.vtoggle { display: flex; border: 1px solid var(--border); border-radius: 9999px; overflow: hidden; background: var(--bg-card); }
+.vtoggle .vt { width: 42px; height: 42px; display: grid; place-items: center; color: var(--fg-muted); font-size: 19px; }
+.vtoggle .vt.on { background: var(--primary); color: #fff; }
+
+/* category chips */
+.chips { display: flex; gap: 7px; padding: 13px 18px 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; padding: 7px 14px; border-radius: 9999px; font-size: 12.5px; font-weight: 500; background: var(--light); color: var(--primary); border: 1px solid transparent; white-space: nowrap; }
+.chip.on { background: var(--primary); color: #fff; }
+.chip.ghost { background: transparent; border-color: var(--border); color: var(--fg-muted); }
+
+/* ── MONTH DIVIDER ── */
+.month-div { display: flex; align-items: baseline; gap: 10px; padding: 22px 18px 6px; }
+.month-div .m { font-family: var(--font-display); font-weight: 900; font-size: 24px; line-height: 1; letter-spacing: -0.01em; }
+.month-div .y { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); font-size: 16px; }
+.month-div .ct { font-family: var(--font-body); font-size: 11px; color: var(--fg-muted); }
+.month-div .ln { flex: 1; height: 1px; background: var(--border); align-self: center; }
+
+/* sub-bucket eyebrow (near-term emphasis) */
+.bucket { padding: 16px 18px 2px; font-family: var(--font-body); font-weight: 700; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+.bucket .ln { flex: 1; height: 1px; background: color-mix(in oklab, var(--gold) 30%, var(--border)); }
+
+/* ── THE DATE-RAIL ROW ── */
+.feed { display: grid; }
+.arow { display: grid; grid-template-columns: 70px 1fr; border-bottom: 1px solid var(--border); position: relative; }
+.arail { padding: 17px 0 17px; display: grid; justify-items: center; align-content: start; gap: 0; position: relative; }
+.arail::before { content: ""; position: absolute; inset-inline-start: 0; top: 0; bottom: 0; width: 3px; background: var(--primary); }
+.arow.exp .arail::before { background: var(--gold); }
+.arail .d { font-family: var(--font-display); font-weight: 900; font-size: 36px; line-height: 0.96; color: var(--text); }
+.arail .dow { font-size: 11.5px; font-weight: 600; color: var(--fg-muted); margin-top: 2px; }
+.arail .mo { font-size: 10.5px; color: var(--fg-muted); }
+.arail .tm { margin-top: 7px; font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--gold); }
+.abody { padding: 16px 16px 16px 6px; min-width: 0; }
+.abody .typ { font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 700; color: var(--primary); display: inline-flex; align-items: center; gap: 5px; }
+.arow.exp .abody .typ { color: var(--gold); }
+.abody h4 { font-family: var(--font-display); font-weight: 700; font-size: 18.5px; line-height: 1.2; margin-top: 5px; }
+.abody .meta { font-size: 12.5px; color: var(--fg-muted); margin-top: 4px; }
+.abody .desc { font-size: 12.5px; color: color-mix(in oklab, var(--text) 82%, transparent); margin-top: 7px; line-height: 1.5; }
+.abody .foot { display: flex; align-items: center; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+.abody .cat { background: var(--light); color: var(--primary); font-size: 11px; padding: 4px 10px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 5px; }
+.arow.exp .abody .cat { background: color-mix(in oklab, var(--gold) 15%, var(--background)); color: #6b4f0f; }
+.abody .soon { background: color-mix(in oklab, var(--gold) 18%, var(--background)); color: #6b4f0f; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 4px 9px; border-radius: 9999px; }
+.abody .price { margin-inline-start: auto; font-family: var(--font-italic); font-style: italic; font-weight: 600; color: var(--gold); font-size: 16px; }
+.abody .wa { width: 36px; height: 36px; border-radius: 9999px; display: grid; place-items: center; color: #fff; background: #25D366; font-size: 17px; }
+
+/* featured (near-term) row — slightly more weight */
+.arow.feat { background: color-mix(in oklab, var(--gold) 4.5%, var(--background)); }
+.arow.feat .arail .d { font-size: 42px; }
+.arow.feat .abody h4 { font-size: 20px; }
+
+/* compact far rows omit description; tighter */
+.arow.compact .arail { padding-top: 14px; padding-bottom: 14px; }
+.arow.compact .abody { padding-top: 14px; padding-bottom: 14px; }
+.arow.compact .arail .d { font-size: 30px; }
+
+/* ══ CALENDAR SKIN ══ */
+.cal { padding: 14px 16px 8px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 14px; }
+.cal-head .mm { font-family: var(--font-display); font-weight: 900; font-size: 22px; }
+.cal-head .mm span { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); font-size: 15px; margin-inline-start: 6px; }
+.cal-head .nav { display: inline-flex; gap: 4px; }
+.cal-head .nav .a { width: 36px; height: 36px; border-radius: 9999px; border: 1px solid var(--border); display: grid; place-items: center; color: var(--primary); background: var(--bg-card); font-size: 16px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-grid .dow { text-align: center; font-size: 10.5px; font-weight: 600; color: var(--fg-muted); padding: 4px 0 8px; }
+.cal-cell { aspect-ratio: 1 / 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-variant-numeric: tabular-nums; font-size: 14px; color: var(--text); position: relative; }
+.cal-cell.empty { visibility: hidden; }
+.cal-cell .dots { display: flex; gap: 3px; height: 6px; }
+.cal-cell .dots i { width: 5px; height: 5px; border-radius: 9999px; }
+.cal-cell .dots .ev { background: var(--primary); }
+.cal-cell .dots .ex { background: var(--gold); }
+.cal-cell.sel { background: var(--primary); color: #fff; }
+.cal-cell.sel .dots .ev, .cal-cell.sel .dots .ex { background: #fff; }
+.cal-cell.muted { color: color-mix(in oklab, var(--text) 38%, transparent); }
+.cal-cell.today { box-shadow: inset 0 0 0 1.5px var(--gold); }
+.cal-cell.today .n { color: var(--gold); font-weight: 700; }
+.cal-legend { display: flex; gap: 16px; padding: 14px 6px 6px; font-size: 11.5px; color: var(--fg-muted); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 8px; height: 8px; border-radius: 9999px; display: inline-block; }
+.cal-legend .ev { background: var(--primary); }
+.cal-legend .ex { background: var(--gold); }
+.cal-day { border-top: 1px solid var(--border); margin-top: 6px; }
+.cal-day .dh { padding: 14px 6px 4px; font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.cal-day .dh span { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); font-size: 13px; }
+
+/* ══ EMPTY STATE ══ */
+.empty { padding: 54px 30px 60px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.empty .mk { width: 76px; height: 76px; border-radius: 9999px; display: grid; place-items: center; background: color-mix(in oklab, var(--gold) 12%, var(--background)); border: 1px solid color-mix(in oklab, var(--gold) 26%, var(--border)); color: var(--gold); font-size: 36px; }
+.empty h4 { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.28; margin-top: 20px; max-width: 22ch; }
+.empty p { font-size: 13.5px; color: var(--fg-muted); margin-top: 10px; line-height: 1.6; max-width: 30ch; }
+.empty .acts { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 260px; }
+.empty .btn-primary { background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; padding: 13px 18px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.empty .btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); font-size: 14px; font-weight: 600; padding: 12px 18px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.empty .rule { width: 38px; height: 2px; background: var(--gold); opacity: 0.5; margin: 22px 0 0; }
+
+/* ══ LOADING SKELETON ══ */
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.sk { background: linear-gradient(90deg, color-mix(in oklab, var(--border) 55%, var(--background)) 25%, color-mix(in oklab, var(--border) 22%, var(--background)) 50%, color-mix(in oklab, var(--border) 55%, var(--background)) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 6px; }
+.skrow { display: grid; grid-template-columns: 70px 1fr; border-bottom: 1px solid var(--border); }
+.skrow .skrail { padding: 17px 12px; display: grid; gap: 7px; justify-items: center; }
+.skrow .skbody { padding: 17px 16px; display: grid; gap: 9px; }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+
+/* bottom nav (BottomNav source pattern, minimal) */
+.botnav { display: flex; border-top: 1px solid var(--border); background: color-mix(in oklab, var(--background) 92%, white); }
+.botnav .bn { flex: 1; text-align: center; padding: 9px 0 12px; font-size: 10px; color: var(--fg-muted); display: grid; gap: 3px; justify-items: center; }
+.botnav .bn i { font-size: 22px; }
+.botnav .bn.on { color: var(--primary); }
+
+/* sticky add bar */
+.addbar { position: absolute; bottom: 64px; inset-inline: 0; display: flex; justify-content: center; pointer-events: none; }
+.addbar .pill { pointer-events: auto; background: var(--primary); color: #fff; font-size: 13.5px; font-weight: 600; padding: 12px 22px; border-radius: 9999px; box-shadow: 0 8px 28px rgba(46,104,83,0.32); display: inline-flex; align-items: center; gap: 8px; }
+
+/* ══════════════════ DESKTOP SURFACE ══════════════════ */
+.dk { direction: rtl; font-family: var(--font-body); color: var(--text); }
+.dk .dhero { background: var(--primary-dark); color: var(--background); padding: 26px 56px 46px; position: relative; overflow: hidden; }
+.dk .dhero::before { content: ""; position: absolute; inset: 0; background:
+  radial-gradient(120% 90% at 88% -10%, color-mix(in oklab, var(--gold) 40%, transparent), transparent 55%),
+  radial-gradient(90% 80% at 8% 120%, color-mix(in oklab, var(--primary-light) 40%, transparent), transparent 60%); opacity: 0.55; }
+.dk .dhero .crumb2 { position: relative; font-size: 12px; color: color-mix(in oklab, var(--background) 72%, transparent); display: flex; align-items: center; gap: 7px; }
+.dk .dhero .crumb2 i { opacity: 0.6; }
+.dk .dhero .eyebrow { position: relative; font-weight: 600; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold-soft); margin-top: 26px; }
+.dk .dhero h1 { position: relative; font-family: var(--font-display); font-weight: 900; font-size: 64px; line-height: 0.98; letter-spacing: -0.02em; margin-top: 12px; max-width: 18ch; }
+.dk .dhero h1 em { font-family: var(--font-display); font-style: normal; font-weight: 900; color: var(--gold-soft); margin-inline-start: 0.14em; }
+.dk .dhero p { position: relative; font-family: var(--font-italic); font-style: italic; font-size: 21px; color: color-mix(in oklab, var(--background) 86%, transparent); margin-top: 16px; max-width: 56ch; line-height: 1.45; }
+
+.dk .dwrap { max-width: 1180px; margin: 0 auto; padding: 0 56px; }
+.dk .dtabs { display: flex; gap: 36px; border-bottom: 1px solid var(--border); margin-top: 8px; }
+.dk .dtabs .tab { padding: 22px 0 18px; font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--fg-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 12px; }
+.dk .dtabs .tab.on { color: var(--primary); border-color: var(--primary); }
+.dk .dtabs .tab .add { font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--gold); border: 1px solid color-mix(in oklab,var(--gold) 35%, var(--border)); padding: 4px 11px; border-radius: 9999px; }
+.dk .dtabs .grow { flex: 1; }
+.dk .dtabs .vtoggle2 { align-self: center; display: flex; border: 1px solid var(--border); border-radius: 9999px; overflow: hidden; background: var(--bg-card); }
+.dk .dtabs .vtoggle2 .vt { padding: 9px 18px; font-size: 13px; font-weight: 600; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 8px; }
+.dk .dtabs .vtoggle2 .vt.on { background: var(--primary); color: #fff; }
+
+.dk .dtoolbar { display: flex; align-items: center; gap: 12px; padding: 22px 0 6px; }
+.dk .dtoolbar .search { max-width: 320px; padding: 11px 17px; font-size: 14px; }
+.dk .dtoolbar .chips { padding: 0; overflow: visible; flex-wrap: wrap; }
+
+/* desktop list = centered editorial column */
+.dk .dlist { max-width: 1180px; margin: 0 auto; padding: 8px 56px 64px; display: grid; grid-template-columns: 1fr 300px; gap: 56px; align-items: start; }
+.dk .dcol .month-div { padding: 30px 0 8px; }
+.dk .dcol .month-div .m { font-size: 34px; }
+.dk .dcol .month-div .y { font-size: 19px; }
+.dk .dcol .arow { grid-template-columns: 104px 1fr; }
+.dk .dcol .arail { padding: 22px 0; }
+.dk .dcol .arail .d { font-size: 52px; }
+.dk .dcol .arail .dow { font-size: 13px; }
+.dk .dcol .arail .mo { font-size: 12px; }
+.dk .dcol .arail .tm { font-size: 15px; }
+.dk .dcol .abody { padding: 22px 22px 22px 8px; display: grid; grid-template-columns: 1fr auto; column-gap: 24px; align-items: start; }
+.dk .dcol .abody h4 { font-size: 24px; }
+.dk .dcol .abody .meta { font-size: 14px; }
+.dk .dcol .abody .desc { font-size: 14px; max-width: 60ch; grid-column: 1 / -1; }
+.dk .dcol .abody .foot { grid-column: 1 / -1; }
+.dk .dcol .abody .price { font-size: 19px; }
+.dk .dcol .abody .actcol { display: flex; flex-direction: column; align-items: end; gap: 10px; }
+.dk .dcol .abody .det { border: 1px solid var(--primary); color: var(--primary); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 9999px; white-space: nowrap; }
+
+/* desktop sidebar */
+.dk .dside { position: sticky; top: 24px; display: grid; gap: 18px; }
+.dk .dside .panel { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-card); padding: 20px; }
+.dk .dside .panel h5 { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.dk .dside .panel .mini { font-size: 13px; color: var(--fg-muted); margin-top: 6px; line-height: 1.5; }
+.dk .dside .upnext { display: grid; gap: 0; }
+.dk .dside .upnext .u { display: grid; grid-template-columns: 44px 1fr; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border); align-items: center; }
+.dk .dside .upnext .u:first-child { border-top: 0; padding-top: 4px; }
+.dk .dside .upnext .u .ud { text-align: center; }
+.dk .dside .upnext .u .ud .d { font-family: var(--font-display); font-weight: 900; font-size: 22px; line-height: 1; }
+.dk .dside .upnext .u .ud .mo { font-size: 10px; color: var(--fg-muted); }
+.dk .dside .upnext .u .ut { font-size: 13px; font-weight: 600; line-height: 1.3; }
+.dk .dside .upnext .u .ut span { display: block; font-weight: 400; color: var(--fg-muted); font-size: 11.5px; margin-top: 2px; }
+.dk .dside .gold-bar { height: 3px; width: 36px; background: var(--gold); opacity: 0.6; border-radius: 9999px; margin-bottom: 4px; }
+
+/* desktop calendar */
+.dk .dcalwrap { max-width: 1180px; margin: 0 auto; padding: 18px 56px 64px; }
+.dk .dcal { display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: start; }
+.dk .dcal .cg { }
+.dk .dcal .cal-grid .cal-cell { border-radius: 12px; font-size: 16px; align-items: flex-start; padding: 10px; justify-content: flex-start; }
+.dk .dcal .cal-grid .cal-cell .n { align-self: flex-start; }
+.dk .dcal .cal-grid .cal-cell .dots { margin-top: auto; }
+.dk .dcal .cal-grid .dow { font-size: 12px; padding-bottom: 12px; }
+.dk .dcal .cal-grid { gap: 6px; }
+.dk .dcal .daypanel { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-card); padding: 22px; position: sticky; top: 24px; }
+.dk .dcal .daypanel .dh { font-family: var(--font-display); font-weight: 900; font-size: 22px; }
+.dk .dcal .daypanel .dh span { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); font-size: 15px; margin-inline-start: 6px; }
+
+/* doc footer / ledger */
+.ledger { border-top: 1px solid rgba(42,38,32,0.30); margin-top: 56px; padding-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.ledger h3 { font-family: var(--font-display); font-weight: 900; font-size: 22px; margin-bottom: 16px; }
+.ledger h3 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.ledger .item { padding: 14px 0; border-top: 1px solid rgba(42,38,32,0.14); display: grid; grid-template-columns: 30px 1fr; gap: 14px; }
+.ledger .item:first-of-type { border-top: 0; }
+.ledger .item .n { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 24px; color: var(--gold); line-height: 1; }
+.ledger .item .b { font-size: 13px; line-height: 1.55; color: var(--doc-ink); }
+.ledger .item .b b { color: var(--doc-ink); }
+.ledger .item .b .tag { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; background: rgba(46,104,83,0.10); color: var(--primary-dark); padding: 1px 7px; border-radius: 3px; }
+.ledger.anti .item .n { color: var(--doc-warn); }
+.ledger .item .b .x { color: var(--doc-warn); font-weight: 700; }
+.ledger .item .b .ok { color: var(--primary); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="docpage">
+
+  <!-- ── MASTHEAD ── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav">
+        <span>PHASE</span>
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span>
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span>
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span>
+        <span class="pip is-now"></span>
+        <span style="margin-inline-start:8px;">S10 · /events · Direction A</span>
+      </div>
+      <h1>The Almanac — <em>dates as the spine</em></h1>
+      <p class="sub">Direction A built out: list-first chronological with a date-rail down the start edge — both tabs, month grouping, both row species (<b>events</b> green tick · <b>experiences</b> gold tick + eyebrow), the calendar skin as a quiet secondary toggle, plus empty + loading states. Surfaces are live <code>375px</code> mobile (canon) and <code>1280px</code> desktop in real palette + type. <b>Dates are calendar-true for June&nbsp;2026.</b></p>
+    </div>
+    <div class="stamp">
+      <div><strong>MEH-744</strong> <span class="dot">·</span> /events</div>
+      <div>Approved <span class="dot">·</span> Sapir</div>
+      <div>Corrections <span class="dot">·</span> R2</div>
+      <div>Visual layer only</div>
+      <div>2026-06-05</div>
+    </div>
+  </header>
+
+  <div class="draft-band">
+    <b>Draft copy</b>
+    <span>Hebrew strings are draft baseline — code remains canonical. ADR-014 neutral chrome (הוסיפו / גלו). Out of scope: /events/[id], producer-detail events (S6), Header/Footer (MEH-732), filter logic, add-event form.</span>
+  </div>
+
+  <div class="changelog">
+    <span class="cl-tag">Corrections · R2</span>
+    <ol>
+      <li><b>Hero glyph removed</b> — accent set in Frank Ruhl (not Latin Cormorant) + a clean word-gap so the bet's serif no longer reads as a geresh at the cream→gold seam</li>
+      <li><b>Calendar dots</b> = exactly events 6·7·10 (green) · experiences 12·14·17 (gold); weekly recurrence not implied</li>
+      <li><b>Today · 5 ביוני</b> marked with a gold ring; past days 1–4 muted</li>
+      <li><b>R1 retained</b> — neutral chrome · greeked header (no MEKOR) · de-tinted hero · varied names · "— עדיין" break · brand-we אוספות</li>
+    </ol>
+  </div>
+
+  <!-- ════════════════════ SECTION: MOBILE ════════════════════ -->
+  <div class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Mobile — <em>375 canon</em></h2>
+      <p class="pitch">The 3-second scan: dates run as a vertical rhythm down the start edge, weekday + time always paired. This week's events carry slightly more weight (larger numeral, description, a קרוב tag); the rest tighten into the rail. Reading order is RTL — the rail sits on the right.</p>
+    </div>
+    <div class="meta"><strong>5 frames</strong><br>list · experiences · calendar<br>empty ×2 · loading</div>
+  </div>
+
+  <!-- FRAME 01 — LIST, EVENTS TAB -->
+  <div class="bp-cap"><span class="num">01</span><span class="label">List · אירועים בחוות · near-term emphasis + month grouping</span><span class="rule"></span><span class="dims">375 × 812</span></div>
+  <p class="cap-note">Default landing. <b>Green tick</b> = farm event. The nearest weekend is the featured bucket; June then July group below. Tap targets ≥ 44px; WhatsApp glyph inline per <code>ProducerCard</code>.</p>
+  <div class="frame-row">
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="crumb"><span>בית</span> <span class="sep">/</span> <span class="here">אירועים</span></div>
+          <div class="ptitle">
+            <div class="eyebrow">EVENTS · קרוב לבית</div>
+            <h1>אירועים בחוות ואצל בתי עסק</h1>
+            <p>מה קורה החודש — סוף שבוע אחרי סוף שבוע</p>
+          </div>
+          <div class="tabs">
+            <div class="tab on">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span>חיפוש לפי עיר</span></div>
+            <div class="vtoggle"><div class="vt on"><i class="ph-fill ph-rows"></i></div><div class="vt"><i class="ph ph-calendar-blank"></i></div></div>
+          </div>
+          <div class="chips">
+            <div class="chip on">הכול</div><div class="chip">סדנה</div><div class="chip">סיור</div><div class="chip">שוק</div><div class="chip">קטיף</div><div class="chip">טעימות</div>
+          </div>
+
+          <div class="bucket">סוף השבוע הקרוב <span class="ln"></span></div>
+          <div class="feed">
+            <div class="arow feat">
+              <div class="arail"><div class="d tnum">06</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">09:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-storefront"></i> שוק</div>
+                <h4>שוק איכרים בבוקר שבת</h4>
+                <div class="meta">משק רותם · פרדס חנה</div>
+                <div class="desc">טעימות, לחם חם מהתנור ומוזיקה שקטה בין הדוכנים.</div>
+                <div class="foot"><span class="soon">קרוב</span><span class="cat">שוק</span><span class="price">חינם</span></div>
+              </div>
+            </div>
+            <div class="arow feat">
+              <div class="arail"><div class="d tnum">07</div><div class="dow">ראשון</div><div class="mo">יוני</div><div class="tm tnum">17:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-cooking-pot"></i> סדנה</div>
+                <h4>סדנת לחם מחמצת</h4>
+                <div class="meta">מאפיית בוקר · מודיעין</div>
+                <div class="desc">מהמחמצת ועד הכיכר — לוקחים הביתה בצק משלכן.</div>
+                <div class="foot"><span class="cat">סדנה</span><span class="price">₪120</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="month-div"><span class="m">יוני</span><span class="y">2026</span><span class="ln"></span><span class="ct">5 אירועים</span></div>
+          <div class="feed">
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">10</div><div class="dow">רביעי</div><div class="mo">יוני</div><div class="tm tnum">17:30</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-basket"></i> קטיף</div>
+                <h4>קטיף דובדבנים בעמק</h4>
+                <div class="meta">חוות הראל · כפר ידידיה</div>
+                <div class="foot"><span class="cat">קטיף</span><span class="price">₪40</span></div>
+              </div>
+            </div>
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">13</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">10:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-cooking-pot"></i> סדנה</div>
+                <h4>סדנת גבינות עזים</h4>
+                <div class="meta">משק בן־ארי · רמת הגולן</div>
+                <div class="foot"><span class="cat">סדנה</span><span class="price">₪180</span></div>
+              </div>
+            </div>
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">14</div><div class="dow">ראשון</div><div class="mo">יוני</div><div class="tm tnum">18:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-drop"></i> טעימות</div>
+                <h4>טעימות שמן זית</h4>
+                <div class="meta">יקב ובוסתן · זכרון יעקב</div>
+                <div class="foot"><span class="cat">טעימות</span><span class="price">₪60</span></div>
+              </div>
+            </div>
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">20</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">08:30</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-path"></i> סיור</div>
+                <h4>סיור בוקר ברפת החלב</h4>
+                <div class="meta">רפת הבקעה · עמק יזרעאל</div>
+                <div class="foot"><span class="cat">סיור</span><span class="price">₪50</span></div>
+              </div>
+            </div>
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">27</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">09:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-storefront"></i> שוק</div>
+                <h4>שוק קיץ בכיכר</h4>
+                <div class="meta">ועד פרדס חנה · פרדס חנה</div>
+                <div class="foot"><span class="cat">שוק</span><span class="price">חינם</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="month-div"><span class="m">יולי</span><span class="y">2026</span><span class="ln"></span><span class="ct">אירוע אחד</span></div>
+          <div class="feed">
+            <div class="arow compact">
+              <div class="arail"><div class="d tnum">04</div><div class="dow">שבת</div><div class="mo">יולי</div><div class="tm tnum">09:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-basket"></i> קטיף</div>
+                <h4>קטיף תאנים ראשון</h4>
+                <div class="meta">בוסתן סבא · גליל תחתון</div>
+                <div class="foot"><span class="cat">קטיף</span><span class="price">₪45</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- side annotation -->
+    <div style="max-width:300px; align-self:flex-start; padding-top:6px;">
+      <p style="font-family:var(--font-italic); font-style:italic; font-size:18px; color:var(--doc-ink); line-height:1.5;">The rail is the page.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:10px;">A single 3px green tick runs the start edge of every event row. Your eye rides the dates down the spine — <b style="color:var(--doc-ink);">06 · 07 · 10 · 13…</b> — before reading a single title. That's the 3-second <i>when</i>.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:14px;"><b style="color:var(--doc-ink);">Near-term emphasis (proposed):</b> the immediate weekend gets a featured bucket — bigger numeral, description, <i>קרוב</i> tag. Far rows go compact, title + meta only. The rail rhythm stays unbroken.</p>
+      <p style="font-size:11.5px; color:var(--doc-ink-mute); line-height:1.6; margin-top:14px; padding-top:12px; border-top:1px solid rgba(42,38,32,0.16);"><b style="color:var(--doc-ink);">Calendar-true:</b> 06 שבת · 07 ראשון · 10 רביעי · 13 שבת · 14 ראשון · 20 שבת · 27 שבת · Jul 04 שבת. Every weekday matches its date.</p>
+    </div>
+  </div>
+
+  <!-- FRAME 02 — EXPERIENCES TAB -->
+  <div class="bp-cap"><span class="num">02</span><span class="label">List · חוויות וסדנאות · second species</span><span class="rule"></span><span class="dims">375 × 812</span></div>
+  <p class="cap-note">Same house language, <b>gold tick</b> + gold eyebrow distinguishes the experience species at a glance. Vocabulary switches to the experiences taxonomy (בישול / תזונה / סיור אוכל / חקלאות). <b>ארוחת שישי בחווה sits on Fri 12 ביוני</b> — a true Friday.</p>
+  <div class="frame-row">
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="ptitle" style="padding-top:14px;">
+            <div class="eyebrow" style="color:var(--gold);">EXPERIENCES · חוויות</div>
+            <h1>חוויות וסדנאות אוכל</h1>
+            <p>ללמוד, לטעום, לבשל — אצל מי שעושה את זה באמת</p>
+          </div>
+          <div class="tabs">
+            <div class="tab">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab on">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span>חיפוש לפי עיר</span></div>
+            <div class="vtoggle"><div class="vt on"><i class="ph-fill ph-rows"></i></div><div class="vt"><i class="ph ph-calendar-blank"></i></div></div>
+          </div>
+          <div class="chips">
+            <div class="chip on">הכול</div><div class="chip">בישול</div><div class="chip">תזונה</div><div class="chip">סיור אוכל</div><div class="chip">חקלאות</div><div class="chip">טעימות</div><div class="chip">סדנה</div>
+          </div>
+
+          <div class="month-div"><span class="m">יוני</span><span class="y">2026</span><span class="ln"></span><span class="ct">5 חוויות</span></div>
+          <div class="feed">
+            <div class="arow exp feat">
+              <div class="arail"><div class="d tnum">12</div><div class="dow">שישי</div><div class="mo">יוני</div><div class="tm tnum">19:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-cooking-pot"></i> בישול</div>
+                <h4>ארוחת שישי בחווה</h4>
+                <div class="meta">המטבח של נטע · כפר ביל"ו</div>
+                <div class="desc">שולחן ארוך בין ערוגות הירק, מנות עונתיות ויין מקומי.</div>
+                <div class="foot"><span class="soon">קרוב</span><span class="cat">בישול</span><span class="price">₪220</span></div>
+              </div>
+            </div>
+            <div class="arow exp compact">
+              <div class="arail"><div class="d tnum">14</div><div class="dow">ראשון</div><div class="mo">יוני</div><div class="tm tnum">11:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-cooking-pot"></i> בישול</div>
+                <h4>סדנת בישול עונתי</h4>
+                <div class="meta">סטודיו טעם · תל אביב</div>
+                <div class="foot"><span class="cat">בישול</span><span class="price">₪190</span></div>
+              </div>
+            </div>
+            <div class="arow exp compact">
+              <div class="arail"><div class="d tnum">17</div><div class="dow">רביעי</div><div class="mo">יוני</div><div class="tm tnum">18:30</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-map-trifold"></i> סיור אוכל</div>
+                <h4>סיור אוכל בשוק מחנה יהודה</h4>
+                <div class="meta">טעימות עם דנה · ירושלים</div>
+                <div class="foot"><span class="cat">סיור אוכל</span><span class="price">₪150</span></div>
+              </div>
+            </div>
+            <div class="arow exp compact">
+              <div class="arail"><div class="d tnum">20</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">17:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-heart"></i> סדנה</div>
+                <h4>סדנת גבינות לזוגות</h4>
+                <div class="meta">חוות עדן · גליל עליון</div>
+                <div class="foot"><span class="cat">סדנה</span><span class="price">₪240</span></div>
+              </div>
+            </div>
+            <div class="arow exp compact">
+              <div class="arail"><div class="d tnum">21</div><div class="dow">ראשון</div><div class="mo">יוני</div><div class="tm tnum">10:00</div></div>
+              <div class="abody">
+                <div class="typ"><i class="ph-bold ph-plant"></i> חקלאות</div>
+                <h4>בוקר חקלאי במשק</h4>
+                <div class="meta">משק שדה · עמק חפר</div>
+                <div class="foot"><span class="cat">חקלאות</span><span class="price">₪80</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="height:80px;"></div>
+        </div>
+        <div class="addbar"><span class="pill"><i class="ph-bold ph-plus"></i> הוסיפו חוויה</span></div>
+      </div>
+    </div>
+    <div style="max-width:300px; align-self:flex-start; padding-top:6px;">
+      <p style="font-family:var(--font-italic); font-style:italic; font-size:18px; color:var(--doc-ink); line-height:1.5;">One language, two accents.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:10px;">The skeleton is identical to the events tab — same rail, same rhythm — but the tick and eyebrow turn <b style="color:#6b4f0f;">gold</b>, and the category vocabulary swaps. A returning visitor reads <i>"this is the other kind"</i> instantly, without learning a new layout.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:14px;">Both differ from <b style="color:var(--doc-ink);">ProducerCard</b>: that card leads with a photo and a verified seal; these lead with a date and a time. Event ≠ producer.</p>
+      <p style="font-size:11.5px; color:var(--doc-ink-mute); line-height:1.6; margin-top:14px; padding-top:12px; border-top:1px solid rgba(42,38,32,0.16);">The floating <i>הוסיפו חוויה</i> pill is the per-tab add action (ADR-014 neutral imperative).</p>
+    </div>
+  </div>
+
+  <!-- FRAME 03 — CALENDAR -->
+  <div class="bp-cap"><span class="num">03</span><span class="label">Calendar view · secondary toggle</span><span class="rule"></span><span class="dims">375 × 812</span></div>
+  <p class="cap-note">A quiet utility, not an equal hero. Same green/gold dot language carries the species onto the grid. Selecting a day reveals its rail rows below — the list pattern, scoped to one date. <b>Dot map is calendar-true.</b></p>
+  <div class="frame-row">
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="tabs" style="padding-top:14px;">
+            <div class="tab on">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span>חיפוש לפי עיר</span></div>
+            <div class="vtoggle"><div class="vt"><i class="ph ph-rows"></i></div><div class="vt on"><i class="ph-fill ph-calendar-blank"></i></div></div>
+          </div>
+
+          <div class="cal">
+            <div class="cal-head">
+              <span class="mm">יוני <span>2026</span></span>
+              <span class="nav"><span class="a"><i class="ph-bold ph-caret-right"></i></span><span class="a"><i class="ph-bold ph-caret-left"></i></span></span>
+            </div>
+            <div class="cal-grid">
+              <div class="dow">א׳</div><div class="dow">ב׳</div><div class="dow">ג׳</div><div class="dow">ד׳</div><div class="dow">ה׳</div><div class="dow">ו׳</div><div class="dow">ש׳</div>
+              <div class="cal-cell empty"></div>
+              <div class="cal-cell muted"><span class="n">1</span><span class="dots"></span></div>
+              <div class="cal-cell muted"><span class="n">2</span><span class="dots"></span></div>
+              <div class="cal-cell muted"><span class="n">3</span><span class="dots"></span></div>
+              <div class="cal-cell muted"><span class="n">4</span><span class="dots"></span></div>
+              <div class="cal-cell today"><span class="n">5</span><span class="dots"></span></div>
+              <div class="cal-cell sel"><span class="n">6</span><span class="dots"><i class="ev"></i></span></div>
+
+              <div class="cal-cell"><span class="n">7</span><span class="dots"><i class="ev"></i></span></div>
+              <div class="cal-cell"><span class="n">8</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">9</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">10</span><span class="dots"><i class="ev"></i></span></div>
+              <div class="cal-cell"><span class="n">11</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">12</span><span class="dots"><i class="ex"></i></span></div>
+              <div class="cal-cell"><span class="n">13</span><span class="dots"></span></div>
+
+              <div class="cal-cell"><span class="n">14</span><span class="dots"><i class="ex"></i></span></div>
+              <div class="cal-cell"><span class="n">15</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">16</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">17</span><span class="dots"><i class="ex"></i></span></div>
+              <div class="cal-cell"><span class="n">18</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">19</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">20</span><span class="dots"></span></div>
+
+              <div class="cal-cell"><span class="n">21</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">22</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">23</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">24</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">25</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">26</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">27</span><span class="dots"></span></div>
+
+              <div class="cal-cell"><span class="n">28</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">29</span><span class="dots"></span></div>
+              <div class="cal-cell"><span class="n">30</span><span class="dots"></span></div>
+            </div>
+            <div class="cal-legend">
+              <span><i class="ev"></i> אירוע בחווה</span>
+              <span><i class="ex"></i> חוויה / סדנה</span>
+            </div>
+          </div>
+
+          <div class="cal-day">
+            <div class="dh" style="padding:16px 18px 2px;">שבת, 6 ביוני <span>· אירוע אחד</span></div>
+            <div class="feed">
+              <div class="arow">
+                <div class="arail"><div class="d tnum">06</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">09:00</div></div>
+                <div class="abody">
+                  <div class="typ"><i class="ph-bold ph-storefront"></i> שוק</div>
+                  <h4>שוק איכרים בבוקר שבת</h4>
+                  <div class="meta">משק רותם · פרדס חנה</div>
+                  <div class="foot"><span class="cat">שוק</span><span class="price">חינם</span><span class="wa"><i class="ph-fill ph-whatsapp-logo"></i></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="height:60px;"></div>
+        </div>
+      </div>
+    </div>
+    <div style="max-width:300px; align-self:flex-start; padding-top:6px;">
+      <p style="font-family:var(--font-italic); font-style:italic; font-size:18px; color:var(--doc-ink); line-height:1.5;">Secondary, on purpose.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:10px;">Pre-launch, a sparse calendar reads as <i>"nothing's happening."</i> So the list is the hero and the calendar is the toggle's second seat. When density grows, it earns more room — the skin is ready, not loud.</p>
+      <p style="font-size:12.5px; color:var(--doc-ink-mute); line-height:1.65; margin-top:14px;">Dots reuse the rail's <b style="color:var(--primary);">green</b> / <b style="color:#6b4f0f;">gold</b> species code, so the two views speak one language. Tapping a day drops you back into rail rows.</p>
+      <p style="font-size:11.5px; color:var(--doc-ink-mute); line-height:1.6; margin-top:14px; padding-top:12px; border-top:1px solid rgba(42,38,32,0.16);"><b style="color:var(--doc-ink);">Grid is true:</b> June 1 falls on Monday (ב׳); the 6/13/20/27 column is שבת. Dots land only on real event dates.</p>
+    </div>
+  </div>
+
+  <!-- FRAMES 04 + 05 — EMPTY STATES -->
+  <div class="bp-cap"><span class="num">04 · 05</span><span class="label">Empty states · per tab · editorial, not apologetic</span><span class="rule"></span><span class="dims">375 × 812</span></div>
+  <p class="cap-note">Direction-D empty treatment restyled in A's language: a Phosphor glyph in gold (📅🌱 retired per the icon migration), an editorial headline with no terminal period, and a forward action. Events tab invites a city reset; experiences tab invites notification.</p>
+  <div class="frame-row">
+    <!-- events empty -->
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="tabs" style="padding-top:14px;">
+            <div class="tab on">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span style="color:var(--text);">חדרה</span></div>
+            <div class="vtoggle"><div class="vt on"><i class="ph-fill ph-rows"></i></div><div class="vt"><i class="ph ph-calendar-blank"></i></div></div>
+          </div>
+          <div class="chips">
+            <div class="chip ghost">הכול</div><div class="chip on">קטיף</div><div class="chip">סדנה</div><div class="chip">שוק</div>
+          </div>
+          <div class="empty">
+            <div class="mk"><i class="ph ph-calendar-x"></i></div>
+            <h4>אין כאן אירועים שתואמים לסינון<br><span class="still">— עדיין</span></h4>
+            <p>נסו להרחיב את האזור, או לנקות את הקטגוריה. שווה לבדוק שוב בקרוב</p>
+            <div class="acts">
+              <span class="btn-primary"><i class="ph-bold ph-arrow-counter-clockwise"></i> נקו את הסינון</span>
+              <span class="btn-ghost"><i class="ph-bold ph-bell"></i> עדכנו אותי על חדשים</span>
+            </div>
+            <span class="rule"></span>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+      </div>
+    </div>
+    <!-- experiences empty -->
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="tabs" style="padding-top:14px;">
+            <div class="tab">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab on">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span style="color:var(--fg-muted);">חיפוש לפי עיר</span></div>
+            <div class="vtoggle"><div class="vt on"><i class="ph-fill ph-rows"></i></div><div class="vt"><i class="ph ph-calendar-blank"></i></div></div>
+          </div>
+          <div class="chips">
+            <div class="chip on">הכול</div><div class="chip">בישול</div><div class="chip">תזונה</div><div class="chip">סיור אוכל</div>
+          </div>
+          <div class="empty">
+            <div class="mk" style="color:var(--gold);"><i class="ph ph-cooking-pot"></i></div>
+            <h4>חוויות חדשות בדרך</h4>
+            <p>עדיין אוספות בתי עסק שמארחים סדנאות באזור שלך. רוצים לדעת ראשונים?</p>
+            <div class="acts">
+              <span class="btn-primary"><i class="ph-bold ph-bell"></i> עדכנו אותי</span>
+              <span class="btn-ghost"><i class="ph-bold ph-plus"></i> מארחות חוויה? הוסיפו</span>
+            </div>
+            <span class="rule"></span>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRAME 06 — LOADING -->
+    <div class="vp mobile fixed">
+      <div class="scroll">
+        <div class="mh">
+          <div class="statusbar"><span>9:41</span><span class="ic"><i class="ph-fill ph-cell-signal-full"></i> <i class="ph-fill ph-wifi-high"></i> <i class="ph-fill ph-battery-full"></i></span></div>
+          <div class="appbar refonly" aria-hidden="true">
+            <span class="greek-logo"></span>
+            <span class="reflabel">Header · MEH-732 — reference only</span>
+            <span class="greek-acts"><span class="gb"></span><span class="gb"></span></span>
+          </div>
+          <div class="tabs" style="padding-top:14px;">
+            <div class="tab on">אירועים בחוות<span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות<span class="add">הוסיפו חוויה</span></div>
+          </div>
+          <div class="toolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span>חיפוש לפי עיר</span></div>
+            <div class="vtoggle"><div class="vt on"><i class="ph-fill ph-rows"></i></div><div class="vt"><i class="ph ph-calendar-blank"></i></div></div>
+          </div>
+          <div class="chips">
+            <div class="chip on">הכול</div><div class="chip">סדנה</div><div class="chip">סיור</div><div class="chip">שוק</div><div class="chip">קטיף</div>
+          </div>
+          <div class="month-div"><span class="sk" style="width:120px;height:24px;"></span><span class="ln"></span></div>
+          <div class="feed">
+            <div class="skrow"><div class="skrail"><span class="sk" style="width:34px;height:34px;"></span><span class="sk" style="width:28px;height:10px;"></span><span class="sk" style="width:32px;height:10px;"></span></div><div class="skbody"><span class="sk" style="width:46px;height:9px;"></span><span class="sk" style="width:80%;height:18px;"></span><span class="sk" style="width:55%;height:12px;"></span><span class="sk" style="width:90px;height:22px;border-radius:9999px;"></span></div></div>
+            <div class="skrow"><div class="skrail"><span class="sk" style="width:34px;height:34px;"></span><span class="sk" style="width:28px;height:10px;"></span><span class="sk" style="width:32px;height:10px;"></span></div><div class="skbody"><span class="sk" style="width:46px;height:9px;"></span><span class="sk" style="width:70%;height:18px;"></span><span class="sk" style="width:50%;height:12px;"></span><span class="sk" style="width:90px;height:22px;border-radius:9999px;"></span></div></div>
+            <div class="skrow"><div class="skrail"><span class="sk" style="width:34px;height:34px;"></span><span class="sk" style="width:28px;height:10px;"></span><span class="sk" style="width:32px;height:10px;"></span></div><div class="skbody"><span class="sk" style="width:46px;height:9px;"></span><span class="sk" style="width:85%;height:18px;"></span><span class="sk" style="width:60%;height:12px;"></span><span class="sk" style="width:90px;height:22px;border-radius:9999px;"></span></div></div>
+            <div class="skrow"><div class="skrail"><span class="sk" style="width:34px;height:34px;"></span><span class="sk" style="width:28px;height:10px;"></span><span class="sk" style="width:32px;height:10px;"></span></div><div class="skbody"><span class="sk" style="width:46px;height:9px;"></span><span class="sk" style="width:75%;height:18px;"></span><span class="sk" style="width:52%;height:12px;"></span><span class="sk" style="width:90px;height:22px;border-radius:9999px;"></span></div></div>
+            <div class="skrow"><div class="skrail"><span class="sk" style="width:34px;height:34px;"></span><span class="sk" style="width:28px;height:10px;"></span><span class="sk" style="width:32px;height:10px;"></span></div><div class="skbody"><span class="sk" style="width:46px;height:9px;"></span><span class="sk" style="width:82%;height:18px;"></span><span class="sk" style="width:58%;height:12px;"></span><span class="sk" style="width:90px;height:22px;border-radius:9999px;"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note" style="margin-top:18px;"><b>Empty states — events (04) · experiences (05) · loading (06).</b> The events empty assumes an over-filtered result (city חדרה + קטיף); the experiences empty is a pre-launch zero-state. Loading mirrors the rail geometry so the layout doesn't jump on hydrate.</p>
+
+  <!-- ════════════════════ SECTION: DESKTOP ════════════════════ -->
+  <div class="section-head">
+    <div class="letter">B</div>
+    <div>
+      <h2>Desktop — <em>the editorial column</em></h2>
+      <p class="pitch">The rail scales up: a centered reading column with oversized date numerals, a type-led hero (no image dependence), and a quiet sidebar carrying the up-next rail + the calendar entry. Filters become an inline toolbar. One wide column, magazine cadence — never a card grid.</p>
+    </div>
+    <div class="meta"><strong>2 frames</strong><br>list + hero<br>calendar skin</div>
+  </div>
+
+  <!-- FRAME 07 — DESKTOP LIST -->
+  <div class="bp-cap"><span class="num">07</span><span class="label">Desktop · list + type-led hero</span><span class="rule"></span><span class="dims">1280 × live</span></div>
+  <p class="cap-note">Hero is typographic on forest-dark with a warm gold/green wash — A stays type-led, no stock photo to fail. The rail column holds the reading; the sidebar surfaces <i>הקרובים</i> (next up) and the calendar toggle without competing.</p>
+  <div class="frame-row">
+    <div class="vp desktop">
+      <div class="dk">
+        <div class="dhero">
+          <div class="crumb2"><span>בית</span> <span class="sep">/</span> <span>אירועים</span></div>
+          <div class="eyebrow">EVENTS · קרוב לבית</div>
+          <h1>אירועים בחוות ואצל <em>בתי עסק</em></h1>
+          <p>מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור</p>
+        </div>
+        <div class="dwrap">
+          <div class="dtabs">
+            <div class="tab on">אירועים בחוות <span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות <span class="add">הוסיפו חוויה</span></div>
+            <span class="grow"></span>
+            <span class="vtoggle2"><span class="vt on"><i class="ph-fill ph-rows"></i> רשימה</span><span class="vt"><i class="ph ph-calendar-blank"></i> לוח שנה</span></span>
+          </div>
+          <div class="dtoolbar">
+            <div class="search"><i class="ph ph-magnifying-glass"></i><span>חיפוש לפי עיר</span></div>
+            <div class="chips"><div class="chip on">הכול</div><div class="chip">סדנה</div><div class="chip">סיור</div><div class="chip">שוק</div><div class="chip">קטיף</div><div class="chip">טעימות</div></div>
+          </div>
+        </div>
+        <div class="dlist">
+          <div class="dcol">
+            <div class="month-div"><span class="m">יוני</span><span class="y">2026</span><span class="ln"></span><span class="ct">7 אירועים</span></div>
+            <div class="feed">
+              <div class="arow feat">
+                <div class="arail"><div class="d tnum">06</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">09:00</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-storefront"></i> שוק</div><h4>שוק איכרים בבוקר שבת</h4><div class="meta">משק רותם · פרדס חנה</div></div>
+                  <div class="actcol"><span class="price">חינם</span><span class="det">מידע נוסף</span></div>
+                  <div class="desc">טעימות, לחם חם מהתנור ומוזיקה שקטה בין הדוכנים. כניסה חופשית לכל המשפחה.</div>
+                  <div class="foot"><span class="soon">קרוב</span><span class="cat">שוק</span></div>
+                </div>
+              </div>
+              <div class="arow">
+                <div class="arail"><div class="d tnum">07</div><div class="dow">ראשון</div><div class="mo">יוני</div><div class="tm tnum">17:00</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-cooking-pot"></i> סדנה</div><h4>סדנת לחם מחמצת</h4><div class="meta">מאפיית בוקר · מודיעין</div></div>
+                  <div class="actcol"><span class="price">₪120</span><span class="det">מידע נוסף</span></div>
+                  <div class="foot"><span class="cat">סדנה</span></div>
+                </div>
+              </div>
+              <div class="arow">
+                <div class="arail"><div class="d tnum">10</div><div class="dow">רביעי</div><div class="mo">יוני</div><div class="tm tnum">17:30</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-basket"></i> קטיף</div><h4>קטיף דובדבנים בעמק</h4><div class="meta">חוות הראל · כפר ידידיה</div></div>
+                  <div class="actcol"><span class="price">₪40</span><span class="det">מידע נוסף</span></div>
+                  <div class="foot"><span class="cat">קטיף</span></div>
+                </div>
+              </div>
+              <div class="arow">
+                <div class="arail"><div class="d tnum">13</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">10:00</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-cooking-pot"></i> סדנה</div><h4>סדנת גבינות עזים</h4><div class="meta">משק בן־ארי · רמת הגולן</div></div>
+                  <div class="actcol"><span class="price">₪180</span><span class="det">מידע נוסף</span></div>
+                  <div class="foot"><span class="cat">סדנה</span></div>
+                </div>
+              </div>
+              <div class="arow">
+                <div class="arail"><div class="d tnum">20</div><div class="dow">שבת</div><div class="mo">יוני</div><div class="tm tnum">08:30</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-path"></i> סיור</div><h4>סיור בוקר ברפת החלב</h4><div class="meta">רפת הבקעה · עמק יזרעאל</div></div>
+                  <div class="actcol"><span class="price">₪50</span><span class="det">מידע נוסף</span></div>
+                  <div class="foot"><span class="cat">סיור</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="month-div"><span class="m">יולי</span><span class="y">2026</span><span class="ln"></span><span class="ct">אירוע אחד</span></div>
+            <div class="feed">
+              <div class="arow">
+                <div class="arail"><div class="d tnum">04</div><div class="dow">שבת</div><div class="mo">יולי</div><div class="tm tnum">09:00</div></div>
+                <div class="abody">
+                  <div style="grid-column:1/-1;"><div class="typ"><i class="ph-bold ph-basket"></i> קטיף</div><h4>קטיף תאנים ראשון</h4><div class="meta">בוסתן סבא · גליל תחתון</div></div>
+                  <div class="actcol"><span class="price">₪45</span><span class="det">מידע נוסף</span></div>
+                  <div class="foot"><span class="cat">קטיף</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="dside">
+            <div class="panel">
+              <div class="gold-bar"></div>
+              <h5>הקרובים</h5>
+              <div class="upnext">
+                <div class="u"><div class="ud"><div class="d tnum">06</div><div class="mo">יוני</div></div><div class="ut">שוק איכרים בבוקר שבת<span>שבת · 09:00 · פרדס חנה</span></div></div>
+                <div class="u"><div class="ud"><div class="d tnum">07</div><div class="mo">יוני</div></div><div class="ut">סדנת לחם מחמצת<span>ראשון · 17:00 · מודיעין</span></div></div>
+                <div class="u"><div class="ud"><div class="d tnum">10</div><div class="mo">יוני</div></div><div class="ut">קטיף דובדבנים בעמק<span>רביעי · 17:30 · כפר ידידיה</span></div></div>
+              </div>
+            </div>
+            <div class="panel">
+              <h5>מעדיפים לוח שנה?</h5>
+              <p class="mini">עברו לתצוגת לוח כדי לראות את כל החודש במבט אחד.</p>
+              <div style="margin-top:14px;"><span class="det" style="display:inline-flex;align-items:center;gap:8px;border:1px solid var(--primary);color:var(--primary);padding:9px 16px;border-radius:9999px;font-weight:600;font-size:13px;"><i class="ph ph-calendar-blank"></i> פתחו לוח שנה</span></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRAME 08 — DESKTOP CALENDAR -->
+  <div class="bp-cap"><span class="num">08</span><span class="label">Desktop · calendar skin (secondary)</span><span class="rule"></span><span class="dims">1280 × live</span></div>
+  <p class="cap-note">Same toggle, same species dots. The month grid takes the main column; the selected day's rail rows sit in a sticky panel. House language is consistent with the list — no separate visual world for the calendar.</p>
+  <div class="frame-row">
+    <div class="vp desktop">
+      <div class="dk">
+        <div class="dwrap" style="padding-top:26px;">
+          <div class="dtabs">
+            <div class="tab on">אירועים בחוות <span class="add">הוסיפו אירוע</span></div>
+            <div class="tab">חוויות וסדנאות <span class="add">הוסיפו חוויה</span></div>
+            <span class="grow"></span>
+            <span class="vtoggle2"><span class="vt"><i class="ph ph-rows"></i> רשימה</span><span class="vt on"><i class="ph-fill ph-calendar-blank"></i> לוח שנה</span></span>
+          </div>
+        </div>
+        <div class="dcalwrap">
+          <div class="cal-head" style="padding:22px 0 18px;">
+            <span class="mm" style="font-size:30px;">יוני <span style="font-size:19px;">2026</span></span>
+            <span class="nav"><span class="a"><i class="ph-bold ph-caret-right"></i></span><span class="a"><i class="ph-bold ph-caret-left"></i></span></span>
+          </div>
+          <div class="dcal">
+            <div class="cg">
+              <div class="cal-grid">
+                <div class="dow">ראשון</div><div class="dow">שני</div><div class="dow">שלישי</div><div class="dow">רביעי</div><div class="dow">חמישי</div><div class="dow">שישי</div><div class="dow">שבת</div>
+                <div class="cal-cell empty"></div>
+                <div class="cal-cell muted"><span class="n">1</span><span class="dots"></span></div>
+                <div class="cal-cell muted"><span class="n">2</span><span class="dots"></span></div>
+                <div class="cal-cell muted"><span class="n">3</span><span class="dots"></span></div>
+                <div class="cal-cell muted"><span class="n">4</span><span class="dots"></span></div>
+                <div class="cal-cell today"><span class="n">5</span><span class="dots"></span></div>
+                <div class="cal-cell sel"><span class="n">6</span><span class="dots"><i class="ev"></i></span></div>
+                <div class="cal-cell"><span class="n">7</span><span class="dots"><i class="ev"></i></span></div>
+                <div class="cal-cell"><span class="n">8</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">9</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">10</span><span class="dots"><i class="ev"></i></span></div>
+                <div class="cal-cell"><span class="n">11</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">12</span><span class="dots"><i class="ex"></i></span></div>
+                <div class="cal-cell"><span class="n">13</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">14</span><span class="dots"><i class="ex"></i></span></div>
+                <div class="cal-cell"><span class="n">15</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">16</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">17</span><span class="dots"><i class="ex"></i></span></div>
+                <div class="cal-cell"><span class="n">18</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">19</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">20</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">21</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">22</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">23</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">24</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">25</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">26</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">27</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">28</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">29</span><span class="dots"></span></div>
+                <div class="cal-cell"><span class="n">30</span><span class="dots"></span></div>
+              </div>
+              <div class="cal-legend" style="padding-top:18px;">
+                <span><i class="ev"></i> אירוע בחווה</span>
+                <span><i class="ex"></i> חוויה / סדנה</span>
+              </div>
+            </div>
+            <div class="daypanel">
+              <div class="dh">שבת, 6 ביוני <span>· אירוע אחד</span></div>
+              <div class="feed" style="margin-top:8px;">
+                <div class="arow" style="grid-template-columns:64px 1fr;">
+                  <div class="arail" style="padding:14px 0;"><div class="d tnum" style="font-size:30px;">06</div><div class="dow">שבת</div><div class="tm tnum">09:00</div></div>
+                  <div class="abody" style="padding:14px 4px 14px 4px;">
+                    <div class="typ"><i class="ph-bold ph-storefront"></i> שוק</div>
+                    <h4>שוק איכרים בבוקר שבת</h4>
+                    <div class="meta">משק רותם · פרדס חנה</div>
+                    <div class="foot"><span class="cat">שוק</span><span class="price">חינם</span><span class="wa"><i class="ph-fill ph-whatsapp-logo"></i></span></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mini" style="font-size:12.5px;color:var(--fg-muted);margin-top:14px;padding-top:14px;border-top:1px solid var(--border);line-height:1.5;">בחרו יום עם נקודה כדי לראות מה מתקיים בו.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════ LEDGER ════════════════════ -->
+  <div class="section-head" style="margin-bottom:8px;">
+    <div class="letter">C</div>
+    <div>
+      <h2>Patterns &amp; <em>anti-patterns</em></h2>
+      <p class="pitch">Three house patterns reused from the S1–S9 lineage, two slop traps actively avoided.</p>
+    </div>
+    <div class="meta"><strong>3 + 2</strong><br>cited precedents<br>avoided traps</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;">
+    <div class="ledger" style="border-top:0;margin-top:0;padding-top:0;display:block;">
+      <h3>Patterns <em>used</em></h3>
+      <div class="item"><span class="n">1</span><div class="b"><b>The editorial date device.</b> The date-rail is the events-page form of the brand's signature oversized-numeral gesture — Frank Ruhl 900 day numbers riding a colored tick. <span class="tag">S2 signature gesture #2</span> · scale logic from <span class="tag">S3 Hero</span>.</div></div>
+      <div class="item"><span class="n">2</span><div class="b"><b>Species-by-accent, not by layout.</b> Events (green) and experiences (gold) share one skeleton and diverge only on tick + eyebrow + vocabulary — the same available/verified chip-color discipline that distinguishes states on <span class="tag">S6 Business</span> / <span class="tag">ProducerCard</span>.</div></div>
+      <div class="item"><span class="n">3</span><div class="b"><b>Two-tab + view-toggle chrome.</b> Tab pair and the rows/calendar segmented toggle reuse the pill + segmented-control vocabulary from <span class="tag">S4 Floating Navbar</span> (MEH-732); empty-state action ladder ports from <span class="tag">S9 Login</span>.</div></div>
+    </div>
+    <div class="ledger anti" style="border-top:0;margin-top:0;padding-top:0;display:block;">
+      <h3>Anti-patterns <em>avoided</em></h3>
+      <div class="item"><span class="n">1</span><div class="b"><span class="x">Avoided:</span> the cookie-cutter image-top / text-bottom event card. <span class="ok">Instead:</span> the date leads every row; A is type-led and survives with zero photography — no generic stock-photo dependence, no failed-image gray boxes.</div></div>
+      <div class="item"><span class="n">2</span><div class="b"><span class="x">Avoided:</span> raw emoji as UI glyphs (📅 🌱 in the legacy empty state). <span class="ok">Instead:</span> Phosphor <code style="font-family:ui-monospace;font-size:10.5px">calendar-x</code> / <code style="font-family:ui-monospace;font-size:10.5px">cooking-pot</code> in gold, regular/bold weight — never duotone, never Lucide, per the icon migration + brand lock.</div></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

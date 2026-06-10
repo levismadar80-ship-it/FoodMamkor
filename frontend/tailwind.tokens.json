@@ -5,6 +5,7 @@
         "primary": "#2e6853",
         "primary-dark": "#2e4a2e",
         "background": "#f5f0e8",
+        "background-alt": "#ede4d2",
         "surface": "#ffffff",
         "text": "#1c1a17",
         "muted": "#6b6860",
