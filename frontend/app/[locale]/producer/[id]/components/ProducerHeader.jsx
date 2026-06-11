@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { MapPin, Heart } from "@phosphor-icons/react";
+import { MapPin, Heart, Star } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
@@ -42,10 +42,13 @@ export default function ProducerHeader({
         <TrustBadge tier={producer.trust_tier} />
         {producer.reviews_count > 0 && (
           <span
-            className="bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
+            className="inline-flex items-center gap-1 bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
             title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
           >
-            ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
+            {/* MEH-76: emoji star -> Phosphor; rating digits bidi-isolated
+                (.numeric, MEH-763 convention). */}
+            <Star size={12} weight="fill" aria-hidden="true" />
+            <span className="numeric">{Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})</span>
           </span>
         )}
         {producer.plan === "premium" && (

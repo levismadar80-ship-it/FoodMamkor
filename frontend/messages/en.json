@@ -584,7 +584,12 @@
       "verified_tooltip_license": "License submitted and reviewed on {date}",
       "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
       "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
-      "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else."
+      "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
+      "verified_label": "Verified",
+      "declared_label": "Declared",
+      "aria_verified": "Verified business. {tooltip}",
+      "aria_verified_plain": "Verified business",
+      "aria_declared": "Declared business"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
