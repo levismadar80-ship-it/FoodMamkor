@@ -5,6 +5,114 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-11 — session close: MEH-602 MERGED · MEH-790 canceled · home-cook LOCK sweep held
+
+**MEH-602 — MERGED to staging** (PR #1048, squash `0e5f364`). Merged on Smadar's explicit `MERGE` ahead of the Rule-23 mobile-QA gate (same precedent as MEH-732/#909). Supersedes the "draft PR opened" entry below. All 6 required checks green + Playwright E2E + adversarial-calibration green (Rule 21 verified). Post-merge staging health probe deferred to Smadar (CC sandbox blocks `*.mehamakor.online`, MEH-360). Unblocks MEH-131-135 / MEH-76 / MEH-122. **Carried debt (future ticket):** Badge `secondary`→`primary` collapse · TrustBadge tier-5 raw hex · 3 divergent badge tooltip mechanisms.
+
+**MEH-790 — CANCELED** (verdict comment posted). Phase 0 found the `producer/dashboard` i18n tail was **already extracted in a prior wave** — 3 strings remained, not ~106 (the HANDOFF §"Remaining MEH-475 work" count was stale). The 3 survivors were deliberately NOT extracted: behind the `TODO MEH-543` deferral AND they are home-cook DNA-LOCK strings — extracting `מהמטבח של השכן` into the i18n files would entrench LOCK-forbidden copy. Spike's stated vehicle didn't exist. Fan-out primitive ran (1 self-verified scanner agent, ~58k sub-tokens) but a 3-string vehicle couldn't stress it; standalone-CC "use a workflow" on Windows/Git Bash remains unvalidated.
+
+**Home-cook LOCK sweep (Smadar re-vehicle) — discovery only, ZERO edits, HELD.** Forbidden family (`מהמטבח של השכן` / `אוכל ביתי` / `מוצרים ביתיים` / EN "Neighbor's Kitchen") found live across: `/neighbor/NeighborClient.jsx` (hero h1/subhead/breadcrumb/h2/empty), `HomeProductCard.jsx:53,57`, `HomeProductForm.jsx:220` (central comp), `ChatWidget.jsx:44,48,75-76` (FAQ), `dashboard/page.js:507,510,686` (MEH-543 trio), **`messages/{he,en}.json:2757` (privacy/legal copy — MEH-751 legal-exposure class, highest priority)**, and `מוצרים ביתיים` taxonomy across ~8 he.json keys. Dead code: `HomeKitchenPreview` (`HomeStaticBlocks.jsx:145`) is exported-but-never-imported; its `home.kitchen.*` keys are absent from both JSONs (inert). **Held for Sapir's locked replacement wording (Rule 22 copy gate)** — suggested ticket split: (1) legal `:2757` he+en first, (2) `/neighbor`+Card/Form/ChatWidget feature copy, (3) `מוצרים ביתיים` taxonomy rename. No tickets opened yet (await go).
+
+## 2026-06-11 — MEH-602 atomic components — draft PR opened
+
+**Done:** net-new atomic UI layer in `frontend/components/ui/` — `Button.jsx`, `Input.jsx`, `Card.jsx`, `Badge.jsx`, `Heading.jsx`, `Link.jsx` + `index.js` barrel + dev-gated gallery `app/[locale]/dev/components/page.jsx`. **Scope held tight:** ZERO consumers touched — ProducerCard/BadgeRow/Header/pages untouched (migration is MEH-131-135/76/122). `Card` ported verbatim from Assembly-v2 `ProducerCard.jsx:219-368` (rounded-none, no hover shadow-lift, active ring; variants default|flat — `elevated` dropped). `Badge` mirrors `BadgeRow.jsx:36-41` (category/quality only; TrustBadge/trust-tiers excluded per ADR-022). All atoms tokens-only (0 hex), logical RTL props, ≥44px targets. Gates: build ✓, lint ✓ (0 errors), RTL grep clean, 0-hex clean, /dev/components screenshotted mobile+desktop.
+
+**Pending / next:** (a) **mobile QA** on the Vercel preview — confirm the gallery atoms on a real phone (Rule 23 — draft until Sapir confirms). (b) **3 known-debt items carried, NOT resolved** (intentional, mirror-live): Badge `secondary`→`primary` collapse; `TrustBadge` tier-5 raw hex; 3 divergent badge tooltip mechanisms — all flagged in the PR body for a future consolidation ticket. (c) once approved + merged, MEH-131-135 page refactors unblock.
+
+**Decision this session:** dropped the ticket's Card `elevated`/shadow variant — it contradicts the shipped Assembly-v2 "no hover shadow-lift" lock (MEH-643/MEH-638). Shipped code wins over the ticket's acceptance-criteria wording.
+
+## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR #1040)
+
+- **Branch:** `feature/meh-131-login-s9-port` off fresh `origin/staging`.
+- **Scope:** visual/structural restyle of `frontend/app/[locale]/login/LoginClient.jsx` ONLY (GREEN). No JSON, no shared components, no auth logic touched.
+- **Done:** S9 Direction-C port — no white card (open fields on cream), gold eyebrow + FRL-900 welcome headline, **social-first** order (supersedes old form-first), mail/lock adornments + eye-toggle (logical RTL), forgot link in label-row, register "door" panel on green-50. Copy 100% from locked keys (0 JSON edits). build green, lint 0-errors, RTL grep 0, hex grep 0, /adversarial-review = 0 blocking.
+- **Headline-scale follow-up (same PR #1040):** welcome headline was at hero scale (raw `text-[40px] md:text-[52px]`); swapped to the `headline-lg` token (32px/900, FRL-900 kept) so it reads as a utility-login head, not an /about hero. Token-driven (no raw px on the headline). build green (/login ● SSG), lint 0 errors.
+- **MEH-788 split-screen + polish (same PR #1040):** two-pane split — desktop form START/right + Cloudinary image END/left (`next/image fill`, `optimizeCloudinary` f_auto,q_auto, panes via `order-*`); mobile image ~30vh top band + form below. Brand overlay `auth.login.hero_overlay` (cream FRL-900) over a `green-900/90` bottom scrim (AA). Register de-boxed → gold-underlined text link; submit `font-bold`; headline stays `headline-lg`. **One new key only** (`hero_overlay` he+en); all other copy byte-identical. build green (/login ● SSG), lint 0 errors, RTL 0, hex 0, adversarial-review 0 blocking (1 finding fixed: scrim /75→/90 for AA). **NOTE:** hit the lint-feedback 3-strike hook mid-edit (removed `Leaf` import before replacing its register-panel usage → transient no-undef, exec §8); recovered by completing the structural edit in one pass — final lint 0 errors.
+- **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
+- **Flags for QA:** (1) submit rounded-[10px], not pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm intended; (5) headline 32px both breakpoints (token) vs ~40/30 ask; (6) **MEH-788:** hero image crop is render-time `object-cover` (no baked Cloudinary ar) — confirm the produce crate frames well on 375/360/390 band + desktop tall pane; overlay AA on the actual photo.
+- **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
+
+## 2026-06-11 — MEH-233 triage follow-ups (Linear at free-issue limit → deferred)
+
+Triage of the mobile audit (PR #1038) shipped 2 fixes; 3 items deferred pending a free slot:
+
+1. **chips tap-targets** (YELLOW) — home/events/map filter pills at ~30px → 44px.
+   ChipScrollRow.jsx is shared (home + map); Phase 0 must determine single-shared-fix vs
+   per-consumer. MapClient.jsx = central HIGH-RISK → chunk 2 separate w/ WAIT.
+   Branch: feature/mobile-chip-tap-targets. Refs MEH-233.
+
+2. **audit heuristic refine** — MEH-233 check-4 over-flags: doesn't exclude inset:-5%
+   kenburns decorative layers, and counts WCAG-2.5.8-exempt inline text links as targets.
+   Pattern seen twice (9 CRITICAL→1 real, 33 HIGH→subset). Refine before next audit run.
+
+3. **seeded content-density run** — audit ran on local build w/ no backend; real producer
+   data/image overflow untested. Re-run seeded once backend available.
+
+SHIPPED this triage: overflow-clip (PR #1042, LocationBanner truncate fix + audit
+false-positive notes) ✅ · icon-button tap-targets subset (PR #1046, merged). Refs MEH-233.
+
+## 2026-06-10 — MEH-789: bottom nav system PR-A (DRAFT — Sapir QA + merges)
+
+- **Branch:** `feature/meh-789-nav-bottom-pill` off clean `staging`, in an **isolated git
+  worktree** (`../meh-789-worktree`) — the main checkout had branch-slip + multi-feature
+  WIP contamination (EventsClient/Footer/about-process), so the work was re-applied fresh
+  in the worktree. **DRAFT PR off staging, body "Part of MEH-789" (NOT Closes).**
+- **Scope (verified clean, Rule 26):** `components/BottomNav.jsx` (rewrite) + new
+  `components/AccountSheet.jsx` + `messages/{he,en}.json` (+6 keys/locale) + CHANGELOG +
+  HANDOFF. No EventsClient/Footer/about-process/events-i18n.
+- **What landed:** Phase 6 "Cream Signature" port (Direction A, mobile only). Floating cream
+  pill, 4 destinations (גלו·מפה·אודות·חשבון), pill-in-pill green active + fill-on-active +
+  11px DM Sans labels. Account tab toggles the warm-dark account sheet (favorites/settings/
+  language[embedded `<LanguageToggle>`]/logout + MEH-669-gated "יש לך בית עסק?" + gold ↗).
+  Avatar tokenized (raw-hex → `bg-primary`). OnboardingTip preserved.
+- **Adversarial-review (central):** 2 real fixes — (1) unstable `onClose` re-fired the sheet
+  focus effect each re-render → memoized with `useCallback`; (2) guest account `aria-label`
+  → `nav.account`. All other candidates disproved.
+- **Gates green:** build (101/101 SSG), lint 0 errors, RTL 0, hex 0, forbidden-copy 0,
+  i18n parity 2593==2593.
+- **Pending:** Sapir mobile QA (375/360/390) + desktop on the Vercel preview, then **she**
+  marks ready + merges (PR stays DRAFT). **Deferred / next:** PR-B = Header minimal-top +
+  retire the hamburger drawer (transitional overlap until then — secondary items reachable
+  from both); bottom-pill hide-on-scroll (reuse MEH-734). Biz CTA href is `/register/producer`
+  for now (`/about/for-businesses` = MEH-721).
+
+## 2026-06-10 — MEH-534: /about/process S11 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-534-acceptance-process` off `staging`. **Scope:** new
+  standalone editorial page `frontend/app/[locale]/about/process/` (server
+  `page.js` + `AboutProcessClient.jsx`, 7 sections), `process.*` i18n namespace
+  (he locked / en draft), 2 cross-links (Footer nav + /about close section), docs.
+  Reference: `design-reference/Process Page - Direction D Criteria in the Open (S11).html`.
+- **⚠️ Recovered from a parallel-session collision.** A concurrent session
+  (MEH-789 nav + MEH-134 events) switched branches out from under the first
+  build attempt (2026-06-10 18:35–18:36) and stashed the WIP. Sapir confirmed
+  that session STOPPED + saved (MEH-134 committed 21:00). This work was
+  **recreated clean from context** on a fresh checkout of the 534 branch —
+  pre-checks ran (reflog: no fresh checkout/stash after 18:36; tree clean;
+  9 stashes left UNTOUCHED — stash@{0} is contaminated, {1}/{2} = other session).
+- **Contamination guard:** clean i18n baseline = he 3096 / en 3096. After
+  recreate = **3198 / 3198**, delta = exactly **102** keys (`process.*` +
+  `nav.footer.process`). grep for `bottom_pill`/MEH-789 keys = **0** — no leak.
+- **Done:** build green (`/he/about/process` + `/en/about/process` ● SSG),
+  lint 0 errors, he↔en parity 3198/3198, ICU parity clean, hex grep 0, RTL
+  physical-prop grep 0, `/adversarial-review` run. CHANGELOG + COPY_BANK +
+  MANUAL_TESTING updated.
+- **Decisions:** (a) **standalone route** `/about/process` (NOT a section in
+  AboutClient — that file is already over max-lines; one route = one surface,
+  self-canonical metadata); (b) badge is **illustrative/editorial** — no producer
+  object, so **no `BadgeRow`/`TrustBadge` import**; tooltip reuses the live
+  `producer.badge.verified_tooltip_license` key with literal date `5.6.2026`;
+  (c) gold = `accent` token (#8b6914), the `honey` #c8821e token deliberately
+  unused; (d) /about cross-link label kept in-namespace (`process.crosslink_from_about`)
+  to keep the message diff = process.* + nav.footer.process only; (e) en is all
+  **⏳ pending Sapir** (design he-only).
+- **Pending / next:** Sapir mobile QA (375/360/390) → comment "mobile QA ✅" on
+  Linear → mark PR ready + merge (`Closes MEH-534` auto-closes after human
+  approval, Rule 23). Then **en copy review** (all `process.*` en values are
+  drafts) and **S6/MEH-76** wiring of the real per-producer seal component
+  (this page only *explains* the ADR-022 tiers). No `_cosmetics` tooltip key
+  exists yet (cosmetics matrix rows are inline editorial text only).
+
 ## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
 
 - **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
@@ -73,6 +181,27 @@
   **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
   + `fill` + `object-[center_30%]` not visually verified — confirm in mobile QA.
   `/about/for-businesses` is a separate page, out of scope.
+
+## 2026-06-08 — MEH-233 mobile responsiveness audit (Audit 7/7, AUDIT-ONLY)
+
+**Report:** [`docs/audits/2026-06-mobile-audit-MEH-233.md`](./docs/audits/2026-06-mobile-audit-MEH-233.md).
+Branch `feature/meh-233-audit-mobile` off staging → DRAFT PR. **No layout code
+touched** — findings are for Sapir to triage into per-route sub-MEHs.
+
+- **What ran:** new isolated Playwright config `frontend/playwright.mobile-audit.config.ts`
+  + spec `frontend/e2e/mobile-audit/mobile-audit.spec.ts` + merge script
+  `frontend/scripts/build-mobile-audit-report.mjs`. 11 routes × 3 mobile viewports
+  (iPhone SE 375×667 · Galaxy 360×640 · iPhone 14 390×844), 33 full-page screenshots
+  in `docs/audits/screenshots/MEH-233/`. All 33 passed. Existing e2e specs untouched.
+- **Result:** 9 CRITICAL (overflow:hidden clipping on `/` location-banner text + `/about`
+  & `/events` hero sections, consistent across all 3 viewports), 33 HIGH (tap targets
+  < 44px). No horizontal-overflow / nav-cutoff / header-overlap / modal-fit findings.
+- **CAVEAT (load-bearing):** ran against a LOCAL build with **no backend** — API content
+  rendered empty/loading; external CDNs blocked. Content-density overflow (long Hebrew
+  names, real card grids/images) is a KNOWN BLIND SPOT → recommend a follow-up run on a
+  seeded staging/preview env. `@playwright/test` was already a dep; browser via the
+  pre-provisioned `/opt/pw-browsers` Chromium (CDN blocked in sandbox).
+- **Next:** Sapir triages Top 10 CRITICAL → opens per-route fix sub-MEHs.
 
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 

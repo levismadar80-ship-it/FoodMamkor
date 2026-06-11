@@ -13,6 +13,8 @@
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
+    "account": "Account",
+    "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
     "menu_close": "Close menu",
@@ -37,6 +39,7 @@
       "new_businesses": "New Businesses",
       "events": "Events",
       "about": "About",
+      "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
@@ -139,6 +142,7 @@
       "loading": "Loading...",
       "title": "Sign in to Mehamakor",
       "welcome": "Good to see you again",
+      "hero_overlay": "Fresh · Local · From the source",
       "value_save": "Save businesses",
       "value_rate": "Write reviews",
       "value_publish": "Add your business",
@@ -323,6 +327,12 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out"
+    },
+    "sheet": {
+      "connected": "Signed in",
+      "guest_name": "Guest",
+      "guest_sub": "Not signed in yet",
+      "biz_cta": "Have a business?"
     }
   },
   "error": {
@@ -1857,6 +1867,9 @@
     "list": {
       "title": "Events at farms and local businesses",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
+      "eyebrow_events": "EVENTS · Close to home",
+      "eyebrow_experiences": "EXPERIENCES",
+      "h1_experiences": "Food experiences & workshops",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "tab_events": "Farm events",
@@ -1870,8 +1883,12 @@
       "filter_city_placeholder": "City or town name",
       "loading_events": "Loading events...",
       "loading_experiences": "Loading experiences...",
-      "empty_events": "No events match this filter — yet",
-      "empty_experiences": "No experiences match this filter — yet",
+      "empty_events_title": "No events match this filter — yet",
+      "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
+      "empty_events_cta": "Clear the filter",
+      "empty_experiences_title": "New experiences on the way",
+      "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
+      "empty_experiences_cta": "Hosting an experience? Add it",
       "free": "Free"
     },
     "categories": {
@@ -3609,6 +3626,101 @@
       "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
       "email_label": "Email",
       "close_cta": "Close"
+    }
+  },
+  "process": {
+    "meta": {
+      "title": "Our Acceptance Process | Mehamakor",
+      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
+      "og_title": "Our Acceptance Process — Mehamakor",
+      "og_description": "How a business is accepted to Mehamakor: a personal introduction, and what's checked in every category."
+    },
+    "tier": {
+      "verified": "Verified",
+      "declared": "Declared"
+    },
+    "crosslink_from_about": "How we get to know every business",
+    "hero": {
+      "eyebrow": "Our acceptance process",
+      "h1": "Every business here goes through us — <em>a personal introduction</em>.",
+      "sub": "Before a business goes live, we get to know the person behind it — we hear the story, understand how they work, and sometimes we come to visit."
+    },
+    "steps": {
+      "marker": "The introduction",
+      "lead": "Four steps, one person on the other side. This is how it works from the request to going live.",
+      "s1_title": "The request reaches us",
+      "s1_body": "It all starts with a short form — what's made, from which ingredients, and where. Every request is read by a person, from the very first word.",
+      "s2_title": "We actually talk",
+      "s2_body": "A personal conversation — on WhatsApp or by phone. Who stands behind the business, what a workday looks like, and where the raw ingredients come from.",
+      "s3_title": "A visit, if needed",
+      "s3_body": "Sometimes we travel. When it helps us understand the place — we come to see the kitchen, the farm, or the hive with our own eyes.",
+      "s4_title": "Going live — after we've met",
+      "s4_body": "We've gotten to know them, there's a fit — the business goes live. That's it: now you can find it and message it directly.",
+      "badge_aside_title": "The \"Verified\" badge is a separate step — and optional",
+      "badge_aside_body": "It's added when an official licensing or exemption document is submitted, and we review it. Without the badge, the business is still here — and still went through the same personal introduction as everyone else."
+    },
+    "everyone": {
+      "marker": "For everyone",
+      "h2": "What's checked for every business",
+      "intro": "No matter the category and no matter whether there's a badge — these three things are checked for everyone, always.",
+      "c1_title": "Identity",
+      "c1_body": "Who stands behind the business. A real name and place. No anonymity.",
+      "c2_title": "Story",
+      "c2_body": "How and why they work this way. What goes into the product — and what doesn't.",
+      "c3_title": "Conversation",
+      "c3_body": "We talked. A person across from us, not a form that approved itself."
+    },
+    "badge": {
+      "marker": "The badge",
+      "h2": "The \"Verified\" badge — what it adds",
+      "oneliner": "The \"Verified\" badge says one thing: an official licensing or exemption document was submitted — <em>and we reviewed it.</em>",
+      "absence_h3": "No verified badge? It doesn't mean less",
+      "absence_body": "Some categories are legally exempt from licensing — they have no document to show, simply because none is required. Such a business is \"Declared\": a binding declaration of lawful operation was signed, and the business went through the same personal introduction as everyone else.",
+      "absence_kicker": "The badge marks an extra document — not extra trust."
+    },
+    "matrix": {
+      "marker": "In the open",
+      "h2": "What's actually checked — by category",
+      "intro": "We don't hide the criteria. Here, by category, is the document that earns the \"Verified\" badge — and when \"Declared\" is exactly the right path.",
+      "path_or": "or",
+      "groupA_title": "Categories where the law requires a license",
+      "groupA_desc": "Here the law requires a license — so here there's <b>always</b> an official document (from the local authority or the Ministry of Health) that was submitted and reviewed. Without a valid license, the business simply doesn't go live.",
+      "groupA_doc": "A valid official license.",
+      "honey_doc": "Three licenses together — beekeeper, marketing, and business. One alone isn't enough.",
+      "groupB_title": "Categories legally exempt from licensing",
+      "groupB_desc": "Here the law exempts from licensing. Most businesses will be <b>\"Declared\"</b> — a full path in its own right. Whoever wishes can add an exemption approval or registration and also receive a \"Verified\" badge.",
+      "caveat": "Our process is personal, and the criteria update with the law and with new categories. If something isn't clear — talk to us, and we'll explain.",
+      "catA": {
+        "meat_fish": "Meat & fish",
+        "dairy": "Milk & cheese",
+        "bread": "Breads & baking",
+        "prepared": "Prepared foods",
+        "fermented": "Fermented & pickled",
+        "drinks": "Wine, beer & drinks",
+        "chocolate": "Chocolate & sweets",
+        "honey": "Honey"
+      },
+      "catB": {
+        "vegetables": { "label": "Vegetables", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
+        "fruits": { "label": "Fruits", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
+        "oils": { "label": "Olive oil & oils", "doc": "Verified: an official exemption approval from the business-licensing department." },
+        "spices": { "label": "Spices & culinary herbs", "doc": "Verified: an official exemption approval." },
+        "soaps": { "label": "Natural soaps", "doc": "Verified: registration in the cosmetics registry (Ministry of Health)." },
+        "creams": { "label": "Skin creams & oils", "doc": "Verified: registration in the cosmetics registry." },
+        "herbal": { "label": "Herbal preparations", "doc": "Verified: registration in the cosmetics registry." },
+        "candles": { "label": "Candles & aroma", "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine." }
+      }
+    },
+    "closing": {
+      "em_mark": "Mehamakor",
+      "quote": "I want to know who I'm buying from. I built a place where you know too.",
+      "attrib": "— Sapir"
+    },
+    "cta": {
+      "h2": "Have a business that deserves a home?",
+      "intro": "Tell us about it. We'll read it, get back to you, and start getting to know you.",
+      "submit": "Tell us about the business",
+      "secondary": "Continue to the registration form"
     }
   }
 }
