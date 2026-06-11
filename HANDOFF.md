@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR #1040)
+
+- **Branch:** `feature/meh-131-login-s9-port` off fresh `origin/staging`.
+- **Scope:** visual/structural restyle of `frontend/app/[locale]/login/LoginClient.jsx` ONLY (GREEN). No JSON, no shared components, no auth logic touched.
+- **Done:** S9 Direction-C port — no white card (open fields on cream), gold eyebrow + FRL-900 welcome headline, **social-first** order (supersedes old form-first), mail/lock adornments + eye-toggle (logical RTL), forgot link in label-row, register "door" panel on green-50. Copy 100% from locked keys (0 JSON edits). build green, lint 0-errors, RTL grep 0, hex grep 0, /adversarial-review = 0 blocking.
+- **Headline-scale follow-up (same PR #1040):** welcome headline was at hero scale (raw `text-[40px] md:text-[52px]`); swapped to the `headline-lg` token (32px/900, FRL-900 kept) so it reads as a utility-login head, not an /about hero. Token-driven (no raw px on the headline). build green (/login ● SSG), lint 0 errors.
+- **MEH-788 split-screen + polish (same PR #1040):** two-pane split — desktop form START/right + Cloudinary image END/left (`next/image fill`, `optimizeCloudinary` f_auto,q_auto, panes via `order-*`); mobile image ~30vh top band + form below. Brand overlay `auth.login.hero_overlay` (cream FRL-900) over a `green-900/90` bottom scrim (AA). Register de-boxed → gold-underlined text link; submit `font-bold`; headline stays `headline-lg`. **One new key only** (`hero_overlay` he+en); all other copy byte-identical. build green (/login ● SSG), lint 0 errors, RTL 0, hex 0, adversarial-review 0 blocking (1 finding fixed: scrim /75→/90 for AA). **NOTE:** hit the lint-feedback 3-strike hook mid-edit (removed `Leaf` import before replacing its register-panel usage → transient no-undef, exec §8); recovered by completing the structural edit in one pass — final lint 0 errors.
+- **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
+- **Flags for QA:** (1) submit rounded-[10px], not pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm intended; (5) headline 32px both breakpoints (token) vs ~40/30 ask; (6) **MEH-788:** hero image crop is render-time `object-cover` (no baked Cloudinary ar) — confirm the produce crate frames well on 375/360/390 band + desktop tall pane; overlay AA on the actual photo.
+- **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
+
 ## 2026-06-11 — MEH-233 triage follow-ups (Linear at free-issue limit → deferred)
 
 Triage of the mobile audit (PR #1038) shipped 2 fixes; 3 items deferred pending a free slot:
