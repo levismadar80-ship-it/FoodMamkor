@@ -20,6 +20,12 @@ vi.mock("next-intl", () => ({
       "producer.card.favorites.aria": "שמירה",
       "producer.card.badges.delivery_only": "🚚 משלוחים בלבד",
       "producer.card.badges.available_today": "🛒 מגיעה היום",
+      // MEH-76 chunk 4 — S12 tier badge keys consumed by BadgeRow.
+      verified_label: "מאומת",
+      declared_label: "מוצהר",
+      aria_verified: "בית עסק מאומת. {tooltip}",
+      aria_verified_plain: "בית עסק מאומת",
+      aria_declared: "בית עסק מוצהר",
     };
     if (flat[key]) return flat[key];
     if (key === "producer.card.aria.image_missing") return `${values.name} — תמונה חסרה`;
@@ -110,6 +116,9 @@ vi.mock("@phosphor-icons/react", () => ({
   Phone: (props) => <span data-testid="icon-phone" {...props} />,
   Globe: (props) => <span data-testid="icon-globe" {...props} />,
   EnvelopeSimple: (props) => <span data-testid="icon-email" {...props} />,
+  // MEH-76 chunk 4 — S12 tier badge glyphs rendered by BadgeRow.
+  SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
+  Note: (props) => <span data-testid="icon-note" {...props} />,
 }));
 
 const fullProducer = {

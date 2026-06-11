@@ -34,32 +34,28 @@ vi.mock("@phosphor-icons/react", () => ({
 }));
 
 describe("ImageGallery empty state (MEH-25)", () => {
-  // MEH-729: the v4 redesign (PR #890) replaced the caption + Leaf icon empty
-  // state with a category-emoji + producer-initials placeholder. Assertions
-  // updated to the v4 component (component = source of truth).
+  // MEH-76 chunk 3 (S6 state b): the emoji-avatar placeholder is replaced by
+  // a typographic monogram — display-serif initials on the cream token
+  // surface. No emoji, no leaf icon. Assertions follow the component.
   it("renders the empty-state container when images array is empty", () => {
     render(<ImageGallery images={[]} />);
     expect(screen.getByTestId("gallery-empty-state")).toBeInTheDocument();
   });
 
-  it("shows the category emoji and producer initials (v4), not a leaf icon", () => {
-    render(
-      <ImageGallery images={[]} categoryEmoji="🧀" producerInitials="חש" />,
-    );
-    expect(screen.getByText("🧀")).toBeInTheDocument();
-    expect(screen.getByText("חש")).toBeInTheDocument();
+  it("shows the typographic monogram (S6 state b) — no emoji, no leaf icon", () => {
+    render(<ImageGallery images={[]} producerInitials="ח · ש" />);
+    const monogram = screen.getByText("ח · ש");
+    expect(monogram).toBeInTheDocument();
+    expect(monogram.className).toMatch(/font-headline-lg/);
     expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
   });
 
-  it("uses #F5F0E8 warm-cream background, not a green gradient", () => {
+  it("uses the cream background TOKEN, not inline hex or a green gradient", () => {
     render(<ImageGallery images={[]} />);
     const wrapper = screen.getByTestId("gallery-empty-state");
-    const bg = (wrapper.style.background || "").toLowerCase();
-    // jsdom normalizes `#F5F0E8` → `rgb(245, 240, 232)`. Accept either.
-    const isExpected = bg.includes("#f5f0e8") || bg.includes("rgb(245, 240, 232)");
-    expect(isExpected).toBe(true);
-    // Regression guard: no linear-gradient green
-    expect(bg).not.toContain("linear-gradient");
+    expect(wrapper.className).toMatch(/bg-background/);
+    // Regression guard: the old inline style (raw hex / gradient) is gone.
+    expect(wrapper.style.background || "").toBe("");
   });
 
   it("has fixed-height constraints so it doesn't take over the viewport", () => {

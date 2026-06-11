@@ -59,7 +59,7 @@ export default function PrimaryContactButton({ producer, onClick }) {
         : {})}
       data-testid="primary-contact-button"
       data-method={method}
-      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-[10px] transition font-medium mb-2.5 focus-visible:ring-2 ${variant.className}`}
+      className={`flex items-center justify-center gap-2 px-4 py-3 rounded-md transition font-medium mb-2.5 focus-visible:ring-2 ${variant.className}`}
     >
       <Icon size={20} weight="fill" aria-hidden="true" />
       {label}
