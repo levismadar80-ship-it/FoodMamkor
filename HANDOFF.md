@@ -16,6 +16,50 @@
 - **Flags for QA:** (1) submit rounded-[10px], not pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm intended; (5) headline 32px both breakpoints (token) vs ~40/30 ask; (6) **MEH-788:** hero image crop is render-time `object-cover` (no baked Cloudinary ar) — confirm the produce crate frames well on 375/360/390 band + desktop tall pane; overlay AA on the actual photo.
 - **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
 
+## 2026-06-11 — MEH-233 triage follow-ups (Linear at free-issue limit → deferred)
+
+Triage of the mobile audit (PR #1038) shipped 2 fixes; 3 items deferred pending a free slot:
+
+1. **chips tap-targets** (YELLOW) — home/events/map filter pills at ~30px → 44px.
+   ChipScrollRow.jsx is shared (home + map); Phase 0 must determine single-shared-fix vs
+   per-consumer. MapClient.jsx = central HIGH-RISK → chunk 2 separate w/ WAIT.
+   Branch: feature/mobile-chip-tap-targets. Refs MEH-233.
+
+2. **audit heuristic refine** — MEH-233 check-4 over-flags: doesn't exclude inset:-5%
+   kenburns decorative layers, and counts WCAG-2.5.8-exempt inline text links as targets.
+   Pattern seen twice (9 CRITICAL→1 real, 33 HIGH→subset). Refine before next audit run.
+
+3. **seeded content-density run** — audit ran on local build w/ no backend; real producer
+   data/image overflow untested. Re-run seeded once backend available.
+
+SHIPPED this triage: overflow-clip (PR #1042, LocationBanner truncate fix + audit
+false-positive notes) ✅ · icon-button tap-targets subset (PR #1046, merged). Refs MEH-233.
+
+## 2026-06-10 — MEH-789: bottom nav system PR-A (DRAFT — Sapir QA + merges)
+
+- **Branch:** `feature/meh-789-nav-bottom-pill` off clean `staging`, in an **isolated git
+  worktree** (`../meh-789-worktree`) — the main checkout had branch-slip + multi-feature
+  WIP contamination (EventsClient/Footer/about-process), so the work was re-applied fresh
+  in the worktree. **DRAFT PR off staging, body "Part of MEH-789" (NOT Closes).**
+- **Scope (verified clean, Rule 26):** `components/BottomNav.jsx` (rewrite) + new
+  `components/AccountSheet.jsx` + `messages/{he,en}.json` (+6 keys/locale) + CHANGELOG +
+  HANDOFF. No EventsClient/Footer/about-process/events-i18n.
+- **What landed:** Phase 6 "Cream Signature" port (Direction A, mobile only). Floating cream
+  pill, 4 destinations (גלו·מפה·אודות·חשבון), pill-in-pill green active + fill-on-active +
+  11px DM Sans labels. Account tab toggles the warm-dark account sheet (favorites/settings/
+  language[embedded `<LanguageToggle>`]/logout + MEH-669-gated "יש לך בית עסק?" + gold ↗).
+  Avatar tokenized (raw-hex → `bg-primary`). OnboardingTip preserved.
+- **Adversarial-review (central):** 2 real fixes — (1) unstable `onClose` re-fired the sheet
+  focus effect each re-render → memoized with `useCallback`; (2) guest account `aria-label`
+  → `nav.account`. All other candidates disproved.
+- **Gates green:** build (101/101 SSG), lint 0 errors, RTL 0, hex 0, forbidden-copy 0,
+  i18n parity 2593==2593.
+- **Pending:** Sapir mobile QA (375/360/390) + desktop on the Vercel preview, then **she**
+  marks ready + merges (PR stays DRAFT). **Deferred / next:** PR-B = Header minimal-top +
+  retire the hamburger drawer (transitional overlap until then — secondary items reachable
+  from both); bottom-pill hide-on-scroll (reuse MEH-734). Biz CTA href is `/register/producer`
+  for now (`/about/for-businesses` = MEH-721).
+
 ## 2026-06-10 — MEH-534: /about/process S11 Direction D port (DRAFT PR — Sapir merges)
 
 - **Branch:** `feature/meh-534-acceptance-process` off `staging`. **Scope:** new

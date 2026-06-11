@@ -13,6 +13,8 @@
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
+    "account": "Account",
+    "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
     "menu_close": "Close menu",
@@ -325,6 +327,12 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out"
+    },
+    "sheet": {
+      "connected": "Signed in",
+      "guest_name": "Guest",
+      "guest_sub": "Not signed in yet",
+      "biz_cta": "Have a business?"
     }
   },
   "error": {
@@ -1852,6 +1860,9 @@
     "list": {
       "title": "Events at farms and local businesses",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
+      "eyebrow_events": "EVENTS · Close to home",
+      "eyebrow_experiences": "EXPERIENCES",
+      "h1_experiences": "Food experiences & workshops",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "tab_events": "Farm events",
@@ -1865,8 +1876,12 @@
       "filter_city_placeholder": "City or town name",
       "loading_events": "Loading events...",
       "loading_experiences": "Loading experiences...",
-      "empty_events": "No events match this filter — yet",
-      "empty_experiences": "No experiences match this filter — yet",
+      "empty_events_title": "No events match this filter — yet",
+      "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
+      "empty_events_cta": "Clear the filter",
+      "empty_experiences_title": "New experiences on the way",
+      "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
+      "empty_experiences_cta": "Hosting an experience? Add it",
       "free": "Free"
     },
     "categories": {
