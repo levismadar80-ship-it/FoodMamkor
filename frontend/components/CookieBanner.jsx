@@ -51,14 +51,14 @@ export default function CookieBanner() {
           <button
             type="button"
             onClick={() => accept("all")}
-            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap"
+            className="bg-green-50 text-primary-dark font-medium text-xs px-4 py-2 rounded-full hover:bg-white transition whitespace-nowrap inline-flex items-center justify-center min-h-[44px]"
           >
             {t("accept_all")}
           </button>
           <button
             type="button"
             onClick={() => accept("essential")}
-            className="text-green-50/80 text-xs px-4 py-2 rounded-full border border-green-50/30 hover:bg-green-50/10 transition whitespace-nowrap"
+            className="text-green-50/80 text-xs px-4 py-2 rounded-full border border-green-50/30 hover:bg-green-50/10 transition whitespace-nowrap inline-flex items-center justify-center min-h-[44px]"
           >
             {t("essential_only")}
           </button>

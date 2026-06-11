@@ -628,6 +628,40 @@ v1 defines exact scope per tier (what IS / is NOT checked), a declaration-only d
 and a no-ongoing-supervision carve-out (5.5). Locked verbatim by Sapir 2026-06-06; lawyer opinion
 outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
 
+### Gate — /about/process page (MEH-534, S11 Direction D, 2026-06-10)
+
+> Standalone editorial page `/about/process` ("תהליך הקבלה"). he = the S11
+> copy-table draft locked by Sapir, ported **verbatim** into the `process.*`
+> namespace. **en = ⏳ pending Sapir review** (design he-only; MEH-758
+> precedent — every `process.*` en value is a draft translation). Tier words
+> **מאומת / מוצהר only**. "בית עסק", never "יצרן". Voice ADR-014 hybrid
+> (headings/CTA neutral plural; narrative feminine).
+
+| Key | he | Status |
+|---|---|---|
+| `process.hero.h1` | `כל בית עסק כאן עובר דרכנו — היכרות אישית.` | ✅ **LOCKED verbatim** (gold `<em>` on `היכרות אישית`; stored with `<em>` rich-tag, visible text matches the lock char-for-char) |
+| `process.closing.quote` | `אני רוצה לדעת ממי אני קונה. בניתי מקום שבו גם אתם יודעים.` | ✅ **LOCKED verbatim** |
+| `process.closing.attrib` | `— ספיר` | ✅ **LOCKED verbatim** |
+| `process.hero.eyebrow` / `.sub` | `תהליך הקבלה` / `לפני שעסק עולה לאתר…` | ⏳ draft (Sapir-as-drafted) |
+| `process.steps.s1–4.*` + `badge_aside_*` | 4-step process + the "separate optional badge" aside | ⏳ draft (s4 MUST stay separate from badge) |
+| `process.everyone.*` | `מה נבדק אצל כל בית עסק` + 3 cards (זהות · סיפור · שיחה) | ⏳ draft |
+| `process.badge.oneliner` | `תג "מאומת" אומר דבר אחד… ואנחנו בדקנו אותו.` | ⏳ draft (gold `<em>` on closing clause) |
+| `process.badge.absence_h3 / _body / _kicker` | `אין תג מאומת? זה לא אומר פחות` / explainer / `התג מסמן מסמך נוסף — לא אמון נוסף.` | ⏳ draft — **3 separate keys, NOT collapsed** |
+| `process.matrix.*` (groupA/B + 16 cats + caveat) | published criteria matrix by category | ⏳ draft (honey = 3-license row; candles = `מוצהר`-only, no badge path) |
+| `process.cta.*` | `יש לך בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ⏳ draft |
+| `process.tier.verified` / `.declared` | `מאומת` / `מוצהר` | ⏳ draft (tag labels, page-wide) |
+| `process.crosslink_from_about` | `כך אנחנו מכירות כל בית עסק` (/about → /about/process link) | ⏳ draft |
+| `nav.footer.process` | `תהליך הקבלה` (footer nav link — only non-`process.*` key added) | ⏳ draft |
+
+**Reused (not recreated):** the illustrative badge tooltip uses the existing
+`producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
+
+**Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
+`producer.badge.declared_explainer` — **sync if the tier-2 wording changes
+(lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
+editorial voice can diverge from the per-producer badge surface; the two must
+stay semantically aligned on the "exempt ≠ less trustworthy" message.
+
 ## Brand phrasings
 
 Canonical reusable brand phrases. When the same phrase appears across

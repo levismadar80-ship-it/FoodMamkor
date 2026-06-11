@@ -175,7 +175,7 @@ export default function Header() {
           {/* LEAD GROUP — logo + nav links together (internal gap 36px).
               start of the row (visual right in RTL). */}
           <div className="flex items-center gap-9">
-            <Link href="/" className="shrink-0 inline-flex items-center" aria-label={BRAND_NAME}>
+            <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
