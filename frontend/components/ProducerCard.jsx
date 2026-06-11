@@ -254,9 +254,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </div>
         </Link>
 
-        {/* Badge row — bottom-start over the image (Assembly v2), max 2. */}
+        {/* Badge row — bottom-start over the image (Assembly v2), max 2.
+            MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
+            icon-only seal; declared shows nothing (no placeholder). */}
         <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
-          <BadgeRow producer={producer} limit={2} />
+          <BadgeRow producer={producer} limit={2} surface="card" />
           {(producer.trust_tier ?? 1) >= 3 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
