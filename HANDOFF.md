@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-11 — MEH-602 atomic components — draft PR opened
+
+**Done:** net-new atomic UI layer in `frontend/components/ui/` — `Button.jsx`, `Input.jsx`, `Card.jsx`, `Badge.jsx`, `Heading.jsx`, `Link.jsx` + `index.js` barrel + dev-gated gallery `app/[locale]/dev/components/page.jsx`. **Scope held tight:** ZERO consumers touched — ProducerCard/BadgeRow/Header/pages untouched (migration is MEH-131-135/76/122). `Card` ported verbatim from Assembly-v2 `ProducerCard.jsx:219-368` (rounded-none, no hover shadow-lift, active ring; variants default|flat — `elevated` dropped). `Badge` mirrors `BadgeRow.jsx:36-41` (category/quality only; TrustBadge/trust-tiers excluded per ADR-022). All atoms tokens-only (0 hex), logical RTL props, ≥44px targets. Gates: build ✓, lint ✓ (0 errors), RTL grep clean, 0-hex clean, /dev/components screenshotted mobile+desktop.
+
+**Pending / next:** (a) **mobile QA** on the Vercel preview — confirm the gallery atoms on a real phone (Rule 23 — draft until Sapir confirms). (b) **3 known-debt items carried, NOT resolved** (intentional, mirror-live): Badge `secondary`→`primary` collapse; `TrustBadge` tier-5 raw hex; 3 divergent badge tooltip mechanisms — all flagged in the PR body for a future consolidation ticket. (c) once approved + merged, MEH-131-135 page refactors unblock.
+
+**Decision this session:** dropped the ticket's Card `elevated`/shadow variant — it contradicts the shipped Assembly-v2 "no hover shadow-lift" lock (MEH-643/MEH-638). Shipped code wins over the ticket's acceptance-criteria wording.
+
 ## 2026-06-03 — MEH-732 merged to staging (PR #909, squash `c9b1587`)
 
 **Done:** navbar pill polish on `Header.jsx` — Composition B (flex space-between: lead group [logo + links] · action cluster, max-width 940px), pill-only glass on scrolled/inner (`bg-background/85` + 12px backdrop-blur, solid fallback, threshold 80→60, never transitions padding/backdrop-filter), action hierarchy (search filled-primary · add-business outlined · login quiet text hidden on /login · globe quiet). i18n voice fixes (he.json `nav.explore`/`nav.discover` גלי·גלה→גלו, also the BottomNav home tab; en.json `nav.explore`→Explore). `#E8E0D0` mapped to existing `border` token. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); `/adversarial-review` ran with one fix (dropped `padding` from transition).
