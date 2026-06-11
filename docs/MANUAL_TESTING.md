@@ -3,6 +3,27 @@
 
 ---
 
+## MEH-534 — /about/process "תהליך הקבלה" (S11 Direction D)
+
+New standalone editorial page at `/about/process`. he copy locked; en is draft
+(⏳ pending Sapir). Badge shown is illustrative (no live producer). Test on
+mobile widths **375 / 360 / 390** and desktop.
+
+- [ ] **Route renders** — פתחי `/he/about/process` ו-`/en/about/process` — שני הדפים נטענים (SSG), כותרת הטאב = "תהליך הקבלה | מהמקור" / "Our Acceptance Process | Mehamakor"
+- [ ] **Hero** — H1 `כל בית עסק כאן עובר דרכנו — היכרות אישית.` עם "היכרות אישית" בזהב נטוי (Cormorant) — ללא חיתוך, RTL נכון
+- [ ] **4 steps** — מובייל: רשימה אנכית עם עיגולי מספר 01–04; דסקטופ: 4 עמודות. אייקונים: מטוס/שיחה/סיכה/חנות. כיתוב "תג מאומת שלב נפרד" מופיע מתחת לשלבים
+- [ ] **What's checked** — 3 כרטיסים (זהות · סיפור · שיחה) על רקע `background-alt`, מספרי זהב 01–03
+- [ ] **Badge section** — צ'יפ "מאומת" עם אייקון חותם + טקסט tooltip "רישיון הוגש ונבדק בתאריך 5.6.2026" (התאריך LTR לא מתהפך); בלוק "אין תג מאומת? זה לא אומר פחות" עם kicker זהב
+- [ ] **Matrix — group A** — 8 קטגוריות (בשר/חלב/לחם/מוכנים/מותססים/משקאות/שוקולד/דבש), כולן תג "מאומת"; שורת דבש = "שלושה רישיונות יחד…"
+- [ ] **Matrix — group B** — 8 קטגוריות, כל אחת "מוצהר או מאומת" חוץ מ**נרות וארומה** = "מוצהר" בלבד + הערה "אין מסלול לתג…"; ירקות/פירות מציגים שורת "מוצהר: הצהרה שזו תוצרת…"
+- [ ] **Closing** — ציטוט ספיר `אני רוצה לדעת ממי אני קונה…` נטוי, eyebrow "מהמקור", קרדיט "— ספיר"
+- [ ] **CTA** — כפתור "ספרו לנו על העסק" → `/register/producer`; טקסט משני "ממשיכים לטופס ההרשמה"
+- [ ] **Footer link** — "תהליך הקבלה" מופיע בעמודת הניווט בפוטר → מוביל ל-`/about/process`
+- [ ] **Cross-link from /about** — בתחתית עמוד `/about` יש קישור "כך אנחנו מכירות כל בית עסק" → `/about/process`
+- [ ] **RTL + tap targets** — כל הסקשנים מיושרים RTL, אין גלישה אופקית ב-360px, קישור CTA ≥44px, focus ring נראה
+
+---
+
 ## MEH-685 — Toast semantic icon API (Category D2 emoji strip)
 
 All toasts now render a Phosphor icon (no emoji). Icon sits at the **start** of
