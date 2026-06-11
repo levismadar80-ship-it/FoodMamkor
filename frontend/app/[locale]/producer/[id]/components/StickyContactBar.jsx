@@ -23,7 +23,6 @@ import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 export default function StickyContactBar({
   producer,
   isVacation,
-  vacationReturnLabel,
   isBarVisible,
 }) {
   const t = useTranslations();
@@ -42,10 +41,11 @@ export default function StickyContactBar({
       aria-hidden={!isBarVisible}
     >
       <div className="flex items-center gap-3 px-4 py-3">
-        {/* Social proof — hidden if < 3 reviews; replaced by vacation notice */}
-        {isVacation ? (
-          <span className="text-[11px] text-fg-muted shrink-0">🌿 {vacationReturnLabel}</span>
-        ) : producer.reviews_count >= 3 ? (
+        {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
+            notice that used to replace it was the page's THIRD vacation
+            surface — removed (single banner lives in ProducerHeader). The
+            CTA label below still carries the honest expectation line. */}
+        {producer.reviews_count >= 3 ? (
           <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
             <div className="font-bold text-[#8B6914]">
               ⭐ {Number(producer.avg_rating).toFixed(1)}
@@ -70,10 +70,11 @@ export default function StickyContactBar({
                 pingWhatsAppBeacon(producer.id);
               }
             }}
+            // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
+            // violation (state-color fill + raw hex). The CTA keeps its normal
+            // method-driven color — the whole bar is already dimmed via opacity.
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-medium text-sm transition ${
-              isVacation
-                ? "bg-[#6EAF8A] text-white"
-                : getPrimaryMethod(producer) === "whatsapp"
+              getPrimaryMethod(producer) === "whatsapp"
                 ? "btn-whatsapp"
                 : getPrimaryMethod(producer) === "phone"
                 ? "bg-primary text-white hover:bg-primary-dark"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Info, Package, Truck, Star } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -40,6 +40,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const router = useRouter();
   const { user } = useAuth();
   const t = useTranslations();
+  const locale = useLocale();
 
   const { producer, loading, events, similarProducers } = useProducerData({
     params,
@@ -71,7 +72,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const isVacation =
     producer.availability_state === "on_vacation" ||
     (!producer.availability_state && producer.availability_status === "vacation");
-  const vacationReturnLabel = getVacationReturnLabel(producer);
+  const vacationReturnLabel = getVacationReturnLabel(producer, t, locale);
   const producerInitials = getProducerInitials(producer);
   const primaryCategory = producer.categories?.[0];
   const handleShowOnMap = buildShowOnMapHandler(producer, router);
@@ -169,7 +170,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         <ContactSidebar
           producer={producer}
           isVacation={isVacation}
-          vacationReturnLabel={vacationReturnLabel}
           primaryCategory={primaryCategory}
           shareUrl={shareUrl}
         />
@@ -179,7 +179,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <StickyContactBar
         producer={producer}
         isVacation={isVacation}
-        vacationReturnLabel={vacationReturnLabel}
         isBarVisible={isBarVisible}
       />
     </div>

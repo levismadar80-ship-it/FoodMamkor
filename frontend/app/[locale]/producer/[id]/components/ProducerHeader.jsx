@@ -154,18 +154,20 @@ export default function ProducerHeader({
 
       {/* MEH-291 — full_this_week banner (response-time hint, not a closure
           signal). Suppressed during vacation since that banner already
-          dominates the messaging. */}
+          dominates the messaging. MEH-76: amber → ADR-019 (cream + fg-muted). */}
       {producer.availability_state === "full_this_week" && !isVacation && (
-        <div className="mx-0 mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-amber-800">{t("producer.detail.header.slow_response")}</p>
+        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
+          <p className="text-sm font-bold text-text">{t("producer.detail.header.slow_response")}</p>
         </div>
       )}
 
-      {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
+      {/* Vacation banner — the page's SINGLE vacation surface (S6 state a:
+          one muted editorial banner, never two). MEH-76 chunk 1: the sidebar
+          + sticky-bar copies were removed; slate → ADR-019 cream + fg-muted. */}
       {isVacation && (
-        <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
-          <p className="text-xs text-slate-500 mt-1">
+        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
+          <p className="text-sm font-bold text-text">{t("producer.detail.header.vacation")}</p>
+          <p className="text-xs text-fg-muted mt-1">
             {t("producer.detail.header.vacation_return", { label: vacationReturnLabel })}
           </p>
         </div>

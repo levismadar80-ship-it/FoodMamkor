@@ -30,7 +30,6 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from 
 export default function ContactSidebar({
   producer,
   isVacation,
-  vacationReturnLabel,
   primaryCategory,
   shareUrl,
 }) {
@@ -38,13 +37,9 @@ export default function ContactSidebar({
   return (
     <aside>
       <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-        {/* Vacation notice in sidebar */}
-        {isVacation && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-            <p className="text-xs font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
-          </div>
-        )}
+        {/* MEH-76 chunk 1: the sidebar's duplicate vacation banner was removed —
+            the single vacation surface is the ProducerHeader banner (S6 state a).
+            The dim treatment below still signals the state here. */}
 
         {/* Dim contact content when on vacation — pointer-events-auto keeps clicking possible */}
         <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>

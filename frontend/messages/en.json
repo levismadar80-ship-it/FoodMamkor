@@ -641,7 +641,9 @@
         },
         "slow_response": "⏳ Longer response times this week",
         "vacation": "🌙 This business is on break right now",
-        "vacation_return": "{label} — you can leave a message"
+        "vacation_return": "{label} — you can leave a message",
+        "vacation_back": "Back on {date}",
+        "vacation_back_soon": "Back soon"
       },
       "action_row": {
         "aria": {

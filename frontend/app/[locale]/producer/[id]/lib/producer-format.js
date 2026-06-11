@@ -13,14 +13,19 @@ export function buildShareUrl(producer) {
   return `${window.location.origin}${path}`;
 }
 
-export function getVacationReturnLabel(producer) {
-  if (!producer.vacation_until) return "חוזרת בקרוב";
+// MEH-76 chunk 1: label moved to i18n (producer.detail.header.vacation_back*) —
+// the hardcoded Hebrew here rendered on /en too. Callers pass next-intl's
+// t + locale. The date is wrapped FSI…PDI (⁨…⁩, the string-level
+// <bdi>) so it never reorders inside the surrounding RTL sentence.
+export function getVacationReturnLabel(producer, t, locale) {
+  if (!producer.vacation_until) return t("producer.detail.header.vacation_back_soon");
   try {
     // Parse as local date (not UTC) to avoid off-by-one in UTC+2/+3 (Israel).
     const [y, m, d] = producer.vacation_until.split("-").map(Number);
-    return "חוזרת ב-" + new Date(y, m - 1, d).toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+    const date = new Date(y, m - 1, d).toLocaleDateString(locale, { day: "numeric", month: "long" });
+    return t("producer.detail.header.vacation_back", { date: `\u2068${date}\u2069` });
   } catch {
-    return "חוזרת בקרוב";
+    return t("producer.detail.header.vacation_back_soon");
   }
 }
 

@@ -641,7 +641,9 @@
         },
         "slow_response": "⏳ זמני תגובה ארוכים יותר השבוע",
         "vacation": "🌙 בית עסק זה בהפסקה כרגע",
-        "vacation_return": "{label} — ניתן להשאיר הודעה"
+        "vacation_return": "{label} — ניתן להשאיר הודעה",
+        "vacation_back": "חוזרת ב-{date}",
+        "vacation_back_soon": "חוזרת בקרוב"
       },
       "action_row": {
         "aria": {
