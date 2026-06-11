@@ -104,7 +104,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <ImageGallery
         images={producer.images || []}
         producerId={producer.id}
-        categoryEmoji={primaryCategory?.emoji ?? "🌿"}
         producerInitials={producerInitials}
       />
 

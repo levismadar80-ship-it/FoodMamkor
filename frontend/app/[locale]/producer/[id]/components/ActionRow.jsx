@@ -62,7 +62,7 @@ export default function ActionRow({
           <button
             type="button"
             onClick={onShowOnMap}
-            className="flex items-center justify-center gap-2 border border-border text-primary-dark px-4 min-h-[44px] rounded-[10px] hover:border-primary transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="flex items-center justify-center gap-2 border border-border text-primary-dark px-4 min-h-[44px] rounded-md hover:border-primary transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label={t("producer.detail.action_row.aria.show_on_map")}
           >
             <MapTrifold size={16} weight="duotone" />
@@ -76,7 +76,7 @@ export default function ActionRow({
             href={`https://wa.me/?text=${encodeURIComponent(t("producer.detail.action_row.referral_msg", { code: user.referral_code }))}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-[10px] hover:bg-green-50 transition text-sm font-medium"
+            className="flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-md hover:bg-green-50 transition text-sm font-medium"
           >
             {t("producer.detail.action_row.referral_cta")}
           </a>

@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { Star } from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
@@ -28,13 +29,13 @@ export default function StickyContactBar({
   const t = useTranslations();
   return (
     <div
-      className="md:hidden fixed bottom-16 inset-x-0 z-[598]"
+      // MEH-76 chunk 3: border hex literal -> border-border token class; the
+      // soft lift shadow stays inline (no shadow token exists; rgba, not hex).
+      className="md:hidden fixed bottom-16 inset-x-0 z-[598] bg-white border-t border-border"
       style={{
         transform: isBarVisible ? "translateY(0)" : "translateY(100%)",
         transition: isBarVisible ? "transform 200ms ease-out" : "transform 150ms ease-in",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        background: "white",
-        borderTop: "1px solid #DDD5C8",
         boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
         opacity: isVacation ? 0.85 : 1,
       }}
@@ -47,8 +48,11 @@ export default function StickyContactBar({
             CTA label below still carries the honest expectation line. */}
         {producer.reviews_count >= 3 ? (
           <div className="shrink-0 text-[11px] text-fg-muted leading-tight">
-            <div className="font-bold text-[#8B6914]">
-              ⭐ {Number(producer.avg_rating).toFixed(1)}
+            {/* MEH-76: gold hex -> accent token, emoji star -> Phosphor,
+                rating digits bidi-isolated (.numeric, MEH-763 convention). */}
+            <div className="font-bold text-accent inline-flex items-center gap-0.5">
+              <Star size={11} weight="fill" aria-hidden="true" />
+              <span className="numeric">{Number(producer.avg_rating).toFixed(1)}</span>
             </div>
             <div>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</div>
           </div>
@@ -73,7 +77,7 @@ export default function StickyContactBar({
             // MEH-76 chunk 1: the vacation pale-green CTA fork was an ADR-019
             // violation (state-color fill + raw hex). The CTA keeps its normal
             // method-driven color — the whole bar is already dimmed via opacity.
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-[10px] font-medium text-sm transition ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-md font-medium text-sm transition ${
               getPrimaryMethod(producer) === "whatsapp"
                 ? "btn-whatsapp"
                 : getPrimaryMethod(producer) === "phone"
