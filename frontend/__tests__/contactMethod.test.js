@@ -125,7 +125,7 @@ describe("getPrimaryContactLabel", () => {
       "התקשרי",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "website" })).toBe(
-      "בקרי באתר",
+      "להזמנה באתר",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "email" })).toBe(
       "שלחי מייל",

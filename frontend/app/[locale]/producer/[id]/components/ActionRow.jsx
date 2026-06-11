@@ -54,12 +54,15 @@ export default function ActionRow({
           Desktop: MapButton moves here from sidebar to reduce sidebar density.
           WhatsAppShareButton is secondary (gray outlined) to avoid green conflict with primary CTA. */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {/* MEH-213: map button only for producers with a physical location */}
+        {/* MEH-213: map button only for producers with a physical location.
+            MEH-76 chunk 2 (S6 .btn-nav): nav-out actions are neutral —
+            border-border + primary-dark text, never the primary green that
+            competed with the mobile inline CTA right above this row. */}
         {producer.has_physical_location !== false && producer.lat && producer.lng && (
           <button
             type="button"
             onClick={onShowOnMap}
-            className="flex items-center justify-center gap-2 border border-primary text-primary px-4 min-h-[44px] rounded-[10px] hover:bg-green-50 transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="flex items-center justify-center gap-2 border border-border text-primary-dark px-4 min-h-[44px] rounded-[10px] hover:border-primary transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label={t("producer.detail.action_row.aria.show_on_map")}
           >
             <MapTrifold size={16} weight="duotone" />

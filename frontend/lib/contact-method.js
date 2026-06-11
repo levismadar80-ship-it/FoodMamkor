@@ -63,7 +63,9 @@ export function getPrimaryContactLabel(producer) {
     case "phone":
       return "התקשרי";
     case "website":
-      return "בקרי באתר";
+      // MEH-76 chunk 2 — S6 CTA variant C (D4 decision, 6.6): relabel only.
+      // website-primary reads as an ordering affordance, not a brochure link.
+      return "להזמנה באתר";
     case "email":
       return "שלחי מייל";
     default:
