@@ -2761,7 +2761,7 @@
           },
           "ugc": {
             "label": "Content you create:",
-            "value": "Posts in the \"Neighbor's Kitchen\" section, ratings, comments, and inquiries through contact forms."
+            "value": "Ratings, comments, and inquiries through contact forms."
           }
         }
       },
@@ -3394,7 +3394,7 @@
       "meta_title": "Messages | Mehamakor",
       "meta_description": "Communication on Mehamakor happens directly on WhatsApp with the business.",
       "heading": "How communication works on Mehamakor",
-      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner or to the neighbor seller.",
+      "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner.",
       "why_heading": "Why this way?",
       "why_item_no_middlemen": "✓ No middlemen — you talk with the person who grew / prepared / baked it",
       "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",
