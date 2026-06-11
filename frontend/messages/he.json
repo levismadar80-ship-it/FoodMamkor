@@ -13,6 +13,8 @@
     "add_business": "הוסיפו את העסק שלך",
     "mobile_label": "ניווט מובייל",
     "profile": "פרופיל",
+    "account": "חשבון",
+    "language": "שפה",
     "main_label": "ניווט ראשי",
     "search_label": "חיפוש",
     "menu_close": "סגור תפריט",
@@ -324,6 +326,12 @@
       "admin": "ממשק אדמין",
       "aria": "תפריט — {name}",
       "logout": "התנתקו"
+    },
+    "sheet": {
+      "connected": "מחוברת",
+      "guest_name": "אורחת",
+      "guest_sub": "עוד לא בפנים",
+      "biz_cta": "יש לך בית עסק?"
     }
   },
   "error": {
