@@ -1,6 +1,7 @@
 import "../globals.css";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { MotionConfig } from "framer-motion";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -203,6 +204,14 @@ export default async function LocaleLayout({ children, params }) {
           <AuthProvider>
             <LanguageProvider>
               <SmoothScrollProvider>
+                {/* MEH-788: global reduced-motion off-switch for ALL
+                    framer-motion (FadeInSection scroll-reveals, home hero/grid,
+                    etc.). reducedMotion="user" makes framer honor
+                    prefers-reduced-motion — its default is "never", which is why
+                    motion previously ignored the OS setting. CSS-driven motion
+                    (hover transitions, marquee, kenburns) is covered by the
+                    global @media block in globals.css. */}
+                <MotionConfig reducedMotion="user">
                 <Header />
                 {/* MEH-731: verify banner relocated out of the sticky <header>
                     to the top of <main> so the floating navbar pill stays pure
@@ -218,6 +227,7 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidget />
                 <InstallPrompt />
+                </MotionConfig>
               </SmoothScrollProvider>
             </LanguageProvider>
           </AuthProvider>

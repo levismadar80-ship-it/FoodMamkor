@@ -18,6 +18,8 @@ import { Leaf, CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/reac
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
+// MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
+import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 
 const TIP_KEYS = ["eggs", "grass_fed", "honey"];
 // gold Cormorant numerals — decorative, aria-hidden
@@ -84,7 +86,7 @@ export default function AboutPage() {
       </section>
 
       {/* ======== 02 — Sapir's story (prose start · portrait standfirst end) ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-12 md:gap-[72px] items-start">
             {/* prose — sits at start edge in RTL */}
@@ -131,19 +133,19 @@ export default function AboutPage() {
             </figure>
           </div>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 03 — Benefits (alt-tone block w/ Values · centered gold numerals) ======== */}
-      <section className="bg-background-alt py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-6xl mx-auto px-4 md:px-12">
           <Eyebrow as="h2">{t("benefits.heading")}</Eyebrow>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
@@ -162,10 +164,10 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 04 — Values (bordered editorial container · gold numerals) ======== */}
-      <section className="bg-background-alt py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background-alt py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Eyebrow>{t("values.eyebrow")}</Eyebrow>
           <div className="border-2 border-accent/30 rounded-3xl p-8 md:p-14">
@@ -192,10 +194,10 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 05 — Tips accordion ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Eyebrow>{t("tips.eyebrow")}</Eyebrow>
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
@@ -233,10 +235,10 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 06 — Testimonials (slim invitation band) ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
           <div className="border-y border-border py-12 md:py-14">
             <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
@@ -254,10 +256,10 @@ export default function AboutPage() {
             </Link>
           </div>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
-      <section className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 text-center">
           {/* single primary CTA — consumer */}
           <Link
@@ -288,10 +290,10 @@ export default function AboutPage() {
             </Link>
           </p>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* ======== 08 — Contact form ======== */}
-      <section className="bg-background py-9 md:py-14 scroll-mt-24">
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
@@ -375,7 +377,7 @@ export default function AboutPage() {
             )}
           </form>
         </div>
-      </section>
+      </FadeInSection>
 
       {/* Subtle film grain — tactile warmth over the cream. Inline SVG feTurbulence
           (monochrome, data-URI, LCP-safe), pointer-events-none, ~3.5% so it reads as

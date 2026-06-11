@@ -28,6 +28,25 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
+/* ── MEH-788 — global reduced-motion off-switch (CSS layer) ────────────────
+   The site-wide kill for CSS-driven motion: every transition + animation
+   collapses to ~instant and smooth scrolling is disabled. Complements the
+   <MotionConfig reducedMotion="user"> at the layout root, which handles the
+   JS layer (framer-motion / FadeInSection reveals). Near-zero (not 0) keeps
+   transition/animation -end events firing so JS state machines don't stall.
+   Kenburns + marquee keep their own `animation: none` rules below; this is
+   the catch-all for everything else (hover transitions, fades, etc.). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* MEH-763: LTR-isolate numerals/ranges on RTL surfaces (counts, prices,
    distances, ratings) so digits + separators don't reorder under bidi. */
 .numeric { unicode-bidi: isolate; }
