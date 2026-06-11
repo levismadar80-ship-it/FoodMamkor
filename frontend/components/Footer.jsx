@@ -184,14 +184,14 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-8"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-11 min-h-[44px]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
                 aria-label={t("nav.footer.newsletter_submit")}
-                className="absolute end-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition disabled:opacity-40"
+                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
               >
                 {status === "loading" ? <ButtonSpinner /> : "→"}
               </button>
