@@ -3,14 +3,34 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { CookingPot, Grains } from "@phosphor-icons/react";
+import {
+  ArrowCounterClockwise,
+  Basket,
+  CalendarBlank,
+  CalendarX,
+  CookingPot,
+  Drop,
+  MapTrifold,
+  Path,
+  Plant,
+  Plus,
+  Rows,
+  Storefront,
+} from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
-import ExperienceCard from "@/components/ExperienceCard";
+import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
+
+// MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
+// date formatting (lib/format-date.js) untouched — layout layer only.
+// EventCard rewritten as the date-rail EntryRow (the page's signature
+// gesture); experiences render through the SAME EntryRow (gold accent),
+// so ExperienceCard.jsx is no longer imported here (still owns
+// /experiences + /mine). Calendar view keeps CalendarView as-is.
 
 // API filter values are Hebrew strings (server-side enum). Keep keys
 // as the wire format; localize labels via t().
@@ -37,9 +57,43 @@ const EXPERIENCE_CATEGORY_KEYS = [
   { key: "אחר", labelKey: "other" },
 ];
 
+// Category glyph per wire value (Phosphor only — ADR-013). Falls back to
+// CalendarBlank for any unmapped/free-text category.
+const CATEGORY_ICON = {
+  "סדנה": CookingPot,
+  "סיור": Path,
+  "שוק": Storefront,
+  "קטיף": Basket,
+  "טעימות": Drop,
+  "בישול": CookingPot,
+  "תזונה": Plant,
+  "סיור אוכל": MapTrifold,
+  "חקלאות": Plant,
+};
+
 function formatTime(t) {
   if (!t) return "";
   return t.slice(0, 5);
+}
+
+// Normalize an event OR experience row into one shape the rail renderer
+// understands. Field names diverge between the two APIs; the accent
+// ("green" event / "gold" experience) drives the species styling.
+function toEntry(row, tab) {
+  const isExp = tab === "experiences";
+  return {
+    id: row.id,
+    title: row.title,
+    date: row.event_date,
+    time: row.event_time,
+    who: isExp ? row.host?.name : row.producer_name,
+    city: row.city,
+    category: row.category,
+    price: isExp ? row.price_per_person : row.price,
+    description: row.description,
+    accent: isExp ? "gold" : "green",
+    href: isExp ? `/experiences/${row.id}` : `/events/${row.id}`,
+  };
 }
 
 export default function EventsPage() {
@@ -95,196 +149,190 @@ export default function EventsPage() {
     }
   };
 
-  // Backward-compatibility alias so the existing render code below
-  // keeps using `events` even when the tab is experiences.
+  const isExp = tab === "experiences";
+  // Backward-compatibility alias so the render code keeps using `events`
+  // even when the tab is experiences.
   const events = rows;
-  const activeCategories =
-    tab === "experiences" ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
+  const activeCategories = isExp ? EXPERIENCE_CATEGORY_KEYS : CATEGORY_KEYS;
   const categoryLabel = (entry) =>
-    tab === "experiences" ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
+    isExp ? tExpCat(entry.labelKey) : tCat(entry.labelKey);
 
+  // Chips → shared ChipScrollRow (radio semantics). The wire value for
+  // "all" is "" but ChipScrollRow's reset sentinel is "all" — bridge the
+  // two so its scroll-pinning behaves like /producers + /map.
+  const chips = activeCategories.map((c) => ({
+    key: c.key || "all",
+    label: categoryLabel(c),
+  }));
+  const activeChipKey = category === "" ? "all" : category;
+  const onChipClick = (k) => setCategory(k === "all" ? "" : k);
+
+  // Group rows into consecutive month buckets (same logic as before —
+  // restyled into the month-divider). Stores month + year labels split so
+  // the year can render in Cormorant italic per the FINAL.
   const groupedByMonth = useMemo(() => {
-    const groups = {};
-    for (const ev of events) {
-      const key = formatEventDate(ev.event_date, locale, { month: "long", year: "numeric" });
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(ev);
+    const groups = [];
+    const index = {};
+    for (const row of events) {
+      const monthLabel = formatEventDate(row.event_date, locale, { month: "long" });
+      const yearLabel = formatEventDate(row.event_date, locale, { year: "numeric" });
+      const key = `${yearLabel}-${monthLabel}`;
+      if (index[key] == null) {
+        index[key] = groups.length;
+        groups.push({ key, monthLabel, yearLabel, items: [] });
+      }
+      groups[index[key]].items.push(row);
     }
     return groups;
   }, [events, locale]);
 
+  const resetFilters = () => {
+    setCity("");
+    setCategory("");
+  };
+
   return (
     <div>
-      {/* Header — PREMIUM_DESIGN: Ken Burns background image (harvest
-          scene) behind the title, dark overlay preserves contrast. */}
-      <section className="relative text-white py-16 overflow-hidden">
-        <div
-          className="kenburns-right absolute"
-          style={{
-            inset: "-5%",
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&auto=format&q=80&fm=webp)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(46,74,46,0.80) 0%, rgba(46,74,46,0.90) 100%)",
-          }}
-        />
-        <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
-            {t("title")}
+      {/* Breadcrumb — stays on cream so it reads on the dark desktop hero
+          below without recoloring the shared component. */}
+      <div className="max-w-5xl mx-auto px-4 pt-4">
+        <Breadcrumb items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_events") }]} />
+      </div>
+
+      {/* Header — type-led per tab. Mobile: on cream. Desktop (md+): flat
+          primary-dark editorial hero, NO radial wash (BRAND §3 lock). */}
+      <section className="md:bg-primary-dark">
+        <div className="max-w-5xl mx-auto px-4 pt-3 pb-1 md:px-14 md:pt-9 md:pb-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent md:text-green-100">
+            {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
+          </p>
+          <h1 className="font-headline-display font-bold text-3xl md:text-6xl leading-tight text-text md:text-background mt-1.5 md:mt-3">
+            {isExp ? t("h1_experiences") : t("title")}
           </h1>
-          <p className="text-green-50 text-lg">
+          <p className="text-base md:text-xl text-fg-muted md:text-background/85 mt-2 leading-snug">
             {t("subtitle")}
           </p>
         </div>
       </section>
 
-      {/* Breadcrumb */}
+      {/* Tabs — producer events vs community experiences + per-tab add */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <Breadcrumb items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_events") }]} />
-      </div>
-
-      {/* Tabs — combine producer events and community experiences */}
-      <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div role="tablist" className="flex gap-2 border-b border-border">
+        <div role="tablist" className="flex items-end gap-4 border-b border-border">
           <button
             role="tab"
-            aria-selected={tab === "events"}
+            aria-selected={!isExp}
             onClick={() => switchTab("events")}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
-              tab === "events"
-                ? "border-primary text-primary"
-                : "border-transparent text-fg-muted hover:text-primary"
+            className={`pb-3 pt-2 text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+              !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
-            <span className="inline-flex items-center gap-1"><Grains size={16} className="text-current" />{t("tab_events")}</span>
+            {t("tab_events")}
           </button>
           <button
             role="tab"
-            aria-selected={tab === "experiences"}
+            aria-selected={isExp}
             onClick={() => switchTab("experiences")}
-            className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${
-              tab === "experiences"
-                ? "border-primary text-primary"
-                : "border-transparent text-fg-muted hover:text-primary"
+            className={`pb-3 pt-2 text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+              isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
-            <span className="inline-flex items-center gap-1"><CookingPot size={16} className="text-current" />{t("tab_experiences")}</span>
+            {t("tab_experiences")}
           </button>
           <Link
-            href={tab === "experiences" ? "/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto text-sm text-primary hover:underline self-center"
+            href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
+            className="ms-auto self-center text-sm font-medium text-primary hover:underline"
           >
-            {tab === "experiences" ? t("submit_experience") : t("add_event")} ←
+            {isExp ? t("submit_experience") : t("add_event")} ←
           </Link>
         </div>
       </div>
 
-      {/* View-mode toggle — list vs calendar */}
+      {/* Toolbar — city search + list/calendar view toggle */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div
-          role="tablist"
-          aria-label={t("view_mode_label")}
-          className="inline-flex gap-1 rounded-lg bg-green-50 p-1"
-        >
-          <button
-            role="tab"
-            aria-selected={view === "list"}
-            onClick={() => setView("list")}
-            className={`px-4 py-2 text-sm rounded-lg transition ${
-              view === "list"
-                ? "bg-primary text-white"
-                : "text-text hover:bg-background"
-            }`}
-          >
-            {t("view_list")}
-          </button>
-          <button
-            role="tab"
-            aria-selected={view === "calendar"}
-            onClick={() => setView("calendar")}
-            className={`px-4 py-2 text-sm rounded-lg transition ${
-              view === "calendar"
-                ? "bg-primary text-white"
-                : "text-text hover:bg-background"
-            }`}
-          >
-            {t("view_calendar")}
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <section className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="flex items-center gap-2 md:gap-3">
           <CitySearch
             id="events-city"
             label={t("filter_city_label")}
             value={city}
             onChange={setCity}
             placeholder={t("filter_city_placeholder")}
-            className="md:w-64"
+            className="flex-1 md:max-w-xs"
           />
-          <div className="flex flex-wrap gap-2">
-            {activeCategories.map((cat) => (
-              <button
-                key={cat.key || "all"}
-                onClick={() => setCategory(cat.key)}
-                className={`px-3 py-1 rounded-full text-sm transition ${
-                  category === cat.key
-                    ? "bg-primary text-white"
-                    : "bg-white text-text border border-border hover:bg-green-50"
-                }`}
-              >
-                {categoryLabel(cat)}
-              </button>
-            ))}
+          <div
+            role="tablist"
+            aria-label={t("view_mode_label")}
+            className="inline-flex shrink-0 rounded-full border border-border bg-surface-card overflow-hidden"
+          >
+            <button
+              role="tab"
+              aria-selected={view === "list"}
+              // Label is icon-only on mobile (hidden sm:inline); keep a stable
+              // accessible name on every viewport (MEH-134 — a11y + E2E locator).
+              aria-label={t("view_list")}
+              onClick={() => setView("list")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
+                view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+              }`}
+            >
+              <Rows size={18} weight={view === "list" ? "fill" : "regular"} />
+              <span className="hidden sm:inline">{t("view_list")}</span>
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "calendar"}
+              aria-label={t("view_calendar")}
+              onClick={() => setView("calendar")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
+                view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
+              }`}
+            >
+              <CalendarBlank size={18} weight={view === "calendar" ? "fill" : "regular"} />
+              <span className="hidden sm:inline">{t("view_calendar")}</span>
+            </button>
           </div>
         </div>
+      </div>
 
+      {/* Category chips — shared ChipScrollRow (rounded-md, MEH-764). */}
+      <div className="max-w-5xl mx-auto px-4 pt-3">
+        <ChipScrollRow
+          variant="category"
+          chips={chips}
+          activeKey={activeChipKey}
+          onChipClick={onChipClick}
+          // brand cream — shared ChipScrollRow fade API, matches
+          // ProducersClient.jsx:264 + HomeProducersGrid.jsx:70.
+          fadeBg="#F5F0E8"
+        />
+      </div>
+
+      {/* Feed */}
+      <section className="max-w-5xl mx-auto px-4 pt-4 pb-16">
         {loading ? (
-          <p className="text-center text-fg-muted py-12">
-            {tab === "experiences" ? t("loading_experiences") : t("loading_events")}
-          </p>
+          <SkeletonRows srLabel={isExp ? t("loading_experiences") : t("loading_events")} />
         ) : events.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-5xl mb-4">
-              {tab === "experiences" ? "🌱" : "📅"}
-            </p>
-            <p className="text-fg-muted">
-              {tab === "experiences"
-                ? t("empty_experiences")
-                : t("empty_events")}
-            </p>
-          </div>
+          <EmptyState tab={tab} t={t} onReset={resetFilters} />
         ) : view === "calendar" ? (
-          <CalendarView
-            items={events}
-            linkPrefix={tab === "experiences" ? "/experiences" : "/events"}
-          />
+          <CalendarView items={events} linkPrefix={isExp ? "/experiences" : "/events"} />
         ) : (
-          <div className="space-y-12">
-            {Object.entries(groupedByMonth).map(([month, monthEvents]) => (
-              <div key={month}>
-                <h2 className="font-headline-md text-2xl font-bold text-text mb-6 border-b border-border pb-2">
-                  {month}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {monthEvents.map((row) =>
-                    tab === "experiences" ? (
-                      <ExperienceCard key={row.id} experience={row} />
-                    ) : (
-                      <EventCard key={row.id} event={row} freeLabel={t("free")} />
-                    )
-                  )}
+          <div className="space-y-2">
+            {groupedByMonth.map((group) => (
+              <section key={group.key}>
+                <div className="flex items-baseline gap-2.5 pt-6 pb-1.5">
+                  <span className="font-headline-md text-2xl font-bold text-text leading-none">
+                    {group.monthLabel}
+                  </span>
+                  <span className="font-english italic text-base font-medium text-accent numeric">
+                    {group.yearLabel}
+                  </span>
+                  <span className="flex-1 h-px bg-border" />
                 </div>
-              </div>
+                <div>
+                  {group.items.map((row) => (
+                    <EntryRow key={row.id} entry={toEntry(row, tab)} freeLabel={t("free")} />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
@@ -293,46 +341,134 @@ export default function EventsPage() {
   );
 }
 
-function EventCard({ event, freeLabel }) {
+// The date-rail row — the page's signature gesture. Date leads (Frank
+// Ruhl day numeral on a colored tick down the start edge); Latin
+// numerals (time, price) are Cormorant italic, Hebrew stays upright.
+function EntryRow({ entry, freeLabel }) {
   const locale = useLocale();
+  const isExp = entry.accent === "gold";
+  const Icon = CATEGORY_ICON[entry.category] ?? CalendarBlank;
+  const accentText = isExp ? "text-accent" : "text-primary";
+  const tickBg = isExp ? "bg-accent" : "bg-primary";
+  const catChip = isExp ? "bg-accent/10 text-accent" : "bg-green-50 text-primary";
+  const day = formatEventDate(entry.date, locale, { day: "2-digit" });
+  const weekday = formatEventDate(entry.date, locale, { weekday: "long" });
+  const month = formatEventDate(entry.date, locale, { month: "long" });
+  const time = formatTime(entry.time);
+  const meta = [entry.who, entry.city].filter(Boolean).join(" · ");
+  const isFree = !(entry.price > 0);
+
   return (
     <Link
-      href={`/events/${event.id}`}
-      className="bg-background border border-border rounded-[16px] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col"
+      href={entry.href}
+      className="relative grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border transition hover:bg-surface-card"
     >
-      {event.image_url ? (
-        <div
-          className="h-44 bg-cover bg-center"
-          style={{ backgroundImage: `url(${event.image_url})` }}
-        />
-      ) : (
-        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
-          📅
-        </div>
-      )}
-      <div className="p-4 flex-1 flex flex-col">
-        <p className="text-primary text-sm font-semibold mb-1">
-          {formatEventDate(event.event_date, locale)}
-          {event.event_time && ` · ${formatTime(event.event_time)}`}
-        </p>
-        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
-          {event.title}
-        </h3>
-        <p className="text-sm text-fg-muted mb-2">
-          {event.producer_name} · {event.city}
-        </p>
-        {event.description && (
-          <p className="text-sm text-text/85 line-clamp-2 mb-3">{event.description}</p>
+      {/* species tick — start edge, full height */}
+      <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
+      {/* date rail */}
+      <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
+        <span className="font-headline-display font-bold text-3xl md:text-5xl leading-none text-text numeric">
+          {day}
+        </span>
+        <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>
+        <span className="text-[10px] text-fg-muted">{month}</span>
+        {time && (
+          <span dir="ltr" className={`font-english italic text-sm mt-1 numeric ${accentText}`}>
+            {time}
+          </span>
         )}
-        <div className="mt-auto flex items-center justify-between pt-3 border-t border-border">
-          <span className="bg-green-50 text-primary text-xs px-2 py-1 rounded-full">
-            {event.category}
-          </span>
-          <span className="text-accent font-semibold text-sm">
-            {event.price > 0 ? `₪${event.price}` : freeLabel}
-          </span>
+      </div>
+      {/* body */}
+      <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
+        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] ${accentText}`}>
+          <Icon size={14} weight="bold" />
+          {entry.category}
+        </div>
+        <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text mt-1 leading-snug">
+          {entry.title}
+        </h3>
+        {meta && <p className="text-sm text-fg-muted mt-1">{meta}</p>}
+        {entry.description && (
+          <p className="text-sm text-text/85 line-clamp-2 mt-2 leading-relaxed">{entry.description}</p>
+        )}
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          {entry.category && (
+            <span className={`text-xs px-2.5 py-1 rounded-full ${catChip}`}>{entry.category}</span>
+          )}
+          {isFree ? (
+            <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
+          ) : (
+            <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
+              {`₪${entry.price}`}
+            </span>
+          )}
         </div>
       </div>
     </Link>
+  );
+}
+
+// Per-tab empty state — editorial, not apologetic. Phosphor glyph in
+// gold, headline + body + a single real forward action (filter reset on
+// events; add-experience on experiences).
+function EmptyState({ tab, t, onReset }) {
+  const isExp = tab === "experiences";
+  const Icon = isExp ? CookingPot : CalendarX;
+  return (
+    <div className="flex flex-col items-center text-center px-6 py-16">
+      <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
+        <Icon size={36} />
+      </div>
+      <h4 className="font-headline-md text-2xl font-bold text-text mt-5 max-w-[22ch] leading-snug">
+        {isExp ? t("empty_experiences_title") : t("empty_events_title")}
+      </h4>
+      <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
+        {isExp ? t("empty_experiences_body") : t("empty_events_body")}
+      </p>
+      <div className="mt-6 w-full max-w-[260px]">
+        {isExp ? (
+          <Link
+            href="/experiences/new"
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+          >
+            <Plus size={18} weight="bold" />
+            {t("empty_experiences_cta")}
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onReset}
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+          >
+            <ArrowCounterClockwise size={18} weight="bold" />
+            {t("empty_events_cta")}
+          </button>
+        )}
+      </div>
+      <span aria-hidden="true" className="mt-6 w-9 h-0.5 bg-accent/50 rounded-full" />
+    </div>
+  );
+}
+
+// Loading skeleton — mirrors the rail geometry so the layout doesn't jump
+// on hydrate. Cream-toned (opacity-on-cream per ADR-019), not gray blocks.
+function SkeletonRows({ srLabel }) {
+  return (
+    <div aria-busy="true" aria-label={srLabel}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="grid grid-cols-[64px_1fr] md:grid-cols-[104px_1fr] border-b border-border">
+          <div className="py-5 grid justify-items-center content-start gap-2">
+            <span className="w-8 h-8 rounded bg-border/60 animate-pulse" />
+            <span className="w-7 h-2.5 rounded bg-border/60 animate-pulse" />
+          </div>
+          <div className="py-5 ps-3 pe-4 grid gap-2.5">
+            <span className="w-12 h-2.5 rounded bg-border/60 animate-pulse" />
+            <span className="w-3/4 h-4 rounded bg-border/60 animate-pulse" />
+            <span className="w-1/2 h-3 rounded bg-border/60 animate-pulse" />
+            <span className="w-24 h-5 rounded-full bg-border/60 animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
