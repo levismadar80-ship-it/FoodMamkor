@@ -49,7 +49,7 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
         <button
           type="button"
           onClick={dismiss}
-          className="w-7 h-7 rounded-full hover:bg-primary/10 flex items-center justify-center transition"
+          className="w-11 h-11 rounded-full hover:bg-primary/10 flex items-center justify-center transition"
           aria-label={t("close_aria")}
         >
           <X size={14} weight="bold" />

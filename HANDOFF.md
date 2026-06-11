@@ -30,6 +30,43 @@
   from both); bottom-pill hide-on-scroll (reuse MEH-734). Biz CTA href is `/register/producer`
   for now (`/about/for-businesses` = MEH-721).
 
+## 2026-06-10 — MEH-534: /about/process S11 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-534-acceptance-process` off `staging`. **Scope:** new
+  standalone editorial page `frontend/app/[locale]/about/process/` (server
+  `page.js` + `AboutProcessClient.jsx`, 7 sections), `process.*` i18n namespace
+  (he locked / en draft), 2 cross-links (Footer nav + /about close section), docs.
+  Reference: `design-reference/Process Page - Direction D Criteria in the Open (S11).html`.
+- **⚠️ Recovered from a parallel-session collision.** A concurrent session
+  (MEH-789 nav + MEH-134 events) switched branches out from under the first
+  build attempt (2026-06-10 18:35–18:36) and stashed the WIP. Sapir confirmed
+  that session STOPPED + saved (MEH-134 committed 21:00). This work was
+  **recreated clean from context** on a fresh checkout of the 534 branch —
+  pre-checks ran (reflog: no fresh checkout/stash after 18:36; tree clean;
+  9 stashes left UNTOUCHED — stash@{0} is contaminated, {1}/{2} = other session).
+- **Contamination guard:** clean i18n baseline = he 3096 / en 3096. After
+  recreate = **3198 / 3198**, delta = exactly **102** keys (`process.*` +
+  `nav.footer.process`). grep for `bottom_pill`/MEH-789 keys = **0** — no leak.
+- **Done:** build green (`/he/about/process` + `/en/about/process` ● SSG),
+  lint 0 errors, he↔en parity 3198/3198, ICU parity clean, hex grep 0, RTL
+  physical-prop grep 0, `/adversarial-review` run. CHANGELOG + COPY_BANK +
+  MANUAL_TESTING updated.
+- **Decisions:** (a) **standalone route** `/about/process` (NOT a section in
+  AboutClient — that file is already over max-lines; one route = one surface,
+  self-canonical metadata); (b) badge is **illustrative/editorial** — no producer
+  object, so **no `BadgeRow`/`TrustBadge` import**; tooltip reuses the live
+  `producer.badge.verified_tooltip_license` key with literal date `5.6.2026`;
+  (c) gold = `accent` token (#8b6914), the `honey` #c8821e token deliberately
+  unused; (d) /about cross-link label kept in-namespace (`process.crosslink_from_about`)
+  to keep the message diff = process.* + nav.footer.process only; (e) en is all
+  **⏳ pending Sapir** (design he-only).
+- **Pending / next:** Sapir mobile QA (375/360/390) → comment "mobile QA ✅" on
+  Linear → mark PR ready + merge (`Closes MEH-534` auto-closes after human
+  approval, Rule 23). Then **en copy review** (all `process.*` en values are
+  drafts) and **S6/MEH-76** wiring of the real per-producer seal component
+  (this page only *explains* the ADR-022 tiers). No `_cosmetics` tooltip key
+  exists yet (cosmetics matrix rows are inline editorial text only).
+
 ## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
 
 - **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
