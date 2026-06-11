@@ -266,6 +266,9 @@ export default function EventsPage() {
             <button
               role="tab"
               aria-selected={view === "list"}
+              // Label is icon-only on mobile (hidden sm:inline); keep a stable
+              // accessible name on every viewport (MEH-134 — a11y + E2E locator).
+              aria-label={t("view_list")}
               onClick={() => setView("list")}
               className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
                 view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
@@ -277,6 +280,7 @@ export default function EventsPage() {
             <button
               role="tab"
               aria-selected={view === "calendar"}
+              aria-label={t("view_calendar")}
               onClick={() => setView("calendar")}
               className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
                 view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
