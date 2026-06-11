@@ -15,6 +15,44 @@
 - **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
 - **Flags for QA:** (1) submit rounded-[10px], not pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm intended; (5) headline 32px both breakpoints (token) vs ~40/30 ask; (6) **MEH-788:** hero image crop is render-time `object-cover` (no baked Cloudinary ar) — confirm the produce crate frames well on 375/360/390 band + desktop tall pane; overlay AA on the actual photo.
 - **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
+
+## 2026-06-10 — MEH-534: /about/process S11 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-534-acceptance-process` off `staging`. **Scope:** new
+  standalone editorial page `frontend/app/[locale]/about/process/` (server
+  `page.js` + `AboutProcessClient.jsx`, 7 sections), `process.*` i18n namespace
+  (he locked / en draft), 2 cross-links (Footer nav + /about close section), docs.
+  Reference: `design-reference/Process Page - Direction D Criteria in the Open (S11).html`.
+- **⚠️ Recovered from a parallel-session collision.** A concurrent session
+  (MEH-789 nav + MEH-134 events) switched branches out from under the first
+  build attempt (2026-06-10 18:35–18:36) and stashed the WIP. Sapir confirmed
+  that session STOPPED + saved (MEH-134 committed 21:00). This work was
+  **recreated clean from context** on a fresh checkout of the 534 branch —
+  pre-checks ran (reflog: no fresh checkout/stash after 18:36; tree clean;
+  9 stashes left UNTOUCHED — stash@{0} is contaminated, {1}/{2} = other session).
+- **Contamination guard:** clean i18n baseline = he 3096 / en 3096. After
+  recreate = **3198 / 3198**, delta = exactly **102** keys (`process.*` +
+  `nav.footer.process`). grep for `bottom_pill`/MEH-789 keys = **0** — no leak.
+- **Done:** build green (`/he/about/process` + `/en/about/process` ● SSG),
+  lint 0 errors, he↔en parity 3198/3198, ICU parity clean, hex grep 0, RTL
+  physical-prop grep 0, `/adversarial-review` run. CHANGELOG + COPY_BANK +
+  MANUAL_TESTING updated.
+- **Decisions:** (a) **standalone route** `/about/process` (NOT a section in
+  AboutClient — that file is already over max-lines; one route = one surface,
+  self-canonical metadata); (b) badge is **illustrative/editorial** — no producer
+  object, so **no `BadgeRow`/`TrustBadge` import**; tooltip reuses the live
+  `producer.badge.verified_tooltip_license` key with literal date `5.6.2026`;
+  (c) gold = `accent` token (#8b6914), the `honey` #c8821e token deliberately
+  unused; (d) /about cross-link label kept in-namespace (`process.crosslink_from_about`)
+  to keep the message diff = process.* + nav.footer.process only; (e) en is all
+  **⏳ pending Sapir** (design he-only).
+- **Pending / next:** Sapir mobile QA (375/360/390) → comment "mobile QA ✅" on
+  Linear → mark PR ready + merge (`Closes MEH-534` auto-closes after human
+  approval, Rule 23). Then **en copy review** (all `process.*` en values are
+  drafts) and **S6/MEH-76** wiring of the real per-producer seal component
+  (this page only *explains* the ADR-022 tiers). No `_cosmetics` tooltip key
+  exists yet (cosmetics matrix rows are inline editorial text only).
+
 ## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
 
 - **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
@@ -83,6 +121,27 @@
   **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
   + `fill` + `object-[center_30%]` not visually verified — confirm in mobile QA.
   `/about/for-businesses` is a separate page, out of scope.
+
+## 2026-06-08 — MEH-233 mobile responsiveness audit (Audit 7/7, AUDIT-ONLY)
+
+**Report:** [`docs/audits/2026-06-mobile-audit-MEH-233.md`](./docs/audits/2026-06-mobile-audit-MEH-233.md).
+Branch `feature/meh-233-audit-mobile` off staging → DRAFT PR. **No layout code
+touched** — findings are for Sapir to triage into per-route sub-MEHs.
+
+- **What ran:** new isolated Playwright config `frontend/playwright.mobile-audit.config.ts`
+  + spec `frontend/e2e/mobile-audit/mobile-audit.spec.ts` + merge script
+  `frontend/scripts/build-mobile-audit-report.mjs`. 11 routes × 3 mobile viewports
+  (iPhone SE 375×667 · Galaxy 360×640 · iPhone 14 390×844), 33 full-page screenshots
+  in `docs/audits/screenshots/MEH-233/`. All 33 passed. Existing e2e specs untouched.
+- **Result:** 9 CRITICAL (overflow:hidden clipping on `/` location-banner text + `/about`
+  & `/events` hero sections, consistent across all 3 viewports), 33 HIGH (tap targets
+  < 44px). No horizontal-overflow / nav-cutoff / header-overlap / modal-fit findings.
+- **CAVEAT (load-bearing):** ran against a LOCAL build with **no backend** — API content
+  rendered empty/loading; external CDNs blocked. Content-density overflow (long Hebrew
+  names, real card grids/images) is a KNOWN BLIND SPOT → recommend a follow-up run on a
+  seeded staging/preview env. `@playwright/test` was already a dep; browser via the
+  pre-provisioned `/opt/pw-browsers` Chromium (CDN blocked in sandbox).
+- **Next:** Sapir triages Top 10 CRITICAL → opens per-route fix sub-MEHs.
 
 ## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
 

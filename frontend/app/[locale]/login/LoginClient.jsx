@@ -264,7 +264,7 @@ function LoginPageBody() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-9 h-9 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label={showPassword ? t("password_hide") : t("password_show")}
                 aria-pressed={showPassword}
               >

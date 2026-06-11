@@ -35,6 +35,8 @@ const VALUES = [
 
 export default function AboutPage() {
   const t = useTranslations("about.consumer");
+  // MEH-534: cross-link label to the /about/process page (process namespace).
+  const tProcess = useTranslations("process");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
@@ -273,6 +275,16 @@ export default function AboutPage() {
               className="text-primary font-semibold underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("cta.register")}
+            </Link>
+          </p>
+          {/* MEH-534: cross-link to the S11 acceptance-process page */}
+          <p className="mt-4">
+            <Link
+              href="/about/process"
+              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {tProcess("crosslink_from_about")}
+              <ArrowLeft size={18} aria-hidden="true" />
             </Link>
           </p>
         </div>
