@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { EnvelopeSimple, Eye, EyeSlash, Leaf, Lock } from "@phosphor-icons/react";
+import Image from "next/image";
+import { EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -12,6 +13,7 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
  * Module:   LoginClient
@@ -22,14 +24,18 @@ import { env } from "@/lib/env";
  *           (GoogleAuthButton.jsx / AppleAuthButton.jsx — vendor primitives).
  * Related:  frontend/messages/he.json → auth.login.* / auth.oauth.* (copy
  *           locked MEH-751/MEH-752); design-reference S9 mock.
- * History:  MEH-211 (S9 design); MEH-131 (this S9 port — social-first order,
- *           open fields on cream, no white card; supersedes the old
- *           form-first FEEDBACK_FIXES fix 2, re-synced by S9 2026-06-05).
+ * History:  MEH-211 (S9 design); MEH-131 (S9 port — social-first order, open
+ *           fields on cream, no white card; supersedes the old form-first
+ *           FEEDBACK_FIXES fix 2, re-synced by S9 2026-06-05); MEH-788
+ *           (split-screen — Cloudinary hero pane + brand overlay; register
+ *           de-boxed to an editorial text link).
+ * Touches:  Cloudinary (login/hero-produce-crate, via optimizeCloudinary).
  *
- * S9 layout (top→bottom): gold eyebrow rule + Frank Ruhl 900 welcome
- * headline → social-first auth (Google → Apple) → "או" → email + password
- * (eye toggle + adjacent forgot link) → green submit → demoted register
- * "door" panel on --light.
+ * Layout: desktop = two panes (form START/right · image END/left); mobile =
+ * image top band → form below. Form pane (top→bottom): gold eyebrow + small
+ * Frank Ruhl welcome headline → social-first auth (Google → Apple) → "או" →
+ * email + password (eye toggle + adjacent forgot link) → green submit →
+ * understated register text link. Brand mood lives in the image overlay.
  */
 export default function LoginClient() {
   return (
@@ -91,6 +97,14 @@ function LoginPageBody() {
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
+  // MEH-788: split-screen hero image. f_auto,q_auto via the helper; object-cover
+  // crops to each pane (tall on desktop, top band on mobile) — no baked ar so the
+  // single asset serves both layouts without distortion.
+  // REUSES: components/HomeProductCard.jsx:26 (optimizeCloudinary + next/image fill)
+  const heroSrc = optimizeCloudinary(
+    "https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
+  );
+
   // Inline field-level validation.
   // onBlur flips the `*Touched` state; error / valid states below only
   // activate after the user has interacted with the field, so the form
@@ -109,9 +123,34 @@ function LoginPageBody() {
   const formIsValid = validateEmail(email) && password.length >= 1;
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center bg-background px-4 py-16 md:py-20">
-      {/* S9 "Two Doors": open fields on cream — no floating white auth card. */}
-      <div className="w-full max-w-[416px] mx-auto grid gap-6">
+    <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
+
+      {/* Image pane — END (left) on desktop, top band on mobile (MEH-788) */}
+      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+        <Image
+          src={heroSrc}
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+        />
+        {/* scrim — keeps the overlay AA-readable over any part of the photo */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/30 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
+          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50">
+            {t("hero_overlay")}
+          </p>
+        </div>
+      </div>
+
+      {/* Form pane — START (right) on desktop */}
+      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+        {/* S9 "Two Doors": open fields on cream — no floating white auth card. */}
+        <div className="w-full max-w-[416px] mx-auto grid gap-6">
 
         {/* Head — gold eyebrow rule + Frank Ruhl 900 welcome headline */}
         <div className="grid gap-3 text-start">
@@ -254,7 +293,7 @@ function LoginPageBody() {
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-[10px] px-6 font-semibold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-[10px] px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">
@@ -267,19 +306,17 @@ function LoginPageBody() {
           </button>
         </form>
 
-        {/* The other door — demoted cross-link panel on --light (green-50) */}
-        <Link
-          href="/register"
-          className="grid grid-cols-[auto_1fr] gap-3.5 items-center p-[18px] bg-green-50 border border-border rounded-[16px] hover:border-primary transition"
-        >
-          <span className="grid place-items-center w-10 h-10 rounded-full bg-surface-card border border-border text-primary">
-            <Leaf size={19} weight="regular" aria-hidden="true" />
-          </span>
-          <span className="grid gap-0.5 text-start">
-            <span className="font-headline-md text-[17px] font-bold text-text leading-tight">{t("no_account")}</span>
-            <span className="text-[13px] text-primary font-medium">{t("register_cta")}</span>
-          </span>
-        </Link>
+        {/* Register — understated editorial text link (no box, no icon) */}
+        <p className="text-center text-sm text-fg-muted">
+          {t("no_account")}{" "}
+          <Link
+            href="/register"
+            className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
+          >
+            {t("register_cta")}
+          </Link>
+        </p>
+        </div>
       </div>
     </div>
   );
