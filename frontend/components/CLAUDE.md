@@ -33,7 +33,7 @@ behavior see `frontend/components/Header.jsx`.
 
 ## Gotchas
 - **Central components require `/adversarial-review`** even on a green
-  build — `MapClient.jsx`, `ProducerDetail.jsx`, `HomeProductForm.jsx`
+  build — e.g. `MapClient.jsx`, `ProducerCard.jsx`
   listed in `.claude/central-components.json` (workflow rule 20).
 - **i18n migration mid-flight** (MEH-366): `lib/language-context.js` is
   the legacy homegrown provider; the codebase is migrating to

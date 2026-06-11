@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf, House } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import HomeProductCard from "@/components/HomeProductCard";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
 // Tag display labels resolve via home.marquee.* — preserving the order
@@ -132,48 +131,6 @@ export function HomeRecentlyViewed({ items }) {
             </Link>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-/**
- * DEFERRED home-product preview (max 3). Hidden until MEH-543 launch.
- * Full browse at /neighbor.
- * Hidden entirely when the products list is empty.
- */
-export function HomeKitchenPreview({ products, onWhatsAppClick }) {
-  const t = useTranslations();
-  if (!products.length) return null;
-  return (
-    <section
-      id="home-kitchen"
-      className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
-    >
-      <div className="flex items-baseline justify-between mb-6">
-        <h2
-          className="font-headline-md font-bold text-text inline-flex items-center gap-2"
-          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
-        >
-          <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
-          {t("home.kitchen.heading")}
-        </h2>
-        <Link
-          href="/neighbor"
-          className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
-        >
-          {t("home.kitchen.see_more")}
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.slice(0, 3).map((hp) => (
-          <HomeProductCard
-            key={hp.id}
-            product={hp}
-            onWhatsAppClick={() => onWhatsAppClick(hp.id)}
-          />
-        ))}
       </div>
     </section>
   );

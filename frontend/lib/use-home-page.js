@@ -47,7 +47,6 @@ export function useHomePage() {
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   const router = useRouter();
   const [producers, setProducers] = useState([]);
-  const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
@@ -131,12 +130,6 @@ export function useHomePage() {
     const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
-    // Home-kitchen preview — just the 3 most recent, no filter.
-    // Full browse + filter lives on /neighbor.
-    api
-      .get("/home-products")
-      .then((r) => setHomeProducts(r.data))
-      .catch(() => setHomeProducts([]));
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
     // true and the skeleton dismisses — empty result hides the section
     // (showStatsCounter/showStatsFallback both false), which is the same
@@ -327,7 +320,6 @@ export function useHomePage() {
     user,
     // raw state
     producers,
-    homeProducts,
     categories,
     filters,
     chips,
