@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-11 — MEH-233 triage follow-ups (Linear at free-issue limit → deferred)
+
+Triage of the mobile audit (PR #1038) shipped 2 fixes; 3 items deferred pending a free slot:
+
+1. **chips tap-targets** (YELLOW) — home/events/map filter pills at ~30px → 44px.
+   ChipScrollRow.jsx is shared (home + map); Phase 0 must determine single-shared-fix vs
+   per-consumer. MapClient.jsx = central HIGH-RISK → chunk 2 separate w/ WAIT.
+   Branch: feature/mobile-chip-tap-targets. Refs MEH-233.
+
+2. **audit heuristic refine** — MEH-233 check-4 over-flags: doesn't exclude inset:-5%
+   kenburns decorative layers, and counts WCAG-2.5.8-exempt inline text links as targets.
+   Pattern seen twice (9 CRITICAL→1 real, 33 HIGH→subset). Refine before next audit run.
+
+3. **seeded content-density run** — audit ran on local build w/ no backend; real producer
+   data/image overflow untested. Re-run seeded once backend available.
+
+SHIPPED this triage: overflow-clip (PR #1042, LocationBanner truncate fix + audit
+false-positive notes) ✅ · icon-button tap-targets subset (PR #1046, merged). Refs MEH-233.
+
 ## 2026-06-10 — MEH-789: bottom nav system PR-A (DRAFT — Sapir QA + merges)
 
 - **Branch:** `feature/meh-789-nav-bottom-pill` off clean `staging`, in an **isolated git
