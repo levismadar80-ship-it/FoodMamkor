@@ -1,6 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+// MEH-731: locale-stripping usePathname (returns "/map" on /he/map and
+// /en/map) so the `=== "/map"` check below fires under next-intl [locale]
+// routing — next/navigation's usePathname keeps the locale prefix and the
+// footer would wrongly render on /map.
+import { usePathname } from "@/i18n/navigation";
 import Footer from "@/components/Footer";
 
 /**

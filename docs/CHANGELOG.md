@@ -3,6 +3,559 @@
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
 ## Unreleased
+- **MEH-131 — /login S9 "Two Doors" port (visual/structural only):** restyled `frontend/app/[locale]/login/LoginClient.jsx` to the S9 design (Direction C). Removed the floating white auth card → open fields directly on `bg-background` cream; gold eyebrow rule (`auth.login.title`) + Frank Ruhl 900 welcome headline (`auth.login.welcome`); **flipped to social-first order** (Google → Apple → "או" → email/password), superseding the old form-first FEEDBACK_FIXES fix 2 (S9 re-synced 2026-06-05); leading mail/lock adornments inside `dir="ltr"` field wrappers (logical `start`/`end`, eye-toggle on logical `end`); forgot-password link moved into the password label-row; register CTA restyled as the demoted `--light` (green-50) "door" panel with leaf glyph. **Zero copy changes** — all strings resolve from existing locked `auth.login.*`/`auth.oauth.*` keys (MEH-751/752); he.json/en.json untouched. Tokens-only (0 raw hex), RTL logical props only (0 physical). Removed the value-prop strip (`value_save/rate/publish` — not in S9; keys retained in JSON). Submit uses site-standard `rounded-[10px]` primary, not the mock's pill (per "NOT green pill" constraint). Auth logic (JWT/OAuth/validation/error-handling) untouched. `npm run build` green, `/login` still SSG.
+- **MEH-131 — /login welcome headline scale-down (same PR #1040):** the welcome headline rendered at hero scale (raw `text-[40px] md:text-[52px]`, /about-sized); swapped to the `headline-lg` heading token (32px/900) so it reads as a utility-login head. FRL-900 weight + gold eyebrow kept; token-driven (no raw px on the headline); zero copy change. `npm run build` green, `/login` still ● SSG.
+- **MEH-788 — /login split-screen + 3 polish fixes (same PR #1040):** elevated `/login` from a centered single column to a **two-pane split** — desktop: form pane on the START (right) + Cloudinary produce image pane on the END (left, `next/image fill` + `object-cover`, `optimizeCloudinary` f_auto,q_auto); mobile: image as a ~30vh top band, form below (image never hidden). Brand **overlay** on the image (`auth.login.hero_overlay`, FRL-900 cream `text-green-50`) over a bottom-anchored `green-900` scrim gradient (bumped to /90 for AA on bright photo regions). Polish: (1) register CTA **de-boxed** — green-50 panel + leaf-circle replaced with an understated gold-underlined editorial text link; (2) submit CTA `font-semibold`→`font-bold` (decisive solid `bg-primary` enabled state, muted disabled); (3) welcome headline kept small (`headline-lg`). **Only one new string** — `auth.login.hero_overlay` (he+en); all other `auth.login.*`/`auth.oauth.*` byte-identical. Tokens only (0 raw hex), RTL logical props only (0 physical; panes via `order-*` + logical start/end). Auth logic untouched. `npm run build` green, `/login` still ● SSG; lint 0 errors; adversarial-review 0 blocking.
+
+### 2026-06-10 — MEH-789: bottom nav system — signature cream pill + account sheet (PR-A, draft)
+
+- **`feat(MEH-789)`**: port of the Phase 6 "Cream Signature" bottom nav system (Direction A) — mobile only, `BottomNav.jsx` + new `AccountSheet.jsx`. The MEH-20 full-width `bg-white border-t` bar becomes a **floating cream pill** (`max-w-[343px]`, centered, `p-1.5`, `rounded-full`, `bg-background` + `border-border`, safe-area gutter) with **exactly 4 destinations, zero actions**: גלו (`Compass`) · מפה (`MapTrifold`) · אודות (`Flower`) · חשבון (`User`/avatar). Active = **pill-in-pill** `bg-primary` + cream content + Phosphor **fill-on-active**; idle `text-fg-muted`; labels DM Sans 500 11px; `motion-reduce:transition-none` (instant toggle). Tabs ≥ 64×56px. The **account tab is not a route** — it toggles the new warm-dark **account sheet** (`bg-green-900`, `rounded-[20px]`, `role="dialog"`, scrim + Escape close, focus-trap + restore): favorites · settings · language (embeds the existing `<LanguageToggle>` 1:1) · logout, plus a quiet **"יש לך בית עסק?"** entry (gold `Storefront` + ↗, → `/register/producer`, **MEH-669-gated** `!producer && !admin`). Gold appears only on the sheet accent + ↗ + lang indicator. Avatar tokenized (old raw-hex green → `bg-primary`). OnboardingTip preserved (step 2 → map, step 3 → account — the latter previously dead on a 3-item array). **Adversarial-review** (central component): 2 real findings fixed — unstable `onClose` bounced the sheet's focus effect on every re-render (memoized via `useCallback`), and the guest account-tab `aria-label` mislabeled a dialog trigger (→ `nav.account`). **Test:** `BottomNav.test.jsx` rewritten for the 4-destination structure (the stale 3-tab assertions failed the vitest gate). i18n: +6 keys/locale (`nav.account`, `nav.language`, `account.sheet.{connected,guest_name,guest_sub,biz_cta}`), parity 2593==2593. **Part of MEH-789** (not Closes — PR-B retires the Header hamburger drawer; bottom-pill hide-on-scroll reuse of MEH-734 deferred). Gates: build (101/101 SSG), lint 0 errors, RTL 0, hex 0, forbidden-copy 0.
+
+### 2026-06-10 — MEH-534: /about/process S11 Direction D port ("Criteria in the Open")
+
+- **`feat(process)`**: new standalone editorial page `frontend/app/[locale]/about/process/` — server wrapper `page.js` (mirrors `about/page.js`: `generateMetadata` from the `process.meta` namespace + `buildAlternates("/about/process")` + `urlForLocalePath` self-canonical og:url) and `AboutProcessClient.jsx` (the 7-section S11 "תהליך הקבלה" Direction D surface: hero · 4-step personal process · what's-checked-for-everyone · the badge / what it adds · public verification matrix by category · founder closing · CTA → `/register/producer`). Reference `design-reference/Process Page - Direction D Criteria in the Open (S11).html`. Tokens-only (0 raw hex; gold = `accent` #8b6914, **never** the `honey` #c8821e token), RTL logical props only (0 physical), Phosphor `regular` icons only, no emoji. `.numeric` (unicode-bidi:isolate) on the badge date + step/everyone numerals; FRL-900 gold-geresh `ms-[0.14em]` on the 4 cream↔gold seam spots (hero `<em>היכרות אישית</em>`, badge one-liner `<em>ואנחנו בדקנו אותו.</em>`, matrix declare italic, tier-tag labels). `npm run build` green (`/he/about/process` + `/en/about/process` both ● SSG), lint 0 errors, he↔en parity 3198/3198, ICU parity clean. _Recreated cleanly after a parallel-session (MEH-789/134) working-tree collision — see HANDOFF; contamination guard ran, delta = exactly `process.*` + `nav.footer.process`._
+- **i18n**: added the `process.*` namespace (101 keys) to `messages/{he,en}.json`. **he = the Sapir-locked S11 copy table verbatim** (hard locks: `process.hero.h1`, `process.closing.quote` + `.attrib`; the 6 Sapir-flagged rows used as-drafted). **en = draft translations, ⏳ pending Sapir review** (design is he-only; MEH-758 precedent). The illustrative badge tooltip **reuses** the live key `producer.badge.verified_tooltip_license` with a literal example date (`5.6.2026`) — no live `{date}` on this static page, no producer object, **no `BadgeRow`/`TrustBadge` import** (badge is editorial chrome, not a per-producer badge). The only non-`process.*` message key added is `nav.footer.process` (footer nav link); the /about cross-link label lives in-namespace as `process.crosslink_from_about`.
+- **Links**: footer nav gains "תהליך הקבלה" → `/about/process` (`Footer.jsx`, after `/about`); `/about` close section gains a subtle cross-link → `/about/process` (`AboutClient.jsx`, via a `process`-scoped `useTranslations`). DRAFT PR — mobile QA (375/360/390) + merge deferred to Sapir per Rule 23. `process.badge.absence_*` mirrors the tier-2 framing of `producer.badge.declared_explainer` (kept as 3 separate keys, not collapsed — see COPY_BANK cross-ref).
+
+### 2026-06-09 — MEH-135: /about S8 Direction D port ("Feature Standfirst")
+
+- **`feat(about)`**: visual restyle of `frontend/app/[locale]/about/AboutClient.jsx` into the locked S8 Direction D editorial longread — cream ink-on-paper canvas, FRL-900 hero, founder-story portrait standfirst with gold byline, **cream typographic offset pull-quote** (replaces the image/kenburns `ParallaxQuote` component on this page — component untouched, still used on home), 3-pillar benefits with gold Cormorant numerals (was primary-green cards), `CaretDown`-rotating tips accordion (first-open), slim testimonials invitation band, bordered editorial Values box with gold numerals (2-col desktop), and a 2-col contact form. **Zero copy changes** — every string still resolves from existing `about.consumer.*` keys; `messages/{he,en}.json` untouched. Tokens-only (0 raw hex), RTL logical props only (0 physical), AA contrast, ≥44px tap targets, visible focus rings. S8 decorative Hebrew eyebrows with no i18n key (`צעדים ראשונים`, `הקריטריונים שלנו`, parallax `מהמקור`) render as decorative gold rules (no hardcoded Hebrew); `mehflag` doc annotation excluded. `npm run build` green (/about ● SSG), lint 0 errors. Mobile QA (375/360/390) deferred to Sapir per Rule 23.
+- **Subtle grain texture:** added a barely-visible film-grain overlay over `/about` to break the flat-digital feel — inline SVG `feTurbulence` (monochrome, `baseFrequency 0.8`, data-URI, no external asset, LCP-safe), `pointer-events-none`, `aria-hidden`, `opacity-[0.035]`, full-bleed `absolute inset-0` scoped to the `/about` root (RTL-neutral). Rendered as a top film (not a behind-bg layer) because the tonal section fills are opaque — a layer behind them wouldn't show through; at 3.5% it reads as depth, AA unaffected, focus/clicks pass through. AboutClient.jsx only.
+- **Tonal-block separation (option B) + drop rules:** separation by tone, not lines. Added an additive `background-alt` (`#EDE4D2`, a subtle warm step from `background #F5F0E8`) to `docs/DESIGN.md` + the generated `frontend/tailwind.tokens.json` (no existing token changed; `design.md` export CLI isn't in the sandbox, so the generated file was hand-synced to the DESIGN.md source — a real `npm run design:export` reproduces it identically). DESIGN.md prose marks it a *layout/surface* token, explicitly **not** a per-state background (the ADR-019 prohibition is about component states, which still use opacity on cream). In `AboutClient.jsx`: the adjacent **Benefits + Values** pair now sits on one continuous `bg-background-alt` block (`AboutClient.jsx:144` + `:166`); all narrative sections (hero, story, pull-quote, tips, testimonials, CTA, contact) stay on base cream — calm rhythm, not stripes. All decorative horizontal gold rules removed; the `Eyebrow` marker is now a **text-only** label (small, tracked +0.15em, `fg-muted` for AA on both tones, tight gap to heading). The pull-quote's vertical gold rule (blockquote device) is kept; the Values bordered box is kept (now on the alt block). AA verified on the alt tone (`fg-muted` ~5.6:1). No copy/JSON-message edits.
+- **Eyebrow labels restored (tips/values) + label-rule unit:** root-cause fix for the orphan-rule issue — the S8 design has eyebrow LABELS above each section marker; the original port dropped the ones with no i18n key and left bare rules. Added **2 new keys per locale** (`about.consumer.tips.eyebrow` = `צעדים ראשונים`/"First steps", `about.consumer.values.eyebrow` = `הקריטריונים שלנו`/"Our criteria"; he/en each +2, no other string touched). New `Eyebrow` unit in AboutClient renders a small tracked muted-accent label at the start edge + a thin gold rule extending toward the line-end (RTL-safe, `flex-1` rule, `bg-accent/30`), tight 8–16px gap to the heading. Applied to **Benefits** (`as="h2"` — the label IS the section heading), **Tips**, and **Values** (unit sits above the bordered box, not on its border). Eyebrows are `<p>` (Tips/Values) so they don't outrank the section `h2`. The old bare `<Rule />` component is removed entirely — a gold rule now appears **only** as part of an eyebrow unit (the lone Hero rule is gone too).
+- **Rule/divider cleanup round:** decorative gold `<Rule />` kicker reduced to one-per-section, single-purpose — kept ONLY where a section has no other framing and the rule pairs with the heading: **Hero, Benefits, Tips** (3 remain). Removed from **Pull-quote** (the blockquote already carries a gold `border-s` start-rule — two lines were stacking), **Values** (the bordered box is the framing device — the rule collided with the box top edge), and **Contact**. Also dropped Contact's section `border-t` (it stacked a second line directly under the CTA tinted-band's bottom border) — the `bg-green-50` CTA band's `border-y` is now the single separator on both its edges. Whitespace carries the rest. No copy edits.
+- **Pull-quote spacing + numeral restyle round:** (1) **pull-quote void closed** — the short right-offset quote left an L-shaped void before Benefits; pull-quote padding `py-12 md:py-20`→`pt-9 md:pt-14 pb-4 md:pb-6` (no larger than other sections) and Benefits top trimmed (`py-9 md:py-14`→`pt-4 md:pt-6 pb-9 md:pb-14`) so the gap closes. (2) **benefit numerals restyled** — em-dash removed; each Benefits column is now `text-center` so the gold Cormorant numeral sits centered over its title + body (reads connected). (3) **values numerals** — em-dash removed for consistency; alignment unchanged (start-aligned in the bordered 2-col box). No copy edits.
+- **Spacing + caption proportion round:** (1) **vertical rhythm tightened** — replaced the global `section-y` (80/48px) with `py-9 md:py-14` (56/36px, ~30% cut) on all sections, pull-quote `py-16 md:py-24`→`py-12 md:py-20`; editorial-generous without dead voids (globals untouched — change scoped to AboutClient). (2) **founder byline caption hierarchy** — the two equal body-sized lines under the portrait become a proper byline: `story.caption1` (credit) → small muted `text-sm` `fg-muted`; `story.caption3` (personal) → distinct `text-[15px]` `text-text` `font-medium` accent; gap tightened (`space-y-1.5`, `mt-4`, `ps-4`, `max-w-[320px]`), gold start-rule kept, whole block now sits below body-prose scale. No copy edits.
+- **IA round (information architecture):** (1) **section reorder** — Values (`כך אנחנו בוחרות`) moved to sit **after Benefits, before Tips** (values-before-social-proof): Hero → Story → Pull-quote → Benefits → Values → Tips → Testimonials → Close → Contact. Pure JSX block move, copy/markup inside blocks unchanged. (2) **close restructure (consumer-primary)** — the two stacked twin centered blocks are collapsed: the bottom section now has a **single primary CTA** = the consumer button `cta.explore` (`גלו עסקים קרובים`, → `/map`), filled green/large; the business action `cta.register` is **demoted to a light underlined link repointed to `/about/for-businesses`** (was a filled button → `/register/producer`). The business-facing `cta.heading` is kept verbatim but demoted to a muted `text-sm` lead-in (no longer an `h2`). The close section is a **tinted `bg-green-50` bordered band** so it no longer reads identical to the plain Contact form below it. Zero copy edits this round (he/en.json untouched).
+- **Refinement round (post-visual-review):** (1) **type scale ↓** to editorial — hero `clamp(28px,5vw,52px)`, section h2 `clamp(23px,4vw,30px)`, greeting ~25px, prose `text-[17px]`/`leading-[1.75]`/`max-w-[64ch]`. (2) **Hebrew faux-italic killed** — pull-quote, story byline captions, and testimonials subtitle now **upright** (Frank Ruhl / DM Sans); `font-english`+`italic` now wraps **only** the Latin `01—02—03` numerals. (3) **hero anchored** — gold rule above H1, ~30% less vertical padding, standfirst pulled closer. (4) **`scroll-mt-24`** on all 9 sections (clears the sticky floating-nav). (5) **Values border** now `border-2 border-accent/30` (visible, intentional). (6) **portrait** `object-[center_30%]` crop toward subject (stopgap pending real 3:4 portrait). (7) **copy (he.json only):** `cta.explore` `גלי`→`גלו` (neutral-plural UI-button voice, matches nav, ADR-014). en.json untouched.
+
+### 2026-06-08 — MEH-214 + MEH-780: fuzz chain unblock (combine — supersedes #1030 + #1034)
+
+- **`test(api)` + `chore(deps)` + `fix(auth)`**: single atomic PR off current `staging` that lands the schemathesis fuzz chain green, replacing the two stale, non-merged PRs #1030 (`feature/meh-214-schemathesis-dep`) + #1034 (`feature/meh-780-fuzz-optin-oauth-docs`) — both branched off old `staging` and would have **reverted** merged work (MEH-771 `outbound_messages` #1029, the schema-guard 36→35, and 9 Dependabot bumps). Three parts: **(1)** `schemathesis>=4.0` added to `backend/pyproject.toml` dev group + `uv.lock` relocked via `uv add` (the lock relock also forward-syncs the 6 already-merged-but-unlocked Dependabot bumps #1019–#1022 — fastapi 0.120.1→0.136.3, uvicorn 0.30.6→0.48.0, alembic 1.13.2→1.18.4, joserfc 1.6.4→1.7.0, resend 2.29.0→2.30.1, sentry-sdk 2.18.0→2.60.0 — that CI's `uv sync --frozen` had left dormant; **forward-sync, zero reversions**, full suite green under them). **(2)** module-level `pytestmark = skipif(not RUN_FUZZ)` gate on `tests/test_fuzz_schemathesis.py` (MEH-780) — even with schemathesis installed, the finder suite stays OFF in the default required `pytest tests/` job (first run = 297 failures, mostly `UndefinedStatusCode` spec-completeness + the FUZZ-001..004 ledger). Run on demand / nightly with `RUN_FUZZ=1`. **(3)** annotation-only `responses={401, 503}` on `/auth/google`, `/auth/apple`, `/auth/register/producer/oauth` (MEH-780) — kills the dominant schemathesis `UndefinedStatusCode` noise on those ops; **zero behavior change**. Verified: `pytest tests/` → 1032 passed / 352 skipped (350 = gated fuzz) / 0 failed; `RUN_FUZZ=1` collects 350 cases; schema-guard stays 36 tables / `c1d2e3f4a5b6` (no revert). FUZZ-001..004 remain in `docs/audits/` for post-release triage — **no blind API fix here** (the OAuth 503→4xx fix stays its own sub-MEH).
+
+### 2026-06-06 — MEH-214: schemathesis property-based API fuzz suite
+
+- **`test(api)`**: new `tests/test_fuzz_schemathesis.py` — Hypothesis-driven requests over the FastAPI app's own `openapi.json` (in-process ASGI, no network), asserting each response against schemathesis's default checks (no 5xx, status-code/content-type/response-schema conformance). Two passes: **unauthenticated** (destructive admin DELETEs excluded via `exclude(method="DELETE", path_regex="^/admin")`) and **authenticated** (admin JWT; admin DELETEs hit random ids → 404 against the isolated test DB). Marked `@pytest.mark.fuzz` (registered in `conftest.pytest_configure`); `max_examples` env-tunable (`FUZZ_MAX_EXAMPLES`, default 15). `schemathesis` is opt-in: `pytest.importorskip` skips the whole module until the dev dep lands in `uv.lock`, so the default `pytest tests/` job stays green. **Sapir-terminal step** (PR body): add `schemathesis` to `backend/pyproject.toml` dev group + `uv lock` (pyproject is guard-protected by `protect-lint-config.sh`, MEH-442). Finder-not-fixer: failures are FUZZ-NNN findings for morning triage, never a green-gate to silence. Locally verified: 350 tests collect (177 authed + 173 unauth), marker filter + importorskip skip-path both confirmed; execution deferred to CI (no sandbox Postgres).
+
+### 2026-06-06 — AUD-009/010 (MEH-214): WhatsApp — parse Graph response, stop 200=delivered
+
+- **`fix(whatsapp)`**: `app/services/whatsapp.py` `_post` treated any non-error HTTP status as "delivered" and discarded the response body. A Graph `200` only means *accepted/queued* (true delivery is a later MEH-509 webhook) and an `error` object can ride inside a `200`. New `WhatsAppSendResult` + `_classify`/`_result_from_error`/`_safe_json` parse the body: extract the `wamid` on success, the `error.code`/`error.message` on failure, classify outcomes `accepted`/`failed`/`window_expired` (24h-window codes `{470, 131047, 131051}`), and log per outcome. `send_text`/`send_template` keep the **bool** façade (`result.ok`) so every call site (watchdog `auto_reply_watchdog.py:174`, `rating_dispatcher`, `auth_notifications`, admin/alerts/OTP routers) is byte-compatible. New `tests/test_whatsapp_delivery_parsing.py` (pure unit, no DB). **Schema-free slice** — outbound delivery-status persistence column is a Sapir-terminal Alembic step in the PR body. Phase 0: `docs/discovery/2026-06-whatsapp-delivery-phase0.md`.
+### 2026-06-06 — AUD-039/040 (MEH-214): availability server-side validation + Israel tz
+
+- **`fix(availability)`**: every `availability_state` write path now rejects a **past** `vacation_until`, determined in **Asia/Jerusalem** time (not the server's UTC `date.today()`). New `app/utils/clock.py` (`israel_now`/`israel_today`, reusing the watchdog's `BUSINESS_HOURS_TIMEZONE`) + `app/services/availability_validation.py` (explicit-but-permissive transition matrix `ALLOWED_TRANSITIONS`, `validate_transition`, `resolve_vacation_until`). Wired into `set_availability_state` (new endpoint — value→400, missing/past return-date→422, status codes preserved), the legacy `set_availability_status` (past-date→422), and a narrow `ProducerUpdate._validate_vacation_until` model-validator (admin path). **Read-path auto-clear (`schemas.py:591`) intentionally left on `date.today()`** — the merged mutation suite's `test_vacation_ending_today_is_not_auto_cleared` (AV-3) pins that boundary, and Israel-ahead-of-UTC would flakily break it; tz correctness lands on the write path where no test conflicts (full alignment is a follow-up that ships with the expansion-test update). New `tests/test_availability_validation.py` (unit: clock + Fri-23:30-Israel boundary + matrix + return-date guard; API: past-date rejection on both endpoints). Phase 0: `docs/discovery/2026-06-availability-phase0.md`.
+### 2026-06-06 — UIS Pattern A (MEH-228): useAdminAction — admin double-submit protection
+
+- **`fix(admin)`**: the 10 CRITICAL admin fire-and-reload handlers (UIS-038/039/040/041 reports, UIS-055 users toggleBlock, UIS-060/061 content restore/delete, UIS-063/064/065 producers approve/toggle-status/ambassador) all shared one hole — `await api.post(...)` with **no in-flight lock and no error surface** → a rapid double-click double-fired the mutation (double moderation / block / delete) and a failed request was swallowed silently. New shared hook `frontend/lib/use-admin-action.js` (`run(key, fn, onError?)` + `isBusy(key)`): a synchronous per-key `inFlight` ref blocks the second call before re-render (genuine double-fire protection), `busyKeys` state disables the in-flight trigger, and errors surface via the central `errorMessage()` Hebrew toast (MEH-251) — **no new i18n keys**. Wired into `reports/page.js`, `users/page.js`, `content/page.js`, and `producers/use-admin-producers.js` (+ `isBusy` threaded through `AdminProducersTable` → `ProducerActions` for the row buttons). New `__tests__/useAdminAction.test.js` (7 cases: busy/reset, same-key double-fire block, concurrent keys, default/string/fn error surfaces). vitest 429✓, `npm run build` green, eslint 0 errors. **DEFER:** none — all 10 sites are the mechanical pattern (no per-site custom logic beyond the hook).
+### 2026-06-06 (night-batch-6) — MEH-434: launch-cohort Sentry tag (client-side slice)
+
+- **`feat(MEH-434)`**: launch-window observability — the Sentry `launch_cohort` tag is now set client-side so month-1 users can be filtered in Replay. New `frontend/lib/launch-cohort.js` (`computeLaunchCohort` + `useLaunchCohortTag`); `auth-context.js` calls the hook (2-line diff: import + call) so the tag stays in sync with the signed-in user and clears on logout. Cohort derived from `user.created_at` (already on `UserOut` → `/auth/me`, `schemas.py:752`) — **no backend/schema change**. setTag only, no PII, no setUser (per MEH-434 Forbidden). vitest 6/6 (boundary cases pinned), `npm run build` + lint (0 errors) green. **Deferred → follow-up:** the server-side `auth.py` helper + `UserOut.launch_cohort` + `test_auth.py` slice from the original plan (documented in `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434.
+
+### 2026-06-06 — MEH-764: ChipScrollRow global rounded-md + state-selected (#987)
+
+`refactor(MEH-764)`: converged the shared `ChipScrollRow` chip shape to `rounded-md`
++ `state-selected` for **all three consumers** (/home `HomeProducersGrid`, /producers
+`ProducersClient`, /map `FilterChipsBar`), per DESIGN.md §Shapes / BRAND §3 (*no
+`rounded-full` on rectangles*). Flips the temporary default added by MEH-763 chunk 3.
+
+- The /home + /producers `rounded-full` pill chips were a **pre-existing DESIGN
+  violation**; /map already opted in (MEH-763 chunk 3).
+- Removed the temporary `chipShape` / `selectedClassName` opt-in props (component back
+  to one shape) + the redundant `FilterChipsBar` props. Zero logic/copy changes.
+- Phase 0 (read-only): S4 homepage FINAL (MEH-639) is **silent** on chip shape → no
+  design conflict; BRAND §3 / DESIGN §Shapes governs.
+- Verified: build · vitest 423/0 · ESLint 0 errors; Sapir QA on all 3 surfaces.
+
+### 2026-06-06 — fix: HomeProductCard.test next-intl mock — staging vitest green (#988)
+
+`fix(MEH-753)`: `#976` (MEH-753, locale-aware event dates) added `useLocale()` to
+`HomeProductCard` but its test had no next-intl mock → 16 tests threw "No intl context
+found", leaving **staging silently red on `Frontend unit tests (vitest)`** — a
+non-required check, so it slipped past the merge gate and every open PR inherited the
+16 failures (surfaced while triaging MEH-764 #987's CI). Mocked `next-intl`'s
+`useLocale` per the `RecipeCard.test` precedent. **Test-only**; 407 → 423 passing.
+The `formatDate` helper dedup itself was already done by #976 (MEH-753 — shared
+`format-date.js`, incl. `HomeProductCard`); only the missing test mock remained.
+
+### 2026-06-06 — MEH-731: FooterSlot + admin/layout locale-aware usePathname
+
+- **`fix(MEH-731)`**: `FooterSlot.jsx` + `app/[locale]/admin/layout.js` imported `usePathname` from `next/navigation`, which keeps the `/he` / `/en` prefix under next-intl `[locale]` routing — so `FooterSlot`'s `pathname === "/map"` check failed (footer wrongly rendered on `/map`) and the admin sidebar's `isActive()` (compares against non-prefixed `NAV_HREFS`) never highlighted a tab. Swapped both to the locale-stripping `usePathname` from `@/i18n/navigation` (same fix as Header/BottomNav in PR #894). Phase 0 grep confirmed these were the **only 2** remaining `next/navigation` usePathname sites. `admin/layout.js` `useRouter` left on `next/navigation` (only the path-comparison was buggy; the `/login` redirect is out of scope). `npm run build` green (both locales).
+### 2026-06-06 — MEH-753: event dates respect locale (kill 4 hardcoded he-IL formatDate helpers)
+
+- **`fix(MEH-753)`**: `/en/events` (and every en event surface) was rendering Hebrew dates because 4 duplicated `formatDate` helpers hardcoded `toLocaleDateString("he-IL", …)`. Extracted one shared `formatEventDate(iso, locale, options)` in `frontend/lib/format-date.js` — `he → "he-IL"` (byte-identical preserved), `en → "en-US"`. Locale threaded from `useLocale()` (next-intl) into `EventsClient.jsx` (card + month-grouping memo, `locale` added to deps), `EventDetailClient.jsx` (year variant), `ExperienceCard.jsx`, `HomeProductCard.jsx`. `formatTime` (HH:MM slice) + price `toLocaleString` left untouched (locale-independent / out of scope). `npm run build` green; both `/he/events` + `/en/events` build. ~30 other he-IL date sites codebase-wide are out of MEH-753 scope (other surfaces / i18n waves) — reported in PR body.
+
+### 2026-06-06 — MEH-741: omit null durations from Recipe JSON-LD
+
+- **`fix(MEH-741)`**: `buildRecipeSchema` (`frontend/components/public/RecipeJsonLd.jsx`) emitted `prepTime: null` / `cookTime: null` for missing/0 durations — invalid `schema.org/Recipe` JSON-LD (a duration must be an ISO-8601 string or absent). Root cause: `minutesToIso8601()` returned `null` while the strip filter only dropped `undefined`. Fix: helper now returns `undefined` (aligns with the `|| undefined` convention every other optional field uses) + filter hardened to drop `null` too (defense for any future duration field). No `totalTime`/sibling duration field exists in this schema. Un-skipped the 2 MEH-729 tests in `RecipeJsonLd.test.jsx` (now green) + translated one Hebrew `it()` description in `BottomNav.test.jsx` to English (rule 5, folded nit). vitest 15/15 green; `npm run build` green.
+
+### 2026-06-06 — MEH-762: ADR-022 tier — Chunk 4 (is_verified badge decouple)
+
+`feat(MEH-762)`: the "מאומת" pill now drives off the ADR-022 public tier, not the legacy admin flag. **Semantics only** — `is_verified` the field is untouched (full retirement + `trust_tier` coupling = **MEH-766**).
+- `lib/badges.js`: `earnsBadge("verified")` → `producer.verification_tier === "verified"` (was the legacy admin flag); tooltip over-claim (`"עבר אימות זהות ורישוי"`) → Sapir copy-lock `"בית העסק הציג מסמך רישוי או אישור פטור רשמי שנבדק ידנית."` (terms §5.2-aligned; `/en` gap is inherited legacy — dies when MEH-76 S12 wires the MEH-758 keys). Label `"מאומת"` unchanged.
+- Tests: `badges.test.js` / `BadgeRow.test.jsx` / `ProducerCard.test.jsx` verified-badge fixtures switched to `verification_tier` (vitest 80✓); `npm run build` ✓.
+- **Deferred → MEH-766:** map verified surfaces + filter chips (backend `?verified` param, `producer_listing.py:49`), `AdminProducersTable`/`ProducerForm`, `trust_tier.py:32` coupling, `is_verified` column drop (Expand-Contract).
+- ⚠️ **Transitional:** the pill keys off `verified_at` presence → absent until admins `grant-verify` (intended ADR-022 over-claim correction; pre-launch, no real producers affected).
+
+### 2026-06-06 — MEH-763: S5 map port (/map design v4 → code) — 4 chunks + token
+
+`feat(MEH-763)`: visual port of `/map` to S5 FINAL — design-layer only; feed/filter/sync
+logic and `is_verified` render sites + verified ✓ glyph frozen (MEH-762 handoff). Shipped
+across 4 chunk PRs (#967, #968, #971, this) + a token micro-PR (#970):
+
+- **Chunk 1 (#967)** — token/class cleanup: `rounded-[..px]`→tokens, token-valued inline
+  hex→classes, `text-right`→`text-start` (map/components).
+- **Chunk 2 (#968)** — markers v2: `MapComponent` divIcon → 36px circular **photo** marker
+  (Cloudinary square thumb / MEH-638 monogram fallback on primary), 2px primary border, no
+  category colour on pins (Kare ≤4 holds by construction); honey `דבש` → `#C8821E` + `Hexagon`;
+  legend leads with the tinted category icon.
+- **`state-selected` token (#970)** — semantic alias = `primary-dark` `#2E4A2E` (DESIGN.md →
+  `design:export`); single selected/active affordance for markers + chips.
+- **Chunk 3 (#971)** — sheet + cards + flat overlays: `MapBottomSheet` two-snap 45vh, handle
+  32×4 `#D4C5A9`, radius-16, cream, shadow→border (**F1**); `MapProducerCard` ⭐→Star, 🚚→Truck,
+  🌿→Leaf, dynamic MEH-296 CTA, hover-shadow deleted; **F1** flattened 8 overlay shadows →
+  `surface-floating` + border; **F3** /map chips → `rounded-md` + `state-selected` via additive
+  `ChipScrollRow` props (defaults preserve /home + /producers; temporary, MEH-764).
+- **Chunk 4 (this)** — states + bidi + a11y: skeleton → cream (ADR-019; geo-denied already a
+  neutral city-picker fallback, disabled states already opacity-on-cream); `.numeric`
+  (`unicode-bidi: isolate`) utility + applied to sheet count, card price, rating;
+  `MapProducerCard` `<article>` keyboard affordance (role/tabIndex/Enter-Space). Marker
+  keyboard-a11y deferred to **MEH-765**. `business_count` is an ICU plural (`#` not
+  span-wrappable; standalone integer is bidi-safe).
+
+### 2026-06-06 — MEH-762: ADR-022 public tier contract — chunks 1–3 (verification trail + admin stamping + public exposure)
+
+- **Chunk 1 (schema):** `producers.verified_at` (TIMESTAMPTZ nullable) + `verification_doc_type` (VARCHAR(20) nullable) via Alembic `f1c7b9a3e264` (expand-only, ADR-007; `down_revision a7f3e9c14d28`). ORM mirror in `models.py`; `verification_tier` stays computed in schemas (Chunk 3), never stored. No `verified_by` column (V1, single admin — D1). `EXPECTED_REV` bumped (`EXPECTED_TABLES` stays 35). db-schema diagram + `VERIFICATION.md` §3 updated (D1: result columns move to DB; issuer/name_match/channel/notes/reviewer stay manual). Migration + workflow line Sapir-applied (`b84ceb6`) — CC-denied paths.
+- **Chunk 2 (admin stamping):** `POST /admin/producers/{id}/grant-verified` (`{doc_type: license|exemption|cosmetics}` → `verified_at = now(timezone.utc)` + doc_type; ISO in response) + `/revoke-verified` (clears both, idempotent). Mirrors `admin_kashrut` approve; `require_admin`. Re-grant overwrites (correction path). Legacy `is_verified` untouched (decoupling = Chunk 4); no auto-stamp on admin-create/import. `GrantVerifiedIn` Literal schema (invalid → 422). New `tests/test_meh_762_verification_stamping.py` (13 cases; pytest deferred to CI — no sandbox Postgres).
+- **Chunk 3 (public exposure + resolver):** `ProducerListOut` (inherited by `ProducerDetailOut`/`ProducerAdminOut`) now exposes `verification_tier` (`"verified"`|`"declared"`|`null`, computed in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — `field_validator` truncates the TIMESTAMPTZ, no time leak), `verification_doc_type`. Resolver (D2/D3): verified_at set → verified; elif no category in `LICENSE_REQUIRED_CATEGORIES` → declared; else None (no badge, no negative label); one license-required category excludes "declared". Mirrors MEH-530 `categories_require_license` name-membership (same SoT, no DB round-trip in serialization). `trust_tier` untouched (Chunk 4). Admin sees the 3 fields via inheritance (date granularity). New `tests/test_meh_762_public_tier_contract.py` (9 cases incl. date-only + privacy regression; pytest deferred to CI).
+- ADR-022 D1–D4 locked in MEH-762. Blocks MEH-76 S6 badge (Chunk 4 handoff). Chunks 4–5 per plan.
+
+### 2026-06-06 — MEH-132: S7 port — /register + /register/producer (design v4 → code)
+
+`refactor(MEH-132)`: visual port of the two register clients to S7 v4 FINAL —
+design-layer only, all auth/registration/declaration logic bit-identical
+(functional-freeze inventory verified each chunk). 4 chunks on PR #965:
+
+- **Chunk 1 — token/class cleanup (both files):** arbitrary `rounded-[..px]` →
+  DESIGN.md radius tokens; removed 2 inline card shadows in RegisterClient
+  (flat-tonal; the 3 sibling auth files left for S9/MEH-131); tokenized 2 inline
+  `style={{fontFamily}}`; progress-track `bg-gray-200` → `bg-border`; swept
+  `text-right` → `text-start` on `dir=rtl`/no-dir elements (3 `dir=ltr` numeric/
+  email inputs keep physical `text-right` with inline comment).
+- **Chunk 2 + 2b — consumer RegisterClient:** headings → Frank Ruhl Libre 900
+  scale; inbox 📬 → Phosphor `EnvelopeSimple` + amber circle → ADR-019 (neutral
+  cream + `fg-muted`, anti-enum semantics); primary CTAs (submit, back-home) →
+  dark-outlined.
+- **Chunk 3 — producer steps 1+2:** progress flat-bars → Cormorant italic
+  numerals (producer-only; `font-english` + `dir=ltr` isolation, active
+  `text-accent`, inactive `fg-muted` opacity-40); headings FRL 900; license-format
+  amber warning → `fg-muted` (ADR-019); step CTAs → dark-outlined.
+- **Chunk 4 — success 06A/06B:** wired existing `success.tier_trust` key into both
+  variants; success headings FRL 900; 06B 📬 → `EnvelopeSimple` (cream/`fg-muted`);
+  dashboard + back-home CTAs → dark-outlined (`rounded-full` → `rounded-md`),
+  WhatsApp share → `btn-whatsapp-outline` (ghost); WhatsApp-fallback amber box →
+  ADR-019 cream/hairline/`fg-muted`. No variant C (moved to S6/MEH-76).
+- **Verified:** `npm run build` (both routes SSG), vitest 414/0, ESLint 0 errors,
+  i18n parity 2569==2569 (message files untouched — 📬 was hardcoded JSX). Freeze
+  intact: OAuth, `"access_token" in res.data` branch, 3-checkbox composition,
+  MEH-530 wiring, E2E selectors/labels/ids. Playwright `/register` on CI preview.
+
+### 2026-06-06 — MEH-685: Toast API refactor — showToast() → semantic icon API (Category D2)
+
+`feat(MEH-685)`: refactor `showToast()` from a plain-string positional signature
+to a **semantic methods-only API** + strip Category D2 (toast) emojis, replacing
+them with Phosphor icons. Closes the LOCK v2 temporary KEEP on toast emojis.
+
+- **API (variant 2 hybrid):** `showToast.success | error | info(message, { icon?,
+  duration?, action? })`. `lib/toast.js` is now a methods-only object — the
+  legacy positional `showToast(message, type, duration, options)` shim was
+  removed after migrating all ~40 call sites. The store stays
+  presentation-agnostic (opaque `icon` node, no React import); `Toaster.jsx`
+  resolves a **default icon per type** (success→CheckCircle, error→WarningCircle,
+  info→Info) and renders it as the first flex child of the existing `gap-3` row
+  (RTL-safe, no physical margin).
+- **Bespoke icons:** favorites/saved → `HeartStraight` (fill, echoes the tapped
+  control), follow → `Bell`, recipe/experience published → `Leaf`, under-review
+  → `MagnifyingGlass`, review saved → `Star`, copied/settings → `Check`, share
+  link → `LinkSimple`. Kashrut badge approved (✅) maps to the default
+  `CheckCircle` (no bespoke).
+- **i18n:** stripped emoji from 12 toast keys × he/en (parity 2558==2558).
+  `saved_toast_first_time` reworded — the bottom favorites tab it pointed to was
+  removed (`BottomNav` MEH-643); now points to the Favorites page in the menu.
+- **errors.js** `showErrorToast` dispatches via `(showToast[type] ?? showToast.info)`
+  (guarded against an unexpected type).
+- **Out of scope (left as-is):** `copied` (2564/3170) + `contact.success_toast`
+  (2096) are inline labels, not toasts → possible MEH-657 misses, flagged.
+- Tests: new `toast.test.js` + `Toaster.test.jsx`, updated 6 call-site mocks to
+  the methods-only shape. vitest green; `npm run build` green.
+### 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5) (Refs MEH-760, Part of MEH-742)
+
+`feat(MEH-760)`: ADR-022 gate 3 — replaced the single-tier terms §5 ("עסקים מאומתים", a vague
+"initial review" + "no guarantee" sentence) with the Sapir-locked two-tier definition, heading
+`5. אימות ושכבות הצגה`. Five sub-parts (he+en): 5.1 manual acceptance review = personal
+introduction, explicitly **not** regulatory; 5.2 `תג ״מאומת״` — document-verified-at-presentation
+scope, no ongoing monitoring, free; 5.3 `בית עסק ״מוצהר״` — legally-exempt categories shown on a
+binding declaration we don't verify; 5.4 `שיפוי` — narrow indemnity (limits תנאי-מקפח exposure);
+5.5 no ongoing-supervision duty. `terms.sections.verified` restructured from `{title,body}` to
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}`; `terms/page.js` `verified` case now renders intro + 3 `<h3>` sub-blocks + closing
+para. Operator block (`טופז שנפ`, MEH-736) byte-identical — untouched. `מורשה`/`מורשים` permitted
+(legal surface). he==en parity; COPY_BANK §7 gate-3 rows, all **v1 — pending lawyer (Brief Q1/Q3)**,
+en ⏳ pending Sapir review. `npm run build` green. **Refs MEH-760, Part of MEH-742** — NOT Closes
+(Sapir closes after /terms render check; post-lawyer revision is a follow-up, launch not blocked).
+
+### 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys (Refs MEH-758, Part of MEH-742)
+
+`feat(MEH-758)`: Sapir-locked ADR-022 two-tier (מאומת / מוצהר) copy added as i18n keys —
+**key-only**, no rendering (the S7 register port + S6/S534 badge UI consume them later, so we
+don't wire copy into a success screen the port is about to rebuild). New keys (he+en, parity):
+`auth.register.producer.success.tier_trust` (replaces the pre-ADR-022 "checks every business"
+over-claim — honest per-tier framing: personal vetting for all, מאומת badge is document-gated),
+`producer.badge.verified_tooltip_license` + `..._exemption` (both carry the `{date}` ICU param),
+`producer.badge.declared_explainer` (positive no-badge explanation per template-05 research —
+Yelp-FAQ pattern, not silence). Consumer language is מאומת/מוצהר only — zero `מורשה`/`מורשים`
+(grep-verified). COPY_BANK §7 added with a decision-log row per key (en marked ⏳ pending Sapir
+review). Strings verbatim from S11 FINAL. **Refs MEH-758, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke of the rendered surfaces once the port lands).
+
+### 2026-06-06 — MEH-761: VERIFICATION.md — "מותססים וכבושים" open lawyer question (Refs MEH-761, Refs MEH-742)
+
+`docs(MEH-761)`: Sapir-spotted inconsistency (2026-06-06) — `docs/VERIFICATION.md` §1א listed
+"מותססים וכבושים" as license-required with rationale "מזון מעובד" attributed to נספח א', but
+the brief's נספח א' has **no row** for fermented/pickled (confirmed: brief only maps "ייצור
+צמחי קטן (ריבות, ממרחים, טחינה)" → 4.6ו → שכבה 2). So pickled cabbage (vegetable+salt+water)
+requiring a license while jam/tahini don't is **unexplained** — possible fermentation/preserving
+food-safety rationale, but **unverified**. Added it to §1ג (open questions) as the *inverse*
+case (in `LICENSE_REQUIRED_CATEGORIES` but absent from נספח א', unlike the de-facto-מוצהר rows);
+§1א rationale now points to §1ג instead of asserting settled law; §1ג intro + footer reconciled
+(3→4 categories, both enforcement directions). **Conservative status preserved — enforcement
+stays license-required; `LICENSE_REQUIRED_CATEGORIES` untouched** (any change = regulatory claim).
+Question routed to lawyer per Brief Q4.5. "אני לא יודע" framing kept. Docs-only.
+
+### 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2, Chunk C — the Sapir-locked continuous-commitment
+declaration text + conditional grower line. The single ToS-bundled consent checkbox is
+split into three separate affirmative acts (ADR-014 voice): (1) ToS/privacy consent
+(chrome, plural), (2) the binding licensing declaration `auth.register.producer.terms.declaration`
+(first-person — "פועל כדין… ההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור…"), (3) a
+conditional grower declaration `terms.farmer_declaration` ("תוצרת שגידלתי בחלקתי בלבד.")
+shown + required only when an agricultural category (ירקות / פירות) is selected. Both
+declarations fold into the single `declaration_accepted` bool — **no schema change, no new
+API field**: `declaration_accepted = declarationConfirmed && (!farmerRequired || farmerConfirmed)`.
+`DECLARATION_VERSION` bumped `2026-06-v1` → `2026-06-v2` (new wording = new audit version;
+v1 stays the record of the launch text Chunk B stamped); constant test updated. New he/en
+keys + validation messages (key parity); en marked "pending Sapir review" in COPY_BANK.
+Strings are Sapir-locked, lawyer opinion still outstanding (Brief Q1.1–Q1.5). Docs:
+COPY_BANK (v2 — pending lawyer). **Refs MEH-759, Part of MEH-742** — NOT Closes (Sapir
+closes after mobile smoke). `/terms` indemnity = MEH-760, not here.
+
+### 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B) (Refs MEH-759, Part of MEH-742)
+
+`feat(MEH-759)`: ADR-022 gate 2 — the binding tier-2 licensing declaration now leaves an
+audit trail. **Chunk A** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` adds
+`producers.declared_at` (TIMESTAMP WITH TIME ZONE, null) + `producers.declaration_version`
+(VARCHAR(10), null), expand-only per ADR-007 (no backfill); ORM parity + `EXPECTED_REV`
+bump. **Chunk B** (this PR): `POST /auth/register/producer` (both new-account and MEH-143
+upgrade paths) stamps `declared_at=now(UTC)` + `declaration_version=DECLARATION_VERSION`
+(`"2026-06-v1"`, `app/constants.py`) when the new required `declaration_accepted` body
+field is truthy; the handler 422s (`יש לאשר את הצהרת הרישוי כדי להמשיך`) when it is
+falsy/absent. Minimal frontend plumbing sends the existing consent checkbox
+(`agreedToTerms`) as `declaration_accepted` — no copy/UI change (declaration COPY = Chunk
+C). Admin-create / Excel-import leave both columns NULL. Admin-only exposure — added to
+`ProducerAdminOut`, never to public `ProducerDetailOut`/`ProducerListOut` (MEH-530
+privacy-first precedent). New `tests/test_producer_declaration.py` (stamp-on-register,
+version constant, 422 on falsy/absent, NULL on non-register create, no public exposure);
+existing register payloads across the suite updated to send the field. Docs: DATA.md +
+db-schema diagram. **Refs MEH-759, Part of MEH-742.** (Chunk C — frontend declaration copy
++ farmer line — remains.)
+
+### 2026-06-06 — MEH-754: OTP via Meta authentication template (Addresses MEH-754)
+
+`fix(MEH-754)`: producer phone-verification OTP now ships through the Meta
+**AUTHENTICATION** template `producer_otp_v1` instead of free-form `send_text`.
+Free-form WhatsApp is delivered only inside Meta's 24h customer-service window, so a
+brand-new producer who never messaged the business number never received the code and
+stayed stuck in `pending_whatsapp` (evidence: staging smoke 05/06). New typed
+`OtpCodeV1(code=...)` class in `whatsapp_templates.py` (MEH-672 pattern) overrides
+`to_components()` to place the code in BOTH the body parameter AND the copy-code
+URL-button component (`sub_type="url"`, `index=0`) — a body-only auth-template payload
+400s at Meta. `_send_whatsapp_otp` (`producer_me.py`) switched to
+`send_template(phone, OtpCodeV1(code=code))`; fail-open contract and phone path
+unchanged (both transports do `to.lstrip("+")`). New `tests/test_meh_754_otp_template.py`
+asserts the dual-code payload shape + wrapper fail-open. Device smoke on a "cold" number
+is manual post-merge (hence Addresses, not Closes).
+
+### 2026-06-05 — MEH-761: Gate 4 — verification matrix doc (Closes MEH-761)
+
+`docs(MEH-761)`: new `docs/VERIFICATION.md` — operational consolidation of ADR-022
+launch gate 4. Maps each platform category → tier eligibility (מאומת/מוצהר) → qualifying
+document, aligned to `LICENSE_REQUIRED_CATEGORIES` (post-MEH-743 honey split) + נספח א'
+of the lawyer brief. Adds (1) the per-category matrix split into license-required (Tier 1
+only, 8 categories) vs exempt (Tier 1 with exemption/registration doc, or Tier 2
+declaration); (2) admin checklist per document type — issuer, validity, name match —
+for the 3 qualifying docs (license / exemption / cosmetics registration); (3) internal
+audit-record fields per Brief Q5.5; (4) launch submission channel = manual WhatsApp/email
+within the existing manual-approval flow (no upload feature in V1). Honestly flags 3
+unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions — does NOT
+expand the enforcement list. Header carries "לא ייעוץ משפטי, בכפוף לעו"ד". Docs-only — no
+code, schema, UI, or admin feature; decisions/README.md untouched (no new ADR). **Closes
+MEH-761. Refs MEH-742.**
+
+### 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר (Refs MEH-742)
+
+`docs(MEH-742)`: landed ADR-022 — the "Licensed businesses only" blanket DNA LOCK
+(MEH-528 option B) is replaced by a two-tier model. **Tier 1 מאומת** = license/exemption
+doc reviewed → gold badge (free forever); **Tier 2 מוצהר** = binding declaration, for
+legally exempt categories only, never negatively labeled. Unlicensed food production
+where a license is legally required stays excluded; home-cook LOCK + manual approval
+unchanged. Consumer-facing tier language is מאומת / מוצהר only — `"מורשה/מורשים"` is
+legal-internal. **Files:** new `docs/decisions/ADR-022-two-tier-licensing-model.md`;
+synced the LOCK line in `docs/CONTEXT.md` §2 + `docs/BRAND.md` §3, added an anti-pattern
+in `docs/BRAND.md` §7, indexed in `docs/decisions/README.md`. Brand-book step only — no
+code, schema, or UI. Decision ticket stays open (4 children pending). **Refs MEH-742.**
+
+### 2026-06-05 — MEH-757: /about founder-story copy swap — "בלי לחפש שעות" (Closes MEH-757)
+
+`copy(about)`: replaced the founder-story body (`about.consumer.story.p1`–`p5`,
+he + en) with Sapir's 05/06 rewrite — problem→discovery→insight→solution arc
+closing on the canonical `בלי לחפש שעות` anchor (COPY_BANK / MEH-719). Copy-only
+swap riding tonight's release on top of the MEH-750 wave; the two closing
+captions (`caption1` / `caption3`) and all other /about copy are untouched.
+`greeting` kept period-free (bold heading, EN parity `Hi, I'm Sapir`) per the
+MEH-750 styling decision. **Files:** `frontend/messages/he.json`,
+`frontend/messages/en.json`, `docs/COPY_BANK.md`, `docs/CHANGELOG.md`. No JSX
+touched (keys pre-existed). `npm run build` green.
+
+### 2026-06-05 — MEH-755: OTP tokens block producer deletion — NotNullViolation on both delete paths (Closes MEH-755)
+
+`fix(producers)`: producer with `phone_otp_tokens` rows was undeletable — both
+`auth.py::delete_account` (`DELETE /auth/me`) and `admin.py::admin_delete_producer`
+500'd on `NotNullViolation` for `phone_otp_tokens.producer_id`. **Root cause:**
+`db.delete(producer)` triggers an ORM nullify (`UPDATE phone_otp_tokens SET
+producer_id=NULL`) because the `PhoneOtpToken.producer` relationship
+(`models.py:1012`) has no delete cascade, but the column is `NOT NULL`. **Fix
+(code-level, no Alembic, no schema change):** explicit
+`db.query(PhoneOtpToken).filter(...producer_id == producer.id).delete()` before
+`db.delete(producer)` in both paths — joins the existing explicit-delete list in
+`delete_account`. Release blocker for the OTP UI package (PR #941): once OTP
+verification is live in prod, any phone-verified business owner would otherwise
+become undeletable. **Files (4):** `backend/app/routers/auth.py`,
+`backend/app/routers/admin.py`, `tests/test_account_deletion_cascade.py` (+2
+regression tests, direct-model OTP insert), `docs/CHANGELOG.md`.
+
+### 2026-06-05 — MEH-743: honey license-required — split "שמנים ודבש" → "שמנים" + "דבש" (Closes MEH-743)
+
+`feat(licensing)`: dedicated regulatory regime for honey per צו הפיקוח על מצרכים
+ושירותים (ייצור דבש ומכירתו), תשל"ז-1977 — keeper license + marketing license +
+business license. Source: legal brief נספח א' (PR #934). **Taxonomy decision
+(Sapir-approved):** split the combined category, not a sub-flag. Rationale:
+keeps `LICENSE_REQUIRED_CATEGORIES` as the single source of truth for the
+regulatory class; matches the legal model (honey + olive oil are separate
+regimes); aligns with MEH-203 category-selector pattern (one chip = one
+regulatory unit). **Live producer count = 0** (verified by Sapir on Railway
+prod) → seed-only migration, no Alembic, no `producer_categories` re-pointing.
+**Files (9):** `backend/app/constants.py` + `backend/seed_data.py` (rename row 5
+→ "שמנים", append "דבש" at end so seed-id slots 1–18 stay stable);
+`frontend/lib/license-required-categories.js` mirror; `home-categories.js` hero
+card stays a single "שמנים" tile (no honey hero — MEH-203 will revisit);
+`map-categories.js` both kept on the same amber/JarLabel styling until S5 map
+redesign; `categoryQuestions.js` generic Q-set duplicated under "דבש";
+`HomeProductForm.jsx` consistency split (NOTE: dead surface, MEH-598 burial,
+MEH-543 revival path); `tests/test_producer_license.py` +3 cases
+(`TestRegisterProducerHoneyLicense`); `docs/MANUAL_TESTING.md` honey/oils
+manual tests. **Verified:** frontend `npm run build` ✓; backend pytest deferred
+to CI (sandbox can't install backend deps). **Deployment note:** prod
+`categories` table currently has the legacy "שמנים ודבש" row with 0 producer
+links — Sapir to add "דבש" row + rename to "שמנים" via direct SQL on prod once
+this lands on staging (no Alembic per the seed-only path).
+
+### 2026-06-05 — MEH-749: read-only orphan-audit script (Refs MEH-749)
+
+`chore(scripts)`: new `scripts/audit_orphans.py` — read-only DB audit (SELECT/COUNT only,
+zero writes) mapping dangling rows after the 2026-06-05 manual prod SQL deletions. 8 checks
+(ownerless producers, `users.producer_id`/`is_producer` dangling, phone_otp_tokens,
+favorites/reviews/reports/followers, home_products+ratings/clicks, inbound_messages count,
+Cloudinary URL reference counts). Phase 0 note: spec check #1 `producers.user_id` doesn't
+exist in the schema (link is one-directional `users.producer_id`) — implemented as the
+schema-valid inverse "ownerless producers". ruff clean; ran against local dev DB (all
+sections render). Ticket stays open until Sapir runs it against prod and records findings.
+
+### 2026-06-05 — MEH-745 PR2: OTP self-serve releases pending_whatsapp → pending (Closes MEH-745)
+
+`feat`: self-registered producers were stranded in `status=pending_whatsapp` — nothing in
+code transitioned them out (Phase 0: `confirm_phone_otp` only set `phone_verified`; the
+dashboard banner CTA pointed at a `/settings` page with no OTP UI; no frontend consumed the
+existing `verify-phone` endpoints). This PR wires the self-serve path:
+- **Backend** (`producer_me.py::confirm_phone_otp`): after `phone_verified=True`, advance
+  `pending_whatsapp → pending` (admin-review gate preserved). Only that status is touched —
+  approved/rejected/inactive are never demoted. Tests
+  (`test_otp_pending_whatsapp_transition.py`): pending_whatsapp→pending on valid code;
+  other status unchanged; invalid code → 400 + status unchanged.
+- **Frontend**: new `components/PhoneVerifyCard.jsx` (send code → 6-digit input → confirm,
+  60s resend cooldown, 429 detail surfaced as toast, no-phone/invalid/expired error states).
+  Rendered in the producer dashboard `pending_whatsapp` banner, replacing the dead
+  `/settings` CTA; a successful confirm flips the local status to `pending` (banner updates,
+  no reload). All copy via `dashboard.producer.phone_verify.*` keys in `he.json` + `en.json`
+  (HE↔EN parity 2555==2555). Combined with PR1 (admin approve fallback), this is MEH-745
+  scope (c). No schema change (status is an existing varchar; no Alembic).
+### 2026-06-05 — MEH-745 PR1: admin approve action for pending_whatsapp producers (Refs MEH-745)
+
+`fix(admin)`: self-registered producers land in `status=pending_whatsapp` (`auth.py:454`/`:546`)
+but the admin producers table gated the approve button on `p.status === "pending"`
+(`AdminProducersTable.jsx:115`) — so the only producers an admin could approve were
+admin-created ones (`status=pending`). The approve endpoint
+(`POST /admin/producers/{id}/approve`, `admin.py:395`) has no status guard and works on
+`pending_whatsapp` as-is, so this is a pure frontend unhide: gate → `["pending",
+"pending_whatsapp"].includes(p.status)`. New vitest `AdminProducersTableActions.test.jsx`
+(approve renders for `pending_whatsapp` + `pending`, hidden for `approved`); `ProducerActions`
+exported for the unit test. No backend change. Admin fallback half of MEH-745 scope (c) —
+the OTP self-serve path is PR2.
+### 2026-06-05 — MEH-750: S8 copy wave /about (Closes MEH-750; swallows MEH-746; Refs MEH-742/MEH-579)
+
+`copy(about)`: applied the 17 Sapir-locked strings from MEH-750 to `about.consumer.*` in
+`he.json` + `en.json` (key parity 2542==2542) plus 4 JSX changes in
+`frontend/app/[locale]/about/AboutClient.jsx`. **Strings:** H1 drops terminal period + NEW
+`hero.subheading` rendered under H1; Sapir story rewritten (`greeting` loses period, `p1`–`p5`
+new word-of-mouth narrative, `caption2` deleted); `parallax.quote` →
+`אוכל טוב — לא שומרים לעצמנו` (old quote ranked source over food); NEW `benefits.heading`
+`למה מהמקור` + tightened pillar titles; `benefits.trust.body` drops "מאומתים" (MEH-742 gate +
+MEH-579 over-claim — **swallows MEH-746**); testimonials reframed as honest placeholder; `cta.heading`
+merged to `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` + `values.closing` deleted (values card ends
+after בטיחות). **COPY_BANK:** decision-log rows for every changed key, retired the stale "criteria
+admission headline" row, and corrected the stats-row `MEH-654` typo (per MEH-746). **Out of scope
+(untouched):** `tips.*`, `values.intro`, `contact.*`, `nav.*`, metadata/OG — the S8/D visual port is
+a separate future task (MEH-135). **Verified:** greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0;
+`מאומתים` = 0 in `about.consumer.*`; `npm run build` ✓.
+
+### 2026-06-05 — MEH-747 follow-up: i18n the admin delete-error toast (Refs MEH-747)
+
+`refactor(i18n)`: the delete-failure toast added in PR #937 hardcoded the Hebrew string
+`"מחיקת בית העסק נכשלה. נסי שוב."` in `use-admin-producers.js`. Adversarial-review
+"Should Consider" nit — the hook already uses `t()` for every other string. Replaced with
+`t("producers.table.delete_error")` and added the key to `he.json` + `en.json` under
+`admin.producers.table` (HE↔EN parity preserved, 2543 == 2543). `npm run build` ✓. Nit #2
+(comment-block length) intentionally skipped per Sapir.
+
+### 2026-06-05 — MEH-747: unlink users_producer_id_fkey before admin producer-delete (Closes MEH-747)
+
+`fix(MEH-747)`: admin "מחק" on the producers list 500'd for any **self-registered**
+producer. `admin.py::admin_delete_producer` did `db.delete(producer); db.commit()` with
+no FK unlink — `User.producer_id` has no `ondelete` (`models.py`), so deleting a producer
+a user still points at violated `users_producer_id_fkey`. Admin-created producers (no
+linked user) deleted fine, so the bug only hit the real onboarding path. **Fix** mirrors
+`auth.py::delete_account`: before `db.delete`, unlink every linked user
+(`producer_id → None`, `is_producer → False`) + `db.flush()`. **Phase 0 `is_producer`
+decision → reset to False:** the user row survives admin-delete (unlike `delete_account`
+which deletes it), so leaving the durable flag True with a NULL `producer_id` re-creates
+the MEH-669 role-lockout (409 at `auth.py:829` blocks re-registration) — resetting
+reflects reality. **Frontend:** `use-admin-producers.js::deleteProducer` previously had no
+`catch`, swallowing the 500 silently — now shows Hebrew error toast
+(`"מחיקת בית העסק נכשלה. נסי שוב."`). **Tests:** `tests/test_admin_delete_producer.py` —
+register producer via API → admin delete → 200 + `user.producer_id IS NULL` +
+`is_producer False`; admin-created no-link path no-regression. **Verified:** `pytest
+tests/test_api.py` (192 passed) + targeted suites + `npm run build` ✓. **Scope:** code-level
+unlink only — no model/schema/Alembic/`ondelete` change.
+
+### 2026-06-05 — MEH-684: strip emoji from ICU plural patterns (Closes MEH-684; Refs MEH-657)
+
+`fix(MEH-684)`: removed the trailing ` 🌿` (U+1F33F) from every branch of the only
+emoji-bearing ICU plural key — `producers.discovery.all_shown` in both `he.json`
+(`one`/`two`/`other`) and `en.json` (`one`/`other`). Screen readers announced the
+seedling mid-sentence (LOCK v2 a11y flow). **Phase 0:** 13 ICU plural keys total per
+locale; exactly **1** contained an Extended_Pictographic char (below the 5–15 estimate —
+the rest were already clean / non-plural emoji are separate C/D tickets). The 🌿 here is
+the canonical strip example from the ticket intent, not brand-voice copy, so it was
+stripped (not surfaced as an exception). ICU syntax (`{count}`/`#`/plural keywords/curly
+braces) preserved; HE↔EN key parity unchanged (2543 == 2543). Test mock
+`__tests__/PaginationCounter.test.jsx:22` aligned to the stripped source (no assertion
+depended on the emoji). **Verified:** ripgrep `\p{Extended_Pictographic}` inside plural
+keys = 0; JSON valid; `npm run build` ✓. **Out of scope:** `nav.*` (navbar-port track),
+non-ICU emoji strings (categories C/D1/D2/D4 — separate tickets).
+
+### 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral) (Refs MEH-472)
+
+`copy(i18n)`: `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה`.
+Per ADR-014:80 ambiguous-surface fallback — section headings default to UI rules
+(gender-neutral plural), as Sapir adjudicated. Single key in `he.json`; `en.json`
+heading is proper English (`Browse by category`), left untouched. The ~10 other `גלי`
+CTA strings are MEH-472 en-wave territory, out of scope here. Refs MEH-472 (stays open).
+
+### 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage (Refs MEH-733/MEH-542)
+
+`refactor(home)`: deleted the §06 editorial "breath" pull-quote section pre-launch.
+Removed `HomeEditorialBreath.jsx`, its import + mount + `§06` comment from
+`app/[locale]/page.js`, and the `home.editorial_breath` block from `he.json`/`en.json`.
+Rationale: the lone rendered `06` numeral had no visible sibling numerals and collided
+semantically with `HomeCategoryGrid`'s own `01–06`; the quote promised *people* but the
+next section delivers *categories*. Stats strip now flows straight to
+LocationBanner/HolidayBanner/CategoryGrid. Quote (`תכירי את מי שמאחורי האוכל`) shelved in
+`docs/COPY_BANK.md` 🕐 — intended future home is the Producer Stories opener (MEH-542).
+`HomeCategoryGrid` untouched (numerals are index-driven, no renumber). Sapir locked option C.
+
+### 2026-06-05 — MEH-687: ProducerHeader hardcoded red Heart → text-primary (Closes MEH-687; Refs MEH-686)
+
+`fix(brand)`: removed the inline `style={{ color: "#A32D2D" }}` (red) from the favorites-count
+`Heart` icon, replaced with `className="text-primary"` (green) — BRAND.md §3 LOCK (no red heart;
+green/gold only). F1 precedent, PR #831 (CardHeart). **Phase 0 finding:** the violation was filed
+against `ProducerCard.jsx:362` (24/5), but PR #890's v4 redesign removed the Heart from the card —
+the instance relocated to `frontend/app/[locale]/producer/[id]/components/ProducerHeader.jsx:58`
+(producer-detail header, behind `favorites_count >= 5`). Re-scoped the EDIT file accordingly.
+**Out of scope (untouched):** the two `OpeningHours.jsx` `#A32D2D` reds are "closed now" status
+indicators (red = closed), a different semantic from the heart lock — left as-is. Single-line diff;
+no new tokens, no refactor, CardHeart (PR #831) not touched.
+
+### 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (Closes MEH-740; Refs MEH-739, PR #916)
+
+`fix(seo)`: extended the #916 per-page-og:url pattern (`url: urlForLocalePath(path, locale)`
+inside each page's `openGraph`) to 8 shareable routes — the MEH-739 AC3 follow-up.
+**🔴 root-emitting (no per-page openGraph → inherited `layout.js:71` `url: SITE_URL`):**
+`accessibility`, `producers` — given full per-page `openGraph` blocks. **🟡 og:url absent
+(openGraph overridden without `url`):** `about`, `contact`, `map`, `events` — `url` line added;
+`experiences`, `group-buys` — static `export const metadata` → `generateMetadata({params})`
+(needs `locale`), `url` added. `producers` (paginated, `ƒ` dynamic) uses `url: alternates.canonical`
+so `?page=N` variants stay self. **Out of scope (untouched):** `[slug]` producer-detail (already
+self via `lib/seo.js:225`), noindex auth chrome (login/register/forgot/reset/verify-email/
+favorites/messages/upgrade). Verified: all 8 grep `url:` in openGraph; `npm run build` ✓; rendered
+HTML `/he/about`+`/en/about` og:url = self (locale-aware); live = green `Playwright E2E (Vercel preview)` CI.
+
+### 2026-06-05 — head-meta: per-page openGraph for /terms + /privacy (PR #916)
+
+`feat(seo)`: added per-page `openGraph` to the `generateMetadata` of `/terms` and `/privacy` (no MEH# — retroactive ticket pending, workspace at issue limit). Both routes previously exported only `title`/`description`/`alternates`, so they fell back to the layout's site-level `BASE_METADATA.openGraph` (homepage card on social shares). Each page now emits `og:title` + `og:description` (reusing the MEH-720-cleaned `meta_title`/`meta_description` — HE voice `פלטפורמה`, zero `דירקטורי`), `og:type=website`, and `og:url` via `urlForLocalePath` (host `mehamakor.co.il`). **Why `siteName`/`locale`/`images` are repeated:** Next.js *shallow-merges* the `openGraph` field, so a page-level block replaces the layout's entirely — repeating them preserves the OG image (mirrors the `about`/`contact` siblings). Canonical was already correct (`buildAlternates`→`urlForLocalePath`, host `mehamakor.co.il`) and is unchanged. Scope: the two `page.js` files only — no i18n, layout, or dependency changes. Prod baseline confirmed via Vercel MCP: pre-PR `og:url` = site root, this PR makes it page-specific. `npm run build` green (terms + privacy SSG, 101/101).
+
+### 2026-06-04 — MEH-739: register/producer + events metadata fallbacks (Refs MEH-214/476/679)
+
+`fix(seo)`: שני תיקוני metadata על routes שלא קיבלו canonical/title עצמיים.
+**(1) register/producer** היה client component (`"use client"`) ולכן ירש את
+layout fallback (canonical=root, title דיפולטי — אומת בפרודקשן 05/06). פוצל ל-
+server wrapper בתבנית MEH-658 (login): `RegisterProducerClient.jsx` מחזיק את כל
+קוד הטופס **verbatim (move-only)** ו-`page.js` הפך ל-server component עם
+`generateMetadata` (`buildAlternates("/register/producer")`, title.absolute
+"רישום בית עסק | מהמקור", description). **(2) events** השתמש ב-canonical ידני
+ללא hreflang → הוחלף ל-`buildAlternates("/events", locale)` (canonical עצמי +
+languages map). `npm run build` ✓ (שני ה-routes כעת ●SSG). **og:url (AC3) —
+STOP/surfaced:** אין openGraph helper מרכזי; `layout.js:71` מקבע `url: SITE_URL`
+(root) שיורש לכל subpage. תיקון site-wide = >5 קבצים מחוץ ל-scope → לא בוצע;
+אפשרויות הוצגו ל-Sapir ב-PR body.
+
+### 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (Refs MEH-672, MEH-562)
+
+`chore(types)`: ניקוי strict-mypy ל-WhatsApp typed-template surface (המשך
+MEH-672). Phase 0 מצא **7** שגיאות in-scope (לא 13 כפי שה-HANDOFF העריך —
+ה-13 כלל גם שגיאות transitive ב-models/database/email/vacation_state שהן
+**מחוץ ל-scope**). תוקנו 7: `whatsapp.py:42` `dict`→`dict[str, Any]`;
+`auth_notifications.py:73/107` הוספת `or not phone` ל-guard (מצמצם `str|None`→
+`str` ל-`_normalize_il_phone`; preflight כבר מחזיר False ל-phone falsy → no-op
+בזמן ריצה); `auto_reply_watchdog.py:166/167/171/178` — 4 false-positives של
+SQLAlchemy `Column[...]` (mypy רואה את ה-descriptor, לא את ערך ה-instance) →
+`# type: ignore[assignment|arg-type]` עם הצדקה (תיקון אמיתי = `Mapped[]` ב-
+`models.py`, מחוץ ל-scope). אפס שינוי התנהגות; type-annotations בלבד.
+`mypy --follow-imports=silent` על 4 קבצי היעד (כולל `whatsapp_templates.py`
+שכבר נקי) → **Success, 0 errors**. pytest = CI gate (אין Postgres ב-sandbox).
+**pyproject `[tool.mypy] files` ש-Sapir תקמיט** (CC חסום מ-pyproject):
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+
+### 2026-06-04 — MEH-735: complete skip-to-content link (WCAG 2.4.1) (PR #912)
+
+`feat(MEH-735)`: Phase 0 found the skip link **already existed** (`layout.js:199` — `sr-only`→`focus:not-sr-only`, first element in `<body>`, `z-10000`, AA green-on-white, `rtl-ok`-annotated) targeting `<main id="main-content">`. Closed the two gaps vs the acceptance criteria instead of re-adding it (avoids a duplicate link). **(1)** `<main id="main-content">` gains `tabIndex={-1}` + `focus:outline-none` → reliable programmatic focus target (verified: Enter→`activeElement === main#main-content` on / + /login). **(2)** reused the existing `sweep_tail.layout.skip_to_main` key (no new namespace key): he `דלג לתוכן הראשי`→**`דילוג לתוכן`** (gender-neutral, ADR-014 voice), en `Skip to main content`→**`Skip to content`**. Scope: layout.js + he.json + en.json. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); squash-merged `9942674`.
 
 ### 2026-06-11 — MEH-602: atomic component layer — Button/Input/Card/Badge/Heading/Link
 

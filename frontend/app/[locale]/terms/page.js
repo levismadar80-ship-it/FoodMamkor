@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { buildAlternates } from "@/lib/i18n-seo";
+import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
+import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-475 PR-C4b/chunk-3: terms of use i18n. SECTIONS-array shape
@@ -14,6 +15,19 @@ export async function generateMetadata({ params }) {
     // title.absolute prevents layout's `%s | ${BRAND_NAME}` template appending.
     title: { absolute: t("meta_title") },
     description: t("meta_description"),
+    // Per-page openGraph: Next.js shallow-merges this field, so it REPLACES
+    // the layout's BASE_METADATA.openGraph — siteName/locale/images repeated
+    // here to preserve them (mirrors about/contact siblings). Reuses the
+    // cleaned meta copy (MEH-720: "פלטפורמה", no "דירקטורי").
+    openGraph: {
+      title: t("meta_title"),
+      description: t("meta_description"),
+      type: "website",
+      url: urlForLocalePath("/terms", locale),
+      siteName: BRAND_NAME,
+      locale: OG_LOCALE[locale],
+      images: ["/og-image.png"],
+    },
     alternates: buildAlternates("/terms", locale),
   };
 }
@@ -93,9 +107,25 @@ function renderBody(id, t) {
     case "responsibility":
       return t("sections.responsibility.body");
     case "verified":
-      return t.rich("sections.verified.body", {
-        b: (chunks) => <strong>{chunks}</strong>,
-      });
+      // MEH-760: ADR-022 gate 3 — two-tier verification (§5.1–5.5).
+      return (
+        <>
+          <p className="mb-3">{t("sections.verified.intro")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.verified_badge_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.verified_badge_body")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.declared_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.declared_body")}</p>
+          <h3 className="font-semibold text-text mt-4 mb-2">
+            {t("sections.verified.indemnity_title")}
+          </h3>
+          <p className="mb-3">{t("sections.verified.indemnity_body")}</p>
+          <p>{t("sections.verified.no_supervision")}</p>
+        </>
+      );
     case "report":
       return (
         <>

@@ -13,6 +13,905 @@
 
 **Decision this session:** dropped the ticket's Card `elevated`/shadow variant — it contradicts the shipped Assembly-v2 "no hover shadow-lift" lock (MEH-643/MEH-638). Shipped code wins over the ticket's acceptance-criteria wording.
 
+## 2026-06-10 — MEH-131 /login S9 "Two Doors" port (DRAFT PR #1040)
+
+- **Branch:** `feature/meh-131-login-s9-port` off fresh `origin/staging`.
+- **Scope:** visual/structural restyle of `frontend/app/[locale]/login/LoginClient.jsx` ONLY (GREEN). No JSON, no shared components, no auth logic touched.
+- **Done:** S9 Direction-C port — no white card (open fields on cream), gold eyebrow + FRL-900 welcome headline, **social-first** order (supersedes old form-first), mail/lock adornments + eye-toggle (logical RTL), forgot link in label-row, register "door" panel on green-50. Copy 100% from locked keys (0 JSON edits). build green, lint 0-errors, RTL grep 0, hex grep 0, /adversarial-review = 0 blocking.
+- **Headline-scale follow-up (same PR #1040):** welcome headline was at hero scale (raw `text-[40px] md:text-[52px]`); swapped to the `headline-lg` token (32px/900, FRL-900 kept) so it reads as a utility-login head, not an /about hero. Token-driven (no raw px on the headline). build green (/login ● SSG), lint 0 errors.
+- **MEH-788 split-screen + polish (same PR #1040):** two-pane split — desktop form START/right + Cloudinary image END/left (`next/image fill`, `optimizeCloudinary` f_auto,q_auto, panes via `order-*`); mobile image ~30vh top band + form below. Brand overlay `auth.login.hero_overlay` (cream FRL-900) over a `green-900/90` bottom scrim (AA). Register de-boxed → gold-underlined text link; submit `font-bold`; headline stays `headline-lg`. **One new key only** (`hero_overlay` he+en); all other copy byte-identical. build green (/login ● SSG), lint 0 errors, RTL 0, hex 0, adversarial-review 0 blocking (1 finding fixed: scrim /75→/90 for AA). **NOTE:** hit the lint-feedback 3-strike hook mid-edit (removed `Leaf` import before replacing its register-panel usage → transient no-undef, exec §8); recovered by completing the structural edit in one pass — final lint 0 errors.
+- **Pending:** DRAFT PR → Sapir mobile QA (375/360/390) → SHE marks ready + merges (Rule 23). **Not merged.**
+- **Flags for QA:** (1) submit rounded-[10px], not pill (per "NOT green pill"); (2) value-prop strip removed (not in S9); (3) eyebrow `tracking-[0.16em]` on Hebrew — confirm legibility; (4) social-first re-flip — confirm intended; (5) headline 32px both breakpoints (token) vs ~40/30 ask; (6) **MEH-788:** hero image crop is render-time `object-cover` (no baked Cloudinary ar) — confirm the produce crate frames well on 375/360/390 band + desktop tall pane; overlay AA on the actual photo.
+- **Note:** design-reference/ is now tracked on staging (committed by MEH-135 #1037); the S9 login mock was provided in-chat (not under design-reference/).
+
+## 2026-06-11 — MEH-233 triage follow-ups (Linear at free-issue limit → deferred)
+
+Triage of the mobile audit (PR #1038) shipped 2 fixes; 3 items deferred pending a free slot:
+
+1. **chips tap-targets** (YELLOW) — home/events/map filter pills at ~30px → 44px.
+   ChipScrollRow.jsx is shared (home + map); Phase 0 must determine single-shared-fix vs
+   per-consumer. MapClient.jsx = central HIGH-RISK → chunk 2 separate w/ WAIT.
+   Branch: feature/mobile-chip-tap-targets. Refs MEH-233.
+
+2. **audit heuristic refine** — MEH-233 check-4 over-flags: doesn't exclude inset:-5%
+   kenburns decorative layers, and counts WCAG-2.5.8-exempt inline text links as targets.
+   Pattern seen twice (9 CRITICAL→1 real, 33 HIGH→subset). Refine before next audit run.
+
+3. **seeded content-density run** — audit ran on local build w/ no backend; real producer
+   data/image overflow untested. Re-run seeded once backend available.
+
+SHIPPED this triage: overflow-clip (PR #1042, LocationBanner truncate fix + audit
+false-positive notes) ✅ · icon-button tap-targets subset (PR #1046, merged). Refs MEH-233.
+
+## 2026-06-10 — MEH-789: bottom nav system PR-A (DRAFT — Sapir QA + merges)
+
+- **Branch:** `feature/meh-789-nav-bottom-pill` off clean `staging`, in an **isolated git
+  worktree** (`../meh-789-worktree`) — the main checkout had branch-slip + multi-feature
+  WIP contamination (EventsClient/Footer/about-process), so the work was re-applied fresh
+  in the worktree. **DRAFT PR off staging, body "Part of MEH-789" (NOT Closes).**
+- **Scope (verified clean, Rule 26):** `components/BottomNav.jsx` (rewrite) + new
+  `components/AccountSheet.jsx` + `messages/{he,en}.json` (+6 keys/locale) + CHANGELOG +
+  HANDOFF. No EventsClient/Footer/about-process/events-i18n.
+- **What landed:** Phase 6 "Cream Signature" port (Direction A, mobile only). Floating cream
+  pill, 4 destinations (גלו·מפה·אודות·חשבון), pill-in-pill green active + fill-on-active +
+  11px DM Sans labels. Account tab toggles the warm-dark account sheet (favorites/settings/
+  language[embedded `<LanguageToggle>`]/logout + MEH-669-gated "יש לך בית עסק?" + gold ↗).
+  Avatar tokenized (raw-hex → `bg-primary`). OnboardingTip preserved.
+- **Adversarial-review (central):** 2 real fixes — (1) unstable `onClose` re-fired the sheet
+  focus effect each re-render → memoized with `useCallback`; (2) guest account `aria-label`
+  → `nav.account`. All other candidates disproved.
+- **Gates green:** build (101/101 SSG), lint 0 errors, RTL 0, hex 0, forbidden-copy 0,
+  i18n parity 2593==2593.
+- **Pending:** Sapir mobile QA (375/360/390) + desktop on the Vercel preview, then **she**
+  marks ready + merges (PR stays DRAFT). **Deferred / next:** PR-B = Header minimal-top +
+  retire the hamburger drawer (transitional overlap until then — secondary items reachable
+  from both); bottom-pill hide-on-scroll (reuse MEH-734). Biz CTA href is `/register/producer`
+  for now (`/about/for-businesses` = MEH-721).
+
+## 2026-06-10 — MEH-534: /about/process S11 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-534-acceptance-process` off `staging`. **Scope:** new
+  standalone editorial page `frontend/app/[locale]/about/process/` (server
+  `page.js` + `AboutProcessClient.jsx`, 7 sections), `process.*` i18n namespace
+  (he locked / en draft), 2 cross-links (Footer nav + /about close section), docs.
+  Reference: `design-reference/Process Page - Direction D Criteria in the Open (S11).html`.
+- **⚠️ Recovered from a parallel-session collision.** A concurrent session
+  (MEH-789 nav + MEH-134 events) switched branches out from under the first
+  build attempt (2026-06-10 18:35–18:36) and stashed the WIP. Sapir confirmed
+  that session STOPPED + saved (MEH-134 committed 21:00). This work was
+  **recreated clean from context** on a fresh checkout of the 534 branch —
+  pre-checks ran (reflog: no fresh checkout/stash after 18:36; tree clean;
+  9 stashes left UNTOUCHED — stash@{0} is contaminated, {1}/{2} = other session).
+- **Contamination guard:** clean i18n baseline = he 3096 / en 3096. After
+  recreate = **3198 / 3198**, delta = exactly **102** keys (`process.*` +
+  `nav.footer.process`). grep for `bottom_pill`/MEH-789 keys = **0** — no leak.
+- **Done:** build green (`/he/about/process` + `/en/about/process` ● SSG),
+  lint 0 errors, he↔en parity 3198/3198, ICU parity clean, hex grep 0, RTL
+  physical-prop grep 0, `/adversarial-review` run. CHANGELOG + COPY_BANK +
+  MANUAL_TESTING updated.
+- **Decisions:** (a) **standalone route** `/about/process` (NOT a section in
+  AboutClient — that file is already over max-lines; one route = one surface,
+  self-canonical metadata); (b) badge is **illustrative/editorial** — no producer
+  object, so **no `BadgeRow`/`TrustBadge` import**; tooltip reuses the live
+  `producer.badge.verified_tooltip_license` key with literal date `5.6.2026`;
+  (c) gold = `accent` token (#8b6914), the `honey` #c8821e token deliberately
+  unused; (d) /about cross-link label kept in-namespace (`process.crosslink_from_about`)
+  to keep the message diff = process.* + nav.footer.process only; (e) en is all
+  **⏳ pending Sapir** (design he-only).
+- **Pending / next:** Sapir mobile QA (375/360/390) → comment "mobile QA ✅" on
+  Linear → mark PR ready + merge (`Closes MEH-534` auto-closes after human
+  approval, Rule 23). Then **en copy review** (all `process.*` en values are
+  drafts) and **S6/MEH-76** wiring of the real per-producer seal component
+  (this page only *explains* the ADR-022 tiers). No `_cosmetics` tooltip key
+  exists yet (cosmetics matrix rows are inline editorial text only).
+
+## 2026-06-09 — MEH-135: /about S8 Direction D port (DRAFT PR — Sapir merges)
+
+- **Branch:** `feature/meh-135-about-s8-port` off `staging`. **Scope:** single file
+  `frontend/app/[locale]/about/AboutClient.jsx` restyled to S8 Direction D
+  ("Feature Standfirst"), reference `design-reference/about-s8.html`. **Done:**
+  build green (/about ● SSG), lint 0 errors, RTL grep 0, hex grep 0,
+  adversarial-review 0 blocking. CHANGELOG updated.
+- **Decisions:** (a) cream typographic pull-quote **replaces** the image/kenburns
+  `ParallaxQuote` on /about (component left untouched — still used on home); (b)
+  S8 decorative Hebrew eyebrows with no i18n key render as decorative gold rules
+  (no hardcoded Hebrew, zero he/en.json edits); (c) `t("benefits.heading")` /
+  `t("contact.heading")` reused for those section eyebrows.
+- **Grain-texture round (same PR #1037):** added a ~3.5% film-grain overlay over /about
+  (inline SVG feTurbulence, monochrome, data-URI, pointer-events-none, aria-hidden,
+  absolute inset-0 on the relative root). Top film (tonal fills are opaque). AboutClient.jsx
+  only. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Tonal-block round (same PR #1037):** separation by tone, not lines (Sapir picked option B).
+  Added additive `background-alt` (#EDE4D2) to DESIGN.md + tailwind.tokens.json (no existing
+  token changed; `design.md` CLI absent in sandbox → generated file hand-synced to the
+  DESIGN.md source). Benefits + Values now share one continuous `bg-background-alt` block
+  (AboutClient.jsx:144,:166); all narrative sections stay base cream. All horizontal gold rules
+  removed; Eyebrow is now text-only (fg-muted, AA on both tones). Pull-quote vertical rule +
+  Values box kept. Files: AboutClient.jsx, DESIGN.md, tailwind.tokens.json. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0 in component, adversarial 0). **NOTE on branch
+  hygiene:** session resumed on the wrong branch (`feature/meh-734-smart-sticky-navbar`);
+  switched back to `feature/meh-135-about-s8-port` before any edit. A local `wip` commit
+  c499d3d (design-reference/*.html assets only, no code) sits under this round's commit.
+- **Eyebrow-label round (same PR #1037):** restored S8 section eyebrow labels. Added 2 new
+  keys/locale (`tips.eyebrow`, `values.eyebrow`; he/en +2 each, no other string). New `Eyebrow`
+  unit = tracked muted-accent label + thin gold rule toward line-end; applied to Benefits
+  (`as="h2"`), Tips, Values (above the box). Bare `<Rule />` removed entirely (incl. Hero) — a
+  rule now only appears inside an eyebrow unit. Note: hit the per-edit lint-feedback 3-strike
+  hook mid-refactor (renamed Rule→Eyebrow before removing the last Tips usage → transient
+  no-undef; exec §8). Resolved by completing the usage swap; final lint 0 errors.
+  Files: AboutClient.jsx + he.json + en.json. Gates green (build /about ● SSG, RTL 0, hex 0, adversarial 0).
+- **Rule/divider cleanup round (same PR #1037):** gold `<Rule />` kicker now single-purpose,
+  kept only on Hero/Benefits/Tips (3); removed from Pull-quote (blockquote already has a gold
+  start-rule), Values (box border frames it), Contact. Dropped Contact's section `border-t`
+  (stacked under the CTA band's bottom border) — CTA `bg-green-50 border-y` is the single
+  separator. AboutClient.jsx only, no copy. Gates green (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Pull-quote + numeral round (same PR #1037):** closed the L-shaped void around the
+  pull-quote (padding `pt-9 md:pt-14 pb-4 md:pb-6`; Benefits top trimmed to `pt-4 md:pt-6`);
+  benefit numerals centered over each column with the em-dash removed; Values numerals
+  em-dash removed (alignment unchanged). AboutClient.jsx only, no copy edits. Gates green
+  (build /about ● SSG, lint 0, RTL 0, hex 0, adversarial 0).
+- **Spacing + caption round (same PR #1037):** section vertical padding cut ~30%
+  (`section-y`→`py-9 md:py-14`, pull-quote `py-12 md:py-20`; AboutClient-scoped, globals
+  untouched); founder byline captions restyled into a hierarchy (caption1 = small muted
+  `text-sm` credit, caption3 = `text-[15px]` `text-text` `font-medium` accent, tighter gap,
+  gold rule kept). AboutClient.jsx only, no copy edits. Gates green (build /about ● SSG,
+  lint 0, RTL 0, hex 0, adversarial 0).
+- **IA round (same PR #1037):** section reorder — Values moved after Benefits / before
+  Tips (new order: Hero → Story → Pull-quote → Benefits → Values → Tips → Testimonials
+  → Close → Contact). Close restructured to consumer-primary: single primary CTA =
+  `cta.explore` → `/map`; business `cta.register` demoted to underlined link → **`/about/for-businesses`**;
+  `cta.heading` kept verbatim, demoted to muted lead-in; close is now a tinted `bg-green-50`
+  band (distinct from the plain Contact form). **AboutClient.jsx only — no he/en.json this round.**
+  Gates green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
+- **Refinement round (after visual review, same PR #1037):** editorial type scale ↓,
+  Hebrew faux-italic removed (upright FRL/DM Sans; italic now only on Latin numerals),
+  hero anchored (gold rule + tighter padding), `scroll-mt-24` on all 9 sections,
+  Values box `border-2 border-accent/30`, portrait `object-[center_30%]` crop, and the
+  **one** copy edit `cta.explore` `גלי`→`גלו` (he.json only; en.json untouched).
+  Gates re-run green: build (/about ● SSG), lint 0 errors, RTL 0, hex 0, adversarial 0 blocking.
+- **Pending / next:** Sapir mobile QA (375/360/390) on the Vercel preview, then
+  **she** marks ready + merges (Rule 23). Skeptic note: portrait `aspect-[3/4]`
+  + `fill` + `object-[center_30%]` not visually verified — confirm in mobile QA.
+  `/about/for-businesses` is a separate page, out of scope.
+
+## 2026-06-08 — MEH-233 mobile responsiveness audit (Audit 7/7, AUDIT-ONLY)
+
+**Report:** [`docs/audits/2026-06-mobile-audit-MEH-233.md`](./docs/audits/2026-06-mobile-audit-MEH-233.md).
+Branch `feature/meh-233-audit-mobile` off staging → DRAFT PR. **No layout code
+touched** — findings are for Sapir to triage into per-route sub-MEHs.
+
+- **What ran:** new isolated Playwright config `frontend/playwright.mobile-audit.config.ts`
+  + spec `frontend/e2e/mobile-audit/mobile-audit.spec.ts` + merge script
+  `frontend/scripts/build-mobile-audit-report.mjs`. 11 routes × 3 mobile viewports
+  (iPhone SE 375×667 · Galaxy 360×640 · iPhone 14 390×844), 33 full-page screenshots
+  in `docs/audits/screenshots/MEH-233/`. All 33 passed. Existing e2e specs untouched.
+- **Result:** 9 CRITICAL (overflow:hidden clipping on `/` location-banner text + `/about`
+  & `/events` hero sections, consistent across all 3 viewports), 33 HIGH (tap targets
+  < 44px). No horizontal-overflow / nav-cutoff / header-overlap / modal-fit findings.
+- **CAVEAT (load-bearing):** ran against a LOCAL build with **no backend** — API content
+  rendered empty/loading; external CDNs blocked. Content-density overflow (long Hebrew
+  names, real card grids/images) is a KNOWN BLIND SPOT → recommend a follow-up run on a
+  seeded staging/preview env. `@playwright/test` was already a dep; browser via the
+  pre-provisioned `/opt/pw-browsers` Chromium (CDN blocked in sandbox).
+- **Next:** Sapir triages Top 10 CRITICAL → opens per-route fix sub-MEHs.
+
+## 2026-06-07 — P1 wave from the Hotspot/Sentry audit (3 DRAFT PRs + 1 BLOCKED)
+
+**Ledger:** `docs/audits/2026-06-p1-wave-ledger.md`. Sequential, one DRAFT PR per
+issue off fresh `staging`; **none merged — Sapir's merge is the gate.**
+
+- **MEH-767** (HOT-001 CRITICAL) → **PR #1005** `fix(MEH-767): owner-scoped schema
+  for /producers/me`. New `ProducerOwnerOut` drops `risk_score`/`risk_reasoning`
+  (+ declaration audit) from the owner endpoint; keeps `producer_license_number`.
+  Serialization-only.
+- **MEH-769** (HOT-002 HIGH) → **PR #1006** `fix(MEH-769): enforce producer-approval
+  state machine`. `toggle-status` guarded to approved⇄inactive; else → 409. New
+  msg key `admin.producers.toggle.invalid_transition` (he+en). Off fresh staging
+  (no overlap with #767).
+- **MEH-770** (SEN-001) → **PR #1008** `fix(MEH-770): tune + harden SQLAlchemy
+  engine pool`. Explicit env-overridable pool config + `_ObservableQueuePool`
+  structured exhaustion log. **New env vars (Sapir → Railway, not in any env
+  file):** `DB_POOL_SIZE=10 DB_MAX_OVERFLOW=5 DB_POOL_TIMEOUT=30 DB_POOL_RECYCLE=1800`.
+  Scope note: env read in `database.py` (config.py permission-protected).
+- **MEH-771** (RED) → **⛔ BLOCKED.** Precondition unmet: no `outbound_messages`
+  migration in `alembic/versions/`, `EXPECTED_REV` still `f1c7b9a3e264` (MEH-762),
+  no `OutboundMessage` model. PR #991's Alembic (Sapir terminal) not yet applied.
+  **Unblock:** apply + commit the migration, bump `EXPECTED_REV`, re-run from Chunk A.
+
+**Next:** Sapir reviews/merges #1005/#1006/#1008 (each a YELLOW WAIT gate);
+sets the MEH-770 Railway env vars before the MEH-768 release; then unblocks MEH-771.
+
+## 2026-06-07 (overnight) — Hotspot + Sentry audit (read-mostly, DRAFT PR)
+
+**Deliverable:** `docs/audits/2026-06-hotspot-sentry.md` — `SEN-`/`HOT-` series.
+Branch `claude/friendly-fermat-CSzTr` (harness-assigned). Docs-only diff; **DRAFT PR**.
+No code fixes shipped (Phase C deferred — rationale in doc).
+
+**Sentry (org `df7d71a2ad7a`):** frontend 0 unresolved; backend 19.
+- **SEN-001** QueuePool exhaustion (~500 events, one burst 23d ago, every endpoint) —
+  `database.py` engine has no `pool_size`/`max_overflow`/`pool_recycle` → config/infra → Sapir.
+- **SEN-002/003 (ACTIVE)** FK + NotNull on producer delete — **already fixed in code**
+  (PR #946 MEH-747/755) but **not in prod release `4ab691a`** (verified via
+  `git merge-base --is-ancestor`). → deploy staging→main + resolve in Sentry.
+- **SEN-004 (ACTIVE)** slowapi skips per-email limit on empty key (`/auth/register/producer`) → auth → Sapir.
+- **SEN-005 (ACTIVE)** Anthropic credit-too-low — fail-open catches it (no user impact);
+  Sentry anthropic integration reports `handled:no` → config (add credits) + noise.
+- **SEN-007/008** noise (lifespan CancelledError; MEH-500 verification issue) → ignore/resolve.
+
+**Hotspot deep review (top-10 churn×LOC, 10 read-only subagents):**
+- **HOT-001 CRITICAL (verified by me):** `GET/PUT /producers/me` returns `ProducerAdminOut`
+  which carries `risk_score`/`risk_reasoning` (`schemas.py:659-660`) → producer reads their own
+  AI risk score + reasoning. Needs a self-serve response model w/o risk fields. Schema → Sapir.
+- **HOT-002 HIGH:** `admin.py:281 toggle_producer_status` force-approves any non-approved
+  producer (incl. `rejected`) → goes public, bypasses approval notifications.
+- **HOT-003 HIGH:** stacked title validators (`sanitize`→`None`→`.strip()`) → 500 on
+  punctuation/HTML-only title (HomeProduct/Experience/Recipe).
+- **HOT-004 HIGH (prod-confirmed by SEN-002/003):** schema FK gaps remain (router-only patch);
+  `KashrutBadgeRequest.producer_id` is an un-fixed sibling.
+- **HOT-005 HIGH:** no Zod validation before `/producers` map fetch (rule 19) → string-coord → blank map.
+- **HOT-006 HIGH:** locale-blind JSON-LD → EN pages emit HE `@id`/`url` → duplicate structured-data identity.
+- MED/LOW: HOT-007..018 (map selection staleness, form stale-closure, reviews optimistic-update,
+  delete_account non-atomic, push_subscription dict DoS, map ref leaks, etc.). Full table in doc.
+
+**Dedup:** producer_name/list-caps/admin_notes/reset-oracle folded into AUD-011/013/012/015.
+
+**For MORNING-BRIEF:** new findings doc — incorporate `SEN-`/`HOT-` alongside `AUD-`/`UIS-`.
+First two low-risk fix PRs to action: HOT-017 (SEO `sameAs`/OG guards), HOT-018 (reviews date/pagination).
+
+---
+
+## 2026-06-06 (night-batch-5) — autonomous implementer: P1/P2 fixes + fuzz layer (DRAFT PRs)
+
+Four sequential tasks off fresh `staging`, all DRAFT (merges = Sapir's). Ledger: [docs/audits/2026-06-night-batch-5.md](./docs/audits/2026-06-night-batch-5.md). Safety net (merged `test_expansion_*` / `__tests__/expansion/`) never modified.
+
+- **AUD-009/010** (WhatsApp Graph parse) — Draft **PR #991**. `whatsapp.py` stops treating any non-error HTTP as delivered; classifies accepted/failed/window_expired, keeps the bool façade. CI: pytest ✅ / ruff ✅ (after format fix). **Sapir-terminal:** Alembic `outbound_messages` revision (verbatim in PR body). Refs MEH-214.
+- **AUD-039/040** (availability validation + Israel tz) — Draft **PR #995**. New `app/utils/clock.py` + `app/services/availability_validation.py`; rejects past `vacation_until` in Asia/Jerusalem on all write paths. Read-path auto-clear left on `date.today()` (preserves merged AV-3 boundary). **DEFER:** admin required-date parity; read-path tz alignment. Refs MEH-214.
+- **UIS Pattern A** (useAdminAction) — Draft **PR #1001**. Shared hook (per-key in-flight lock + `errorMessage()` toast, no new i18n keys) wired into all 10 CRITICAL admin double-submit sites. Local: build ✅ / vitest 443 ✅ / lint 0-err ✅. CI green. Refs MEH-228.
+- **schemathesis fuzz** — Draft **PR #1003**. `tests/test_fuzz_schemathesis.py` (in-process ASGI over openapi; unauth excludes admin DELETEs; authed admin JWT). `importorskip` keeps CI green until the dep lands. **Sapir-terminal:** add `schemathesis` to `pyproject` dev group + `uv lock` (pyproject guard-protected, MEH-442). Findings → morning triage (FUZZ-NNN), not this PR. Refs MEH-214.
+- **Next:** Sapir applies the 2 terminal steps (Task 1 Alembic, Task 4 dep), reviews the 4 draft PRs (Vercel/mobile for UI-facing #1001), then merges. `send_later` unavailable → no scheduled check-in; CI failures arrive via PR webhooks (subscribed to all 4). Re-triggered #991/#995 CI via empty commits (their fixed heads hadn't fired a `pull_request` event).
+
+## 2026-06-06 (night) — Overnight batch #7: 6 deferred items → 2 PRs, 4 already-done
+
+Autonomous batch of 6 documented-deferred items (HANDOFF/memory). Every premise
+verified against `staging` with file:line before acting (meta-pattern #1) —
+**4 of 6 were already complete**, surfaced as no-ops, no empty PRs. Full ledger:
+[`docs/audits/2026-06-night-batch-7.md`](./docs/audits/2026-06-night-batch-7.md).
+
+- **#996 (draft)** — events/new EN category labels: flat `CATEGORIES` → `CATEGORY_KEYS`
+  + `events.categories` `t()` (EventsClient pattern). 0 new keys. Refs MEH-475.
+- **#998 (draft)** — Wave 6 metadata tail: 4 static routes (events/experiences/group-buys
+  lists + register/producer) → `getTranslations` (`seo.*`). New keys parity 2584/2584.
+  Fixed 2 hreflang leftovers + a double-brand. Scope corrected: sitemap.js has 0 strings;
+  detail routes already done in MEH-476 3b2. Refs MEH-475.
+- **No-ops (already on staging):** (2) robots.txt has no `/en` disallow to lift — EN
+  already crawlable (hreflang gate live, 30 routes). (4) all 8 auth routes already split
+  + `robots:noindex` (#915 precedent applied prior). (5) **PR #934 was merged** (not
+  closed-before-merge) — appendix present at `docs/legal/…licensing-tiers.md:179`.
+  (6) MEH-475 S2 SecurityTab already i18n'd (#766/767/768; `settings.security` 32 keys parity).
+- **Recommendation:** HANDOFF cleanup pass — retire the closed deferred items (Wave 6
+  detail routes, auth splits, S2) so they aren't re-dispatched in future batches.
+
+
+## 2026-06-06 (night-batch-6) — second-shift fixer + shepherd (DRAFT PRs only)
+
+Autonomous second-shift session. Ledger: [docs/audits/2026-06-night-batch-6.md](./docs/audits/2026-06-night-batch-6.md).
+
+- **MEH-434** ✅ — client-side `launch_cohort` Sentry tag. Draft **PR #994** off `staging`. New `frontend/lib/launch-cohort.js` + `useLaunchCohortTag` in `auth-context.js` (2-line diff); cohort from `user.created_at` (no backend/schema). vitest 6/6 + full suite + build + lint green. **Backend `auth.py`/`UserOut`/`test_auth.py` slice DEFERRED** (see `docs/LAUNCH_OBSERVABILITY.md`). Refs MEH-434 (slice only, not Closes).
+- **MEH-290** ⛔ BLOCKED — copy is verbatim, but the 4 tour anchor targets don't exist (Step 1 ProfileCompletenessCard = unshipped MEH-288; Step 3 add-product button absent; Step 4 share button = open Q#2). Building requires invention + design judgment + missing dep. Unblock path in ledger.
+- **B1 (MOB) / B2 (FUZZ)** ⏸ NOT TRIGGERED — `feature/meh-233-mobile-audit` and `feature/schemathesis-fuzz` PRs don't exist yet. Re-check on each wake.
+- **Shepherd:** #987 green; #975 CI re-running; **#991 ruff-format failure** (owning session's whatsapp.py — out of resync scope, logged not touched). `send_later` unavailable → no scheduled check-in; rely on #994 webhooks + per-wake sweeps.
+
+## 2026-06-06 (PM) — MEH-764 chips converged (#987) + staging vitest hotfix (#988)
+
+**MEH-764 — MERGED (#987, `b11e18f`, Closes MEH-764).** Flipped the shared
+`ChipScrollRow` default to `rounded-md` + `state-selected` for all 3 consumers
+(/home, /producers, /map), per DESIGN §Shapes / BRAND §3; removed the temporary
+MEH-763-chunk-3 opt-in props (component back to one shape). Phase 0 found S4 FINAL
+silent on chip shape → BRAND §3 governs. Sapir QA'd all 3 surfaces. Zero logic/copy.
+
+**Staging vitest hotfix — MERGED (#988, `686eb63`).** `#976` (MEH-753) unified the 4
+hardcoded `formatDate` helpers into shared `format-date.js` (incl. `HomeProductCard`,
+now using `useLocale()`), but its TEST never got a next-intl mock → 16 fails, **staging
+silently red on vitest** (non-required check, slipped the gate). #988 mocks `useLocale`
+per `RecipeCard.test` — **test-only; 407 → 423 passing.** (The helper dedup itself was
+already done in #976; only the missing test mock remained.)
+
+**Process flags this session (S7 + S5 design tracks):**
+- **5 orchestrator-claim/evidence mismatches** STOP-surfaced (all verified file:line):
+  2 RTL Phase-0 flags (MEH-763 #967), the `state-selected` token ("merged" but absent →
+  built #970), "#971 merged" (was draft → verified + merged on the MERGE instruction),
+  and "#987 vitest failure" (pre-existing #976, not MEH-764). → adopted **verify-
+  preconditions over asserted premises**.
+- **Open follow-ups:** MEH-765 (marker + card→map keyboard a11y; deferral tracked).
+  MEH-753 formatDate dedup (#976) + MEH-764 temporary-prop removal are both DONE.
+- **Lint-hook lesson** added to `code-execution.md §8` (batch import+usage moves /
+  MultiEdit — the per-edit hook false-3-strikes a transient `no-undef`).
+
+## 2026-06-06 (night) — Overnight batch #4: MEH-692 / 688 + 2 Phase-0 (3 PRs MERGED)
+
+Autonomous batch, branches off staging. **Merged to staging (Smadar "MERGE ALL").** Ledger: [docs/audits/2026-06-night-batch-4.md](./docs/audits/2026-06-night-batch-4.md).
+
+- **MEH-692** → PR **#989** ✅ merged (`Closes`): auto-close forensics. Root cause = the
+  literal magic-word string embedded in the "Note on CHANGELOG entry" **prose** of
+  #832/#833/#834/#835 (Linear parses the whole PR body, not just the trailer). Decisive
+  trigger #834 (merge+2s). Rule 26/27 don't cover it → new prevention note proposed.
+- **MEH-688** → PR **#990** ✅ merged (`Refs` — epic NOT closed): he.json emoji LOCK v2.
+  **Sweep BLOCKED** — parent MEH-657 already shipped A+B+D4+E (PR #818); all remaining
+  emoji are deferred (C→MEH-683, D1=KEEP, D2→MEH-685) or Sapir/ADR-021-gated (availability
+  dots, kosher). Delivered Phase-1 Discovery only; **no he.json change**. Unblock path in the doc.
+- **Phase 0 A** WhatsApp delivery → `docs/discovery/2026-06-whatsapp-delivery-phase0.md`
+  (PR #992). `wamid` discarded; `statuses[]` webhook parsed-then-dropped; options A/B/C.
+- **Phase 0 B** availability+tz → `docs/discovery/2026-06-availability-phase0.md` (PR #992).
+  **Primary risk: vacation auto-clear `schemas.py:591` uses `date.today()` not Israel TZ.**
+- ⚠️ **Deviation (accepted):** MEH-688 brief asked to strip+close; delivered Discovery+`Refs`. Epic stays open for Sapir's ADR-021 decision.
+
+## 2026-06-06 (night) — overnight bug-fix batch: MEH-753 / MEH-741 / MEH-731 (MERGED to staging)
+
+Autonomous overnight batch, 3 LOW-RISK issues, one PR each off `staging`. All build-verified and **merged to staging** (Smadar authorized "merge all"). Full table + notes: [docs/audits/2026-06-night-batch.md](./docs/audits/2026-06-night-batch.md).
+
+- **MEH-753** — event dates respect locale: shared `frontend/lib/format-date.js` replaces 4 hardcoded `he-IL` formatDate helpers (EventsClient, EventDetailClient, ExperienceCard, HomeProductCard). PR **#976** ✅ merged.
+- **MEH-741** — Recipe JSON-LD: `minutesToIso8601` → `undefined` (not `null`) + filter drops null; un-skipped 2 MEH-729 tests + EN'd one BottomNav `it()`. vitest 15/15. PR **#979** ✅ merged.
+- **MEH-731** — locale-aware `usePathname`: FooterSlot + admin/layout swapped `next/navigation` → `@/i18n/navigation` (only 2 remaining sites; useRouter untouched). PR **#984** ✅ merged.
+
+## 2026-06-06 (night) — Overnight batch #2: MEH-452 / 405 / 258 / 228 (4 draft PRs)
+
+Autonomous 4-issue batch, one branch + draft PR each off staging. Full table +
+scope notes: [docs/audits/2026-06-night-batch-2.md](./docs/audits/2026-06-night-batch-2.md).
+
+- **MEH-452** → PR **#978** (`Closes`): JSON-LD `openingHoursSpecification` +
+  `servesCuisine` + WebSite/Organization graph nodes in `lib/seo.js` (graph 3→5,
+  closes dangling `isPartOf #website`). 42/42 vitest, build green.
+- **MEH-405** → PR **#980** (`Closes`): workflow Rules — PR-scope verification +
+  Linear duplicate-check. ⚠️ Specced as 22/23 but those numbers are taken
+  (MEH-579/585); slotted at **26/27**, bodies verbatim. Renumber decision flagged.
+- **MEH-258** → PR **#982** (`Refs`, draft): `SECURITY-CHECKLIST.md` already
+  existed (8 TRAPs) — appended a draft "2026-06 audit watch items" section
+  (AUD-002/003/004/007 + MEH-265). Not wired into CLAUDE.md/template (per scope).
+- **MEH-228** → this PR (`Refs`, read-only audit): `docs/audits/2026-06-ui-states-audit.md`
+  — ~100 findings, **13 CRITICAL** in 4 root patterns (Pattern A = admin
+  fire-and-reload handlers, ~10), Top-10 with file:line, Hebrew summary. No code changed.
+
+**Next:** review the 3 scope notes in the batch doc, then triage MEH-228 Top-10
+(start with a shared `useAdminAction` helper → closes ~10 CRITICAL at once).
+
+---
+
+## 2026-06-06 (PM) — MEH-762 Chunk 4: is_verified badge decouple
+
+**Branch `feature/meh-762-tier-public-contract`, draft PR (Refs MEH-762).** The "מאומת" pill driver switched `is_verified` → `verification_tier === "verified"` (`badges.js`); the over-claim tooltip replaced with the Sapir copy-lock (terms §5.2-aligned). `is_verified` field **NOT deleted** (badge role only). 3 test files updated (vitest **80✓**); `npm run build` ✓; `grep is_verified badges.js` = 0 (code; comments reworded to keep the gate clean).
+- **Deferred → MEH-766** (opened): `trust_tier.py:32` coupling (a) · backend `?verified` filter `producer_listing.py:49` (b) · map verified surfaces + Zod `schemas.js` (c) · `AdminProducersTable`/`ProducerForm` (d) · `is_verified` column drop via Expand-Contract (e).
+- ⚠️ **Deploy note:** the pill is absent until admins `grant-verify` a producer (intended ADR-022 over-claim correction; pre-launch, no real producers).
+- **Next — Chunk 5** (likely docs-only): handoff to MEH-76 — the S12 badge consumes the 3 public fields (`verification_tier` / `verified_at` date / `verification_doc_type`) + the MEH-758 keys, with **LTR-isolation on `{date}`** required; `"cosmetics"` has no tooltip key yet (`verified_tooltip_registration` MEH-758 micro-follow-up).
+
+## 2026-06-06 — MEH-214: audit fix-wave (autonomous LOW-RISK lane) — PR #974 + DEFER package
+
+Follow-on overnight wave on the 56 audit findings. Ledger:
+[`docs/audits/2026-06-fix-wave.md`](./docs/audits/2026-06-fix-wave.md).
+**FIXED 1 · DEFER 33 · N/A 22.**
+
+- **Shipped (draft, off `staging`):** **PR #974** `feature/audit-fix-bidi-aud026` —
+  AUD-026 bidi LTR-isolation on ExperienceCard/HomeProductCard/ReviewsSection. `npm run
+  build` ✅. CI green-track at hand-off (frontend build/lint/vitest/adversarial running,
+  backend skipped). NOT merged — morning review. Re-verified vs current staging
+  (`b5d5a0f`): MapProducerCard AUD-026 site was **already fixed** → audit snapshot stale.
+- **DEFER (prepared, not applied):** P1 = `.env.example` 7-day-token (AUD-050, **blocked
+  by env-read hook → apply in your terminal**), WhatsApp 200≠delivered (AUD-009/010),
+  unique-constraint Alembic draft for Report/Referral races (AUD-042, draft revision in
+  the doc). P2 = availability validation+tz, auth (fingerprint/reset-rate-limit), MEH-736
+  twin jobs (**verbatim YAML in the doc — workflows write-denied**, this blocks #969's
+  merge), security-header consolidation, dep bumps. P3 = FE mechanical (RTL/aria/useId —
+  autofix-eligible but need re-verify vs moved staging), copy (needs your approval), design tokens.
+- **Blocked (logged+skipped):** `backend/.env.example` (env-read hook), `.github/workflows/**`
+  (settings deny) — both handed off with exact diffs/YAML. No STOP conditions hit.
+- **Subscribed to PR #974** activity (CI/reviews); self check-in scheduled if `send_later` available.
+- **Next:** Sapir — review #974 → merge; apply the 3 terminal-only fixes (.env.example,
+  MEH-736 twins); triage P1 DEFER items into Linear. #969 (audit) still needs the twins or admin-merge.
+
+## 2026-06-06 — MEH-214: 2026-06 full-repo audit COMPLETE — PR #969 ready-for-review
+
+**Branch:** `feature/audit-2026-06-full` off staging — draft → **ready-for-review**, PR #969
+(Refs MEH-214). Read-only audit, **zero source edits**; all output in
+[`docs/audits/2026-06-full-audit.md`](./docs/audits/2026-06-full-audit.md) + `docs/audits/raw/`.
+Ran fully autonomous overnight: Phases 0→A→B→C→D→Final, checkpoint-committed per phase.
+
+**Counts:** 56 findings (AUD-001…056). **0 RED · 33 YELLOW · 23 GREEN.** Every subagent-proposed
+RED downgraded/rejected on source verify (~36% reject/demote — calibrated). 3 Audit-0 carry-overs
+closed: AUD-004 starlette host-header → FP (only `request.url` use is a Sentry tag); AUD-007
+eslint object-injection ×122 → FP (test mocks); mypy 639 → ~80% ORM/stub noise, 0 runtime crashes.
+
+**Top risks (all YELLOW):** AUD-050 `.env.example ACCESS_TOKEN_EXPIRE_MINUTES=10080` overrides
+15-min→7-day access token (BaseSettings maps it); AUD-009/010 WhatsApp 200≠delivered (body not
+parsed); AUD-042/043 check-then-act races (missing unique constraints) + double admin-notify;
+AUD-039/040 availability server-side validation + vacation UTC-vs-Israel tz; AUD-052 **MEH-736
+docs-only twin jobs absent → this PR #969 will block on "Expected" required checks (needs the twins
+or an admin merge)**. Frontend-quality cluster (RTL/bidi/a11y IS-5568) + dep-bump batch are P3/P4.
+Suggested Linear batch P1–P4 in the doc (NOT created). Strong positive controls: no IDOR, no
+hardcoded secrets, clean linear Alembic chain (35 tables, matches CI gate), non-negative trust-tier,
+comprehensive producer-delete cascade, strict frontend CSP.
+
+**State:** branch pushed (`cc41630`→final); PROGRESS checklist all ✓; BLOCKED: none. pytest deferred
+(no Postgres in sandbox, MEH-672 — documented, not claimed passing). **Next:** Sapir reviews the
+audit doc → triage P1 items into Linear; merge of #969 needs the MEH-736 twins (AUD-052) or admin.
+
+## 2026-06-06 (PM) — MEH-763: S5 /map port COMPLETE (4 chunks merged + Chunk 4 PR open)
+
+**Branch:** `feature/meh-763-s5-chunk4-states` off staging — draft PR (Refs MEH-763), the FINAL
+chunk. **Chunks 1–3 + the state-selected token are all merged to staging** (#967 `42a2056`,
+#968 `ed04af8`, #970 `125da96`, #971 `b5d5a0f`). Chunk 4 = states + `.numeric` bidi + card a11y
++ this docs commit.
+
+**Chunk 4 done:** skeleton `bg-green-50`→`bg-background` (ADR-019 cream); geo-denied already
+neutral (opens LocationModal city-picker, zero negative labeling) + disabled states already
+opacity-on-cream → no restyle needed; `.numeric { unicode-bidi: isolate }` added + applied to
+sheet count (`MapBottomSheet`), card price + rating (`MapProducerCard`); `<article>` got
+keyboard parity (role=button / tabIndex / Enter-Space, guarded against inner a/button).
+
+**Decisions / flags for Sapir at the FINAL gate (full mobile QA before merge):**
+- **`<article role="button">` contains inner `<a>`/`<Link>`** → technically nested-interactive.
+  Implemented per the ticket's explicit ask + `aria-label`; flag for your a11y call (the inner
+  profile Link is independently keyboard-reachable, so the card onClick is a select-on-map
+  convenience).
+- **`business_count`** (MapClient:250) is an ICU plural — `#` can't be span-wrapped; a standalone
+  integer is bidi-safe, so it's left intact (documented, not forced).
+- **MEH-765** (marker keyboard-a11y, Leaflet limitation) opened — NOT absorbed here.
+- **MEH-764** — global chip convergence (remove the temporary `ChipScrollRow` opt-in props).
+
+**⚠️ Process this session (route to rules if recurring):** four orchestrator claims were
+contradicted by file:line evidence and STOP-surfaced — two RTL Phase-0 flags (#967), the
+`state-selected` token ("merged" but absent → built #970), and **"#971 merged"** (it was
+`open`/`draft`; CC verified, then merged on the explicit MERGE instruction before basing Chunk 4).
+Lesson added to `code-execution.md` §8: batch import+usage moves (MultiEdit) — the per-edit
+`lint-feedback` hook false-3-strikes a mid-refactor transient `no-undef`.
+
+**Next:** Sapir full mobile QA of the whole port (markers+honey, sheet, flat overlays, chips,
+states) on the Chunk-4 preview → merge. Then MEH-763 done; MEH-762 Chunk 4 (verified-badge
+semantics) hands off to the now-frozen map sites.
+
+## 2026-06-06 (PM) — MEH-762 chunks 1–3 + session-close digest
+
+**MEH-762 (ADR-022 public tier contract) — branch `feature/meh-762-tier-public-contract`.**
+- **Chunks 1+2 MERGED to staging** (PR #966, squash `7a52e77`). Chunk 1 = verified_at + verification_doc_type (expand-only; migration `f1c7b9a3e264` + `EXPECTED_REV` Sapir-applied `b84ceb6` — `alembic/versions/**`, `.github/workflows/**`, `.claude/settings.json` all CC-denied + self-sealing, MEH-738). Chunk 2 = admin `grant-verified`/`revoke-verified` (`require_admin`, `GrantVerifiedIn` Literal, tz-aware `now(timezone.utc)`, ISO response, re-grant overwrite, 13-case tests).
+- **Chunk 3 (new PR — public exposure + resolver):** `ProducerListOut` exposes `verification_tier` (computed, never stored), `verified_at` (**date-only**, `field_validator` truncates the TIMESTAMPTZ), `verification_doc_type`. Resolver mirrors MEH-530 `categories_require_license` name-membership (`constants.LICENSE_REQUIRED_CATEGORIES` SoT, no DB in serialization). `trust_tier` untouched. **AdminOut decision:** the 3 fields reach admin via inheritance at **date granularity** — I did NOT add a full-timestamp admin override (it would fight the inherited date-truncation `field_validator`; flag at gate if admin wants `declared_at`-style precision). 9-case test file; pytest deferred to CI.
+- **LOCKED D1–D4** in ticket top block. **Remaining:** 4 = `is_verified` badge decouple (badges.js relabel; `trust_tier.py:32` coupling → follow-up ticket); 5 = handoff to MEH-76 Chunk 4 (S12 badge consumes these fields + MEH-758 keys w/ LTR-isolation).
+
+**Session-close digest (06/06 PM):**
+- MEH-132 S7 port DONE (#965 → staging) · MEH-763 S5 chunk 1 merged (#967); F1 flat/`surface-floating` · F2 markers carry no category colors (photo/monogram, honey `#C8821E`+icon in categories lib) · F3 chips `rounded-md` — all locked evidence-based, recorded in MEH-763.
+- MEH-762 LOCKED D1-D4 (ticket top block); chunk 1 = #966 (models/docs by CC + migration Sapir-applied `b84ceb6`); chunks 2-5 per plan.
+- MEH-76 S6: Phase 0 done, chunk order 1-vacation 2-CTA 3-monogram 4-badge; Stage 2 blocked ONLY on Sapir pasting S6 FINAL + S12 spec; variant C = relabel (D4).
+- Follow-ups to open later: `verified_tooltip_registration` key (MEH-758 micro) · `trust_tier` `is_verified` decoupling · map marker keyboard a11y.
+- Process: terminal blocks for Sapir must be fully executable (heredoc/sed) — comment-line instructions get pasted verbatim and fail (proven 06/06).
+
+## 2026-06-06 — MEH-132: S7 register port (design v4 → code) — PR #965 ready-for-review
+
+**Branch:** `feature/meh-132-s7-register-port` off staging — **draft → ready-for-review**,
+PR #965 (Refs MEH-132). Visual port of `/register` + `/register/producer` to S7 v4;
+design-layer only, functional freeze verified each chunk. 4 commits (chunks 1, 2+2b, 3, 4).
+
+**Done (per chunk):** (1) token/class cleanup — `rounded-[..]`→tokens, removed 2 inline
+shadows, tokenized inline fontFamily, `bg-gray-200`→`bg-border`, `text-right`→`text-start`
+sweep (3 `dir=ltr` exceptions documented). (2/2b) consumer — FRL-900 headings, 📬→Phosphor
+`EnvelopeSimple` + amber→ADR-019 (neutral cream/`fg-muted`), dark-outlined CTAs. (3) producer
+steps — progress→Cormorant numerals (producer-only), FRL-900 headings, license amber→`fg-muted`,
+dark-outlined step CTAs. (4) success 06A/06B — `tier_trust` wired into both, FRL-900 headings,
+06B 📬→Phosphor, dashboard/back-home dark-outlined + share `btn-whatsapp-outline`, WhatsApp-
+fallback amber box→ADR-019. **No variant C** (→ S6/MEH-76).
+
+**Decisions (Sapir, this batch):** amber → neutral ADR-019 (not green); consumer CTA pulled
+into Chunk 2b (locked plan had it in 3); CTA reading = dark-outlined (border-`primary-dark`,
+transparent, hover fills dark/white); batch authority to run chunks 2b+3+4 without per-chunk gate.
+
+**State:** build (both SSG) ✓ · vitest 414/0 ✓ · ESLint 0 errors ✓ · i18n parity 2569==2569
+(message files untouched) ✓ · Playwright `/register` → CI preview. **Freeze verified:** OAuth,
+`access_token` branch, 3-checkbox composition, MEH-530 wiring, E2E selectors/labels/ids, 3
+documented `dir=ltr` `text-right` exceptions. **Next:** Sapir ONE mobile QA on the preview →
+merge (`Refs MEH-132`; MEH-132 stays open until S6 takes variant C — confirm closure intent).
+
+## 2026-06-06 — MEH-685: Toast API refactor → semantic icon API (Category D2)
+
+**Branch:** `levismadar80/meh-685-toast-api-refactor-showtoast-icon-prop-category-d2-post-meh`
+off staging — **draft PR (Chunk 4), awaiting Sapir device QA before merge.** MEDIUM-risk,
+ran chunk-by-chunk with WAIT gates.
+
+**Done:** `showToast()` plain-string API → semantic methods-only object
+`showToast.success/error/info(message, { icon?, duration?, action? })`. `Toaster.jsx`
+renders a default icon per type (success→CheckCircle, error→WarningCircle, info→Info),
+bespoke `icon` overrides. Migrated **all ~40 call sites** across ~28 files (Chunks 2+3),
+stripped emoji from **12 toast i18n keys × he/en**, removed the backward-compat shim.
+Bespoke: HeartStraight (favorites, echoes the tapped control) · Bell (follow) · Leaf
+(published) · MagnifyingGlass (under-review) · Star (review saved) · Check (copied/settings)
+· LinkSimple (share). errors.js `showErrorToast` guarded: `(showToast[type] ?? showToast.info)`.
+
+**⭐ Phase 0 LESSON (route to a rule if recurring):** `reviews.saved_toast` carried a
+**⭐ (U+2B50)** that a hand-rolled emoji regex range missed entirely — it sits in the
+`\x{2700}–\x{1F000}` gap. **Emoji scans must use `\p{Extended_Pictographic}` (rg/Rust
+regex), never a hand-assembled codepoint range.** Same family as the MEH-733 "decode JSON
+before grep" miss. The no-regression count used Unicode `So`-category (caught the 12-per-locale
+delta exactly).
+
+**Flags (Sapir-confirmed, left untouched — possible MEH-657 misses):** `copied` (he/en 2564
++ 3170) → inline labels via `StoryCardCanvas.jsx:263` + share-card, NOT toasts.
+`contact.success_toast` (2096) → `AboutClient.jsx:31` `setContactMsg`, inline, NOT a toast.
+**`saved_toast_first_time` reworded** (Sapir-approved): the bottom favorites tab it pointed to
+was removed (MEH-643 BottomNav) → now "…בעמוד המועדפים שבתפריט" / "…on the Favorites page in
+the menu". Declarative (gender-neutral) — neighbors keep feminine נסי (out of scope).
+
+**State:** vitest green, `npm run build` green, `/adversarial-review` on central
+components (ProducerCard/MapClient/HomeProductForm). **Next:** Sapir device QA on the preview
+(toast icon + RTL position) → mark ready → merge (`Closes MEH-685`).
+## 2026-06-06 — MEH-760: Gate 3 — /terms two-tier verification (§5)
+
+**Branch:** `feature/meh-760-gate3-terms-tiers` off staging — draft PR (Refs MEH-760, Part of
+MEH-742). Replaced terms §5 single-tier text with Sapir-locked two-tier v1 (5.1–5.5), heading
+`5. אימות ושכבות הצגה`. `terms.sections.verified` restructured `{title,body}` →
+`{title, intro, verified_badge_title/body, declared_title/body, indemnity_title/body,
+no_supervision}` (he+en); `terms/page.js` `verified` case renders intro + 3 `<h3>` + closing para
+(structure change — Sapir approved option 1). Operator block byte-identical (untouched, git-diff
+verified). he==en parity; COPY_BANK §7 gate-3 rows; `npm run build` green.
+
+**Pending:** Sapir /terms render check on Vercel preview → then Closes. All five strings are
+**v1 — pending lawyer (Brief Q1/Q3)**; en ⏳ pending Sapir review. Post-lawyer terms revision is a
+follow-up edit (not yet a ticket; open one when opinion arrives) — launch not blocked on it.
+The §5.4 שיפוי clause was drafted narrowly for תנאי-מקפח (חוק החוזים האחידים) caution.
+
+## 2026-06-06 — MEH-758: Gate 1 — ADR-022 tier copy keys
+
+**Branch:** `feature/meh-758-gate1-tier-copy` off staging — draft PR (Refs MEH-758, Part of
+MEH-742). **Key-only** i18n copy, no rendering. 4 new keys (he+en, parity): success
+`tier_trust` + `producer.badge.{verified_tooltip_license, verified_tooltip_exemption,
+declared_explainer}` (both tooltips carry `{date}`). COPY_BANK §7 + decision-log rows; en ⏳
+pending Sapir review. Zero מורשה/מורשים (grep-clean). `npm run build` green.
+
+**Phase 0 findings worth keeping:**
+- The "בודקות כל עסק" over-claim the prompt referenced **does not exist** in the codebase
+  (grep 0). Sapir decided (this session) → `tier_trust` is a **new key**, rendered later by
+  the S7 register port (06A/06B), NOT wired into the current success screen (avoids copy in a
+  surface the port rebuilds + a throwaway QA cycle).
+- Keys go under **top-level `producer.badge`** (the `producer` ns had only detail/card;
+  `badge_row` at he.json:860 is under `group_buys`, not `producer` — first edit landed there
+  by mistake and was corrected).
+
+**Pending:** S7 register port + S6/S534 badge UI wire these keys (separate tickets). Sapir
+mobile smoke of the rendered surfaces → then Closes. en strings pending Sapir review.
+
+## 2026-06-06 — 🧾 SESSION CLOSE: OTP template + Linear sync audit
+
+**🚨 NEXT-SESSION #1 — staging→main RELEASE is the most urgent task.** Prod is still
+on `send_text` for OTP → **producer phone OTP is undelivered in prod** until the next
+staging→main release ships. Release candidates already on staging: **#953** (MEH-759-A,
+Alembic `a7f3e9c14d28`) + **#954** (MEH-754 OTP template). **#955** (MEH-759-B) awaits
+Sapir review.
+
+**Next-session priority order:**
+1. **staging→main release** (unblocks prod OTP — most urgent).
+2. **#955 review/merge** → then MEH-759 **Chunk C** (frontend declaration copy + farmer line).
+3. **MEH-754** — check Meta template approval + run cold-number device smoke on staging.
+4. **MEH-749** orphan script — Sapir manual run vs prod.
+5. Candidate next code task: **MEH-685** (showToast icon-prop, D2).
+
+**This session's outcomes:**
+- **MEH-754 OTP — PR #954 MERGED to staging @ `5c0dbf2`.** `OtpCodeV1` (MEH-672 pattern;
+  code twice: body param + button `sub_type:"url"` index 0); `_send_whatsapp_otp` →
+  `send_template`; fail-open preserved; 20 new tests + `test_api` 192 green. Meta template
+  `producer_otp_v1` created by Sapir (he, AUTHENTICATION, copy-code, 10-min TTL = backend).
+  **Gates before Done:** (a) Meta approval (pending at close), (b) cold-number staging
+  smoke, (c) ⚠️ prod still on `send_text` until release.
+- **MEH-744 credits — DEFERRED to launch (Sapir).** Don't load Anthropic credits yet
+  (manual approval is the LOCK; risk-score fail-open). `[RISK]` WARNING in Railway logs +
+  "אין מידע" admin badge = **EXPECTED, not a bug**. Reactivation: buy credits + auto-reload
+  → staging smoke shows "[RISK] scored" w/o 400 → archive Sentry MEHAMAKOR-BACKEND-D.
+- **MEH-743 honey — closed WITHOUT SQL.** Prod DB already correct: release #936 boot seed
+  insert-if-missing added שמנים (id 19) + דבש (id 20); combined row gone; orphan=0. License
+  enforcement keys off Hebrew name (`backend/app/constants.py`) → auto-active. Sapir smoke ✓.
+- **MEH-733 — closed.** §06 quote removal (PR #927, release #936) verified against prod HTML:
+  0 occurrences. Night sighting = cache. **LESSON:** Hebrew in fetched JSON is unicode-escaped
+  — `json`-decode BEFORE grepping or you get false negatives.
+- **MEH-732 — closed.** Drawer-login-gate follow-up was ALREADY fixed by PR #914 (drawer
+  reuses `isLoginPage`). CC Phase 0 caught it, stopped (no no-op edit). Cosmetic strike-through
+  PR #956 closed unmerged; local branch deleted. Stale CHANGELOG line `CHANGELOG.md:318` stays
+  (harmless). Orphan remote branch `feature/meh-732-drawer-login-gate` (`8068dad`) — env blocked
+  remote delete; prune from your terminal.
+- **MEH-736 CI gap (to investigate later).** Docs-only PR #956: all 5 path-gated required
+  checks reported *skipped*, MEH-736 twin jobs did NOT fire → under Rulesets, skipped-required =
+  "Expected" = merge blocked without admin override. Repro: a one-line docs diff. Check the
+  twins' `if:` conditions in `pr-checks.yml` / `deploy.yml`.
+- **Linear In Progress audit — 11 sync closures** (evidence comments on each): MEH-738/739/740/735
+  (#924); MEH-747 (#937+#938, #936, prod smoke); MEH-684/687/729 (#932); MEH-579 (merged 14/5,
+  missed Closes); MEH-643 (epic, all 4 chunks #898/#906); MEH-657 (A+B+D4+E via #818/#821; reopen
+  was a same-second relation artifact). Remaining In Progress (justified): 759, 754, 742, 547,
+  214, 233, 130.
+- **Unrelated flag (from MEH-732 Linear thread):** `nav.discover` may render `גלה`
+  (masculine-singular) on the BottomNav home tab — ADR-014 forbids pure masculine. Not yet
+  verified/fixed; out of scope this session.
+
+## 2026-06-06 — MEH-759: Gate 2 — declaration copy v2 (Chunk C)
+
+**Branch:** `feature/meh-759-chunk-c-declaration-copy` off staging — draft PR. Frontend copy
++ constant bump only (no schema, no API field). Chunks A (#953) + B (#955) merged.
+
+**What:** split the single ToS-bundled consent checkbox into 3 separate checkboxes (ADR-014
+voice): ToS/privacy (chrome) · binding licensing declaration (`terms.declaration`,
+first-person, continuous commitment) · conditional grower declaration
+(`terms.farmer_declaration`, shown+required only for ירקות/פירות). Both declarations fold
+into the single `declaration_accepted` bool (`declarationConfirmed && (!farmerRequired ||
+farmerConfirmed)`). `DECLARATION_VERSION` 2026-06-v1 → **2026-06-v2** + test updated. he/en
+keys + validation msgs (parity); en "pending Sapir review" in COPY_BANK.
+
+**Decisions (Sapir, this session):** Q1 = separate checkboxes (verbatim-lock integrity +
+ADR-014 + distinct affirmative act = evidentiary value); Q2 = ship v2 (Linear DoD's "v1"
+line is stale, written pre-Chunk-B; orchestrator reconciles ticket next session).
+
+**Pending:** Sapir mobile smoke on the Vercel preview → then mark Closes. en copy + both
+he strings are **Sapir-locked but lawyer opinion outstanding** (Brief Q1.1–Q1.5) — COPY_BANK
+marks them "v2 — pending lawyer"; a lawyer revision = another version bump + Chunk-C-style PR.
+`/terms` indemnity clause = MEH-760 (separate). Farmer match is by category NAME (ירקות/פירות,
+seed_data.py:15-16) mirroring requiresProducerLicense — kept inline in the component (lib
+out of scope this PR).
+
+## 2026-06-06 — MEH-759: Gate 2 — producer declaration audit (Chunks A+B)
+
+**Branch:** `feature/meh-759-chunk-b-stamping` off staging — draft PR (Chunk B).
+**Chunk A merged** (PR #953, squash `40aead3`): Alembic `a7f3e9c14d28` →
+`producers.declared_at` (TIMESTAMPTZ null) + `declaration_version` (VARCHAR(10) null),
+expand-only; ORM parity; `EXPECTED_REV` bumped (Sapir applied the workflow-file line — CC
+is deny-listed from `.github/workflows/**`).
+
+**Chunk B (this PR):** stamping on `POST /auth/register/producer` (new-account + MEH-143
+upgrade) when the new required `declaration_accepted` body field is truthy; 422 otherwise.
+`DECLARATION_VERSION="2026-06-v1"` in `app/constants.py`. Minimal FE plumbing sends the
+existing `agreedToTerms` checkbox as `declaration_accepted` (no copy/UI). Admin-only
+exposure (`ProducerAdminOut`); admin-create/import leave NULL. New
+`tests/test_producer_declaration.py` + register payloads across the suite updated. Docs:
+DATA.md + db-schema diagram + CHANGELOG. **Decisions (Sapir, this session):** Q1 = explicit
+`declaration_accepted` field (contract change) + minimal FE plumbing this PR; Q2 = register
+flow only (auth.py 443+535) — `POST /producers`/admin/import stay NULL.
+
+**Pending:** local alembic/pytest deferred to CI (no Postgres in sandbox). **Flag for Chunk
+C triage:** `POST /producers` (producers.py:289, authed generic create) does NOT stamp — if
+it's ever a business-owner self-registration surface showing a declaration, revisit. Chunk
+C = frontend declaration copy (continuous-commitment wording) + conditional farmer line
+("תוצרת שגידלתי בחלקתי בלבד"); copy locked by Sapir before Chunk C. **Workflow-comment
+nit:** the `EXPECTED_REV` line's neighbouring comment still misattributes `a7f3e9c14d28` to
+"MEH-509 PR3" — fix needs Sapir's hand (CC deny on workflows).
+
+## 2026-06-06 — MEH-754: OTP via Meta authentication template
+
+**Status: PR #954 MERGED to staging @ `5c0dbf2`** (was draft; Addresses MEH-754 — Done
+gated on Meta approval + cold-number smoke + staging→main release; see session-close block above).
+Migrated producer phone-verification OTP from free-form `send_text` (delivered only inside
+Meta's 24h window → cold numbers never got the code → stuck in `pending_whatsapp`) to the
+Meta AUTHENTICATION template `producer_otp_v1`. New `OtpCodeV1(code=...)` in
+`whatsapp_templates.py` (MEH-672 pattern) overrides `to_components()` → code in BOTH body
+param AND copy-code URL button (`sub_type="url"`, `index=0`; body-only 400s at Meta).
+`_send_whatsapp_otp` → `send_template`. Fail-open + phone path unchanged. Tests:
+`tests/test_meh_754_otp_template.py` (dual-code shape + fail-open) + existing OTP/template
+suites green; `test_api.py` 192 passed; ruff clean.
+
+**OPEN / next session:**
+- **MEH-754 device smoke (manual, Sapir):** register/resend on a "cold" business number
+  that never messaged the line — confirm the OTP arrives via the template with copy-code
+  button. Only then mark Closes. Requires `producer_otp_v1` approved in Meta (auth category).
+
+## 2026-06-05 (evening) — 🚀 SESSION CLOSE: release #936 → production + full prod smoke passed
+
+**Current state — Production = `main` @ `e3e39b9`** (release **#936**, merge-commit;
+21 PRs **#927–#948**). Shipped: OTP fixes (**MEH-745** self-serve `pending_whatsapp`,
+**MEH-747** admin-delete `users_producer_id_fkey` unlink, **MEH-755** OTP-token
+producer-delete `NotNullViolation`), copy waves (**MEH-750** /about S8, **MEH-752**
+/login, **MEH-756** /events, **MEH-757** new founder story "בלי לחפש שעות"), honey
+license split **code** (**MEH-743**), vitest-in-CI (**MEH-729**), orphan-audit script
+(**MEH-749**). Release-blocker conflict on `staging↔main` append-only logs resolved via
+back-merge PR **#950** (`main → staging`, merge-commit `6e70b6e`; founder story = MEH-757
+verbatim, lawyer-brief kept staging's appendix, logs accept-both).
+
+**Prod smoke — PASSED:** admin delete with OTP tokens (MEH-747 + MEH-755) verified live;
+/about new founder story live verbatim; `/he` loads clean; Railway healthy; test remnant
+producer "פ" deleted via admin.
+
+**OPEN / next session:**
+- **MEH-754** — OTP auth-template **blocked**: Sapir creates the Meta AUTHENTICATION
+  template; CC prompt is in the ticket.
+- **MEH-743** — manual **prod SQL** for `categories` (add "דבש" row + rename
+  "שמנים ודבש" → "שמנים"; exact steps in ticket comment). **Until run, honey registers
+  license-free in prod.**
+- **MEH-744** — Anthropic credits exhausted → producer risk-score dead in prod.
+- **`changelog.yml`** workflow disabled in the Actions UI — file deletion still pending;
+  fold into the next CI-touching PR.
+- **MEH-733** — verify the §06 pull-quote removal PR actually merged (prod homepage still
+  shows the pull-quote).
+- **MEH-669** — guard question open: how did "re" register while admin? Suspect the OAuth
+  path (`auth.py:454`).
+- Approved-message sent twice once — idempotency suspect; watch.
+- Stale branch `reconcile-release-936` prunable.
+## 2026-06-05 — MEH-761: Gate 4 — docs/VERIFICATION.md verification matrix
+
+**Branch:** `feature/meh-761-gate4-verification-matrix` off staging — draft PR. New
+`docs/VERIFICATION.md` consolidating ADR-022 launch gate 4: per-category matrix
+(tier eligibility → qualifying doc, aligned to `LICENSE_REQUIRED_CATEGORIES` + נספח א'),
+admin checklist per doc type (license / exemption / cosmetics registration), internal
+audit-record fields (Brief Q5.5), manual launch channel (WhatsApp/email, no upload feature
+V1). Flagged 3 unmapped categories (ביצים, צמחי מרפא, תוספי תזונה) as open lawyer questions —
+enforcement list untouched. Docs-only; `decisions/README.md` not touched (no new ADR).
+PR body: **Closes MEH-761. Refs MEH-742.**
+
+**Decision arc (MEH-742):** ADR-022 approved+merged (#949 ea42821) after template-05
+research (Yelp +24%/+10%; Google 2.7x = profile completeness, not badge; badge free
+forever; affirmative tier-2 explainer required). 4 gate children opened: MEH-758 (tier
+copy, awaiting Sapir string lock) · MEH-759 (declaration audit columns, HIGH-RISK chunks) ·
+MEH-760 (/terms tiers, awaiting v1 lock) · MEH-761 (this PR). Drive Brand Hub addendum
+created (ADR-022-addendum-two-tier-licensing.md). MEH-742 stays In Progress as anchor.
+S5-S10 ports + MEH-534 UNBLOCKED.
+
+## 2026-06-05 — MEH-742: ADR-022 two-tier licensing model — מאומת / מוצהר
+
+**Branch:** `feature/meh-742-adr-022-two-tier-lock` off staging — draft PR. Landed
+ADR-022 (Accepted) + synced the 3 canonical docs that carried the old "Licensed
+businesses only" LOCK (CONTEXT.md §2, BRAND.md §3 LOCKs + §7 anti-pattern, README
+index). Brand-book step only — docs-only, no code/schema/UI. PR body uses **Refs**
+MEH-742 (NOT Closes) — decision ticket stays open for 4 children. **Pending post-merge:**
+MEH-742 DoD items 2 (audit columns `declared_at` / `declaration_version`) + 3 (gate-1
+affirmative tier-2 consumer copy) ready to spin up; lawyer brief Q1–Q5 still with counsel.
+
+## 2026-06-05 — MEH-743: honey license-required (taxonomy split)
+
+**Branch:** `feature/meh-743-honey-license` off staging — draft PR. Sapir-approved
+**split** (vs sub-flag) of "שמנים ודבש" → "שמנים" + "דבש". Live producer count = 0
+on prod → seed-only, no Alembic. Honey added to `LICENSE_REQUIRED_CATEGORIES` (be+fe
+mirror); olive-oil-only stays optional. Hero card: ONE "שמנים" tile, no honey hero
+(MEH-203 will revisit). `HomeProductForm.jsx` updated for consistency though it's a
+dead surface (MEH-598 burial, MEH-543 revival). +3 honey/oils pytest cases. **Open
+for Sapir:** add "דבש" row + rename "שמנים ודבש" → "שמנים" on **prod `categories`
+table** via direct SQL after staging soak (no Alembic per the seed-only path).
+Until then, honey on prod still registers license-free.
+
+## 2026-06-05 — 🛠 smoke fixes: MEH-747 (admin delete FK) + MEH-745 (pending_whatsapp dead-end)
+
+**Merged to staging:** PR #937 (MEH-747 — unlink `users_producer_id_fkey` before admin
+producer-delete + Hebrew error toast) · PR #938 (i18n follow-up — `producers.table.delete_error`
+key). Both squashed, CI green.
+
+**MEH-745 (scope (c), two open PRs):**
+- **PR #939** (`feature/meh-745-admin-approve-pw`, *draft*, **Refs** MEH-745) — admin approve
+  button now renders for `pending_whatsapp` (`AdminProducersTable.jsx:115` gate widened); the
+  approve endpoint already had no status guard. +vitest. Frontend-only.
+- **PR2** (`feature/meh-745-otp-self-serve`, **Closes** MEH-745) — backend
+  `confirm_phone_otp` advances `pending_whatsapp → pending`; new `PhoneVerifyCard` dashboard
+  OTP flow replaces the dead `/settings` CTA; `dashboard.producer.phone_verify.*` keys (HE/EN
+  parity 2555). Full pytest 840✓ / vitest 397✓ / build✓. **Next step:** push PR2, verify CI,
+  Sapir mobile-QA the dashboard OTP flow on a `pending_whatsapp` producer, then merge PR#939 +
+  PR2 (PR2's `Closes MEH-745` auto-closes Linear on merge).
+
+**Phase 0 (MEH-745) findings** posted inline this session; canonical file:lines confirmed
+unchanged before edits. No schema/Alembic changes anywhere this session.
+## 2026-06-05 — MEH-750: S8 copy wave /about (he+en+COPY_BANK)
+
+**Branch:** `feature/meh-750-about-copy-wave` off staging — draft PR. Applied the 17 Sapir-locked
+strings from MEH-750 to `about.consumer.*` (he+en) + 4 JSX changes in `AboutClient.jsx` (hero sub
+render under H1; benefits section heading; `story.caption2` removed; `values.closing` removed —
+values card ends after בטיחות). Swallows **MEH-746** (item 13: `benefits.trust.body` drops "מאומתים"
+— MEH-742 gate + MEH-579 over-claim). H1 + greeting lose terminal periods (locked). `parallax.quote`
+→ `אוכל טוב — לא שומרים לעצמנו`. CTA merged: `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.`
+**COPY_BANK:** decision-log rows for every changed key + retired stale "criteria admission headline"
+row + fixed stats-row `MEH-654` typo (per MEH-746). **Out of scope (untouched):** tips.*, values.intro,
+contact.*, nav.*, metadata/OG.
+**Verified:** key parity 2542==2542; greps `בואי אלינו`/`אם זו את`/`חשוב יותר` = 0; `מאומתים` 0 in
+about.consumer.* (1 remaining hit = `terms.sections.verified.title`, out of scope); `npm run build` ✓.
+**Open for Sapir:** the DoD's "retire old CTA `הוסיפי את העסק שלך 🌿`" — no COPY_BANK row matches that
+text (singular `הוסיפי` absent); nearest is the live homepage `home.cta.button` (`הוסיפו`, plural, §5),
+out of /about scope — left untouched pending confirmation.
+
+## 2026-06-05 — 🧾 SESSION CLOSE (design track closed · legal brief + appendix · MEH-742/743 · port gate)
+
+**1. Design track CLOSED — S5/S6/S7 all FINAL.** S5 (map) + S6 (business page) + S7 (register flow) are FINAL. S7 sits at **v4** in the Claude Design project "S2 — Logo System". S7 now **mirrors shipped product**:
+- **step-00 account gate** (MEH-170) — auto-skips for logged-in users (logged in step).
+- **MEH-530 license field** placed under category in **step 02**.
+- **two success variants** — **06A** logged-in/upgrade (dashboard CTA) · **06B** verify-email, copy **locked to `auth.py` anti-enumeration behavior** ("אם האימייל פנוי...").
+- **CTA variant C "להזמנה באתר"** added (website primary-eligible).
+
+**2. Legal.** `docs/legal/2026-06-lawyer-brief-licensing-tiers.md` **merged** (PR #931). Appendix **נספח א'** (exemption map: 4.6ו plant-based <5t · farm own-produce · תמרוקים regime for soaps · honey sectoral order) **merged** (PR #934, 2026-06-05).
+
+**3. Linear (two created).**
+- **MEH-742** (P2, **LOCK decision**) — two-tier **מאומת/מוצהר** model, 4 launch gates, brand book before code.
+- **MEH-743** (P3) — honey license split; CC prompt ready in ticket; **Phase 0 taxonomy STOP**.
+
+**4. Port scheduling.** S5/S6/S7 port **WAITS for the MEH-742 decision** (verification copy is gate 1). Port CC prompts **MUST include a Phase 0 design-vs-code comparison** — twice this session designs contradicted shipped code (MEH-530 license field; registration auth paths).
+
+**5. Unchanged pending.** Production smoke items (WhatsApp welcome on a real device · `/en/terms` PII · homepage §06 mobile) · FB Sharing Debugger re-scrape after the next prod deploy.
+
+## 2026-06-05 — MEH-684: ICU plural emoji strip (a11y)
+
+Branch `feature/meh-684-icu-plural-strip` off staging. Stripped trailing ` 🌿` from the
+only emoji-bearing ICU plural key (`producers.discovery.all_shown`, he+en) — screen-reader
+mid-sentence announce fix (LOCK v2). Phase 0: 13 plural keys/locale, 1 with emoji (below
+5–15 est; rest clean). Aligned test mock `PaginationCounter.test.jsx:22`. Verified: rg
+`\p{Extended_Pictographic}` in plural keys = 0, key parity 2543==2543, `npm run build` ✓.
+Draft PR opened. **Note:** `PaginationCounter.test.jsx` has a *pre-existing* vitest oxc
+JSX-in-`.js` transform failure on `lib/auth-context.js` (fails identically on clean tree —
+NOT caused by this change; unrelated to MEH-684).
+
+## 2026-06-05 — MEH-472: categories heading גלי → גלו (gender-neutral)
+
+**Branch:** `feature/meh-472-category-heading` (off staging) — draft PR. `Refs MEH-472` (en-wave stays open).
+**Done:** `home.categories.heading` `גלי לפי קטגוריה` → `גלו לפי קטגוריה` (he.json only). Per ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral), Sapir adjudicated section headings → UI side. en.json heading = `Browse by category` (proper English), untouched. Decision-log row added to COPY_BANK §6.
+**Scope:** THIS KEY ONLY — the ~10 other `גלי` CTA strings remain MEH-472 en-wave territory, untouched.
+**Verify:** `npm run build` green; `grep "גלי לפי קטגוריה" frontend/messages/` = 0; `grep "גלו לפי קטגוריה" he.json` = 1.
+
+## 2026-06-05 — MEH-733: remove EditorialBreath (§06) from homepage
+
+**Branch:** `feature/meh-733-remove-breath` (off staging) — draft PR open, `Refs MEH-733` (issue already closed).
+**Done:** deleted `HomeEditorialBreath.jsx`; stripped import + mount + `§06` comment from `app/[locale]/page.js`; removed `home.editorial_breath` block from `he.json`+`en.json`; shelved quote in `docs/COPY_BANK.md` 🕐 (future home = Producer Stories MEH-542). `HomeCategoryGrid` untouched (index-driven numerals). Sapir locked option C.
+**Verify:** `npm run build` green; `grep editorial_breath frontend/` = 0; `grep "תכירי את מי" frontend/` = 0; both message JSONs parse.
+**Pending:** Sapir mobile QA on preview → mark PR ready → merge.
+
+## 2026-06-05 — MEH-687: ProducerHeader red Heart fix (PR pending)
+
+Branch `feature/meh-687-red-heart` off staging. Single-line: `ProducerHeader.jsx:58` Heart
+`style={{color:"#A32D2D"}}` → `className="text-primary"` (BRAND §3, F1 precedent PR #831).
+Phase 0 caught that the ticket's `ProducerCard.jsx:362` target was gone (v4 redesign / PR #890) —
+heart relocated to ProducerHeader; re-scoped EDIT file with user approval. The 2 `OpeningHours.jsx`
+`#A32D2D` reds are "closed now" status (out of scope, left as-is). Closes MEH-687, Refs MEH-686.
+
+## 2026-06-05 — 🧾 SESSION CLOSE (SEO/legal/types batch)
+
+**SHIPPED 05/06:**
+- **Prod release `4ef861c`** (staging→main) — PII removal **live + verified**, operator block final (`טופז שנפ` / `Topaz Schnapp`, `contact@`), `דירקטורי`→`פלטפורמה` purge ×6 surfaces. FB debugger re-scraped (root + `/terms`).
+- **SEO arc complete:** #915 (MEH-739 self canonical+title on register/producer+events) · #916 (head-meta og:url terms/privacy) · #921 (MEH-740 og:url on 8 shareable routes). Self canonical + per-page og:url now on all shareable routes.
+- **mypy strict on WhatsApp surface:** #917 (7 type fixes) + #922 (the `[tool.mypy] files` line, Sapir terminal) → **MEH-738 Done**.
+- **CI docs-PR advisory:** #911 (parity workflow-path-filter trap warning + testing.md required-checks rule).
+
+**LINEAR:** MEH-736 Done (retro #904) · MEH-737 Backlog (en "directory" wording) · MEH-738 / MEH-739 / MEH-740 Done · **MEH-214 stays In Progress** — full 9-point audit pending (see issue comment) · MEH-720 commented (deferred review executed).
+
+**OPEN:**
+1. **Sapir:** WhatsApp welcome/approved smoke on a real device → then close **MEH-672**.
+2. **Next staging→main release** packs #915–#922. Post-release DoD tail: FB-debugger og:url on `/he/producers` (MEH-740) — it's `ƒ` dynamic so couldn't be statically grepped in-PR.
+3. **MEH-737** English verbatim — orchestrator drafts the approved copy.
+4. **MEH-214** full-audit decision pre-launch.
+5. **Off-repo (Sapir):** accountant — registration ownership (Topaz vs operator); certificate spelling fix `שנף`→`שנפ`.
+
+**LEARNINGS (route to rules if recurring):**
+- `mehamakor.online` 308-redirects → `.co.il`; curl `.co.il` **directly with `-L`**.
+- `git checkout <branch> -- <file>` **auto-stages** the file — verify via `git diff --cached`, not `git diff`.
+- **settings-level deny correctly survives a prompt-level "exception"** — `backend/pyproject.toml` stayed CC-blocked despite the owner-approved exception; the harness directory/file deny sits below in-conversation authorization. Don't route around it.
+
+## 2026-06-05 — MEH-740: per-page og:url on 8 shareable routes (branch `feature/meh-740-og-url-shareable`)
+
+**Off staging. LOW-RISK (frontend SEO). Closes MEH-740; Refs MEH-739 (AC3 follow-up), PR #916.** Executes the og:url scope-decision from MEH-739's surfaced options (Option B, scoped to shareable routes).
+
+**8 routes** got per-page `og:url` (mirror #916 `url: urlForLocalePath(path, locale)` in openGraph): `accessibility`, `producers` (🔴 were inheriting layout root — full openGraph block added); `about`, `contact`, `map`, `events` (🟡 url line added); `experiences`, `group-buys` (static `metadata`→`generateMetadata` for `locale`, then url). `producers` is `ƒ` dynamic → `url: alternates.canonical` (keeps `?page=N` self).
+
+**Scope held:** `[slug]` producer-detail untouched (already self via `lib/seo.js:225`); all noindex auth chrome skipped. og:url only — did NOT change canonical/alternates on the static-converted routes.
+
+**Verify:** 8/8 grep `url:` in openGraph; `npm run build` ✓; rendered HTML `/he/about`+`/en/about` og:url = self (locale-aware), login control = no og:url (model confirmed); ESLint 0 errors. Live = green Playwright E2E CI (preview protected in-sandbox). **DoD evidence = green CI E2E (per 06/05 decision).**
+
+## 2026-06-04 — MEH-739: register/producer + events metadata (branch `feature/meh-739-seo-meta-batch`, PR #915)
+
+**Draft PR (base staging). LOW-RISK (frontend SEO/metadata).** Task 1 of a 2-task batch (Task 2 = MEH-738 mypy, PR #917 — MERGED).
+
+**Done:** (1) `register/producer` split — new `RegisterProducerClient.jsx` = old `page.js` **byte-identical (move-only)**; new server `page.js` exports `generateMetadata` (`buildAlternates("/register/producer")` + `title.absolute "רישום בית עסק | מהמקור"` + description). Fixes canonical=root + default-title (was a client component; prod-verified 06/05). Form's internal `<Suspense>`/`useSearchParams` untouched → no wrapper Suspense needed; behavior unchanged. (2) `events/page.js` — `export const metadata` → `generateMetadata`; manual `{canonical:"/events"}` → `buildAlternates("/events", locale)`. `npm run build` ✓ (both ●SSG).
+
+**DoD evidence (Sapir decision 06/05):** accepted the green `Playwright E2E (Vercel preview)` CI job as the live evidence — in-session screenshot blocked by Vercel preview-protection (bypass secret correctly unreadable from CC); not fabricated.
+
+**AC3 og:url — STOP/surfaced (follow-up C):** no central openGraph helper; `layout.js:71` hardcodes `openGraph.url: SITE_URL` (root). PR #916 already added per-page og:url to `/terms` + `/privacy` (one slice). Remaining routes still inherit root — to be scoped (question C). Options A/B/C in #915 body.
+
+## 2026-06-04 — MEH-738: whatsapp.py + callers under mypy strict (branch `feature/meh-738-mypy-whatsapp`)
+
+**Branch off staging (NOT off MEH-739). Draft PR (base staging). LOW-RISK (backend types).** Task 2 of the 2-task batch (Task 1 = MEH-739 SEO, PR #915).
+
+**Phase 0 correction (meta-pattern #1):** the MEH-672 HANDOFF estimated "13" strict errors; actual **in-scope = 7**. The other 10 were transitive errors in `models.py`/`database.py`/`email.py`/`vacation_state.py` (imported, **out of MEH-738 scope** — not touched). Also confirmed the mypy gate is warn-only: baseline `mypy app/auth.py` itself reports 15 errors today.
+
+**Fixed 7 (type-only, 0 behavior change):** `whatsapp.py:42` `dict`→`dict[str, Any]` (+`Any` import); `auth_notifications.py:73/107` guard `or not phone` (narrows `str|None`→`str`; preflight already rejects falsy phone → runtime no-op); `auto_reply_watchdog.py:166/167/171/178` SQLAlchemy `Column[...]` false-positives → justified `# type: ignore[assignment|arg-type]` (real fix = `Mapped[]` in models.py, out of scope).
+
+**Verify:** `mypy --follow-imports=silent` on the 4 target files (incl. already-clean `whatsapp_templates.py`) → **Success, 0 errors**. pytest NOT runnable in sandbox (no Postgres — MEH-672 limit) → **CI Postgres is the gate**. **MERGED to staging (PR #917, squash `f87c06e`).**
+
+**⚠️ Sapir action (CC blocked from pyproject.toml):** commit on staging in your terminal —
+`files = ["app/auth.py", "app/services/whatsapp.py", "app/services/whatsapp_templates.py", "app/services/auth_notifications.py", "app/services/auto_reply_watchdog.py"]`
+(Transitive errors in models/database/email/vacation_state stay warn-only — separate cleanup, like the existing schemas/ deferral noted in `[tool.mypy]`.)
+
+## 2026-06-04 — MEH-735 merged to staging (PR #912, squash `9942674`)
+
+**Done:** completed the WCAG 2.4.1 skip-to-content link. Phase 0 found it already existed (`layout.js:199`); closed two gaps rather than re-adding: `<main id="main-content">` got `tabIndex={-1}` + `focus:outline-none` (reliable focus target), and the existing `sweep_tail.layout.skip_to_main` i18n key updated to spec copy (he `דילוג לתוכן`, en `Skip to content`). Tab→Enter flow verified via Playwright on / + /login (activeElement = main#main-content after Enter). All CI green; no new component/key.
+
+**Pending / next:** (a) keyboard QA on staging if desired (visual no-op for mouse/mobile users). (b) Still open from MEH-732: the mobile-drawer (hamburger) login link is not hidden on `/login` — decide whether to gate it for consistency. (c) `#E8E0D0` exact-literal border still MEH-725-deferred.
+
 ## 2026-06-03 — MEH-732 merged to staging (PR #909, squash `c9b1587`)
 
 **Done:** navbar pill polish on `Header.jsx` — Composition B (flex space-between: lead group [logo + links] · action cluster, max-width 940px), pill-only glass on scrolled/inner (`bg-background/85` + 12px backdrop-blur, solid fallback, threshold 80→60, never transitions padding/backdrop-filter), action hierarchy (search filled-primary · add-business outlined · login quiet text hidden on /login · globe quiet). i18n voice fixes (he.json `nav.explore`/`nav.discover` גלי·גלה→גלו, also the BottomNav home tab; en.json `nav.explore`→Explore). `#E8E0D0` mapped to existing `border` token. All CI green (build, RTL lint, Playwright E2E, parity, adversarial-calibration); `/adversarial-review` ran with one fix (dropped `padding` from transition).

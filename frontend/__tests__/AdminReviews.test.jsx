@@ -40,6 +40,7 @@ vi.mock("next-intl", () => {
     "admin.reviews.columns.actions": "פעולות",
   };
   return {
+    useLocale: () => "he",
     useTranslations: (scope) => (key, values = {}) => {
       const fullKey = scope ? `${scope}.${key}` : key;
       const raw = flat[fullKey] ?? fullKey;
@@ -60,9 +61,9 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-// Mock toast
+// Mock toast — MEH-685: methods-only object.
 vi.mock("@/lib/toast", () => ({
-  showToast: vi.fn(),
+  showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
 const sampleReviews = [

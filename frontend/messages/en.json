@@ -13,6 +13,8 @@
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
+    "account": "Account",
+    "language": "Language",
     "main_label": "Main navigation",
     "search_label": "Search",
     "menu_close": "Close menu",
@@ -37,6 +39,7 @@
       "new_businesses": "New Businesses",
       "events": "Events",
       "about": "About",
+      "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
@@ -73,7 +76,7 @@
       "rate_limited": "Rate limited — try again in an hour"
     },
     "toasts": {
-      "favoriteSaved": "Saved to favorites ❤️",
+      "favoriteSaved": "Saved to favorites",
       "sessionExpired": "Your session expired — please sign in again",
       "loginAgainCta": "Sign in"
     },
@@ -138,10 +141,11 @@
     "login": {
       "loading": "Loading...",
       "title": "Sign in to Mehamakor",
-      "welcome": "Welcome",
+      "welcome": "Good to see you again",
+      "hero_overlay": "Fresh · Local · From the source",
       "value_save": "Save businesses",
-      "value_rate": "Rate",
-      "value_publish": "Publish your home kitchen",
+      "value_rate": "Write reviews",
+      "value_publish": "Add your business",
       "email_label": "Email",
       "email_invalid": "Invalid email",
       "valid": "✓ Valid",
@@ -151,7 +155,7 @@
       "password_hide": "Hide password",
       "forgot_password": "Forgot password?",
       "submit": "Sign in",
-      "submitting": "Signing in...",
+      "submitting": "One moment, signing in…",
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
@@ -268,6 +272,8 @@
           "phone_valid": "✓ Valid number",
           "category_required": "Please select at least one category",
           "terms_required": "Please accept the Terms of Use before joining",
+          "declaration_required": "Please confirm the declaration before joining",
+          "farmer_required": "Please confirm the grower declaration before joining",
           "license_format": "Producer license number is 7-10 digits"
         },
         "terms": {
@@ -275,7 +281,8 @@
           "tos_link": "the Terms of Use",
           "and": "and ",
           "privacy_link": "the Privacy Policy",
-          "license_declaration": ", and I declare that I hold all licenses required to sell my products under the Business Licensing Law."
+          "declaration": "I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.",
+          "farmer_declaration": "The produce I will offer through Mehamakor is produce that I grew on my own plot only."
         },
         "actions": {
           "next": "Next →",
@@ -293,6 +300,7 @@
         },
         "success": {
           "heading": "You're in!",
+          "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
           "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
@@ -319,6 +327,12 @@
       "admin": "Admin Panel",
       "aria": "Menu — {name}",
       "logout": "Sign Out"
+    },
+    "sheet": {
+      "connected": "Signed in",
+      "guest_name": "Guest",
+      "guest_sub": "Not signed in yet",
+      "biz_cta": "Have a business?"
     }
   },
   "error": {
@@ -349,9 +363,6 @@
       "categories": "categories",
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
-    },
-    "editorial_breath": {
-      "quote": "תכירי את מי <accent>שמאחורי האוכל</accent>"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -484,7 +495,7 @@
       "title": "Sign in to Mehamakor | Mehamakor",
       "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
       "og_title": "Sign in to Mehamakor",
-      "og_description": "Sign in to discover local food businesses, save favorites, and support quality producers."
+      "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
       "title": "Join Mehamakor | Mehamakor",
@@ -551,9 +562,40 @@
     "event": {
       "title_fallback": "Culinary event — Mehamakor",
       "description_fallback": "Culinary events at local food businesses."
+    },
+    "events": {
+      "title": "Events at farms and local food businesses | Mehamakor",
+      "description": "Workshops, tours, open days, and tastings at local food businesses across Israel. Discover upcoming events by city, category, and date.",
+      "og_title": "Events at farms and local food businesses | Mehamakor",
+      "og_description": "Workshops, tours, open days, and tastings at local food businesses across Israel."
+    },
+    "experiences": {
+      "title": "Community experiences and workshops | Mehamakor",
+      "description": "Cooking workshops, food tours, and nutrition classes hosted by locals across Israel. Find an experience by city and category, or submit your own.",
+      "og_title": "Community experiences and workshops | Mehamakor",
+      "og_description": "Cooking workshops, food tours, and nutrition classes — local hosts, real experiences."
+    },
+    "group_buys": {
+      "title": "Group purchases | Mehamakor",
+      "description": "Buy together and save — group purchases from local producers across Israel.",
+      "og_title": "Group purchases | Mehamakor",
+      "og_description": "Buy together and save — group purchases from local producers."
+    },
+    "register_producer": {
+      "title": "Register your business | Mehamakor",
+      "description": "Join Mehamakor — register your local food business. Every business is hand-picked."
     }
   },
   "producer": {
+    "badge_row": {
+      "aria": "Business badges"
+    },
+    "badge": {
+      "verified_tooltip_license": "License submitted and reviewed on {date}",
+      "verified_tooltip_exemption": "Exemption approval submitted and reviewed on {date}",
+      "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
+      "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else."
+    },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
       "not_found": "We couldn't find this business — yet",
@@ -700,7 +742,7 @@
       "submit": "Save recipe",
       "cancel": "Cancel",
       "toast_updated": "Recipe updated",
-      "toast_created": "Recipe sent for approval 🌿",
+      "toast_created": "Recipe sent for approval",
       "errors": {
         "upload_image_failed": "Image upload failed",
         "rejected_default": "Content does not meet our criteria",
@@ -855,10 +897,7 @@
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
-      "followed_toast": "You'll now get updates about new products 🔔"
-    },
-    "badge_row": {
-      "aria": "Business badges"
+      "followed_toast": "You'll now get updates about new products"
     },
     "friday_delivery": {
       "today": "today",
@@ -1190,7 +1229,11 @@
         },
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
-        "confirm_delete": "Delete \"{name}\"? This action cannot be undone."
+        "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
+        "delete_error": "Deleting the business failed. Please try again."
+      },
+      "toggle": {
+        "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
       },
       "new": {
         "title": "Add new business",
@@ -1357,7 +1400,7 @@
         "reject": "Reject",
         "view": "View"
       },
-      "approve_toast": "Experience approved 🌿",
+      "approve_toast": "Experience approved",
       "approve_error": "Approval error",
       "validate_feedback": "Please fill in a note",
       "changes_toast": "Change request sent",
@@ -1476,7 +1519,7 @@
       },
       "load_error": "Error loading requests",
       "no_requests": "No requests",
-      "approved_toast": "Badge approved ✅",
+      "approved_toast": "Badge approved",
       "rejected_toast": "Request rejected",
       "columns": {
         "producer": "Business",
@@ -1816,22 +1859,29 @@
   "events": {
     "list": {
       "title": "Events at farms and local businesses",
-      "subtitle": "Workshops, tours, open days and tastings — straight from the source",
+      "subtitle": "What's on this month — weekend after weekend, straight from the source",
+      "eyebrow_events": "EVENTS · Close to home",
+      "eyebrow_experiences": "EXPERIENCES",
+      "h1_experiences": "Food experiences & workshops",
       "breadcrumb_home": "Home",
       "breadcrumb_events": "Events",
       "tab_events": "Farm events",
       "tab_experiences": "Workshops & experiences",
       "add_event": "Add event",
-      "submit_experience": "Submit experience",
+      "submit_experience": "Add experience",
       "view_mode_label": "View mode",
       "view_list": "List",
       "view_calendar": "Calendar",
-      "filter_city_label": "Filter by city",
-      "filter_city_placeholder": "Search city...",
+      "filter_city_label": "Search by city",
+      "filter_city_placeholder": "City or town name",
       "loading_events": "Loading events...",
       "loading_experiences": "Loading experiences...",
-      "empty_events": "No events match this filter — yet",
-      "empty_experiences": "No experiences match this filter — yet",
+      "empty_events_title": "No events match this filter — yet",
+      "empty_events_body": "Try widening the area or clearing the category. Worth checking back soon",
+      "empty_events_cta": "Clear the filter",
+      "empty_experiences_title": "New experiences on the way",
+      "empty_experiences_body": "We're still gathering businesses that host workshops in your area",
+      "empty_experiences_cta": "Hosting an experience? Add it",
       "free": "Free"
     },
     "categories": {
@@ -1889,7 +1939,7 @@
       "submit_cta": "Submit your own experience",
       "breadcrumb_home": "Home",
       "breadcrumb_experiences": "Experiences",
-      "cross_link_events": "Also looking for farm events? See all events and experiences together ←",
+      "cross_link_events": "Also looking for farm events? All events and experiences together ←",
       "filter_city_label": "Filter by city",
       "filter_city_placeholder": "Search city...",
       "loading": "Loading experiences...",
@@ -1972,7 +2022,7 @@
       "submitting": "Submitting...",
       "cannot_publish": "Cannot publish",
       "submit_cta": "Submit for review",
-      "toast_submitted": "Experience submitted for review 🌿",
+      "toast_submitted": "Experience submitted for review",
       "error_title_short": "Title is too short",
       "error_description_short": "Description must be at least 20 characters",
       "error_date_required": "A date is required",
@@ -2004,39 +2054,41 @@
   "about": {
     "consumer": {
       "hero": {
-        "heading": "You used to need to know who to ask. Not anymore."
+        "heading": "You used to need to know who to ask. Not anymore",
+        "subheading": "Food from small businesses we've personally checked — close to you, without searching for hours."
       },
       "story": {
         "image_aria": "Photo of Sapir, founder of Mehamakor",
         "image_alt": "Sapir, founder of Mehamakor",
-        "greeting": "Hi, I'm Sapir.",
-        "p1": "It was always important to me to know where my food came from. I wanted to buy better — healthier, more local.",
-        "p2": "But I quickly discovered it wasn't accessible. To find truly quality food, I had to search for hours — ask the right people, join WhatsApp groups, search Google and Instagram.",
-        "p3": "Then I realized: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
-        "p4": "There are farmers selling fresh vegetables a few minutes from home. There's someone baking sourdough in the next neighborhood. There are small businesses with incredible products — that most people don't even know about. So people keep shopping at the supermarket — not because it's the best, but because it's the most convenient.",
-        "p5": "And that's how Mehamakor was born. One place that brings together real, local, healthy food for you — close to home. Without searching for hours.",
+        "greeting": "Hi, I'm Sapir",
+        "p1": "It was always important to me to know where my food comes from. I wanted to buy better — healthier, more local.",
+        "p2": "But I quickly discovered that it isn't accessible. To find truly good food, I had to search for hours — asking the right people, joining WhatsApp groups, searching on Google and Instagram.",
+        "p3": "And then it hit me: the problem isn't that there's no good food. The problem is that people don't know where to find it.",
+        "p4": "There are farmers selling fresh vegetables minutes from home. There's someone baking sourdough bread in the next neighborhood. There are small businesses with amazing products — that most people have never even heard of. So we keep buying at the supermarket — not because it's best, but because it's easiest.",
+        "p5": "And that's how Mehamakor was born. One place that gathers real, local, healthy food for you — close to home. Without searching for hours.",
         "caption1": "Founder of Mehamakor. Software engineer by trade, studying nutritional medicine.",
-        "caption2": "I'm building the site on my own. I personally vet every business.",
         "caption3": "The criteria — I write them from what I myself look for in food."
       },
       "parallax": {
-        "quote": "Because what you eat matters. And where you buy it matters more"
+        "quote": "Good food — not something we keep to ourselves"
       },
       "benefits": {
+        "heading": "Why Mehamakor",
         "local": {
-          "title": "Real food close to you",
-          "body": "No hour-long drives. No weeks of searching.\nEverything close to you, in one place."
+          "title": "Close to you",
+          "body": "Businesses from your area, with the shortest possible chain. Less distance, more freshness."
         },
         "trust": {
-          "title": "Trust what you eat",
-          "body": "Only verified businesses. We vet each one\nbefore they appear."
+          "title": "Worth your trust",
+          "body": "Every business is checked personally before it goes live. We ask, we look into things, and sometimes we even visit — before we say yes."
         },
         "community": {
-          "title": "Supporting small businesses",
-          "body": "Every local purchase is a choice — to keep money\nin your community, and support the people behind the food."
+          "title": "Local community",
+          "body": "Every purchase directly supports people from the neighborhood — not a big chain, but a business owner from your area."
         }
       },
       "tips": {
+        "eyebrow": "First steps",
         "heading": "Worth knowing",
         "eggs": {
           "question": "Why are organic eggs worth the price?",
@@ -2052,11 +2104,12 @@
         }
       },
       "testimonials": {
-        "heading": "What people say about us",
-        "subtitle": "Stories are coming soon",
-        "cta": "Want to share too? Write to us"
+        "heading": "The stories yet to be written here",
+        "subtitle": "This space is reserved for your stories.",
+        "cta": "Have a story? Tell us"
       },
       "values": {
+        "eyebrow": "Our criteria",
         "heading": "How we choose",
         "intro": "Not everything labeled \"natural\" is actually natural, and not everything labeled \"local\" is actually local. We know that. That's why we go through every business before they join — asking, looking into things, and sometimes visiting in person. Here's what matters to us:",
         "transparency": {
@@ -2074,11 +2127,10 @@
         "safety": {
           "title": "Safety",
           "body": "Clean preparation areas, proper storage, and compliance with the regulations relevant to the category. Some categories require a producer license in Israel, and we'll ask for it. No compromises here."
-        },
-        "closing": "If that's you — a business owner building something you're proud of — we'd love to meet you."
+        }
       },
       "cta": {
-        "heading": "Have a business? Come join us.",
+        "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
         "explore": "Discover businesses near you"
       },
@@ -2282,7 +2334,7 @@
       "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
       "all_count": "{count, plural, one {The only business} other {All {count} businesses}}",
       "showing_count": "Showing {loaded} of {total} businesses",
-      "all_shown": "{count, plural, one {Showed the only business 🌿} other {Showed all {count} businesses 🌿}}",
+      "all_shown": "{count, plural, one {Showed the only business} other {Showed all {count} businesses}}",
       "loading_more_aria": "Loading more businesses"
     },
     "recently_viewed": {
@@ -2344,7 +2396,7 @@
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "error_generic": "Something went wrong, please try again",
-    "saved_toast": "Your review was saved ⭐",
+    "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
     "login_prompt": "<login>Sign in</login> to write a review",
     "loading": "Loading reviews...",
@@ -2469,8 +2521,8 @@
     "empty_cta": "Discover businesses",
     "list_alerts_hint": "Tap on any card to get alerts about new events and products",
     "button": {
-      "saved_toast_first_time": "Saved! You'll find favorites under the ❤️ tab at the bottom",
-      "saved_toast": "Saved to favorites ❤️",
+      "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
+      "saved_toast": "Saved to favorites",
       "removed_toast": "Removed from favorites",
       "error_generic": "Something went wrong, please try again",
       "add_aria": "Add to favorites",
@@ -2508,7 +2560,7 @@
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
-    "copied_toast": "Link copied ✓"
+    "copied_toast": "Link copied"
   },
   "gallery": {
     "open_aria": "Enlarge image {current}",
@@ -2820,8 +2872,15 @@
         "body": "Every product listed on the site is the sole responsibility of the seller. Mehamakor is not responsible for product quality, safety, freshness, kashrut, fit to description, delivery times, or any damage — direct or indirect — arising from use or reliance on them. The buyer purchases at her own responsibility directly from the seller."
       },
       "verified": {
-        "title": "5. Verified businesses",
-        "body": "The \"Verified by Mehamakor\" badge indicates that the business passed an initial review of platform criteria (seller identity, active operation, category fit). The verification <b>does not guarantee</b> product quality, license validity, or any specific purchase."
+        "title": "5. Verification & display tiers",
+        "intro": "Every business on Mehamakor goes through a manual acceptance review that includes a personal introduction: basic identity verification, getting to know the business's story, and a conversation with the people behind it. This review is not a regulatory inspection and does not guarantee the quality of the products, their standard, or the business's compliance with any law.",
+        "verified_badge_title": "“Verified” badge",
+        "verified_badge_body": "A business that presented us with an official licensing document or exemption approval, whose existence and validity we checked at the time of presentation, is marked with a “Verified” badge together with the date of the check. The check is limited to verifying the document presented, does not include ongoing monitoring with the authorities, and provides no guarantee that the document remained valid after the date of the check. The badge is provided free of charge.",
+        "declared_title": "“Declared” business",
+        "declared_body": "A business operating in a category that is legally exempt from the licensing requirement is displayed on the site on the basis of a binding declaration it provided, stating that it operates lawfully. We do not verify this declaration with the authorities; responsibility for its accuracy and for keeping it up to date rests with the business alone.",
+        "indemnity_title": "Indemnification",
+        "indemnity_body": "A business shall indemnify the site operator for any damage, expense, or claim arising from a breach of its declaration, a breach of its obligations, or the provision of false information, without derogating from any other remedy.",
+        "no_supervision": "Nothing in this section shall impose on the site operator an ongoing duty to supervise the businesses."
       },
       "report": {
         "title": "6. Reporting violations",
@@ -3186,10 +3245,24 @@
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
-          "body": "Complete your profile to speed up the review — complete profiles are approved faster.",
-          "cta": "Complete profile ←",
-          "companion_link": "Edit profile"
+          "body": "To send your business for team review, verify your business phone number via WhatsApp."
         }
+      },
+      "phone_verify": {
+        "title": "Verify your business phone",
+        "description": "We'll send a 6-digit code to your business WhatsApp number. Verifying sends your business for team review.",
+        "send_cta": "Send verification code",
+        "sending": "Sending...",
+        "resend_in": "You can resend a code in {seconds}s",
+        "code_label": "Verification code",
+        "code_placeholder": "6-digit code",
+        "confirm_cta": "Verify",
+        "confirming": "Verifying...",
+        "success": "Phone verified! Your business has been sent for team review.",
+        "error_invalid": "Wrong or expired code. Please try again.",
+        "error_no_phone": "No phone number on your profile. Add one, then verify.",
+        "error_generic": "Something went wrong. Please try again.",
+        "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog ←",
       "availability": {
@@ -3330,7 +3403,7 @@
       "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — share your profile link on WhatsApp.",
       "share_cta": "Copy share link",
       "share_cta_copied": "Copied! ✓",
-      "share_toast": "Link copied! 🔗",
+      "share_toast": "Link copied!",
       "followers_label": "followers",
       "share_hint": "A detailed list of followers is coming soon — share your profile to reach more customers."
     },
@@ -3348,11 +3421,11 @@
       "push_active": "Push notifications active",
       "save_cta": "Save settings",
       "saving": "Saving…",
-      "save_success_toast": "Settings updated ✓",
+      "save_success_toast": "Settings updated",
       "save_error_toast": "Save error, please try again"
     },
     "layout": {
-      "skip_to_main": "Skip to main content"
+      "skip_to_main": "Skip to content"
     },
     "event_new": {
       "back_link": "← Dashboard",
@@ -3546,6 +3619,101 @@
       "whatsapp_hours": "Available Sun–Thu 9:00–17:00",
       "email_label": "Email",
       "close_cta": "Close"
+    }
+  },
+  "process": {
+    "meta": {
+      "title": "Our Acceptance Process | Mehamakor",
+      "description": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. Here's our acceptance process, and the criteria by category, in full transparency.",
+      "og_title": "Our Acceptance Process — Mehamakor",
+      "og_description": "How a business is accepted to Mehamakor: a personal introduction, and what's checked in every category."
+    },
+    "tier": {
+      "verified": "Verified",
+      "declared": "Declared"
+    },
+    "crosslink_from_about": "How we get to know every business",
+    "hero": {
+      "eyebrow": "Our acceptance process",
+      "h1": "Every business here goes through us — <em>a personal introduction</em>.",
+      "sub": "Before a business goes live, we get to know the person behind it — we hear the story, understand how they work, and sometimes we come to visit."
+    },
+    "steps": {
+      "marker": "The introduction",
+      "lead": "Four steps, one person on the other side. This is how it works from the request to going live.",
+      "s1_title": "The request reaches us",
+      "s1_body": "It all starts with a short form — what's made, from which ingredients, and where. Every request is read by a person, from the very first word.",
+      "s2_title": "We actually talk",
+      "s2_body": "A personal conversation — on WhatsApp or by phone. Who stands behind the business, what a workday looks like, and where the raw ingredients come from.",
+      "s3_title": "A visit, if needed",
+      "s3_body": "Sometimes we travel. When it helps us understand the place — we come to see the kitchen, the farm, or the hive with our own eyes.",
+      "s4_title": "Going live — after we've met",
+      "s4_body": "We've gotten to know them, there's a fit — the business goes live. That's it: now you can find it and message it directly.",
+      "badge_aside_title": "The \"Verified\" badge is a separate step — and optional",
+      "badge_aside_body": "It's added when an official licensing or exemption document is submitted, and we review it. Without the badge, the business is still here — and still went through the same personal introduction as everyone else."
+    },
+    "everyone": {
+      "marker": "For everyone",
+      "h2": "What's checked for every business",
+      "intro": "No matter the category and no matter whether there's a badge — these three things are checked for everyone, always.",
+      "c1_title": "Identity",
+      "c1_body": "Who stands behind the business. A real name and place. No anonymity.",
+      "c2_title": "Story",
+      "c2_body": "How and why they work this way. What goes into the product — and what doesn't.",
+      "c3_title": "Conversation",
+      "c3_body": "We talked. A person across from us, not a form that approved itself."
+    },
+    "badge": {
+      "marker": "The badge",
+      "h2": "The \"Verified\" badge — what it adds",
+      "oneliner": "The \"Verified\" badge says one thing: an official licensing or exemption document was submitted — <em>and we reviewed it.</em>",
+      "absence_h3": "No verified badge? It doesn't mean less",
+      "absence_body": "Some categories are legally exempt from licensing — they have no document to show, simply because none is required. Such a business is \"Declared\": a binding declaration of lawful operation was signed, and the business went through the same personal introduction as everyone else.",
+      "absence_kicker": "The badge marks an extra document — not extra trust."
+    },
+    "matrix": {
+      "marker": "In the open",
+      "h2": "What's actually checked — by category",
+      "intro": "We don't hide the criteria. Here, by category, is the document that earns the \"Verified\" badge — and when \"Declared\" is exactly the right path.",
+      "path_or": "or",
+      "groupA_title": "Categories where the law requires a license",
+      "groupA_desc": "Here the law requires a license — so here there's <b>always</b> an official document (from the local authority or the Ministry of Health) that was submitted and reviewed. Without a valid license, the business simply doesn't go live.",
+      "groupA_doc": "A valid official license.",
+      "honey_doc": "Three licenses together — beekeeper, marketing, and business. One alone isn't enough.",
+      "groupB_title": "Categories legally exempt from licensing",
+      "groupB_desc": "Here the law exempts from licensing. Most businesses will be <b>\"Declared\"</b> — a full path in its own right. Whoever wishes can add an exemption approval or registration and also receive a \"Verified\" badge.",
+      "caveat": "Our process is personal, and the criteria update with the law and with new categories. If something isn't clear — talk to us, and we'll explain.",
+      "catA": {
+        "meat_fish": "Meat & fish",
+        "dairy": "Milk & cheese",
+        "bread": "Breads & baking",
+        "prepared": "Prepared foods",
+        "fermented": "Fermented & pickled",
+        "drinks": "Wine, beer & drinks",
+        "chocolate": "Chocolate & sweets",
+        "honey": "Honey"
+      },
+      "catB": {
+        "vegetables": { "label": "Vegetables", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
+        "fruits": { "label": "Fruits", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
+        "oils": { "label": "Olive oil & oils", "doc": "Verified: an official exemption approval from the business-licensing department." },
+        "spices": { "label": "Spices & culinary herbs", "doc": "Verified: an official exemption approval." },
+        "soaps": { "label": "Natural soaps", "doc": "Verified: registration in the cosmetics registry (Ministry of Health)." },
+        "creams": { "label": "Skin creams & oils", "doc": "Verified: registration in the cosmetics registry." },
+        "herbal": { "label": "Herbal preparations", "doc": "Verified: registration in the cosmetics registry." },
+        "candles": { "label": "Candles & aroma", "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine." }
+      }
+    },
+    "closing": {
+      "em_mark": "Mehamakor",
+      "quote": "I want to know who I'm buying from. I built a place where you know too.",
+      "attrib": "— Sapir"
+    },
+    "cta": {
+      "h2": "Have a business that deserves a home?",
+      "intro": "Tell us about it. We'll read it, get back to you, and start getting to know you.",
+      "submit": "Tell us about the business",
+      "secondary": "Continue to the registration form"
     }
   }
 }

@@ -32,6 +32,11 @@ LICENSE_REQUIRED_CATEGORIES: tuple[str, ...] = (
     # MEH-529 additions — confirmed in seed_data.py at MEH-530 Phase 0:
     "שוקולד וממתקים בוטיק",
     "יין, בירה ומשקאות",
+    # MEH-743: honey split off from "שמנים ודבש". Dedicated regulatory
+    # regime — צו הפיקוח על מצרכים ושירותים (ייצור דבש ומכירתו), תשל"ז-1977
+    # (keeper license + marketing license + business license). Olive-oil
+    # under 5t/yr stays license-optional via the standalone "שמנים" row.
+    "דבש",
 )
 
 # MEH-530: 7-10 digit license number per משרד הבריאות convention.
@@ -47,3 +52,19 @@ PRODUCER_LICENSE_REGEX: str = r"^\d{7,10}$"
 # Pydantic max_length on the 4 input schemas mirrors this — boundary defense
 # so 200-char garbage produces a clean 422 instead of a Postgres 500.
 PRODUCER_LICENSE_MAX_LENGTH: int = 20
+
+# MEH-759 (ADR-022 gate 2, Chunk B): the version string stamped into
+# producers.declaration_version when a business owner makes the binding
+# tier-2 licensing declaration at registration. Brief Q1.4 — pairing a
+# timestamp (declared_at) with the exact text version agreed to strengthens
+# the platform's good-faith reliance defense and lets us prove WHICH wording
+# each seller consented to if the lawyer-locked copy changes later.
+# Bump this whenever the declaration text materially changes so existing
+# rows stay attributable to the version signed. Must stay within the
+# VARCHAR(10) producers.declaration_version column.
+#   v1 ("2026-06-v1") — 2026-06-05 launch text ("…כל הרישיונות הנדרשים…
+#     לפי חוק רישוי עסקים"). Stamped by Chunk B (PR #955); rows keep it.
+#   v2 ("2026-06-v2") — MEH-759 Chunk C (ADR-022 gate 2): continuous-
+#     commitment wording ("פועל כדין… ההצהרה תישאר נכונה כל עוד העסק
+#     מופיע במהמקור…") + conditional farmer line. New wording = new version.
+DECLARATION_VERSION: str = "2026-06-v2"

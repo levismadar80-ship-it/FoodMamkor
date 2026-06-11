@@ -43,8 +43,13 @@
 | 21 | `producer_recipes` | Producer-owned recipes promoting their products (admin-moderated) | `ProducerRecipe` |
 | 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
 | 23 | `inbound_messages` | Inbound WhatsApp messages — populated by future PR2c receiver, consumed by MEH-509 PR2b watchdog | `InboundMessage` |
+| 24 | `outbound_messages` | Outbound WhatsApp sends — one row per real send written by the send layer (MEH-771 Chunk A); `status` lifecycle `accepted`→`delivered`/`failed` reconciled via the Chunk B delivery webhook; `meta_message_id` (wamid) UNIQUE for idempotency. Mirrors `inbound_messages` phone-key pattern (no FK) | `OutboundMessage` |
 
 > **MEH-509 PR3 (2026-05-22):** `producers.risk_score` (Integer nullable) + `producers.risk_reasoning` (Text nullable) added by migration `92afa3cb76e2`. Populated asynchronously by `app/services/producer_risk.py` via FastAPI BackgroundTasks after producer signup using Claude Haiku 4.5. NULL on both = "not scored yet OR Anthropic call failed (fail-open)". Admin-only — `ProducerAdminOut` schema surfaces them; `ProducerDetailOut` (public) intentionally does not. New endpoint: `GET /admin/producers/{id}/risk-score` returns `{score, reasoning}`.
+
+> **MEH-759 (ADR-022 gate 2, 2026-06-06):** `producers.declared_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `a7f3e9c14d28`, Chunk A) + `producers.declaration_version` (VARCHAR(10), nullable) record the binding tier-2 licensing declaration. Chunk B stamps them in `POST /auth/register/producer` (both new-account and MEH-143 upgrade paths) when the new **required** `declaration_accepted: bool` body field is truthy — the handler 422s (`יש לאשר את הצהרת הרישוי כדי להמשיך`) when it is falsy/absent, so a producer row is only ever created with both columns set. Constant `DECLARATION_VERSION` lives in `app/constants.py`. Admin-create / Excel-import paths leave both NULL (no owner declaration). Admin-only exposure — `ProducerAdminOut` surfaces them; `ProducerDetailOut`/`ProducerListOut` (public) intentionally do not.
+
+> **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; `is_verified` untouched (legacy axis, decoupling deferred). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
@@ -505,6 +510,8 @@ DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
 POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
 POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
+POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
+POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
 GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes

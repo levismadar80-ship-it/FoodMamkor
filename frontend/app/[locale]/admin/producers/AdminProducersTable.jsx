@@ -107,13 +107,19 @@ function ProducerTags({ producer }) {
   );
 }
 
-function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
+  // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
+  // may be undefined if a caller doesn't pass it — default to never-busy.
+  const busy = isBusy || (() => false);
   return (
     <div className="flex gap-3 flex-wrap">
-      {p.status === "pending" && (
-        <button onClick={() => onQuickApprove(p.id)} className="text-primary hover:underline text-xs font-medium">
+      {/* MEH-745: self-registered producers sit in pending_whatsapp; the
+          approve endpoint has no status guard, so surface approve for both
+          waiting states (admin fallback alongside the OTP self-serve path). */}
+      {["pending", "pending_whatsapp"].includes(p.status) && (
+        <button onClick={() => onQuickApprove(p.id)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.approve_short")}
         </button>
       )}
@@ -126,14 +132,15 @@ function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus
         </Link>
       )}
       {(p.status === "approved" || p.status === "inactive") && (
-        <button onClick={() => onToggleStatus(p.id)} className="text-muted hover:text-primary text-xs">
+        <button onClick={() => onToggleStatus(p.id)} disabled={busy(`status:${p.id}`)} className="text-muted hover:text-primary text-xs disabled:opacity-50 disabled:cursor-not-allowed">
           {p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate")}
         </button>
       )}
       {p.status === "approved" && (
         <button
           onClick={() => onToggleAmbassador(p.id, p.ambassador)}
-          className={`text-xs ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-fg-muted hover:text-primary"}`}
+          disabled={busy(`ambassador:${p.id}`)}
+          className={`text-xs disabled:opacity-50 disabled:cursor-not-allowed ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-fg-muted hover:text-primary"}`}
           title={p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
         >
           {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
@@ -148,7 +155,7 @@ function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus
           {t("producers.table.actions.story_card")}
         </button>
       )}
-      <button onClick={() => onDeleteProducer(p.id, p.name)} className="text-red-600 hover:underline text-xs">
+      <button onClick={() => onDeleteProducer(p.id, p.name)} disabled={busy(`delete:${p.id}`)} className="text-red-600 hover:underline text-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
         {t("common.delete")}
       </button>
     </div>
@@ -235,14 +242,14 @@ function EmptyRow({ incompleteOnly }) {
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
   onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
-  onUploadStoryCard,
+  onUploadStoryCard, isBusy,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
     onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
-    onUploadStoryCard, onToggleStoryCard,
+    onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (
     <div className="bg-white border border-border rounded-[12px] overflow-hidden">

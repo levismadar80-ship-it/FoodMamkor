@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { showToast } from "@/lib/toast";
-import { ShareNetwork } from "@phosphor-icons/react";
+import { ShareNetwork, Check } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 
 export default function ShareButton({ url, title, description, city, category }) {
@@ -33,7 +33,7 @@ export default function ShareButton({ url, title, description, city, category })
     }
     try {
       await navigator.clipboard.writeText(shareText);
-      showToast(t("copied_toast"));
+      showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
     } catch {
       // last-resort fallback
       const ta = document.createElement("textarea");
@@ -42,7 +42,7 @@ export default function ShareButton({ url, title, description, city, category })
       ta.select();
       try {
         document.execCommand("copy");
-        showToast(t("copied_toast"));
+        showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
       } finally {
         document.body.removeChild(ta);
       }

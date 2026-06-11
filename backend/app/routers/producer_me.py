@@ -10,7 +10,14 @@ from sqlalchemy.orm import Session, joinedload
 from app.auth import require_producer
 from app.database import get_db
 from app.rate_limit import limiter
-from app.services.whatsapp import send_text
+from app.services.availability_validation import (
+    AvailabilityValidationError,
+    resolve_vacation_until,
+    validate_transition,
+)
+from app.services.whatsapp import send_template
+from app.services.whatsapp_templates import OtpCodeV1
+from app.utils.clock import israel_today
 from app.models import (
     ContactClick,
     DeliveryArea,
@@ -36,7 +43,7 @@ from app.schemas.schemas import (
     KashrutRequestCreate,
     KashrutRequestOut,
     OtpConfirmIn,
-    ProducerAdminOut,
+    ProducerOwnerOut,
     ProducerUpdate,
     ProductCreate,
     ProductOut,
@@ -51,7 +58,7 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/producers/me", tags=["producer-management"])
 
 
-@router.get("", response_model=ProducerAdminOut)
+@router.get("", response_model=ProducerOwnerOut)
 def get_my_producer(
     user: User = Depends(require_producer), db: Session = Depends(get_db)
 ):
@@ -105,7 +112,7 @@ def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
         counter += 1
 
 
-@router.put("", response_model=ProducerAdminOut)
+@router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
     request: Request,
@@ -315,6 +322,16 @@ def set_availability_status(
             status_code=400,
             detail=f"סטטוס לא תקין. חייב להיות אחד מתוך: {sorted(AVAILABILITY_STATUSES)}",
         )
+    # AUD-039: reject a past return date here too (Israel tz), so the legacy
+    # surface can't persist an already-expired vacation.
+    if (
+        data.status == "vacation"
+        and data.vacation_until is not None
+        and data.vacation_until < israel_today()
+    ):
+        raise HTTPException(
+            status_code=422, detail="תאריך החזרה לחופשה חייב להיות עתידי"
+        )
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
@@ -346,25 +363,33 @@ def set_availability_state(
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
+    # Value membership stays a 400 before the DB hit (preserves existing
+    # contract); the transition + return-date guards run against the
+    # producer's current state below (AUD-039/040).
     if data.state not in AVAILABILITY_STATES:
         raise HTTPException(
             status_code=400,
             detail=f"מצב לא תקין. חייב להיות אחד מתוך: {', '.join(AVAILABILITY_STATES)}",
         )
-    if data.state == "on_vacation" and data.vacation_until is None:
-        raise HTTPException(status_code=422, detail="תאריך חזרה לחופשה נדרש")
 
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    try:
+        validate_transition(producer.availability_state, data.state)
+        vacation_until = resolve_vacation_until(data.state, data.vacation_until)
+    except AvailabilityValidationError as e:
+        # value violation → 400; missing/past return date → 422.
+        raise HTTPException(
+            status_code=400 if e.kind == "value" else 422, detail=str(e)
+        ) from e
+
     producer.availability_state = data.state
     is_today, legacy_status = _state_to_legacy(data.state)
     producer.is_available_today = is_today
     producer.availability_status = legacy_status
-    producer.vacation_until = (
-        data.vacation_until if data.state == "on_vacation" else None
-    )
+    producer.vacation_until = vacation_until
     producer.last_active_at = datetime.utcnow()
     db.commit()
     return {
@@ -681,15 +706,19 @@ def producer_analytics(
 
 
 def _send_whatsapp_otp(phone: str, code: str) -> bool:
-    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508).
+    """Send a 6-digit OTP via WhatsApp Cloud API (MEH-508, MEH-754).
 
     Fail-open: returns False if WHATSAPP_* config is missing or the Meta
-    Graph call errors — caller logs and still returns HTTP 200. send_text
-    handles config / HTTP fail-open internally; this function is now a
-    thin wrapper that owns only the OTP message body.
+    Graph call errors — caller logs and still returns HTTP 200.
+
+    MEH-754: switched from `send_text` (free-form) to the Meta
+    AUTHENTICATION template `producer_otp_v1`. Free-form text is only
+    delivered inside Meta's 24h customer-service window, so a brand-new
+    producer who never messaged the business number never received the
+    code. Templates are delivered unconditionally. send_template owns
+    config / HTTP fail-open internally.
     """
-    body = f"מהמקור — קוד האימות שלך: *{code}*\nהקוד בתוקף ל-10 דקות."
-    return send_text(phone, body)
+    return send_template(phone, OtpCodeV1(code=code))
 
 
 @router.post("/verify-phone", status_code=200)
@@ -759,6 +788,12 @@ def confirm_phone_otp(
 
     token.used = True
     producer.phone_verified = True
+    # MEH-745: self-registered producers wait in pending_whatsapp until the
+    # business phone is verified; a successful OTP confirm is the gate that
+    # releases them into the normal admin-review queue (pending). Only advance
+    # from pending_whatsapp — never touch approved / rejected / inactive.
+    if producer.status == "pending_whatsapp":
+        producer.status = "pending"
     db.commit()
     return {"detail": "הטלפון אומת בהצלחה"}
 

@@ -175,7 +175,7 @@ export default function Header() {
           {/* LEAD GROUP — logo + nav links together (internal gap 36px).
               start of the row (visual right in RTL). */}
           <div className="flex items-center gap-9">
-            <Link href="/" className="shrink-0 inline-flex items-center" aria-label={BRAND_NAME}>
+            <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
@@ -354,13 +354,17 @@ export default function Header() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                >
-                  {t("nav.login")}
-                </Link>
+                // MEH-B: hide the drawer login entry on /login too — mirrors
+                // the desktop isLoginPage gate (MEH-732 / PR #909).
+                !isLoginPage && (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+                  >
+                    {t("nav.login")}
+                  </Link>
+                )
               )}
             </div>
 

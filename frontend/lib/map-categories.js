@@ -21,6 +21,7 @@ import {
   Cheese,
   Bread,
   JarLabel,
+  Hexagon,
   FlowerTulip,
   Leaf,
 } from "@phosphor-icons/react";
@@ -30,7 +31,11 @@ export const CATEGORY_STYLES = {
   "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
   "חלב וגבינות":         { color: "#4a90d9", icon: Cheese,      iconName: "Cheese" },
   "לחמים ואפייה":        { color: "#8B6914", icon: Bread,       iconName: "Bread" },
-  "שמנים ודבש":          { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
+  // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
+  // dedicated identity — brand honey #C8821E + Hexagon (honeycomb) — distinct
+  // from oils (#e8a020 + JarLabel).
+  "שמנים":               { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
+  "דבש":                 { color: "#C8821E", icon: Hexagon,     iconName: "Hexagon" },
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };
 

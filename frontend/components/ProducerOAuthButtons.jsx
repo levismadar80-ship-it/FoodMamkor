@@ -49,7 +49,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
         // redirects but drops the message); without it the user lands
         // on /login with no context and the OAuth button looks broken.
         const msg = detail || t("producer_already_account");
-        showToast(msg, "error", 5000);
+        showToast.error(msg, { duration: 5000 });
         onError?.(msg, { redirectToLogin: true });
       } else if (status === 429) {
         onError?.(t("rate_limited"));

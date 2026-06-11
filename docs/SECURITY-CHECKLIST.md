@@ -406,3 +406,67 @@ When a new production incident happens, add here:
 5. File:line of the canonical fix in this codebase
 6. Question to ask yourself — one line
 7. How to verify — a runnable command or step
+
+---
+
+## 2026-06 audit — watch items (DRAFT, Refs MEH-258 — review before promoting)
+
+> **Status / honesty note.** This section is a **draft for review**, not yet
+> promoted to a TRAP. The 8 TRAPs above are confirmed production incidents;
+> the items below are findings from the in-progress `docs/audits/2026-06-full-audit.md`
+> (only **Phase 0 / AUD-001..008** complete at the time of writing — Phases A–D
+> are empty skeletons, so the digest's "AUD-001..056" is aspirational). Each
+> line is one trap + how-to-check + file/AUD ref. Promote a line to a numbered
+> TRAP only once its audit phase confirms it and a fix ships.
+
+### Per-category quick index (where each known trap lives)
+
+| Category | Known traps | Check |
+|---|---|---|
+| Auth / JWT | TRAP 3 (validation), AUD-002 (pyjwt) | schema-level validation; pyjwt only in Apple verifier, RS256 pinned |
+| Rate limiting / proxy | TRAP 1 (proxy IP) | `get_real_client_ip` + `TRUSTED_PROXY=1` |
+| Middleware / proxy desync | AUD-004 (starlette Host-header) | middleware reads `scope` path, not `request.url.path` |
+| IDOR / ownership | TRAP 2 (GET-by-UUID) | status + owner/admin filter, 404 not 403 |
+| Schema / data integrity | TRAP 6 (cascade), MEH-265 (drift) | FK cleanup; one schema authority (Alembic) |
+| Secrets / silent-fail | TRAP 4 (silent skip), MEH-265 | every `if settings.X:` logs its else |
+| Tests | TRAP 5 (422-masks-403) | guard tests send schema-valid payloads |
+| Dependencies | TRAP 8 (CVE gate), AUD-002/003/004 | `pip-audit` / `npm audit` exit 0 |
+| Frontend | AUD-007 (object-injection) | line-level review of `obj[key]` writes |
+
+### New watch items (from the 2026-06 audit)
+
+- **[AUD-002] `pyjwt==2.12.0` — 5 advisories (alg allow-list bypass, HMAC
+  key-confusion, PyJWKClient SSRF/DoS).** YELLOW. Current usage mitigates the
+  headline CVEs (only in the Apple Sign-In verifier; `algorithms=["RS256"]`
+  pinned, JWKS from Apple's fixed endpoint, no `PyJWKClient`/`jku`; app's own
+  tokens use `joserfc`). **Check:** `algorithms=` stays pinned on any refactor;
+  bump `pyjwt → 2.13.0` at next dep refresh (auth file → workflow rule 5a CVE
+  check). **File:** `backend/app/services/oauth_verifiers.py:164,198`.
+
+- **[AUD-003] `python-multipart==0.0.26` — multipart header DoS
+  (CVE-2026-42561).** YELLOW, confirmed. No limit on part-header count/size;
+  reachable unauthenticated at the parse layer via `routers/upload.py`.
+  **Check:** bump `python-multipart → 0.0.27`; interim mitigation = body-size
+  limit at the proxy. **File:** `backend/pyproject.toml` (direct dep).
+
+- **[AUD-004] `starlette==0.49.3` — Host-header `request.url` path desync
+  (PYSEC-2026-161).** YELLOW, **pending Audit-A confirmation**. Any security
+  decision made from `request.url.path` (rebuilt from the unvalidated `Host`
+  header) can diverge from the routed path. **Check:** confirm `middleware.py`
+  gates on the ASGI `scope` path, not `request.url.path`; bump starlette (via
+  fastapi) to a patched line. **File:** `backend/app/middleware.py` (review).
+
+- **[AUD-007] eslint security clusters — `security/detect-object-injection`
+  ×122, `react-hooks/set-state-in-effect` ×40.** YELLOW, **pending Audit-B**.
+  High-FP rule, but 122 hits can hide one genuine user-controlled `obj[key]`
+  write (prototype pollution). **Check:** line-level review of bracket-write
+  sinks where the key is user-controlled. **File:** `frontend/` (see
+  `raw/eslint.txt`).
+
+- **[MEH-265] Two parallel schema mechanisms (post-mortem).** The drift
+  between `Base.metadata.create_all` and `_migrate_columns()` broke production
+  login — both "worked" independently so neither surfaced an error. **Check:**
+  `grep -r "create_all\|metadata.create\|_migrate" backend/ --include="*.py"` —
+  there must be exactly **one** schema authority (Alembic). `_migrate_columns`
+  was removed in MEH-267; if a second owner reappears, delete it (don't
+  disable). **File:** `backend/app/main.py`, `.claude/rules/db.md`.

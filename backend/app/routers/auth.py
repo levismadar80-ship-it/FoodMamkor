@@ -51,6 +51,7 @@ from app.services.oauth_verifiers import (
     verify_apple_token as _verify_apple_token,
     verify_google_token as _verify_google_token,
 )
+from app.constants import DECLARATION_VERSION
 from app.services.license_validation import ensure_license_for_categories
 from app.services.password_policy import validate_password
 from app.database import get_db
@@ -60,6 +61,7 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
+    PhoneOtpToken,
     Report,
 )
 from app.rate_limit import email_from_body, limiter
@@ -412,6 +414,19 @@ async def register_producer(
             detail="חובה להזין אימייל ליצירת קשר עבור אמצעי הקשר הנבחר",
         )
 
+    # MEH-759 (ADR-022 gate 2): the binding licensing declaration is
+    # mandatory on both paths (new registration + MEH-143 upgrade). 422 is
+    # body-shape validation — it runs before the enumeration branch and is
+    # identical regardless of email existence, so it leaks nothing (same
+    # class as the contact-method guards above). Producer rows below are
+    # therefore only ever created with declared_at/declaration_version
+    # stamped.
+    if not data.declaration_accepted:
+        raise HTTPException(
+            status_code=422,
+            detail="יש לאשר את הצהרת הרישוי כדי להמשיך",
+        )
+
     # MEH-530: 422s with Hebrew copy if any selected category requires a
     # license and the body didn't supply one. Same input-validation
     # classification as the contact-method checks above.
@@ -451,6 +466,10 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
+            # above guarantees declaration_accepted is True here.
+            declared_at=datetime.now(timezone.utc),
+            declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
         )
         db.add(producer)
@@ -543,6 +562,10 @@ async def register_producer(
             primary_contact_method=method,
             contact_email=data.contact_email,
             producer_license_number=data.producer_license_number,
+            # MEH-759 (ADR-022 gate 2): stamp the binding declaration. Guard
+            # above guarantees declaration_accepted is True here.
+            declared_at=datetime.now(timezone.utc),
+            declaration_version=DECLARATION_VERSION,
             status="pending_whatsapp",
         )
         db.add(producer)
@@ -632,7 +655,17 @@ async def register_producer(
 # Frontend onBlur caller in register/producer/page.js is removed in Chunk D.
 
 
-@router.post("/google", response_model=GoogleAuthResponse)
+@router.post(
+    "/google",
+    response_model=GoogleAuthResponse,
+    # MEH-780: document the deliberate non-2xx statuses so the OpenAPI spec
+    # matches reality (kills schemathesis UndefinedStatusCode noise). No
+    # behavior change — 401 = invalid id_token, 503 = provider not configured.
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
 def google_auth(
     request: Request,
@@ -722,7 +755,15 @@ def google_auth(
     )
 
 
-@router.post("/register/producer/oauth", response_model=ProducerOAuthSignupResponse)
+@router.post(
+    "/register/producer/oauth",
+    response_model=ProducerOAuthSignupResponse,
+    # MEH-780: document the deliberate non-2xx statuses (see /auth/google).
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")
 def register_producer_oauth(
     request: Request,
@@ -944,7 +985,15 @@ def logout_all_devices(
     )
 
 
-@router.post("/apple", response_model=AppleAuthResponse)
+@router.post(
+    "/apple",
+    response_model=AppleAuthResponse,
+    # MEH-780: document the deliberate non-2xx statuses (see /auth/google).
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")  # SECURITY FIX #2
 def apple_auth(
     request: Request,
@@ -1255,6 +1304,14 @@ def delete_account(
         db.flush()
         producer = db.query(Producer).filter(Producer.id == producer_id).first()
         if producer is not None:
+            # MEH-755: delete OTP tokens explicitly before db.delete(producer).
+            # phone_otp_tokens.producer_id is NOT NULL, but the ORM relationship
+            # (models.py PhoneOtpToken.producer backref) has no delete cascade,
+            # so the unit-of-work tries to nullify producer_id on delete →
+            # NotNullViolation 500. Bulk-delete pre-empts the nullify.
+            db.query(PhoneOtpToken).filter(
+                PhoneOtpToken.producer_id == producer.id
+            ).delete()
             db.delete(producer)
 
     # 3. Finally, delete the user itself.

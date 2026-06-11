@@ -95,6 +95,28 @@ class Producer(Base):
     # on ProducerListOut / ProducerDetailOut; the raw value is admin-only
     # via ProducerAdminOut.
     producer_license_number = Column(String(20), nullable=True)
+    # MEH-759 (ADR-022 gate 2): binding tier-2 declaration audit trail.
+    # Both nullable — existing rows predate the trail; Expand-only (ADR-007,
+    # no backfill). `declared_at` = when the binding declaration was made;
+    # `declaration_version` = which lawyer-locked text version was agreed to
+    # (Brief Q1.4 — timestamp + version strengthen the good-faith reliance
+    # defense). Stamping is Chunk B; raw values are admin-only exposure
+    # (ProducerAdminOut), never public — MEH-530 privacy-first precedent.
+    declared_at = Column(DateTime(timezone=True), nullable=True)
+    declaration_version = Column(String(10), nullable=True)
+    # MEH-762 (ADR-022 public tier contract, Chunk 1): tier-1 "מאומת"
+    # verification trail. Both nullable, Expand-only (ADR-007, no backfill).
+    # `verified_at` = when the admin checked the qualifying document
+    # (timezone-aware; Chunk-2 stamping uses now(timezone.utc) like MEH-759,
+    # NOT utcnow). `verification_doc_type` = which document granted the badge —
+    # by-convention 'license' | 'exemption' | 'cosmetics' (1:1 with
+    # VERIFICATION.md §3; no DB enum/CHECK, app-layer enforced like
+    # availability_state). The public `verification_tier` ("verified" |
+    # "declared") is COMPUTED in schemas (Chunk 3) from verified_at + the
+    # category's licensing requirement — NEVER stored. No `verified_by`
+    # column in V1 (single admin — MEH-762 D1). Paired migration: f1c7b9a3e264.
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    verification_doc_type = Column(String(20), nullable=True)
     admin_notes = Column(Text, nullable=True)  # internal — not exposed publicly
     # MEH-509 PR3: Anthropic-Haiku-backed signup risk score.
     # Populated asynchronously by app/services/producer_risk.py via
@@ -1221,3 +1243,41 @@ class InboundMessage(Base):
         default=False,
         server_default=text("false"),
     )
+
+
+class OutboundMessage(Base):
+    """MEH-771 / AUD-009/010 — durable record of OUTBOUND WhatsApp sends.
+
+    Written by app/services/whatsapp.py per send (template + freeform).
+    A Graph 200 only means *accepted* (queued); true delivery arrives
+    later via the Meta status webhook (MEH-771 Chunk B), which flips
+    `status` to 'delivered'/'failed' and sets `updated_at`.
+
+    `meta_message_id` (the wamid) is UNIQUE for webhook idempotency
+    (Meta delivers at-least-once). `status` is app-enforced (no DB
+    enum/CHECK), by-convention 'accepted' | 'delivered' | 'failed' |
+    'window_expired', consistent with availability_state.
+    """
+
+    __tablename__ = "outbound_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    to_phone = Column(String(20), nullable=False, index=True)
+    kind = Column(String(64), nullable=False)
+    meta_message_id = Column(String(100), unique=True, nullable=True)
+    status = Column(
+        String(20),
+        nullable=False,
+        default="accepted",
+        server_default=text("'accepted'"),
+        index=True,
+    )
+    error_code = Column(Integer, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=text("now()"),
+    )
+    updated_at = Column(DateTime, nullable=True)

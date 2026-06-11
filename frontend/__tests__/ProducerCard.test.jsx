@@ -48,6 +48,15 @@ vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (url) => url || null,
 }));
 
+// MEH-729: ProducerCard reads useRouter() (components/ProducerCard.jsx:175)
+// since the v4 redesign (PR #890). jsdom has no Next app-router context, so
+// mock next/navigation to satisfy the invariant.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // ---- Heart / auth wiring: mock-all-the-things so each test can set state ----
 const { authState, apiMock, toastSpy, enqueueSpy, favCache } = vi.hoisted(() => ({
   authState: { user: null },
@@ -68,8 +77,13 @@ vi.mock("@/lib/api", () => ({
   default: apiMock,
 }));
 
+// MEH-685: methods-only object; spy prefixes the semantic type.
 vi.mock("@/lib/toast", () => ({
-  showToast: (...args) => toastSpy(...args),
+  showToast: {
+    success: (...args) => toastSpy("success", ...args),
+    error: (...args) => toastSpy("error", ...args),
+    info: (...args) => toastSpy("info", ...args),
+  },
 }));
 
 vi.mock("@/lib/post-login-action", () => ({
@@ -104,7 +118,7 @@ const fullProducer = {
   slug: "havat-hashikma",
   city: "רחובות",
   images: ["https://example.com/photo.jpg"],
-  is_verified: true,
+  verification_tier: "verified",
   // MEH-291 Phase 3 — new field (legacy is_available_today preserved during overlap).
   availability_state: "available_today",
   is_available_today: true,
@@ -125,7 +139,7 @@ const minimalProducer = {
   name: "חנות פשוטה",
   city: "תל אביב",
   images: [],
-  is_verified: false,
+  verification_tier: null,
   availability_state: "accepting_orders",
   is_available_today: false,
   reviews_count: 0,
@@ -317,7 +331,7 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(desc.textContent.length).toBeLessThanOrEqual(81);
   });
 
-  it("renders the verified badge via BadgeRow when is_verified=true", () => {
+  it("renders the verified badge via BadgeRow when verification_tier='verified'", () => {
     render(<ProducerCard producer={fullProducer} />);
     const badge = screen.getByRole("button", { name: /מאומת/ });
     expect(badge).toHaveAttribute("data-badge", "verified");
@@ -328,7 +342,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard
         producer={{
           ...fullProducer,
-          is_verified: true,
+          verification_tier: "verified",
           is_recommended: true,
           days_since_created: 5,
           organic_certified: true,
@@ -405,9 +419,11 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(heart).toHaveAttribute("aria-pressed", "true");
     expect(enqueueSpy).toHaveBeenCalledWith("producer-1");
     expect(toastSpy).toHaveBeenCalled();
-    const [msg, type, duration, opts] = toastSpy.mock.calls[0];
-    expect(msg).toMatch(/שמרתי/);
+    // MEH-685: spy receives ("info", message, { duration, action }).
+    const [type, msg, opts] = toastSpy.mock.calls[0];
     expect(type).toBe("info");
+    expect(msg).toMatch(/שמרתי/);
+    expect(opts.duration).toBe(5000);
     expect(opts.action.label).toBe("התחברי");
     expect(opts.action.href).toMatch(/^\/login\?next=/);
   });
@@ -453,8 +469,8 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(heart).toHaveAttribute("aria-pressed", "true");
     await waitFor(() => expect(heart).toHaveAttribute("aria-pressed", "false"));
     expect(toastSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/השתבש/),
       "error",
+      expect.stringMatching(/השתבש/),
     );
   });
 

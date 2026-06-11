@@ -8,8 +8,8 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getUpcomingHoliday } from "@/lib/holidays";
-import { PENDING_WHATSAPP_COMPANION_COPY } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
+import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -186,18 +186,20 @@ export default function ProducerDashboardPage() {
       {producer.status === "pending_whatsapp" && (
         <div className="bg-primary/5 border border-primary/20 rounded-[16px] p-4 mb-6 text-sm">
           <p className="font-semibold text-primary mb-1">{t("status.pending_whatsapp.title")}</p>
-          <p className="text-fg-muted mb-3">
+          <p className="text-fg-muted">
             {t("status.pending_whatsapp.body")}
           </p>
-          <Link href="/settings" className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition">
-            {t("status.pending_whatsapp.cta")}
-          </Link>
-          <p className="text-xs text-fg-muted mt-3">
-            {PENDING_WHATSAPP_COMPANION_COPY.split(" — ")[0]} —{" "}
-            <Link href="/settings" className="text-primary hover:underline">
-              {t("status.pending_whatsapp.companion_link")}
-            </Link>
-          </p>
+          {/* MEH-745: the OTP card replaces the old dead /settings CTA — a
+              successful confirm flips status to pending without a reload. */}
+          <PhoneVerifyCard
+            onVerified={() =>
+              setData((prev) =>
+                prev
+                  ? { ...prev, producer: { ...prev.producer, status: "pending" } }
+                  : prev,
+              )
+            }
+          />
         </div>
       )}
 
@@ -400,7 +402,7 @@ function AnalyticsSection({ analytics, profile }) {
   } = analytics;
 
   const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
-  const trendColor = weekly_trend === "up" ? "text-green-600" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
+  const trendColor = weekly_trend === "up" ? "text-green-700" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
   const cityName = profile?.city ? ` ${profile.city}` : "";
   const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 

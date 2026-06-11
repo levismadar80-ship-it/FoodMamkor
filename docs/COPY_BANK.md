@@ -76,7 +76,8 @@
 | **Current** | `בתי עסק` |
 | **Previous** | `בתי עסק מאומתים` (deprecated per MEH-579 over-claim guard) |
 | **i18n key** | `home.stats.businesses` |
-| **Status** | ✅ (MEH-654, refs MEH-579) |
+| **Status** | ✅ (refs MEH-579; removed in i18n sweep, likely MEH-472) |
+| **Note** | Prior `MEH-654` reference was a typo (MEH-654 = adversarial-review CI job, unrelated to copy) — corrected per MEH-746/MEH-750. |
 | **Why** | MEH-579 over-claim guard prohibits unsubstantiated trust claims pre-launch. "מאומתים" implied vetting infrastructure that doesn't exist yet. Removed in i18n sweep (likely MEH-472). Doc now matches actual key `home.stats.businesses` in `frontend/messages/he.json`. |
 | **MEH** | MEH-654 (doc sync), MEH-521 (original entry), MEH-579 (over-claim guard) |
 
@@ -167,9 +168,27 @@
 ### Sapir quote — /about page prominent callout
 | Field | Value |
 |---|---|
-| **Current** | `כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Quote component) |
-| **Status** | ✅ |
+| **Current** | `אוכל טוב — לא שומרים לעצמנו` |
+| **Previous** | `כי מה שאוכלים — חשוב. ומאיפה קונים — חשוב יותר` |
+| **i18n key** | `about.consumer.parallax.quote` |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (ParallaxQuote) |
+| **Status** | ✅ (MEH-750) |
+| **Why** | S8 review: old quote ranked source over food ("ומאיפה קונים — חשוב יותר" = where you buy matters more), a nutritional contradiction. New line echoes the brand idiom (newsletter heading) — good food is shared, not hoarded. |
+| **MEH** | MEH-750 |
+
+### /about — Founder story (greeting + 5 paragraphs)
+| Field | Value |
+|---|---|
+| **Current** | `greeting` `היי, אני ספיר` · `p1` `תמיד היה לי חשוב לדעת מאיפה האוכל שלי מגיע. רציתי לקנות יותר טוב — יותר בריא, יותר מקומי.` · `p2` `אבל מהר מאוד גיליתי שזה לא נגיש. כדי למצוא אוכל איכותי באמת, הייתי צריכה לחפש שעות — לשאול את האנשים הנכונים, להצטרף לקבוצות וואטסאפ, לחפש בגוגל ובאינסטגרם.` · `p3` `ואז הבנתי: הבעיה היא לא שאין אוכל טוב. הבעיה שלא יודעים איפה למצוא אותו.` · `p4` `יש חקלאים שמוכרים ירקות טריים כמה דקות מהבית. יש מישהי שאופה לחם מחמצת בשכונה ליד. יש בתי עסק קטנים עם מוצרים מדהימים — שרוב האנשים בכלל לא מכירים. אז ממשיכים לקנות בסופר — לא כי זה הכי טוב, אלא כי זה הכי נוח.` · `p5` `וכאן נולדה מהמקור. מקום אחד שמרכז עבורך אוכל אמיתי, מקומי ובריא — קרוב לבית. בלי לחפש שעות.` |
+| **Previous** | `p1` `לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר…` · `p2` `התחלתי לשאול. חברה הכירה אופה…` · `p3` `וזה בדיוק מה שהפריע לי…` · `p4` `אז התחלתי לבנות את המקום הזה בעצמי…` · `p5` `היום מהמקור הוא בדיוק זה…` (MEH-750 wave) |
+| **Unchanged** | `caption1` `מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.` · `caption3` `את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.` |
+| **Anchor phrase** | `בלי לחפש שעות` (canonical, COPY_BANK / MEH-719) — closes `p5`, echoes the hero sub from MEH-750 |
+| **i18n keys** | `about.consumer.story.greeting` / `.p1`–`.p5` (he + en) |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx:100-105` |
+| **Status** | ✅ (MEH-757) |
+| **Why** | Sapir's 05/06 rewrite — problem→discovery→insight→solution arc, tighter than the MEH-750 narrative, landing on the `בלי לחפש שעות` brand anchor. Copy-only swap; closing captions untouched. |
+| **Note** | `greeting` kept without a terminal period (bold heading, EN parity `Hi, I'm Sapir`), preserving the MEH-750 styling decision; MEH-757's prose block writes it with a period — flip the single char if a period is wanted. |
+| **MEH** | MEH-757 (rides MEH-750 wave) |
 
 ### /about — Sub copy paragraph 1
 | Field | Value |
@@ -181,26 +200,55 @@
 | **Why** | Old closer was arrhythmic and passive ("businesses that always existed"). New copy is direct, rhythm-preserving, non-boastful. PR #579 merged 2026-05-10. |
 | **MEH** | MEH-208 / MEH-209 |
 
-### /about — Section 1 H3 titles (3 pillars)
+### /about — Benefits section (heading + 3 pillars)
 | Field | Value |
 |---|---|
-| **Pillar 1** | `אוכל אמיתי קרוב אלייך` |
-| **Pillar 2** | `לסמוך על מה שאת אוכלת` |
-| **Pillar 3** | `לעזור לעסקים הקטנים` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` |
-| **Status** | ✅ |
+| **Heading** | `למה מהמקור` (NEW — `about.consumer.benefits.heading`) |
+| **Pillar 1** | `קרוב אלייך` · body `בתי עסק מהאזור שלך, עם שרשרת קצרה ככל האפשר. פחות דרך, יותר טריות.` |
+| **Pillar 2** | `אפשר לסמוך` · body `כל בית עסק נבדק אישית לפני שהוא עולה לאתר. אנחנו שואלות, מבררות, ולפעמים גם מבקרות — לפני שאומרות כן.` |
+| **Pillar 3** | `קהילה מקומית` · body `כל קנייה תומכת ישירות באנשים מהשכונה — לא ברשת גדולה, אלא בבעלת עסק מהאזור שלך.` |
+| **Previous** | titles `אוכל אמיתי קרוב אלייך` / `לסמוך על מה שאת אוכלת` / `לעזור לעסקים הקטנים`; trust body said `רק בתי עסק מאומתים. אנחנו בודקות כל אחת...` |
+| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` (Section 3) |
+| **Status** | ✅ (MEH-750 — swallows MEH-746) |
+| **Why** | S8 copy wave: tighter pillar titles + added section heading. `trust.body` drops "מאומתים" — MEH-742 gate (verified/declared lock) + MEH-579 over-claim guard. MEH-746 (same key) swallowed here. |
+| **MEH** | MEH-750 (refs MEH-742, MEH-579, MEH-746) |
 
-### /about — Criteria admission headline
+### /about — Criteria admission headline — 🗑️ RETIRED
 | Field | Value |
 |---|---|
-| **Current** | `לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:` |
-| **Location** | `frontend/app/[locale]/about/AboutClient.jsx` |
-| **Status** | ✅ |
+| **Was** | `לא כל עסק נכנס למהמקור. אלו הקריטריונים שאנחנו בודקות:` |
+| **Status** | 🗑️ Retired (MEH-750) — not present on the live page. The values section uses `about.consumer.values.heading` = `כך אנחנו בוחרות` + `values.intro`. Stale row removed to stop drift. |
+| **MEH** | MEH-750 |
 
-### Testimonials
+### Testimonials — /about placeholder state
 | Field | Value |
 |---|---|
-| **Current** | 🕐 **PENDING** — not yet implemented |
+| **Heading** | `הסיפורים שעוד ייכתבו כאן` |
+| **Subtitle** | `המקום הזה שמור לסיפורים שלכן.` |
+| **CTA** | `יש לך סיפור? ספרי לנו` |
+| **Previous** | `מה אומרים עלינו` / `הסיפורים מגיעים בקרוב` / `גם את רוצה לשתף? כתבי לנו` |
+| **i18n keys** | `about.consumer.testimonials.heading` / `.subtitle` / `.cta` |
+| **Status** | ✅ (MEH-750) |
+| **Why** | S8: old `מה אומרים עלינו` promised testimonial content that doesn't exist yet. Reframed as an honest "stories yet to be written" placeholder. |
+| **MEH** | MEH-750 |
+
+### EditorialBreath pull-quote (§06) — SHELVED
+| Field | Value |
+|---|---|
+| **Quote** | `תכירי את מי שמאחורי האוכל` |
+| **i18n key** | (removed — was `home.editorial_breath.quote`) |
+| **Status** | 🕐 Shelved (MEH-733, 2026-06-05) |
+| **Why** | Removed pre-launch (lone numeral, semantic mismatch with categories); intended future home: Producer Stories MEH-542 opener. |
+| **MEH** | MEH-733 (refs MEH-542) |
+
+### EditorialBreath pull-quote (§06) — SHELVED
+| Field | Value |
+|---|---|
+| **Quote** | `תכירי את מי שמאחורי האוכל` |
+| **i18n key** | (removed — was `home.editorial_breath.quote`) |
+| **Status** | 🕐 Shelved (MEH-733, 2026-06-05) |
+| **Why** | Removed pre-launch (lone numeral, semantic mismatch with categories); intended future home: Producer Stories MEH-542 opener. |
+| **MEH** | MEH-733 (refs MEH-542) |
 
 ---
 
@@ -216,6 +264,30 @@
 | **Status** | ✅ (MEH-608, PR #683, 2026-05-16) |
 | **Why** | Step 2 actually renders 6 fields after MEH-530 (license) + MEH-532 (description) shipped. Count-free wording prevents future drift per synthesis Finding F11. |
 | **MEH** | MEH-608 |
+
+### /register/producer — Licensing declaration (continuous commitment)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אני מצהיר/ה שהעסק פועל כדין, ושאם נדרשים לפעילותו רישיון או היתר — הם קיימים ובתוקף. אני מתחייב/ת שההצהרה תישאר נכונה כל עוד העסק מופיע במהמקור, ולעדכן את מהמקור אם משהו ישתנה.` |
+| **en** | `I declare that the business operates lawfully, and that if a license or permit is required for its activity — they exist and are valid. I undertake that this declaration will remain true for as long as the business appears on Mehamakor, and to update Mehamakor if anything changes.` — **en pending Sapir review** |
+| **Previous (he)** | `, ומצהירה שיש ברשותי את כל הרישיונות הנדרשים למכירת המוצרים לפי חוק רישוי עסקים.` (v1 launch text, appended to the ToS checkbox) |
+| **i18n key** | `auth.register.producer.terms.declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (own checkbox, `declarationConfirmed`) |
+| **Audit version** | `DECLARATION_VERSION = "2026-06-v2"` (`backend/app/constants.py`) — v1 = old launch text, v2 = this continuous-commitment wording |
+| **Status** | 🟡 **v2 — pending lawyer** (Brief Q1.1–Q1.5 draft; Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | ADR-022 gate 2 / Brief Q1.3 — continuous commitment (not point-in-time) + Q1.4 audit trail. Own first-person checkbox per ADR-014 voice + stronger evidentiary value. |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
+
+### /register/producer — Grower declaration (conditional: ירקות / פירות)
+| Field | Value |
+|---|---|
+| **Current (he)** | `התוצרת שאציע דרך מהמקור היא תוצרת שגידלתי בחלקתי בלבד.` |
+| **en** | `The produce I will offer through Mehamakor is produce that I grew on my own plot only.` — **en pending Sapir review** |
+| **i18n key** | `auth.register.producer.terms.farmer_declaration` (he+en) |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (conditional checkbox `farmerConfirmed`, shown + required only for categories ירקות / פירות) |
+| **Status** | 🟡 **v2 — pending lawyer** (Sapir-locked wording, lawyer opinion outstanding) |
+| **Why** | נספח א' / פס"ד קירשנר — "grown on my own plot only" is the legal line between license-exempt and license-required produce. Folds into the same `declaration_accepted` submission (no new API field). |
+| **MEH** | MEH-759 Chunk C (source ADR-022) |
 
 ### Welcome email — Consumer
 | Field | Value |
@@ -332,6 +404,18 @@
 
 | Date | MEH | Changed | Before | After | Why |
 |---|---|---|---|---|---|
+| 2026-06-05 | MEH-756 | /events S10 copy wave — 12 keys across `events.list.*`, `events.detail.*`, `dashboard.producer.quick_links.add_event.title`, `sweep_tail.event_new.submit`, `experiences.list.cross_link_events` (he+en) | mixed-voice set: `subtitle` `סדנאות, סיורים, ימים פתוחים וטעימות — ישר מהמקור`; feminine-singular `הוסיפי אירוע` / `הגישי חוויה` / `סנן לפי עיר` / `חפשי עיר...` / `טוענת אירועים...` / `טוענת חוויות...` / `טוענת את האירוע...` / `מחפשת… ראי את…`; masculine-imperative outliers `צור קשר עם בית העסק` / `הוסף אירוע` / `פרסם אירוע` | S10-aligned + ADR-014 neutralized: `subtitle` `מה קורה החודש — סוף שבוע אחרי סוף שבוע, ישר מהמקור` / `What's on this month — weekend after weekend, straight from the source` · `add_event` `הוסיפו אירוע` · `submit_experience` `הוסיפו חוויה` / `Add experience` (unified add verb) · `filter_city_label` `חיפוש לפי עיר` / `Search by city` · `filter_city_placeholder` `שם עיר או יישוב` / `City or town name` · `loading_events` `טוענים אירועים...` · `loading_experiences` `טוענים חוויות...` (ellipsis `...` preserved per file convention) · `events.detail.loading` `טוענים את האירוע...` · `events.detail.contact_producer` `יצירת קשר עם בית העסק` (noun phrase — drops masculine imperative) · `dashboard.producer.quick_links.add_event.title` `הוסיפו אירוע` · `sweep_tail.event_new.submit` `פרסמו אירוע` · `experiences.list.cross_link_events` `מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←` / `Also looking for farm events? All events and experiences together ←` (arrow `←` preserved) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns the /events surfaces to S10 design (MEH-134, Direction A "The Almanac") ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (subtitle, submit_experience, filter_city_*, cross_link_events); other 7 EN strings already neutral. **Out of scope:** `events.list.empty_*` + eyebrow + per-tab H1 (JSX-dependent — land with MEH-134 port); rest of `sweep_tail.event_new.*` (~30 keys — needs separate extraction probe); `events.list.title` + tab keys + `events.categories.*` (untouched). |
+| 2026-06-05 | MEH-752 | /login `auth.login.*` chrome neutralization — 10 keys (he+en) | feminine-singular set (`ברוכה הבאה`, `שמרי עסקים`, `דרגי`, `הוסיפי…`, `הזיני סיסמה`, `הציגי/הסתירי סיסמה`, `מתחברת...`, `נסי שוב`, `הצטרפי →`) + `welcome` was generic `Welcome` | neutralized + S9-aligned: `welcome` `טוב לראות אותך שוב` / `Good to see you again` · `value_save` `שמרו עסקים` · `value_rate` `כתבו ביקורות` / `Write reviews` · `value_publish` `הוסיפו את העסק שלך` (**supersedes MEH-751 row** — was `הוסיפי…` feminine, now neutral; EN unchanged `Add your business`) · `password_required` `הזינו סיסמה` · `password_show/hide` noun phrase `הצגת/הסתרת סיסמה` · `submitting` `רגע, נכנסים…` / `One moment, signing in…` · `generic_error` `…נסו שוב` · `register_cta` `הצטרפו →` (arrow preserved per Linear note — RTL forward convention in this file) | ADR-014 HYBRID — UI chrome is gender-neutral. Aligns /login to S9 design (MEH-131) ahead of the visual port so it stays visual-only. Zero JSX. Zero copy-of-verification (not blocked by MEH-742). EN mirror updates only where HE meaning shifted (welcome / value_rate / submitting); other EN strings were already neutral. |
+| 2026-06-05 | MEH-752 | /login `auth.oauth.*` 3 keys (he+en) | `…נסי בעוד דקה` / `…נסי שוב` / `…היכנסי כדי לנהל אותו` | `…נסו בעוד דקה` / `…נסו שוב` / `…היכנסו כדי לנהל אותו` | Same ADR-014 sweep for the OAuth error/conflict strings that surface from `/login`. EN already neutral — no change. |
+| 2026-06-05 | MEH-751 | /login `auth.login.value_publish` (he+en) | `פרסמי מטבח ביתי` / `Publish your home kitchen` | `הוסיפי את העסק שלך` / `Add your business` | DNA LOCK violation: "מטבח ביתי" = forbidden home-cook framing (legal-exposure family). Hotfix only; full feminine→neutral sweep of `auth.login.*` deferred to S9 copy wave (ADR-014). **🔁 Superseded 2026-06-05 by MEH-752 — HE value `הוסיפי…` → `הוסיפו…` (neutral plural); EN unchanged.** |
+| 2026-06-05 | MEH-751 | /login `seo.login.og_description` (he+en) | `…ולתמוך ביצרניות איכותיות.` / `…support quality producers.` | `…ולתמוך בעסקים קטנים מהסביבה שלך.` / `…support small local businesses.` | Double LOCK violation: `יצרניות` (must be "בית עסק", not "יצרן") + `איכותיות` (balloon word, MEH-579 over-claim guard). |
+| 2026-06-05 | MEH-750 | /about H1 + hero sub | `…עכשיו לא.` | `…עכשיו כבר לא` + NEW sub `אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.` | S8: drop terminal period on H1; add hero subheading rendered under H1. |
+| 2026-06-05 | MEH-750 | /about Sapir story (greeting + p1–p5, −caption2) | old narrative + greeting `היי, אני ספיר.` | locked S8 narrative (word-of-mouth/whisper arc); greeting `היי, אני ספיר` (no period); `story.caption2` deleted | S8: stronger first-person narrative; greeting loses terminal period; 3rd caption dropped (kept caption1+caption3). |
+| 2026-06-05 | MEH-750 | /about parallax quote | `…ומאיפה קונים — חשוב יותר` | `אוכל טוב — לא שומרים לעצמנו` | S8: old quote ranked source over food (nutritional contradiction); new line echoes brand idiom. |
+| 2026-06-05 | MEH-750 | /about benefits (heading + titles + trust body) | titles `אוכל אמיתי קרוב אלייך`/`לסמוך…`/`לעזור…`; trust `רק בתי עסק מאומתים…` | NEW heading `למה מהמקור`; titles `קרוב אלייך`/`אפשר לסמוך`/`קהילה מקומית`; trust drops "מאומתים" | S8 copy wave; trust.body over-claim removal — swallows MEH-746 (MEH-742 gate + MEH-579). |
+| 2026-06-05 | MEH-750 | /about testimonials | `מה אומרים עלינו` / `הסיפורים מגיעים בקרוב` | `הסיפורים שעוד ייכתבו כאן` / `המקום הזה שמור לסיפורים שלכן.` | S8: stop promising testimonial content that doesn't exist yet. |
+| 2026-06-05 | MEH-750 | /about CTA heading + values.closing | `יש לך בית עסק? בואי אלינו.` + closing `אם זו את — בעלת עסק…` | `בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.` (closing DELETED) | S8: merge duplicate business invites (closing+CTA were adjacent); neutral homograph `בנית` echoes tagline (ADR-011); drops gendered `בעלת עסק` exclusion (ADR-014 recruit-neutral). |
+| 2026-06-05 | MEH-472 | Categories heading | `גלי לפי קטגוריה` | `גלו לפי קטגוריה` | ADR-014:80 ambiguous-surface fallback → UI rules (gender-neutral). Sapir adjudicated section headings to the UI side → feminine-singular `גלי` → plural `גלו`. EN heading is proper English (`Browse by category`), untouched. |
 | 2026-05-16 | MEH-620 | Hero subtitle | `בתי עסק מקומיים, כולם במקום אחד.` | `ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.` | MEH-522 winner κ — H1↔Sub arc closes ("לא ידעת איפה" → "אנחנו כבר בדקנו"). |
 | 2026-05-16 | MEH-605 | Home CTA body | `...הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` | Removes "דירקטורי" (marketplace word) + partial category list per Brand Hub v1.1 §8. |
 | 2026-05-16 | MEH-606 | Categories subhead | `ישר מבית העסק — בלי מתווכים` | `כל קטגוריה — בית עסק אחר, סיפור אחר.` | Drops saturated formula (5/7 Israeli competitors use a variant per Sub 2 Anti-pattern 1). |
@@ -474,6 +558,109 @@ should never have to know what an industry term means.
 **No over-specific examples:** Concrete examples must work across
 producer types. "גבינות עזים תל אביב ב-9 בערב" locks out anyone not
 selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי בגוגל" instead.
+
+## Section 7 — ADR-022 two-tier copy (מאומת / מוצהר)
+
+> Source: MEH-758 (gate 1) · ADR-022 (PR #949 `ea42821`) · strings locked
+> 2026-06-06 (S11 FINAL, Sapir). Consumer language is **מאומת / מוצהר only** —
+> `מורשה`/`מורשים` is an anti-pattern (BRAND.md §7). Keys created in this PR;
+> badge UI consumes them in the S6/S534 port (not rendered yet).
+
+### Registration success — tier trust line
+| Field | Value |
+|---|---|
+| **Current (he)** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.` |
+| **en** | `Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.` (⏳ en pending Sapir review) |
+| **i18n key** | `auth.register.producer.success.tier_trust` |
+| **Status** | 🕐 key-only — pending S7 register port (06A/06B) to render; Sapir closes after mobile smoke |
+| **Why** | Replaces the pre-ADR-022 "checks every business" over-claim (which no longer existed verbatim in code). Per-tier honest framing: personal vetting for all; the מאומת badge is document-gated. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — license
+| Field | Value |
+|---|---|
+| **Current (he)** | `רישיון הוגש ונבדק בתאריך {date}` |
+| **en** | `License submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_license` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; license variant. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Verified badge tooltip — exemption
+| Field | Value |
+|---|---|
+| **Current (he)** | `אישור פטור הוגש ונבדק בתאריך {date}` |
+| **en** | `Exemption approval submitted and reviewed on {date}` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.verified_tooltip_exemption` |
+| **Status** | 🕐 key-only — badge UI port consumes (`{date}` ICU param) |
+| **Why** | Tier-1 מאומת evidence line; exemption variant (legally-exempt categories that still filed an official exemption/registration doc). Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Declared-tier explainer (no badge)
+| Field | Value |
+|---|---|
+| **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
+| **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
+| **i18n key** | `producer.badge.declared_explainer` |
+| **Status** | 🕐 key-only — badge UI port consumes |
+| **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
+
+### Gate 3 — /terms §5 two-tier (MEH-760)
+
+> Legal surface — `מורשה`/`מורשים` anti-pattern does NOT apply here (ADR-022).
+> All five strings: **v1 — pending lawyer (Brief Q1/Q3)**; a lawyer revision is a
+> follow-up edit, launch is not blocked on it. en ⏳ pending Sapir review. Section
+> heading `terms.sections.verified.title` = `5. אימות ושכבות הצגה` (was `5. עסקים מאומתים`).
+> Operator block (`terms.sections.operator`, טופז שנפ / MEH-736) is byte-identical — untouched.
+
+| Key | he | Status |
+|---|---|---|
+| `terms.sections.verified.intro` (5.1) | `כל בית עסק במהמקור עובר בדיקת קבלה ידנית … ואינה מהווה ערובה … לעמידת בית העסק בכל דין.` | 🕐 v1 — pending lawyer (Brief Q1/Q3) |
+| `terms.sections.verified.verified_badge_title` (5.2 h) | `תג ״מאומת״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.verified_badge_body` (5.2) | `בית עסק שהציג … מסמך רישוי או אישור פטור רשמי … יסומן בתג ״מאומת״ … התג ניתן ללא תשלום.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_title` (5.3 h) | `בית עסק ״מוצהר״` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.declared_body` (5.3) | `בית עסק הפועל בקטגוריה הפטורה לפי דין … על יסוד הצהרה מחייבת … האחריות … על בית העסק בלבד.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_title` (5.4 h) | `שיפוי` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.indemnity_body` (5.4) | `בית עסק ישפה את מפעילת האתר בגין כל נזק, הוצאה או דרישה … מבלי לגרוע מכל סעד אחר.` | 🕐 v1 — pending lawyer |
+| `terms.sections.verified.no_supervision` (5.5) | `אין באמור בסעיף זה כדי להטיל על מפעילת האתר חובת פיקוח מתמשכת על בתי העסק.` | 🕐 v1 — pending lawyer |
+
+**Why:** Brief §3 — the pre-ADR-022 §5 ("בדיקה ראשונית של קריטריוני הפלטפורמה") defined no
+verification scope (Q3.1 over-broad representation) and didn't distinguish tiers (Q3.2).
+v1 defines exact scope per tier (what IS / is NOT checked), a declaration-only disclaimer for
+מוצהר, an indemnity clause (5.4) drafted narrowly to limit תנאי-מקפח exposure (חוק החוזים האחידים),
+and a no-ongoing-supervision carve-out (5.5). Locked verbatim by Sapir 2026-06-06; lawyer opinion
+outstanding. Source MEH-760 / ADR-022 / Brief Q1+Q3.
+
+### Gate — /about/process page (MEH-534, S11 Direction D, 2026-06-10)
+
+> Standalone editorial page `/about/process` ("תהליך הקבלה"). he = the S11
+> copy-table draft locked by Sapir, ported **verbatim** into the `process.*`
+> namespace. **en = ⏳ pending Sapir review** (design he-only; MEH-758
+> precedent — every `process.*` en value is a draft translation). Tier words
+> **מאומת / מוצהר only**. "בית עסק", never "יצרן". Voice ADR-014 hybrid
+> (headings/CTA neutral plural; narrative feminine).
+
+| Key | he | Status |
+|---|---|---|
+| `process.hero.h1` | `כל בית עסק כאן עובר דרכנו — היכרות אישית.` | ✅ **LOCKED verbatim** (gold `<em>` on `היכרות אישית`; stored with `<em>` rich-tag, visible text matches the lock char-for-char) |
+| `process.closing.quote` | `אני רוצה לדעת ממי אני קונה. בניתי מקום שבו גם אתם יודעים.` | ✅ **LOCKED verbatim** |
+| `process.closing.attrib` | `— ספיר` | ✅ **LOCKED verbatim** |
+| `process.hero.eyebrow` / `.sub` | `תהליך הקבלה` / `לפני שעסק עולה לאתר…` | ⏳ draft (Sapir-as-drafted) |
+| `process.steps.s1–4.*` + `badge_aside_*` | 4-step process + the "separate optional badge" aside | ⏳ draft (s4 MUST stay separate from badge) |
+| `process.everyone.*` | `מה נבדק אצל כל בית עסק` + 3 cards (זהות · סיפור · שיחה) | ⏳ draft |
+| `process.badge.oneliner` | `תג "מאומת" אומר דבר אחד… ואנחנו בדקנו אותו.` | ⏳ draft (gold `<em>` on closing clause) |
+| `process.badge.absence_h3 / _body / _kicker` | `אין תג מאומת? זה לא אומר פחות` / explainer / `התג מסמן מסמך נוסף — לא אמון נוסף.` | ⏳ draft — **3 separate keys, NOT collapsed** |
+| `process.matrix.*` (groupA/B + 16 cats + caveat) | published criteria matrix by category | ⏳ draft (honey = 3-license row; candles = `מוצהר`-only, no badge path) |
+| `process.cta.*` | `יש לך בית עסק שמגיע לו בית?` + `ספרו לנו על העסק` → `/register/producer` | ⏳ draft |
+| `process.tier.verified` / `.declared` | `מאומת` / `מוצהר` | ⏳ draft (tag labels, page-wide) |
+| `process.crosslink_from_about` | `כך אנחנו מכירות כל בית עסק` (/about → /about/process link) | ⏳ draft |
+| `nav.footer.process` | `תהליך הקבלה` (footer nav link — only non-`process.*` key added) | ⏳ draft |
+
+**Reused (not recreated):** the illustrative badge tooltip uses the existing
+`producer.badge.verified_tooltip_license` (`{date}` → literal `5.6.2026` here).
+
+**Cross-ref:** `process.badge.absence_body` mirrors the tier-2 framing of
+`producer.badge.declared_explainer` — **sync if the tier-2 wording changes
+(lawyer/ADR-022).** Kept as a separate string (not a shared key) so the page's
+editorial voice can diverge from the per-producer badge surface; the two must
+stay semantically aligned on the "exempt ≠ less trustworthy" message.
 
 ## Brand phrasings
 

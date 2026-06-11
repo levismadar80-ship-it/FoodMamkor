@@ -21,6 +21,10 @@ from tests.conftest import auth_header, make_category, make_user
 
 BAKERY = "לחמים ואפייה"
 VEGGIES = "ירקות"
+# MEH-743: honey split from "שמנים ודבש"; honey requires a license per
+# צו הפיקוח, תשל"ז-1977, olive-oil-only does not.
+HONEY = "דבש"
+OILS = "שמנים"
 LICENSE_REQUIRED_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
 
 
@@ -34,6 +38,7 @@ def _register_payload(category_ids, *, license_number, email="x@example.com"):
         "phone": "0501234567",
         "category_ids": category_ids,
         "primary_contact_method": "whatsapp",
+        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
     }
     if license_number is not None:
         payload["producer_license_number"] = license_number
@@ -198,3 +203,47 @@ class TestAdminProducerLicense:
         )
         assert resp.status_code == 422, resp.text
         assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+
+
+class TestRegisterProducerHoneyLicense:
+    """MEH-743 — honey is license-required; olive-oil alone is not."""
+
+    def test_honey_without_license_422(self, client, db):
+        honey = make_category(db, name=HONEY, emoji="🍯")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [honey.id],
+                license_number=None,
+                email="honey1@example.com",
+            ),
+        )
+        assert resp.status_code == 422, resp.text
+        assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+
+    def test_honey_with_license_200(self, client, db):
+        honey = make_category(db, name=HONEY, emoji="🍯")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [honey.id],
+                license_number="1234567",
+                email="honey2@example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_oils_only_without_license_200(self, client, db):
+        """Olive-oil-only producers stay license-optional (exempt under
+        4.6ו plant-based < 5t/yr; the split is precisely so honey can be
+        required without sweeping in oil."""
+        oils = make_category(db, name=OILS, emoji="🫒")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [oils.id],
+                license_number=None,
+                email="oils@example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text

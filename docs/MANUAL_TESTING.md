@@ -3,6 +3,47 @@
 
 ---
 
+## MEH-534 — /about/process "תהליך הקבלה" (S11 Direction D)
+
+New standalone editorial page at `/about/process`. he copy locked; en is draft
+(⏳ pending Sapir). Badge shown is illustrative (no live producer). Test on
+mobile widths **375 / 360 / 390** and desktop.
+
+- [ ] **Route renders** — פתחי `/he/about/process` ו-`/en/about/process` — שני הדפים נטענים (SSG), כותרת הטאב = "תהליך הקבלה | מהמקור" / "Our Acceptance Process | Mehamakor"
+- [ ] **Hero** — H1 `כל בית עסק כאן עובר דרכנו — היכרות אישית.` עם "היכרות אישית" בזהב נטוי (Cormorant) — ללא חיתוך, RTL נכון
+- [ ] **4 steps** — מובייל: רשימה אנכית עם עיגולי מספר 01–04; דסקטופ: 4 עמודות. אייקונים: מטוס/שיחה/סיכה/חנות. כיתוב "תג מאומת שלב נפרד" מופיע מתחת לשלבים
+- [ ] **What's checked** — 3 כרטיסים (זהות · סיפור · שיחה) על רקע `background-alt`, מספרי זהב 01–03
+- [ ] **Badge section** — צ'יפ "מאומת" עם אייקון חותם + טקסט tooltip "רישיון הוגש ונבדק בתאריך 5.6.2026" (התאריך LTR לא מתהפך); בלוק "אין תג מאומת? זה לא אומר פחות" עם kicker זהב
+- [ ] **Matrix — group A** — 8 קטגוריות (בשר/חלב/לחם/מוכנים/מותססים/משקאות/שוקולד/דבש), כולן תג "מאומת"; שורת דבש = "שלושה רישיונות יחד…"
+- [ ] **Matrix — group B** — 8 קטגוריות, כל אחת "מוצהר או מאומת" חוץ מ**נרות וארומה** = "מוצהר" בלבד + הערה "אין מסלול לתג…"; ירקות/פירות מציגים שורת "מוצהר: הצהרה שזו תוצרת…"
+- [ ] **Closing** — ציטוט ספיר `אני רוצה לדעת ממי אני קונה…` נטוי, eyebrow "מהמקור", קרדיט "— ספיר"
+- [ ] **CTA** — כפתור "ספרו לנו על העסק" → `/register/producer`; טקסט משני "ממשיכים לטופס ההרשמה"
+- [ ] **Footer link** — "תהליך הקבלה" מופיע בעמודת הניווט בפוטר → מוביל ל-`/about/process`
+- [ ] **Cross-link from /about** — בתחתית עמוד `/about` יש קישור "כך אנחנו מכירות כל בית עסק" → `/about/process`
+- [ ] **RTL + tap targets** — כל הסקשנים מיושרים RTL, אין גלישה אופקית ב-360px, קישור CTA ≥44px, focus ring נראה
+
+---
+
+## MEH-685 — Toast semantic icon API (Category D2 emoji strip)
+
+All toasts now render a Phosphor icon (no emoji). Icon sits at the **start** of
+the toast (right side in he/RTL), inheriting the white text color.
+
+- [ ] **Favorite — save (first time)** — לחצי ❤ על עסק (פעם ראשונה במכשיר) — toast עם
+  אייקון לב מלא (HeartStraight) + "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט", בלי אימוג'י
+- [ ] **Favorite — save (repeat)** — שמירה נוספת — toast לב מלא + "נשמר למועדפים"
+- [ ] **Favorite — remove** — הסרה ממועדפים — toast אייקון ✓ ברירת־מחדל + "הוסר מהמועדפים"
+- [ ] **Follow** — מעקב אחרי עסק — toast פעמון (Bell) + "מעכשיו תקבלי עדכונים…", בלי 🔔
+- [ ] **Share / copy link** — העתקת קישור (ShareButton) — toast אייקון Check + "הקישור הועתק"
+- [ ] **Review saved** — שליחת ביקורת — toast כוכב (Star) + "הביקורת שלך נשמרה", בלי ⭐
+- [ ] **Publish neighbor product** — פרסום מוצר שכן — toast עלה (Leaf) + "המוצר פורסם!", בלי 🌿
+- [ ] **Under review** — מוצר שסומן בבדיקה — toast זכוכית מגדלת (MagnifyingGlass) + "…בבדיקה", בלי 🔍
+- [ ] **Error toast** — כשל רשת/פעולה — toast אדום + אייקון WarningCircle
+- [ ] **Info + action (session expiry)** — אחרי פג תוקף JWT — toast info + אייקון Info +
+  לינק "התחברי" שעובד
+- [ ] **RTL position (he)** — בכל ה־toasts: האייקון בצד ימין (start), צמוד לטקסט עם gap, לבן
+- [ ] **EN locale** — אותם toasts ב־/en — אייקונים זהים, טקסט אנגלי בלי אימוג'י
+
 ## MEH-731 — navbar homepage-state (locale-path) + verify-banner relocation
 
 - [ ] בית `/he` בראש (לפני גלילה) — navbar **שקוף** + לוגו/קישורים בהירים מעל ה-hero — תוצאה: לא cream pill
@@ -278,7 +319,7 @@ Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen sect
 
 ## Producer license number (MEH-530)
 
-Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)**. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
 
 - [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
 - [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
@@ -293,6 +334,8 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
 - [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
+- [ ] **MEH-743 honey required** — בחרי "דבש" → השדה "מספר רישיון יצרן (חובה)" מופיע inline. submit ללא ערך → 422 "מספר רישיון יצרן חובה לקטגוריה זו". submit עם 1234567 → 200 OK.
+- [ ] **MEH-743 olive-oil only optional** — בחרי "שמנים" בלבד → השדה לא מופיע, במקומו toggle אופציונלי. submit ללא ערך → 200 OK.
 
 ---
 
@@ -1689,3 +1732,11 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - `favorites_unauth` is expected to return 401 on every request — measures auth-rejection latency.
 - p99 > 5s or `X-Railway-Fallback: true` headers = Railway throttling; consider plan upgrade before launch.
 | 4 — Documentation | THIS PR | — |
+
+## UIS Pattern A (MEH-228) — admin double-submit protection
+
+- [ ] `/admin/reports` — לחיצה כפולה מהירה על "השעה"/"אשר"/"הסר"/"שחזר" — תוצאה: הפעולה רצה פעם אחת, הכפתור מושבת בזמן הבקשה
+- [ ] `/admin/users` — לחיצה כפולה על "חסום/בטל חסימה" — תוצאה: בקשה אחת, כפתור מושבת בזמן הריצה
+- [ ] `/admin/content` (מוצרי בית מוסתרים) — לחיצה כפולה על "שחזר"/"מחק" — תוצאה: בקשה אחת
+- [ ] `/admin/producers` — לחיצה כפולה על "אשר"/"השעה"/"שגרירה"/"מחק" — תוצאה: בקשה אחת, הכפתור מושבת
+- [ ] כשל רשת על כל פעולת אדמין מהנ"ל — תוצאה: toast שגיאה בעברית (לא כשל שקט)

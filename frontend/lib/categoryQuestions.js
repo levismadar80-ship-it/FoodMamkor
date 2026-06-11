@@ -25,7 +25,13 @@ export const CATEGORY_QUESTIONS = {
     "איך מזמינים?",
     "יש משלוח?",
   ],
-  "שמנים ודבש": [
+  // MEH-743: honey split off; same generic Q-set duplicated for both.
+  "שמנים": [
+    "מה יש במלאי?",
+    "איך מזמינים?",
+    "יש משלוח?",
+  ],
+  "דבש": [
     "מה יש במלאי?",
     "איך מזמינים?",
     "יש משלוח?",

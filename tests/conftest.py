@@ -46,6 +46,15 @@ from app.models.models import (  # noqa: E402
 )
 
 
+def pytest_configure(config):
+    # MEH-214: register the `fuzz` marker so `pytest -m fuzz` / `-m "not fuzz"`
+    # work and unregistered-marker warnings stay clean. The schemathesis
+    # property-based suite (tests/test_fuzz_schemathesis.py) carries it.
+    config.addinivalue_line(
+        "markers", "fuzz: schemathesis property-based API fuzz tests (slow)"
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _bootstrap_schema():
     """Build a clean schema once per test session."""
@@ -235,6 +244,9 @@ def valid_producer_register_payload() -> dict:
         "producer_name": "חוות הבדיקה",
         "category_ids": [],
         "primary_contact_method": "whatsapp",
+        # MEH-759 (ADR-022 gate 2): binding declaration is mandatory for a
+        # successful registration; the handler 422s when falsy.
+        "declaration_accepted": True,
     }
 
 

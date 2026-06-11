@@ -146,7 +146,7 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text" // rtl-ok: eye toggle inside dir="ltr" input
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-fg-muted hover:text-text" // rtl-ok: eye toggle inside dir="ltr" input
               aria-label={showConfirm ? t("auth.passwordRecovery.reset.toggle_hide") : t("auth.passwordRecovery.reset.toggle_show")}
             >
               {showConfirm ? <EyeSlash size={18} /> : <Eye size={18} />}

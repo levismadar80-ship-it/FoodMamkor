@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 
 export default function AdminCategoryRequestsPage() {
   const t = useTranslations("admin");
+  const locale = useLocale();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -20,7 +22,7 @@ export default function AdminCategoryRequestsPage() {
 
   const STATUS_COLORS = {
     pending: "bg-yellow-100 text-yellow-800",
-    approved: "bg-green-100 text-green-800",
+    approved: "bg-green-100 text-green-700",
     rejected: "bg-red-100 text-red-800",
     merged: "bg-blue-100 text-blue-800",
   };
@@ -29,7 +31,7 @@ export default function AdminCategoryRequestsPage() {
     api
       .get("/admin/category-requests")
       .then((r) => setGroups(r.data))
-      .catch(() => showToast(t("category_requests.load_error"), "error"))
+      .catch(() => showToast.error(t("category_requests.load_error")))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -46,9 +48,9 @@ export default function AdminCategoryRequestsPage() {
           ),
         }))
       );
-      showToast(t("category_requests.status_updated"), "success");
+      showToast.success(t("category_requests.status_updated"));
     } catch {
-      showToast(t("category_requests.update_error"), "error");
+      showToast.error(t("category_requests.update_error"));
     } finally {
       setActionLoading(null);
     }
@@ -110,7 +112,7 @@ export default function AdminCategoryRequestsPage() {
                     {req.producer_id ? req.producer_id.slice(0, 8) + "…" : "—"}
                   </td>
                   <td className="px-5 py-3 text-xs text-fg-muted">
-                    {new Date(req.created_at).toLocaleDateString("he-IL")}
+                    {formatEventDate(req.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                   </td>
                   <td className="px-5 py-3">
                     <span

@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeSlash, Heart, House, Leaf, Star } from "@phosphor-icons/react";
+import Image from "next/image";
+import { EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -12,18 +13,29 @@ import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
- * Login page (docs/archive/FEEDBACK_FIXES.md fix 2).
+ * Module:   LoginClient
+ * Purpose:  /login surface — S9 "Two Doors" (Direction C) editorial port.
+ *           Visual/structural restyle only; auth flow (JWT, Google/Apple
+ *           OAuth, validation, error handling) is untouched.
+ * Does NOT: own SEO/metadata (see page.js) or OAuth widget styling
+ *           (GoogleAuthButton.jsx / AppleAuthButton.jsx — vendor primitives).
+ * Related:  frontend/messages/he.json → auth.login.* / auth.oauth.* (copy
+ *           locked MEH-751/MEH-752); design-reference S9 mock.
+ * History:  MEH-211 (S9 design); MEH-131 (S9 port — social-first order, open
+ *           fields on cream, no white card; supersedes the old form-first
+ *           FEEDBACK_FIXES fix 2, re-synced by S9 2026-06-05); MEH-788
+ *           (split-screen — Cloudinary hero pane + brand overlay; register
+ *           de-boxed to an editorial text link).
+ * Touches:  Cloudinary (login/hero-produce-crate, via optimizeCloudinary).
  *
- * Layout order per the brief:
- *   1. Leaf-in-circle brand mark
- *   2. Heading "כניסה למהמקור" + "ברוכה הבאה 🌱"
- *   3. Email + password form FIRST
- *   4. "— או —" divider
- *   5. Google + Apple buttons BELOW
- *
- * The previous version had OAuth on top. Flipping the order per spec.
+ * Layout: desktop = two panes (form START/right · image END/left); mobile =
+ * image top band → form below. Form pane (top→bottom): gold eyebrow + small
+ * Frank Ruhl welcome headline → social-first auth (Google → Apple) → "או" →
+ * email + password (eye toggle + adjacent forgot link) → green submit →
+ * understated register text link. Brand mood lives in the image overlay.
  */
 export default function LoginClient() {
   return (
@@ -59,7 +71,7 @@ function LoginPageBody() {
 
   useEffect(() => {
     if (params.get("reset") === "1") {
-      showToast(t("reset_success"), "success");
+      showToast.success(t("reset_success"));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -85,6 +97,14 @@ function LoginPageBody() {
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
+  // MEH-788: split-screen hero image. f_auto,q_auto via the helper; object-cover
+  // crops to each pane (tall on desktop, top band on mobile) — no baked ar so the
+  // single asset serves both layouts without distortion.
+  // REUSES: components/HomeProductCard.jsx:26 (optimizeCloudinary + next/image fill)
+  const heroSrc = optimizeCloudinary(
+    "https://res.cloudinary.com/dfzpscjks/image/upload/login/hero-produce-crate.jpg"
+  );
+
   // Inline field-level validation.
   // onBlur flips the `*Touched` state; error / valid states below only
   // activate after the user has interacted with the field, so the form
@@ -103,147 +123,51 @@ function LoginPageBody() {
   const formIsValid = validateEmail(email) && password.length >= 1;
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-[20px] p-8 sm:p-10 w-full max-w-md border border-border shadow-[0_4px_32px_rgba(46,104,83,0.08)] text-center">
-        {/* Brand mark + heading */}
-        <div className="mb-6">
-          <div
-            className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
-          </div>
-          <h1 className="font-headline-md text-2xl font-bold text-text mb-1">
+    <div className="min-h-[calc(100vh-180px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
+
+      {/* Image pane — END (left) on desktop, top band on mobile (MEH-788) */}
+      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+        <Image
+          src={heroSrc}
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+        />
+        {/* scrim — keeps the overlay AA-readable over any part of the photo */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/30 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
+          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50">
+            {t("hero_overlay")}
+          </p>
+        </div>
+      </div>
+
+      {/* Form pane — START (right) on desktop */}
+      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
+        {/* S9 "Two Doors": open fields on cream — no floating white auth card. */}
+        <div className="w-full max-w-[416px] mx-auto grid gap-6">
+
+        {/* Head — gold eyebrow rule + Frank Ruhl 900 welcome headline */}
+        <div className="grid gap-3 text-start">
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em]">
+            <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("title")}
+          </span>
+          {/* MEH-131: utility-login scale, not /about hero — headline-lg token (32px/900) */}
+          <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text">
+            {t("welcome")}
           </h1>
-          <p className="text-fg-muted text-sm">{t("welcome")}</p>
         </div>
 
-        {/* Value-prop strip */}
-        <div className="flex justify-center gap-5 mb-5 text-fg-muted" style={{ fontFamily: "Frank Ruhl Libre, serif", fontSize: "14px" }}>
-          <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("value_save")}</span>
-          <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("value_rate")}</span>
-          <span className="inline-flex items-center gap-1"><House size={14} className="text-current" />{t("value_publish")}</span>
-        </div>
-
-        {/* Email + password form — FIRST per spec */}
-        <form onSubmit={handleSubmit} className="space-y-3 text-right mb-5">
-          <div>
-            <label htmlFor="login-email" className="block text-sm font-medium mb-1 text-right">
-              {t("email_label")}
-            </label>
-            <input
-              id="login-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setEmailTouched(true)}
-              required
-              aria-invalid={emailInvalid || undefined}
-              className={`w-full border rounded-[10px] px-4 py-3 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
-                emailInvalid
-                  ? "border-red-400"
-                  : emailValid
-                    ? "border-primary"
-                    : "border-border focus:border-primary"
-              }`}
-              dir="ltr"
-            />
-            {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("email_invalid")}</p>
-            )}
-            {emailValid && (
-              <p className="text-xs text-primary mt-1 text-right">{t("valid")}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="login-password" className="block text-sm font-medium mb-1 text-right">
-              {t("password_label")}
-            </label>
-            {/* Eye toggle — positioned at the END of the LTR password
-                field (physical right). `pr-11` reserves space so typed
-                text never overlaps the icon. */}
-            <div className="relative">
-              <input
-                id="login-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onBlur={() => setPasswordTouched(true)}
-                required
-                minLength={8}
-                aria-invalid={passwordInvalid || undefined}
-                className={`w-full border rounded-[10px] pr-11 pl-4 py-3 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition ${
-                  passwordInvalid
-                    ? "border-red-400"
-                    : passwordValidLength
-                      ? "border-primary"
-                      : "border-border focus:border-primary"
-                }`}
-                dir="ltr"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                // eslint-disable-next-line no-restricted-syntax -- rtl-ok: eye toggle inside dir="ltr" input
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full p-1"
-                aria-label={showPassword ? t("password_hide") : t("password_show")}
-                aria-pressed={showPassword}
-                tabIndex={0}
-              >
-                {showPassword ? (
-                  <EyeSlash size={20} weight="regular" aria-hidden="true" />
-                ) : (
-                  <Eye size={20} weight="regular" aria-hidden="true" />
-                )}
-              </button>
-            </div>
-            {passwordInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-right" role="alert">{t("password_required")}</p>
-            )}
-            {passwordValidLength && (
-              <p className="text-xs text-primary mt-1 text-right">{t("valid")}</p>
-            )}
-            <div className="text-end mt-1">
-              <Link href="/forgot-password" className="text-xs text-fg-muted hover:text-primary transition">
-                {t("forgot_password")}
-              </Link>
-            </div>
-          </div>
-          {error && (
-            <p className="text-red-500 text-sm text-right" role="alert">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading || !formIsValid}
-            className="w-full bg-primary text-white py-3.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            {loading ? (
-              <span className="inline-flex items-center gap-2">
-                <ButtonSpinner />
-                {t("submitting")}
-              </span>
-            ) : (
-              t("submit")
-            )}
-          </button>
-        </form>
-
-        {/* OAuth block — only when something is configured, BELOW the form */}
+        {/* Social-first auth (S9 locked order): Google → Apple, then "או". */}
         {oauthAvailable && (
           <>
-            <div className="relative my-5">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-fg-muted">{t("or")}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5">
               {googleConfigured && (
                 <GoogleAuthButton
                   onSuccess={() => router.push(redirectTo)}
@@ -257,15 +181,142 @@ function LoginPageBody() {
                 />
               )}
             </div>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-background text-fg-muted">{t("or")}</span>
+              </div>
+            </div>
           </>
         )}
 
-        <p className="text-center text-sm text-fg-muted mt-6">
+        {/* Email + password — labels above, 54px field rhythm */}
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <div className="grid gap-2 text-start">
+            <label htmlFor="login-email" className="text-[13.5px] font-semibold text-text">
+              {t("email_label")}
+            </label>
+            {/* dir=ltr wrapper → logical start/end resolve to left/right for the
+                LTR email value, so adornment + padding stay aligned. */}
+            <div dir="ltr" className="relative">
+              <span className="absolute start-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none" aria-hidden="true">
+                <EnvelopeSimple size={18} weight="regular" />
+              </span>
+              <input
+                id="login-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
+                required
+                aria-invalid={emailInvalid || undefined}
+                className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-4 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                  emailInvalid
+                    ? "border border-red-400"
+                    : emailValid
+                      ? "border border-primary"
+                      : "border border-border focus:border-primary"
+                }`}
+              />
+            </div>
+            {emailInvalid && (
+              <p className="text-xs text-red-500 text-start" role="alert">{t("email_invalid")}</p>
+            )}
+            {emailValid && (
+              <p className="text-xs text-primary text-start">{t("valid")}</p>
+            )}
+          </div>
+
+          <div className="grid gap-2 text-start">
+            {/* label-row: field label at inline-start, forgot link at inline-end */}
+            <div className="flex items-baseline justify-between gap-3">
+              <label htmlFor="login-password" className="text-[13.5px] font-semibold text-text">
+                {t("password_label")}
+              </label>
+              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                {t("forgot_password")}
+              </Link>
+            </div>
+            <div dir="ltr" className="relative">
+              <span className="absolute start-3 top-1/2 -translate-y-1/2 text-primary pointer-events-none" aria-hidden="true">
+                <Lock size={18} weight="regular" />
+              </span>
+              <input
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPasswordTouched(true)}
+                required
+                minLength={8}
+                aria-invalid={passwordInvalid || undefined}
+                className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                  passwordInvalid
+                    ? "border border-red-400"
+                    : passwordValidLength
+                      ? "border border-primary"
+                      : "border border-border focus:border-primary"
+                }`}
+              />
+              {/* rtl-ok: eye toggle pinned to the inline-end of a dir="ltr" field (logical end-, documented exception) */}
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute end-2 top-1/2 -translate-y-1/2 grid place-items-center w-11 h-11 rounded-full text-fg-muted hover:text-primary transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label={showPassword ? t("password_hide") : t("password_show")}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? (
+                  <EyeSlash size={20} weight="regular" aria-hidden="true" />
+                ) : (
+                  <Eye size={20} weight="regular" aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            {passwordInvalid && (
+              <p className="text-xs text-red-500 text-start" role="alert">{t("password_required")}</p>
+            )}
+            {passwordValidLength && (
+              <p className="text-xs text-primary text-start">{t("valid")}</p>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm text-start" role="alert">
+              {error}
+            </p>
+          )}
+
+          {/* Submit — site-standard rounded primary (per "NOT green pill" constraint) */}
+          <button
+            type="submit"
+            disabled={loading || !formIsValid}
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-[10px] px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {loading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <ButtonSpinner />
+                {t("submitting")}
+              </span>
+            ) : (
+              t("submit")
+            )}
+          </button>
+        </form>
+
+        {/* Register — understated editorial text link (no box, no icon) */}
+        <p className="text-center text-sm text-fg-muted">
           {t("no_account")}{" "}
-          <Link href="/register" className="text-primary hover:underline">
+          <Link
+            href="/register"
+            className="font-medium text-accent underline underline-offset-4 decoration-accent/50 hover:decoration-accent transition"
+          >
             {t("register_cta")}
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

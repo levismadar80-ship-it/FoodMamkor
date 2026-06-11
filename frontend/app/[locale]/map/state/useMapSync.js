@@ -212,7 +212,7 @@ export function useMapSync({
       // Zod v4: issues (not errors). Fall back to a generic Hebrew message
       // if the shape ever changes again.
       const msg = geoValidation.error.issues?.[0]?.message || t("map.errors.invalid_search");
-      showToast(msg, "info");
+      showToast.info(msg);
       return;
     }
     const params = { ...chipParams, ...geoValidation.data };

@@ -7,6 +7,13 @@ vi.mock("next/image", () => ({
   default: ({ src, alt }) => <img src={src} alt={alt} />,
 }));
 
+// MEH-753 (#976) added `useLocale()` to HomeProductCard for locale-aware dates.
+// Mock next-intl per the established card-test precedent (RecipeCard.test.jsx) so
+// the render has an intl context (otherwise: "No intl context found").
+vi.mock("next-intl", () => ({
+  useLocale: () => "he",
+}));
+
 // Mock Cloudinary
 vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (url) => url || null,

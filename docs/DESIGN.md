@@ -11,11 +11,13 @@ colors:
   primary: "#2e6853"
   primary-dark: "#2E4A2E"
   background: "#F5F0E8"
+  background-alt: "#EDE4D2"
   surface: "#FFFFFF"
   text: "#1C1A17"
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#8B6914"
+  honey: "#C8821E"
   border: "#E5DFD3"
   green-50: "#EAF3DE"
   green-100: "#C8DCB3"
@@ -27,6 +29,7 @@ colors:
   surface-floating: "#FFFEFB"
   action-primary: "#2E6853"
   action-primary-hover: "#2E4A2E"
+  state-selected: "#2E4A2E"
 typography:
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
@@ -160,6 +163,13 @@ instead, and *Do's and Don'ts* for why.
 - **Background (`#F5F0E8`):** Warm cream. The universal page surface. **Never
   pure white as a page background** — pure white reads as "app", cream reads as
   "magazine". This is a hard brand LOCK (BRAND.md §3).
+- **Background-alt (`#EDE4D2`):** A subtle warm step down from `background`, for
+  **editorial tonal separation** — alternating adjacent section blocks by tone
+  instead of by horizontal rules (e.g. the `/about` Benefits + Values pair, MEH-135).
+  This is a *layout/surface* token, **not** a per-state background — the ADR-019
+  prohibition on darker/lighter background tokens applies to component *states*
+  (selected/loading/vacation), which still use opacity on cream. Both tones keep
+  AA: `text`/`fg-muted` pass ≥ 4.5:1 on `background-alt` as well as `background`.
 - **Surface (`#FFFFFF`):** Pure white, allowed **only** for content that sits
   on top of the cream page — cards, modals, inputs. Never the page itself.
 - **Text (`#1C1A17`):** Warm near-black for body copy and headings. Not
@@ -337,6 +347,12 @@ only 6-digit-hex colors, spacing, and type; it silently drops `cubic-bezier`,
   `#1F4C3C` was rejected to avoid a third green; `green-700` (`#2E4A2E`) is
   unchanged. This keeps the documented "hover goes darker (`primary-dark`)"
   rule intact while giving S4 a role-named alias to bind to.
+- Semantic selected-state alias: `state-selected` (= `primary-dark` `#2E4A2E`).
+  The single "selected/active" affordance across the design system — map markers
+  (selected pin border, MEH-763) and filter chips (active chip). **No new green**
+  — selection reuses the existing palette dark per ADR-019, same precedent as
+  `action-primary-hover`. Components bind to this role name so a future tweak to
+  the selected colour is one token edit, not a grep across `/map`.
 - Spacing `5xl` (96px) / `6xl` (128px) — editorial section rhythm above `4xl`.
 - Headline fallback: every Frank Ruhl Libre stack
   (`headline-display`/`-lg`/`-md`) degrades to `"David Libre", Georgia, serif`.

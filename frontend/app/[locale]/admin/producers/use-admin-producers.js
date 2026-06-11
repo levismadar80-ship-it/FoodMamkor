@@ -7,6 +7,9 @@ import api from "@/lib/api";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPage } from "@/lib/pagination";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
+import { useAdminAction } from "@/lib/use-admin-action";
+import { errorMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
 const DEFAULT_PER_PAGE = 25;
@@ -51,26 +54,55 @@ function useProducersData() {
 }
 
 // Sub-hook 2 — admin action handlers (each calls loadAllProducers after).
+// UIS Pattern A (MEH-228): every mutating handler routes through
+// `useAdminAction.run` so a rapid double-click can't double-fire and a
+// failed request surfaces a toast instead of a silent no-op. `isBusy(key)`
+// is threaded out to AdminProducersTable to disable the in-flight button.
 function useProducerActions(loadAllProducers) {
   const t = useTranslations("admin");
-  const quickApprove = async (id) => {
-    await api.post(`/admin/producers/${id}/approve`);
-    loadAllProducers();
-  };
-  const toggleStatus = async (id) => {
-    await api.post(`/admin/producers/${id}/toggle-status`);
-    loadAllProducers();
-  };
-  const deleteProducer = async (id, name) => {
+  const { run, isBusy } = useAdminAction();
+  const quickApprove = (id) =>
+    run(`approve:${id}`, async () => {
+      await api.post(`/admin/producers/${id}/approve`);
+      loadAllProducers();
+    });
+  const toggleStatus = (id) =>
+    run(
+      `status:${id}`,
+      async () => {
+        await api.post(`/admin/producers/${id}/toggle-status`);
+        loadAllProducers();
+      },
+      // MEH-769: a 409 means the producer isn't in a toggleable state
+      // (pending / rejected) — surface the message-key copy that steers the
+      // admin to the approve/reject flow. Any other error falls back to the
+      // central errorMessage toast (MEH-251).
+      (err) =>
+        showToast.error(
+          err?.response?.status === 409
+            ? t("producers.toggle.invalid_transition")
+            : errorMessage(err),
+        ),
+    );
+  const deleteProducer = (id, name) => {
     if (!confirm(t("producers.table.confirm_delete", { name }))) return;
-    await api.delete(`/admin/producers/${id}`);
-    loadAllProducers();
+    // MEH-747: surface delete failures — the 500 was previously swallowed
+    // silently (no catch), so a failed delete looked like a no-op to the admin.
+    return run(
+      `delete:${id}`,
+      async () => {
+        await api.delete(`/admin/producers/${id}`);
+        loadAllProducers();
+      },
+      t("producers.table.delete_error"),
+    );
   };
-  const toggleAmbassador = async (id, current) => {
-    await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
-    loadAllProducers();
-  };
-  return { quickApprove, toggleStatus, deleteProducer, toggleAmbassador };
+  const toggleAmbassador = (id, current) =>
+    run(`ambassador:${id}`, async () => {
+      await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
+      loadAllProducers();
+    });
+  return { quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy };
 }
 
 // Sub-hook 3 — Excel import flow (dry-run preview, then confirm).

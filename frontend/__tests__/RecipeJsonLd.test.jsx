@@ -57,6 +57,9 @@ describe("buildRecipeSchema (schema.org/Recipe JSON-LD)", () => {
     expect(s.prepTime).toBe("PT1H30M");
   });
 
+  // MEH-741: buildRecipeSchema now omits prep/cook duration keys (returns
+  // undefined, not null) when minutes are 0 / missing / out-of-range, so
+  // `"prepTime": null` no longer leaks into the JSON-LD. Un-skipped here.
   it("omits prep/cook duration when minutes are 0 or missing", () => {
     const s = buildRecipeSchema({
       recipe: { ...RECIPE, prep_time_min: null, cook_time_min: 0 },
@@ -81,6 +84,8 @@ describe("buildRecipeSchema (schema.org/Recipe JSON-LD)", () => {
     });
   });
 
+  // MEH-741: fixed alongside the test above — the final object no longer
+  // carries a null-valued `prepTime`, so `"prepTime" in s` is now false.
   it("strips undefined fields from the final object", () => {
     const minimal = {
       title: "t",
