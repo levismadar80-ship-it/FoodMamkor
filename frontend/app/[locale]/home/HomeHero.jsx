@@ -78,18 +78,23 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
             right) desktop. pb leaves room for the search card's seam overlap. */}
         <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-16 md:pb-20 text-white">
           <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-start">
+            {/* MEH-788: above-the-fold hero content must NOT gate visibility on
+                a JS opacity reveal — SSR renders it visible; the y-slide is a
+                pure enhancement (if the enter anim never runs, text still shows).
+                Desktop H1 capped at 60px inline (the token pipeline is generated
+                from docs/DESIGN.md and can't carry a clamp()). */}
             <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
               transition={{ duration: 0.64, ease: EASE_QUART }}
-              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-hero-display max-w-[18ch] mx-auto md:mx-0"
+              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
               style={{ lineHeight: 1.12 }}
             >
               {t("home.hero.title")}
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 24 }}
+              animate={{ y: 0 }}
               transition={{ duration: 0.64, delay: 0.1, ease: EASE_QUART }}
               className="font-body-lg text-body-lg mt-3 text-green-50"
             >
@@ -103,8 +108,8 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           MEH-99 HeroSearch routes to /producers?q=. Lives OUTSIDE the
           overflow-hidden photo section so its dropdown can overflow freely. */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: 16 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
         role="search"
         aria-label={t("home.hero.search_area_label")}
@@ -121,8 +126,8 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
       {/* Actions — on cream (re-coloured from the on-photo treatment): primary
           CTA (גלו עסקים) + near-me (MEH-41) + "how it works". */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: 12 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
         className="mt-5 px-4 flex flex-wrap items-center justify-center gap-3"
       >

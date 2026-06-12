@@ -58,7 +58,6 @@
             "fontWeight": "900"
           }
         ],
-        "hero-display": "clamp(40px, 4.5vw, 60px)",
         "headline-lg": [
           "32px",
           {
