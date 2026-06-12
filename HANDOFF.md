@@ -5,13 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — "יצרן" DNA-LOCK sweep, public UI (DRAFT PR) + discovered Friday-strip i18n bug
+## 2026-06-12 — "יצרן" DNA-LOCK sweep, public UI (PR #1061 MERGED) + discovered Friday-strip i18n bug
 
 **Branch `feature/copy-yatzran-ui-lock-sweep`** off fresh `origin/staging` (divergence 0). Copy-only. Discovery grep: **6 hits, all `he.json`, zero in JSX** (the MEH-599 4-file list was stale). **Fixed (category a, public):** `seo.group_buys.{description,og_description}` he+en (מיצרנים→מבתי עסק / producers→businesses). **Left + listed:** `value_props.discover` (orphan, #1059), `admin.settings.sections.friday_hint` (admin-exempt), `group_buys.friday_delivery.{title,title_alt}` (surfaced — see below). Full classification table in the PR body. Build green; post-grep category-(a) = 0.
 
 **🐛 KNOWN ISSUE (discovered, NOT yet filed — Rule 13e):** `FridayDeliveryStrip.jsx:11,43` reads namespace `producer.friday_delivery`, which is **empty `{}`** in he+en; the real strings (`title`, `title_alt`, `today`) live under `group_buys.friday_delivery`. When fridayMode is on AND `/producers?availability_state=available_today` returns results, the public homepage strip renders next-intl missing-message fallbacks (raw key paths). Latent because the strip early-returns when the producer list is empty. Fix = 2-line namespace arg change OR move the keys — needs its own GREEN PR; ALSO the right moment for the יצרניות→rewrite decision on its title (feminine plural — Sapir's wording call per the sweep spec). Recommend filing a Linear ticket (Rule 27 search first: "friday strip", "friday_delivery", "namespace").
 
-**Pending / next:** DRAFT PR → Sapir reviews the classification table, decides friday_delivery wording + bug-fix ticket → SHE merges.
+**MERGED to staging** (PR #1061, squash `b06df7a`) on Smadar's explicit `MERGE`, all checks green incl. i18n parity (Rule 21 verified). Automated review: clean (0 findings), independently endorsed deferring the strip bug.
+
+**Pending / next:** (a) **Friday-strip bug + יצרניות wording still OPEN** — the merge approved the classification table, not the deferred items: file the Linear ticket (Rule 27 search first) for the `FridayDeliveryStrip.jsx` namespace fix, and fold Sapir's `group_buys.friday_delivery.{title,title_alt}` rewrite into that PR. (b) Orphan-key cleanup (`value_props.*`, login's `value_save/rate/publish`) stays on the i18n-sweep list.
 
 ## 2026-06-12 — MEH-788 /register polish: headline token + strip removal (PR #1059 MERGED)
 
