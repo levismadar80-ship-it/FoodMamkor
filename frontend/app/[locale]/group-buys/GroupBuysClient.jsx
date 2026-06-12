@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitySearch from "@/components/CitySearch";
+
+// MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-35113948, 3732×4089)
+// replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
+// f_auto,q_auto via the helper. CSS cover crops the band; scrim below keeps AA.
+// REUSES: app/[locale]/home/HomeHero.jsx (optimizeCloudinary width cap, #1055)
+const HERO_BG = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/staging/pick-pexels-35113948.jpg",
+  { width: 1600 }
+);
 
 function progressPct(commits, min, max) {
   const denom = max || min;
@@ -122,8 +132,7 @@ export default function GroupBuysClient() {
           className="kenburns-right absolute"
           style={{
             inset: "-5%",
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1542838132-92c53300491e?w=1600&auto=format&q=80&fm=webp)",
+            backgroundImage: `url(${HERO_BG})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
