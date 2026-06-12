@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-789 duplicate caught (Rule 1) · focus-ring follow-up (DRAFT PR #1072) · Playwright-harness limitation recorded
+
+**Parallel-session duplicate — caught, dropped unpushed (Rule 1 worked):** this session was dispatched the same Header top-pill streamline that landed as **#1070** (`f676669`, MEH-789-tagged, merged by a parallel session mid-implementation — see the 5-PR entry below, logged by that session via #1071). The duplicate was detected at Rule-25 pre-push sync; the local branch was dropped **unpushed**, no comparison PR. The two implementations were functionally equivalent: identical avatar gate; #1070 kept the md-gated two-button search pair (vs a single merged button) and `hover:bg-primary/5` (vs `hover:text-primary`) — cosmetic deltas only.
+
+**Focus-ring follow-up — DRAFT PR #1072** (`feature/meh-789-mobile-search-focus-ring` off `0c3f1a0`): the one real residual from the comparison — the `md:hidden` mobile search circle (`Header.jsx:267`) is the only header action without `focus-ring` (its desktop twin got one in #1070); no visible keyboard-focus indicator on a primary action (WCAG 2.4.7). **One class added, nothing else.** Build green, lint 0 errors. `Refs MEH-789`. **Not merged** — Sapir QA gate: בדיקי על https://food-mamkor-git-feature-m-27ee27-levismadar80-ship-its-projects.vercel.app (mobile 375 → Tab to the search circle → visible ring).
+
+**⚠️ Known limitation — in-sandbox screenshot QA is NOT viable (Playwright harness):** the CC cloud sandbox ships Chromium build **1194** (`/opt/pw-browsers`), older than the **1223** the repo's Playwright 1.60 expects, and `cdn.playwright.dev` is **egress-blocked** (same class as the MEH-360 Railway block) so the matching browser can't be fetched. Beyond the version skew: `page.goto` hangs even with `domcontentloaded` + full third-party/chat-widget request blocking, and the local `next start` server wedges (curl 000) after an aborted Playwright run. **Decision (Smadar, 2026-06-12): no reinvestment — MEH-560 + MEH-347 canceled; Sapir's deployed-preview QA is the visual gate.** What stays viable in-sandbox: build, lint, RTL/hex/copy greps, and token-based contrast math (`tailwind.tokens.json`) — e.g. the #1070 quiet search icon verified at `fg-muted` on cream = **6.25:1** (≥ 3:1 non-text).
+
+**Pending / next:** (a) PR #1072 → Sapir mobile QA + merge (session subscribed to PR events). (b) Everything else per the 5-PR entry below (g_auto crop QA, pending assets, S14 copy-Δ) — unchanged.
+
 ## 2026-06-12 — MEH-788/789 home hero imagery arc + header streamline (PRs #1053/#1063/#1065/#1067/#1070 MERGED)
 
 **Five PRs merged to staging this session**, all visual/photo-only (copy untouched), each on Smadar's explicit `MERGE` after deployed-preview QA:
