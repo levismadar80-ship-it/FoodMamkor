@@ -24,8 +24,8 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 /**
  * Hero section — S14 "Photography + Texture" composition (MEH-788 Phase 3).
  *
- * Full-bleed Ken Burns produce photo, height-capped (mobile ~52svh ≤400px /
- * desktop ~52svh 440–520px) — NOT 100vh, and short enough that the bottom-
+ * Full-bleed Ken Burns produce photo, height-capped (mobile ~44svh ≤360px /
+ * desktop ~44svh 380–440px) — NOT 100vh, and short enough that the bottom-
  * overlaid headline + the seam-riding search + CTAs all clear a ~700–800px
  * laptop fold on load (MEH-788: 560px was too tall once search went in-flow).
  * S14 hero discipline: only the FRL-900 headline +
@@ -55,7 +55,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
     <>
       {/* 01 · HERO — capped full-bleed IMG-02 + --scrim-ink. H1 + subtitle only. */}
       <section
-        className="relative isolate w-full overflow-hidden h-[clamp(330px,52svh,400px)] md:h-[clamp(440px,52svh,520px)]"
+        className="relative isolate w-full overflow-hidden h-[clamp(300px,44svh,360px)] md:h-[clamp(380px,44svh,440px)]"
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
