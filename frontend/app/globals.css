@@ -28,32 +28,47 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
-/* ── MEH-788 — hero scrim token (CSS utility layer, hex-token set can't carry
-   alpha gradients — same rationale as the MEH-136 motion utils above).
-   `--scrim-hero` darkens the hero's bottom text band so the white headline +
-   green-50 subtitle stay legible over ANY photo. Warm ink = rgb(28,26,23) ≡
-   the `text` token #1c1a17 (not pure black — brand warmth, per the 2026-06-11
-   design lock), expressed as rgba for the alpha ramp. Bottom-heavy: the photo
-   breathes in the top ~40%; ink holds ≥0.66 through the subtitle band.
+/* ── MEH-788 S14 — texture primitives (CSS utility layer; the hex-token set
+   can't carry alpha gradients / masks — same rationale as the MEH-136 motion
+   utils above). Photography+Texture Hybrid (S14). No new hues. ───────────── */
 
-   WCAG 2.1 — worst-case bright (pure-white) crop, text bottom-anchored on a
-   100vh hero (~800px viewport; positions are layout-derived, not rendered —
-   re-verify on the preview at 375 + short viewports, Skeptic note in PR):
-     · subtitle (#eaf3de green-50) ≈ 38% up → ~0.71 ink → ≈ 5.5:1 ✓ (≥4.5)
-     · headline (#fff, large)      ≈ 52% up → ~0.55 ink → ≈ 4.0:1 ✓ (≥3 large)
-     · CTA/link band (bottom)      → ≥0.80 ink → ≫ 7:1   ✓
-   Re-verify against the real home/hero-produce crop; raise the stops if a
-   live brighter crop drops the subtitle below 4.5:1. */
-.scrim-hero {
+/* `--scrim-ink` (S14): contrast scrim for the hero text band. Warm ink =
+   rgb(28 26 23) ≡ the `text` token #1c1a17 (brand warmth, not pure black).
+   S14 hero discipline: ONLY H1 + subtitle ride this — the search card + CTAs
+   sit on cream below — so the ink can stay bottom-anchored and let the photo
+   breathe up top.
+   AA (S14, worst case = a blown-white highlight under the text, not a smooth
+   gradient): bottom 44% (α ≥ .80) composite ≥ 8:1; H1 top line (~50% on 4:5
+   mobile, α ≥ .70) ≥ 6:1. Re-verify on the real home/hero-produce crop. */
+.scrim-ink {
   background-image: linear-gradient(
     to top,
-    rgba(28, 26, 23, 0.85) 0%,
-    rgba(28, 26, 23, 0.82) 22%,
-    rgba(28, 26, 23, 0.66) 45%,
-    rgba(28, 26, 23, 0.40) 62%,
-    rgba(28, 26, 23, 0.12) 85%,
-    rgba(28, 26, 23, 0) 100%
+    rgb(28 26 23 / 0.88) 0%,
+    rgb(28 26 23 / 0.80) 44%,
+    rgb(28 26 23 / 0.40) 66%,
+    rgb(28 26 23 / 0) 86%
   );
+}
+
+/* `.seam-cut` (S14 DS gesture №4): a hand-cut paper deckle bridging a
+   cream ↔ background-alt section transition — the cream folds, nothing
+   floats. A thin divider strip (no asset, no shadow): solid background-alt
+   (#ede4d2 ≡ the `background-alt` token) with a torn TOP edge (~4px), so the
+   cream above shows through the tears; the alt section continues below it.
+   `.seam-cut.flip` mirrors it (scaleY) for the bottom edge of an alt block.
+   Decorative — always aria-hidden. */
+.seam-cut {
+  height: 13px;
+  margin-bottom: -1px;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: 40px 13px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='13'%3E%3Cpath d='M0,13 L40,13 L40,5 L36,7 L32,4 L28,6 L24,3 L20,6 L16,4 L12,7 L8,4 L4,6 L0,5 Z' fill='%23ede4d2'/%3E%3C/svg%3E");
+}
+.seam-cut.flip {
+  margin-bottom: 0;
+  margin-top: -1px;
+  transform: scaleY(-1);
 }
 
 /* ── MEH-788 — global reduced-motion off-switch (CSS layer) ────────────────
@@ -104,7 +119,7 @@ body {
      at 3% opacity. Adds organic "texture" without affecting legibility.
      Inline SVG keeps it CSS-only (no extra HTTP request). */
   background-color: #F5F0E8;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
   color: #1C1A17;
 }
 
