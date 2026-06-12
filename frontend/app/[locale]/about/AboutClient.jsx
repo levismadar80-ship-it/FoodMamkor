@@ -100,25 +100,40 @@ export default function AboutPage() {
               <p>{t("story.p4")}</p>
               <p>{t("story.p5")}</p>
             </div>
-            {/* portrait standfirst — sticky on desktop */}
-            <figure className="m-0 md:sticky md:top-10">
-              <div
-                className="relative w-full max-w-[280px] md:max-w-[360px] aspect-[3/4] rounded-lg border border-border overflow-hidden bg-green-50 flex items-center justify-center"
-                aria-label={t("story.image_aria")}
-              >
-                {imgFailed ? (
-                  <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
-                ) : (
-                  <Image
-                    src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
-                    alt={t("story.image_alt")}
-                    fill
-                    sizes="(min-width: 768px) 360px, 280px"
-                    className="object-cover object-[center_30%]"
-                    priority={false}
-                    onError={() => setImgFailed(true)}
-                  />
-                )}
+            {/* portrait standfirst — sticky on desktop. MEH-788 S14: IMG-01
+                framed PLATE — warm-white mat + hairline + an offset
+                background-alt panel behind it (depth by overlap, zero shadows).
+                The current image is kept until the matte IMG-01 founder
+                portrait lands (swap the src then); the plate treatment is the
+                visual port. */}
+            <figure className="m-0 md:sticky md:top-10 max-w-[280px] md:max-w-[360px]">
+              <div className="relative">
+                {/* offset panel behind the mat */}
+                <div
+                  className="absolute -bottom-3 -end-3 w-full h-full rounded-lg bg-background-alt border border-border"
+                  aria-hidden="true"
+                />
+                {/* mat + hairline + the 3:4 image */}
+                <div className="relative rounded-lg bg-surface-card border border-border p-2">
+                  <div
+                    className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-green-50 flex items-center justify-center"
+                    aria-label={t("story.image_aria")}
+                  >
+                    {imgFailed ? (
+                      <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
+                    ) : (
+                      <Image
+                        src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
+                        alt={t("story.image_alt")}
+                        fill
+                        sizes="(min-width: 768px) 360px, 280px"
+                        className="object-cover object-[center_30%]"
+                        priority={false}
+                        onError={() => setImgFailed(true)}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
               <figcaption className="mt-4 border-s-2 border-accent ps-4 max-w-[320px] space-y-1.5">
                 {/* credit — small muted role line */}
