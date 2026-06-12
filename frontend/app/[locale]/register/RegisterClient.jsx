@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { EnvelopeSimple, Heart, Leaf, MapPin, Star } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
@@ -14,6 +15,24 @@ import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
 import { env } from "@/lib/env";
+import { optimizeCloudinary } from "@/lib/cloudinary";
+
+/**
+ * Module:   RegisterClient
+ * Purpose:  /register surface — consumer signup form, MEH-788 split-editorial
+ *           shell (image pane + form pane, mirroring /login). Visual shell
+ *           only; signup flow (OWASP ack, password policy, referral claim,
+ *           OAuth) is untouched.
+ * Does NOT: own SEO/metadata (page.js server wrapper) or the password
+ *           checklist UX (PasswordInput.jsx, MEH-306). Producer signup is
+ *           register/producer/.
+ * Related:  frontend/messages/he.json → auth.register.consumer.* (copy
+ *           locked); overlay reuses auth.login.hero_overlay (same locked
+ *           string as /login — single owner, no duplicate key).
+ * Touches:  Cloudinary (register/hero-box-produce, via optimizeCloudinary).
+ * History:  MEH-306 (password policy); MEH-328 (OWASP ack flow); MEH-49
+ *           (referral); MEH-788 (split-editorial image pane).
+ */
 
 export default function RegisterClient() {
   const t = useTranslations();
@@ -140,6 +159,14 @@ export default function RegisterClient() {
   const appleConfigured = !!env.NEXT_PUBLIC_APPLE_CLIENT_ID;
   const oauthAvailable = googleConfigured || appleConfigured;
 
+  // MEH-788: split-screen hero image (4000×6000 portrait). f_auto,q_auto via
+  // the helper; object-cover crops to each pane — no baked ar so the single
+  // asset serves the tall desktop pane and the mobile top band undistorted.
+  // REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary + next/image fill)
+  const heroSrc = optimizeCloudinary(
+    "https://res.cloudinary.com/dfzpscjks/image/upload/register/hero-box-produce.jpg"
+  );
+
   if (emailSent) {
     // MEH-328 Chunk D: unconditional inbox-check screen. Backend returns
     // an identical 200 ack regardless of whether the email was new or
@@ -165,7 +192,35 @@ export default function RegisterClient() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+    <div className="min-h-[calc(100vh-200px)] flex flex-col bg-background lg:grid lg:grid-cols-2">
+
+      {/* Image pane — END (left) on desktop, top band on mobile.
+          REUSES: app/[locale]/login/LoginClient.jsx:129 (split pane + scrim + overlay) */}
+      <div className="relative order-1 lg:order-2 h-[30vh] min-h-[220px] lg:h-auto overflow-hidden">
+        <Image
+          src={heroSrc}
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1024px) 50vw, 100vw"
+          className="object-cover"
+        />
+        {/* scrim — keeps the overlay AA-readable over any part of the photo */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-green-900/90 via-green-900/30 to-transparent"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-x-0 bottom-0 p-6 lg:p-10">
+          {/* Same locked string as /login — deliberately reads the auth.login
+              key (single owner) instead of duplicating it under auth.register. */}
+          <p className="font-headline-display font-black text-2xl lg:text-4xl leading-tight text-green-50">
+            {t("auth.login.hero_overlay")}
+          </p>
+        </div>
+      </div>
+
+      {/* Form pane — START (right) on desktop; existing card unchanged inside */}
+      <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
         {/* Brand mark + heading */}
         <div className="mb-6">
@@ -339,6 +394,7 @@ export default function RegisterClient() {
             {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
