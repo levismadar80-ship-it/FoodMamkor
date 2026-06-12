@@ -8,7 +8,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 
 // MEH-788: Cloudinary produce photo (4032×3024 original). f_auto,q_auto via the
 // helper + w_1920,c_limit. No baked ar — background-size:cover crops responsively
-// per breakpoint (4:5 mobile box → 16:9 desktop box) without distortion.
+// to the height-capped hero box per breakpoint (background-size:cover, no distortion).
 // REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
 const HERO_MAX_WIDTH = 1920;
 const HERO_IMAGE = optimizeCloudinary(
@@ -24,8 +24,11 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 /**
  * Hero section — S14 "Photography + Texture" composition (MEH-788 Phase 3).
  *
- * Full-bleed Ken Burns produce photo, height-capped (4:5 mobile → 16:9 desktop,
- * cap 560px) — NOT 100vh. S14 hero discipline: only the FRL-900 headline +
+ * Full-bleed Ken Burns produce photo, height-capped (mobile ~52svh ≤400px /
+ * desktop ~52svh 440–520px) — NOT 100vh, and short enough that the bottom-
+ * overlaid headline + the seam-riding search + CTAs all clear a ~700–800px
+ * laptop fold on load (MEH-788: 560px was too tall once search went in-flow).
+ * S14 hero discipline: only the FRL-900 headline +
  * subtitle ride the `--scrim-ink` band on the photo; the pill search card then
  * rides the photo seam DOWN onto cream (negative margin overlap), and the CTAs
  * (גלו עסקים → #producers-grid · near-me MEH-41 · "how it works") land fully on
@@ -52,7 +55,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
     <>
       {/* 01 · HERO — capped full-bleed IMG-02 + --scrim-ink. H1 + subtitle only. */}
       <section
-        className="relative isolate w-full overflow-hidden aspect-[4/5] md:aspect-auto md:h-[560px]"
+        className="relative isolate w-full overflow-hidden h-[clamp(330px,52svh,400px)] md:h-[clamp(440px,52svh,520px)]"
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
@@ -76,7 +79,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
 
         {/* Text — bottom-anchored on the scrim; centered mobile, start (RTL
             right) desktop. pb leaves room for the search card's seam overlap. */}
-        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-16 md:pb-20 text-white">
+        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-12 md:pb-16 text-white">
           <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-start">
             {/* MEH-788: above-the-fold hero content must NOT gate visibility on
                 a JS opacity reveal — SSR renders it visible; the y-slide is a
