@@ -6,14 +6,18 @@ import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
-// MEH-788: Cloudinary produce photo (4032×3024 original). f_auto,q_auto via the
-// helper + w_1920,c_limit. No baked ar — background-size:cover crops responsively
-// per breakpoint (4:5 mobile box → 16:9 desktop box) without distortion.
-// REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
+// MEH-788: Cloudinary produce photo (4032×3024 4:3 original). Smart-cropped to
+// a wide 16:9 band via g_auto (c_fill,g_auto,ar_16:9 — Cloudinary's saliency
+// model) so the produce is framed intentionally, NOT center-sliced: a downward-
+// angle 4:3 source under CSS center-cover sliced the crate-tops. CSS cover then
+// fills the height-capped band from the g_auto-framed, subject-centered 16:9, so
+// the produce survives the final crop on both mobile + desktop. w_1920 downscales
+// the 4032 original (never upscales). f_auto,q_auto via the helper.
+// REUSES: components/ProducerCard.jsx (optimizeCloudinary aspectRatio + g_auto)
 const HERO_MAX_WIDTH = 1920;
 const HERO_IMAGE = optimizeCloudinary(
   "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
-  { width: HERO_MAX_WIDTH }
+  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
 );
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
@@ -24,8 +28,11 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 /**
  * Hero section — S14 "Photography + Texture" composition (MEH-788 Phase 3).
  *
- * Full-bleed Ken Burns produce photo, height-capped (4:5 mobile → 16:9 desktop,
- * cap 560px) — NOT 100vh. S14 hero discipline: only the FRL-900 headline +
+ * Full-bleed Ken Burns produce photo, height-capped (mobile ~44svh ≤360px /
+ * desktop ~44svh 380–440px) — NOT 100vh, and short enough that the bottom-
+ * overlaid headline + the seam-riding search + CTAs all clear a ~700–800px
+ * laptop fold on load (MEH-788: 560px was too tall once search went in-flow).
+ * S14 hero discipline: only the FRL-900 headline +
  * subtitle ride the `--scrim-ink` band on the photo; the pill search card then
  * rides the photo seam DOWN onto cream (negative margin overlap), and the CTAs
  * (גלו עסקים → #producers-grid · near-me MEH-41 · "how it works") land fully on
@@ -52,7 +59,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
     <>
       {/* 01 · HERO — capped full-bleed IMG-02 + --scrim-ink. H1 + subtitle only. */}
       <section
-        className="relative isolate w-full overflow-hidden aspect-[4/5] md:aspect-auto md:h-[560px]"
+        className="relative isolate w-full overflow-hidden h-[clamp(300px,44svh,360px)] md:h-[clamp(380px,44svh,440px)]"
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
@@ -76,20 +83,25 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
 
         {/* Text — bottom-anchored on the scrim; centered mobile, start (RTL
             right) desktop. pb leaves room for the search card's seam overlap. */}
-        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-16 md:pb-20 text-white">
+        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-12 md:pb-16 text-white">
           <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-start">
+            {/* MEH-788: above-the-fold hero content must NOT gate visibility on
+                a JS opacity reveal — SSR renders it visible; the y-slide is a
+                pure enhancement (if the enter anim never runs, text still shows).
+                Desktop H1 capped at 60px inline (the token pipeline is generated
+                from docs/DESIGN.md and can't carry a clamp()). */}
             <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
               transition={{ duration: 0.64, ease: EASE_QUART }}
-              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,5vw,68px)]"
+              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
               style={{ lineHeight: 1.12 }}
             >
               {t("home.hero.title")}
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ y: 24 }}
+              animate={{ y: 0 }}
               transition={{ duration: 0.64, delay: 0.1, ease: EASE_QUART }}
               className="font-body-lg text-body-lg mt-3 text-green-50"
             >
@@ -103,8 +115,8 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           MEH-99 HeroSearch routes to /producers?q=. Lives OUTSIDE the
           overflow-hidden photo section so its dropdown can overflow freely. */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: 16 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
         role="search"
         aria-label={t("home.hero.search_area_label")}
@@ -121,10 +133,10 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
       {/* Actions — on cream (re-coloured from the on-photo treatment): primary
           CTA (גלו עסקים) + near-me (MEH-41) + "how it works". */}
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ y: 12 }}
+        animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        className="mt-5 px-4 flex flex-wrap items-center justify-center gap-3"
+        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center gap-3"
       >
         <button
           type="button"
