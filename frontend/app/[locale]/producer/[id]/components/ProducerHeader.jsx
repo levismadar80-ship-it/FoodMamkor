@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { MapPin, Heart } from "@phosphor-icons/react";
+import { MapPin, Heart, Star } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
@@ -42,10 +42,13 @@ export default function ProducerHeader({
         <TrustBadge tier={producer.trust_tier} />
         {producer.reviews_count > 0 && (
           <span
-            className="bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
+            className="inline-flex items-center gap-1 bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
             title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
           >
-            ⭐ {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
+            {/* MEH-76: emoji star -> Phosphor; rating digits bidi-isolated
+                (.numeric, MEH-763 convention). */}
+            <Star size={12} weight="fill" aria-hidden="true" />
+            <span className="numeric">{Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})</span>
           </span>
         )}
         {producer.plan === "premium" && (
@@ -119,22 +122,22 @@ export default function ProducerHeader({
       {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
-            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
             </span>
           )}
           {producer.organic_certified && (
-            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
-            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
-            <span className="bg-green-50 text-text border border-border rounded-[20px] text-[11px] px-[10px] py-[4px]">
+            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}
@@ -154,18 +157,20 @@ export default function ProducerHeader({
 
       {/* MEH-291 — full_this_week banner (response-time hint, not a closure
           signal). Suppressed during vacation since that banner already
-          dominates the messaging. */}
+          dominates the messaging. MEH-76: amber → ADR-019 (cream + fg-muted). */}
       {producer.availability_state === "full_this_week" && !isVacation && (
-        <div className="mx-0 mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-amber-800">{t("producer.detail.header.slow_response")}</p>
+        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
+          <p className="text-sm font-bold text-text">{t("producer.detail.header.slow_response")}</p>
         </div>
       )}
 
-      {/* Vacation banner — slate (neutral unavailable), not amber (which reads as sale/warning) */}
+      {/* Vacation banner — the page's SINGLE vacation surface (S6 state a:
+          one muted editorial banner, never two). MEH-76 chunk 1: the sidebar
+          + sticky-bar copies were removed; slate → ADR-019 cream + fg-muted. */}
       {isVacation && (
-        <div className="mx-0 mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-          <p className="text-sm font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
-          <p className="text-xs text-slate-500 mt-1">
+        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
+          <p className="text-sm font-bold text-text">{t("producer.detail.header.vacation")}</p>
+          <p className="text-xs text-fg-muted mt-1">
             {t("producer.detail.header.vacation_return", { label: vacationReturnLabel })}
           </p>
         </div>

@@ -6,7 +6,7 @@ import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
 
-export default function ImageGallery({ images = [], producerId = null, categoryEmoji = null, producerInitials = "" }) {
+export default function ImageGallery({ images = [], producerId = null, producerInitials = "" }) {
   const t = useTranslations("gallery");
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -41,27 +41,24 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
     touchEndX.current = null;
   }, [images.length]);
 
+  // MEH-76 chunk 3 — S6 state b: no photo renders a dignified typographic
+  // monogram (display-serif initials on the cream surface), never the old
+  // emoji-avatar. Initials come from getProducerInitials ("ג · ה" / one
+  // deliberate letter, MEH-638).
   if (!images.length) {
     return (
       <div
-        className="relative w-full h-[120px] md:h-[180px] rounded-[12px] flex flex-col items-center justify-center gap-2 text-fg-muted"
-        style={{ background: "#F5F0E8" }}
+        className="relative w-full h-[120px] md:h-[180px] rounded-md bg-background border border-border flex flex-col items-center justify-center gap-2 text-fg-muted"
         data-testid="gallery-empty-state"
       >
-        <div className="flex items-center gap-2">
-          {categoryEmoji && (
-            <span className="text-5xl" aria-hidden="true">{categoryEmoji}</span>
-          )}
-          {producerInitials && (
-            <span
-              className="text-sm font-bold"
-              style={{ color: "#2e6853", opacity: 0.6 }}
-              aria-hidden="true"
-            >
-              {producerInitials}
-            </span>
-          )}
-        </div>
+        {producerInitials && (
+          <span
+            className="font-headline-lg text-4xl md:text-5xl font-black text-primary-dark/60"
+            aria-hidden="true"
+          >
+            {producerInitials}
+          </span>
+        )}
         {producerId && (
           <div className="absolute top-3 start-3 z-10">
             <FavoriteButton producerId={producerId} variant="gallery" />
@@ -74,7 +71,7 @@ export default function ImageGallery({ images = [], producerId = null, categoryE
   return (
     <>
     <div
-      className="relative h-52 rounded-[12px] overflow-hidden bg-gray-100"
+      className="relative h-52 rounded-md overflow-hidden bg-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

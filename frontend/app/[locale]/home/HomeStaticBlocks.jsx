@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf, House } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import HomeProductCard from "@/components/HomeProductCard";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
 // Tag display labels resolve via home.marquee.* — preserving the order
@@ -61,31 +60,63 @@ export function HomeMarquee() {
 }
 
 /**
- * FOUNDER QUOTE CARD (LAUNCH_CHECKLIST fix 4)
- * Hand-off between the abstract category grid and the concrete
- * producer grid. Establishes personal voice before browse mode.
+ * FEATURE BAND (S14 · MEH-788 Phase-3) — position 06 "texture moment".
+ * The editorial hand-off (quote → /about) restyled as the background-alt step
+ * that breaks the typography run: hand-cut seams both ends, quote at start,
+ * framed 3:2 IMG-03 plate + offset panel at end (5/7 grid desktop, stacked
+ * mobile). Copy is UNCHANGED (existing home.founder_quote.* — the S14 copy Δ
+ * reconciliation is separate/pending).
  */
 export function HomeFounderQuote() {
   const t = useTranslations();
   return (
-    <FadeInSection className="max-w-4xl mx-auto px-4 mb-8">
-      <Link
-        href="/about"
-        className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
-      >
-        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center shrink-0" aria-hidden="true">
-          <Leaf size={36} weight="duotone" className="text-primary" />
+    <>
+      {/* hand-cut seam — cream → background-alt (DS gesture №4, globals.css) */}
+      <div className="seam-cut" aria-hidden="true" />
+      <section className="bg-background-alt">
+        <div className="max-w-6xl mx-auto px-4 md:px-12 py-12 md:py-16">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
+            {/* quote — start (5 cols) */}
+            <FadeInSection className="md:col-span-5">
+              {/* gold rule marker (decorative — no new copy) */}
+              <span className="block w-10 h-px bg-accent mb-4" aria-hidden="true" />
+              <Link
+                href="/about"
+                className="group block focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
+              >
+                <p className="font-headline-md italic text-text text-xl md:text-2xl leading-relaxed mb-2">
+                  &ldquo;{t("home.founder_quote.text")}&rdquo;
+                </p>
+                <p className="font-body-md text-sm text-primary group-hover:underline">
+                  {t("home.founder_quote.attribution")}
+                </p>
+              </Link>
+            </FadeInSection>
+
+            {/* IMG-03 plate — end (7 cols). Framed 3:2 inset: warm-white mat +
+                hairline + an offset cream panel behind it (depth by overlap,
+                zero shadows). FEATURE_ID still pending → tonal fallback inside
+                the mat (never a broken <img>); drop a lazy <img>
+                (optimizeCloudinary, ar 3:2) in the inner frame when it lands. */}
+            <FadeInSection className="md:col-span-7" delay={0.1}>
+              <figure className="relative m-0">
+                <div
+                  className="absolute -bottom-3 -end-3 w-full h-full rounded-lg bg-background border border-border"
+                  aria-hidden="true"
+                />
+                <div className="relative rounded-lg bg-surface-card border border-border p-2">
+                  <div className="aspect-[3/2] rounded-md bg-background flex items-center justify-center" aria-hidden="true">
+                    <Leaf size={32} weight="duotone" className="text-primary/30" />
+                  </div>
+                </div>
+              </figure>
+            </FadeInSection>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="font-headline-md italic text-text text-lg md:text-xl leading-relaxed mb-2">
-            &ldquo;{t("home.founder_quote.text")}&rdquo;
-          </p>
-          <p className="font-body-md text-sm text-primary group-hover:underline">
-            {t("home.founder_quote.attribution")}
-          </p>
-        </div>
-      </Link>
-    </FadeInSection>
+      </section>
+      {/* hand-cut seam — background-alt → cream */}
+      <div className="seam-cut flip" aria-hidden="true" />
+    </>
   );
 }
 
@@ -132,48 +163,6 @@ export function HomeRecentlyViewed({ items }) {
             </Link>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-/**
- * DEFERRED home-product preview (max 3). Hidden until MEH-543 launch.
- * Full browse at /neighbor.
- * Hidden entirely when the products list is empty.
- */
-export function HomeKitchenPreview({ products, onWhatsAppClick }) {
-  const t = useTranslations();
-  if (!products.length) return null;
-  return (
-    <section
-      id="home-kitchen"
-      className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
-    >
-      <div className="flex items-baseline justify-between mb-6">
-        <h2
-          className="font-headline-md font-bold text-text inline-flex items-center gap-2"
-          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
-        >
-          <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
-          {t("home.kitchen.heading")}
-        </h2>
-        <Link
-          href="/neighbor"
-          className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
-        >
-          {t("home.kitchen.see_more")}
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.slice(0, 3).map((hp) => (
-          <HomeProductCard
-            key={hp.id}
-            product={hp}
-            onWhatsAppClick={() => onWhatsAppClick(hp.id)}
-          />
-        ))}
       </div>
     </section>
   );

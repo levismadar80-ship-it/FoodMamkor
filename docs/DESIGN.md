@@ -11,6 +11,7 @@ colors:
   primary: "#2e6853"
   primary-dark: "#2E4A2E"
   background: "#F5F0E8"
+  background-alt: "#EDE4D2"
   surface: "#FFFFFF"
   text: "#1C1A17"
   muted: "#6B6860"
@@ -162,6 +163,13 @@ instead, and *Do's and Don'ts* for why.
 - **Background (`#F5F0E8`):** Warm cream. The universal page surface. **Never
   pure white as a page background** — pure white reads as "app", cream reads as
   "magazine". This is a hard brand LOCK (BRAND.md §3).
+- **Background-alt (`#EDE4D2`):** A subtle warm step down from `background`, for
+  **editorial tonal separation** — alternating adjacent section blocks by tone
+  instead of by horizontal rules (e.g. the `/about` Benefits + Values pair, MEH-135).
+  This is a *layout/surface* token, **not** a per-state background — the ADR-019
+  prohibition on darker/lighter background tokens applies to component *states*
+  (selected/loading/vacation), which still use opacity on cream. Both tones keep
+  AA: `text`/`fg-muted` pass ≥ 4.5:1 on `background-alt` as well as `background`.
 - **Surface (`#FFFFFF`):** Pure white, allowed **only** for content that sits
   on top of the cream page — cards, modals, inputs. Never the page itself.
 - **Text (`#1C1A17`):** Warm near-black for body copy and headings. Not

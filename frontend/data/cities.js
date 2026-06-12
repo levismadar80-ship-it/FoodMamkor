@@ -2,14 +2,12 @@
  * Israeli cities + major neighborhood list for search autocomplete.
  *
  * Used by the shared CitySearch component (see components/CitySearch.jsx).
- * Real consumer list (12 wirings, verified MEH-201, 14 May 2026):
+ * Real consumer list (10 wirings, verified MEH-201, 14 May 2026; /neighbor + HomeProductForm removed MEH-133):
  *   - /map MapClient (desktop + mobile filters)
  *   - /map CityPickerModal
- *   - /neighbor filter
  *   - /group-buys filter
  *   - /experiences filter + /experiences/new form
  *   - /events filter + /producer/dashboard/events/new form
- *   - HomeProductForm (city + neighborhood)
  *   - LocationModal
  *   - /settings (profile city — single field in ProfileTab)
  *
