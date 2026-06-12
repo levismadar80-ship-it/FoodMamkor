@@ -54,9 +54,9 @@
 
 | Surface | Branch | PR | Status |
 |---|---|---|---|
-| MEH-797 asset wiring (2 Unsplash → Cloudinary) | feature/meh-797-asset-wiring | [#1073](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1073) | DRAFT — Closes MEH-797 |
-| MEH-730 gold-on-dark token + BadgeRow v4 recolor + ProducerCard comments | feature/meh-730-navbar-card-polish | [#1075](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1075) | DRAFT — 2 of 4 items shipped, 2 already fixed upstream |
-| MEH-792 badge reconciliation | feature/meh-792-badge-reconciliation | [#1076](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1076) | DRAFT — PARTIAL (BadgeRow tooltip migration deferred: needs a ui/Tooltip API decision; analysis in PR) |
+| MEH-797 asset wiring (2 Unsplash → Cloudinary) | feature/meh-797-asset-wiring | [#1073](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1073) | **MERGED** `9515b4a` (Sapir order 22:22) |
+| MEH-730 gold-on-dark token + BadgeRow v4 recolor + ProducerCard comments | feature/meh-730-navbar-card-polish | [#1075](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1075) | **MERGED** `6c95884` |
+| MEH-792 badge reconciliation | feature/meh-792-badge-reconciliation | [#1076](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1076) | **MERGED** `159560c` — PARTIAL (BadgeRow popover half → MEH-800) |
 | MEH-524 trust strip (locked copy + S4 restyle) | feature/meh-524-trust-strip | [#1077](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1077) | **MERGED** `86c3353` (Sapir order 22:04) |
 | MEH-525 comparison strip | feature/meh-525-comparison-strip | [#1078](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1078) | **MERGED** `875644d` |
 | MEH-542 Meet a Producer §10 (dormant) | feature/meh-542-meet-a-producer | [#1079](https://github.com/levismadar80-ship-it/FoodMamkor/pull/1079) | **MERGED** `7effa10` (accept-both sync resolution) |
