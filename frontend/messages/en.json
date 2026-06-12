@@ -363,6 +363,18 @@
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
     },
+    "comparison": {
+      "eyebrow": "ההבדל",
+      "heading": "מה שמשתנה בדרך",
+      "col_super": "סופר",
+      "col_brand": "מהמקור",
+      "row1_super": "מוצר על מדף",
+      "row1_brand": "אדם מאחורי המוצר",
+      "row2_super": "נסע רחוק",
+      "row2_brand": "גדל קרוב",
+      "row3_super": "עוד סל בקופה",
+      "row3_brand": "קשר ישיר עם מי שמייצרת"
+    },
     "categories": {
       "eyebrow": "קטגוריות",
       "heading": "Browse by category",
