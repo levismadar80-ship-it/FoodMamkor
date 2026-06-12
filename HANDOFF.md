@@ -5,7 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — "יצרן" DNA-LOCK sweep, public UI (PR #1061 MERGED) + discovered Friday-strip i18n bug
+## 2026-06-12 — Friday-strip i18n namespace fix + בתי עסק title (DRAFT PR)
+
+**Branch `feature/fix-friday-delivery-i18n`** off staging (Rule-25 synced over the parallel #1063 Phase-3 hero merge — no file overlap). **Closes the #1061 known issue below:** both `useTranslations("producer.friday_delivery")` calls (`FridayDeliveryStrip.jsx`) → `"group_buys.friday_delivery"`. Phase-0 key-set proof: components read exactly `today`/`title`/`title_alt`; target namespace has exactly those 3 keys in both locales; no other consumer. **Correction:** `producer.friday_delivery` was `null` (never existed), not an empty `{}` as #1061's note said — no stub to clean, and the move-keys alternative lost its motivation (surfaced in PR anyway). **Wording (Sapir's call applied):** he `title`+`title_alt` יצרניות עם משלוח היום → **בתי עסק עם משלוח היום**; EN already "Businesses delivering today" → 0 EN diff. **Acceptance-criterion correction:** `grep יצרנ he.json → 0` not literally met — 2 LEAVE-classified hits remain (orphan `value_props.discover`, admin-exempt `friday_hint`); *public* instances = 0, which was the criterion's intent. The admin `friday_hint` still says "סרגל יצרניות" (now stale vs the strip's new title) — optional follow-up, admin-exempt. Build green; QA caveat: strip only renders Friday + available-today producers — the key-set proof is the verification.
+
+## 2026-06-12 — "יצרן" DNA-LOCK sweep, public UI (PR #1061 MERGED) + discovered Friday-strip i18n bug — **bug FIXED by the entry above**
 
 **Branch `feature/copy-yatzran-ui-lock-sweep`** off fresh `origin/staging` (divergence 0). Copy-only. Discovery grep: **6 hits, all `he.json`, zero in JSX** (the MEH-599 4-file list was stale). **Fixed (category a, public):** `seo.group_buys.{description,og_description}` he+en (מיצרנים→מבתי עסק / producers→businesses). **Left + listed:** `value_props.discover` (orphan, #1059), `admin.settings.sections.friday_hint` (admin-exempt), `group_buys.friday_delivery.{title,title_alt}` (surfaced — see below). Full classification table in the PR body. Build green; post-grep category-(a) = 0.
 

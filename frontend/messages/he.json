@@ -908,8 +908,8 @@
     },
     "friday_delivery": {
       "today": "היום",
-      "title": "יצרניות עם משלוח היום",
-      "title_alt": "יצרניות עם משלוח היום"
+      "title": "בתי עסק עם משלוח היום",
+      "title_alt": "בתי עסק עם משלוח היום"
     },
     "holiday_banner": {
       "approaching": "{name} מתקרב {emoji}",
