@@ -82,7 +82,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.64, ease: EASE_QUART }}
-              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,5vw,68px)]"
+              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-hero-display max-w-[18ch] mx-auto md:mx-0"
               style={{ lineHeight: 1.12 }}
             >
               {t("home.hero.title")}

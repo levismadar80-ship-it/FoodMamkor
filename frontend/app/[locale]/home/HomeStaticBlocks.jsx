@@ -105,9 +105,10 @@ export function HomeFounderQuote() {
                   aria-hidden="true"
                 />
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  <div className="aspect-[3/2] rounded-md bg-background flex items-center justify-center" aria-hidden="true">
-                    <Leaf size={32} weight="duotone" className="text-primary/30" />
-                  </div>
+                  {/* IMG-03 empty state: tonal background-alt plate (no leaf
+                      box). A lazy <img> drops in here when the Cloudinary
+                      FEATURE_ID is provided. */}
+                  <div className="aspect-[3/2] rounded-md bg-background-alt" aria-hidden="true" />
                 </div>
               </figure>
             </FadeInSection>
