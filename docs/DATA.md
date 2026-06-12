@@ -43,6 +43,7 @@
 | 21 | `producer_recipes` | Producer-owned recipes promoting their products (admin-moderated) | `ProducerRecipe` |
 | 22 | `producer_recipe_products` | Many-to-many recipe ↔ product link (same-producer enforced in router) | _(association `Table`)_ |
 | 23 | `inbound_messages` | Inbound WhatsApp messages — populated by future PR2c receiver, consumed by MEH-509 PR2b watchdog | `InboundMessage` |
+| 24 | `outbound_messages` | Outbound WhatsApp sends — one row per real send written by the send layer (MEH-771 Chunk A); `status` lifecycle `accepted`→`delivered`/`failed` reconciled via the Chunk B delivery webhook; `meta_message_id` (wamid) UNIQUE for idempotency. Mirrors `inbound_messages` phone-key pattern (no FK) | `OutboundMessage` |
 
 > **MEH-509 PR3 (2026-05-22):** `producers.risk_score` (Integer nullable) + `producers.risk_reasoning` (Text nullable) added by migration `92afa3cb76e2`. Populated asynchronously by `app/services/producer_risk.py` via FastAPI BackgroundTasks after producer signup using Claude Haiku 4.5. NULL on both = "not scored yet OR Anthropic call failed (fail-open)". Admin-only — `ProducerAdminOut` schema surfaces them; `ProducerDetailOut` (public) intentionally does not. New endpoint: `GET /admin/producers/{id}/risk-score` returns `{score, reasoning}`.
 

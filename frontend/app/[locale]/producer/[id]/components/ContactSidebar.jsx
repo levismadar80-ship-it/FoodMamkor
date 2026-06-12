@@ -30,21 +30,18 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from 
 export default function ContactSidebar({
   producer,
   isVacation,
-  vacationReturnLabel,
   primaryCategory,
   shareUrl,
 }) {
   const t = useTranslations();
   return (
     <aside>
-      <div className="lg:sticky lg:top-24 bg-white rounded-[16px] p-6 border border-border shadow-[0_4px_24px_rgba(46,104,83,0.06)]">
-        {/* Vacation notice in sidebar */}
-        {isVacation && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4">
-            <p className="text-xs font-bold text-slate-700">{t("producer.detail.header.vacation")}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{vacationReturnLabel}</p>
-          </div>
-        )}
+      {/* MEH-76 chunk 3: arbitrary shadow dropped — S6 contact-card is flat
+          (border-only), matching the S5 flat-overlay convergence. */}
+      <div className="lg:sticky lg:top-24 bg-white rounded-lg p-6 border border-border">
+        {/* MEH-76 chunk 1: the sidebar's duplicate vacation banner was removed —
+            the single vacation surface is the ProducerHeader banner (S6 state a).
+            The dim treatment below still signals the state here. */}
 
         {/* Dim contact content when on vacation — pointer-events-auto keeps clicking possible */}
         <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
@@ -69,7 +66,7 @@ export default function ContactSidebar({
           {producer.phone && (
             <a
               href={`tel:${producer.phone}`}
-              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "phone")}
             >
@@ -88,7 +85,7 @@ export default function ContactSidebar({
                 href={`https://instagram.com/${handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm overflow-hidden"
+                className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm overflow-hidden"
                 dir="ltr"
                 onClick={() => trackContactClick(producer.id, "instagram")}
               >
@@ -110,7 +107,7 @@ export default function ContactSidebar({
               }
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               onClick={() => trackContactClick(producer.id, "website")}
             >
               <Globe size={18} weight="duotone" className="text-primary shrink-0" />
@@ -122,7 +119,7 @@ export default function ContactSidebar({
           {producer.contact_email && getPrimaryMethod(producer) !== "email" && (
             <a
               href={`mailto:${producer.contact_email}`}
-              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-[10px] hover:bg-green-50 transition text-sm"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "email")}
             >
@@ -143,7 +140,7 @@ export default function ContactSidebar({
             href={producer.whatsapp_group}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-[10px] hover:bg-background transition text-sm font-medium mb-2"
+            className="w-full flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-md hover:bg-background transition text-sm font-medium mb-2"
           >
             <WhatsappLogo size={16} weight="duotone" />
             {t("producer.detail.contact_sidebar.join_whatsapp_group")}

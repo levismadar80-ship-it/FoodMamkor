@@ -476,7 +476,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowCurrent((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showCurrent ? t("eye_hide_current") : t("eye_show_current")}
               aria-pressed={showCurrent}
             >
@@ -522,7 +522,7 @@ function PasswordChangeCard({ isOAuth }) {
               type="button"
               onClick={() => setShowConfirm((v) => !v)}
               // eslint-disable-next-line no-restricted-syntax -- rtl-ok
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-text transition rounded-full p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               aria-label={showConfirm ? t("eye_hide_confirm") : t("eye_show_confirm")}
               aria-pressed={showConfirm}
             >

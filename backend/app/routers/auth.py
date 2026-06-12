@@ -655,7 +655,17 @@ async def register_producer(
 # Frontend onBlur caller in register/producer/page.js is removed in Chunk D.
 
 
-@router.post("/google", response_model=GoogleAuthResponse)
+@router.post(
+    "/google",
+    response_model=GoogleAuthResponse,
+    # MEH-780: document the deliberate non-2xx statuses so the OpenAPI spec
+    # matches reality (kills schemathesis UndefinedStatusCode noise). No
+    # behavior change — 401 = invalid id_token, 503 = provider not configured.
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")  # SECURITY FIX #2: OAuth needs a higher ceiling
 def google_auth(
     request: Request,
@@ -745,7 +755,15 @@ def google_auth(
     )
 
 
-@router.post("/register/producer/oauth", response_model=ProducerOAuthSignupResponse)
+@router.post(
+    "/register/producer/oauth",
+    response_model=ProducerOAuthSignupResponse,
+    # MEH-780: document the deliberate non-2xx statuses (see /auth/google).
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")
 def register_producer_oauth(
     request: Request,
@@ -967,7 +985,15 @@ def logout_all_devices(
     )
 
 
-@router.post("/apple", response_model=AppleAuthResponse)
+@router.post(
+    "/apple",
+    response_model=AppleAuthResponse,
+    # MEH-780: document the deliberate non-2xx statuses (see /auth/google).
+    responses={
+        401: {"description": "Invalid OAuth id_token"},
+        503: {"description": "OAuth provider not configured (MEH-253)"},
+    },
+)
 @limiter.limit("10/minute")  # SECURITY FIX #2
 def apple_auth(
     request: Request,

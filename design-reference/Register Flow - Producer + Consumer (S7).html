@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S7 · MEH-204 · /register/producer · הרשמת בית עסק — desktop + mobile + states</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0 (S2→S6 lineage).
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --green:        #2E6853;
+  --green-dark:   #1F4A38;
+  --green-light:  #3A7D64;
+  --primary:      #2E6853;
+  --primary-light:#3A7D64;
+  --primary-dark: #2E4A2E;
+  --secondary:    #4CB08B;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --gold-soft:    #E7C88A;
+  --accent-warm:  #E8823A;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+  --focus-ring:   rgba(46,104,83,0.40);
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --duration-fast: 180ms;
+  --duration-base: 420ms;
+  --ease-quart:    cubic-bezier(.25, 1, .5, 1);
+
+  --shadow-card:   0 8px 32px rgba(46,104,83,0.12);
+  --shadow-header: 0 2px 20px rgba(46,104,83,0.06);
+
+  --ph-dairy:   radial-gradient(60% 55% at 32% 28%, color-mix(in oklab, var(--light) 70%, white), transparent 70%), linear-gradient(140deg, color-mix(in oklab, var(--gold) 20%, var(--background)), color-mix(in oklab, var(--gold) 52%, var(--accent-warm)));
+  --ph-bread:   radial-gradient(58% 50% at 64% 30%, color-mix(in oklab, var(--gold-soft) 76%, white), transparent 68%), linear-gradient(150deg, color-mix(in oklab, var(--accent-warm) 36%, var(--background)), color-mix(in oklab, var(--gold) 64%, var(--primary-dark)));
+  --ph-produce: radial-gradient(58% 52% at 36% 32%, color-mix(in oklab, var(--secondary) 60%, white), transparent 70%), linear-gradient(145deg, color-mix(in oklab, var(--secondary) 42%, var(--light)), color-mix(in oklab, var(--primary) 60%, var(--gold)));
+  --ph-honey:   radial-gradient(56% 50% at 60% 30%, color-mix(in oklab, var(--gold-soft) 82%, white), transparent 66%), linear-gradient(150deg, color-mix(in oklab, var(--gold) 48%, var(--background)), color-mix(in oklab, var(--accent-warm) 70%, var(--gold)));
+  --ph-meat:    radial-gradient(56% 50% at 38% 30%, color-mix(in oklab, var(--accent-warm) 54%, white), transparent 64%), linear-gradient(145deg, color-mix(in oklab, var(--accent-warm) 56%, var(--primary-dark)), color-mix(in oklab, var(--gold) 40%, var(--primary-dark)));
+  --ph-hands:   radial-gradient(58% 52% at 64% 34%, color-mix(in oklab, var(--gold-soft) 64%, white), transparent 68%), linear-gradient(150deg, color-mix(in oklab, var(--gold) 30%, var(--background)), color-mix(in oklab, var(--accent-warm) 48%, var(--primary-dark)));
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg); color: var(--doc-ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+body { padding: 48px 40px 96px; min-width: 1460px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+.docpage { max-width: 1380px; margin: 0 auto; }
+
+/* ── DOC MASTHEAD ─────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(42,38,32,0.18); padding-bottom: 24px; margin-bottom: 32px; gap: 24px; }
+.masthead .phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.masthead .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.masthead .pip.is-on  { background: var(--green); border-color: var(--green); }
+.masthead .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+.masthead h1 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; color: var(--doc-ink); }
+.masthead h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.masthead .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 8px; max-width: 90ch; line-height: 1.5; }
+.masthead .sub code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); }
+.masthead .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.85; }
+.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.masthead .stamp .dot { color: var(--gold); }
+
+/* ── SECTION HEAD ─────────────────── */
+.section-head { border-top: 1px solid rgba(42,38,32,0.30); padding: 36px 0 24px; margin-bottom: 28px; display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline; }
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 88ch; line-height: 1.55; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── FRAME CAPTION + VIEWPORT ─────── */
+.bp-cap { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: baseline; margin: 40px 0 16px; }
+.bp-cap:first-of-type { margin-top: 0; }
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); align-self: center; }
+.cap-note { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin: 14px 0 0; max-width: 70ch; line-height: 1.55; }
+.cap-note b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); font-size: 12px; }
+.cap-note code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+
+.frame-row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+
+.vp { background: var(--background); border: 1px solid rgba(42,38,32,0.18); overflow: hidden; position: relative; }
+.vp.desktop { width: 1280px; }
+.vp.mobile  { width: 375px; }
+.vp.fixed-h.mobile { height: 812px; }
+
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR SURFACE
+   ══════════════════════════════════════════════════════════════ */
+.mh { direction: rtl; font-family: var(--font-body); color: var(--text); background: var(--background); position: relative; min-height: 100%; }
+.paper::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+
+.photo { position: relative; background-size: cover; background-position: center; overflow: hidden; }
+.photo.dairy   { background-image: var(--ph-dairy); }
+.photo.bread   { background-image: var(--ph-bread); }
+.photo.produce { background-image: var(--ph-produce); }
+.photo.honey   { background-image: var(--ph-honey); }
+.photo.meat    { background-image: var(--ph-meat); }
+.photo.hands   { background-image: var(--ph-hands); }
+.photo::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 100% at 50% 0%, transparent 52%, rgba(31,74,56,0.20)); z-index: 1; }
+.photo::after { content: ""; position: absolute; inset: 0; mix-blend-mode: overlay; opacity: 0.26; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"); z-index: 1; }
+
+/* ─── FloatingNavbar v5 LOCKED — embedded as-is ─── */
+.nav-shell { display: flex; justify-content: center; padding: 24px; direction: rtl; z-index: 30; position: relative; }
+.mobile .nav-shell { padding: 14px 14px 0; }
+.nav { width: 100%; max-width: 1200px; display: grid; align-items: center; border-radius: 9999px; }
+.nav.is-scrolled { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-header); }
+.desktop .nav { grid-template-columns: auto 1fr auto; gap: 32px; min-height: 64px; padding: 8px 16px 8px 8px; }
+.mobile  .nav { grid-template-columns: auto 1fr auto auto; gap: 10px; min-height: 52px; padding: 6px 8px 6px 16px; }
+
+.logo { display: inline-flex; align-items: center; text-decoration: none; }
+.wordmark { font-family: var(--font-display); font-weight: 700; color: var(--green-dark); line-height: 1; letter-spacing: 0.01em; }
+.desktop .wordmark { font-size: 30px; }
+.mobile  .wordmark { font-size: 23px; }
+
+.nav-links { display: flex; align-items: center; justify-content: center; gap: 32px; font-family: var(--font-body); font-weight: 500; font-size: 14px; }
+.nav-link { color: var(--text); text-decoration: none; padding: 8px 0; position: relative; }
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after { content: ""; position: absolute; inset-inline: 0; bottom: 2px; height: 1px; background: var(--gold); }
+.nav-end { display: inline-flex; align-items: center; gap: 8px; }
+.btn-text { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); background: transparent; border: 1px solid transparent; padding: 10px 14px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; border-radius: 9999px; }
+.btn-text:hover { background: var(--light); }
+.btn-outline { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px solid var(--green); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-outline:hover { background: var(--green); color: var(--background); }
+.btn-outline.is-current { background: var(--green); color: var(--background); }
+.btn-outline .arr { font-family: var(--font-italic); font-style: italic; display: inline-block; transform: scaleX(-1); }
+.btn-search { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-search:hover { background: var(--primary-light); }
+.btn-search svg, .btn-outline svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn { width: 44px; height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; cursor: default; flex: none; }
+.icon-btn.filled { background: var(--primary); border: 1px solid var(--primary); color: var(--background); }
+.icon-btn.ghost  { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+.icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.verified { display: inline-flex; align-items: center; color: var(--green); flex: none; }
+.verified svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* shared button primitives */
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-body); font-weight: 600; font-size: 16px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); border-radius: 9999px; padding: 15px 26px; min-height: 54px; cursor: default; white-space: nowrap; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-primary svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.btn-primary .arr { font-family: var(--font-italic); font-style: italic; transform: scaleX(-1); display: inline-block; font-size: 18px; }
+
+/* ═══════════════ REGISTRATION SURFACE ═══════════════ */
+.rg { position: relative; z-index: 1; }
+.rg-wrap { max-width: 1080px; margin: 0 auto; padding: 8px 40px 64px; }
+
+/* breadcrumb */
+.rg-crumb { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-body); font-size: 12.5px; font-weight: 500; color: var(--fg-muted); padding: 4px 0 22px; }
+.rg-crumb a { color: var(--fg-muted); text-decoration: none; }
+.rg-crumb a:hover { color: var(--green); }
+.rg-crumb .sep { color: color-mix(in oklab, var(--fg-muted) 50%, transparent); }
+.rg-crumb .is-here { color: var(--green-dark); font-weight: 600; }
+
+.rg-grid { display: grid; grid-template-columns: 312px 1fr; gap: 76px; align-items: start; }
+
+/* ── LEFT RAIL — the brand reassurance + step ladder ── */
+.rg-rail { position: sticky; top: 24px; display: grid; gap: 26px; }
+.rail-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); display: inline-flex; align-items: center; gap: 12px; }
+.rail-eyebrow .rule { width: 28px; height: 1px; background: var(--gold); display: inline-block; }
+.rail-title { font-family: var(--font-display); font-weight: 900; font-size: 32px; line-height: 1.04; letter-spacing: -0.01em; color: var(--text); }
+.rail-sub { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 17px; line-height: 1.45; color: var(--green-dark); margin-top: -12px; }
+
+.rg-steps { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.rg-step { display: grid; grid-template-columns: 34px 1fr auto; gap: 13px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--border); }
+.rg-step .rs-num { font-family: var(--font-italic); font-style: italic; font-size: 21px; line-height: 1; color: color-mix(in oklab, var(--fg-muted) 50%, transparent); }
+.rg-step .rs-name { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--fg-muted); }
+.rg-step .rs-mark { display: inline-flex; color: var(--green); opacity: 0; }
+.rg-step .rs-mark svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rg-step.is-done .rs-num { color: var(--green); }
+.rg-step.is-done .rs-name { color: var(--text); }
+.rg-step.is-done .rs-mark { opacity: 1; }
+.rg-step.is-current .rs-num { color: var(--gold); }
+.rg-step.is-current .rs-name { color: var(--green-dark); font-weight: 600; }
+
+.rail-note { display: grid; gap: 8px; padding: 18px 18px 20px; background: var(--light); border: 1px solid var(--border); border-radius: 16px; }
+.rail-note .rn-t { font-family: var(--font-body); font-weight: 600; font-size: 13px; color: var(--text); display: inline-flex; align-items: center; gap: 9px; }
+.rail-note .rn-t .ic { color: var(--green); display: inline-flex; }
+.rail-note .rn-t .ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.rail-note p { font-family: var(--font-body); font-size: 12.5px; line-height: 1.6; color: var(--fg-muted); }
+
+/* ── FORM COLUMN ── */
+.rg-form { min-width: 0; }
+.rg-step-head { display: grid; gap: 12px; margin-bottom: 30px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+.rg-step-head .sh-top { display: flex; align-items: baseline; gap: 18px; }
+.rg-step-head .sh-num { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 52px; line-height: 0.9; color: var(--gold); flex: none; }
+.rg-step-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.0; letter-spacing: -0.01em; color: var(--text); }
+.rg-step-head .sh-dek { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 19px; line-height: 1.5; color: var(--green-dark); max-width: 52ch; }
+
+/* fields — labels ABOVE, no placeholder-as-label */
+.field { display: grid; gap: 9px; margin-bottom: 24px; }
+.field > .lab { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
+.field > .lab .opt { font-family: var(--font-italic); font-style: italic; font-weight: 400; font-size: 13.5px; color: var(--fg-muted); }
+.field > .lab .tag { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.02em; color: var(--green-dark); background: var(--light); border: 1px solid var(--border); padding: 3px 9px; border-radius: 9999px; line-height: 1.4; }
+.field > .lab .req { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.02em; color: var(--bg-card); background: var(--green); border: 1px solid var(--green); padding: 3px 9px; border-radius: 9999px; line-height: 1.4; }
+
+/* amber format note — warning only, never blocks */
+.fmt-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; }
+.fmt-note .fn-mk { flex: none; color: var(--accent-warm); margin-top: 2px; display: inline-flex; }
+.fmt-note .fn-mk svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.fmt-note .fn-t { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: color-mix(in oklab, var(--accent-warm) 72%, var(--text)); }
+
+/* license sub-block under category */
+.lic-block { margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--border); }
+.lic-toggle { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px dashed var(--border); border-radius: 9999px; padding: 12px 18px; min-height: 48px; cursor: default; }
+.lic-toggle:hover { border-color: var(--green); border-style: solid; }
+.lic-toggle .chev { font-family: var(--font-italic); font-style: italic; display: inline-block; }
+
+/* account screen (step 00) */
+.or-div { display: flex; align-items: center; gap: 14px; margin: 4px 0; font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.or-div::before, .or-div::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.btn-google { display: inline-flex; align-items: center; justify-content: center; gap: 11px; width: 100%; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--text); background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 14px 20px; min-height: 54px; cursor: default; }
+.btn-google:hover { border-color: var(--green); }
+.btn-google svg { width: 19px; height: 19px; }
+.acct-skip { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); margin-top: 6px; }
+.acct-skip .ic { color: var(--green); display: inline-flex; }
+.acct-skip .ic svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ss-resend { font-family: var(--font-body); font-size: 13.5px; color: var(--fg-muted); }
+.ss-resend a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
+.ss-resend a:hover { color: var(--green); }
+.success-tag { font-family: var(--font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); background: color-mix(in oklab, var(--gold) 10%, var(--bg-card)); border: 1px solid color-mix(in oklab, var(--gold) 28%, var(--border)); padding: 4px 11px; border-radius: 9999px; }
+.field .hint { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: var(--fg-muted); margin-top: -3px; }
+.input, textarea.input { width: 100%; min-height: 54px; padding: 15px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 15.5px; color: var(--text); line-height: 1.4; }
+.input::placeholder, textarea.input::placeholder { color: color-mix(in oklab, var(--fg-muted) 62%, transparent); }
+.input:focus, textarea.input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--focus-ring); outline: none; }
+textarea.input { min-height: 152px; resize: vertical; line-height: 1.72; padding: 14px 16px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+.input-wrap { position: relative; display: block; }
+.input-wrap .adorn { position: absolute; inset-inline-start: 15px; top: 27px; transform: translateY(-50%); color: var(--green-dark); display: inline-flex; pointer-events: none; }
+.input-wrap .adorn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.input-wrap .input { padding-inline-start: 46px; }
+.charcount { font-family: var(--font-body); font-size: 12px; color: var(--fg-muted); text-align: end; margin-top: 7px; }
+.charcount.numeric { display: block; }
+
+/* error — editorial, warm; never red shouting */
+.field.has-error .input, .field.has-error textarea.input { border-color: color-mix(in oklab, var(--accent-warm) 60%, var(--border)); background: color-mix(in oklab, var(--accent-warm) 5%, var(--bg-card)); }
+.field .err { display: flex; align-items: flex-start; gap: 9px; margin-top: 2px; }
+.field .err .mk { flex: none; color: var(--accent-warm); margin-top: 3px; display: inline-flex; }
+.field .err .mk svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.field .err .et { font-family: var(--font-italic); font-style: italic; font-size: 15px; line-height: 1.45; color: color-mix(in oklab, var(--accent-warm) 68%, var(--text)); }
+
+/* ── CATEGORY SELECTOR (MEH-203) ── */
+.cat-search { margin-bottom: 8px; }
+.cat-note { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--fg-muted); margin: 4px 0 18px; }
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cat-opt { position: relative; display: grid; grid-template-columns: 46px 1fr; gap: 14px; align-items: center; padding: 16px 18px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; cursor: default; transition: border-color var(--duration-fast) var(--ease-quart); }
+.cat-opt:hover { border-color: var(--green); }
+.cat-opt .ct-glyph { width: 42px; height: 42px; color: var(--green-dark); }
+.cat-opt .ct-glyph svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+.cat-opt .ct-body { display: grid; gap: 3px; min-width: 0; }
+.cat-opt .ct-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; line-height: 1.1; color: var(--text); }
+.cat-opt .ct-desc { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.cat-opt .ct-check { position: absolute; top: 14px; inset-inline-end: 14px; width: 24px; height: 24px; border-radius: 9999px; background: var(--green); color: var(--bg-card); display: grid; place-items: center; opacity: 0; }
+.cat-opt .ct-check svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.cat-opt.is-selected { border-color: var(--green); background: var(--light); }
+.cat-opt.is-selected .ct-glyph { color: var(--green); }
+.cat-opt.is-selected .ct-check { opacity: 1; }
+.cat-opt.is-dimmed { opacity: 0.32; }
+
+/* ── PHOTO UPLOAD ── */
+.upload-zone { display: grid; place-items: center; gap: 9px; text-align: center; padding: 38px 24px; border: 1.5px dashed color-mix(in oklab, var(--green) 32%, var(--border)); border-radius: 20px; background: color-mix(in oklab, var(--light) 45%, var(--bg-card)); }
+.upload-zone .uz-ic { width: 46px; height: 46px; color: var(--green-dark); }
+.upload-zone .uz-ic svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.upload-zone .uz-t { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--text); }
+.upload-zone .uz-t b { color: var(--green-dark); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--green) 40%, transparent); text-underline-offset: 3px; }
+.upload-zone .uz-s { font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); }
+.upload-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 96px; gap: 12px; margin-top: 16px; }
+.ug-cell { position: relative; border: 1px solid var(--border); overflow: hidden; }
+.ug-cell.is-cover { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+.ug-cell .photo { position: absolute; inset: 0; }
+.ug-cover-badge { position: absolute; top: 10px; inset-inline-start: 10px; z-index: 3; font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bg-card); background: color-mix(in oklab, var(--green-dark) 86%, transparent); padding: 4px 9px; border-radius: 9999px; }
+.ug-del { position: absolute; top: 8px; inset-inline-end: 8px; z-index: 3; width: 26px; height: 26px; border-radius: 9999px; background: color-mix(in oklab, var(--bg-card) 88%, transparent); border: 1px solid var(--border); display: grid; place-items: center; color: var(--text); cursor: default; }
+.ug-del svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ug-add { display: grid; place-items: center; gap: 5px; border: 1.5px dashed var(--border); color: var(--fg-muted); background: var(--bg-card); }
+.ug-add svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ug-add span { font-family: var(--font-body); font-size: 11px; }
+.guidance { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px dashed var(--border); }
+.guidance .g-mk { flex: none; color: var(--gold); margin-top: 2px; }
+.guidance .g-mk svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.guidance p { font-family: var(--font-italic); font-style: italic; font-size: 15px; line-height: 1.5; color: var(--green-dark); max-width: 54ch; }
+
+/* ── CONTACT CHANNELS (MEH-296) ── */
+.ch-intro { display: grid; gap: 5px; margin-bottom: 18px; }
+.ch-intro .ci-t { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; color: var(--text); }
+.ch-intro .ci-s { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); line-height: 1.5; }
+.channels-list { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.ch-row { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; padding: 18px 0; border-bottom: 1px solid var(--border); }
+.ch-row .field { margin: 0; }
+.primary-radio { display: inline-flex; align-items: center; gap: 9px; padding: 0 16px; min-height: 54px; border: 1px solid var(--border); border-radius: 9999px; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--fg-muted); cursor: default; white-space: nowrap; background: var(--bg-card); }
+.primary-radio .dot { width: 17px; height: 17px; border-radius: 9999px; border: 1.5px solid color-mix(in oklab, var(--fg-muted) 60%, transparent); position: relative; flex: none; }
+.primary-radio.is-on { border-color: var(--gold); color: var(--gold); background: color-mix(in oklab, var(--gold) 9%, var(--bg-card)); }
+.primary-radio.is-on .dot { border-color: var(--gold); }
+.primary-radio.is-on .dot::after { content: ""; position: absolute; inset: 3px; border-radius: 9999px; background: var(--gold); }
+
+/* step 05 channel groups (Google Business Profile model) */
+.ch-group { margin-bottom: 26px; }
+.cg-head { display: grid; gap: 4px; margin-bottom: 6px; }
+.cg-head .cg-t { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.1; color: var(--text); }
+.cg-head .cg-s { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: var(--fg-muted); }
+.channels-list.no-primary .ch-row { grid-template-columns: 1fr; }
+.ch-more { margin-top: 14px; }
+.ch-more-btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px dashed var(--border); border-radius: 9999px; padding: 11px 18px; min-height: 46px; cursor: default; }
+.ch-more-btn:hover { border-color: var(--green); border-style: solid; }
+.ch-more-btn .plus { display: inline-flex; }
+.ch-more-btn .plus svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ch-menu { margin-top: 10px; max-width: 288px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-card); padding: 6px; display: grid; gap: 2px; }
+.ch-menu .cm-item { display: grid; grid-template-columns: 28px 1fr; gap: 11px; align-items: center; padding: 11px 12px; border-radius: 8px; cursor: default; font-family: var(--font-body); font-size: 14px; color: var(--text); }
+.ch-menu .cm-item:hover { background: var(--light); }
+.ch-menu .cm-item .ic { color: var(--green-dark); display: inline-flex; }
+.ch-menu .cm-item .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* CTA variants by primary channel — what step 05's radio produces on the S6 card */
+.cta-variants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cta-var { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: grid; gap: 14px; align-content: start; }
+.cta-var.is-active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.cta-var .cv-lab { display: flex; align-items: center; gap: 9px; }
+.cta-var .cv-lab .k { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 22px; line-height: 1; color: var(--gold); }
+.cta-var .cv-lab .t { font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted); }
+.cta-var .cv-lab .new { margin-inline-start: auto; font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: color-mix(in oklab, var(--gold) 12%, var(--bg-card)); border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--border)); padding: 3px 8px; border-radius: 9999px; }
+.cta-var .btn-primary { width: 100%; }
+.cta-var .cv-ext { display: inline-flex; opacity: 0.8; margin-inline-start: 2px; }
+.cta-var .cv-ext svg { width: 15px; height: 15px; }
+.cta-var .cv-note { font-family: var(--font-body); font-size: 12px; line-height: 1.5; color: var(--fg-muted); }
+
+/* ── FORM ACTIONS — dark-outline back + filled advance ── */
+.rg-actions { display: flex; align-items: center; gap: 16px; margin-top: 36px; padding-top: 28px; border-top: 1px solid var(--border); }
+.rg-actions .step-meta { font-family: var(--font-body); font-size: 12.5px; font-weight: 500; color: var(--fg-muted); }
+.rg-actions .spacer { flex: 1; }
+.btn-back { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px solid var(--green); border-radius: 9999px; padding: 13px 24px; min-height: 54px; display: inline-flex; align-items: center; gap: 9px; cursor: default; }
+.btn-back:hover { background: var(--green); color: var(--background); }
+.btn-back .arr { font-family: var(--font-italic); font-style: italic; display: inline-block; }
+.btn-ghost-save { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--fg-muted); background: transparent; border: 0; padding: 8px 4px; cursor: default; }
+.btn-ghost-save:hover { color: var(--green); }
+
+/* ── SUCCESS (state c) ── */
+.rg-success { max-width: 660px; margin: 0 auto; text-align: center; display: grid; gap: 20px; justify-items: center; padding: 16px 0 8px; }
+.rg-seal { width: 92px; height: 92px; color: var(--gold); }
+.rg-seal svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.ss-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.rg-success h2 { font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 1.0; letter-spacing: -0.01em; color: var(--text); }
+.ss-lede { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 23px; line-height: 1.4; color: var(--green-dark); max-width: 26ch; }
+.ss-approval { font-family: var(--font-body); font-size: 16px; line-height: 1.7; color: var(--text); max-width: 46ch; }
+.ss-approval b { font-weight: 600; color: var(--green-dark); }
+.rg-next { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; text-align: start; margin-top: 14px; width: 100%; border-top: 1px solid var(--border); padding-top: 32px; }
+.rg-next .nx { display: grid; gap: 7px; align-content: start; }
+.rg-next .nx .n-num { font-family: var(--font-italic); font-style: italic; font-size: 30px; line-height: 1; color: var(--gold); }
+.rg-next .nx .n-t { font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.2; color: var(--text); }
+.rg-next .nx p { font-family: var(--font-body); font-size: 13px; line-height: 1.55; color: var(--fg-muted); }
+.ss-sign { margin-top: 18px; display: grid; gap: 4px; justify-items: center; }
+.ss-sign .sg { font-family: var(--font-italic); font-style: italic; font-size: 26px; color: var(--green-dark); }
+.ss-sign .sn { font-family: var(--font-body); font-size: 12px; letter-spacing: 0.04em; color: var(--fg-muted); }
+.ss-foot { margin-top: 10px; }
+
+/* ── S7 FINAL v4.1 · MEH-758 locked tier line (verbatim) — identical in both success variants ── */
+.ss-verify { display: grid; grid-template-columns: auto 1fr; gap: 11px; align-items: start; text-align: start; max-width: 52ch; margin: 2px auto 0; padding: 14px 16px; border: 1px solid color-mix(in oklab, var(--gold) 42%, var(--border)); background: color-mix(in oklab, var(--gold) 6%, transparent); border-radius: 14px; }
+.ss-verify .vk { color: var(--gold); display: inline-flex; margin-top: 1px; }
+.ss-verify .vk svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.ss-verify p { font-family: var(--font-body); font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.mobile .ss-verify { padding: 10px 12px; gap: 8px; max-width: none; border-radius: 12px; }
+.mobile .ss-verify p { font-size: 11.5px; line-height: 1.5; }
+.mobile .ss-verify .vk svg { width: 17px; height: 17px; }
+
+/* ── CONSUMER /register ── */
+.rg-consumer { max-width: 452px; margin: 0 auto; padding: 36px 0 56px; display: grid; gap: 22px; }
+.rgc-head { display: grid; gap: 12px; }
+.rgc-head .rc-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); display: inline-flex; align-items: center; gap: 12px; }
+.rgc-head .rc-eyebrow .rule { width: 28px; height: 1px; background: var(--gold); display: inline-block; }
+.rgc-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.0; letter-spacing: -0.01em; color: var(--text); }
+.rgc-head .rc-dek { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 18px; line-height: 1.45; color: var(--green-dark); max-width: 34ch; }
+.rgc-form { display: grid; gap: 4px; margin-top: 4px; }
+.rgc-form .btn-primary { width: 100%; margin-top: 8px; }
+.rgc-alt { font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); text-align: center; margin-top: 2px; }
+.rgc-alt a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
+.rgc-alt a:hover { color: var(--green); }
+.rgc-cross { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin-top: 12px; padding: 18px; background: var(--light); border: 1px solid var(--border); border-radius: 16px; text-decoration: none; }
+.rgc-cross .xc-ic { width: 38px; height: 38px; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border); display: grid; place-items: center; color: var(--green-dark); }
+.rgc-cross .xc-ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.rgc-cross .xc-body { display: grid; gap: 2px; }
+.rgc-cross .xc-t { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text); }
+.rgc-cross .xc-s { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.rgc-cross .xc-arr { font-family: var(--font-italic); font-style: italic; font-size: 20px; color: var(--green-dark); transform: scaleX(-1); }
+
+/* ═══ MOBILE FUNNEL ═══ */
+.mobile .rg { display: flex; flex-direction: column; min-height: 812px; }
+.vp.fixed-h .rg { height: 812px; min-height: 0; }
+.mobile .rg-wrap { padding: 0; max-width: none; }
+.mobile .rg-grid { grid-template-columns: 1fr; gap: 0; }
+.mobile .rg-rail { display: none; }
+.mobile .rg-crumb { display: none; }
+
+.m-progress { padding: 14px 18px 15px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: grid; gap: 11px; }
+.m-progress .mp-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.m-progress .mp-step { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--text); }
+.m-progress .mp-count { font-family: var(--font-body); font-weight: 500; font-size: 12px; color: var(--fg-muted); }
+.m-progress .mp-count .numeric { color: var(--gold); }
+.m-progress .mp-nums { display: flex; gap: 7px; align-items: baseline; }
+.mp-num { font-family: var(--font-italic); font-style: italic; font-size: 14px; line-height: 1; color: color-mix(in oklab, var(--fg-muted) 45%, transparent); }
+.mp-num.is-done { color: var(--green); }
+.mp-num.is-now { color: var(--gold); font-size: 17px; }
+.m-progress .mp-bar { height: 3px; background: var(--border); border-radius: 9999px; position: relative; overflow: hidden; }
+.m-progress .mp-bar .fill { position: absolute; inset-inline-start: 0; top: 0; bottom: 0; background: var(--green); border-radius: 9999px; }
+
+.mobile .rg-form { flex: 1 1 auto; min-height: 0; padding: 22px 18px 116px; overflow-y: auto; }
+.mobile .rg-step-head { margin-bottom: 22px; padding-bottom: 18px; }
+.mobile .rg-step-head .sh-top { gap: 14px; }
+.mobile .rg-step-head .sh-num { font-size: 38px; }
+.mobile .rg-step-head h2 { font-size: 30px; }
+.mobile .rg-step-head .sh-dek { font-size: 17px; }
+.mobile .field-row { grid-template-columns: 1fr; gap: 0; }
+.mobile .cat-grid { grid-template-columns: 1fr; }
+.mobile .upload-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 92px; }
+.mobile .ch-row { grid-template-columns: 1fr; gap: 12px; align-items: stretch; }
+.mobile .primary-radio { min-height: 48px; justify-content: center; }
+
+.m-funnel-cta { position: absolute; bottom: 0; inset-inline: 0; z-index: 40; background: color-mix(in oklab, var(--bg-card) 92%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-top: 1px solid var(--border); box-shadow: 0 -8px 30px rgba(46,104,83,0.10); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
+.m-funnel-cta .btn-back { min-height: 52px; padding: 12px 18px; }
+.m-funnel-cta .btn-primary { min-height: 52px; width: 100%; font-size: 15px; }
+.m-funnel-cta.single { grid-template-columns: 1fr; }
+
+.mobile .rg-success { padding: 20px 6px 8px; gap: 10px; }
+.mobile .rg-success h2 { font-size: 38px; }
+.mobile .ss-lede { font-size: 20px; }
+.mobile .rg-next { grid-template-columns: 1fr; gap: 12px; padding-top: 14px; }
+/* mobile success (12A/12B): content scrolls above the sticky CTA — matches the funnel pattern, nothing clipped */
+.mobile .rg-seal { width: 56px; height: 56px; }
+.vp.fixed-h .rg-form:has(> .rg-success) { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 96px; }
+.mobile .rg-consumer { padding: 26px 18px 40px; }
+.mobile .rgc-head h2 { font-size: 36px; }
+
+/* ── LOCKED Assembly v2 footer (Section 14) — as-is ── */
+.hp-footer { background: var(--primary-dark); color: #EAF3DE; padding: 72px 48px 44px; position: relative; z-index: 1; }
+.mobile .hp-footer { padding: 44px 24px 30px; }
+.hp-footer-grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 3fr; gap: 32px; }
+.mobile .hp-footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+.mobile .hp-footer-grid .hp-footer-brand, .mobile .hp-footer-grid .hp-footer-news { grid-column: span 2; }
+.hp-footer-brand { display: grid; gap: 16px; align-content: start; }
+.hp-footer-brand .wordmark { color: #EAF3DE; font-size: 30px; }
+.hp-footer-tagline { font-family: var(--font-display); font-weight: 400; font-size: 18px; line-height: 1.5; color: #EAF3DE; max-width: 32ch; }
+.hp-footer-col h4 { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #C9D9B8; margin-bottom: 16px; }
+.hp-footer-col ul { list-style: none; display: grid; gap: 10px; }
+.hp-footer-col a { font-family: var(--font-body); font-weight: 400; font-size: 14px; color: #EAF3DE; text-decoration: none; }
+.hp-footer-col a:hover { color: #fff; }
+.hp-footer-news { display: grid; gap: 12px; align-content: start; }
+.hp-footer-news .h { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: #EAF3DE; line-height: 1.3; }
+.hp-footer-news .sub { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: #C9D9B8; }
+.hp-footer-news .form { display: grid; grid-template-columns: 1fr auto; gap: 0; border-bottom: 1px solid rgba(234,243,222,0.4); padding-bottom: 8px; }
+.hp-footer-news input { background: transparent; border: 0; outline: none; font-family: var(--font-body); font-size: 14px; color: #EAF3DE; padding: 6px 0; }
+.hp-footer-news input::placeholder { color: rgba(234,243,222,0.5); }
+.hp-footer-news .submit { background: transparent; border: 0; font-family: var(--font-italic); font-style: italic; color: #C9D9B8; font-size: 14px; cursor: default; }
+.hp-footer-bottom { max-width: 1280px; margin: 44px auto 0; padding-top: 24px; border-top: 1px solid rgba(234,243,222,0.15); display: flex; justify-content: space-between; gap: 16px; font-family: var(--font-body); font-size: 12px; color: #C9D9B8; flex-wrap: wrap; }
+.mobile .hp-footer-bottom { flex-direction: column; gap: 8px; }
+
+/* ── PANELS (lock self-check) ── */
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; margin-top: 12px; }
+.panel > h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--doc-ink); margin-bottom: 4px; }
+.panel > h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.panel > .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 22px; line-height: 1.5; max-width: 92ch; }
+.lock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.lock-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.lock-row { display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 13.5px; line-height: 1.5; color: var(--doc-ink); }
+.lock-row:last-child { border-bottom: 0; }
+.lock-row .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.lock-row code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+.lock-row .he { font-family: var(--font-body); }
+.lock-row em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+footer.docfoot { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer.docfoot .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 14px; color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="docpage">
+
+  <!-- ─── MASTHEAD ─── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-now"></span>
+        <span class="ltr"> S7 · MEH-204 · /register/producer · FINAL</span>
+      </div>
+      <h1>The registration flow — <em>הרשמת בית עסק.</em></h1>
+      <div class="sub">The acquisition funnel — a business owner's first real experience of the brand. It opens on a lightweight <b>account gate</b> (step 00, email/password or Google, auto-skipped when signed in), then six editorial steps: a reassurance rail with magazine numerals, labels above every field, <code>.numeric</code> LTR-isolation on numbers, MEH-203's searchable category selector, MEH-530's license field living under the category (required for food, optional toggle otherwise), MEH-296's two-group channel picker feeding the S6 contact card + its new website CTA, and two submitted variants — verify-email for new accounts, logged-in for the rest — both closing on the manual personal approval. Plus the consumer <code>/register</code> frame and the states. Locked to Assembly v2 + S5 + S6.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> design only · no handoff<br>
+      Surface <strong>/register</strong> · v4<br>
+      <span class="numeric">2026-06-05</span><br>
+      <strong style="color: var(--green-dark);">S7 · FINAL</strong><br>
+      <span style="font-size: 10px; color: var(--gold);">account · funnel · verify · LTR ranges</span>
+    </div>
+  </header>
+
+  <!-- ════════════════ A · PRODUCER FUNNEL — DESKTOP 1280 ════════════════ -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Producer funnel — <em>1280, the six steps.</em></h2>
+      <p class="pitch">The whole acquisition flow read as one editorial sequence. It opens on the step-00 account gate, then the sticky reassurance rail carries the magazine-numeral step ladder (<span class="numeric">01–06</span>) and the personal-approval promise; the form column holds one step at a time — labels above every field, generous 54px targets, never a placeholder standing in for a label. Step 02 is MEH-203's searchable selector with MEH-530's license beneath it; step 05 is MEH-296's two-group channel picker; step 06 closes on the manual approval that is the brand's whole point.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>2-col funnel</strong></div>
+  </section>
+
+  <!-- STEP 00 — ACCOUNT -->
+  <div class="bp-cap"><span class="num">00</span><span class="label">Desktop · /register/producer · שלב 0 — חשבון</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 00 — חשבון">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-consumer">
+          <div class="rgc-head">
+            <div class="rc-eyebrow"><span class="rule"></span>פתיחת חשבון</div>
+            <h2>נתחיל מחשבון</h2>
+            <p class="rc-dek">כדי לשמור את ההתקדמות, ושנוכל לחזור אלייך אחרי האישור.</p>
+          </div>
+          <div class="rgc-form">
+            <button class="btn-google" type="button">__ICO_GOOGLE__ הרשמה עם Google</button>
+            <div class="or-div">או</div>
+            <div class="field"><label class="lab" for="a-mail">אימייל</label><input class="input ltr" id="a-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il"></div>
+            <div class="field"><label class="lab" for="a-pass">סיסמה</label><input class="input" id="a-pass" type="password" value="benari2026"><div class="hint">לפחות שמונה תווים.</div></div>
+            <button class="btn-primary" type="button">המשך לפרטי העסק <span class="arr">←</span></button>
+            <div class="acct-skip"><span class="ic">__ICO_CHECK__</span> מחוברת? נדלג על השלב הזה.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>STEP 00 — ACCOUNT GATE · REVISED 2026-06-05 (social-first re-sync)</b> Block order flipped to <b>Google → <span class="he" dir="rtl">או</span> → email + password</b> so the gate shares one auth order with S9 <code>/login</code> — two doors, one house (approved by Sapir, this frame only returns for re-approval). Button hierarchy unchanged: <code>.btn-primary</code> stays the email-path CTA, <code>.btn-google</code> the white outlined secondary. A producer who is already signed in skips straight to step 01 (<span class="he" dir="rtl">מחוברת? נדלג על השלב הזה</span>); the rail's numbered ladder covers steps <span class="numeric">01–06</span>, the profile build. <b>Note:</b> an Apple button is env-conditional — add when <code>NEXT_PUBLIC_APPLE_CLIENT_ID</code> is set; password min-length pending code verification.</p>
+
+  <!-- STEP 01 -->
+  <div class="bp-cap"><span class="num">01</span><span class="label">Desktop · /register/producer · שלב 1 — פרטי בית העסק</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 01 — פרטי העסק">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links">
+            <a class="nav-link" href="#">גלו</a>
+            <a class="nav-link" href="#">מפה</a>
+            <a class="nav-link" href="#">אודות</a>
+          </div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-grid">
+          <aside class="rg-rail">
+            <div>
+              <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+              <div class="rail-title">להוסיף את העסק שלך</div>
+            </div>
+            <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+            <div class="rg-steps">
+              <div class="rg-step is-current"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+            </div>
+            <div class="rail-note">
+              <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+              <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+            </div>
+          </aside>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">01</span><h2>פרטי בית העסק</h2></div>
+              <div class="sh-dek">נתחיל מהבסיס — איך קוראים לעסק, איפה הוא יושב, ומספר העוסק לאימות.</div>
+            </div>
+            <div class="field">
+              <label class="lab" for="biz-name">שם בית העסק</label>
+              <input class="input" id="biz-name" type="text" placeholder="למשל: מחלבת בן ארי" value="מחלבת בן ארי">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="lab" for="biz-city">עיר או יישוב</label>
+                <span class="input-wrap"><span class="adorn">__ICO_PIN__</span><input class="input" id="biz-city" type="text" placeholder="חיפוש יישוב" value="כפר ויתקין"></span>
+              </div>
+              <div class="field">
+                <label class="lab" for="biz-lic">מספר עוסק <span class="opt">מורשה או פטור</span></label>
+                <input class="input numeric" id="biz-lic" type="text" inputmode="numeric" placeholder="000000000" value="514783920">
+              </div>
+            </div>
+            <div class="field" style="margin-bottom: 4px;">
+              <label class="lab" for="biz-addr">כתובת מדויקת <span class="opt">לא חובה</span></label>
+              <input class="input" id="biz-addr" type="text" placeholder="רחוב ומספר — יוצג רק אם תבחרי שכן">
+              <div class="hint">מספר העוסק משמש לאימות בלבד ולא יוצג בפומבי. הכתובת מופיעה במפה רק אם תאשרי.</div>
+            </div>
+            <div class="rg-actions">
+              <span class="step-meta">שלב <span class="numeric">01</span> מתוך <span class="numeric">06</span></span>
+              <span class="spacer"></span>
+              <button class="btn-ghost-save" type="button">שמרי כטיוטה</button>
+              <button class="btn-primary" type="button">המשך לקטגוריה <span class="arr">←</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>RAIL</b> The numerals are the S6 magazine device, not a progress bar dressed up. The personal-approval card sits in view the entire flow — it is the single most on-brand message in the funnel. <b>NUMERIC</b> <code>.numeric</code> isolates the license number and keeps it LTR inside the RTL form.</p>
+
+  <!-- STEP 02 — MEH-203 searchable category selector -->
+  <div class="bp-cap"><span class="num">02</span><span class="label">Desktop · שלב 2 — קטגוריה · MEH-203 searchable selector</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 02 — קטגוריה">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-grid">
+          <aside class="rg-rail">
+            <div>
+              <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+              <div class="rail-title">להוסיף את העסק שלך</div>
+            </div>
+            <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+            <div class="rg-steps">
+              <div class="rg-step is-done"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-current"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+            </div>
+            <div class="rail-note">
+              <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+              <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+            </div>
+          </aside>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">02</span><h2>הקטגוריה שלך</h2></div>
+              <div class="sh-dek">בחרי את הקטגוריה שמתארת הכי טוב את מה שאת מכינה. אפשר פשוט לחפש.</div>
+            </div>
+            <div class="field cat-search">
+              <label class="lab" for="cat-q">חיפוש קטגוריה</label>
+              <span class="input-wrap"><span class="adorn">__ICO_SEARCH__</span><input class="input" id="cat-q" type="text" placeholder="לדוגמה: גבינה, לחם, סבון"></span>
+            </div>
+            <div class="cat-grid">
+              <div class="cat-opt is-selected"><span class="ct-glyph">__G_DAIRY__</span><span class="ct-body"><span class="ct-name">חלב וגבינות</span><span class="ct-desc">גבינות, יוגורט, חמאה</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_BREAD__</span><span class="ct-body"><span class="ct-name">לחמים ואפייה</span><span class="ct-desc">מאפים, חלות, עוגות</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_PRODUCE__</span><span class="ct-body"><span class="ct-name">ירקות ופירות</span><span class="ct-desc">מהשדה, עונתי, אורגני</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_PANTRY__</span><span class="ct-body"><span class="ct-name">שמנים ודבש</span><span class="ct-desc">שמן זית, דבש, ריבות</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_MEAT__</span><span class="ct-body"><span class="ct-name">בשר, עוף ודגים</span><span class="ct-desc">טרי, כשר, מהחווה</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_BODYCARE__</span><span class="ct-body"><span class="ct-name">טיפוח וסבונים</span><span class="ct-desc">סבונים, נרות, שמנים</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+            </div>
+            <div class="lic-block">
+              <div class="field" style="margin-bottom: 0;">
+                <label class="lab" for="cat-lic">מספר רישיון יצרן / רישיון עסק <span class="req">נדרש לקטגוריה זו</span></label>
+                <div class="hint">חלב וגבינות היא קטגוריית ייצור מזון — לכן הרישיון נדרש. בחקלאות גולמית, סבונים ונרות הוא יופיע כאופציונלי בלבד.</div>
+                <input class="input numeric" id="cat-lic" type="text" inputmode="numeric" placeholder="0000000" value="2748013">
+                <div class="fmt-note"><span class="fn-mk">__ICO_ALERT__</span><span class="fn-t">מספר רישיון יצרן הוא <span class="numeric">7–10</span> ספרות.</span></div>
+              </div>
+            </div>
+            <div class="rg-actions">
+              <span class="step-meta">שלב <span class="numeric">02</span> מתוך <span class="numeric">06</span></span>
+              <span class="spacer"></span>
+              <button class="btn-back" type="button"><span class="arr">→</span> חזרה</button>
+              <button class="btn-primary" type="button">המשך לסיפור <span class="arr">←</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>MEH-203</b> The twelve-pill wall is gone. A search field filters the set live (typing <span class="he" dir="rtl">"גב"</span> dims everything but <span class="he" dir="rtl">חלב וגבינות</span> — see state D·right); selection is a single filled-check card on <code>--light</code>, identical affordance to the map's selected pill. Hand-drawn glyphs are reused verbatim from S5.</p>
+
+  <!-- STEP 03 — story + quote -->
+  <div class="bp-cap"><span class="num">03</span><span class="label">Desktop · שלב 3 — הסיפור שלך · feeds S6 story + pull-quote</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 03 — הסיפור">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-grid">
+          <aside class="rg-rail">
+            <div>
+              <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+              <div class="rail-title">להוסיף את העסק שלך</div>
+            </div>
+            <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+            <div class="rg-steps">
+              <div class="rg-step is-done"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-current"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+            </div>
+            <div class="rail-note">
+              <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+              <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+            </div>
+          </aside>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">03</span><h2>הסיפור שלך</h2></div>
+              <div class="sh-dek">זה הלב של הדף. ספרי מי את ומה את מכינה — אנחנו נבנה מהמילים האלה כתבה.</div>
+            </div>
+            <div class="field">
+              <label class="lab" for="story">הסיפור</label>
+              <div class="hint">שתיים-שלוש פסקאות, בגוף ראשון — "אני אופה", "התחלתי כש...". בלי שיווק, רק את.</div>
+              <textarea class="input" id="story" rows="6">לפני שמונה שנים התחלתי להכין גבינות במטבח הביתי, מחלב של שלוש עזים בחצר. היום יש עדר קטן, מחלבה ברפת הישנה, ושכנים שמגיעים בכל שישי. כל גבינה מתיישנת לפי הקצב שלה — אני לא ממהרת אותן.</textarea>
+              <div class="charcount"><span class="ltr"><span class="numeric">218 / 1,200</span> תווים</span></div>
+            </div>
+            <div class="field">
+              <label class="lab" for="quote">משפט שמייצג אותך</label>
+              <div class="hint">ציטוט קצר שיופיע גדול, בראש הדף שלך. זה הדבר הראשון שיקראו.</div>
+              <input class="input" id="quote" type="text" placeholder="למשל: כל גבינה מתיישנת לפי הקצב שלה." value="כל גבינה מתיישנת לפי הקצב שלה.">
+            </div>
+            <div class="rail-note" style="margin-top: 6px;">
+              <div class="rn-t"><span class="ic">__ICO_PEN__</span> המילים שלך הופכות לכתבה</div>
+              <p>המשפט הזה מופיע כציטוט המוביל, והסיפור נפרס כמו כתבה — בדיוק כמו בדף של מחלבת בן ארי. אנחנו עורכות קלות לאורך וסגנון, ותמיד שולחות לאישורך לפני פרסום.</p>
+            </div>
+            <div class="rg-actions">
+              <span class="step-meta">שלב <span class="numeric">03</span> מתוך <span class="numeric">06</span></span>
+              <span class="spacer"></span>
+              <button class="btn-back" type="button"><span class="arr">→</span> חזרה</button>
+              <button class="btn-primary" type="button">המשך לתמונות <span class="arr">←</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 04 — photos -->
+  <div class="bp-cap"><span class="num">04</span><span class="label">Desktop · שלב 4 — תמונות · real-photo guidance</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 04 — תמונות">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-grid">
+          <aside class="rg-rail">
+            <div>
+              <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+              <div class="rail-title">להוסיף את העסק שלך</div>
+            </div>
+            <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+            <div class="rg-steps">
+              <div class="rg-step is-done"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-current"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+            </div>
+            <div class="rail-note">
+              <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+              <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+            </div>
+          </aside>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">04</span><h2>תמונות</h2></div>
+              <div class="sh-dek">במהמקור התמונות הן הזהות. תמונה אחת אמיתית שווה יותר מעמוד שלם של מילים.</div>
+            </div>
+            <div class="field">
+              <label class="lab">העלאת תמונות <span class="opt">מינימום <span class="numeric">1</span> · מומלץ <span class="numeric">3–8</span></span></label>
+              <div class="hint">צריך תמונה אחת לפחות כדי לפרסם. אפשר להוסיף עוד גם אחרי הפרסום.</div>
+              <div class="upload-zone">
+                <span class="uz-ic">__ICO_UPLOAD__</span>
+                <span class="uz-t">גררי לכאן תמונות, או <b>בחרי מהמכשיר</b></span>
+                <span class="uz-s">JPG או PNG · עד 10MB לתמונה</span>
+              </div>
+              <div class="upload-grid">
+                <div class="ug-cell is-cover"><span class="photo dairy"></span><span class="ug-cover-badge">תמונה ראשית</span><button class="ug-del" type="button" aria-label="הסרה">__ICO_X__</button></div>
+                <div class="ug-cell"><span class="photo hands"></span><button class="ug-del" type="button" aria-label="הסרה">__ICO_X__</button></div>
+                <div class="ug-cell"><span class="photo produce"></span><button class="ug-del" type="button" aria-label="הסרה">__ICO_X__</button></div>
+                <button class="ug-cell ug-add" type="button">__ICO_PLUS__<span>הוספה</span></button>
+              </div>
+            </div>
+            <div class="guidance">
+              <span class="g-mk">__ICO_LEAF__</span>
+              <p>תמונות אמיתיות — מהמטבח, מהשדה, מהידיים שלך. בלי תמונות סטוק; אנחנו מזהות אותן ולא נפרסם. התמונה הראשית היא הפנים של העסק במפה ובכרטיס.</p>
+            </div>
+            <div class="rg-actions">
+              <span class="step-meta">שלב <span class="numeric">04</span> מתוך <span class="numeric">06</span></span>
+              <span class="spacer"></span>
+              <button class="btn-back" type="button"><span class="arr">→</span> חזרה</button>
+              <button class="btn-primary" type="button">המשך לערוצי קשר <span class="arr">←</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 05 — MEH-296 channels -->
+  <div class="bp-cap"><span class="num">05</span><span class="label">Desktop · שלב 5 — ערוצי קשר · MEH-296 · feeds S6 contact card</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 05 — ערוצי קשר">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+        <div class="rg-grid">
+          <aside class="rg-rail">
+            <div>
+              <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+              <div class="rail-title">להוסיף את העסק שלך</div>
+            </div>
+            <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+            <div class="rg-steps">
+              <div class="rg-step is-done"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-done"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step is-current"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+              <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+            </div>
+            <div class="rail-note">
+              <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+              <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+            </div>
+          </aside>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">05</span><h2>איך יוצרים איתך קשר</h2></div>
+              <div class="sh-dek">ככה הלקוחות יגיעו אלייך, ומה שכבר יש לך ברשת.</div>
+            </div>
+            <div class="ch-group">
+              <div class="cg-head">
+                <span class="cg-t">ערוצי פנייה</span>
+                <span class="cg-s">לכאן הלקוחות פונות — הראשי יהיה הכפתור הגדול בדף.</span>
+              </div>
+              <div class="channels-list">
+                <div class="ch-row">
+                  <div class="field"><label class="lab">וואטסאפ <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_WA__</span><input class="input numeric" type="tel" inputmode="tel" placeholder="050-000-0000" value="052-873-1140"></span></div>
+                  <span class="primary-radio is-on"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+                <div class="ch-row">
+                  <div class="field"><label class="lab">טלפון <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_PHONE__</span><input class="input numeric" type="tel" inputmode="tel" placeholder="09-000-0000"></span></div>
+                  <span class="primary-radio"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+                <div class="ch-row">
+                  <div class="field"><label class="lab">אתר או קישור <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_GLOBE__</span><input class="input ltr" type="url" placeholder="www.example.co.il"></span></div>
+                  <span class="primary-radio"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+              </div>
+            </div>
+            <div class="ch-group">
+              <div class="cg-head">
+                <span class="cg-t">נוכחות ברשת</span>
+                <span class="cg-s">קישורים שיופיעו בדף שלך.</span>
+              </div>
+              <div class="channels-list no-primary">
+                <div class="ch-row"><div class="field"><label class="lab">אינסטגרם <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_IG__</span><input class="input ltr" type="text" placeholder="@username" value="@benari.dairy"></span></div></div>
+                <div class="ch-row"><div class="field"><label class="lab">פייסבוק <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_FB__</span><input class="input ltr" type="text" placeholder="@page-name או קישור"></span></div></div>
+              </div>
+              <div class="ch-more">
+                <button class="ch-more-btn" type="button"><span class="plus">__ICO_PLUS__</span> עוד ערוץ</button>
+                <div class="ch-menu" role="menu">
+                  <div class="cm-item" role="menuitem"><span class="ic">__ICO_TT__</span> טיקטוק</div>
+                  <div class="cm-item" role="menuitem"><span class="ic">__ICO_YT__</span> יוטיוב</div>
+                  <div class="cm-item" role="menuitem"><span class="ic">__ICO_MAIL__</span> אימייל</div>
+                </div>
+              </div>
+            </div>
+            <div class="rg-actions">
+              <span class="step-meta">שלב <span class="numeric">05</span> מתוך <span class="numeric">06</span></span>
+              <span class="spacer"></span>
+              <button class="btn-back" type="button"><span class="arr">→</span> חזרה</button>
+              <button class="btn-primary" type="button">שליחה לאישור <span class="arr">←</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>MEH-296</b> Two groups, the Google-Business-Profile model. <b>ערוצי פנייה</b> (WhatsApp + phone + website) carry the gold <span class="he" dir="rtl">ערוץ ראשי</span> radio — that pick is the single source for the S6 contact-card CTA variant. <b>נוכחות ברשת</b> (Instagram / Facebook, <code>.ltr</code>) is link-only, no primary radio. <span class="he" dir="rtl">+ עוד ערוץ</span> progressively discloses TikTok · YouTube · אימייל instead of rendering eight empty fields.</p>
+
+  <div class="bp-cap"><span class="num">05·CTA</span><span class="label">מה הערוץ הראשי מייצר בכרטיס הקשר (S6)</span><span class="rule"></span><span class="dims">A · B · C</span></div>
+  <div class="vp" dir="rtl" style="width: 820px;" data-screen-label="CTA variants by primary channel">
+    <div class="mh paper rg" style="padding: 28px 28px 30px;">
+      <div class="cta-variants">
+        <div class="cta-var">
+          <div class="cv-lab"><span class="k">A</span><span class="t">ראשי · וואטסאפ</span></div>
+          <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה</button>
+          <span class="cv-note">ברירת המחדל — הערוץ שרוב בתי העסק בוחרים.</span>
+        </div>
+        <div class="cta-var">
+          <div class="cv-lab"><span class="k">B</span><span class="t">ראשי · טלפון</span></div>
+          <button class="btn-primary" type="button">__ICO_PHONE__ התקשרי</button>
+          <span class="cv-note">חיוג ישיר — למי שמעדיפה לדבר.</span>
+        </div>
+        <div class="cta-var is-active">
+          <div class="cv-lab"><span class="k">C</span><span class="t">ראשי · אתר</span><span class="new">חדש</span></div>
+          <button class="btn-primary" type="button">__ICO_GLOBE__ להזמנה באתר <span class="cv-ext">__ICO_EXT__</span></button>
+          <span class="cv-note">למי שמוכרת דרך אתר משלה — נפתח בלשונית חדשה.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>CTA VARIANT C</b> Adding website to <span class="he" dir="rtl">ערוצי פנייה</span> makes it eligible as the primary channel — so the S6 contact card gains a third CTA: <span class="he" dir="rtl">להזמנה באתר</span> with the globe glyph + an external-link affordance (it leaves Mehamakor for the producer's own site). A / B are the WhatsApp + phone variants locked in S6.</p>
+
+
+  <!-- STEP 06 — success · variant A: logged-in / upgrade -->
+  <div class="bp-cap"><span class="num">06A</span><span class="label">Desktop · שלב 6 — סיום · variant A · logged-in / upgrade (state c)</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 06 — סיום (success)">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <div class="rg-success">
+          <span class="rg-seal">__ICO_SEAL__</span>
+          <span class="ss-eyebrow">נשלח לאישור</span>
+          <h2>קיבלנו את הפרטים שלך</h2>
+          <p class="ss-lede">תודה, נורית. הסיפור של מחלבת בן ארי אצלנו.</p>
+          <p class="ss-approval">כל בית עסק עובר <b>אישור אישי</b> לפני שהוא עולה לאוויר — אנחנו קוראות כל סיפור ובודקות כל עסק. נחזור אלייך תוך <b>כמה ימים</b>.</p>
+          <div class="rg-next">
+            <div class="nx"><span class="n-num">01</span><span class="n-t">בדיקה אישית</span><p>קוראות את הסיפור, מאמתות את מספר העוסק, מסתכלות על התמונות.</p></div>
+            <div class="nx"><span class="n-num">02</span><span class="n-t">שיחת היכרות</span><p>מתקשרות אלייך לכמה דקות — להכיר, ולסגור פרטים אחרונים.</p></div>
+            <div class="nx"><span class="n-num">03</span><span class="n-t">הדף עולה לאוויר</span><p>הדף שלך מתפרסם עם תג מאומת, ומופיע במפה ובחיפוש.</p></div>
+          </div>
+          <div class="ss-sign">
+            <span class="sg">בשמחה, ספיר</span>
+            <span class="sn">ספיר — מייסדת מהמקור</span>
+          </div>
+          <div class="ss-verify"><span class="vk">__ICO_SEAL__</span><p>כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.</p></div>
+          <div class="ss-foot" style="display: grid; gap: 14px; justify-items: center;">
+            <button class="btn-primary" type="button">לדשבורד שלי <span class="arr">←</span></button>
+            <a class="ss-home" href="#" style="font-family: var(--font-body); font-size: 13.5px; color: var(--fg-muted); text-decoration: none;">חזרה לעמוד הבית</a>
+          </div>
+        </div>
+      </div>
+      <footer class="hp-footer">
+        <div class="hp-footer-grid">
+          <div class="hp-footer-brand">
+            <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+            <p class="hp-footer-tagline">אוכל אמיתי, ישר מהמקור אלייך.</p>
+          </div>
+          <div class="hp-footer-col"><h4>גלו</h4><ul><li><a href="#">מפת בתי עסק</a></li><li><a href="#">קטגוריות</a></li><li><a href="#">קרוב אלייך</a></li></ul></div>
+          <div class="hp-footer-col"><h4>לבתי עסק</h4><ul><li><a href="#">הוספת עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">אישור ואימות</a></li></ul></div>
+          <div class="hp-footer-col"><h4>מהמקור</h4><ul><li><a href="#">הסיפור שלנו</a></li><li><a href="#">צרו קשר</a></li><li><a href="#">תנאי שימוש</a></li></ul></div>
+          <div class="hp-footer-news">
+            <div class="h">מכתב מהמקור</div>
+            <div class="sub">בתי עסק חדשים שנפתחו לידך, אחת לשבועיים.</div>
+            <div class="form"><input type="email" placeholder="המייל שלך"><button class="submit" type="button">הרשמה ←</button></div>
+          </div>
+        </div>
+        <div class="hp-footer-bottom"><span>© <span class="numeric">2026</span> מהמקור · כל הזכויות שמורות</span><span>נבנה באהבה בישראל</span></div>
+      </footer>
+    </div>
+  </div>
+  <p class="cap-note"><b>STATE C · VARIANT A — LOGGED-IN / UPGRADE</b> The funnel does not end on "thanks, you're live". It ends on the promise that makes Mehamakor a trusted map and not a marketplace: a human reads every submission. Gold approval seal, founder's first-name signature, and a <span class="he" dir="rtl">תוך כמה ימים</span> window. Footer is the locked Assembly v2 lockup — embedded as-is because this is a true page end. Shown to a producer who was already signed in (or used Google at step 00). <b>S7 FINAL v4.1 · MEH-758</b> The locked tier line (verbatim) is set below the message body, above the CTA, as a calm gold-sealed note — <span class="he" dir="rtl">כל בית עסק עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.</span> Identical treatment in variant B and on mobile (12A/12B). No other S7 decision re-opened.</p>
+
+  <!-- STEP 06 — success · variant B: verify-email (new account) -->
+  <div class="bp-cap"><span class="num">06B</span><span class="label">Desktop · שלב 6 — סיום · variant B · verify-email (new account)</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+  <div class="vp desktop" dir="rtl" data-screen-label="/register/producer · Step 06 — סיום (verify email)">
+    <div class="mh paper rg">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+      <div class="rg-wrap">
+        <div class="rg-success">
+          <span class="rg-seal">__ICO_MAIL__</span>
+          <span class="ss-eyebrow">אימות מייל</span>
+          <h2>בדקי את תיבת המייל שלך</h2>
+          <p class="ss-approval">אם האימייל פנוי, נשלח אלייך קישור אימות.</p>
+          <p class="ss-resend">לא קיבלת? בדקי בתיקיית הספאם, או <a href="#">שלחי שוב</a>.</p>
+          <div class="ss-verify"><span class="vk">__ICO_SEAL__</span><p>כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.</p></div>
+          <div class="ss-foot">
+            <button class="btn-back" type="button"><span class="arr">→</span> חזרה לעמוד הבית</button>
+          </div>
+        </div>
+      </div>
+      <footer class="hp-footer">
+        <div class="hp-footer-grid">
+          <div class="hp-footer-brand">
+            <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+            <p class="hp-footer-tagline">אוכל אמיתי, ישר מהמקור אלייך.</p>
+          </div>
+          <div class="hp-footer-col"><h4>גלו</h4><ul><li><a href="#">מפת בתי עסק</a></li><li><a href="#">קטגוריות</a></li><li><a href="#">קרוב אלייך</a></li></ul></div>
+          <div class="hp-footer-col"><h4>לבתי עסק</h4><ul><li><a href="#">הוספת עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">אישור ואימות</a></li></ul></div>
+          <div class="hp-footer-col"><h4>מהמקור</h4><ul><li><a href="#">הסיפור שלנו</a></li><li><a href="#">צרו קשר</a></li><li><a href="#">תנאי שימוש</a></li></ul></div>
+          <div class="hp-footer-news">
+            <div class="h">מכתב מהמקור</div>
+            <div class="sub">בתי עסק חדשים שנפתחו לידך, אחת לשבועיים.</div>
+            <div class="form"><input type="email" placeholder="המייל שלך"><button class="submit" type="button">הרשמה ←</button></div>
+          </div>
+        </div>
+        <div class="hp-footer-bottom"><span>© <span class="numeric">2026</span> מהמקור · כל הזכויות שמורות</span><span>נבנה באהבה בישראל</span></div>
+      </footer>
+    </div>
+  </div>
+  <p class="cap-note"><b>STATE C · VARIANT B — VERIFY EMAIL</b> Shown to a producer who created a new email + password account at step 00. Before the submission enters review she confirms the address: <span class="he" dir="rtl">בדקי את תיבת המייל שלך</span>, with a spam-folder fallback (<span class="he" dir="rtl">לא קיבלת? בדקי בספאם</span>) and a resend. The email is <code>.ltr</code>-isolated. Once verified she lands on variant A. <b>S7 FINAL v4.1 · MEH-758</b> Same locked tier line as variant A, placed below the message body, above the CTA — identical treatment across both variants and breakpoints.</p>
+
+
+  <!-- ════════════════ B · PRODUCER FUNNEL — MOBILE 375 ════════════════ -->
+  <section class="section-head">
+    <div class="letter">B</div>
+    <div>
+      <h2>Producer funnel — <em>375, one step a screen.</em></h2>
+      <p class="pitch">The rail collapses into a slim progress header (state b) that rides above every step — current label, step count, the six numerals, and a fill bar. One field group fills the screen; a frosted sticky bar pins חזרה + the advance CTA to the thumb zone. Touch targets stay ≥ 48px. The locked mobile navbar sits on top throughout.</p>
+    </div>
+    <div class="meta">375 × 812<br><strong>sticky CTA</strong></div>
+  </section>
+
+  <div class="frame-row">
+
+    <!-- M-STEP 00 — ACCOUNT -->
+    <div>
+      <div class="bp-cap"><span class="num">00</span><span class="label">Mobile · שלב 0 — חשבון</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile" dir="rtl" data-screen-label="Mobile · /register/producer · Step 00 — חשבון">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="rg-consumer">
+            <div class="rgc-head">
+              <div class="rc-eyebrow"><span class="rule"></span>פתיחת חשבון</div>
+              <h2>נתחיל מחשבון</h2>
+              <p class="rc-dek">כדי לשמור את ההתקדמות ולחזור אלייך אחרי האישור.</p>
+            </div>
+            <div class="rgc-form">
+              <button class="btn-google" type="button">__ICO_GOOGLE__ הרשמה עם Google</button>
+              <div class="or-div">או</div>
+              <div class="field"><label class="lab" for="ma-mail">אימייל</label><input class="input ltr" id="ma-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il"></div>
+              <div class="field"><label class="lab" for="ma-pass">סיסמה</label><input class="input" id="ma-pass" type="password" value="benari2026"><div class="hint">לפחות שמונה תווים.</div></div>
+              <button class="btn-primary" type="button">המשך לפרטי העסק <span class="arr">←</span></button>
+              <div class="acct-skip"><span class="ic">__ICO_CHECK__</span> מחוברת? נדלג על השלב הזה.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 01 -->
+    <div>
+      <div class="bp-cap"><span class="num">07</span><span class="label">שלב 1 — פרטי העסק</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 01">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">פרטי העסק</span><span class="mp-count">שלב <span class="numeric">1</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-now">01</span><span class="mp-num">02</span><span class="mp-num">03</span><span class="mp-num">04</span><span class="mp-num">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 16.6%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">01</span><h2>פרטי בית העסק</h2></div>
+              <div class="sh-dek">נתחיל מהבסיס — שם, מיקום, ומספר עוסק לאימות.</div>
+            </div>
+            <div class="field"><label class="lab" for="m-name">שם בית העסק</label><input class="input" id="m-name" type="text" placeholder="למשל: מחלבת בן ארי" value="מחלבת בן ארי"></div>
+            <div class="field"><label class="lab" for="m-city">עיר או יישוב</label><span class="input-wrap"><span class="adorn">__ICO_PIN__</span><input class="input" id="m-city" type="text" placeholder="חיפוש יישוב" value="כפר ויתקין"></span></div>
+            <div class="field"><label class="lab" for="m-lic">מספר עוסק <span class="opt">מורשה/פטור</span></label><input class="input numeric" id="m-lic" type="text" inputmode="numeric" placeholder="000000000" value="514783920"><div class="hint">לאימות בלבד — לא יוצג בפומבי.</div></div>
+          </div>
+          <div class="m-funnel-cta single">
+            <button class="btn-primary" type="button">המשך לקטגוריה <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 02 -->
+    <div>
+      <div class="bp-cap"><span class="num">08</span><span class="label">שלב 2 — קטגוריה</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 02">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">קטגוריה</span><span class="mp-count">שלב <span class="numeric">2</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-done">01</span><span class="mp-num is-now">02</span><span class="mp-num">03</span><span class="mp-num">04</span><span class="mp-num">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 33.3%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">02</span><h2>הקטגוריה שלך</h2></div>
+            </div>
+            <div class="field cat-search"><span class="input-wrap"><span class="adorn">__ICO_SEARCH__</span><input class="input" type="text" placeholder="חיפוש קטגוריה"></span></div>
+            <div class="cat-grid">
+              <div class="cat-opt is-selected"><span class="ct-glyph">__G_DAIRY__</span><span class="ct-body"><span class="ct-name">חלב וגבינות</span><span class="ct-desc">גבינות, יוגורט, חמאה</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_BREAD__</span><span class="ct-body"><span class="ct-name">לחמים ואפייה</span><span class="ct-desc">מאפים, חלות, עוגות</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+              <div class="cat-opt"><span class="ct-glyph">__G_PRODUCE__</span><span class="ct-body"><span class="ct-name">ירקות ופירות</span><span class="ct-desc">מהשדה, עונתי</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+            </div>
+            <div class="lic-block">
+              <div class="field" style="margin-bottom: 0;">
+                <label class="lab" for="m-cat-lic">מספר רישיון יצרן <span class="req">נדרש לקטגוריה זו</span></label>
+                <div class="hint">חלב וגבינות היא קטגוריית ייצור מזון.</div>
+                <input class="input numeric" id="m-cat-lic" type="text" inputmode="numeric" placeholder="0000000" value="2748013">
+                <div class="fmt-note"><span class="fn-mk">__ICO_ALERT__</span><span class="fn-t"><span class="numeric">7–10</span> ספרות.</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="m-funnel-cta">
+            <button class="btn-back" type="button"><span class="arr">→</span></button>
+            <button class="btn-primary" type="button">המשך לסיפור <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 03 -->
+    <div>
+      <div class="bp-cap"><span class="num">09</span><span class="label">שלב 3 — הסיפור</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 03">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">הסיפור שלך</span><span class="mp-count">שלב <span class="numeric">3</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-done">01</span><span class="mp-num is-done">02</span><span class="mp-num is-now">03</span><span class="mp-num">04</span><span class="mp-num">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 50%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">03</span><h2>הסיפור שלך</h2></div>
+              <div class="sh-dek">בגוף ראשון, בלי שיווק. מהמילים האלה נבנה כתבה.</div>
+            </div>
+            <div class="field"><label class="lab" for="m-story">הסיפור</label><textarea class="input" id="m-story" rows="5">לפני שמונה שנים התחלתי להכין גבינות במטבח הביתי, מחלב של שלוש עזים בחצר. היום יש עדר קטן ומחלבה ברפת הישנה.</textarea><div class="charcount"><span class="ltr"><span class="numeric">142 / 1,200</span> תווים</span></div></div>
+            <div class="field"><label class="lab" for="m-quote">משפט מוביל</label><input class="input" id="m-quote" type="text" placeholder="ציטוט קצר לראש הדף" value="כל גבינה מתיישנת לפי הקצב שלה."></div>
+          </div>
+          <div class="m-funnel-cta">
+            <button class="btn-back" type="button"><span class="arr">→</span></button>
+            <button class="btn-primary" type="button">המשך לתמונות <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 04 -->
+    <div>
+      <div class="bp-cap"><span class="num">10</span><span class="label">שלב 4 — תמונות</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 04">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">תמונות</span><span class="mp-count">שלב <span class="numeric">4</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-done">01</span><span class="mp-num is-done">02</span><span class="mp-num is-done">03</span><span class="mp-num is-now">04</span><span class="mp-num">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 66.6%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">04</span><h2>תמונות</h2></div>
+              <div class="sh-dek">התמונות הן הזהות. אמיתיות, מהמטבח שלך.</div>
+            </div>
+            <div class="upload-zone">
+              <span class="uz-ic">__ICO_UPLOAD__</span>
+              <span class="uz-t"><b>בחרי תמונות</b></span>
+              <span class="uz-s">JPG/PNG · עד 10MB</span>
+            </div>
+            <div class="upload-grid">
+              <div class="ug-cell is-cover"><span class="photo dairy"></span><span class="ug-cover-badge">ראשית</span></div>
+              <div class="ug-cell"><span class="photo hands"></span></div>
+              <div class="ug-cell"><span class="photo produce"></span></div>
+              <button class="ug-cell ug-add" type="button">__ICO_PLUS__<span>הוספה</span></button>
+            </div>
+            <div class="guidance"><span class="g-mk">__ICO_LEAF__</span><p>בלי תמונות סטוק — אנחנו מזהות אותן. תמונה אחת לפחות; אפשר להוסיף עוד גם אחרי הפרסום.</p></div>
+          </div>
+          <div class="m-funnel-cta">
+            <button class="btn-back" type="button"><span class="arr">→</span></button>
+            <button class="btn-primary" type="button">המשך לערוצי קשר <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 05 -->
+    <div>
+      <div class="bp-cap"><span class="num">11</span><span class="label">שלב 5 — ערוצי קשר</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 05">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">ערוצי קשר</span><span class="mp-count">שלב <span class="numeric">5</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-done">01</span><span class="mp-num is-done">02</span><span class="mp-num is-done">03</span><span class="mp-num is-done">04</span><span class="mp-num is-now">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 83.3%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">05</span><h2>ערוצי קשר</h2></div>
+              <div class="sh-dek">ערוצי פנייה ונוכחות ברשת.</div>
+            </div>
+            <div class="ch-group">
+              <div class="cg-head">
+                <span class="cg-t">ערוצי פנייה</span>
+                <span class="cg-s">לכאן הלקוחות פונות — הראשי יהיה הכפתור הגדול בדף.</span>
+              </div>
+              <div class="channels-list">
+                <div class="ch-row">
+                  <div class="field"><label class="lab">וואטסאפ <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_WA__</span><input class="input numeric" type="tel" inputmode="tel" value="052-873-1140"></span></div>
+                  <span class="primary-radio is-on"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+                <div class="ch-row">
+                  <div class="field"><label class="lab">טלפון <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_PHONE__</span><input class="input numeric" type="tel" inputmode="tel" placeholder="09-000-0000"></span></div>
+                  <span class="primary-radio"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+                <div class="ch-row">
+                  <div class="field"><label class="lab">אתר או קישור <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_GLOBE__</span><input class="input ltr" type="url" placeholder="www.example.co.il"></span></div>
+                  <span class="primary-radio"><span class="dot"></span> ערוץ ראשי</span>
+                </div>
+              </div>
+            </div>
+            <div class="ch-group">
+              <div class="cg-head">
+                <span class="cg-t">נוכחות ברשת</span>
+                <span class="cg-s">קישורים שיופיעו בדף שלך.</span>
+              </div>
+              <div class="channels-list no-primary">
+                <div class="ch-row"><div class="field"><label class="lab">אינסטגרם <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_IG__</span><input class="input ltr" type="text" placeholder="@username" value="@benari.dairy"></span></div></div>
+                <div class="ch-row"><div class="field"><label class="lab">פייסבוק <span class="opt">לא חובה</span></label><span class="input-wrap"><span class="adorn">__ICO_FB__</span><input class="input ltr" type="text" placeholder="@page-name או קישור"></span></div></div>
+              </div>
+              <div class="ch-more">
+                <button class="ch-more-btn" type="button"><span class="plus">__ICO_PLUS__</span> עוד ערוץ</button>
+              </div>
+            </div>
+          </div>
+          <div class="m-funnel-cta">
+            <button class="btn-back" type="button"><span class="arr">→</span></button>
+            <button class="btn-primary" type="button">שליחה לאישור <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 06 — success -->
+    <div>
+      <div class="bp-cap"><span class="num">12A</span><span class="label">שלב 6 — סיום · variant A · logged-in</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 06 (success)">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="rg-form">
+            <div class="rg-success">
+              <span class="rg-seal">__ICO_SEAL__</span>
+              <span class="ss-eyebrow">נשלח לאישור</span>
+              <h2>קיבלנו את הפרטים שלך</h2>
+              <p class="ss-lede">תודה, נורית. הסיפור של מחלבת בן ארי אצלנו.</p>
+              <p class="ss-approval">כל בית עסק עובר <b>אישור אישי</b>. נחזור אלייך תוך <b>כמה ימים</b>.</p>
+              <div class="rg-next">
+                <div class="nx"><span class="n-num">01</span><span class="n-t">בדיקה אישית</span><p>קוראות סיפור, מאמתות עוסק.</p></div>
+                <div class="nx"><span class="n-num">02</span><span class="n-t">שיחת היכרות</span><p>כמה דקות בטלפון.</p></div>
+                <div class="nx"><span class="n-num">03</span><span class="n-t">הדף עולה</span><p>מתפרסם עם תג מאומת.</p></div>
+              </div>
+              <div class="ss-sign"><span class="sg">בשמחה, ספיר</span><span class="sn">מייסדת מהמקור</span></div>
+              <div class="ss-verify"><span class="vk">__ICO_SEAL__</span><p>כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.</p></div>
+              <a class="ss-home" href="#" style="font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); text-decoration: none;">חזרה לעמוד הבית</a>
+            </div>
+          </div>
+          <div class="m-funnel-cta single">
+            <button class="btn-primary" type="button">לדשבורד שלי <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M-STEP 06 — verify-email variant -->
+    <div>
+      <div class="bp-cap"><span class="num">12B</span><span class="label">שלב 6 — סיום · variant B · verify-email</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="Mobile · /register/producer · Step 06 (verify email)">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="rg-form">
+            <div class="rg-success">
+              <span class="rg-seal">__ICO_MAIL__</span>
+              <span class="ss-eyebrow">אימות מייל</span>
+              <h2>בדקי את תיבת המייל שלך</h2>
+              <p class="ss-approval">אם האימייל פנוי, נשלח אלייך קישור אימות.</p>
+              <p class="ss-resend">לא קיבלת? בדקי בספאם, או <a href="#">שלחי שוב</a>.</p>
+              <div class="ss-verify"><span class="vk">__ICO_SEAL__</span><p>כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.</p></div>
+            </div>
+          </div>
+          <div class="m-funnel-cta single">
+            <button class="btn-back" type="button" style="justify-content:center;"><span class="arr">→</span> חזרה לעמוד הבית</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="cap-note"><b>STATE B</b> The progress header is the rail's mobile form: current label, <code>שלב N / 6</code>, the six magazine numerals (done in green, current in gold), and a fill bar. <b>STICKY CTA</b> חזרה collapses to an arrow chip; the advance button keeps full width and a 52px target in the thumb zone.</p>
+
+
+  <!-- ════════════════ C · CONSUMER /register ════════════════ -->
+  <section class="section-head">
+    <div class="letter">C</div>
+    <div>
+      <h2>Consumer register — <em>/register, one frame.</em></h2>
+      <p class="pitch">The other door. A visitor signs up to save businesses, write reviews, and get the "new near you" letter — so it is deliberately light: three fields, one CTA, done. A demoted cross-link routes business owners to the producer funnel so the two audiences never collide. Locked navbar + footer on this one because it is a standalone page.</p>
+    </div>
+    <div class="meta">desktop + mobile<br><strong>light, fast</strong></div>
+  </section>
+
+  <div class="frame-row">
+
+    <!-- consumer desktop -->
+    <div>
+      <div class="bp-cap"><span class="num">13</span><span class="label">Desktop · /register · הצטרפות</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+      <div class="vp desktop" dir="rtl" data-screen-label="/register · Consumer · Desktop">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+              <div class="nav-end">
+                <button class="btn-text" type="button">כניסה לחשבון</button>
+                <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+                <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+              </div>
+            </nav>
+          </div>
+          <div class="rg-wrap">
+            <div class="rg-consumer">
+              <div class="rgc-head">
+                <div class="rc-eyebrow"><span class="rule"></span>הרשמה</div>
+                <h2>הצטרפי למהמקור</h2>
+                <p class="rc-dek">כדי לשמור בתי עסק אהובים, לכתוב המלצות, ולקבל את החדשים שנפתחו לידך.</p>
+              </div>
+              <div class="rgc-form">
+                <div class="field"><label class="lab" for="c-name">שם מלא</label><input class="input" id="c-name" type="text" placeholder="איך לקרוא לך"></div>
+                <div class="field"><label class="lab" for="c-mail">אימייל</label><input class="input ltr" id="c-mail" type="email" placeholder="name@example.com"></div>
+                <div class="field"><label class="lab" for="c-phone">טלפון <span class="opt">לא חובה</span></label><input class="input numeric" id="c-phone" type="tel" inputmode="tel" placeholder="050-000-0000"></div>
+                <button class="btn-primary" type="button">צרי חשבון <span class="arr">←</span></button>
+                <p class="rgc-alt">כבר יש לך חשבון? <a href="#">כניסה</a></p>
+              </div>
+              <a class="rgc-cross" href="#">
+                <span class="xc-ic">__ICO_STORE__</span>
+                <span class="xc-body"><span class="xc-t">בעלת עסק?</span><span class="xc-s">ספרי לנו עליו — והוא יופיע במפה.</span></span>
+                <span class="xc-arr">←</span>
+              </a>
+            </div>
+          </div>
+          <footer class="hp-footer">
+            <div class="hp-footer-grid">
+              <div class="hp-footer-brand">
+                <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+                <p class="hp-footer-tagline">אוכל אמיתי, ישר מהמקור אלייך.</p>
+              </div>
+              <div class="hp-footer-col"><h4>גלו</h4><ul><li><a href="#">מפת בתי עסק</a></li><li><a href="#">קטגוריות</a></li><li><a href="#">קרוב אלייך</a></li></ul></div>
+              <div class="hp-footer-col"><h4>לבתי עסק</h4><ul><li><a href="#">הוספת עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">אישור ואימות</a></li></ul></div>
+              <div class="hp-footer-col"><h4>מהמקור</h4><ul><li><a href="#">הסיפור שלנו</a></li><li><a href="#">צרו קשר</a></li><li><a href="#">תנאי שימוש</a></li></ul></div>
+              <div class="hp-footer-news">
+                <div class="h">מכתב מהמקור</div>
+                <div class="sub">בתי עסק חדשים שנפתחו לידך, אחת לשבועיים.</div>
+                <div class="form"><input type="email" placeholder="המייל שלך"><button class="submit" type="button">הרשמה ←</button></div>
+              </div>
+            </div>
+            <div class="hp-footer-bottom"><span>© <span class="numeric">2026</span> מהמקור · כל הזכויות שמורות</span><span>נבנה באהבה בישראל</span></div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- consumer mobile -->
+    <div>
+      <div class="bp-cap"><span class="num">14</span><span class="label">Mobile · /register</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile" dir="rtl" data-screen-label="/register · Consumer · Mobile">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="rg-consumer">
+            <div class="rgc-head">
+              <div class="rc-eyebrow"><span class="rule"></span>הרשמה</div>
+              <h2>הצטרפי למהמקור</h2>
+              <p class="rc-dek">לשמור בתי עסק, לכתוב המלצות, ולקבל את החדשים שלידך.</p>
+            </div>
+            <div class="rgc-form">
+              <div class="field"><label class="lab" for="cm-name">שם מלא</label><input class="input" id="cm-name" type="text" placeholder="איך לקרוא לך"></div>
+              <div class="field"><label class="lab" for="cm-mail">אימייל</label><input class="input ltr" id="cm-mail" type="email" placeholder="name@example.com"></div>
+              <div class="field"><label class="lab" for="cm-phone">טלפון <span class="opt">לא חובה</span></label><input class="input numeric" id="cm-phone" type="tel" inputmode="tel" placeholder="050-000-0000"></div>
+              <button class="btn-primary" type="button">צרי חשבון <span class="arr">←</span></button>
+              <p class="rgc-alt">כבר יש לך חשבון? <a href="#">כניסה</a></p>
+            </div>
+            <a class="rgc-cross" href="#">
+              <span class="xc-ic">__ICO_STORE__</span>
+              <span class="xc-body"><span class="xc-t">בעלת עסק?</span><span class="xc-s">ספרי לנו עליו.</span></span>
+              <span class="xc-arr">←</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="cap-note"><b>TWO DOORS</b> Consumer sign-up stays under a minute — no story, no category, no approval gate. The producer cross-link uses <code>--light</code> and the store glyph so an owner who landed here is gently rerouted, never funnelled through the wrong form.</p>
+
+
+  <!-- ════════════════ D · STATES ════════════════ -->
+  <section class="section-head">
+    <div class="letter">D</div>
+    <div>
+      <h2>States — <em>error, progress, filter, license.</em></h2>
+      <p class="pitch">Three behaviours pulled out for the record. (a) Validation reads like a note from a person, in warm Cormorant italic — never a red shout. (b) The mobile progress header carries the step location at all times. State (c), the submitted success, lives in frames 06 and 12. Plus MEH-203's live search-filter, the reason the twelve pills could die.</p>
+    </div>
+    <div class="meta">a · b · filter · license<br><strong>editorial tone</strong></div>
+  </section>
+
+  <div class="frame-row">
+
+    <!-- STATE A — desktop validation error -->
+    <div>
+      <div class="bp-cap"><span class="num">15</span><span class="label">State A · desktop · validation error</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+      <div class="vp desktop" dir="rtl" data-screen-label="State A · validation error · Desktop">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <div class="nav-links"><a class="nav-link" href="#">גלו</a><a class="nav-link" href="#">מפה</a><a class="nav-link" href="#">אודות</a></div>
+              <div class="nav-end">
+                <button class="btn-text" type="button">כניסה לחשבון</button>
+                <button class="btn-outline is-current" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+                <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+              </div>
+            </nav>
+          </div>
+          <div class="rg-wrap">
+            <nav class="rg-crumb" aria-label="breadcrumb"><a href="#">מהמקור</a><span class="sep">›</span><span class="is-here">הוספת בית עסק</span></nav>
+            <div class="rg-grid">
+              <aside class="rg-rail">
+                <div>
+                  <div class="rail-eyebrow"><span class="rule"></span>הצטרפות למהמקור</div>
+                  <div class="rail-title">להוסיף את העסק שלך</div>
+                </div>
+                <div class="rail-sub">שש שאלות קצרות. אנחנו בונות מהן דף עסק שמרגיש כמו כתבה.</div>
+                <div class="rg-steps">
+                  <div class="rg-step is-current"><span class="rs-num">01</span><span class="rs-name">פרטי העסק</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                  <div class="rg-step"><span class="rs-num">02</span><span class="rs-name">קטגוריה</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                  <div class="rg-step"><span class="rs-num">03</span><span class="rs-name">הסיפור שלך</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                  <div class="rg-step"><span class="rs-num">04</span><span class="rs-name">תמונות</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                  <div class="rg-step"><span class="rs-num">05</span><span class="rs-name">ערוצי קשר</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                  <div class="rg-step"><span class="rs-num">06</span><span class="rs-name">סיום</span><span class="rs-mark">__ICO_CHECK__</span></div>
+                </div>
+                <div class="rail-note">
+                  <div class="rn-t"><span class="ic">__ICO_SEAL__</span> כל בית עסק עובר אישור אישי</div>
+                  <p>אין כאן הרשמה אוטומטית. כל פרט שתשלחי עובר בדיקה אישית לפני שהדף עולה לאוויר.</p>
+                </div>
+              </aside>
+              <div class="rg-form">
+                <div class="rg-step-head">
+                  <div class="sh-top"><span class="sh-num">01</span><h2>פרטי בית העסק</h2></div>
+                  <div class="sh-dek">נתחיל מהבסיס — איך קוראים לעסק, איפה הוא יושב, ומספר העוסק לאימות.</div>
+                </div>
+                <div class="field">
+                  <label class="lab" for="e-name">שם בית העסק</label>
+                  <input class="input" id="e-name" type="text" value="מחלבת בן ארי">
+                </div>
+                <div class="field-row">
+                  <div class="field has-error">
+                    <label class="lab" for="e-city">עיר או יישוב</label>
+                    <span class="input-wrap"><span class="adorn">__ICO_PIN__</span><input class="input" id="e-city" type="text" placeholder="חיפוש יישוב" value=""></span>
+                    <div class="err"><span class="mk">__ICO_ALERT__</span><span class="et">בלי יישוב לא נדע לאן לשייך אותך — רק שם המקום, בלי כתובת.</span></div>
+                  </div>
+                  <div class="field has-error">
+                    <label class="lab" for="e-lic">מספר עוסק <span class="opt">מורשה או פטור</span></label>
+                    <input class="input numeric" id="e-lic" type="text" inputmode="numeric" value="51478392">
+                    <div class="err"><span class="mk">__ICO_ALERT__</span><span class="et">מספר עוסק הוא תשע ספרות — נראה שנשמטה אחת.</span></div>
+                  </div>
+                </div>
+                <div class="field" style="margin-bottom: 4px;">
+                  <label class="lab" for="e-addr">כתובת מדויקת <span class="opt">לא חובה</span></label>
+                  <input class="input" id="e-addr" type="text" placeholder="רחוב ומספר — יוצג רק אם תבחרי שכן">
+                </div>
+                <div class="rg-actions">
+                  <span class="step-meta">שלב <span class="numeric">01</span> מתוך <span class="numeric">06</span></span>
+                  <span class="spacer"></span>
+                  <button class="btn-ghost-save" type="button">שמרי כטיוטה</button>
+                  <button class="btn-primary" type="button">המשך לקטגוריה <span class="arr">←</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note"><b>STATE A</b> Warm <code>--accent-warm</code> 60%-mixed border + a 5%-tinted fill — present, not alarming. The message is a sentence in Cormorant italic that explains the fix ("nine digits — looks like one dropped"), not a barked <span class="he" dir="rtl">"שגיאה"</span>. No red. The field keeps its label and value.</p>
+    </div>
+
+    <!-- STATE A+B — mobile error + progress -->
+    <div>
+      <div class="bp-cap"><span class="num">16</span><span class="label">State A+B · mobile · error + progress</span><span class="rule"></span><span class="dims numeric">375</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="State A+B · mobile error + progress">
+        <div class="mh paper rg">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="m-progress">
+            <div class="mp-top"><span class="mp-step">פרטי העסק</span><span class="mp-count">שלב <span class="numeric">1</span> / <span class="numeric">6</span></span></div>
+            <div class="mp-nums"><span class="mp-num is-now">01</span><span class="mp-num">02</span><span class="mp-num">03</span><span class="mp-num">04</span><span class="mp-num">05</span><span class="mp-num">06</span></div>
+            <div class="mp-bar"><span class="fill" style="width: 16.6%;"></span></div>
+          </div>
+          <div class="rg-form">
+            <div class="rg-step-head">
+              <div class="sh-top"><span class="sh-num">01</span><h2>פרטי בית העסק</h2></div>
+            </div>
+            <div class="field"><label class="lab" for="me-name">שם בית העסק</label><input class="input" id="me-name" type="text" value="מחלבת בן ארי"></div>
+            <div class="field"><label class="lab" for="me-city">עיר או יישוב</label><span class="input-wrap"><span class="adorn">__ICO_PIN__</span><input class="input" id="me-city" type="text" placeholder="חיפוש יישוב" value="כפר ויתקין"></span></div>
+            <div class="field has-error">
+              <label class="lab" for="me-lic">מספר עוסק <span class="opt">מורשה/פטור</span></label>
+              <input class="input numeric" id="me-lic" type="text" inputmode="numeric" value="51478392">
+              <div class="err"><span class="mk">__ICO_ALERT__</span><span class="et">תשע ספרות — נראה שנשמטה אחת.</span></div>
+            </div>
+          </div>
+          </div>
+          <div class="m-funnel-cta single">
+            <button class="btn-primary" type="button">המשך לקטגוריה <span class="arr">←</span></button>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note"><b>STATE B</b> The progress header pins the step location while the error sits inline below its field — the thumb never loses context. The error wording shortens for the narrow column but keeps the same warm, explanatory voice.</p>
+    </div>
+
+    <!-- MEH-203 filtered detail -->
+    <div>
+      <div class="bp-cap"><span class="num">17</span><span class="label">MEH-203 · search active — filtered set</span><span class="rule"></span><span class="dims numeric">560 wide</span></div>
+      <div class="vp" dir="rtl" style="width: 560px;" data-screen-label="MEH-203 · filtered selector">
+        <div class="mh paper rg" style="padding: 28px 26px 30px;">
+          <div class="rg-step-head" style="margin-bottom: 22px; padding-bottom: 18px;">
+            <div class="sh-top"><span class="sh-num">02</span><h2>הקטגוריה שלך</h2></div>
+          </div>
+          <div class="field cat-search">
+            <label class="lab" for="f-q">חיפוש קטגוריה</label>
+            <span class="input-wrap"><span class="adorn">__ICO_SEARCH__</span><input class="input" id="f-q" type="text" value="גב"></span>
+          </div>
+          <p class="cat-note">תוצאה אחת מתוך שש. השאר מתעמעמים.</p>
+          <div class="cat-grid" style="grid-template-columns: 1fr;">
+            <div class="cat-opt is-selected"><span class="ct-glyph">__G_DAIRY__</span><span class="ct-body"><span class="ct-name">חלב וגבינות</span><span class="ct-desc">גבינות, יוגורט, חמאה</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+            <div class="cat-opt is-dimmed"><span class="ct-glyph">__G_BREAD__</span><span class="ct-body"><span class="ct-name">לחמים ואפייה</span><span class="ct-desc">מאפים, חלות, עוגות</span></span></div>
+            <div class="cat-opt is-dimmed"><span class="ct-glyph">__G_PRODUCE__</span><span class="ct-body"><span class="ct-name">ירקות ופירות</span><span class="ct-desc">מהשדה, עונתי</span></span></div>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note"><b>FILTER</b> Typing <span class="he" dir="rtl">"גב"</span> (from <span class="he" dir="rtl">גבינה</span>) keeps the matching card lit and dims the rest to 32%. This is what replaces a twelve-pill wall: one input, instant narrowing, the same selected-card affordance as the live state.</p>
+    </div>
+
+    <!-- MEH-530 · non-food → optional toggle -->
+    <div>
+      <div class="bp-cap"><span class="num">18</span><span class="label">MEH-530 · non-food → optional license toggle</span><span class="rule"></span><span class="dims numeric">560 wide</span></div>
+      <div class="vp" dir="rtl" style="width: 560px;" data-screen-label="MEH-530 · non-food optional license">
+        <div class="mh paper rg" style="padding: 28px 26px 30px;">
+          <div class="rg-step-head" style="margin-bottom: 22px; padding-bottom: 18px;">
+            <div class="sh-top"><span class="sh-num">02</span><h2>הקטגוריה שלך</h2></div>
+          </div>
+          <div class="cat-grid" style="grid-template-columns: 1fr;">
+            <div class="cat-opt is-selected"><span class="ct-glyph">__G_BODYCARE__</span><span class="ct-body"><span class="ct-name">טיפוח וסבונים</span><span class="ct-desc">סבונים, נרות, שמנים</span></span><span class="ct-check">__ICO_CHECK__</span></div>
+          </div>
+          <div class="lic-block">
+            <button class="lic-toggle" type="button">יש לי רישיון יצרן <span class="chev">↓</span></button>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note"><b>MEH-530 · NON-FOOD</b> Pick a non-food category — <span class="he" dir="rtl">טיפוח וסבונים</span>, raw agriculture — and the license collapses to an optional toggle (<span class="he" dir="rtl">יש לי רישיון יצרן ↓</span>) that expands a single optional field. Food categories (frame 02) show it required, inline. The amber <span class="numeric">7–10</span>-digit format note is a warning only — it never blocks the step.</p>
+    </div>
+
+  </div>
+
+
+  <!-- ════════════════ BRAND-LOCK SELF-CHECK ════════════════ -->
+  <div class="panel">
+    <h2>Brand-LOCK <em>self-check.</em></h2>
+    <p class="lede">Every claim in the design lock, verified against this file. Left: the system carried in unchanged. Right: the new decisions and the rationale behind the two judgement calls.</p>
+    <div class="lock-grid">
+      <div class="lock-col">
+        <h3>Carried in — unchanged</h3>
+        <div class="lock-row"><span class="box">✓</span><span>FloatingNavbar v5 embedded as-is — filled <span class="he" dir="rtl">חיפוש</span>, outlined <span class="he" dir="rtl">הוסיפו עסק</span>, text <span class="he" dir="rtl">כניסה</span>. In-funnel the outlined CTA shows its <code>is-current</code> filled state.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Assembly v2 footer embedded as-is on the two true page-ends — success (06) and consumer <code>/register</code>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Canonical wordmark <span class="he" dir="rtl">מהמקור</span>, Frank Ruhl Libre — no niqud, no Latin, no glyph.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Palette: <code>#2e6853</code> · <code>#F5F0E8</code> · <code>#8B6914</code>. Zero raw hex on mock surfaces below <code>:root</code>; all <code>var()</code> or <code>color-mix()</code>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Type: Frank Ruhl 900 headlines, DM Sans body, Cormorant italic numerals + helper voice.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><code>.numeric</code> LTR-isolation on license number + every phone/WhatsApp field. <code>.ltr</code> on website + Instagram handle.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Magazine numerals (S6 device) on the rail ladder, step heads, success steps, and mobile progress.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>RTL surface throughout (<code>dir="rtl"</code>); logical <code>start/end</code> + <code>ms/me</code> only — no <code>left/right</code>.</span></div>
+      </div>
+      <div class="lock-col">
+        <h3>New decisions + judgement calls</h3>
+        <div class="lock-row"><span class="box">✓</span><span>Producer voice: feminine throughout — <span class="he" dir="rtl">בעלת עסק</span>, <span class="he" dir="rtl">בית עסק</span>, <span class="he" dir="rtl">גלי / צרי / בחרי</span>. Never <span class="he" dir="rtl">יצרן</span>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Zero emoji. Zero exclamation marks. No balloon words ("פלטפורמה", "סולושן").</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Forms function-first: labels above every field, 54px desktop / 48px+ mobile targets, no placeholder-as-label.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>MEH-203 searchable selector replaces the 12 static pills — live filter + dimming + single filled-check selected card (frames 02 · 08 · 17).</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>MEH-296 split into <span class="he" dir="rtl">ערוצי פנייה</span> (WhatsApp + phone, owns the gold primary radio → S6 CTA) and <span class="he" dir="rtl">נוכחות ברשת</span> (link-only) + a <span class="he" dir="rtl">+ עוד ערוץ</span> disclosure.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>MEH-530 license aligned to shipped behavior — lives in <b>step 02 under the category</b>: required inline for food-production categories, a collapsed optional <span class="he" dir="rtl">יש לי רישיון יצרן ↓</span> toggle otherwise (frame 18). Amber <span class="he" dir="rtl"><span class="numeric">7–10</span> ספרות</span> format note is warning-only, never blocks.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Step 00 account gate — <b>social-first</b> (<span class="he" dir="rtl">הרשמה עם Google</span> → <span class="he" dir="rtl">או</span> → email + password), re-synced 2026-06-05 to match S9 <code>/login</code>; logged-in producers auto-skip (<span class="he" dir="rtl">מחוברת? נדלג על השלב הזה</span>). Rail ladder stays <span class="numeric">01–06</span>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Two submitted variants — <em>A</em> logged-in / upgrade (<span class="he" dir="rtl">קיבלנו את הפרטים</span>) and <em>B</em> verify-email for new accounts (<span class="he" dir="rtl">בדקי את תיבת המייל</span> + spam fallback), labelled in the captions.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>State a errors are warm Cormorant italic with <code>--accent-warm</code>, never red — editorial tone per scope.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span>Success closes on manual approval (<span class="he" dir="rtl">אישור אישי · כמה ימים</span>) + founder signature — the brand DNA, not a generic "done".</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><em>Call 1 — CTA:</em> advance + submit use filled <code>.btn-primary</code> (conversion driver); the dark-outlined pattern carries <span class="he" dir="rtl">חזרה</span> + the in-nav <span class="he" dir="rtl">הוסיפו עסק</span>. Both MEH-132 treatments present.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><em>Call 2 — chrome:</em> footer omitted on interior funnel steps (focused-task UX, reduces abandonment); kept on the two real page-ends. Navbar stays on every frame.</span></div>
+      </div>
+    </div>
+    <div style="margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(42,38,32,0.18);">
+      <h3 style="font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-warn); margin-bottom: 12px;">Open — pending Sapir</h3>
+      <div class="lock-grid">
+        <div class="lock-row"><span class="box" style="background: transparent; border-color: var(--doc-warn); color: var(--doc-warn);">·</span><span>Account / auth step — does the producer create login credentials, and where it slots into the six.</span></div>
+        <div class="lock-row"><span class="box" style="background: transparent; border-color: var(--doc-warn); color: var(--doc-warn);">·</span><span>SLA wording — softened to <span class="he" dir="rtl">תוך כמה ימים</span> (vague placeholder); pending the real review turnaround before a number goes back in.</span></div>
+      </div>
+    </div>
+  </div>
+
+
+  <footer class="docfoot">
+    <span>Mehamakor · S7 · /register · design only</span>
+    <span class="italic">מהמקור — ישר מהמקור אלייך.</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var ICO_SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  var ICO_BURGER = '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  var ICO_CHECK  = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  var ICO_SEAL   = '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.2 1.7 2.7-.2 1 2.5 2.5 1-.2 2.7 1.7 2.2-1.7 2.2.2 2.7-2.5 1-1 2.5-2.7-.2L12 21.4l-2.2-1.7-2.7.2-1-2.5-2.5-1 .2-2.7L2.1 11.5l1.7-2.2-.2-2.7 2.5-1 1-2.5 2.7.2z"/><path d="M9 12l2.1 2.1L15.2 10"/></svg>';
+  var ICO_WA     = '<svg viewBox="0 0 24 24"><path d="M3.6 20.4l1.3-4.1A8 8 0 1 1 8 19.1l-4.4 1.3z"/><path d="M9 8.6c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.6 4.1 3.6 2 .8 2.4.7 2.9.6.5-.1 1.3-.5 1.5-1.1.2-.5.2-1 .1-1.1l-.5-.3c-.3-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1l-.6.8c-.1.1-.3.2-.5.1-.3-.1-1-.4-1.7-1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.4.1-.5l.4-.4c.1-.1.2-.3.2-.4.1-.2 0-.3 0-.4 0-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.5-.4z"/></svg>';
+  var ICO_PHONE  = '<svg viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4-2 1.3a12 12 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg>';
+  var ICO_PIN    = '<svg viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+  var ICO_GLOBE  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/></svg>';
+  var ICO_IG     = '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1.1"/></svg>';
+  var ICO_UPLOAD = '<svg viewBox="0 0 24 24"><path d="M12 15.5V5M12 5l-4 4M12 5l4 4"/><path d="M5 15.5v2.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2.5"/></svg>';
+  var ICO_X      = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var ICO_PLUS   = '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICO_LEAF   = '<svg viewBox="0 0 24 24"><path d="M20 4C10 4 4 10 4 20c0 0 10 1 16-5 4.5-4 0-11 0-11z"/><path d="M9 15c2-3 5-5 9-6.5"/></svg>';
+  var ICO_PEN    = '<svg viewBox="0 0 24 24"><path d="M4 20l4-1L19 8a2 2 0 0 0-3-3L5 16l-1 4z"/><path d="M14 7l3 3"/></svg>';
+  var ICO_STORE  = '<svg viewBox="0 0 24 24"><path d="M4 10l1.4-5h13.2L20 10"/><path d="M4 10a2.4 2.4 0 0 0 4 0 2.4 2.4 0 0 0 4 0 2.4 2.4 0 0 0 4 0 2.4 2.4 0 0 0 4 0"/><path d="M5.5 11.5V19h13v-7.5"/><path d="M10 19v-4h4v4"/></svg>';
+  var ICO_ALERT  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.4v.2"/></svg>';
+  var ICO_FB     = '<svg viewBox="0 0 24 24"><path d="M13.5 21v-7h2.3l.4-3h-2.7V9.1c0-.9.3-1.5 1.6-1.5H16V5c-.3 0-1.2-.1-2.2-.1-2.2 0-3.6 1.3-3.6 3.8V11H8v3h2.2v7z"/></svg>';
+  var ICO_TT     = '<svg viewBox="0 0 24 24"><path d="M14 4c.5 2.6 2.1 4.1 4.6 4.4"/><path d="M14 4v9.6a3.6 3.6 0 1 1-3.6-3.6"/></svg>';
+  var ICO_YT     = '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3.6"/><path d="M11 9.6l4 2.4-4 2.4z"/></svg>';
+  var ICO_MAIL   = '<svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M4 7.5l8 5.5 8-5.5"/></svg>';
+  var ICO_EXT    = '<svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-7 7"/><path d="M19 13.5V17a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5"/></svg>';
+  var ICO_GOOGLE = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path d="M6.4 14a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.6 9.4 5.9 12 5.9z"/></svg>';
+
+  var G = {
+    dairy:    '<svg viewBox="0 0 120 120"><path d="M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z"/><path d="M48 28 h24"/><path d="M50 70 h20"/></svg>',
+    bread:    '<svg viewBox="0 0 120 120"><path d="M60 18 v90"/><path d="M60 30 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 30 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 50 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 50 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 70 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 70 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/></svg>',
+    produce:  '<svg viewBox="0 0 120 120"><path d="M30 100 q4 -34 30 -50 q26 -16 60 -14"/><path d="M52 64 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M76 50 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M100 38 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M60 80 q-12 -2 -16 -12"/></svg>',
+    pantry:   '<svg viewBox="0 0 120 120"><path d="M46 36 h28 v6 h-28 z"/><path d="M42 42 h36 v52 a8 8 0 0 1 -8 8 h-20 a8 8 0 0 1 -8 -8 z"/><path d="M60 14 v22"/><path d="M56 14 q4 -6 8 0"/><path d="M52 62 q4 4 8 0 q4 -4 8 0"/><path d="M52 76 q4 4 8 0 q4 -4 8 0"/></svg>',
+    meat:     '<svg viewBox="0 0 120 120"><path d="M42 38 q22 -16 46 -4 q16 9 13 30 q-3 23 -28 27 q-27 4 -36 -17 q-7 -19 5 -36 z"/><path d="M64 50 v30"/><path d="M64 60 q-7 -3 -12 2"/><path d="M64 60 q7 -3 12 2"/></svg>',
+    bodycare: '<svg viewBox="0 0 120 120"><path d="M60 22 v68"/><path d="M40 50 q10 -16 20 -16 q10 0 20 16"/><path d="M44 66 q8 -10 16 -10 q8 0 16 10"/><path d="M48 80 q6 -8 12 -8 q6 0 12 8"/><path d="M50 90 h20"/><path d="M52 90 v10 h16 v-10"/><path d="M52 96 h16"/></svg>'
+  };
+
+  var map = {
+    '__ICO_SEARCH__': ICO_SEARCH, '__ICO_BURGER__': ICO_BURGER, '__ICO_CHECK__': ICO_CHECK,
+    '__ICO_SEAL__': ICO_SEAL, '__ICO_WA__': ICO_WA, '__ICO_PHONE__': ICO_PHONE,
+    '__ICO_PIN__': ICO_PIN, '__ICO_GLOBE__': ICO_GLOBE, '__ICO_IG__': ICO_IG,
+    '__ICO_UPLOAD__': ICO_UPLOAD, '__ICO_X__': ICO_X, '__ICO_PLUS__': ICO_PLUS,
+    '__ICO_LEAF__': ICO_LEAF, '__ICO_PEN__': ICO_PEN, '__ICO_STORE__': ICO_STORE,
+    '__ICO_ALERT__': ICO_ALERT,
+    '__ICO_FB__': ICO_FB, '__ICO_TT__': ICO_TT, '__ICO_YT__': ICO_YT, '__ICO_MAIL__': ICO_MAIL, '__ICO_EXT__': ICO_EXT, '__ICO_GOOGLE__': ICO_GOOGLE,
+    '__G_DAIRY__': G.dairy, '__G_BREAD__': G.bread, '__G_PRODUCE__': G.produce,
+    '__G_PANTRY__': G.pantry, '__G_MEAT__': G.meat, '__G_BODYCARE__': G.bodycare
+  };
+
+  function walk(node){
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var c = node.childNodes[i];
+      if (c.nodeType === 3) {
+        var t = c.nodeValue;
+        if (t.indexOf('__') !== -1 && /__[A-Z_]+__/.test(t)) {
+          var html = t.replace(/__[A-Z_]+__/g, function(m){ return map[m] || m; });
+          if (html !== t) {
+            var span = document.createElement('span');
+            span.style.display = 'contents';
+            span.innerHTML = html;
+            c.parentNode.replaceChild(span, c);
+          }
+        }
+      } else if (c.nodeType === 1 && c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') {
+        walk(c);
+      }
+    }
+  }
+  walk(document.body);
+})();
+</script>
+</body>
+</html>

@@ -42,7 +42,7 @@ export default function HomePage() {
   const t = useTranslations();
   const {
     user,
-    producers, homeProducts, categories, filters, chips,
+    producers, categories, filters, chips,
     visibleCount, producersLoading, geoLoading,
     recentlyViewed, showNewUserHint, locationModalOpen, setLocationModalOpen,
     fridayMode, step0Visible, userCity,

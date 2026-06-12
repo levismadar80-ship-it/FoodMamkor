@@ -1,34 +1,45 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CaretDown, Crosshair } from "@phosphor-icons/react";
+import { Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
-// OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
-// `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
-const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80&fm=webp";
+// MEH-788: Cloudinary produce photo (4032×3024 original). f_auto,q_auto via the
+// helper + w_1920,c_limit. No baked ar — background-size:cover crops responsively
+// per breakpoint (4:5 mobile box → 16:9 desktop box) without distortion.
+// REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
+const HERO_MAX_WIDTH = 1920;
+const HERO_IMAGE = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
+  { width: HERO_MAX_WIDTH }
+);
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
-// CSS utility (MEH-136, globals.css). Durations mirror .duration-base (.42s) /
-// .duration-slow (.64s); CSS-driven hovers below use the .duration-*/.ease-quart classes.
+// CSS utility (MEH-136, globals.css). Reduced-motion honored globally via
+// <MotionConfig reducedMotion="user"> at the layout root (#1053).
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 /**
- * Hero section — Assembly v2 (MEH-643 chunk 1). Full-bleed parallax photo with
- * a display-font headline, pill search (HeroSearch, MEH-99), a primary CTA
- * (גלו עסקים → scrolls to #producers-grid via onScrollDown), the inline near-me
- * geolocation control (MEH-41 behavior), and a "how it works" anchor link
- * (scrolls to #how-it-works). Consumes MEH-136 tokens (action-primary,
- * surface-card, .focus-ring, .duration-base/.ease-quart); no raw content hex.
+ * Hero section — S14 "Photography + Texture" composition (MEH-788 Phase 3).
+ *
+ * Full-bleed Ken Burns produce photo, height-capped (4:5 mobile → 16:9 desktop,
+ * cap 560px) — NOT 100vh. S14 hero discipline: only the FRL-900 headline +
+ * subtitle ride the `--scrim-ink` band on the photo; the pill search card then
+ * rides the photo seam DOWN onto cream (negative margin overlap), and the CTAs
+ * (גלו עסקים → #producers-grid · near-me MEH-41 · "how it works") land fully on
+ * cream — far less overlay surface, AA for free.
+ *
+ * Ken Burns = the kenburns-right layer (globals.css), opposite direction to the
+ * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
  *
  * Does NOT: own search routing (HeroSearch), own the near-me handler
- * (onNearMe from use-home-page), or restyle the navbar (later MEH-643 chunk).
+ * (onNearMe from use-home-page), or restyle the navbar (parallel track).
  *
- * background-attachment: fixed is the CSS parallax (.hero-parallax); the
- * @media (pointer: coarse) fallback to scroll lives in globals.css.
- *
- * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2 redesign).
+ * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
+ * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
+ * search/CTAs).
  */
 export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
   const t = useTranslations();
@@ -38,135 +49,109 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
 
   return (
-    <section
-      className="relative w-full hero-parallax"
-      aria-label={t("home.hero.main_label")}
-      style={{
-        height: "100vh",
-        backgroundImage: `url(${HERO_IMAGE})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      {/* Gradient overlay — dark forest at the bottom fading up. Kept as an
-          alpha gradient (not tokenizable with the hex-only token set). */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(46,74,46,0.88) 0%, rgba(46,74,46,0.40) 50%, rgba(0,0,0,0.10) 100%)",
-        }}
-      />
-
-      {/* Text anchored to bottom 25% of hero. inset-x-0 = symmetric full-width span. */}
-      <div
-        className="absolute inset-x-0 text-center px-4 text-white"
-        style={{ bottom: "25%" }}
+    <>
+      {/* 01 · HERO — capped full-bleed IMG-02 + --scrim-ink. H1 + subtitle only. */}
+      <section
+        className="relative isolate w-full overflow-hidden aspect-[4/5] md:aspect-auto md:h-[560px]"
+        aria-label={t("home.hero.main_label")}
       >
-        <motion.h1
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.64, ease: EASE_QUART }}
-          className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(42px,6vw,80px)]"
-          style={{ lineHeight: 1.15 }}
-        >
-          {t("home.hero.title")}
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.64, delay: 0.1, ease: EASE_QUART }}
-          className="font-body-lg text-body-lg mt-3 text-green-50"
-        >
-          {fridayMode ? t("home.hero.friday_subtitle") : t("home.hero.subtitle")}
-        </motion.p>
-
-        {/* Pill search — MEH-99 HeroSearch routes to /producers?q=. surface-card
-            (MEH-136) is the warm-white pill surface. */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
-          role="search"
-          aria-label={t("home.hero.search_area_label")}
-          className="mx-auto mt-8 bg-surface-card shadow-lg px-6 py-3.5"
-          style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
-        >
-          <HeroSearch
-            placeholder={t("home.search.placeholder")}
-            srLabel={t("home.search.sr_label")}
-            className="w-full"
+        {/* Ken Burns layer — decorative produce photo. inset -5% gives the
+            ≤1.08 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div
+            className="kenburns-right absolute"
+            style={{
+              inset: "-5%",
+              backgroundImage: `url(${HERO_IMAGE})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
           />
-        </motion.div>
+        </div>
 
-        {/* Actions row — primary CTA (גלו עסקים) + near-me (MEH-41). gap/flex are
-            direction-neutral (RTL-safe). */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.4, ease: EASE_QUART }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-3"
-        >
-          {/* CTA reuses onScrollDown (= scrollToProducers); overlap with the
-              scroll caret is an accepted minor UX overlap for this chunk. */}
-          <button
-            type="button"
-            onClick={onScrollDown}
-            className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-full transition-colors duration-base ease-quart focus-ring"
-          >
-            {/* TODO i18n EN (extends MEH-472): real translation for new hero keys
-                (cta_primary, how_it_works) — currently HE-mirrored in en.json. */}
-            {t("home.hero.cta_primary")}
-          </button>
+        {/* --scrim-ink (globals.css) — warm-ink bottom band; H1 + subtitle stay
+            ≥ AA over any crop. */}
+        <div className="scrim-ink absolute inset-0" aria-hidden="true" />
 
-          <button
-            type="button"
-            onClick={onNearMe}
-            disabled={geoLoading}
-            className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm text-white border border-white/30 px-5 py-2.5 rounded-full hover:bg-white/25 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
-          >
-            <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
-            {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
-          </button>
-        </motion.div>
+        {/* Text — bottom-anchored on the scrim; centered mobile, start (RTL
+            right) desktop. pb leaves room for the search card's seam overlap. */}
+        <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-16 md:pb-20 text-white">
+          <div className="max-w-2xl mx-auto md:mx-0 text-center md:text-start">
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.64, ease: EASE_QUART }}
+              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,5vw,68px)]"
+              style={{ lineHeight: 1.12 }}
+            >
+              {t("home.hero.title")}
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.64, delay: 0.1, ease: EASE_QUART }}
+              className="font-body-lg text-body-lg mt-3 text-green-50"
+            >
+              {fridayMode ? t("home.hero.friday_subtitle") : t("home.hero.subtitle")}
+            </motion.p>
+          </div>
+        </div>
+      </section>
 
-        {/* "How it works" anchor link → #how-it-works (HomeHowItWorks). */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.55, ease: EASE_QUART }}
-          className="mt-4"
-        >
-          <button
-            type="button"
-            onClick={scrollToHowItWorks}
-            className="text-green-50 hover:text-white underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
-          >
-            {t("home.hero.how_it_works")}
-          </button>
-        </motion.div>
-      </div>
-
-      {/*
-        Scroll arrow — subtle slow fade+glide (PREMIUM_DESIGN: no bounce easing).
-        `scroll-hint` keyframe lives in globals.css and respects
-        prefers-reduced-motion.
-
-        rtl-ok: horizontal-center idiom (canonical exception in
-        .claude/rules/rtl.md). Inline style emits identical CSS and avoids the
-        RTL hook's literal Tailwind class match.
-      */}
-      <button
-        type="button"
-        onClick={onScrollDown}
-        className="absolute text-white/70 hover:text-white transition-opacity scroll-hint"
-        style={{ bottom: "32px", left: "50%", transform: "translateX(-50%)" }}
-        aria-label={t("home.hero.scroll_down_label")}
+      {/* Search card — rides the photo seam DOWN onto cream (negative overlap).
+          MEH-99 HeroSearch routes to /producers?q=. Lives OUTSIDE the
+          overflow-hidden photo section so its dropdown can overflow freely. */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
+        role="search"
+        aria-label={t("home.hero.search_area_label")}
+        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-surface-card shadow-lg px-6 py-3.5"
+        style={{ borderRadius: "50px", width: "min(580px, calc(100% - 2rem))" }}
       >
-        <CaretDown size={28} weight="bold" aria-hidden="true" />
-      </button>
-    </section>
+        <HeroSearch
+          placeholder={t("home.search.placeholder")}
+          srLabel={t("home.search.sr_label")}
+          className="w-full"
+        />
+      </motion.div>
+
+      {/* Actions — on cream (re-coloured from the on-photo treatment): primary
+          CTA (גלו עסקים) + near-me (MEH-41) + "how it works". */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
+        className="mt-5 px-4 flex flex-wrap items-center justify-center gap-3"
+      >
+        <button
+          type="button"
+          onClick={onScrollDown}
+          className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-full transition-colors duration-base ease-quart focus-ring"
+        >
+          {t("home.hero.cta_primary")}
+        </button>
+
+        <button
+          type="button"
+          onClick={onNearMe}
+          disabled={geoLoading}
+          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-border px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
+        >
+          <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
+          {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
+        </button>
+
+        <button
+          type="button"
+          onClick={scrollToHowItWorks}
+          className="text-primary hover:text-primary-dark underline underline-offset-4 text-sm transition-colors duration-base ease-quart focus-ring rounded"
+        >
+          {t("home.hero.how_it_works")}
+        </button>
+      </motion.div>
+    </>
   );
 }

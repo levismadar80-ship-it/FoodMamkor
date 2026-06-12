@@ -6,6 +6,8 @@ import { Package } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
 import DeliveryBlock from "@/components/DeliveryBlock";
+// MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
+import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
 import ProducerCard from "@/components/ProducerCard";
@@ -70,14 +72,15 @@ export default function ProducerSections({
 
   return (
     <>
-      {/* Description */}
+      {/* Description — MEH-788: scroll-reveal (motion.section keeps the
+          sectionRefs callback ref for the tab-scroll IO). */}
       {producer.description && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("producer.detail.sections.about")}</h2>
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
-        </section>
+        </FadeInSection>
       )}
 
       {/* MEH-102: Opening hours */}
@@ -88,9 +91,9 @@ export default function ProducerSections({
         <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
       )}
 
-      {/* MEH-102: Similar producers */}
+      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
-        <section className="mt-8 border-t border-border pt-8">
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
           <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
           {producer.categories?.[0]?.name && (
             <p className="text-sm text-fg-muted mb-4">
@@ -104,7 +107,7 @@ export default function ProducerSections({
               </div>
             ))}
           </div>
-        </section>
+        </FadeInSection>
       )}
 
       {/* Events section */}
@@ -125,13 +128,13 @@ export default function ProducerSections({
               return (
                 <div
                   key={ev.id}
-                  className="bg-white rounded-[12px] border border-border p-4 flex gap-4"
+                  className="bg-white rounded-md border border-border p-4 flex gap-4"
                 >
                   {ev.image_url && (
                     <img
                       src={ev.image_url}
                       alt={ev.title}
-                      className="w-16 h-16 rounded-[8px] object-cover flex-shrink-0"
+                      className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
@@ -180,10 +183,10 @@ export default function ProducerSections({
             {producer.products.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-[12px] p-4 border border-border flex gap-3 items-start"
+                className="bg-white rounded-md p-4 border border-border flex gap-3 items-start"
               >
                 {product.image_url ? (
-                  <div className="relative w-16 h-16 shrink-0 rounded-[8px] overflow-hidden bg-green-50">
+                  <div className="relative w-16 h-16 shrink-0 rounded-sm overflow-hidden bg-green-50">
                     <Image
                       src={product.image_url}
                       alt={product.name}
@@ -193,7 +196,7 @@ export default function ProducerSections({
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 shrink-0 rounded-[8px] bg-green-50 flex items-center justify-center">
+                  <div className="w-16 h-16 shrink-0 rounded-sm bg-green-50 flex items-center justify-center">
                     <Package size={28} className="text-fg-muted/60" aria-hidden="true" />
                   </div>
                 )}
@@ -254,7 +257,7 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
             {t("producer.detail.sections.delivery.heading")}
           </h2>
-          <div className="bg-white rounded-[12px] overflow-hidden border border-border">
+          <div className="bg-white rounded-md overflow-hidden border border-border">
             <table className="w-full">
               <thead className="bg-green-50">
                 <tr>

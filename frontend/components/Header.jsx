@@ -6,9 +6,8 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useLanguage } from "@/lib/language-context";
 import { useTranslations } from "next-intl";
-import { Heart, List, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -42,17 +41,19 @@ import LanguageToggle from "@/components/LanguageToggle";
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = gold underline. MEH-732 SUPERSEDES the MEH-638 "no glass"
- * lock for the pill (pill-only glass, never a full-width band); the mobile
- * hamburger keeps its own glass over the hero. Transition never animates
- * backdrop-filter (background + shadow only).
+ * lock for the pill (pill-only glass, never a full-width band). Transition
+ * never animates backdrop-filter (background + shadow only).
+ *
+ * MEH-789 PR-B: the mobile hamburger + drawer were RETIRED — BottomNav
+ * (PR-A) owns mobile navigation; its AccountSheet carries favorites /
+ * settings / language / logout / the add-business entry. Mobile header
+ * chrome is now logo + search only. Desktop nav is untouched.
  */
 export default function Header() {
   const { user, logout } = useAuth();
-  const { lang } = useLanguage();
   const t = useTranslations();
   const pathname = usePathname();
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
@@ -70,10 +71,10 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", onDocMouseDown);
   }, [userMenuOpen]);
 
-  // Close menus on route change so they don't look stuck during the fade.
+  // Close the avatar dropdown on route change so it doesn't look stuck
+  // during the fade. (MEH-789 PR-B: the drawer's menuOpen reset left with it.)
   useEffect(() => {
     setUserMenuOpen(false);
-    setMenuOpen(false);
   }, [pathname]);
 
   // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
@@ -175,7 +176,7 @@ export default function Header() {
           {/* LEAD GROUP — logo + nav links together (internal gap 36px).
               start of the row (visual right in RTL). */}
           <div className="flex items-center gap-9">
-            <Link href="/" className="shrink-0 inline-flex items-center" aria-label={BRAND_NAME}>
+            <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
@@ -255,7 +256,7 @@ export default function Header() {
               </Link>
             )}
 
-            {/* Mobile: search (44px circle) + hamburger */}
+            {/* Mobile: search (44px circle) — nav lives in BottomNav (MEH-789 PR-A) */}
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
@@ -264,120 +265,9 @@ export default function Header() {
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? t("nav.menu_close") : t("nav.menu_open")}
-              aria-expanded={menuOpen}
-              className={[
-                "md:hidden flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring",
-                transparent
-                  ? "bg-white/15 backdrop-blur-sm border border-white/40 text-background"
-                  : "bg-surface-card border border-border text-text",
-              ].join(" ")}
-              style={transparent ? textShadow : undefined}
-            >
-              {menuOpen ? <X size={22} weight="bold" /> : <List size={22} weight="bold" />}
-            </button>
           </div>
         </nav>
       </div>
-
-      {/* Mobile drawer — MEH-643 warm-dark (green-900) surface for ghost-on-dark
-          legibility. Replaces the MEH-29 cream drawer; all of its contents are
-          migrated here (nav · CTAs · lang · logged-in items). In normal flow
-          (expands the band) — no overlay z-index. */}
-      {menuOpen && (
-        <div className="md:hidden px-4 pb-2">
-          <div className="rounded-2xl bg-green-900 border border-white/10 p-6 shadow-[0_12px_40px_rgba(20,50,40,0.45)]">
-            {/* Nav links — Frank Ruhl 700 / 24px / gold editorial numerals. */}
-            <nav className="grid" aria-label={t("nav.mobile_label")}>
-              {NAV_ITEMS.map((item, i) => {
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => setMenuOpen(false)}
-                    className={[
-                      "grid grid-cols-[1fr_auto] items-baseline py-4 border-b border-white/10 last:border-b-0",
-                      "font-headline-md font-bold text-[24px] transition-colors duration-fast ease-quart",
-                      active ? "text-amber-200" : "text-background",
-                    ].join(" ")}
-                  >
-                    <span>{item.label}</span>
-                    <span className="text-[14px] font-normal text-amber-200" dir="ltr" aria-hidden="true">
-                      0{i + 1}
-                    </span>
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* CTA row + account/logged-in actions. */}
-            <div className="grid gap-2 mt-4 pt-4 border-t border-white/15">
-              {showAddBusinessCta && (
-                <Link
-                  href="/register/producer"
-                  onClick={() => setMenuOpen(false)}
-                  className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-full bg-action-primary hover:bg-action-primary-hover text-white text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                >
-                  {t("nav.add_business_short")}
-                  <span className="inline-block scale-x-[-1] text-white/70" aria-hidden="true">↗</span>
-                </Link>
-              )}
-
-              {user ? (
-                <>
-                  <Link
-                    href="/favorites"
-                    onClick={() => setMenuOpen(false)}
-                    className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                  >
-                    <Heart size={18} weight="duotone" aria-hidden="true" />
-                    {t("nav.favorites")}
-                  </Link>
-                  {user.role === "admin" && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setMenuOpen(false)}
-                      className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                    >
-                      {t("nav.admin")}
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { logout(); setMenuOpen(false); }}
-                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full border border-red-400/50 text-red-300 hover:bg-red-500/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                  >
-                    {t("nav.logout")}
-                  </button>
-                </>
-              ) : (
-                // MEH-B: hide the drawer login entry on /login too — mirrors
-                // the desktop isLoginPage gate (MEH-732 / PR #909).
-                !isLoginPage && (
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="inline-flex items-center justify-center w-full min-h-[48px] rounded-full action-ghost-on-dark hover:bg-white/10 text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
-                  >
-                    {t("nav.login")}
-                  </Link>
-                )
-              )}
-            </div>
-
-            {/* Language toggle — tinted cream for the dark surface. */}
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/15">
-              <LanguageToggle className="text-background hover:bg-white/10" />
-              <span className="text-sm text-background/80">
-                {lang === "he" ? t("nav.lang_en") : t("nav.lang_he")}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

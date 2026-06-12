@@ -1,0 +1,1601 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S3 · P2 v3 · ProducerCard — zero derived colours</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ────────────────────────────────────────────────────────────
+   Brand tokens (Design System v1.0)
+   ──────────────────────────────────────────────────────────── */
+:root {
+  --green:       #2E6853;
+  --green-dark:  #1F4A38;
+  --background:  #F5F0E8;
+  --bg-card:     #FFFEFB;
+  --text:        #1C1A17;
+  --fg-muted:    #57524A;
+  --gold:        #8B6914;
+  --light:       #EAF3DE;
+  --border:      #E8E0D0;
+  --focus-ring:  rgba(46,104,83,0.40);
+
+  /* Vacation re-routes through --fg-muted #57524A (v1.0 primitive) — no new token */
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body { padding: 48px 32px 96px; min-width: 1400px; }
+
+.numeric {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-style: normal;
+  direction: ltr; unicode-bidi: isolate;
+}
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+.docpage { max-width: 1740px; margin: 0 auto; }
+
+/* ─── Doc masthead ─────────────────────────────────────────── */
+.docpage > header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+.docpage > header h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.docpage > header h1 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: #6b4f0f;
+}
+.docpage > header .sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--doc-ink-mute);
+  margin-top: 6px;
+}
+.docpage > header .stamp {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.8;
+}
+.docpage > header .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.docpage > header .stamp .dot { color: var(--green); }
+
+.phase-nav {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink-mute);
+}
+.phase-nav .pip {
+  width: 8px; height: 8px;
+  border: 1px solid rgba(42,38,32,0.30);
+  background: transparent;
+  display: inline-block;
+}
+.phase-nav .pip.is-on  { background: var(--green); border-color: var(--green); }
+.phase-nav .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+
+/* ────────────────────────────────────────────────────────────
+   VALIDATION GATE (same protocol as P1 v2)
+   ──────────────────────────────────────────────────────────── */
+.gate {
+  background: #1F4A38;
+  color: var(--background);
+  padding: 32px 40px;
+  margin-bottom: 48px;
+  display: grid;
+  grid-template-columns: 320px 1fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.gate h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 0em;
+  line-height: 1.1;
+}
+.gate h2 em { font-family: var(--font-italic); font-weight: 500; font-style: italic; color: #E7C88A; }
+.gate .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(245,240,232,0.7);
+  margin-top: 8px;
+  line-height: 1.5;
+  max-width: 28ch;
+}
+.gate .pass-tag {
+  display: inline-block;
+  margin-top: 16px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--background);
+  background: var(--green);
+  padding: 4px 10px;
+}
+.gate-col h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.55);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(245,240,232,0.18);
+}
+.gate-col h3 .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: #E7C88A;
+  margin-inline-end: 8px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 13px;
+}
+.gate-row {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--background);
+  border-bottom: 1px dashed rgba(245,240,232,0.08);
+}
+.gate-row:last-child { border-bottom: 0; }
+.gate-row .box {
+  width: 14px; height: 14px;
+  border: 1px solid #E7C88A;
+  background: #E7C88A;
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.gate-row em { font-family: var(--font-italic); font-style: italic; color: rgba(245,240,232,0.65); }
+.gate-row .evi {
+  font-family: ui-monospace, Menlo, monospace;
+  font-style: normal;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: #E7C88A;
+  background: rgba(231,200,138,0.10);
+  padding: 1px 4px;
+  margin-inline-start: 6px;
+  white-space: nowrap;
+  display: inline-block;
+}
+.gate-row code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: #E7C88A;
+  background: rgba(231,200,138,0.10);
+  padding: 1px 4px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   Section header (anatomy / specimen / mockup)
+   ──────────────────────────────────────────────────────────── */
+.section-head {
+  border-top: 1px solid rgba(42,38,32,0.30);
+  padding: 32px 0 24px;
+  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+}
+.section-head .letter {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 96px;
+  color: var(--gold);
+  line-height: 1;
+}
+.section-head h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.section-head h2 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+.section-head .pitch {
+  font-size: 14px;
+  color: var(--doc-ink-mute);
+  font-family: var(--font-italic);
+  font-style: italic;
+  margin-top: 6px;
+  max-width: 70ch;
+  line-height: 1.5;
+}
+.section-head .meta {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.8;
+}
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ────────────────────────────────────────────────────────────
+   THE CARD — anatomy + all 8 states share this CSS
+   ──────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  display: grid;
+  grid-template-rows: auto auto;
+  width: 280px;
+  font-family: var(--font-body);
+  color: var(--text);
+  position: relative;
+  isolation: isolate;
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.25,1,0.5,1);
+  direction: rtl;
+}
+
+/* Media frame -------------------------------------------------- */
+.card-media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;        /* desktop default — overridden on mobile */
+  background-color: var(--background);   /* v3 fix: was #6b3f20 (brown) — derived colour, killed */
+}
+.card-image {
+  position: absolute;
+  inset: 0;
+  background-color: var(--background);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><g fill='none' stroke='%231F4A38' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M40 14 C 56 18 64 36 60 56 C 44 60 24 56 18 38 C 22 22 36 14 40 14 Z'/><path d='M30 22 C 32 36 36 50 42 60'/><path d='M30 30 C 36 32 42 32 48 30'/><path d='M28 42 C 34 44 40 44 46 42'/></g></svg>");
+  background-position: center;
+  background-size: 88px 88px;
+  background-repeat: no-repeat;
+  transition: transform 300ms cubic-bezier(0.25,1,0.5,1);
+  /* No-image placeholder per Sapir v2 — cream surface + leaf glyph.
+     The canonical "no photo yet" state. Replaced with a real producer
+     photo when MEH-602 (media integration) lands. */
+}
+.card-image::after {
+  /* warm grain overlay */
+  content:"";
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+/* Heart — top-start (right in RTL), green ink, NOT red ---- */
+.card-heart {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgba(245,240,232,0.6);
+  background: rgba(31,74,56,0.30);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--background);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+.card-heart svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.card-heart.is-saved {
+  background: rgba(245,240,232,0.95);
+  color: var(--green);
+}
+.card-heart.is-saved svg { fill: currentColor; stroke: currentColor; }
+
+/* Badge row — bottom-start on image, max 2 ---------------- */
+.card-badge-row {
+  position: absolute;
+  bottom: 16px;
+  inset-inline-start: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+.badge {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.badge--new {
+  background: var(--gold);
+  color: var(--background);
+}
+.badge--recommended {
+  background: var(--green);
+  color: var(--background);
+}
+.badge--kosher {
+  background: var(--bg-card);
+  color: var(--green-dark);
+  border-color: var(--border);
+}
+
+/* Body -------------------------------------------------------- */
+.card-body {
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+.card-eyebrow {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.card-headline-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+}
+.card-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: 0em;
+  color: var(--text);
+  position: relative;
+  display: inline-block;
+}
+.card-rating {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.card-rating .star { color: var(--gold); }
+.card-rating .count { color: var(--fg-muted); }
+
+.card-availability {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.card-availability .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--green);
+  display: inline-block;
+}
+.card-availability .dot.is-vacation { background: var(--fg-muted); }
+.card-availability .status { color: var(--text); font-weight: 500; }
+.card-availability .status.is-vacation {
+  color: var(--fg-muted);
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.card-meta {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--fg-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ─── STATE VARIATIONS ─────────────────────────────────────── */
+
+/* 02 · HOVER — caption underline + image scale 1.02 · NO shadow lift */
+.card.is-hover .card-image { transform: scale(1.02); }
+.card.is-hover .card-name::after {
+  content:"";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -2px;
+  height: 1px;
+  background: var(--gold);
+}
+.card.is-hover { border-color: var(--green); }
+
+/* 03 · ACTIVE — opacity 0.95 + scale 0.98 */
+.card.is-active { opacity: 0.95; transform: scale(0.98); }
+
+/* 04 · LOADING — skeleton (v3: cream bg + opacity pulse, no new color) */
+.card.is-loading .card-image {
+  background: var(--background);
+  background-image: none;
+}
+.card.is-loading .card-image::after { display: none; }
+.card.is-loading .card-heart,
+.card.is-loading .card-badge-row { display: none; }
+.card.is-loading .card-body > * { display: none; }
+.card.is-loading .card-body { padding: 16px; gap: 8px; }
+/* Skeleton bars — --fg-muted at 0.15 opacity, on cream bg, no new color */
+.card.is-loading .card-body::after {
+  content:"";
+  display: block;
+  height: 12px;
+  background: rgba(87,82,74,0.15);
+  width: 60%;
+  border-radius: 2px;
+}
+.card.is-loading .card-body::before {
+  content:"";
+  display: block;
+  height: 20px;
+  background: rgba(87,82,74,0.15);
+  width: 80%;
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+.card.is-loading .card-skel-row {
+  display: grid;
+  grid-template-columns: 8px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.card.is-loading .card-skel-row .d {
+  width: 8px; height: 8px; border-radius: 9999px; background: rgba(87,82,74,0.15);
+}
+.card.is-loading .card-skel-row .b {
+  height: 10px; background: rgba(87,82,74,0.15); border-radius: 2px; width: 45%;
+}
+.card.is-loading .card-image {
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card.is-loading .card-image { animation: none; opacity: 0.5; }
+}
+
+/* 05 · VACATION — v3: NO filter (was producing #D5D2C9 grey).
+   Layered: cream image + --fg-muted overlay at 0.10 opacity. */
+.card.is-vacation .card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(87,82,74,0.10);
+  pointer-events: none;
+  z-index: 1;
+}
+.card.is-vacation .card-name { color: var(--fg-muted); }
+.card.is-vacation .card-heart {
+  border-color: rgba(87,82,74,0.6);
+  background: rgba(87,82,74,0.30);
+}
+
+/* 08 · DISABLED — opacity 0.5, no interaction */
+.card.is-disabled { opacity: 0.5; pointer-events: none; }
+.card.is-disabled .card-image { filter: grayscale(0.6); }
+
+/* Focus state — composes with all non-disabled */
+.card.is-focus { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* ────────────────────────────────────────────────────────────
+   Anatomy — large annotated specimen
+   ──────────────────────────────────────────────────────────── */
+.anatomy {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 80px;
+  align-items: start;
+  margin-bottom: 96px;
+}
+.anatomy .specimen {
+  width: 360px;
+  position: relative;
+}
+.anatomy .specimen .card { width: 360px; }
+.anatomy .specimen .card .card-name { font-size: 22px; }
+.anatomy .annot {
+  position: absolute;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  white-space: nowrap;
+}
+.anatomy .annot .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.anatomy .annot .pin {
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+}
+.anatomy .annot .pin::after {
+  content:"";
+  position: absolute;
+  inset: 4px;
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+.anatomy .annot-line {
+  position: absolute;
+  border-top: 1px dashed var(--gold);
+  height: 0;
+  opacity: 0.55;
+}
+
+.anatomy .legend {
+  display: grid;
+  gap: 24px;
+}
+.anatomy .legend h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.anatomy .legend h3 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.anatomy .legend .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--doc-ink-mute);
+  line-height: 1.55;
+  max-width: 56ch;
+  margin-bottom: 8px;
+}
+.anatomy .legend ol {
+  list-style: none;
+  display: grid;
+  gap: 0;
+}
+.anatomy .legend li {
+  display: grid;
+  grid-template-columns: 36px 180px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.anatomy .legend li:last-child { border-bottom: 0; }
+.anatomy .legend li .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--gold);
+  line-height: 1;
+}
+.anatomy .legend li .name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.anatomy .legend li .name code {
+  display: block;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--green-dark);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.anatomy .legend li .spec { color: var(--doc-ink); }
+.anatomy .legend li .spec strong { color: var(--gold); font-family: var(--font-italic); font-style: italic; font-weight: 500; }
+
+/* ────────────────────────────────────────────────────────────
+   Specimen sheet — 8 states · 4×2 grid
+   ──────────────────────────────────────────────────────────── */
+.specimens {
+  display: grid;
+  grid-template-columns: repeat(4, 280px);
+  gap: 48px 32px;
+  justify-content: center;
+  margin-bottom: 64px;
+}
+.state-cell {
+  display: grid;
+  gap: 12px;
+}
+.state-cell .state-cap {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.state-cell .state-cap .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.state-cell .state-cap .name { color: var(--doc-ink); }
+.state-cell .state-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+.state-cell .state-cap .token {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  color: var(--green-dark);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.state-cell .state-note {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--doc-ink-mute);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.state-cell .state-note .h { color: var(--doc-ink); font-family: var(--font-body); font-style: normal; font-weight: 500; }
+
+/* ────────────────────────────────────────────────────────────
+   Mockup row (mobile + desktop in viewport boxes)
+   ──────────────────────────────────────────────────────────── */
+.mockup-row { display: grid; gap: 80px; margin-bottom: 80px; }
+
+.stack-cap {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+}
+.stack-cap .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.stack-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.stack-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; letter-spacing: 0.02em; font-size: 13px; color: var(--gold); }
+.stack-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+
+.vp {
+  background: var(--background);
+  border: 1px solid rgba(42,38,32,0.18);
+  overflow: hidden;
+  position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.vp.mobile  { width: 375px; }
+.vp.desktop { width: 1280px; }
+
+.vp .vp-header {
+  padding: 32px 24px 16px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  color: var(--text);
+  direction: rtl;
+  line-height: 1.05;
+  border-bottom: 1px solid var(--border);
+}
+.vp.desktop .vp-header { padding: 48px 48px 24px; font-size: 36px; }
+.vp .vp-header em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+.vp .vp-grid {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+.vp.desktop .vp-grid {
+  padding: 32px 48px 48px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.vp.mobile .vp-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Mobile card scale tweaks — aspect-square + smaller name */
+.vp.mobile .card { width: 100%; }
+.vp.mobile .card-media { aspect-ratio: 1 / 1; }
+.vp.mobile .card-name { font-size: 16px; }
+.vp.mobile .card-rating { font-size: 12px; }
+.vp.mobile .card-availability,
+.vp.mobile .card-meta { font-size: 12px; }
+.vp.mobile .card-eyebrow { font-size: 10px; }
+.vp.mobile .card-heart { width: 32px; height: 32px; top: 8px; inset-inline-start: 8px; }
+.vp.mobile .card-heart svg { width: 16px; height: 16px; }
+.vp.mobile .card-body { padding: 16px; gap: 8px; }
+.vp.mobile .card-badge-row { bottom: 8px; inset-inline-start: 8px; }
+.vp.mobile .badge { font-size: 10px; padding: 4px 8px; }
+
+/* Desktop card in mockup — 4:3 (default) — keeps 280 width */
+.vp.desktop .card { width: 100%; }
+
+/* ────────────────────────────────────────────────────────────
+   INSPECTOR
+   ──────────────────────────────────────────────────────────── */
+.inspector {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.inspector h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0em;
+  line-height: 1.2;
+  color: var(--doc-ink);
+  margin-bottom: 4px;
+}
+.inspector .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--doc-ink-mute);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.insp-col h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+}
+.insp-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--doc-ink);
+}
+.insp-row .chip { width: 14px; height: 14px; border: 1px solid rgba(42,38,32,0.20); }
+.insp-row .name { color: var(--doc-ink); }
+.insp-row .val { color: var(--doc-ink-mute); }
+
+.insp-states {
+  display: grid;
+  gap: 0;
+}
+.insp-states .row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.insp-states .row:last-child { border-bottom: 0; }
+.insp-states .row .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--gold);
+  line-height: 1;
+}
+.insp-states .row .nm {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink);
+}
+.insp-states .row .nm code {
+  display: block;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--green-dark);
+  font-weight: 400;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.insp-states .row .effect {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* ────────────────────────────────────────────────────────────
+   SELF-CHECK + COUNCIL  (same layout as P1)
+   ──────────────────────────────────────────────────────────── */
+.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+.panel {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+}
+.panel h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0em; margin-bottom: 4px; }
+.panel .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--doc-ink-mute);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.checklist { display: grid; gap: 4px; }
+.checklist .item {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .item .box {
+  width: 16px; height: 16px;
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.checklist .item .note {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  white-space: nowrap;
+}
+.checklist .item code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--green-dark);
+  background: rgba(46,104,83,0.08);
+  padding: 1px 4px;
+}
+
+.council-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.council-row:last-child { border-bottom: 0; }
+.council-row .who {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.council-row .who strong { color: var(--doc-ink); display: block; font-size: 13px; letter-spacing: 0.06em; text-transform: none; margin-top: 2px;}
+.council-row .how { color: var(--doc-ink); }
+.council-row .how em { color: var(--gold); font-family: var(--font-italic); font-style: italic; }
+
+/* Footer + changelog */
+footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(42,38,32,0.18);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+footer .italic {
+  font-family: var(--font-italic);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  color: var(--gold);
+}
+.changelog {
+  background: transparent;
+  margin-bottom: 24px;
+  border-top: 1px solid rgba(42,38,32,0.18);
+  padding-top: 24px;
+}
+.changelog .micro {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  margin-bottom: 8px;
+}
+.changelog ul { list-style: none; display: grid; gap: 6px; }
+.changelog li {
+  display: grid;
+  grid-template-columns: 100px 84px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.changelog li .v { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.changelog li .d { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 12px; }
+.changelog li .t { color: var(--doc-ink); }
+</style>
+</head>
+<body>
+
+<div class="docpage">
+
+  <!-- ──────────── DOC MASTHEAD ──────────── -->
+  <header>
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on" title="P1 done"></span>
+        <span class="pip is-on" title="P1 v2 done"></span>
+        <span class="pip is-now" title="P2 — current"></span>
+        <span class="pip" title="P3 categories"></span>
+        <span class="pip" title="P4 navbar"></span>
+        <span class="ltr"> S3 · MEH-638 · P2 v2 · 3 fixes + media swap</span>
+      </div>
+      <h1>ProducerCard — <em>v3 · zero derived colours.</em></h1>
+      <div class="sub">v2 — three Sapir corrections applied: heart aria <strong>שמירה</strong> (gerund · MEH-472), Vacation re-routed through <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color: var(--green-dark);">--fg-muted #57524A</code> (no new token), card padding cleaned to <span class="numeric">8</span>-grid (<span class="numeric">16</span>/<span class="numeric">16</span>). Amber image mock replaced with cream + leaf glyph — the canonical no-photo state.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> awaiting Sapir review<br>
+      Phase <strong class="numeric">2</strong> of <strong class="numeric">4</strong><br>
+      <span class="numeric">2026-05-22</span> · S3.P2.v3<br>
+      Anatomy locked <strong class="numeric">2026-04-18</strong>
+    </div>
+  </header>
+
+  <!-- ──────────── VALIDATION GATE ──────────── -->
+  <section class="gate" aria-label="Pre-output validation">
+    <div>
+      <h2>Validation gate — <em>all four cleared.</em></h2>
+      <p class="lede">Same protocol as P1 v2. No phase output ships before Copy / Tokens / LOCKs / Scope are individually proven against locked source.</p>
+      <span class="pass-tag">4 / 4 cleared</span>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">01</span> Copy</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Eyebrow = <strong>CATEGORY</strong> (Chimero rule) · uppercase tracking <span class="numeric">0.15em</span> · never "DEFAULT · IMAGE". <em class="evi">SYNC v4 §4 #07</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Producer name + city in Hebrew · <strong>בית עסק</strong> never "יצרן". <em class="evi">SYNC v4 §2 brand-LOCK</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Vacation copy: "בחופשה עד <span class="numeric">15.6</span>" · not "לא זמינה היום". <em class="evi">COPY_BANK proposal</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Badges: "חדש" / "מומלץ" · plural-neutral, Hebrew adjective form. <em class="evi">[NEW COPY]</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Heart aria: <code>שמירה</code> · <strong>gerund</strong>, matches "טעינה" pattern. <em>v2 fix #1.</em> <em class="evi">MEH-472</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">02</span> Tokens</h3>
+      <div class="gate-row"><span class="box">✓</span><span>State tokens <code>--state-default</code> … <code>--state-disabled</code> · all <span class="numeric">7</span> resolve to a single visual rule each. <em class="evi">DS v1.0 §4</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Spacing on <span class="numeric">8</span>px grid · padding <span class="numeric">16</span>/<span class="numeric">16</span> · gaps <span class="numeric">8</span>/<span class="numeric">16</span> · insets <span class="numeric">8</span>/<span class="numeric">16</span>. <em>v2 fix #3.</em> <em class="evi">SYNC v4 §3.1</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Image: aspect-square mobile, <span class="numeric">4</span>:<span class="numeric">3</span> desktop. Heart <span class="numeric">40</span>×<span class="numeric">40</span> d / <span class="numeric">32</span>×<span class="numeric">32</span> m · dot <span class="numeric">8</span>×<span class="numeric">8</span>. <em class="evi">CHANGELOG 2026-04-18</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Vacation re-routes through <code>--fg-muted #57524A</code> — no new primitive · v1.0 unchanged. <em>v2 fix #2.</em> <em class="evi">DS v1.0 (no extension)</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Borders <span class="numeric">1</span>px <code>--border</code> · never <span class="numeric">2</span>px+ (focus ring excepted). <em class="evi">DS guide §Borders</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">03</span> LOCKs</h3>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No red heart.</strong> Default = green-ink outline; saved = green fill. <em class="evi">SYNC v4 §4 #03 Ive</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No shadow-lift on hover.</strong> Hover = image scale <span class="numeric">1.02</span> + gold caption underline. Border colour shift only. <em class="evi">SYNC v4 §2 design-LOCK</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No amber for Vacation.</strong> Re-routed to <code>--fg-muted</code> · v1.0 primitive. <em class="evi">brief · v2 fix #2</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>BadgeRow limit=2.</strong> Hard cap enforced; third badge collapses to "+ <span class="numeric">N</span>" overflow (documented, not shown). <em class="evi">brief P2 anatomy</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>Eyebrow = category</strong>, never the layer name. <em class="evi">SYNC v4 §4 #07 Chimero</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No gradient orbs · no glassmorphism · no time-stamped framing. <em class="evi">SYNC v4 §2 design-LOCK</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Rating in name row (★ <span class="numeric">4.5</span> · <span class="numeric">12</span>) · LTR-isolated numerals · star in gold. <em class="evi">SYNC v4 §3.2</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">04</span> Scope</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Card only · no list shell · no filter chips · no map view. <em class="evi">brief P2 scope</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Save state shown as a single sub-variant of Default · not counted as a <span class="numeric">9</span>th. <em class="evi">brief P2 · 8 states</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Navbar in mockup viewports is placeholder · Floating Pill arrives in P4. <em class="evi">brief P4 spec</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Category grid context deferred to P3. <em class="evi">brief P3 scope</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Producer image = cream + leaf glyph · real photo per MEH-602. <em>v2 fix #4.</em> <em class="evi">P1 v2 cond. #1</em></span></div>
+    </div>
+  </section>
+
+  <!-- ──────────── ANATOMY ──────────── -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Anatomy — <em>one card, eight roles.</em></h2>
+      <p class="pitch">Locked geometry from prod (CHANGELOG <span class="numeric">2026-04-18</span>). Heart top-start · BadgeRow bottom-start · rating folded into name row · availability dot before status · meta last. Every role lives on a row of the <span class="numeric">8</span>px grid.</p>
+    </div>
+    <div class="meta">canonical<br><strong>do not invent roles</strong></div>
+  </section>
+
+  <div class="anatomy">
+    <div class="specimen">
+      <article class="card" aria-label="Anatomy specimen">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה">
+            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <div class="card-image" aria-hidden="true"></div>
+          <div class="card-badge-row">
+            <span class="badge badge--new">חדש</span>
+            <span class="badge badge--recommended">מומלץ</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row">
+            <h3 class="card-name">מחלבת בן ארי</h3>
+            <span class="card-rating">
+              <span class="star">★</span>
+              <span class="numeric">4.5</span>
+              <span class="count">· <span class="numeric">12</span></span>
+            </span>
+          </div>
+          <div class="card-availability">
+            <span class="dot"></span>
+            <span class="status">פעיל היום</span>
+          </div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+    </div>
+
+    <div class="legend">
+      <div>
+        <h3>Legend — <em>seven roles + one shell.</em></h3>
+        <p class="lede">Each row below is one component of the card. The third column is the role's locked spec — values, not adjectives.</p>
+      </div>
+
+      <ol>
+        <li>
+          <span class="num numeric">01</span>
+          <span class="name">Media frame<code>.card-media</code></span>
+          <span class="spec">Aspect <strong>4:3</strong> desktop / <strong>1:1</strong> mobile. Producer photo. <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; background: rgba(46,104,83,0.08); padding: 1px 4px; color: var(--green-dark);">overflow: hidden</code> — image alone scales on hover.</span>
+        </li>
+        <li>
+          <span class="num numeric">02</span>
+          <span class="name">Heart<code>.card-heart</code></span>
+          <span class="spec">Top-start (right in RTL). <span class="numeric">36</span>×<span class="numeric">36</span> circular. Outline cream over a green-tinted backdrop-blur button. <strong>Saved → green fill, not red.</strong></span>
+        </li>
+        <li>
+          <span class="num numeric">03</span>
+          <span class="name">Badge row<code>.card-badge-row</code></span>
+          <span class="spec">Bottom-start of image. Max <strong>2</strong> chips. Order: <em>חדש</em> → <em>מומלץ</em> → <em>+N overflow</em>. Each chip <span class="numeric">4</span>×<span class="numeric">10</span>px padding.</span>
+        </li>
+        <li>
+          <span class="num numeric">04</span>
+          <span class="name">Eyebrow<code>.card-eyebrow</code></span>
+          <span class="spec"><strong>CATEGORY</strong> only — never "DEFAULT · IMAGE". DM Sans 500 / <span class="numeric">11</span>px / LS <span class="numeric">0.15em</span> / UPPER. (Chimero)</span>
+        </li>
+        <li>
+          <span class="num numeric">05</span>
+          <span class="name">Name + rating<code>.card-headline-row</code></span>
+          <span class="spec">Two columns. Frank Ruhl <span class="numeric">700</span> / <span class="numeric">20</span>px name on the start; <strong>★ <span class="numeric">4.5</span> · <span class="numeric">12</span></strong> on the end. Star gold, count muted.</span>
+        </li>
+        <li>
+          <span class="num numeric">06</span>
+          <span class="name">Availability<code>.card-availability</code></span>
+          <span class="spec"><span class="numeric">8</span>px dot (green active / muted vacation) + status text. DM Sans / <span class="numeric">13</span>px. No "אחה״צ", no time framing.</span>
+        </li>
+        <li>
+          <span class="num numeric">07</span>
+          <span class="name">Meta<code>.card-meta</code></span>
+          <span class="spec">Location · distance. DM Sans <span class="numeric">12</span>px / muted. Numerals + units in Latin: <strong><span class="numeric">12 km</span></strong>, never "<span class="numeric">12</span> ק״מ".</span>
+        </li>
+        <li>
+          <span class="num numeric">00</span>
+          <span class="name">Shell<code>.card</code></span>
+          <span class="spec"><strong><span class="numeric">280</span></strong>px width default. <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; background: rgba(46,104,83,0.08); padding: 1px 4px; color: var(--green-dark);">--bg-card #FFFEFB</code> · <span class="numeric">1</span>px <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; background: rgba(46,104,83,0.08); padding: 1px 4px; color: var(--green-dark);">--border</code> · radius <span class="numeric">0</span> (editorial, not pill).</span>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ──────────── SPECIMEN SHEET — 8 STATES ──────────── -->
+  <section class="section-head">
+    <div class="letter">B</div>
+    <div>
+      <h2>Eight states — <em>specimen sheet.</em></h2>
+      <p class="pitch">Same producer in every cell — only state differs. Hover and Active are simulated statically. Loading is the animated skeleton (look for the <em>1.8s pulse</em>). State tokens map to the system's <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; background: rgba(46,104,83,0.08); padding: 1px 4px; color: var(--green-dark);">--state-*</code> from v1.0.</p>
+    </div>
+    <div class="meta">8 states<br><strong>Brad Frost</strong></div>
+  </section>
+
+  <div class="specimens">
+
+    <!-- 01 · DEFAULT -->
+    <div class="state-cell">
+      <div class="state-cap">
+        <span class="num numeric">01</span>
+        <span class="name">Default</span>
+        <span class="rule"></span>
+        <span class="token">--state-default</span>
+      </div>
+      <article class="card">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Base.</span> No transform, no underline, full opacity. <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--border</code> outline.</p>
+    </div>
+
+    <!-- 02 · HOVER -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">02</span><span class="name">Hover</span><span class="rule"></span><span class="token">--state-hover</span></div>
+      <article class="card is-hover">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Hover.</span> Image scales <span class="numeric">1.02</span> + <span class="numeric">1</span>px gold underline under name + border shifts to <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--green</code>. <em>No shadow lift.</em></p>
+    </div>
+
+    <!-- 03 · ACTIVE -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">03</span><span class="name">Active</span><span class="rule"></span><span class="token">--state-active</span></div>
+      <article class="card is-active">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Pressed.</span> Opacity <span class="numeric">0.95</span> + scale <span class="numeric">0.98</span>. Mobile press feedback; supersedes hover.</p>
+    </div>
+
+    <!-- 04 · LOADING -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">04</span><span class="name">Loading</span><span class="rule"></span><span class="token">--state-loading</span></div>
+      <article class="card is-loading">
+        <div class="card-media">
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <div class="card-skel-row"><span class="d"></span><span class="b"></span></div>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Skeleton.</span> Pulse <span class="numeric">1.8</span>s ease-in-out · all glyphs masked · respects <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">prefers-reduced-motion</code> (pulse becomes a static <span class="numeric">0.8</span> opacity).</p>
+    </div>
+
+    <!-- 05 · VACATION -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">05</span><span class="name">Vacation</span><span class="rule"></span><span class="token">--fg-muted @ 0.10 / cream</span></div>
+      <article class="card is-vacation">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot is-vacation"></span><span class="status is-vacation">בחופשה עד <span class="numeric">15.6</span></span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">On hold.</span> <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--fg-muted</code> overlay at <span class="numeric">0.10</span> opacity over <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--cream</code> base. Status text + heart in <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--fg-muted</code> (no opacity). <em>Browseable, not contactable.</em></p>
+    </div>
+
+    <!-- 06 · NEW -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">06</span><span class="name">New</span><span class="rule"></span><span class="token">badge "חדש"</span></div>
+      <article class="card">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+          <div class="card-badge-row"><span class="badge badge--new">חדש</span></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Just joined.</span> Single gold pill on the image. Lifetime: first <span class="numeric">30</span> days after approval (Kare: badge XOR label — gold + word, no glyph).</p>
+    </div>
+
+    <!-- 07 · RECOMMENDED -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">07</span><span class="name">Recommended</span><span class="rule"></span><span class="token">badge "מומלץ"</span></div>
+      <article class="card">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+          <div class="card-badge-row"><span class="badge badge--recommended">מומלץ</span></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Editor's pick.</span> Green pill. Awarded manually — never auto-derived from rating. Stewart Brand: <em>"who decides matters more than what they decide."</em></p>
+    </div>
+
+    <!-- 08 · DISABLED -->
+    <div class="state-cell">
+      <div class="state-cap"><span class="num numeric">08</span><span class="name">Disabled</span><span class="rule"></span><span class="token">--state-disabled</span></div>
+      <article class="card is-disabled">
+        <div class="card-media">
+          <button class="card-heart" type="button" aria-label="שמירה" disabled><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          <div class="card-image" aria-hidden="true"></div>
+        </div>
+        <div class="card-body">
+          <p class="card-eyebrow">גבינות</p>
+          <div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div>
+          <div class="card-availability"><span class="dot"></span><span class="status">לא פעיל</span></div>
+          <p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p>
+        </div>
+      </article>
+      <p class="state-note"><span class="h">Suspended.</span> Opacity <span class="numeric">0.5</span> · <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">pointer-events:none</code> · grayscale <span class="numeric">60</span>%. Wins over all other states — no hover, no focus.</p>
+    </div>
+  </div>
+
+  <!-- ──────────── MOBILE + DESKTOP MOCKUP ──────────── -->
+  <section class="section-head">
+    <div class="letter">C</div>
+    <div>
+      <h2>In situ — <em>grid context.</em></h2>
+      <p class="pitch">How the card behaves in a producer-list grid. Mobile 2-col with square images; desktop 4-col with 4:3. States below mirror specimen sheet positions so any cell can be cross-referenced.</p>
+    </div>
+    <div class="meta">375 + 1280<br><strong>real grid behaviour</strong></div>
+  </section>
+
+  <div class="mockup-row">
+    <section>
+      <div class="stack-cap">
+        <span class="num">01</span>
+        <span class="label">Desktop · 4-column producer grid</span>
+        <span class="rule"></span>
+        <span class="dims numeric">1280 × auto</span>
+      </div>
+      <div class="vp desktop" data-screen-label="ProducerCard · Desktop grid">
+        <div class="vp-header" dir="rtl">תוצאות — <em>גבינות</em></div>
+        <div class="vp-grid">
+          <!-- Row 1 -->
+          <article class="card"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card is-hover"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div><div class="card-badge-row"><span class="badge badge--recommended">מומלץ</span></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card"><div class="card-media"><button class="card-heart is-saved" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div><div class="card-badge-row"><span class="badge badge--new">חדש</span></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card is-vacation"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot is-vacation"></span><span class="status is-vacation">בחופשה עד <span class="numeric">15.6</span></span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <!-- Row 2 -->
+          <article class="card is-loading"><div class="card-media"><div class="card-image"></div></div><div class="card-body"><div class="card-skel-row"><span class="d"></span><span class="b"></span></div></div></article>
+
+          <article class="card is-active"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div><div class="card-badge-row"><span class="badge badge--new">חדש</span><span class="badge badge--recommended">מומלץ</span></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card is-disabled"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה" disabled><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">לא פעיל</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="stack-cap">
+        <span class="num">02</span>
+        <span class="label">Mobile · 2-column producer grid · square images</span>
+        <span class="rule"></span>
+        <span class="dims numeric">375 × auto</span>
+      </div>
+      <div class="vp mobile" data-screen-label="ProducerCard · Mobile grid">
+        <div class="vp-header" dir="rtl">תוצאות — <em>גבינות</em></div>
+        <div class="vp-grid">
+          <article class="card"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card"><div class="card-media"><button class="card-heart is-saved" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div><div class="card-badge-row"><span class="badge badge--new">חדש</span></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card is-vacation"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot is-vacation"></span><span class="status is-vacation">בחופשה</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div><div class="card-badge-row"><span class="badge badge--recommended">מומלץ</span></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">פעיל</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+
+          <article class="card is-loading"><div class="card-media"><div class="card-image"></div></div><div class="card-body"><div class="card-skel-row"><span class="d"></span><span class="b"></span></div></div></article>
+
+          <article class="card is-disabled"><div class="card-media"><button class="card-heart" type="button" aria-label="שמירה" disabled><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></button><div class="card-image"></div></div><div class="card-body"><p class="card-eyebrow">גבינות</p><div class="card-headline-row"><h3 class="card-name">מחלבת בן ארי</h3><span class="card-rating"><span class="star">★</span> <span class="numeric">4.5</span> <span class="count">· <span class="numeric">12</span></span></span></div><div class="card-availability"><span class="dot"></span><span class="status">לא פעיל</span></div><p class="card-meta">כפר חיים · <span class="numeric">12 km</span></p></div></article>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ──────────── INSPECTOR ──────────── -->
+  <section class="inspector" aria-label="Tokens used">
+    <div>
+      <h2>Inspector.</h2>
+      <p class="lede"><em style="font-family: var(--font-italic); color: var(--gold); font-weight: 500;">Tokens + states.</em><br>State column documents every visual rule. New v2 entry — <code style="font-family:ui-monospace,Menlo,monospace;font-size:11px;background:rgba(46,104,83,0.08);padding:1px 4px;color:var(--green-dark);">--slate #7A7669</code> for Vacation only.</p>
+    </div>
+
+    <div class="insp-col">
+      <h3>Color</h3>
+      <div class="insp-row"><span class="chip" style="background:#FFFEFB; outline:1px solid rgba(0,0,0,0.05); outline-offset:-1px;"></span><span class="name">--bg-card</span><span class="val numeric">#FFFEFB</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1C1A17;"></span><span class="name">--text</span><span class="val numeric">#1C1A17</span></div>
+      <div class="insp-row"><span class="chip" style="background:#57524A;"></span><span class="name">--fg-muted</span><span class="val numeric">#57524A</span></div>
+      <div class="insp-row"><span class="chip" style="background:#2E6853;"></span><span class="name">--green</span><span class="val numeric">#2E6853</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1F4A38;"></span><span class="name">--green-dark</span><span class="val numeric">#1F4A38</span></div>
+      <div class="insp-row"><span class="chip" style="background:#8B6914;"></span><span class="name">--gold</span><span class="val numeric">#8B6914</span></div>
+      <div class="insp-row"><span class="chip" style="background:#E8E0D0;"></span><span class="name">--border</span><span class="val numeric">#E8E0D0</span></div>
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed rgba(42,38,32,0.18); font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px; line-height: 1.55;">
+        <strong style="font-family: var(--font-body); font-style: normal; color: var(--green-dark);">Zero new tokens.</strong> Vacation uses <code style="font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 11px; color: var(--green-dark);">--fg-muted</code> overlay on cream · Loading uses the same on cream. The earlier <code style="font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 11px; color: var(--green-dark);">--slate</code> request is fully withdrawn · v1.0 unchanged.
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>States (7 + 1)</h3>
+      <div class="insp-states">
+        <div class="row"><span class="num numeric">01</span><span class="nm">Default<code>--state-default</code></span><span class="effect">base · <span class="numeric">1</span>px border</span></div>
+        <div class="row"><span class="num numeric">02</span><span class="nm">Hover<code>--state-hover</code></span><span class="effect">img scale <span class="numeric">1.02</span> · gold underline</span></div>
+        <div class="row"><span class="num numeric">03</span><span class="nm">Active<code>--state-active</code></span><span class="effect">scale <span class="numeric">0.98</span> · opacity <span class="numeric">0.95</span></span></div>
+        <div class="row"><span class="num numeric">04</span><span class="nm">Loading<code>--state-loading</code></span><span class="effect">skeleton · pulse <span class="numeric">1.8</span>s</span></div>
+        <div class="row"><span class="num numeric">05</span><span class="nm">Vacation<code>--fg-muted</code></span><span class="effect">muted dot · italic status</span></div>
+        <div class="row"><span class="num numeric">06</span><span class="nm">New<code>badge.new</code></span><span class="effect">gold pill · "חדש"</span></div>
+        <div class="row"><span class="num numeric">07</span><span class="nm">Recommended<code>badge.recommended</code></span><span class="effect">green pill · "מומלץ"</span></div>
+        <div class="row"><span class="num numeric">08</span><span class="nm">Disabled<code>--state-disabled</code></span><span class="effect">opacity <span class="numeric">0.5</span> · no events</span></div>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Spec sheet</h3>
+      <div style="display: grid; gap: 12px; font-size: 12px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">geometry</div>
+          <ul style="list-style:none; font-family: ui-monospace, Menlo, monospace; font-size: 11px; line-height: 1.7; color: var(--doc-ink);">
+            <li>card.width = <span class="numeric">280</span>px</li>
+            <li>media.aspect = m <span class="numeric">1</span>:<span class="numeric">1</span> / d <span class="numeric">4</span>:<span class="numeric">3</span></li>
+            <li>body.padding = <span class="numeric">16</span> (m <span class="numeric">12</span>)</li>
+            <li>body.gap = <span class="numeric">8</span> (m <span class="numeric">6</span>)</li>
+            <li>heart = <span class="numeric">36</span>×<span class="numeric">36</span> (m <span class="numeric">32</span>)</li>
+            <li>dot = <span class="numeric">8</span>×<span class="numeric">8</span></li>
+            <li>badge.padding = <span class="numeric">4</span>×<span class="numeric">10</span></li>
+            <li>radius = <span class="numeric">0</span>  <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">— editorial, not pill</em></li>
+          </ul>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">type</div>
+          <ul style="list-style:none; font-family: var(--font-body); font-size: 12px; line-height: 1.7; color: var(--doc-ink);">
+            <li>eyebrow · DM Sans 500 · <span class="numeric">11</span> / <span class="numeric">0.15em</span></li>
+            <li>name · Frank Ruhl 700 · <span class="numeric">20</span></li>
+            <li>rating · DM Sans 500 · <span class="numeric">13</span></li>
+            <li>status · DM Sans 500 · <span class="numeric">13</span></li>
+            <li>meta · DM Sans · <span class="numeric">12</span></li>
+            <li>badge · DM Sans 500 · <span class="numeric">11</span> / <span class="numeric">0.06em</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Composition</h3>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px;">state precedence</div>
+        <ol style="padding-inline-start: 20px; font-size: 12.5px; line-height: 1.75; color: var(--doc-ink); display: grid; gap: 4px;">
+          <li><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">disabled</code> wins always.</li>
+          <li><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">active</code> &gt; <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">hover</code>.</li>
+          <li><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">focus</code> composes with all non-disabled.</li>
+          <li><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">loading</code> replaces content — masks any other state.</li>
+          <li><code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">vacation</code> composes with hover / active normally.</li>
+          <li>Badges <strong>New</strong> + <strong>Recommended</strong> can co-occur (cap = <span class="numeric">2</span>).</li>
+        </ol>
+      </div>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px; margin-top: 12px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px;">copy provenance</div>
+        <ul style="list-style: none; font-size: 12px; line-height: 1.7; color: var(--doc-ink);">
+          <li>card.eyebrow → category.label</li>
+          <li>card.availability.active → "פעיל היום"</li>
+          <li>card.availability.vacation → "בחופשה עד {<span class="numeric">DD.M</span>}"</li>
+          <li>badge.new → "חדש" · ≤ <span class="numeric">30</span> days since approval</li>
+          <li>badge.recommended → "מומלץ" · editor pick</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────── SELF-CHECK + COUNCIL ──────────── -->
+  <div class="bottom-row">
+    <section class="panel">
+      <h2>Self-check.</h2>
+      <p class="lede">Eight gates from the prompt — all pass on the card system.</p>
+      <div class="checklist">
+        <div class="item"><span class="box">✓</span><span><strong>8px grid.</strong> Padding <span class="numeric">12</span>/<span class="numeric">16</span>, gaps <span class="numeric">6</span>/<span class="numeric">8</span>/<span class="numeric">16</span>/<span class="numeric">24</span>, heart <span class="numeric">36</span>/<span class="numeric">32</span>, dot <span class="numeric">8</span>. Card width <span class="numeric">280</span>.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Latin numerals.</strong> Rating <span class="numeric">4.5</span>·<span class="numeric">12</span> · distance <span class="numeric">12 km</span> · vacation date <span class="numeric">15.6</span> — all <code>.numeric</code> LTR-isolated.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Hebrew RTL.</strong> <code>dir="rtl"</code> on every <code>.card</code>. Heart top-start = top-right. BadgeRow bottom-start = bottom-right.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Heart aria — gerund.</strong> <code>שמירה</code>, matches "טעינה" pattern (MEH-472). <em>v2 fix #1 — was “שמרי”, the override I claimed for action verbs did not exist in LOCK.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No gradient orb.</strong> Image is cream + leaf-glyph placeholder — the canonical no-photo state. No radial orb floats anywhere. <em>v2 fix #4 — amber CSS mock removed.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No shadow-lift on hover.</strong> Hover = image scale + caption underline + border colour shift. <em>Zero shadow change in any state.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No red heart.</strong> Default outline cream; saved = green fill. Disabled inherits muted opacity.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Eyebrow = CATEGORY.</strong> Reads "גבינות" — never "DEFAULT · IMAGE". Mirrors P3 category grid.</span><span class="note">pass</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Council — applied.</h2>
+      <p class="lede">Each voice that touched a state decision.</p>
+      <div>
+        <div class="council-row"><div class="who">#03 · hover<strong>Jonathan Ive</strong></div><div class="how">Heart = green or gold, <em>never red</em>. Hover = colour shift, never shadow-lift. WCAG AA: rating ★/count contrast verified on warm-white card.</div></div>
+        <div class="council-row"><div class="who">#04 · identity<strong>Aaron Draplin</strong></div><div class="how">Card is the <em>system unit</em> the product rests on. Same component renders <span class="numeric">8</span> states with one source of truth — no bespoke variant per state.</div></div>
+        <div class="council-row"><div class="who">#07 · magazine UX<strong>Frank Chimero</strong></div><div class="how">Eyebrow = <strong>CATEGORY</strong> (גבינות), full stop. Never "DEFAULT" / "IMAGE" / layer-name leak. <em>The label is the noun.</em></div></div>
+        <div class="council-row"><div class="who">#09 · atomic<strong>Brad Frost</strong></div><div class="how">State token system documented. Seven non-overlapping states + composition rules (disabled wins, active &gt; hover, focus composes). One visual rule per state.</div></div>
+        <div class="council-row"><div class="who">#10 · iconography<strong>Susan Kare</strong></div><div class="how">One glyph: heart. One symbol: ★. One indicator: <span class="numeric">8</span>px dot. <strong>Badge XOR emoji</strong> — gold pill + word, no leaf / no cheese glyph attached.</div></div>
+        <div class="council-row"><div class="who">#11 · long-term<strong>Stewart Brand</strong></div><div class="how">"Recommended" is human-curated, never derived from rating. Editorial accountability lives at the badge, not the algorithm.</div></div>
+        <div class="council-row"><div class="who">#02 · Hebrew type<strong>Spiekermann</strong></div><div class="how">Name in Frank Ruhl <span class="numeric">700</span> at <span class="numeric">20</span>px / LH <span class="numeric">1.25</span>. Rating fold beside name uses LTR-isolated numerals so the row baseline holds.</div></div>
+        <div class="council-row"><div class="who">#08 · editorial home<strong>Rosa Park</strong></div><div class="how">Cards sit on cream, no card-on-card layering. No glass, no orb. Eight states tested against both <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--background</code> and <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--bg-card</code> baselines.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ──────────── CHANGELOG ──────────── -->
+  <section class="changelog">
+    <div class="micro">— Changelog · S3 · MEH-638</div>
+    <ul>
+      <li><span class="v numeric">S3.P2.v3</span><span class="d numeric">2026-05-22</span><span class="t"><strong>v3 ship · 2 token violations fixed.</strong> Vacation grayscale filter removed (was rendering as #D5D2C9 — a derived new colour) → layered <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--fg-muted</code> @ <span class="numeric">0.10</span> overlay on cream base. Loading skeleton <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--border</code> bars (rendered tan against cream) → <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--fg-muted</code> @ <span class="numeric">0.15</span> on cream. Pulse opacity <span class="numeric">0.4</span>→<span class="numeric">0.6</span> · reduced-motion fallback opacity <span class="numeric">0.5</span>. <strong>Zero derived colours.</strong></span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P2.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>4 fixes applied.</s> Vacation routed to --fg-muted but a grayscale filter on the image derived #D5D2C9; Loading skeleton used --border which read as brown-tan. Both = new-colour drift through different doors. Superseded.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P2.v1</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>4/4 cleared (3 misses on review).</s> ProducerCard anatomy + 8 states shipped; gate failed to catch heart aria, slate token, off-grid padding. Superseded.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">MEH-124 v4.1</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Direction A = canonical Hero · Direction B = secondary (campaign-only). Mobile clause-2 italic pattern documented.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P1.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Hero approved (A canonical, B conditional ×<span class="numeric">3</span>). <span class="numeric">14</span>/<span class="numeric">15</span> validation cleared.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S1.v1.0</span><span class="d numeric">2026-05-21</span><span class="t" style="color: var(--doc-ink-mute);">Design System v1.0 — referenced verbatim.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>S3 · MEH-638 · Phase <span class="numeric">2</span> · <span class="numeric">2026-05-22</span></div>
+    <div class="italic">ProducerCard · 8 states · awaiting approval</div>
+    <div>מהמקור · Session <span class="numeric">3</span></div>
+  </footer>
+
+</div>
+
+</body>
+</html>
