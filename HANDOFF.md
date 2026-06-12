@@ -5,6 +5,32 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-789 duplicate caught (Rule 1) · focus-ring follow-up (DRAFT PR #1072) · Playwright-harness limitation recorded
+
+**Parallel-session duplicate — caught, dropped unpushed (Rule 1 worked):** this session was dispatched the same Header top-pill streamline that landed as **#1070** (`f676669`, MEH-789-tagged, merged by a parallel session mid-implementation — see the 5-PR entry below, logged by that session via #1071). The duplicate was detected at Rule-25 pre-push sync; the local branch was dropped **unpushed**, no comparison PR. The two implementations were functionally equivalent: identical avatar gate; #1070 kept the md-gated two-button search pair (vs a single merged button) and `hover:bg-primary/5` (vs `hover:text-primary`) — cosmetic deltas only.
+
+**Focus-ring follow-up — DRAFT PR #1072** (`feature/meh-789-mobile-search-focus-ring` off `0c3f1a0`): the one real residual from the comparison — the `md:hidden` mobile search circle (`Header.jsx:267`) is the only header action without `focus-ring` (its desktop twin got one in #1070); no visible keyboard-focus indicator on a primary action (WCAG 2.4.7). **One class added, nothing else.** Build green, lint 0 errors. `Refs MEH-789`. **Not merged** — Sapir QA gate: בדיקי על https://food-mamkor-git-feature-m-27ee27-levismadar80-ship-its-projects.vercel.app (mobile 375 → Tab to the search circle → visible ring).
+
+**⚠️ Known limitation — in-sandbox screenshot QA is NOT viable (Playwright harness):** the CC cloud sandbox ships Chromium build **1194** (`/opt/pw-browsers`), older than the **1223** the repo's Playwright 1.60 expects, and `cdn.playwright.dev` is **egress-blocked** (same class as the MEH-360 Railway block) so the matching browser can't be fetched. Beyond the version skew: `page.goto` hangs even with `domcontentloaded` + full third-party/chat-widget request blocking, and the local `next start` server wedges (curl 000) after an aborted Playwright run. **Decision (Smadar, 2026-06-12): no reinvestment — MEH-560 + MEH-347 canceled; Sapir's deployed-preview QA is the visual gate.** What stays viable in-sandbox: build, lint, RTL/hex/copy greps, and token-based contrast math (`tailwind.tokens.json`) — e.g. the #1070 quiet search icon verified at `fg-muted` on cream = **6.25:1** (≥ 3:1 non-text).
+
+**Pending / next:** (a) PR #1072 → Sapir mobile QA + merge (session subscribed to PR events). (b) Everything else per the 5-PR entry below (g_auto crop QA, pending assets, S14 copy-Δ) — unchanged.
+
+## 2026-06-12 — MEH-788/789 home hero imagery arc + header streamline (PRs #1053/#1063/#1065/#1067/#1070 MERGED)
+
+**Five PRs merged to staging this session**, all visual/photo-only (copy untouched), each on Smadar's explicit `MERGE` after deployed-preview QA:
+- **#1053** `2f1516d` — motion layer (scroll-reveal + global reduced-motion `<MotionConfig reducedMotion="user">`).
+- **#1063** `2a77ba1` — hero scrim → token + IMG-03 feature-band tonal inset.
+- **#1065** `b07237d` — S14 Photography+Texture port (`.scrim-ink`, `.seam-cut` deckle, grain 0.035, capped hero, feature-band plate, /about portrait plate).
+- **#1067** `e818b25` — hero fix arc: **visible-on-load** (de-gated opacity-motion), **compact fold** (`clamp svh` height), **g_auto crop**, strengthened scrim (white H1 ≈ 6.9:1 worst-case), CTA breathing room, H1 cap + 2-line wrap, generated-token revert.
+- **#1070** `f676669` — `Header.jsx`: quiet desktop search icon + `hidden md:block` avatar gate (mobile = logo + search only).
+
+**Phase-0 lessons (carry forward):** (1) the "hero shows only the photo" bug was **opacity-gated SSR content, NOT a 100vh height issue** — ruled out reducedMotion via `FadeInSection.jsx:12-16` evidence; above-the-fold content must never gate visibility on a JS opacity reveal. (2) **`tailwind.tokens.json` is GENERATED** from `docs/DESIGN.md` via `npm run design:export` — never hand-edit (CI sync gate fails); the `@google/design.md` exporter can't carry `clamp()`, so responsive type stays an inline clamp in the component. (3) A read-only **systemic hero audit** confirmed the bug was a one-off — about/login/register/events/map/producer/experiences/group-buys heroes use content-driven `py-16` overlays or split-grids, none repeat the opacity-gate or content-below-fold pattern.
+
+**Pending / next:**
+- **#1067 `g_auto` crop** — render-unverified in sandbox; Smadar QA-ing deployed staging. If the hero still reads sliced, swap in a **landscape-composed replacement asset** (g_auto can't salvage a 4:3 downward shot) — pre-agreed escape hatch.
+- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band + /about IMG-01 founder-portrait Cloudinary ids — slots render graceful tonal `background-alt` plates until provided (drop a lazy `<img>` via `optimizeCloudinary` then).
+- **S14 copy-Δ** reconciliation (S14 rendered P5-v2 lock strings; shipped code differs) — separate task; copy untouched throughout this arc.
+
 ## 2026-06-12 — Friday-strip i18n namespace fix + בתי עסק title (PR #1064 MERGED)
 
 **Branch `feature/fix-friday-delivery-i18n`** off staging (Rule-25 synced over the parallel #1063 Phase-3 hero merge — no file overlap). **Closes the #1061 known issue below:** both `useTranslations("producer.friday_delivery")` calls (`FridayDeliveryStrip.jsx`) → `"group_buys.friday_delivery"`. Phase-0 key-set proof: components read exactly `today`/`title`/`title_alt`; target namespace has exactly those 3 keys in both locales; no other consumer. **Correction:** `producer.friday_delivery` was `null` (never existed), not an empty `{}` as #1061's note said — no stub to clean, and the move-keys alternative lost its motivation (surfaced in PR anyway). **Wording (Sapir's call applied):** he `title`+`title_alt` יצרניות עם משלוח היום → **בתי עסק עם משלוח היום**; EN already "Businesses delivering today" → 0 EN diff. **Acceptance-criterion correction:** `grep יצרנ he.json → 0` not literally met — 2 LEAVE-classified hits remain (orphan `value_props.discover`, admin-exempt `friday_hint`); *public* instances = 0, which was the criterion's intent. The admin `friday_hint` still says "סרגל יצרניות" (now stale vs the strip's new title) — optional follow-up, admin-exempt. Build green; QA caveat: strip only renders Friday + available-today producers — the key-set proof is the verification.
