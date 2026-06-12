@@ -264,7 +264,7 @@ export default function Header() {
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full ${transparent ? "text-background" : "text-fg-muted"}`}
+              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring ${transparent ? "text-background" : "text-fg-muted"}`}
               style={textShadow}
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
