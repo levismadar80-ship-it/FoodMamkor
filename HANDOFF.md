@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-788 /register polish: headline token + strip removal (DRAFT PR)
+
+**Branch `feature/meh-788-register-polish`** off fresh `origin/staging` (divergence 0). GREEN, `RegisterClient.jsx` only. (1) Heading raw `text-3xl` → `headline-lg` token, login's exact class (`LoginClient.jsx:162`) + retained `mb-1`. **Phase 0 correction (meta-pattern #1):** prompt billed the heading as hero-scale `text-[40px]/[52px]` — actual was raw `text-3xl`. (2) Value-prop strip deleted (+ `MapPin`/`Heart`/`Star` import strip, exec §8 single batch) — retires the live DNA-LOCK violation in the strip's discover string; `value_props.*` keys orphaned in place (JSON 0-diff). **Gotcha caught pre-push:** the first removal-comment draft quoted the forbidden Hebrew string literally — would have failed the LOCK-grep gate + forbidden-copy CI; reworded. Gates: build (`/register` ● SSG), lint 17→17/0 errors, LOCK-grep 0, RTL/hex clean, adversarial self-review 0 blocking.
+
+**Pending / next:** DRAFT PR → Sapir mobile QA 375/360/390 (heading scale next to the split image pane, rhythm without the strip) → SHE merges (Rule 23). Orphan `value_props.*` keys = future i18n-sweep candidate (alongside login's `value_save/rate/publish`).
+
 ## 2026-06-12 — MEH-788 /register split-editorial port (PR #1057 MERGED)
 
 **Branch `feature/meh-788-register-split`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `RegisterClient.jsx` ONLY — wrapped the existing white-card form in the /login #1040 split shell (image pane = Cloudinary `register/hero-box-produce`, 4000×6000 portrait, verified via Cloudinary MCP; `next/image fill` needs no width cap — default loader resizes per `sizes`). Overlay deliberately reads `auth.login.hero_overlay` cross-namespace (identical locked string, single owner — avoids a duplicate `auth.register.hero_overlay`; root-scoped `t` resolves it). Kept the white card (no de-box — that was login's own MEH-131 port; spec said "form pane = existing register form") and register's `100vh-200px` offset (vs login's 180px). `emailSent` screen untouched. Gates: build green (`/register` ● SSG), lint 17→17 warnings (0 new), RTL/hex greps clean, i18n 0-diff, adversarial self-review 0 blocking (the 6000px-payload candidate is a false alarm — Next optimizer, unlike the hero's raw CSS bg).
