@@ -5,11 +5,29 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — MEH-788 /register split-editorial port (DRAFT PR)
+## 2026-06-12 — "יצרן" DNA-LOCK sweep, public UI (DRAFT PR) + discovered Friday-strip i18n bug
+
+**Branch `feature/copy-yatzran-ui-lock-sweep`** off fresh `origin/staging` (divergence 0). Copy-only. Discovery grep: **6 hits, all `he.json`, zero in JSX** (the MEH-599 4-file list was stale). **Fixed (category a, public):** `seo.group_buys.{description,og_description}` he+en (מיצרנים→מבתי עסק / producers→businesses). **Left + listed:** `value_props.discover` (orphan, #1059), `admin.settings.sections.friday_hint` (admin-exempt), `group_buys.friday_delivery.{title,title_alt}` (surfaced — see below). Full classification table in the PR body. Build green; post-grep category-(a) = 0.
+
+**🐛 KNOWN ISSUE (discovered, NOT yet filed — Rule 13e):** `FridayDeliveryStrip.jsx:11,43` reads namespace `producer.friday_delivery`, which is **empty `{}`** in he+en; the real strings (`title`, `title_alt`, `today`) live under `group_buys.friday_delivery`. When fridayMode is on AND `/producers?availability_state=available_today` returns results, the public homepage strip renders next-intl missing-message fallbacks (raw key paths). Latent because the strip early-returns when the producer list is empty. Fix = 2-line namespace arg change OR move the keys — needs its own GREEN PR; ALSO the right moment for the יצרניות→rewrite decision on its title (feminine plural — Sapir's wording call per the sweep spec). Recommend filing a Linear ticket (Rule 27 search first: "friday strip", "friday_delivery", "namespace").
+
+**Pending / next:** DRAFT PR → Sapir reviews the classification table, decides friday_delivery wording + bug-fix ticket → SHE merges.
+
+## 2026-06-12 — MEH-788 /register polish: headline token + strip removal (PR #1059 MERGED)
+
+**Branch `feature/meh-788-register-polish`** off fresh `origin/staging` (divergence 0). GREEN, `RegisterClient.jsx` only. (1) Heading raw `text-3xl` → `headline-lg` token, login's exact class (`LoginClient.jsx:162`) + retained `mb-1`. **Phase 0 correction (meta-pattern #1):** prompt billed the heading as hero-scale `text-[40px]/[52px]` — actual was raw `text-3xl`. (2) Value-prop strip deleted (+ `MapPin`/`Heart`/`Star` import strip, exec §8 single batch) — retires the live DNA-LOCK violation in the strip's discover string; `value_props.*` keys orphaned in place (JSON 0-diff). **Gotcha caught pre-push:** the first removal-comment draft quoted the forbidden Hebrew string literally — would have failed the LOCK-grep gate + forbidden-copy CI; reworded. Gates: build (`/register` ● SSG), lint 17→17/0 errors, LOCK-grep 0, RTL/hex clean, adversarial self-review 0 blocking.
+
+**MERGED to staging** (PR #1059, squash `8d04abe`) on Smadar's explicit `MERGE` — this round CI was still running when MERGE arrived, so the merge waited for all checks to complete green on `c8e1a27` first (Rule 21). The automated review round's only findings were the recurring nonexistent "one-line comment max" convention — skipped silently as a duplicate of the declines already on record (#1055/#1057).
+
+**Pending / next:** (a) Post-merge mobile QA 375/360/390 on staging (heading scale next to the split image pane, rhythm without the strip) — checklist in MANUAL_TESTING § MEH-788 /register. (b) Orphan `value_props.*` keys = future i18n-sweep candidate (alongside login's `value_save/rate/publish`).
+
+## 2026-06-12 — MEH-788 /register split-editorial port (PR #1057 MERGED)
 
 **Branch `feature/meh-788-register-split`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `RegisterClient.jsx` ONLY — wrapped the existing white-card form in the /login #1040 split shell (image pane = Cloudinary `register/hero-box-produce`, 4000×6000 portrait, verified via Cloudinary MCP; `next/image fill` needs no width cap — default loader resizes per `sizes`). Overlay deliberately reads `auth.login.hero_overlay` cross-namespace (identical locked string, single owner — avoids a duplicate `auth.register.hero_overlay`; root-scoped `t` resolves it). Kept the white card (no de-box — that was login's own MEH-131 port; spec said "form pane = existing register form") and register's `100vh-200px` offset (vs login's 180px). `emailSent` screen untouched. Gates: build green (`/register` ● SSG), lint 17→17 warnings (0 new), RTL/hex greps clean, i18n 0-diff, adversarial self-review 0 blocking (the 6000px-payload candidate is a false alarm — Next optimizer, unlike the hero's raw CSS bg).
 
-**Pending / next:** DRAFT PR → Sapir mobile QA 375/360/390 (image band height, overlay legibility on the box photo, form usability below the band) → SHE merges (Rule 23). Producer signup (`register/producer/`) untouched — separate surface if the split is wanted there too.
+**MERGED to staging** (PR #1057, squash `1ba796b`) on Smadar's explicit `MERGE` ahead of the Rule-23 QA gate (same precedent chain as #1055/MEH-602). All 6 required checks + Playwright E2E + adversarial-calibration green on head `a6ed82f`. One automated claude[bot] review round: all 4 suggestions declined with citations on the PR (`Closes` would auto-close the umbrella MEH-788 initiative — `Refs` intentional; multi-line file header is mandated by code-execution.md §14; `REUSES:` anchors are the §15 convention).
+
+**Pending / next:** (a) **Post-merge mobile QA still owed**: 375/360/390 on staging — image band, overlay legibility, form below (checklist in MANUAL_TESTING § MEH-788 /register). (b) Producer signup (`register/producer/`) untouched — separate surface if the split is wanted there too.
 
 ## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (PR #1055 MERGED)
 
