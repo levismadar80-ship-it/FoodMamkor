@@ -364,6 +364,12 @@
       "countrywide": "מכל רחבי הארץ",
       "fallback": "מתחילות עכשיו · בכל רחבי הארץ"
     },
+    "featured": {
+      "eyebrow": "היכרות",
+      "heading": "מאחורי הקלעים",
+      "cta_meet": "להכיר את {name}",
+      "cta_write": "לכתוב ל{name}"
+    },
     "categories": {
       "eyebrow": "קטגוריות",
       "heading": "גלו לפי קטגוריה",

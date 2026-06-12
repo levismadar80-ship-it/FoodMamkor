@@ -13,6 +13,7 @@ import {
   HomeMarquee,
   HomeFounderQuote,
   HomeHowItWorks,
+  HomeFeaturedProducer,
   HomeRecentlyViewed,
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
@@ -184,6 +185,14 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* =========================
+          MEET A PRODUCER (P5 §10 · MEH-542) — dormant until a real featured
+          business is authored: pass an editorial object (see the component
+          JSDoc in HomeStaticBlocks.jsx) instead of null. With null the
+          section renders nothing — no fictional content ever ships.
+          ========================= */}
+      <HomeFeaturedProducer featured={null} />
 
       {/* =========================
           PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
