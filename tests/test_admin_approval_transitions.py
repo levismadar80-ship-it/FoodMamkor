@@ -37,6 +37,8 @@ def _toggle(client, producer_id, admin):
     )
 
 
+TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/test.jpg"
+
 # --- allowed transitions: approved ⇄ inactive ------------------------------
 
 
@@ -109,7 +111,9 @@ def test_legit_approve_from_rejected_fires_hook_once(client, db, monkeypatch):
         "notify_producer_approved",
         lambda *a, **k: calls.append(a),
     )
-    producer = make_producer(db, status="rejected")
+    # MEH-799: the approve gate requires an image — give it one so this
+    # test keeps exercising the hook-count contract, not the image gate.
+    producer = make_producer(db, status="rejected", images=[TEST_IMAGE])
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )
@@ -117,3 +121,40 @@ def test_legit_approve_from_rejected_fires_hook_once(client, db, monkeypatch):
     db.refresh(producer)
     assert producer.status == "approved"
     assert len(calls) == 1, "producer_approved_v1 must fire exactly once on approve"
+
+
+# --- MEH-799: approve requires at least one image ---------------------------
+
+
+def test_approve_imageless_producer_is_blocked(client, db, monkeypatch):
+    """0 images -> 422 with the locked Hebrew detail; no side-effects fire."""
+    calls = []
+    monkeypatch.setattr(
+        admin_module,
+        "notify_producer_approved",
+        lambda *a, **k: calls.append(a),
+    )
+    producer = make_producer(db, status="pending")
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["detail"] == (
+        "לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות."
+    )
+    db.refresh(producer)
+    assert producer.status == "pending", "blocked approve must not change status"
+    assert calls == [], "blocked approve must not fire producer_approved_v1"
+
+
+def test_approve_with_image_succeeds(client, db, monkeypatch):
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "approved"
