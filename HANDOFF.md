@@ -5,11 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — MEH-788 /register polish: headline token + strip removal (DRAFT PR)
+## 2026-06-12 — MEH-788 /register polish: headline token + strip removal (PR #1059 MERGED)
 
 **Branch `feature/meh-788-register-polish`** off fresh `origin/staging` (divergence 0). GREEN, `RegisterClient.jsx` only. (1) Heading raw `text-3xl` → `headline-lg` token, login's exact class (`LoginClient.jsx:162`) + retained `mb-1`. **Phase 0 correction (meta-pattern #1):** prompt billed the heading as hero-scale `text-[40px]/[52px]` — actual was raw `text-3xl`. (2) Value-prop strip deleted (+ `MapPin`/`Heart`/`Star` import strip, exec §8 single batch) — retires the live DNA-LOCK violation in the strip's discover string; `value_props.*` keys orphaned in place (JSON 0-diff). **Gotcha caught pre-push:** the first removal-comment draft quoted the forbidden Hebrew string literally — would have failed the LOCK-grep gate + forbidden-copy CI; reworded. Gates: build (`/register` ● SSG), lint 17→17/0 errors, LOCK-grep 0, RTL/hex clean, adversarial self-review 0 blocking.
 
-**Pending / next:** DRAFT PR → Sapir mobile QA 375/360/390 (heading scale next to the split image pane, rhythm without the strip) → SHE merges (Rule 23). Orphan `value_props.*` keys = future i18n-sweep candidate (alongside login's `value_save/rate/publish`).
+**MERGED to staging** (PR #1059, squash `8d04abe`) on Smadar's explicit `MERGE` — this round CI was still running when MERGE arrived, so the merge waited for all checks to complete green on `c8e1a27` first (Rule 21). The automated review round's only findings were the recurring nonexistent "one-line comment max" convention — skipped silently as a duplicate of the declines already on record (#1055/#1057).
+
+**Pending / next:** (a) Post-merge mobile QA 375/360/390 on staging (heading scale next to the split image pane, rhythm without the strip) — checklist in MANUAL_TESTING § MEH-788 /register. (b) Orphan `value_props.*` keys = future i18n-sweep candidate (alongside login's `value_save/rate/publish`).
 
 ## 2026-06-12 — MEH-788 /register split-editorial port (PR #1057 MERGED)
 
