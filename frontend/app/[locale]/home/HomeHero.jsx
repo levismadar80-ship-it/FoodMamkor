@@ -6,14 +6,18 @@ import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
-// MEH-788: Cloudinary produce photo (4032×3024 original). f_auto,q_auto via the
-// helper + w_1920,c_limit. No baked ar — background-size:cover crops responsively
-// to the height-capped hero box per breakpoint (background-size:cover, no distortion).
-// REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
+// MEH-788: Cloudinary produce photo (4032×3024 4:3 original). Smart-cropped to
+// a wide 16:9 band via g_auto (c_fill,g_auto,ar_16:9 — Cloudinary's saliency
+// model) so the produce is framed intentionally, NOT center-sliced: a downward-
+// angle 4:3 source under CSS center-cover sliced the crate-tops. CSS cover then
+// fills the height-capped band from the g_auto-framed, subject-centered 16:9, so
+// the produce survives the final crop on both mobile + desktop. w_1920 downscales
+// the 4032 original (never upscales). f_auto,q_auto via the helper.
+// REUSES: components/ProducerCard.jsx (optimizeCloudinary aspectRatio + g_auto)
 const HERO_MAX_WIDTH = 1920;
 const HERO_IMAGE = optimizeCloudinary(
   "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
-  { width: HERO_MAX_WIDTH }
+  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
 );
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
