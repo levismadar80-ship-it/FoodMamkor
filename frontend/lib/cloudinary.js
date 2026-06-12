@@ -33,6 +33,9 @@ export function optimizeCloudinary(url, opts = {}) {
   }
   const width = opts.width;
   if (Number.isInteger(width) && width > 0) {
+    // Intentional: with aspectRatio, w_ rides c_fill — which MAY upscale a
+    // smaller original (fill semantics). Width-only gets c_limit (never
+    // upscales). No caller combines both today; revisit if one does.
     if (!hasAspect) parts.push("c_limit");
     parts.push(`w_${width}`);
   }
