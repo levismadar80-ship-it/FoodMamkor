@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (DRAFT PR)
+
+**Branch `feature/meh-788-homepage-hero`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `HomeHero.jsx` + an additive `width` opt in `lib/cloudinary.js` (frontend.md says extend the helper, never hardcode transforms — flagged in PR as the one file beyond the named scope).
+
+**Phase 0 correction (meta-pattern #1):** prompt said hero is "text-on-cream" — false; it has had a full-bleed Unsplash bg + green gradient since MEH-643. Actual change: Unsplash+`.hero-parallax` (fixed-attachment) → Cloudinary `home/hero-produce` (asset verified via Cloudinary MCP; sandbox curl blocked, MEH-360) + ParallaxQuote-style `kenburns-right` layer. `kenburns-right` (not `-left`) so the hero doesn't drift in lock-step with the ParallaxQuote dividers below.
+
+**Adversarial-review catches (fixed pre-push):** (1) `overflow-hidden` on the `<section>` would clip HeroSearch's `top-full max-h-[70vh]` dropdown → moved clipping to a nested bg-only wrapper; (2) new asset is 4032px/~1.7MB with no width cap vs old `w=1920` → helper `width` opt, `c_limit,w_1920`; (3) scrim mid-stop raised 0.55→0.65 (top of spec band) for AA margin; worst-case-white math: headline (large, 3:1) ✓, subtitle ~4.4:1 vs a hypothetical pure-white pixel — real produce photo is darker; flagged for preview QA.
+
+**Pending / next:** (a) DRAFT PR → Sapir mobile QA 375/360/390 (hero text legibility over the photo, dropdown overflow, reduced-motion static fallback) → SHE merges (Rule 23). **Not merged.** (b) `.hero-parallax` CSS in `globals.css:227-234` is now dead (zero consumers) — left in place per smell-#2 rule (no silent cleanup in an unrelated PR); fold removal into a future tokens/CSS sweep. (c) `optimizeCloudinary` complexity 12/10 warn-mode signal — acceptable per MEH-443; refactor only if the helper grows again.
+
 ## 2026-06-12 — MEH-793 /neighbor removal (DRAFT PR #1050) — executes held LOCK sweep items 1+2
 
 **Ticket = MEH-793** (the dedicated removal ticket Smadar wrote 2026-06-11; the prompt run was its verbatim "Prompt לClaude Code"). **Branch `feature/meh-133-remove-neighbor`** (off fresh `origin/staging`, divergence 0) + the first commit carry the legacy `meh-133` slug — chosen before a Rule-27 Linear search surfaced MEH-793; not renamed (cosmetic). PR #1050 `Closes MEH-793`. **MEH-133** = the old /neighbor *refactor* ticket, listed in MEH-793's "קשורים" as **superseded → recommended to close** (disposition pending Sapir). Executes the home-cook LOCK sweep held below (2026-06-11) — item (1) legal clause + item (2) /neighbor feature copy. Sapir approved **removal** (not reframe) 2026-06-11.

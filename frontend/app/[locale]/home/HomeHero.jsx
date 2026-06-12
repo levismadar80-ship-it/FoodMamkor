@@ -4,10 +4,18 @@ import { motion } from "framer-motion";
 import { CaretDown, Crosshair } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
-// OPTIMIZE: `auto=format` → Unsplash serves WebP/AVIF when supported;
-// `q=80` drops ~30% bytes with no perceptible quality loss on a parallax bg.
-const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1920&auto=format&q=80&fm=webp";
+// MEH-788: Cloudinary produce photo (4032×3024 original). f_auto,q_auto via the
+// helper + w_1920,c_limit (parity with the previous Unsplash w=1920 cap — the
+// raw original is ~1.7MB). No baked ar — background-size:cover crops
+// responsively per breakpoint, so one asset serves portrait mobile and
+// landscape desktop without distortion.
+// REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
+const HERO_IMAGE = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
+  { width: 1920 }
+);
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
 // CSS utility (MEH-136, globals.css). Durations mirror .duration-base (.42s) /
@@ -15,7 +23,8 @@ const HERO_IMAGE = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 /**
- * Hero section — Assembly v2 (MEH-643 chunk 1). Full-bleed parallax photo with
+ * Hero section — Assembly v2 (MEH-643 chunk 1). Full-bleed Ken Burns produce
+ * photo (MEH-788) with
  * a display-font headline, pill search (HeroSearch, MEH-99), a primary CTA
  * (גלו עסקים → scrolls to #producers-grid via onScrollDown), the inline near-me
  * geolocation control (MEH-41 behavior), and a "how it works" anchor link
@@ -25,10 +34,14 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * Does NOT: own search routing (HeroSearch), own the near-me handler
  * (onNearMe from use-home-page), or restyle the navbar (later MEH-643 chunk).
  *
- * background-attachment: fixed is the CSS parallax (.hero-parallax); the
- * @media (pointer: coarse) fallback to scroll lives in globals.css.
+ * Background motion is the kenburns-right layer (globals.css) — same Ken Burns
+ * treatment as ParallaxQuote, opposite direction so the hero doesn't drift in
+ * lock-step with the kenburns-left dividers below it. Honors
+ * prefers-reduced-motion (animation: none → static image). MEH-788 replaced
+ * the previous .hero-parallax background-attachment:fixed approach.
  *
- * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2 redesign).
+ * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2
+ * redesign), MEH-788 (Cloudinary produce bg + Ken Burns).
  */
 export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
   const t = useTranslations();
@@ -39,24 +52,42 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
 
   return (
     <section
-      className="relative w-full hero-parallax"
+      className="relative w-full"
       aria-label={t("home.hero.main_label")}
-      style={{
-        height: "100vh",
-        backgroundImage: `url(${HERO_IMAGE})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
+      style={{ height: "100vh" }}
     >
-      {/* Gradient overlay — dark forest at the bottom fading up. Kept as an
-          alpha gradient (not tokenizable with the hex-only token set). */}
+      {/* Clip wrapper — confines the oversized Ken Burns layer WITHOUT putting
+          overflow-hidden on the section itself: HeroSearch's dropdown
+          (absolute top-full, max-h-[70vh]) must stay free to overflow past the
+          hero's bottom edge, as it did before MEH-788. */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+        {/* Ken Burns background layer — decorative produce photo. inset -5%
+            gives the 1.08 zoom drift room without exposing edges.
+            REUSES: components/ParallaxQuote.jsx:36 (kenburns layer + inset -5%) */}
+        <div
+          className="kenburns-right absolute"
+          style={{
+            inset: "-5%",
+            backgroundImage: `url(${HERO_IMAGE})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      </div>
+
+      {/* Scrim — same forest green as ParallaxQuote's overlay (46,74,46),
+          kept as a bottom-weighted gradient: ≥0.65 alpha across the whole
+          text/CTA zone (bottom half) for AA legibility over the busy produce
+          photo, fading up so the image reads at the top. Alpha gradient —
+          not tokenizable with the hex-only token set. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to top, rgba(46,74,46,0.88) 0%, rgba(46,74,46,0.40) 50%, rgba(0,0,0,0.10) 100%)",
+            "linear-gradient(to top, rgba(46,74,46,0.88) 0%, rgba(46,74,46,0.65) 50%, rgba(0,0,0,0.10) 100%)",
         }}
+        aria-hidden="true"
       />
 
       {/* Text anchored to bottom 25% of hero. inset-x-0 = symmetric full-width span. */}
