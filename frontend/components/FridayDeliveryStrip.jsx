@@ -8,7 +8,10 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import api from "@/lib/api";
 
 function ProducerMiniCard({ producer }) {
-  const t = useTranslations("producer.friday_delivery");
+  // Strings live under group_buys.friday_delivery (today/title/title_alt) —
+  // the prior producer.friday_delivery namespace never existed in the JSONs,
+  // so the strip rendered raw key-path fallbacks (bug found in PR #1061).
+  const t = useTranslations("group_buys.friday_delivery");
   const img = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], "w_160,h_160,c_fill,f_auto,q_auto")
     : null;
@@ -40,7 +43,8 @@ function ProducerMiniCard({ producer }) {
 }
 
 export default function FridayDeliveryStrip({ city }) {
-  const t = useTranslations("producer.friday_delivery");
+  // Same namespace note as ProducerMiniCard above.
+  const t = useTranslations("group_buys.friday_delivery");
   const [producers, setProducers] = useState([]);
   const scrollRef = useRef(null);
 
