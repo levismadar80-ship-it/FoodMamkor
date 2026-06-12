@@ -3,6 +3,7 @@
 > Chronological session log preserved from earlier `CLAUDE.md` revisions.
 
 ## Unreleased
+- **fix(MEH-789) — focus-ring on the mobile header search circle (DRAFT PR #1072):** one-class a11y follow-up to #1070 — the `md:hidden` mobile search circle (`Header.jsx:267`) was the only header action without a visible keyboard-focus indicator (WCAG 2.4.7); its desktop twin got `focus-ring` in #1070. Context: #1070 itself landed from a **parallel session** mid-flight while this session implemented the same streamline — the in-flight duplicate was detected at Rule-25 pre-push sync and dropped **unpushed** (Rule 1; functionally equivalent diff), leaving only this residual gap to ship. Build green, lint 0 errors. Draft — Sapir preview QA gate. Companion HANDOFF entry records the **Playwright-harness known limitation** (sandbox Chromium 1194 < Playwright 1.60's expected 1223, `cdn.playwright.dev` egress-blocked → in-sandbox screenshot QA not viable; MEH-560 + MEH-347 canceled; Sapir deployed-preview = visual gate).
 - **MEH-788/789 — home hero imagery arc + header streamline (5 PRs, visual/photo only, copy untouched throughout):**
   - **#1053** (`2f1516d`) — photo-independent **motion layer**: scroll-reveal (`FadeInSection` `REVEAL_PRESET`) + global reduced-motion off-switch (`<MotionConfig reducedMotion="user">` at the layout root + a CSS catch-all).
   - **#1063** (`2a77ba1`) — extracted the inline hero scrim to a tokenized scrim utility + the IMG-03 feature-band tonal inset (graceful, **no invented Cloudinary id**).
