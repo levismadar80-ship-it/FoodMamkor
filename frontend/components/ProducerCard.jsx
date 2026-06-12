@@ -82,6 +82,9 @@ function CardHeart({ producer, onCountChange }) {
 
   useEffect(() => {
     if (!user) return;
+    // MEH-730 (restored from pre-v4): clear the guest-saved flag the moment a
+    // user logs in — otherwise a heart saved as guest stays visually stuck
+    // "on" even when the account's real favorites say otherwise.
     setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
@@ -133,6 +136,10 @@ function CardHeart({ producer, onCountChange }) {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
     } catch (err) {
+      // MEH-730 (restored from pre-v4): 404 on DELETE means the favorite was
+      // already gone server-side — keep the heart un-filled and only revert
+      // the optimistic count decrement; a full state revert would re-fill
+      // the heart for a favorite that doesn't exist.
       if (!next && err?.response?.status === 404) {
         onCountChange?.(1);
         return;
