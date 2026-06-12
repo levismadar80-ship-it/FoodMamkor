@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { EnvelopeSimple, Heart, Leaf, MapPin, Star } from "@phosphor-icons/react";
+import { EnvelopeSimple, Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -31,7 +31,8 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           string as /login — single owner, no duplicate key).
  * Touches:  Cloudinary (register/hero-box-produce, via optimizeCloudinary).
  * History:  MEH-306 (password policy); MEH-328 (OWASP ack flow); MEH-49
- *           (referral); MEH-788 (split-editorial image pane).
+ *           (referral); MEH-788 (split-editorial image pane; headline-lg
+ *           parity + value-prop strip removal, mirrors MEH-131).
  */
 
 export default function RegisterClient() {
@@ -230,16 +231,16 @@ export default function RegisterClient() {
           >
             <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
           </div>
-          <h1 className="font-headline-lg text-3xl font-black text-text mb-1">{t("auth.register.consumer.heading")}</h1>
+          {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
+              parity with LoginClient's welcome headline (MEH-131 precedent). */}
+          <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
           <p className="text-fg-muted text-sm">{t("auth.register.consumer.subtitle")}</p>
         </div>
 
-        {/* Value-prop strip */}
-        <div className="flex justify-center gap-5 mb-5 text-fg-muted font-headline-md text-sm">
-          <span className="inline-flex items-center gap-1"><MapPin size={14} className="text-current" />{t("auth.register.consumer.value_props.discover")}</span>
-          <span className="inline-flex items-center gap-1"><Heart size={14} className="text-current" />{t("auth.register.consumer.value_props.favorites")}</span>
-          <span className="inline-flex items-center gap-1"><Star size={14} className="text-current" />{t("auth.register.consumer.value_props.rate")}</span>
-        </div>
+        {/* MEH-788: feature strip removed — mirrors login's MEH-131 strip drop;
+            its discover-string also violated the licensed-businesses DNA LOCK.
+            The three orphaned keys stay in the JSONs (untouched), same as
+            login's retained value_save/rate/publish. */}
 
         {/* MEH-49: referral discount badge */}
         {referralCode && (
