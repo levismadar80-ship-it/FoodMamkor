@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
 import { Note, SealCheck } from "@phosphor-icons/react";
 import { allBadges, topBadges } from "@/lib/badges";
+import Popover from "@/components/ui/Popover";
 
 /**
  * BadgeRow — horizontal row of pill badges for a producer (MEH-18).
@@ -70,25 +71,6 @@ const COLOR_CLASSES = {
   muted: "bg-surface-card text-green-700 border border-border",
 };
 
-/** Outside-click + Esc dismissal shared by every popover badge. */
-function useDismissablePopover(open, setOpen, wrapRef) {
-  useEffect(() => {
-    if (!open) return;
-    const handleClick = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setOpen(false);
-    };
-    const handleKey = (e) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", handleClick);
-    window.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [open, setOpen, wrapRef]);
-}
-
 /** d.m.yyyy from a date-only ISO string, LRI/PDI-isolated (S12 bidi lock). */
 function formatTierDate(isoDate) {
   if (!isoDate) return null;
@@ -117,47 +99,46 @@ function getVerifiedTooltip(producer, t) {
  * hero surface (cards drop to icon-only so the name stays the hero).
  */
 function VerifiedTierBadge({ producer, surface, t }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  useDismissablePopover(open, setOpen, wrapRef);
-
   const tooltip = getVerifiedTooltip(producer, t);
   const ariaLabel = tooltip ? t("aria_verified", { tooltip }) : t("aria_verified_plain");
   const iconOnly = surface === "card";
 
+  // MEH-800: the chip carries no onClick of its own in the popover branch —
+  // ui/Popover injects the toggle + the card-Link tap guard (S12 §03).
+  const chip = (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      data-badge="verified"
+      className={
+        iconOnly
+          ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
+            // surface-card backing keeps the gold glyph legible there.
+            "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 focus-visible:ring-2 focus-visible:ring-accent/40"
+          : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-accent/40 transition"
+      }
+    >
+      <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
+      {!iconOnly && t("verified_label")}
+    </button>
+  );
+
   return (
-    <span ref={wrapRef} role="listitem" className="relative inline-block">
-      <button
-        type="button"
-        onClick={(e) => {
-          // The chip is interactive in its own right — never let the tap
-          // bubble into the ProducerCard Link (S12 §03: first tap shows,
-          // never navigates).
-          e.stopPropagation();
-          e.preventDefault();
-          if (tooltip) setOpen((v) => !v);
-        }}
-        aria-expanded={tooltip ? open : undefined}
-        aria-label={ariaLabel}
-        data-badge="verified"
-        className={
-          iconOnly
-            ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
-              // surface-card backing keeps the gold glyph legible there.
-              "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 focus-visible:ring-2 focus-visible:ring-accent/40"
-            : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-accent/40 transition"
-        }
-      >
-        <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
-        {!iconOnly && t("verified_label")}
-      </button>
-      {open && tooltip && (
-        <span
-          role="tooltip"
-          data-testid="badge-tooltip-verified"
-          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed w-52 text-start"
-        >
+    <span role="listitem" className="inline-block">
+      {tooltip ? (
+        <Popover trigger={chip} contentTestId="badge-tooltip-verified" contentClassName="w-52">
           {tooltip}
+        </Popover>
+      ) : (
+        // cosmetics — seal only, no popover (MEH-758 micro); keep the
+        // card-Link tap guard the popover branch gets from ui/Popover.
+        <span className="relative inline-block">
+          {cloneElement(chip, {
+            onClick: (e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            },
+          })}
         </span>
       )}
     </span>
@@ -169,75 +150,53 @@ function VerifiedTierBadge({ producer, surface, t }) {
  * hero surface only; cards and map show nothing for declared businesses.
  */
 function DeclaredTierBadge({ t }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  useDismissablePopover(open, setOpen, wrapRef);
-
   return (
-    <span ref={wrapRef} role="listitem" className="relative inline-block">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          setOpen((v) => !v);
-        }}
-        aria-expanded={open}
-        aria-label={t("aria_declared")}
-        data-badge="declared"
-        className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+    <span role="listitem" className="inline-block">
+      <Popover
+        contentTestId="badge-tooltip-declared"
+        contentClassName="w-60"
+        trigger={
+          <button
+            type="button"
+            aria-label={t("aria_declared")}
+            data-badge="declared"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          >
+            <Note size={14} aria-hidden="true" />
+            {t("declared_label")}
+          </button>
+        }
       >
-        <Note size={14} aria-hidden="true" />
-        {t("declared_label")}
-      </button>
-      {open && (
-        <span
-          role="tooltip"
-          data-testid="badge-tooltip-declared"
-          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed w-60 text-start"
-        >
-          {t("declared_explainer")}
-        </span>
-      )}
+        {t("declared_explainer")}
+      </Popover>
     </span>
   );
 }
 
 function Badge({ badge }) {
-  const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
-  useDismissablePopover(open, setOpen, wrapRef);
-
   const colorClass = COLOR_CLASSES[badge.color] || COLOR_CLASSES.muted;
 
+  // MEH-800: click-popover routed through ui/Popover — the primitive owns
+  // the toggle, Esc/outside-click dismissal, and the ProducerCard-Link tap
+  // guard that used to live inline here.
   return (
-    <span ref={wrapRef} role="listitem" className="relative inline-block">
-      <button
-        type="button"
-        onClick={(e) => {
-          // Don't let the badge click bubble up to the ProducerCard's
-          // handleRootClick / Link wrapper — the badge is interactive
-          // in its own right and the outer card shouldn't navigate.
-          e.stopPropagation();
-          e.preventDefault();
-          setOpen((v) => !v);
-        }}
-        aria-expanded={open}
-        aria-label={`${badge.label} — ${badge.tooltip}`}
-        data-badge={badge.key}
-        className={`text-xs px-2.5 py-0.5 rounded-full font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition ${colorClass}`}
+    <span role="listitem" className="inline-block">
+      <Popover
+        contentTestId={`badge-tooltip-${badge.key}`}
+        contentClassName="w-52"
+        trigger={
+          <button
+            type="button"
+            aria-label={`${badge.label} — ${badge.tooltip}`}
+            data-badge={badge.key}
+            className={`text-xs px-2.5 py-0.5 rounded-full font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition ${colorClass}`}
+          >
+            {badge.label}
+          </button>
+        }
       >
-        {badge.label}
-      </button>
-      {open && (
-        <span
-          role="tooltip"
-          data-testid={`badge-tooltip-${badge.key}`}
-          className="absolute top-full mt-2 start-0 z-[800] bg-white border border-border rounded-md shadow-lg p-3 text-xs text-text leading-relaxed w-52 text-start"
-        >
-          {badge.tooltip}
-        </span>
-      )}
+        {badge.tooltip}
+      </Popover>
     </span>
   );
 }
