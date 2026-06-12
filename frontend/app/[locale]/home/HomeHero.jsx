@@ -136,7 +136,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         initial={{ y: 12 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        className="mt-5 px-4 flex flex-wrap items-center justify-center gap-3"
+        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center gap-3"
       >
         <button
           type="button"
