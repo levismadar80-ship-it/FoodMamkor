@@ -5,6 +5,34 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12/13 (overnight, batch #2) — MERGE-ALL wave + 4 task PRs
+
+**MERGE-ALL (Sapir 22:22):** the remaining session PRs merged — #1073 `9515b4a`, #1075 `6c95884`, #1076 `159560c`, #1081 `6c25ffa` (docs; one 405 "expected checks" retry per the known transient). All 8 first-batch PRs are now on staging.
+
+**Batch #2 (4 PRs, sequential, zero merges):**
+- **#1082 MEH-799** (ready) — approve gate: 0 images → 422, locked Hebrew detail, before any MEH-509 side-effect. Validation-only, no Alembic. Local Postgres provisioned in-sandbox → `test_admin_approval_transitions` 9/9 + `test_api` 192/192 REAL local runs. Sibling flagged, not gated: admin-created producers are born approved (`admin.py:180`).
+- **#1083 MEH-798** (ready) — legend icon circles shipped; **item 2 premise failure**: `buildPopupHtml` doesn't exist anywhere and /map has no Leaflet popups by design (`MapComponent.jsx:413`, MEH-30 #8). Chip belongs in MapProducerCard/bottom-sheet if wanted — Sapir call.
+- **#1084 MEH-800** (draft) — `ui/Popover` primitive per the locked API + BadgeRow migration, behavior-identical (testids preserved, card-Link tap guard built into the primitive, focus-return on Esc). Was specced stacked on #1076; parent merged → based on staging. Full vitest 466 green.
+- **#1085 MEH-801** (draft) — ui/Badge re-synced to the #1075 recolor; `AnimatedCounter.jsx` deleted (0 imports proven). **⛔ Copy gate honored:** the 2 מתווכים strings untouched; 2 proposals each in the PR body await Sapir's verbatim approval → one follow-up commit on that branch (EN siblings + key rename ride along).
+
+**Pending / next:** (a) Sapir: review/merge #1082/#1083 (ready) + #1084/#1085 (draft); approve a מתווכים proposal per string. (b) Post-merge mobile QA debt from batch #1 still owed (MANUAL_TESTING section). (c) MEH-798 item 2 placement decision. (d) Parallel-session note: #1072/#1074 landed mid-batch from another session — no collisions.
+
+## 2026-06-12/13 (overnight) — design-port batch: 7 PRs (homepage quartet MERGED on Sapir order)
+
+**Sanctioned autonomous overnight run** (GREEN surfaces to draft PR). **UPDATE 22:04: Sapir ordered "Merge IN ORDER #1077 → #1078 → #1079 → #1080" — executed**: #1077 `86c3353` → #1078 `875644d` (clean auto-sync) → #1079 `7effa10` (accept-both conflict resolution: home.featured + home.comparison blocks + both imports; build+parity re-verified, required checks green) → #1080 `33c8db2` (clean auto-sync). Each merge waited for the 6 required checks on the synced head (Rule 21/25). Second wave 22:22 ("MERGE ALL"): #1073 `9515b4a` → #1075 `6c95884` → #1076 `159560c`. All 7 batch PRs are now on staging. Full ledger + gap table: [docs/audits/2026-06-overnight-design-port.md](./docs/audits/2026-06-overnight-design-port.md).
+
+**Phase 0 premise drift (meta-pattern #1):** queue items 1/2/3/6/7/9 — /about (#1037), /login (#1040), /events (#1044), motion pass (#1053), atoms (#1048), MEH-789 nav (PR-A #1043 + PR-B #1052) — were **already merged** before the batch started; the `../meh-789-worktree` named in the brief no longer exists (its PRs merged). Also pre-done inside MEH-797's scope: login/register heroes (#1040/#1057), IMG-03 (#1063).
+
+**Shipped (all DRAFT, Sapir merges):**
+- **#1073** MEH-797 — experiences + group-buys hero bgs → Cloudinary `staging/pick-pexels-8586455` / `-35113948` (both verified via Cloudinary MCP). grep: 0 unsplash/pexels in both files. Closes MEH-797.
+- **#1075** MEH-730 — `gold-on-dark` (#E7C88A) token (DESIGN.md + hand-synced tokens json) consumed by AccountSheet (the ticket's drawer was retired by #1052 — premise updated); BadgeRow v4 recolor (cream text on green chips; gold chip keeps white — cream measures 4.48:1, under AA); 2 ProducerCard rationale comments restored. Items 3+4 of the ticket were already fixed upstream.
+- **#1076** MEH-792 — TrustBadge tier-5 hex → `state-selected`; TrustBadge native-title → ui/Tooltip; badges.js "new" secondary→primary. **BadgeRow popover migration DEFERRED** — its tested behavior (Esc/outside-click, stopPropagation vs card Link, testids) can't route through ui/Tooltip without the API redesign the ticket forbids. Needs Sapir's API call. PR = Refs, not Closes.
+- **#1077** MEH-524 — trust strip locked copy (F4 Option B) on the existing ≥5 threshold; restyled green bar → cream S4 quiet strip; **static** gold italic numerals (AnimatedCounter starts at 0 = forbidden state; component now orphaned, left in place); גליון `issue_prefix` removed (BRAND time-stamp anti-pattern).
+- **#1078** MEH-525 — comparison strip between How-It-Works and For-Business; locked 3 rows verbatim; `home.comparison.*` (en = HE-mirror ⏳).
+- **#1079** MEH-542 — `HomeFeaturedProducer` (§10 Direction A split), frame copy locked (`home.featured.*`), data-driven with `featured=null` in prod ⇒ renders nothing; zero fictional content shipped.
+- **#1080** MEH-788 copy-Δ — P5-v2 §04 LOCK table applied: How-It-Works eyebrow+"שלושה צעדים"+locked steps (מצאי/צרי קשר/קנייה — 3 steps, MEH-523 stays canceled); For-Business locked 3-line body (retired a live `אוכל אמיתי` violation); footer tagline (pronoun-free)/newsletter (no period)/trust ("שקיפות")/bottom-row wordmark + leaf-emoji drop (UI emoji LOCK). Old→new diff table in the PR body.
+
+**Pending / needing Sapir (full list in the ledger):** (a) ~~merge order~~ DONE — quartet merged in order; (b) post-merge mobile QA on staging (trust strip / comparison / copy-Δ / featured no-op) + per-preview QA for the 3 remaining drafts; (c) MEH-792 ui/Tooltip API decision; (d) MEH-666 honey pin = the one remaining design-reference gap (central HIGH-RISK, chunked session); (e) home parallax dividers still Unsplash (no mapping given); (f) EN copy for `home.comparison.*`/`home.featured.*` HE-mirrors; (g) ui/Badge atom color drift after #1075 + the one-line dead `secondary` cleanup in whichever of #1075/#1076 merges second.
 ## 2026-06-12 — MEH-789 duplicate caught (Rule 1) · focus-ring follow-up (DRAFT PR #1072) · Playwright-harness limitation recorded
 
 **Parallel-session duplicate — caught, dropped unpushed (Rule 1 worked):** this session was dispatched the same Header top-pill streamline that landed as **#1070** (`f676669`, MEH-789-tagged, merged by a parallel session mid-implementation — see the 5-PR entry below, logged by that session via #1071). The duplicate was detected at Rule-25 pre-push sync; the local branch was dropped **unpushed**, no comparison PR. The two implementations were functionally equivalent: identical avatar gate; #1070 kept the md-gated two-button search pair (vs a single merged button) and `hover:bg-primary/5` (vs `hover:text-primary`) — cosmetic deltas only.
