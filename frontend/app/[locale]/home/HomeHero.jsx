@@ -77,26 +77,18 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         />
       </div>
 
-      {/* Scrim — bottom two stops use ParallaxQuote's forest green (46,74,46):
-          ≥0.65 alpha across the whole text/CTA zone (bottom half) for AA
-          legibility over the busy produce photo. Top stop is a faint neutral
-          black (0.10), inherited from the MEH-643 gradient, so the image reads
-          untinted at the top. Alpha gradient — not tokenizable with the
-          hex-only token set. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(46,74,46,0.88) 0%, rgba(46,74,46,0.65) 50%, rgba(0,0,0,0.10) 100%)",
-        }}
-        aria-hidden="true"
-      />
+      {/* Scrim — MEH-788 Phase-3: extracted to the `--scrim-hero` token
+          (globals.css). Warm ink per the 2026-06-11 design lock ("warm ink,
+          not pure black") — replaces #1055's inline forest-green rgba. Bottom-
+          heavy so the bottom-anchored white text band clears ≥4.5:1 over the
+          worst-case bright crop of home/hero-produce; the photo breathes up top. */}
+      <div className="scrim-hero absolute inset-0" aria-hidden="true" />
 
-      {/* Text anchored to bottom 25% of hero. inset-x-0 = symmetric full-width span. */}
-      <div
-        className="absolute inset-x-0 text-center px-4 text-white"
-        style={{ bottom: "25%" }}
-      >
+      {/* Text band — MEH-788 Phase-3: bottom-anchored (sits in the darkest
+          scrim zone for contrast), centered on mobile, bottom-start (RTL right)
+          on desktop per the design lock. */}
+      <div className="absolute inset-x-0 bottom-0 px-4 md:px-12 pb-12 md:pb-16 text-white">
+       <div className="w-full md:max-w-2xl text-center md:text-start mx-auto md:mx-0">
         <motion.h1
           initial={{ opacity: 0, y: 60 }}
           animate={{ opacity: 1, y: 0 }}
@@ -124,8 +116,8 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
           role="search"
           aria-label={t("home.hero.search_area_label")}
-          className="mx-auto mt-8 bg-surface-card shadow-lg px-6 py-3.5"
-          style={{ borderRadius: "50px", width: "min(580px, 88vw)" }}
+          className="mx-auto md:mx-0 mt-8 bg-surface-card shadow-lg px-6 py-3.5"
+          style={{ borderRadius: "50px", width: "min(580px, 100%)" }}
         >
           <HeroSearch
             placeholder={t("home.search.placeholder")}
@@ -140,7 +132,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.4, ease: EASE_QUART }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-3"
+          className="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-3"
         >
           {/* CTA reuses onScrollDown (= scrollToProducers); overlap with the
               scroll caret is an accepted minor UX overlap for this chunk. */}
@@ -180,6 +172,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
             {t("home.hero.how_it_works")}
           </button>
         </motion.div>
+       </div>
       </div>
 
       {/*

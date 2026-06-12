@@ -72,8 +72,16 @@ export function HomeFounderQuote() {
         href="/about"
         className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center shrink-0" aria-hidden="true">
-          <Leaf size={36} weight="duotone" className="text-primary" />
+        {/* MEH-788 (Phase-3, chunk 2): IMG-03 feature inset — 3:2 TONAL frame
+            (background-alt mat + hairline; never pure white, per BRAND).
+            Graceful fallback: the FEATURE_ID is still pending (Sapir), so this
+            renders the tonal mat + a faint mark — never a broken <img>. When
+            the id lands, drop a lazy <img> (optimizeCloudinary, ar 3:2) inside
+            the inner frame; the mat + sizing stay. */}
+        <div className="shrink-0 w-28 md:w-44 aspect-[3/2] rounded-lg bg-background-alt border border-border p-1.5" aria-hidden="true">
+          <div className="w-full h-full rounded-md bg-background flex items-center justify-center">
+            <Leaf size={28} weight="duotone" className="text-primary/30" />
+          </div>
         </div>
         <div className="flex-1">
           <p className="font-headline-md italic text-text text-lg md:text-xl leading-relaxed mb-2">
