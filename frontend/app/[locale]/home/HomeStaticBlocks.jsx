@@ -178,6 +178,11 @@ export function HomeHowItWorks() {
     // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
     <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
+        {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
+            ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("home.how_it_works.eyebrow")}
+        </p>
         <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}
         </h2>
@@ -210,8 +215,16 @@ export function HomeCTA() {
         <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
+        {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
+            then curation, then the closing nudge) — body prose keeps periods. */}
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l1")}
+        </p>
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l2")}
+        </p>
         <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
-          {t("home.cta.body")}
+          {t("home.cta.body_l3")}
         </p>
         <Link
           href="/register/producer"
