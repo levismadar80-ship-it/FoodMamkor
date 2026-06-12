@@ -12,9 +12,10 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 // responsively per breakpoint, so one asset serves portrait mobile and
 // landscape desktop without distortion.
 // REUSES: app/[locale]/login/LoginClient.jsx:104 (optimizeCloudinary, no-ar pattern)
+const HERO_MAX_WIDTH = 1920;
 const HERO_IMAGE = optimizeCloudinary(
   "https://res.cloudinary.com/dfzpscjks/image/upload/home/hero-produce.jpg",
-  { width: 1920 }
+  { width: HERO_MAX_WIDTH }
 );
 
 // MEH-643: ease-quart curve mirrored for Framer (JS) — same as the .ease-quart
@@ -76,11 +77,12 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         />
       </div>
 
-      {/* Scrim — same forest green as ParallaxQuote's overlay (46,74,46),
-          kept as a bottom-weighted gradient: ≥0.65 alpha across the whole
-          text/CTA zone (bottom half) for AA legibility over the busy produce
-          photo, fading up so the image reads at the top. Alpha gradient —
-          not tokenizable with the hex-only token set. */}
+      {/* Scrim — bottom two stops use ParallaxQuote's forest green (46,74,46):
+          ≥0.65 alpha across the whole text/CTA zone (bottom half) for AA
+          legibility over the busy produce photo. Top stop is a faint neutral
+          black (0.10), inherited from the MEH-643 gradient, so the image reads
+          untinted at the top. Alpha gradient — not tokenizable with the
+          hex-only token set. */}
       <div
         className="absolute inset-0"
         style={{
