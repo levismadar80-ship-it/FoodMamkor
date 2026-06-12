@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-788 /register split-editorial port (DRAFT PR)
+
+**Branch `feature/meh-788-register-split`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `RegisterClient.jsx` ONLY — wrapped the existing white-card form in the /login #1040 split shell (image pane = Cloudinary `register/hero-box-produce`, 4000×6000 portrait, verified via Cloudinary MCP; `next/image fill` needs no width cap — default loader resizes per `sizes`). Overlay deliberately reads `auth.login.hero_overlay` cross-namespace (identical locked string, single owner — avoids a duplicate `auth.register.hero_overlay`; root-scoped `t` resolves it). Kept the white card (no de-box — that was login's own MEH-131 port; spec said "form pane = existing register form") and register's `100vh-200px` offset (vs login's 180px). `emailSent` screen untouched. Gates: build green (`/register` ● SSG), lint 17→17 warnings (0 new), RTL/hex greps clean, i18n 0-diff, adversarial self-review 0 blocking (the 6000px-payload candidate is a false alarm — Next optimizer, unlike the hero's raw CSS bg).
+
+**Pending / next:** DRAFT PR → Sapir mobile QA 375/360/390 (image band height, overlay legibility on the box photo, form usability below the band) → SHE merges (Rule 23). Producer signup (`register/producer/`) untouched — separate surface if the split is wanted there too.
+
 ## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (PR #1055 MERGED)
 
 **Branch `feature/meh-788-homepage-hero`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `HomeHero.jsx` + an additive `width` opt in `lib/cloudinary.js` (frontend.md says extend the helper, never hardcode transforms — flagged in PR as the one file beyond the named scope).
