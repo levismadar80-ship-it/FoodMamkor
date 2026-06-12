@@ -5,11 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — MEH-788 /register split-editorial port (DRAFT PR)
+## 2026-06-12 — MEH-788 /register split-editorial port (PR #1057 MERGED)
 
 **Branch `feature/meh-788-register-split`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `RegisterClient.jsx` ONLY — wrapped the existing white-card form in the /login #1040 split shell (image pane = Cloudinary `register/hero-box-produce`, 4000×6000 portrait, verified via Cloudinary MCP; `next/image fill` needs no width cap — default loader resizes per `sizes`). Overlay deliberately reads `auth.login.hero_overlay` cross-namespace (identical locked string, single owner — avoids a duplicate `auth.register.hero_overlay`; root-scoped `t` resolves it). Kept the white card (no de-box — that was login's own MEH-131 port; spec said "form pane = existing register form") and register's `100vh-200px` offset (vs login's 180px). `emailSent` screen untouched. Gates: build green (`/register` ● SSG), lint 17→17 warnings (0 new), RTL/hex greps clean, i18n 0-diff, adversarial self-review 0 blocking (the 6000px-payload candidate is a false alarm — Next optimizer, unlike the hero's raw CSS bg).
 
-**Pending / next:** DRAFT PR → Sapir mobile QA 375/360/390 (image band height, overlay legibility on the box photo, form usability below the band) → SHE merges (Rule 23). Producer signup (`register/producer/`) untouched — separate surface if the split is wanted there too.
+**MERGED to staging** (PR #1057, squash `1ba796b`) on Smadar's explicit `MERGE` ahead of the Rule-23 QA gate (same precedent chain as #1055/MEH-602). All 6 required checks + Playwright E2E + adversarial-calibration green on head `a6ed82f`. One automated claude[bot] review round: all 4 suggestions declined with citations on the PR (`Closes` would auto-close the umbrella MEH-788 initiative — `Refs` intentional; multi-line file header is mandated by code-execution.md §14; `REUSES:` anchors are the §15 convention).
+
+**Pending / next:** (a) **Post-merge mobile QA still owed**: 375/360/390 on staging — image band, overlay legibility, form below (checklist in MANUAL_TESTING § MEH-788 /register). (b) Producer signup (`register/producer/`) untouched — separate surface if the split is wanted there too.
 
 ## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (PR #1055 MERGED)
 
