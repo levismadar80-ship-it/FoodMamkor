@@ -363,6 +363,12 @@
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
     },
+    "featured": {
+      "eyebrow": "היכרות",
+      "heading": "מאחורי הקלעים",
+      "cta_meet": "להכיר את {name}",
+      "cta_write": "לכתוב ל{name}"
+    },
     "comparison": {
       "eyebrow": "ההבדל",
       "heading": "מה שמשתנה בדרך",
