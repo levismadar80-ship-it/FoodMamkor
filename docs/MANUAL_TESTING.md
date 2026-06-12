@@ -44,6 +44,11 @@ the toast (right side in he/RTL), inheriting the white text color.
 - [ ] **RTL position (he)** — בכל ה־toasts: האייקון בצד ימין (start), צמוד לטקסט עם gap, לבן
 - [ ] **EN locale** — אותם toasts ב־/en — אייקונים זהים, טקסט אנגלי בלי אימוג'י
 
+## Friday-strip i18n fix (סרגל שישי)
+
+- [ ] בחלון שוק שישי (ד׳ 18:00–ו׳ 14:00, או עקיפת אדמין) + יש בתי עסק עם משלוח היום — סרגל "בתי עסק עם משלוח היום" בראש דף הבית — תוצאה: טקסט אמיתי (לא נתיבי מפתח כמו group_buys.friday_delivery.title), badge "🛒 היום" על הכרטיסים
+- [ ] אותו סרגל ב-`/en` — תוצאה: "Businesses delivering today" + "today"
+
 ## MEH-788 — /register split-editorial (תמונה + טופס)
 
 - [ ] כותרת "הצטרפי לקהילה" — תוצאה: סקייל זהה לכותרת /login (32px/900, לא ענקית), שורת שלוש התכונות (מפה·לב·כוכב) לא מופיעה
