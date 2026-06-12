@@ -57,11 +57,17 @@ export default function BadgeRow({ producer, limit, surface = "hero" }) {
   );
 }
 
+// MEH-730: v4 chip recolor (Phase 2 freeze). Green chips carry cream
+// (`background`) text per the design's --background fill; the gold chip keeps
+// white — cream-on-accent measures 4.48:1, a hair under AA for 12px text
+// (white = 5.08:1 ✓). Neutral chips move green-50 → surface-card with
+// green-700 ink (v4 --bg-card / --green-dark; green-700 is the closest
+// existing token — no third green per ADR-019).
 const COLOR_CLASSES = {
-  primary: "bg-primary text-white",
+  primary: "bg-primary text-background",
   accent: "bg-accent text-white",
-  secondary: "bg-primary text-white",
-  muted: "bg-green-50 text-text border border-border",
+  secondary: "bg-primary text-background",
+  muted: "bg-surface-card text-green-700 border border-border",
 };
 
 /** Outside-click + Esc dismissal shared by every popover badge. */
