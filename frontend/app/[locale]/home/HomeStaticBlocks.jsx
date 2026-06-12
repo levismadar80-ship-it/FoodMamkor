@@ -199,6 +199,56 @@ export function HomeHowItWorks() {
   );
 }
 
+// MEH-525: row key order is the locked editorial order — do not re-sort.
+const COMPARISON_ROWS = ["row1", "row2", "row3"];
+
+/**
+ * COMPARISON STRIP — MEH-525 (copy LOCK 2026-06-13). Sits between How It
+ * Works and the For Business CTA. Two columns (סופר | מהמקור), 3 rows,
+ * S4 voice: cream page surface, hairline borders only, gold accent on the
+ * brand column — F1 flat, no shadows. Static, prop-free.
+ */
+export function HomeComparison() {
+  const t = useTranslations("home.comparison");
+  return (
+    <section className="max-w-7xl mx-auto px-4 section-y">
+      <FadeInSection>
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("eyebrow")}
+        </p>
+        <h2
+          className="font-headline-lg font-bold text-text text-center mb-10"
+          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+        >
+          {t("heading")}
+        </h2>
+      </FadeInSection>
+      <FadeInSection>
+        <div className="max-w-3xl mx-auto border-y border-border divide-y divide-border" role="table" aria-label={t("heading")}>
+          <div role="row" className="grid grid-cols-2">
+            <div role="columnheader" className="py-3 pe-4 text-sm font-medium text-fg-muted">
+              {t("col_super")}
+            </div>
+            <div role="columnheader" className="py-3 ps-4 text-sm font-medium text-accent border-s border-border">
+              {t("col_brand")}
+            </div>
+          </div>
+          {COMPARISON_ROWS.map((row) => (
+            <div key={row} role="row" className="grid grid-cols-2">
+              <div role="cell" className="py-5 pe-4 text-fg-muted leading-relaxed">
+                {t(`${row}_super`)}
+              </div>
+              <div role="cell" className="py-5 ps-4 text-text font-medium leading-relaxed border-s border-border">
+                {t(`${row}_brand`)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </FadeInSection>
+    </section>
+  );
+}
+
 /**
  * CTA — "הוסיפי את העסק שלך". Static, prop-free.
  */

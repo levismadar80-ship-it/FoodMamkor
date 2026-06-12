@@ -12,6 +12,7 @@ import {
   HomeMarquee,
   HomeFounderQuote,
   HomeHowItWorks,
+  HomeComparison,
   HomeRecentlyViewed,
   HomeCTA,
 } from "@/app/[locale]/home/HomeStaticBlocks";
@@ -197,6 +198,10 @@ export default function HomePage() {
       />
 
       <HomeHowItWorks />
+
+      {/* MEH-525: comparison strip — locked between How It Works and the
+          For Business CTA (P5 sections 12/13). */}
+      <HomeComparison />
 
       {/* =========================
           PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
