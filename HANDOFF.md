@@ -5,7 +5,7 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (DRAFT PR)
+## 2026-06-12 — MEH-788 homepage hero produce bg + Ken Burns (PR #1055 MERGED)
 
 **Branch `feature/meh-788-homepage-hero`** off fresh `origin/staging` (divergence 0). GREEN visual-only: `HomeHero.jsx` + an additive `width` opt in `lib/cloudinary.js` (frontend.md says extend the helper, never hardcode transforms — flagged in PR as the one file beyond the named scope).
 
@@ -13,7 +13,9 @@
 
 **Adversarial-review catches (fixed pre-push):** (1) `overflow-hidden` on the `<section>` would clip HeroSearch's `top-full max-h-[70vh]` dropdown → moved clipping to a nested bg-only wrapper; (2) new asset is 4032px/~1.7MB with no width cap vs old `w=1920` → helper `width` opt, `c_limit,w_1920`; (3) scrim mid-stop raised 0.55→0.65 (top of spec band) for AA margin; worst-case-white math: headline (large, 3:1) ✓, subtitle ~4.4:1 vs a hypothetical pure-white pixel — real produce photo is darker; flagged for preview QA.
 
-**Pending / next:** (a) DRAFT PR → Sapir mobile QA 375/360/390 (hero text legibility over the photo, dropdown overflow, reduced-motion static fallback) → SHE merges (Rule 23). **Not merged.** (b) `.hero-parallax` CSS in `globals.css:227-234` is now dead (zero consumers) — left in place per smell-#2 rule (no silent cleanup in an unrelated PR); fold removal into a future tokens/CSS sweep. (c) `optimizeCloudinary` complexity 12/10 warn-mode signal — acceptable per MEH-443; refactor only if the helper grows again.
+**MERGED to staging** (PR #1055, squash `38231c5`) on Smadar's explicit `MERGE` ahead of the Rule-23 mobile-QA gate (MEH-602/#1048 + MEH-732/#909 precedent). All 6 required checks + Playwright E2E + adversarial-calibration green on head `900e669`, real runtimes (Rule 21 verified). Two automated claude[bot] review rounds addressed pre-merge: round 1 → `__tests__/cloudinary.test.js` (13 cases, width branch) + ar+width upscale-intent comment (declined the "one-line comment max" suggestion — convention doesn't exist in CLAUDE.md/rules, replied on PR); round 2 → scrim comment accuracy (top stop is pre-existing neutral black, not green) + `HERO_MAX_WIDTH` named constant; round 3 all-clear.
+
+**Pending / next:** (a) **Post-merge mobile QA still owed** (merge preceded QA): 375/360/390 on staging — hero legibility over the photo, search dropdown overflows hero edge, reduced-motion static fallback (checklist in MANUAL_TESTING § MEH-788). Staging health probe deferred to Smadar (CC sandbox blocks `*.mehamakor.online`, MEH-360). (b) `.hero-parallax` CSS in `globals.css:227-234` is now dead (zero consumers) — left in place per smell-#2 rule; fold removal into a future CSS sweep. (c) `optimizeCloudinary` complexity 12/10 warn-mode signal — acceptable per MEH-443; refactor only if the helper grows again. (d) Container note: local `staging` in this session's clone was stale-divergent (99/50, MEH-427 squash-drift shape) — docs follow-up was based on `origin/staging` directly; no work lost.
 
 ## 2026-06-12 — MEH-793 /neighbor removal (DRAFT PR #1050) — executes held LOCK sweep items 1+2
 
