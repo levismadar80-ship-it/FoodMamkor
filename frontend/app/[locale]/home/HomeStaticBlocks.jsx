@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
 // Tag display labels resolve via home.marquee.* — preserving the order
@@ -170,6 +171,103 @@ export function HomeRecentlyViewed({ items }) {
 }
 
 /**
+ * MEET A PRODUCER (P5 §10) — MEH-542, Direction A · split (design pass lock).
+ * A magazine feature on ONE בית עסק — photo beside an editorial story, larger
+ * and warmer than a ProducerCard (that stays the grid unit).
+ *
+ * Data-driven by design: `featured` is an editorial object authored per
+ * feature — null/missing ⇒ the section renders NOTHING (the prod state until
+ * a real business is featured). No fictional placeholder content ships; the
+ * design's persona example copy stays in the freeze file only. Frame copy
+ * (eyebrow / heading / CTA patterns) is locked from the freeze via
+ * home.featured.*.
+ *
+ * @param {?{
+ *   quote: string,        // feature headline — display line, no terminal period
+ *   story: string,        // short narrative paragraph (body prose, keeps periods)
+ *   name: string,         // first name — interpolated into both CTAs
+ *   attribution: string,  // "שם מלא · עסק, עיר" meta line (middle-dot rhythm)
+ *   category?: string,
+ *   city?: string,
+ *   photo?: string,       // Cloudinary URL — helper applies f_auto,q_auto
+ *   href?: string,        // producer-page target; meet-CTA hidden without it
+ *   writeHref?: string,   // WhatsApp target; write-CTA hidden without it
+ * }} props.featured
+ */
+export function HomeFeaturedProducer({ featured }) {
+  const t = useTranslations("home.featured");
+  if (!featured) return null;
+  const photo = featured.photo
+    ? optimizeCloudinary(featured.photo, { aspectRatio: "5:6", width: 900 })
+    : null;
+  const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <section className="max-w-6xl mx-auto px-4 md:px-12 section-y">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
+        {/* photo — leading/start column (Direction A: image leads, 5:6) */}
+        <FadeInSection className="md:col-span-5">
+          <figure className="relative m-0 rounded-lg bg-surface-card border border-border p-2">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photo}
+                alt={featured.name}
+                loading="lazy"
+                className="aspect-[5/6] w-full rounded-md object-cover"
+              />
+            ) : (
+              // tonal plate fallback — never a broken <img> (IMG-01 pattern)
+              <div className="aspect-[5/6] rounded-md bg-background-alt" aria-hidden="true" />
+            )}
+          </figure>
+        </FadeInSection>
+
+        {/* editorial text — end column */}
+        <FadeInSection className="md:col-span-7" delay={0.1}>
+          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-1">{t("eyebrow")}</p>
+          <h2 className="font-headline-md text-xl font-bold text-text mb-4">{t("heading")}</h2>
+          {meta && <p className="text-sm text-fg-muted mb-3">{meta}</p>}
+          <p
+            className="font-headline-lg font-bold text-text leading-snug mb-4"
+            style={{ fontSize: "clamp(24px, 3vw, 36px)" }}
+          >
+            {featured.quote}
+          </p>
+          {featured.story && (
+            <p className="text-text/85 leading-relaxed mb-5 max-w-xl">{featured.story}</p>
+          )}
+          {featured.attribution && (
+            <p className="text-sm text-fg-muted mb-6">{featured.attribution}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-4">
+            {featured.href && (
+              <Link
+                href={featured.href}
+                className="inline-block bg-primary text-white px-6 py-2.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
+              >
+                {t("cta_meet", { name: featured.name })}
+              </Link>
+            )}
+            {featured.writeHref && (
+              <a
+                href={featured.writeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline decoration-accent underline-offset-4 hover:text-primary-dark transition"
+              >
+                {t("cta_write", { name: featured.name })}
+              </a>
+            )}
+          </div>
+        </FadeInSection>
+      </div>
+    </section>
+  );
+}
+
+/**
  * HOW IT WORKS — three-step explainer block.
  */
 export function HomeHowItWorks() {
@@ -178,6 +276,11 @@ export function HomeHowItWorks() {
     // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
     <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
+        {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
+            ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("home.how_it_works.eyebrow")}
+        </p>
         <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}
         </h2>
@@ -199,6 +302,56 @@ export function HomeHowItWorks() {
   );
 }
 
+// MEH-525: row key order is the locked editorial order — do not re-sort.
+const COMPARISON_ROWS = ["row1", "row2", "row3"];
+
+/**
+ * COMPARISON STRIP — MEH-525 (copy LOCK 2026-06-13). Sits between How It
+ * Works and the For Business CTA. Two columns (סופר | מהמקור), 3 rows,
+ * S4 voice: cream page surface, hairline borders only, gold accent on the
+ * brand column — F1 flat, no shadows. Static, prop-free.
+ */
+export function HomeComparison() {
+  const t = useTranslations("home.comparison");
+  return (
+    <section className="max-w-7xl mx-auto px-4 section-y">
+      <FadeInSection>
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("eyebrow")}
+        </p>
+        <h2
+          className="font-headline-lg font-bold text-text text-center mb-10"
+          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+        >
+          {t("heading")}
+        </h2>
+      </FadeInSection>
+      <FadeInSection>
+        <div className="max-w-3xl mx-auto border-y border-border divide-y divide-border" role="table" aria-label={t("heading")}>
+          <div role="row" className="grid grid-cols-2">
+            <div role="columnheader" className="py-3 pe-4 text-sm font-medium text-fg-muted">
+              {t("col_super")}
+            </div>
+            <div role="columnheader" className="py-3 ps-4 text-sm font-medium text-accent border-s border-border">
+              {t("col_brand")}
+            </div>
+          </div>
+          {COMPARISON_ROWS.map((row) => (
+            <div key={row} role="row" className="grid grid-cols-2">
+              <div role="cell" className="py-5 pe-4 text-fg-muted leading-relaxed">
+                {t(`${row}_super`)}
+              </div>
+              <div role="cell" className="py-5 ps-4 text-text font-medium leading-relaxed border-s border-border">
+                {t(`${row}_brand`)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </FadeInSection>
+    </section>
+  );
+}
+
 /**
  * CTA — "הוסיפי את העסק שלך". Static, prop-free.
  */
@@ -210,8 +363,16 @@ export function HomeCTA() {
         <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
+        {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
+            then curation, then the closing nudge) — body prose keeps periods. */}
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l1")}
+        </p>
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l2")}
+        </p>
         <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
-          {t("home.cta.body")}
+          {t("home.cta.body_l3")}
         </p>
         <Link
           href="/register/producer"

@@ -5,9 +5,9 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-12/13 (overnight) — design-port batch: 7 DRAFT PRs, queue mostly pre-merged
+## 2026-06-12/13 (overnight) — design-port batch: 7 PRs (homepage quartet MERGED on Sapir order)
 
-**Sanctioned autonomous overnight run** (Sapir asleep; GREEN surfaces to draft PR, zero merges). Full ledger + gap table: [docs/audits/2026-06-overnight-design-port.md](./docs/audits/2026-06-overnight-design-port.md).
+**Sanctioned autonomous overnight run** (GREEN surfaces to draft PR). **UPDATE 22:04: Sapir ordered "Merge IN ORDER #1077 → #1078 → #1079 → #1080" — executed**: #1077 `86c3353` → #1078 `875644d` (clean auto-sync) → #1079 `7effa10` (accept-both conflict resolution: home.featured + home.comparison blocks + both imports; build+parity re-verified, required checks green) → #1080 `33c8db2` (clean auto-sync). Each merge waited for the 6 required checks on the synced head (Rule 21/25). #1073/#1075/#1076 remain DRAFT. Full ledger + gap table: [docs/audits/2026-06-overnight-design-port.md](./docs/audits/2026-06-overnight-design-port.md).
 
 **Phase 0 premise drift (meta-pattern #1):** queue items 1/2/3/6/7/9 — /about (#1037), /login (#1040), /events (#1044), motion pass (#1053), atoms (#1048), MEH-789 nav (PR-A #1043 + PR-B #1052) — were **already merged** before the batch started; the `../meh-789-worktree` named in the brief no longer exists (its PRs merged). Also pre-done inside MEH-797's scope: login/register heroes (#1040/#1057), IMG-03 (#1063).
 
@@ -20,7 +20,32 @@
 - **#1079** MEH-542 — `HomeFeaturedProducer` (§10 Direction A split), frame copy locked (`home.featured.*`), data-driven with `featured=null` in prod ⇒ renders nothing; zero fictional content shipped.
 - **#1080** MEH-788 copy-Δ — P5-v2 §04 LOCK table applied: How-It-Works eyebrow+"שלושה צעדים"+locked steps (מצאי/צרי קשר/קנייה — 3 steps, MEH-523 stays canceled); For-Business locked 3-line body (retired a live `אוכל אמיתי` violation); footer tagline (pronoun-free)/newsletter (no period)/trust ("שקיפות")/bottom-row wordmark + leaf-emoji drop (UI emoji LOCK). Old→new diff table in the PR body.
 
-**Pending / needing Sapir (full list in the ledger):** (a) merge order for the homepage trio #1077→#1078→#1079→#1080 (shared files, trivial adjacent conflicts; Rule-25 sync between merges); (b) mobile QA per PR; (c) MEH-792 ui/Tooltip API decision; (d) MEH-666 honey pin = the one remaining design-reference gap (central HIGH-RISK, chunked session); (e) home parallax dividers still Unsplash (no mapping given); (f) EN copy for `home.comparison.*`/`home.featured.*` HE-mirrors; (g) ui/Badge atom color drift after #1075 + the one-line dead `secondary` cleanup in whichever of #1075/#1076 merges second.
+**Pending / needing Sapir (full list in the ledger):** (a) ~~merge order~~ DONE — quartet merged in order; (b) post-merge mobile QA on staging (trust strip / comparison / copy-Δ / featured no-op) + per-preview QA for the 3 remaining drafts; (c) MEH-792 ui/Tooltip API decision; (d) MEH-666 honey pin = the one remaining design-reference gap (central HIGH-RISK, chunked session); (e) home parallax dividers still Unsplash (no mapping given); (f) EN copy for `home.comparison.*`/`home.featured.*` HE-mirrors; (g) ui/Badge atom color drift after #1075 + the one-line dead `secondary` cleanup in whichever of #1075/#1076 merges second.
+## 2026-06-12 — MEH-789 duplicate caught (Rule 1) · focus-ring follow-up (DRAFT PR #1072) · Playwright-harness limitation recorded
+
+**Parallel-session duplicate — caught, dropped unpushed (Rule 1 worked):** this session was dispatched the same Header top-pill streamline that landed as **#1070** (`f676669`, MEH-789-tagged, merged by a parallel session mid-implementation — see the 5-PR entry below, logged by that session via #1071). The duplicate was detected at Rule-25 pre-push sync; the local branch was dropped **unpushed**, no comparison PR. The two implementations were functionally equivalent: identical avatar gate; #1070 kept the md-gated two-button search pair (vs a single merged button) and `hover:bg-primary/5` (vs `hover:text-primary`) — cosmetic deltas only.
+
+**Focus-ring follow-up — DRAFT PR #1072** (`feature/meh-789-mobile-search-focus-ring` off `0c3f1a0`): the one real residual from the comparison — the `md:hidden` mobile search circle (`Header.jsx:267`) is the only header action without `focus-ring` (its desktop twin got one in #1070); no visible keyboard-focus indicator on a primary action (WCAG 2.4.7). **One class added, nothing else.** Build green, lint 0 errors. `Refs MEH-789`. **Not merged** — Sapir QA gate: בדיקי על https://food-mamkor-git-feature-m-27ee27-levismadar80-ship-its-projects.vercel.app (mobile 375 → Tab to the search circle → visible ring).
+
+**⚠️ Known limitation — in-sandbox screenshot QA is NOT viable (Playwright harness):** the CC cloud sandbox ships Chromium build **1194** (`/opt/pw-browsers`), older than the **1223** the repo's Playwright 1.60 expects, and `cdn.playwright.dev` is **egress-blocked** (same class as the MEH-360 Railway block) so the matching browser can't be fetched. Beyond the version skew: `page.goto` hangs even with `domcontentloaded` + full third-party/chat-widget request blocking, and the local `next start` server wedges (curl 000) after an aborted Playwright run. **Decision (Smadar, 2026-06-12): no reinvestment — MEH-560 + MEH-347 canceled; Sapir's deployed-preview QA is the visual gate.** What stays viable in-sandbox: build, lint, RTL/hex/copy greps, and token-based contrast math (`tailwind.tokens.json`) — e.g. the #1070 quiet search icon verified at `fg-muted` on cream = **6.25:1** (≥ 3:1 non-text).
+
+**Pending / next:** (a) PR #1072 → Sapir mobile QA + merge (session subscribed to PR events). (b) Everything else per the 5-PR entry below (g_auto crop QA, pending assets, S14 copy-Δ) — unchanged.
+
+## 2026-06-12 — MEH-788/789 home hero imagery arc + header streamline (PRs #1053/#1063/#1065/#1067/#1070 MERGED)
+
+**Five PRs merged to staging this session**, all visual/photo-only (copy untouched), each on Smadar's explicit `MERGE` after deployed-preview QA:
+- **#1053** `2f1516d` — motion layer (scroll-reveal + global reduced-motion `<MotionConfig reducedMotion="user">`).
+- **#1063** `2a77ba1` — hero scrim → token + IMG-03 feature-band tonal inset.
+- **#1065** `b07237d` — S14 Photography+Texture port (`.scrim-ink`, `.seam-cut` deckle, grain 0.035, capped hero, feature-band plate, /about portrait plate).
+- **#1067** `e818b25` — hero fix arc: **visible-on-load** (de-gated opacity-motion), **compact fold** (`clamp svh` height), **g_auto crop**, strengthened scrim (white H1 ≈ 6.9:1 worst-case), CTA breathing room, H1 cap + 2-line wrap, generated-token revert.
+- **#1070** `f676669` — `Header.jsx`: quiet desktop search icon + `hidden md:block` avatar gate (mobile = logo + search only).
+
+**Phase-0 lessons (carry forward):** (1) the "hero shows only the photo" bug was **opacity-gated SSR content, NOT a 100vh height issue** — ruled out reducedMotion via `FadeInSection.jsx:12-16` evidence; above-the-fold content must never gate visibility on a JS opacity reveal. (2) **`tailwind.tokens.json` is GENERATED** from `docs/DESIGN.md` via `npm run design:export` — never hand-edit (CI sync gate fails); the `@google/design.md` exporter can't carry `clamp()`, so responsive type stays an inline clamp in the component. (3) A read-only **systemic hero audit** confirmed the bug was a one-off — about/login/register/events/map/producer/experiences/group-buys heroes use content-driven `py-16` overlays or split-grids, none repeat the opacity-gate or content-below-fold pattern.
+
+**Pending / next:**
+- **#1067 `g_auto` crop** — render-unverified in sandbox; Smadar QA-ing deployed staging. If the hero still reads sliced, swap in a **landscape-composed replacement asset** (g_auto can't salvage a 4:3 downward shot) — pre-agreed escape hatch.
+- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band + /about IMG-01 founder-portrait Cloudinary ids — slots render graceful tonal `background-alt` plates until provided (drop a lazy `<img>` via `optimizeCloudinary` then).
+- **S14 copy-Δ** reconciliation (S14 rendered P5-v2 lock strings; shipped code differs) — separate task; copy untouched throughout this arc.
 
 ## 2026-06-12 — Friday-strip i18n namespace fix + בתי עסק title (PR #1064 MERGED)
 

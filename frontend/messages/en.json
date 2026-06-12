@@ -32,7 +32,7 @@
       "discover": "Discover",
       "community": "Community",
       "businesses": "Businesses",
-      "trust": "Trust & Transparency",
+      "trust": "Transparency",
       "home": "Home",
       "map": "Map",
       "all_businesses": "All Businesses",
@@ -54,12 +54,12 @@
       "cta_pitch": "Do you have a local food business?",
       "cta_subpitch": "Join thousands of business owners on Mehamakor",
       "brand_aria": "Mehamakor — Home page",
-      "brand_tagline": "Straight from the source — local businesses, all in one place.",
+      "brand_tagline": "Straight from the source — local businesses, all in one place",
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "nav_discover": "Discover businesses",
-      "newsletter_heading": "Good food is meant to be shared.",
+      "newsletter_heading": "Good food is meant to be shared",
       "newsletter_tagline": "A new producer story every week, straight to your inbox",
       "newsletter_frequency": "Once a week. No spam. Unsubscribe anytime.",
       "newsletter_label": "Newsletter email",
@@ -358,11 +358,28 @@
       "submit": "Search"
     },
     "stats": {
-      "issue_prefix": "{month} issue —",
-      "businesses": "businesses",
+      "businesses": "businesses joined so far",
       "categories": "categories",
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
+    },
+    "featured": {
+      "eyebrow": "היכרות",
+      "heading": "מאחורי הקלעים",
+      "cta_meet": "להכיר את {name}",
+      "cta_write": "לכתוב ל{name}"
+    },
+    "comparison": {
+      "eyebrow": "ההבדל",
+      "heading": "מה שמשתנה בדרך",
+      "col_super": "סופר",
+      "col_brand": "מהמקור",
+      "row1_super": "מוצר על מדף",
+      "row1_brand": "אדם מאחורי המוצר",
+      "row2_super": "נסע רחוק",
+      "row2_brand": "גדל קרוב",
+      "row3_super": "עוד סל בקופה",
+      "row3_brand": "קשר ישיר עם מי שמייצרת"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -393,17 +410,20 @@
       "heading": "Recently viewed"
     },
     "how_it_works": {
-      "heading": "How it works",
+      "eyebrow": "How it works",
+      "heading": "Three steps",
       "step01_title": "Find",
-      "step01_text": "Discover local businesses near you — fresh vegetables, farm cheeses, sourdough bread",
+      "step01_text": "Discover businesses near you",
       "step02_title": "Connect",
-      "step02_text": "Talk directly with the business on WhatsApp, by phone, or on Instagram",
-      "step03_title": "Receive",
-      "step03_text": "Real, fresh food straight from the source — no middlemen, no quality compromises"
+      "step02_text": "Talk directly with the business",
+      "step03_title": "Buy",
+      "step03_text": "Straight from the source, however suits you"
     },
     "cta": {
       "heading": "Have a business? Join us",
-      "body": "If you are a business owner, farmer, or grower — join Israel's first directory for real food.",
+      "body_l1": "Mehamakor is the home of local food businesses in Israel.",
+      "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
+      "body_l3": "We'd love to meet.",
       "button": "Add Your Business"
     },
     "new_businesses": {
@@ -2623,7 +2643,7 @@
     }
   },
   "footer": {
-    "copyright": "Mehamakor · Made with love in Israel"
+    "copyright": "Mehamakor"
   },
   "accessibility": {
     "meta_title": "Accessibility Statement | Mehamakor",
