@@ -358,8 +358,7 @@
       "submit": "Search"
     },
     "stats": {
-      "issue_prefix": "{month} issue —",
-      "businesses": "businesses",
+      "businesses": "businesses joined so far",
       "categories": "categories",
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
