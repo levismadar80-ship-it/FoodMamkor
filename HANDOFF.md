@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-794 backend /neighbor cleanup (chat.py KB + profile_strength) — narrowed after Phase 0
+
+**Branch `feature/meh-794-backend-neighbor-cleanup`** off `origin/staging` (which now contains #1050 — MEH-793 frontend merged). **Phase 0 found the ticket premise wrong:** `/home-products` is NOT a dead endpoint — it's a live subsystem (6 admin moderation endpoints, 24h rating-SMS background job, GDPR account-deletion cascade `auth.py:1280-1294`, AI-moderation service, Cloudinary-cleanup script, **3 DB tables**). Full removal is RED (DROP TABLE deny-listed + ADR-007 Expand-Contract) → **split to MEH-796** (Sapir approved narrowing).
+
+**Done (this PR, code-only):** (1) **chat.py** — stripped all neighbor/home-cook content from `SYSTEM_PROMPT` KB + stale prompt instructions; bot no longer answers "מה זה מהמטבח של השכן?". (2) **profile_strength** (`producer_me.py:644`) — removed home-product 25% weight, redistributed +5 across 5 signals (image 20·desc 25·delivery 15·review 20·phone 20 = 100); full profile reaches 100 again. +2 regression tests (`test_analytics.py`). ruff clean, py_compile clean.
+
+**Pending / next:** (a) **pytest deferred to CI** — no local Postgres (`password authentication failed`, MEH-360 sandbox class); CI provisions a Postgres service. Watch the `Backend tests (pytest)` check on the PR. (b) DRAFT PR → Sapir review. Backend-only + tests → can merge on green CI without mobile QA (Rule 23 exempts backend). (c) **MEH-796** (RED) decommissions the `home_products` subsystem + drops the 3 tables (Smadar runs the migration) — land after this + #1050. (d) taxonomy `מוצרים ביתיים` rename still a separate sibling, untouched. ⚠️ Coupling: do NOT deploy this between #1050 and itself — both merged → strength bar consistent.
+
 ## 2026-06-12 — MEH-793 /neighbor removal (DRAFT PR #1050) — executes held LOCK sweep items 1+2
 
 **Ticket = MEH-793** (the dedicated removal ticket Smadar wrote 2026-06-11; the prompt run was its verbatim "Prompt לClaude Code"). **Branch `feature/meh-133-remove-neighbor`** (off fresh `origin/staging`, divergence 0) + the first commit carry the legacy `meh-133` slug — chosen before a Rule-27 Linear search surfaced MEH-793; not renamed (cosmetic). PR #1050 `Closes MEH-793`. **MEH-133** = the old /neighbor *refactor* ticket, listed in MEH-793's "קשורים" as **superseded → recommended to close** (disposition pending Sapir). Executes the home-cook LOCK sweep held below (2026-06-11) — item (1) legal clause + item (2) /neighbor feature copy. Sapir approved **removal** (not reframe) 2026-06-11.
