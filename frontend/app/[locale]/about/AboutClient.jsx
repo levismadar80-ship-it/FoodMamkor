@@ -14,7 +14,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { Leaf, CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
+import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
@@ -115,13 +115,14 @@ export default function AboutPage() {
                 />
                 {/* mat + hairline + the 3:4 image */}
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
+                  {/* IMG-01: empty/failed state is a tonal background-alt
+                      plate (no leaf box). The matte founder portrait drops in
+                      when its Cloudinary ID lands; current image kept meanwhile. */}
                   <div
-                    className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-green-50 flex items-center justify-center"
+                    className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt"
                     aria-label={t("story.image_aria")}
                   >
-                    {imgFailed ? (
-                      <Leaf size={120} weight="duotone" className="text-primary" aria-hidden="true" />
-                    ) : (
+                    {imgFailed ? null : (
                       <Image
                         src="https://res.cloudinary.com/dfzpscjks/image/upload/f_auto,q_auto,c_fill,g_auto,ar_3:4/v1777302486/WhatsApp_Image_2026-04-27_at_18.07.36_dl4ldr.jpg"
                         alt={t("story.image_alt")}

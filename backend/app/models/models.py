@@ -56,11 +56,16 @@ class Producer(Base):
     whatsapp_group = Column(String(300), nullable=True)  # invite link
     # MEH-17: flexible contact methods. `primary_contact_method` decides
     # which CTA is rendered prominently on ProducerDetail + which icon
-    # is highlighted on ProducerCard. Values: whatsapp | phone | website
-    # | email (default: whatsapp). `contact_email` is the producer's
-    # business email — distinct from the owner user's login email.
+    # is highlighted on ProducerCard. Values (MEH-296): whatsapp | phone |
+    # instagram | email | website | facebook | external_order
+    # (default: whatsapp). `contact_email` is the producer's business
+    # email — distinct from the owner user's login email.
     primary_contact_method = Column(String(20), default="whatsapp")
     contact_email = Column(String(200), nullable=True)
+    # MEH-296: extra contact channels. URLs validated at the API boundary
+    # (schemas.ProducerUpdate, http(s) only). Free-text columns, no enum.
+    facebook = Column(String(200), nullable=True)
+    external_order_form = Column(String(500), nullable=True)
     status = Column(
         String(20), default="pending"
     )  # pending | approved | rejected | inactive

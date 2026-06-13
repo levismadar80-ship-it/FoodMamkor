@@ -51,7 +51,9 @@ export const BADGE_CONFIG = {
     key: "new",
     label: "חדש",
     tooltip: "העסק הצטרף אלינו בחודש האחרון.",
-    color: "secondary",
+    // MEH-792: was "secondary" — an alias of primary ever since MEH-703
+    // collapsed brand-secondary into primary. Named for what it renders.
+    color: "primary",
   },
   organic: {
     key: "organic",

@@ -897,7 +897,12 @@ class TestAdminGuard:
 class TestAdminFlows:
     def test_approve_pending_producer(self, client, db):
         admin = make_user(db, role="admin")
-        p = make_producer(db, status="pending")
+        # MEH-799: approve gate requires >=1 image
+        p = make_producer(
+            db,
+            status="pending",
+            images=["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"],
+        )
         resp = client.post(
             f"/admin/producers/{p.id}/approve", headers=auth_header(admin)
         )

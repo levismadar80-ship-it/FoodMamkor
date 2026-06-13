@@ -37,7 +37,7 @@ export default function UpgradeClient() {
           <div className="border border-border rounded-[16px] p-6">
             <h3 className="font-semibold text-lg text-text mb-1">{t("free_plan.name")}</h3>
             <p className="text-3xl font-bold text-primary mb-4">₪0</p>
-            <ul className="text-right text-sm space-y-2 text-fg-muted">
+            <ul className="text-start text-sm space-y-2 text-fg-muted">
               <li>{t("free_plan.feature_map")}</li>
               <li>{t("free_plan.feature_3_images")}</li>
               <li>{t("free_plan.feature_contact")}</li>
@@ -56,7 +56,7 @@ export default function UpgradeClient() {
             </span>
             <h3 className="font-semibold text-lg text-text mb-1">{t("premium_plan.name")}</h3>
             <p className="text-3xl font-bold text-primary mb-4">{t("premium_plan.price_pending")}</p>
-            <ul className="text-right text-sm space-y-2 text-fg-muted">
+            <ul className="text-start text-sm space-y-2 text-fg-muted">
               <li>{t("premium_plan.feature_map")}</li>
               <li>{t("premium_plan.feature_unlimited_images")}</li>
               <li>{t("premium_plan.feature_contact")}</li>

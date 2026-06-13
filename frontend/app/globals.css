@@ -35,18 +35,21 @@
 /* `--scrim-ink` (S14): contrast scrim for the hero text band. Warm ink =
    rgb(28 26 23) ≡ the `text` token #1c1a17 (brand warmth, not pure black).
    S14 hero discipline: ONLY H1 + subtitle ride this — the search card + CTAs
-   sit on cream below — so the ink can stay bottom-anchored and let the photo
-   breathe up top.
-   AA (S14, worst case = a blown-white highlight under the text, not a smooth
-   gradient): bottom 44% (α ≥ .80) composite ≥ 8:1; H1 top line (~50% on 4:5
-   mobile, α ≥ .70) ≥ 6:1. Re-verify on the real home/hero-produce crop. */
+   sit on cream below. MEH-788: the hero photo is now shorter (so the seam
+   search + primary CTA clear the laptop fold), which rides the 2-line H1
+   higher up the photo — so the dark band was extended (α ≥ .60 through 70%)
+   to hold AA at that height; the top ~30% still reveals produce.
+   AA (worst case = a blown-white highlight under the text): H1 top line
+   (~65% up on the shortest 380px desktop photo, α ≈ .65) ≈ 5.3:1 ≥ 4.5;
+   subtitle (lower, α ≥ .80) ≫ 6:1. Re-verify on the real hero-produce crop. */
 .scrim-ink {
   background-image: linear-gradient(
     to top,
     rgb(28 26 23 / 0.88) 0%,
-    rgb(28 26 23 / 0.80) 44%,
-    rgb(28 26 23 / 0.40) 66%,
-    rgb(28 26 23 / 0) 86%
+    rgb(28 26 23 / 0.84) 46%,
+    rgb(28 26 23 / 0.60) 70%,
+    rgb(28 26 23 / 0.22) 88%,
+    rgb(28 26 23 / 0) 100%
   );
 }
 

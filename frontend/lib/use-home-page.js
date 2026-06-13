@@ -13,6 +13,7 @@ import { buildChipParams } from "@/lib/producer-filters";
 import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
+import { selectFeaturedProducer } from "@/lib/featured-producer";
 
 const PAGE_SIZE = 8;
 // MEH-521: minimum approved count before showing numeric stats.
@@ -314,6 +315,12 @@ export function useHomePage() {
     .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 4);
 
+  // MEH-542: light up §10 "Meet a Producer" from a real producer — reuse the
+  // existing is_recommended flag (zero schema / zero new endpoint). Pure
+  // selection + mapping lives in lib/featured-producer.js (unit-tested);
+  // null ⇒ §10 self-hides (HomeStaticBlocks.jsx:199), no fictional content.
+  const featuredProducer = selectFeaturedProducer(producers);
+
   return {
     // i18n + auth
     t,
@@ -347,6 +354,7 @@ export function useHomePage() {
     showStatsCounter,
     showStatsFallback,
     newestProducers,
+    featuredProducer,
     // handlers
     handleNearMe,
     handleCitySelected,

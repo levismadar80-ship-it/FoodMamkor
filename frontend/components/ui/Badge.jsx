@@ -10,7 +10,7 @@ import Tooltip from "./Tooltip";
  *           system with its own tier palette — deliberately excluded here.
  * Related:  BadgeRow.jsx:36-41,80 (source of truth), lib/badges.js (data layer,
  *           untouched).
- * History:  MEH-602 (creation).
+ * History:  MEH-602 (creation); MEH-801 (re-sync to the MEH-730 v4 recolor).
  *
  * Bounded to the category/quality role ONLY. The 3 live "badge" surfaces don't
  * agree; this atom mirrors BadgeRow as-is and does NOT resolve the conflicts
@@ -28,12 +28,15 @@ import Tooltip from "./Tooltip";
  * <Badge variant="muted" size="sm" tooltip="בית העסק מחזיק בתעודת אורגני">אורגני</Badge>
  */
 
-// VERBATIM from BadgeRow.jsx:36-41 COLOR_CLASSES — mirrored, not re-derived.
+// VERBATIM from BadgeRow.jsx COLOR_CLASSES — mirrored, not re-derived.
+// MEH-801: re-synced to the #1075 (MEH-730) v4 recolor — green chips carry
+// cream text, gold keeps white (AA — see the BadgeRow comment), neutral
+// moves to surface-card + green-700 ink.
 const VARIANT_CLASSES = {
-  primary: "bg-primary text-white",
+  primary: "bg-primary text-background",
   accent: "bg-accent text-white",
-  secondary: "bg-primary text-white", // KNOWN DEBT #1 — collapses to primary.
-  muted: "bg-green-50 text-text border border-border",
+  secondary: "bg-primary text-background", // KNOWN DEBT #1 — collapses to primary.
+  muted: "bg-surface-card text-green-700 border border-border",
 };
 
 const SIZE_CLASSES = {

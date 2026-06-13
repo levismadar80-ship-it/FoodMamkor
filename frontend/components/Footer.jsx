@@ -218,8 +218,10 @@ export default function Footer() {
             marginTop: "32px",
           }}
         >
+          {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
+              emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
           <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} {t("footer.copyright")} 🌿
+            © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
           <ul className="flex items-center gap-4">
             {[

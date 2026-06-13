@@ -160,10 +160,20 @@ export default function MapPane({
                 // F2 (MEH-763): pins no longer carry a category colour, so the
                 // legend leads with the category Phosphor icon (identity); the
                 // colour stays only as the icon's tint (secondary channel).
+                // MEH-798: the bare icon becomes a 20px circle — light
+                // category-colour wash (~10% alpha of the same map-categories
+                // hex) behind a 12px icon in the full category colour. Flat
+                // (F1) — no shadow. Click/aria/opacity behavior unchanged.
                 const Icon = cat.icon;
                 return (
                   <button key={cat.name} type="button" onClick={disabled ? undefined : () => toggleCategory(cat.name)} disabled={disabled} aria-disabled={disabled} className={`w-full flex items-center gap-2 px-1.5 py-1 rounded-md text-start transition ${opacity} ${disabled ? "cursor-not-allowed" : "hover:bg-green-50"}`} aria-pressed={catActive}>
-                    <Icon size={14} weight="fill" className="shrink-0" style={{ color: cat.color }} aria-hidden="true" />
+                    <span
+                      className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: `${cat.color}1A` }}
+                      aria-hidden="true"
+                    >
+                      <Icon size={12} weight="fill" style={{ color: cat.color }} />
+                    </span>
                     <span className="text-xs text-text">{cat.name.split(",")[0]}</span>
                   </button>
                 );

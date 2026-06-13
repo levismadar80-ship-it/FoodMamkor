@@ -49,7 +49,7 @@ export default function ForgotPasswordClient() {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-right">
+          <form onSubmit={handleSubmit} className="space-y-4 text-start">
             <input
               type="email"
               value={email}

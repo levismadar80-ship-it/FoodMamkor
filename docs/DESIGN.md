@@ -18,6 +18,7 @@ colors:
   fg-muted: "#5c584f"
   accent: "#8B6914"
   honey: "#C8821E"
+  gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
   green-50: "#EAF3DE"
   green-100: "#C8DCB3"
@@ -182,6 +183,12 @@ instead, and *Do's and Don'ts* for why.
   recede without a color shift.
 - **Accent (`#8B6914`):** Warm gold. Used **sparingly** — prices, "premium"
   highlights, pull-quotes. A second voice, never a second brand color.
+- **Gold-on-dark (`#E7C88A`):** The gold voice for **dark green surfaces only**
+  (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
+  `green-900`'s family). Same role as `accent`, lighter expression — numerals,
+  small glyph accents on dark panels (MEH-730; first consumer: the account
+  sheet). Never use it on cream/white — there it's the drift, `accent` is the
+  token.
 - **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
   Low-contrast by design; structure should be felt, not drawn.
 - **Green scale (`green-50` … `green-900`):** A 6-stop tint scale of the one
