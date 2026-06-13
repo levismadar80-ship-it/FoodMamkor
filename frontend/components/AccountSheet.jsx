@@ -137,9 +137,10 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
             <li className={liCls}>
               {/* Quiet "for businesses" entry — gold icon + ↗ only. MEH-669-gated. */}
               <Link href="/register/producer" onClick={onClose} className={rowCls}>
-                <Storefront size={19} weight="regular" className="text-amber-200" aria-hidden="true" />
+                {/* MEH-730: gold-on-dark token replaces the amber-200 stopgap. */}
+                <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
                 {t("account.sheet.biz_cta")}
-                <span className="ms-auto font-english italic text-base text-amber-200" aria-hidden="true">
+                <span className="ms-auto font-english italic text-base text-gold-on-dark" aria-hidden="true">
                   ↗
                 </span>
               </Link>

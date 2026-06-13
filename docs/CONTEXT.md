@@ -162,6 +162,10 @@ When Sapir says `"הקשר מתמלא"`, open a new chat and attach `session-sta
 
 `HANDOFF.md` · `DEPLOYMENT.md` · `CHANGELOG.md` · `MANUAL_TESTING.md` · `SECURITY.md` · `ROADMAP.md` · `MIGRATIONS.md` · `BRAND.md` · `DESIGN.md` · `decisions/ADR-NNN-*.md`
 
+### Strategy & Inspiration (Drive — canonical, edit there)
+- Competitive landscape → Drive 01-Strategy/04-competitive-landscape.md
+- Design swipe file → Drive 03-Brand-Hub/06-inspiration-swipe-file.md
+
 ## 18 · Workflow integrity (lessons learned)
 
 - **Doc-vs-merge integrity:** CHANGELOG entries are NOT proof a PR merged. Verify via lockfile + git log + Linear `completedAt` + attached PR state.

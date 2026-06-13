@@ -75,6 +75,21 @@ describe("BadgeRow", () => {
   });
 
   describe("tooltip interaction", () => {
+    // MEH-800: card-Link safety — tap on a chip inside a wrapping clickable
+    // (the ProducerCard Link pattern) opens the popover, never navigates.
+    it("chip tap inside a wrapping clickable does not bubble", () => {
+      const parentClick = vi.fn();
+      render(
+         
+        <div onClick={parentClick}>
+          <BadgeRow producer={VERIFIED_LICENSE} />
+        </div>,
+      );
+      fireEvent.click(screen.getByText("מאומת"));
+      expect(screen.getByTestId("badge-tooltip-verified")).toBeInTheDocument();
+      expect(parentClick).not.toHaveBeenCalled();
+    });
+
     it("opens on click, closes on second click", () => {
       render(<BadgeRow producer={VERIFIED_LICENSE} />);
       const btn = screen.getByText("מאומת");
@@ -97,7 +112,7 @@ describe("BadgeRow", () => {
       render(<BadgeRow producer={VERIFIED_LICENSE} />);
       fireEvent.click(screen.getByText("מאומת"));
       expect(screen.getByTestId("badge-tooltip-verified")).toBeInTheDocument();
-      fireEvent.keyDown(window, { key: "Escape" });
+      fireEvent.keyDown(globalThis, { key: "Escape" });
       expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
     });
 

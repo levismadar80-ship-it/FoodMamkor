@@ -208,14 +208,18 @@ export default function Header() {
 
           {/* ACTION CLUSTER — end of the row (visual left in RTL). */}
           <div className="flex items-center gap-1.5 md:gap-2">
-            {/* Desktop search — MEH-732 single filled-primary action (label + icon). */}
+            {/* Desktop search — MEH-789: quiet icon-only affordance (was the
+                MEH-732 filled-primary action). The hero owns the prominent
+                search field, so a filled green search here was redundant +
+                competed with the add-business CTA + lengthened the pill. Same
+                route + a11y as the mobile circle (:261). */}
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full bg-action-primary hover:bg-action-primary-hover text-white text-sm font-medium transition-colors duration-fast ease-quart focus-ring"
+              className={`hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring ${transparent ? "text-background hover:bg-white/10" : "text-fg-muted hover:bg-primary/5"}`}
+              style={textShadow}
             >
-              <MagnifyingGlass size={18} weight="bold" aria-hidden="true" />
-              {t("nav.search_label")}
+              <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
             <span className="hidden md:inline-flex">
               <LanguageToggle className={transparent ? "text-background hover:bg-white/10" : ""} />
@@ -260,7 +264,7 @@ export default function Header() {
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full ${transparent ? "text-background" : "text-fg-muted"}`}
+              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring ${transparent ? "text-background" : "text-fg-muted"}`}
               style={textShadow}
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
@@ -348,7 +352,10 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
   ];
 
   return (
-    <div ref={menuRef} className="relative">
+    // MEH-789: desktop-only — the bottom-pill account tab + AccountSheet own
+    // mobile account, so the top-bar avatar is gated off mobile (was a
+    // double account entry; matches the :47 docstring "logo + search only").
+    <div ref={menuRef} className="relative hidden md:block">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
