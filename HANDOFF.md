@@ -27,17 +27,17 @@ GREEN-batch PR-C. Premise was "resume draft PR #982" — but **#982 is already m
 - **Verify:** docs-only, no source touched → build trivially green. Branch `feature/meh-258-security-checklist-gaps` off `origin/staging`.
 - **Pending:** Sapir review. Flag: this reverses #982's deliberate template-03 omission, on the authority of the current DoD — veto-able.
 
-## 2026-06-13 — MEH-801 item 1: retire the 2 "מתווכים" strings (DRAFT)
+## 2026-06-13 — MEH-801 item 1: retire the 2 "מתווכים" strings (MERGED — #1091 + #1092)
 
 Copy gate now Sapir-approved; replaced the 2 live forbidden-word hits (the pair flagged but left unedited in #1085's Phase 0) on `feature/meh-801-matvchim-copy` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
 
-- **Mapping (by context):** `auth.register.producer.subtitle` → **PRODUCER** (business-registration page, heading "תני לעסק שלך בית") → `הלקוחה מגיעה ישירות אלייך`; `sweep_tail.messages.why_item_no_middlemen` → **CONSUMER** (intro frames "הקונה", CTAs "גלי בתי עסק"/"המועדפים שלי") → `את יודעת בדיוק ממי את קונה`.
-- **Clause adaptations (both are clauses, not standalone taglines):** (1) producer line dropped into the 3-part tagline `5 דקות. בלי עמלות. …`, terminal period removed per the heading rule; (2) consumer line is the "✓ claim — explanation" head, and the explanation `אתם מדברים`→`את מדברת` was harmonized to feminine singular so the line agrees (same string, same meaning). Neither fit was awkward → no STOP.
+- **Mapping (by context):** `auth.register.producer.subtitle` → **PRODUCER** (business-registration page, heading "תני לעסק שלך בית") → `הלקוחה מגיעה ישירות אלייך`; `sweep_tail.messages.why_item_no_middlemen` → **CONSUMER** (intro frames "הקונה", CTAs "גלי בתי עסק"/"המועדפים שלי") → `אצלנו יודעים בדיוק ממי קונים`.
+- **Clause adaptations (both are clauses, not standalone taglines):** (1) producer line dropped into the 3-part tagline `5 דקות. בלי עמלות. …`, terminal period removed per the heading rule; (2) consumer line is the "✓ claim — explanation" head — the `אין מתווכים` claim → approved `אצלנו יודעים בדיוק ממי קונים`, explanation `אתם מדברים` kept. **Gender-neutral plural** per ADR-014 HYBRID.
 - **en.json:** faithful EN mirror, **provisional** pending the MEH-472 en wave (flagged in PR/CHANGELOG, not as an in-string marker).
 - **Verify:** `grep -rn מתווכים frontend/` → **0**; build green; lint **0 errors**; he.json + en.json JSON-valid; diff exactly 4 lines (2 he + 2 en) — no scope creep.
-- **Pending:** Sapir QA + merge (DRAFT — no merge). Scope was item 1 only; the other MEH-801 items are separate.
+- **Merged:** #1091 shipped item 1 (with a 2nd-person-feminine consumer line); **#1092 (`ea81643`) corrected the consumer line to the approved gender-neutral plural** per Sapir's ADR-014 call (parallel-session reconciliation). Other MEH-801 items are separate.
 
-## 2026-06-13 — MEH-227 RTL physical→logical sweep (DRAFT)
+## 2026-06-13 — MEH-227 RTL physical→logical sweep (MERGED — #1089 `f17b7a9`)
 
 A prior read-only audit produced 19 FIX candidates; this session applied **17** on `feature/meh-227-rtl-logical-props` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
 
