@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { ProducersResponseSchema } from "@/lib/schemas";
 
 /**
  * Owns the /map page's network feed: the producer list, the category
@@ -23,15 +24,28 @@ export function useProducersFeed() {
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // MEH-779: a malformed payload degrades to the same state as a network
+  // failure — empty list + toast — so the map never crashes on bad data.
+  const handleLoadFailure = (reason) => {
+    console.error("[חפשי באזור זה] GET /producers failed:", reason);
+    setAllProducers([]);
+    showToast.error(t("map.errors.load_failed"));
+  };
+
   const loadProducers = (params = {}) => {
     api
       .get("/producers", { params })
-      .then((r) => setAllProducers(r.data))
-      .catch((err) => {
-        console.error("[חפשי באזור זה] GET /producers failed:", err);
-        setAllProducers([]);
-        showToast.error(t("map.errors.load_failed"));
-      });
+      .then((r) => {
+        // Rule-19 belt-and-braces on the response side: validate the shape
+        // before it reaches marker creation / the feed list.
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        if (!parsed.success) {
+          handleLoadFailure(parsed.error.issues);
+          return;
+        }
+        setAllProducers(parsed.data);
+      })
+      .catch(handleLoadFailure);
   };
 
   useEffect(() => {
