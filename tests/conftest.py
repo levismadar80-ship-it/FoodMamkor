@@ -165,6 +165,7 @@ def make_producer(
     status: str = "approved",
     delivery_cities: list[str] | None = None,
     category: Category | None = None,
+    images: list[str] | None = None,
 ) -> Producer:
     producer = Producer(
         name=name,
@@ -174,6 +175,9 @@ def make_producer(
         lng=34.7818,
         status=status,
         is_verified=True,
+        # MEH-799: approve gate requires >=1 image; default stays imageless
+        # so the gate's own tests exercise the 422 path explicitly.
+        images=images or [],
     )
     db.add(producer)
     db.flush()
