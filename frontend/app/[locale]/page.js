@@ -50,6 +50,7 @@ export default function HomePage() {
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showStatsFallback, newestProducers,
+    featuredProducer,
     handleNearMe, handleCitySelected, handleCategoryCardClick,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
@@ -186,12 +187,13 @@ export default function HomePage() {
       )}
 
       {/* =========================
-          MEET A PRODUCER (P5 §10 · MEH-542) — dormant until a real featured
-          business is authored: pass an editorial object (see the component
-          JSDoc in HomeStaticBlocks.jsx) instead of null. With null the
-          section renders nothing — no fictional content ever ships.
+          MEET A PRODUCER (P5 §10 · MEH-542) — fed by the first is_recommended
+          ("מומלץ") producer that carries a usable short_description, mapped to
+          the editorial shape in useHomePage. No recommended producer ⇒ null ⇒
+          the section self-hides (HomeStaticBlocks.jsx:199). No fictional
+          content ever ships.
           ========================= */}
-      <HomeFeaturedProducer featured={null} />
+      <HomeFeaturedProducer featured={featuredProducer} />
 
       {/* =========================
           PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
