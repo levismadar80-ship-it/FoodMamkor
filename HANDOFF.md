@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12/13 (overnight, batch #2) — MERGE-ALL wave + 4 task PRs
+
+**MERGE-ALL (Sapir 22:22):** the remaining session PRs merged — #1073 `9515b4a`, #1075 `6c95884`, #1076 `159560c`, #1081 `6c25ffa` (docs; one 405 "expected checks" retry per the known transient). All 8 first-batch PRs are now on staging.
+
+**Batch #2 (4 PRs, sequential, zero merges):**
+- **#1082 MEH-799** (ready) — approve gate: 0 images → 422, locked Hebrew detail, before any MEH-509 side-effect. Validation-only, no Alembic. Local Postgres provisioned in-sandbox → `test_admin_approval_transitions` 9/9 + `test_api` 192/192 REAL local runs. Sibling flagged, not gated: admin-created producers are born approved (`admin.py:180`).
+- **#1083 MEH-798** (ready) — legend icon circles shipped; **item 2 premise failure**: `buildPopupHtml` doesn't exist anywhere and /map has no Leaflet popups by design (`MapComponent.jsx:413`, MEH-30 #8). Chip belongs in MapProducerCard/bottom-sheet if wanted — Sapir call.
+- **#1084 MEH-800** (draft) — `ui/Popover` primitive per the locked API + BadgeRow migration, behavior-identical (testids preserved, card-Link tap guard built into the primitive, focus-return on Esc). Was specced stacked on #1076; parent merged → based on staging. Full vitest 466 green.
+- **#1085 MEH-801** (draft) — ui/Badge re-synced to the #1075 recolor; `AnimatedCounter.jsx` deleted (0 imports proven). **⛔ Copy gate honored:** the 2 מתווכים strings untouched; 2 proposals each in the PR body await Sapir's verbatim approval → one follow-up commit on that branch (EN siblings + key rename ride along).
+
+**Pending / next:** (a) Sapir: review/merge #1082/#1083 (ready) + #1084/#1085 (draft); approve a מתווכים proposal per string. (b) Post-merge mobile QA debt from batch #1 still owed (MANUAL_TESTING section). (c) MEH-798 item 2 placement decision. (d) Parallel-session note: #1072/#1074 landed mid-batch from another session — no collisions.
+
 ## 2026-06-12/13 (overnight) — design-port batch: 7 PRs (homepage quartet MERGED on Sapir order)
 
 **Sanctioned autonomous overnight run** (GREEN surfaces to draft PR). **UPDATE 22:04: Sapir ordered "Merge IN ORDER #1077 → #1078 → #1079 → #1080" — executed**: #1077 `86c3353` → #1078 `875644d` (clean auto-sync) → #1079 `7effa10` (accept-both conflict resolution: home.featured + home.comparison blocks + both imports; build+parity re-verified, required checks green) → #1080 `33c8db2` (clean auto-sync). Each merge waited for the 6 required checks on the synced head (Rule 21/25). Second wave 22:22 ("MERGE ALL"): #1073 `9515b4a` → #1075 `6c95884` → #1076 `159560c`. All 7 batch PRs are now on staging. Full ledger + gap table: [docs/audits/2026-06-overnight-design-port.md](./docs/audits/2026-06-overnight-design-port.md).
