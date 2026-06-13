@@ -33,7 +33,8 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          className="w-full border border-[#e5e0d8] rounded-[10px] py-2 pr-9 pl-3 text-sm bg-[#faf8f4] focus:outline-none focus:border-primary transition"
+          aria-label={t("search_placeholder")}
+          className="w-full border border-[#e5e0d8] rounded-[10px] py-2 pr-9 pl-3 text-sm bg-[#faf8f4] focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
           dir="rtl"
         />
       </div>
