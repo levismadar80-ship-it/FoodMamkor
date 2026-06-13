@@ -290,7 +290,7 @@
           "submit": "הצטרפי →",
           "submitting": "שולחת...",
           "write_later": "אני אכתוב אחר כך",
-          "edit_description": "ערוך תיאור",
+          "edit_description": "ערכו תיאור",
           "add_license": "יש לי רישיון יצרן ↓",
           "close": "סגור"
         },
@@ -706,7 +706,7 @@
         "login_cta": "התחברי",
         "error": "משהו השתבש, נסי שוב",
         "remove": "הסר ממועדפים",
-        "add": "הוסף למועדפים",
+        "add": "הוסיפו למועדפים",
       "aria": "שמירה"
       },
       "aria": {
@@ -1062,11 +1062,11 @@
       "saving": "שומר...",
       "saving_f": "שומרת...",
       "sending": "שולחת...",
-      "save": "שמור",
+      "save": "שמרו",
       "saved": "✓ נשמר",
       "saved_check": "נשמר ✓",
       "cancel": "ביטול",
-      "delete": "מחק",
+      "delete": "מחקו",
       "delete_f": "מחקי",
       "edit": "עריכה",
       "view": "צפה",
@@ -1119,7 +1119,7 @@
       },
       "alerts": {
         "producers_waiting": "{count} בתי עסק ממתינים לאישור",
-        "click_to_handle": "לחץ לטיפול",
+        "click_to_handle": "לחצו לטיפול",
         "open_reports": "{count} דיווחים פתוחים",
         "needs_review": "דורש בדיקה",
         "hidden_home_products": "{count} מוצרים ביתיים מוסתרים",
@@ -1237,7 +1237,7 @@
           "ambassador_inactive": "☆ שגריר",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "📸 סטורי",
-          "delete": "מחק"
+          "delete": "מחקו"
         },
         "columns": {
           "name": "שם",
@@ -1264,7 +1264,7 @@
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."
       },
       "new": {
-        "title": "הוסף בית עסק חדש",
+        "title": "הוסיפו בית עסק חדש",
         "subtitle": "העסק יישמר מיד כמאושר (status=approved) ויופיע באתר."
       },
       "edit": {
@@ -1277,7 +1277,7 @@
           "save": "שגיאה בשמירה"
         },
         "submit_create": "צור עסק",
-        "submit_update": "שמור שינויים",
+        "submit_update": "שמרו שינויים",
         "uploading": "מעלה...",
         "sections": {
           "basic": "פרטי בסיס",
@@ -1692,7 +1692,7 @@
       "save": {
         "confirm_prefix": "האם לשמור את השינויים הבאים?",
         "saving": "שומר...",
-        "submit": "שמור הגדרות",
+        "submit": "שמרו הגדרות",
         "nothing_to_save_title": "אין שינויים לשמירה",
         "unsaved_count": "{count} שינויים לא שמורים"
       }
@@ -1710,22 +1710,22 @@
         "name_placeholder": "שם קטגוריה",
         "add": "+ הוסף",
         "empty": "אין נתונים להצגה",
-        "save": "שמור",
-        "delete": "מחק",
+        "save": "שמרו",
+        "delete": "מחקו",
         "confirm_delete": "למחוק קטגוריה?"
       },
       "home_products": {
         "heading": "מוצרים ביתיים מוסתרים",
         "empty": "אין מוצרים מוסתרים",
         "restore": "שחזר",
-        "delete": "מחק",
+        "delete": "מחקו",
         "confirm_delete": "למחוק את המוצר?"
       },
       "page_editor": {
         "title_placeholder": "כותרת",
         "body_placeholder": "תוכן (Markdown נתמך)",
         "saving": "שומר...",
-        "save": "שמור",
+        "save": "שמרו",
         "saved": "נשמר ✓"
       }
     },
@@ -2553,9 +2553,9 @@
       "saved_toast": "נשמר למועדפים",
       "removed_toast": "הוסר מהמועדפים",
       "error_generic": "משהו השתבש, נסי שוב",
-      "add_aria": "הוסף למועדפים",
+      "add_aria": "הוסיפו למועדפים",
       "remove_aria": "הסר ממועדפים",
-      "inline_label": "שמור",
+      "inline_label": "שמרו",
       "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסי"
     }
   },
@@ -2568,13 +2568,13 @@
     "heading": "איך היה?",
     "bought_from": "קנית מ<seller>{name}</seller>",
     "comment_placeholder": "תגובה קצרה (אופציונלי)",
-    "submit": "שלח דירוג"
+    "submit": "שלחו דירוג"
   },
   "report": {
     "trigger": "🚩 דווח על עסק",
     "form_heading": "דווח על עסק",
     "reason_placeholder": "ספר/י מה הבעיה...",
-    "submit": "שלח דיווח",
+    "submit": "שלחו דיווח",
     "cancel": "ביטול",
     "error_generic": "שגיאה בשליחה",
     "success_title": "תודה על הדיווח",
@@ -2638,7 +2638,7 @@
       "generating": "מייצר",
       "download": "הורד",
       "uploading": "מעלה...",
-      "save_cloudinary": "שמור ל-Cloudinary",
+      "save_cloudinary": "שמרו ל-Cloudinary",
       "copy_caption": "העתיקי caption",
       "copied": "✅ הועתק!"
     }
@@ -3447,7 +3447,7 @@
       "push_blocked": "התראות דחיפה חסומות בדפדפן",
       "push_enable": "הפעילי התראות דחיפה (PWA)",
       "push_active": "התראות דחיפה פעילות",
-      "save_cta": "שמור הגדרות",
+      "save_cta": "שמרו הגדרות",
       "saving": "שומר...",
       "save_success_toast": "הגדרות עודכנו",
       "save_error_toast": "שגיאה בשמירה, נסי שוב"
