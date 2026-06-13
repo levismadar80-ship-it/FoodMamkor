@@ -2,21 +2,9 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 /**
- * MEH-230 (4/7) — axe-core regression net.
- *
- * Asserts ZERO `critical` / `serious` axe violations on the 6 highest-traffic
- * routes. `moderate` / `minor` violations are reported (console.log) but do NOT
- * fail the build — they're tracked in docs/audits/2026-06-13-a11y.md and fixed
- * in sibling MEH tickets, not gated here. Tightening the gate to moderate is a
- * follow-up once the moderate backlog (contrast: text-accent/honey/green-300,
- * the 19 missing focus indicators) is burned down.
- *
- * Scope per ticket: this is a *net*, not a fixer. New code that regresses a
- * route into a critical/serious violation fails CI here.
- *
- * Runs against the Vercel preview (CI) or localhost:3000 (local) via the shared
- * baseURL in playwright.config.ts. Locale prefix is "as-needed" (defaultLocale
- * "he"), so unprefixed paths resolve to the Hebrew RTL routes.
+ * MEH-230 (4/7) — axe regression net: ZERO critical/serious on 6 routes
+ * (moderate/minor logged, not gated). Gate scope + ignore-rule rationale:
+ * docs/audits/2026-06-13-a11y.md + docs/ACCESSIBILITY.md.
  */
 
 const GATE_IMPACTS = ["critical", "serious"] as const;
