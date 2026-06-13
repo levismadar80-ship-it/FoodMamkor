@@ -146,6 +146,14 @@ class ProducerRegister(BaseModel):
     def _validate_primary_contact_method(cls, v):
         return _contact_method_validator(v)
 
+    # MEH-296: same http(s) scheme guard as ProducerUpdate. ProducerRegister
+    # only exposes `website` among the URL fields (no facebook /
+    # external_order_form columns here — those are owner-edit-only).
+    @field_validator("website")
+    @classmethod
+    def _validate_contact_urls(cls, v):
+        return _url_scheme_validator(v)
+
 
 class GoogleAuthRequest(BaseModel):
     id_token: str

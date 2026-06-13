@@ -18,7 +18,12 @@ These tests pin the contract:
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py. No
 Anthropic/email assertions (those layers fail-open in the test config).
 """
-from conftest import auth_header, make_producer, make_user
+from conftest import (
+    auth_header,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 
 # admin-only fields that ProducerOwnerOut must NOT serialize back to the
@@ -151,4 +156,17 @@ def test_put_producers_me_rejects_javascript_url(client, db):
         json={"website": "javascript:alert(1)"},
         headers=auth_header(user),
     )
+    assert resp.status_code == 422, resp.text
+
+
+def test_register_producer_rejects_javascript_url(client, db):
+    # MEH-296: the same http(s) scheme guard applies on the PUBLIC
+    # registration path (ProducerRegister.website) → 422. Baseline payload
+    # is otherwise valid (phone added) so the 422 isolates the URL guard.
+    payload = {
+        **valid_producer_register_payload(),
+        "phone": "+972501234567",
+        "website": "javascript:alert(1)",
+    }
+    resp = client.post("/auth/register/producer", json=payload)
     assert resp.status_code == 422, resp.text
