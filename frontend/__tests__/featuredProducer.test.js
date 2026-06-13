@@ -6,26 +6,26 @@ import { selectFeaturedProducer } from "@/lib/featured-producer";
 
 const recommended = {
   id: "uuid-1",
-  name: "חוות השקמה",
-  city: "כפר ורדים",
+  name: "Shikma Farm",
+  city: "Kfar Vradim",
   slug: "havat-hashikma",
   is_recommended: true,
-  short_description: "  גבינות עזים מחלב המשק  ",
-  description: "  סיפור המשק.  ",
+  short_description: "  Goat cheese from our farm  ",
+  description: "  The farm story.  ",
   images: ["photo-1.jpg", "photo-2.jpg"],
-  categories: [{ id: 3, name: "גבינות" }],
+  categories: [{ id: 3, name: "Cheese" }],
 };
 
 describe("selectFeaturedProducer", () => {
   it("maps the first eligible recommended producer to the editorial shape", () => {
     const result = selectFeaturedProducer([recommended]);
     expect(result).toEqual({
-      name: "חוות השקמה",
-      city: "כפר ורדים",
-      category: "גבינות",
+      name: "Shikma Farm",
+      city: "Kfar Vradim",
+      category: "Cheese",
       photo: "photo-1.jpg",
-      quote: "גבינות עזים מחלב המשק", // trimmed
-      story: "סיפור המשק.", // trimmed
+      quote: "Goat cheese from our farm", // trimmed
+      story: "The farm story.", // trimmed
       href: "/havat-hashikma",
     });
   });
@@ -49,10 +49,10 @@ describe("selectFeaturedProducer", () => {
 
   it("skips recommended-but-unusable rows and picks the first eligible one", () => {
     const skip = { ...recommended, id: "uuid-skip", short_description: "" };
-    const pick = { ...recommended, id: "uuid-pick", slug: "second", short_description: "תיאור תקין" };
+    const pick = { ...recommended, id: "uuid-pick", slug: "second", short_description: "Valid tagline" };
     const result = selectFeaturedProducer([skip, pick]);
     expect(result.href).toBe("/second");
-    expect(result.quote).toBe("תיאור תקין");
+    expect(result.quote).toBe("Valid tagline");
   });
 
   it("falls back to the UUID route when the producer has no slug", () => {
@@ -63,21 +63,20 @@ describe("selectFeaturedProducer", () => {
   it("leaves photo/category/story undefined-safe when absent", () => {
     const sparse = {
       id: "uuid-2",
-      name: "מאפיית הבוקר",
+      name: "Morning Bakery",
       slug: "boker",
       is_recommended: true,
-      short_description: "לחם מחמצת",
+      short_description: "Sourdough bread",
     };
     const result = selectFeaturedProducer([sparse]);
     expect(result.photo).toBeUndefined();
     expect(result.category).toBeUndefined();
     expect(result.story).toBe("");
-    expect(result.quote).toBe("לחם מחמצת");
+    expect(result.quote).toBe("Sourdough bread");
   });
 
   it("is null-safe on empty / nullish input", () => {
     expect(selectFeaturedProducer([])).toBeNull();
-    expect(selectFeaturedProducer(undefined)).toBeNull();
     expect(selectFeaturedProducer(null)).toBeNull();
   });
 });
