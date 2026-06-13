@@ -76,6 +76,13 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
   test("/producers", async ({ page }) => {
     await page.goto("/producers");
     await page.waitForLoadState("domcontentloaded");
+    // Let client-fetched cards render so axe scans the loaded state, not an
+    // empty shell. Graceful: continue if the staging DB has no producers.
+    await page
+      .locator('[data-testid="producer-card"]')
+      .first()
+      .waitFor({ state: "visible", timeout: 15_000 })
+      .catch(() => {});
     const results = await analyze(page);
     summarize("/producers", results);
     expect(gateViolations(results), "critical/serious axe violations on /producers").toEqual([]);
@@ -90,12 +97,14 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
     await page.waitForLoadState("domcontentloaded");
     const firstCard = page.locator('[data-testid="producer-card"]').first();
     if ((await firstCard.count()) === 0) {
+      // test.skip(condition, ...) throws to abort the test — no return needed.
       test.skip(true, "No producer cards found — staging DB may be empty");
-      return;
     }
     await expect(firstCard).toBeVisible({ timeout: 15_000 });
     await firstCard.click();
-    await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
+    // Tight predicate: fail loudly if the click lands anywhere but a detail
+    // page (error/redirect) instead of silently auditing the wrong route.
+    await page.waitForURL((url) => url.pathname.includes("/producer/"), {
       timeout: 20_000,
     });
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
@@ -107,6 +116,11 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
   test("/map", async ({ page }) => {
     await page.goto("/map");
     await page.waitForLoadState("domcontentloaded");
+    // Leaflet builds the map container in a useEffect; wait for it so axe scans
+    // the rendered map, not an empty container. Graceful on slow init.
+    await page
+      .waitForSelector(".leaflet-container", { timeout: 20_000 })
+      .catch(() => {});
     const results = await analyze(page);
     summarize("/map", results);
     expect(gateViolations(results), "critical/serious axe violations on /map").toEqual([]);
