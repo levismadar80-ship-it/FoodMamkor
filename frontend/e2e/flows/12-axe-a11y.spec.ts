@@ -15,8 +15,11 @@ const GATE_IMPACTS = ["critical", "serious"] as const;
 // docs/audits/2026-06-13-a11y.md Vector 5/6 + docs/ACCESSIBILITY.md "Tightening
 // the gate later"). The footer's low-contrast links/copy trip these on every
 // route, so gating them would make the net red on day one and mask genuine new
-// critical/serious regressions. TODO(MEH-230 follow-up): drop entries from this
-// set as the contrast backlog is burned down, re-tightening the gate.
+// critical/serious regressions. TODO(MEH-230 follow-up): remove "color-contrast"
+// once the Vector 5 sites in docs/audits/2026-06-13-a11y.md reach 0 (text-accent,
+// text-honey, green-300, footer placeholder, home-hero cta_subpitch); remove
+// "link-in-text-block" once the login/register inline links carry a non-color
+// affordance (underline). Each removal re-tightens the gate for that rule.
 const GATE_IGNORE_RULES = new Set(["color-contrast", "link-in-text-block"]);
 
 type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
