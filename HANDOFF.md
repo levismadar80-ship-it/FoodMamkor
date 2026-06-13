@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-12 — MEH-794 backend /neighbor cleanup (chat.py KB + profile_strength) — narrowed after Phase 0
+
+**Branch `feature/meh-794-backend-neighbor-cleanup`** off `origin/staging` (which now contains #1050 — MEH-793 frontend merged). **Phase 0 found the ticket premise wrong:** `/home-products` is NOT a dead endpoint — it's a live subsystem (6 admin moderation endpoints, 24h rating-SMS background job, GDPR account-deletion cascade `auth.py:1280-1294`, AI-moderation service, Cloudinary-cleanup script, **3 DB tables**). Full removal is RED (DROP TABLE deny-listed + ADR-007 Expand-Contract) → **split to MEH-796** (Sapir approved narrowing).
+
+**Done (this PR, code-only):** (1) **chat.py** — stripped all neighbor/home-cook content from `SYSTEM_PROMPT` KB + stale prompt instructions; bot no longer answers "מה זה מהמטבח של השכן?". (2) **profile_strength** (`producer_me.py:644`) — removed home-product 25% weight, redistributed +5 across 5 signals (image 20·desc 25·delivery 15·review 20·phone 20 = 100); full profile reaches 100 again. +2 regression tests (`test_analytics.py`). ruff clean, py_compile clean.
+
+**Pending / next:** (a) **pytest deferred to CI** — no local Postgres (`password authentication failed`, MEH-360 sandbox class); CI provisions a Postgres service. Watch the `Backend tests (pytest)` check on the PR. (b) DRAFT PR → Sapir review. Backend-only + tests → can merge on green CI without mobile QA (Rule 23 exempts backend). (c) **MEH-796** (RED) decommissions the `home_products` subsystem + drops the 3 tables (Smadar runs the migration) — land after this + #1050. (d) taxonomy `מוצרים ביתיים` rename still a separate sibling, untouched. ⚠️ Coupling: do NOT deploy this between #1050 and itself — both merged → strength bar consistent.
 ## 2026-06-13 — MEH-296 Chunk 1+2 (backend) merged to staging (PR #1095, squash `53a832c`)
 
 **Done:** two nullable producer contact channels — `facebook` (200) + `external_order_form` (500), migration `7346235e318b` (expand-only, down_revision `c1d2e3f4a5b6`). Exposed on `ProducerUpdate` / `ProducerDetailOut` (→ `ProducerOwnerOut`) / `_PRODUCER_WRITABLE_FIELDS`. API-boundary hardening: `primary_contact_method` 7-value guard (`whatsapp|phone|instagram|email|website|facebook|external_order`) on **both** `ProducerUpdate` + `ProducerRegister`; http(s)-only URL scheme guard on website/facebook/external_order_form (ProducerUpdate) + website (ProducerRegister) — also closes the pre-existing `website` `javascript:`/`data:` XSS gap (MEH-329). +5 pytest. All 6 required checks green; merged on Sapir's explicit MERGE.

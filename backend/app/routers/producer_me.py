@@ -636,7 +636,10 @@ def producer_analytics(
         else 0.0
     )
 
-    # MEH-57 ── profile_strength: 0-100 score from 6-item checklist.
+    # MEH-57 ── profile_strength: 0-100 score from 5-item checklist.
+    # MEH-794: the home-product item was removed with /neighbor (MEH-793);
+    # its 25% was redistributed +5 across the remaining 5 signals so a
+    # fully-complete profile still reaches 100.
     has_delivery_area = (
         db.query(func.count(DeliveryArea.id))
         .filter(DeliveryArea.producer_id == pid)
@@ -645,15 +648,14 @@ def producer_analytics(
     ) > 0
     strength_score = sum(
         [
-            15 if (producer.images or []) else 0,
-            20
+            20 if (producer.images or []) else 0,
+            25
             if (producer.description or "").strip()
             and len((producer.description or "").strip()) >= 50
             else 0,
-            25 if int(home_products_count) > 0 else 0,
-            10 if has_delivery_area else 0,
-            15 if int(total_reviews) > 0 else 0,
-            15 if producer.phone_verified else 0,
+            15 if has_delivery_area else 0,
+            20 if int(total_reviews) > 0 else 0,
+            20 if producer.phone_verified else 0,
         ]
     )
     profile_strength = int(strength_score)
