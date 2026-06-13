@@ -9,20 +9,20 @@
 
 Copy gate now Sapir-approved; replaced the 2 live forbidden-word hits (the pair flagged but left unedited in #1085's Phase 0) on `feature/meh-801-matvchim-copy` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
 
-- **Mapping (by context):** `auth.register.producer.subtitle` → **PRODUCER** (business-registration page, heading "תני לעסק שלך בית") → `הלקוחה מגיעה ישירות אלייך`; `sweep_tail.messages.why_item_no_middlemen` → **CONSUMER** (intro frames "הקונה", CTAs "גלי בתי עסק"/"המועדפים שלי") → `את יודעת בדיוק ממי את קונה`.
-- **Clause adaptations (both are clauses, not standalone taglines):** (1) producer line dropped into the 3-part tagline `5 דקות. בלי עמלות. …`, terminal period removed per the heading rule; (2) consumer line is the "✓ claim — explanation" head, and the explanation `אתם מדברים`→`את מדברת` was harmonized to feminine singular so the line agrees (same string, same meaning). Neither fit was awkward → no STOP.
+- **Mapping (by context):** `auth.register.producer.subtitle` → **PRODUCER** (business-registration page, heading "תני לעסק שלך בית") → `הלקוחה מגיעה ישירות אלייך`; `sweep_tail.messages.why_item_no_middlemen` → **CONSUMER** (intro frames "הקונה", CTAs "גלי בתי עסק"/"המועדפים שלי") → `אצלנו יודעים בדיוק ממי קונים`.
+- **Clause adaptations (both are clauses, not standalone taglines):** (1) producer line dropped into the 3-part tagline `5 דקות. בלי עמלות. …`, terminal period removed per the heading rule; (2) consumer line is the "✓ claim — explanation" head — the `אין מתווכים` claim → approved `אצלנו יודעים בדיוק ממי קונים`, and the explanation `אתם מדברים` **kept as-is**. Per **ADR-014 HYBRID** the consumer line stays **gender-neutral plural** (matches sibling lines `מסכמים`/`בונים` at :3420–3421) — an earlier draft harmonized it to feminine singular (`את יודעת…את מדברת`); that was reverted to the approved gender-neutral form on Sapir's call (parallel-session reconciliation). Neither fit was awkward → no STOP.
 - **en.json:** faithful EN mirror, **provisional** pending the MEH-472 en wave (flagged in PR/CHANGELOG, not as an in-string marker).
 - **Verify:** `grep -rn מתווכים frontend/` → **0**; build green; lint **0 errors**; he.json + en.json JSON-valid; diff exactly 4 lines (2 he + 2 en) — no scope creep.
 - **Pending:** Sapir QA + merge (DRAFT — no merge). Scope was item 1 only; the other MEH-801 items are separate.
 
-## 2026-06-13 — MEH-227 RTL physical→logical sweep (DRAFT)
+## 2026-06-13 — MEH-227 RTL physical→logical sweep (MERGED — #1089, `f17b7a9`)
 
 A prior read-only audit produced 19 FIX candidates; this session applied **17** on `feature/meh-227-rtl-logical-props` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
 
 - **Applied (17):** 15× `text-right`→`text-start` (all on `dir="rtl"` / RTL-inheriting elements ⇒ Hebrew pixel-identical, only `/en` LTR corrected — MEH-132 family); `layout.js:200` skip-link `focus:right-2`→`focus:start-2`; `AvailabilityBadge.jsx:51` `marginLeft`→`marginInlineEnd` (inline style).
 - **Excluded (2, on Sapir `go`):** `RecipeForm.jsx:32` (shared `baseInput` const → 3 `dir="ltr"` price fields) + `GroupBuyDetailClient.jsx:296` (`dir="ltr"` quantity). `text-right` correct in both locales; swap would regress. → **MEH-341**.
 - **Verify:** build green; ESLint **0 errors** (171 pre-existing warnings); diff exactly 17/17; grep confirms 0 of the 17 remain + 2 excluded intact.
-- **Pending:** Sapir deployed-preview QA + merge (DRAFT — no merge). 3 latent flags (CategorySelector chevron / MapClient `border-l` / ChatWidget FAB) + the 2 excluded `dir="ltr"` items all route to **MEH-341**.
+- **Merged:** `f17b7a9` via PR #1089 (squash → staging) after Sapir QA + explicit `MERGE`. 3 latent flags (CategorySelector chevron / MapClient `border-l` / ChatWidget FAB) + the 2 excluded `dir="ltr"` items all route to **MEH-341**.
 
 ## 2026-06-13 — MEH-542 light up §10 (DRAFT)
 
