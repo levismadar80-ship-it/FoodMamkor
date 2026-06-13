@@ -2,7 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+
+// MEH-785: locale-aware dates via the shared helper — replaces 3 hardcoded
+// toLocaleDateString("he-IL") sites that escaped the MEH-753/MEH-777 sweeps.
+import { formatEventDate } from "@/lib/format-date";
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 
@@ -26,16 +30,11 @@ function formatTime(t) {
   return t.slice(0, 5);
 }
 
-function formatHebrewDate(date) {
-  return date.toLocaleDateString("he-IL", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-}
+const LONG_DATE = { weekday: "long", day: "numeric", month: "long" };
 
 export default function CalendarView({ items, linkPrefix }) {
   const t = useTranslations("events.calendar");
+  const locale = useLocale();
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -81,7 +80,7 @@ export default function CalendarView({ items, linkPrefix }) {
     setSelectedDate(null);
   };
 
-  const monthLabel = currentMonth.toLocaleDateString("he-IL", {
+  const monthLabel = formatEventDate(currentMonth, locale, {
     month: "long",
     year: "numeric",
   });
@@ -146,11 +145,7 @@ export default function CalendarView({ items, linkPrefix }) {
               type="button"
               onClick={() => setSelectedDate(d)}
               aria-pressed={isSelected ? "true" : "false"}
-              aria-label={d.toLocaleDateString("he-IL", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
+              aria-label={formatEventDate(d, locale, LONG_DATE)}
               className={`aspect-square min-h-[44px] rounded-lg flex flex-col items-center justify-center text-sm transition ${
                 isSelected
                   ? "bg-primary text-white"
@@ -177,7 +172,7 @@ export default function CalendarView({ items, linkPrefix }) {
         <div className="mt-6 pt-6 border-t border-border" data-testid="calendar-day-expansion">
           <div className="flex items-baseline justify-between mb-3">
             <h4 className="font-headline-md text-lg font-bold text-text">
-              {formatHebrewDate(selectedDate)}
+              {formatEventDate(selectedDate, locale, LONG_DATE)}
             </h4>
             <span className="text-sm text-fg-muted">
               {t("events_count", { count: selectedItems.length })}

@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+// MEH-785: locale-aware dates via the shared helper — replaces the local
+// formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
+import { formatEventDate } from "@/lib/format-date";
 
 /**
  * Small inline component for "upcoming events" homepage preview.
@@ -13,6 +16,7 @@ import api from "@/lib/api";
  */
 export function UpcomingEventsPreview() {
   const t = useTranslations();
+  const locale = useLocale();
   const [events, setEvents] = useState([]);
   useEffect(() => {
     api
@@ -49,7 +53,7 @@ export function UpcomingEventsPreview() {
             )}
             <div className="p-4">
               <p className="text-primary text-sm font-semibold mb-1">
-                {formatEventDate(ev.event_date)} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
+                {formatEventDate(ev.event_date, locale, { day: "numeric", month: "long" })} {ev.event_time && `· ${ev.event_time.slice(0, 5)}`}
               </p>
               <h3 className="font-headline-md text-xl font-bold text-text mb-1">{ev.title}</h3>
               <p className="text-sm text-fg-muted mb-2">
@@ -64,14 +68,4 @@ export function UpcomingEventsPreview() {
       </div>
     </section>
   );
-}
-
-function formatEventDate(iso) {
-  if (!iso) return "";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
-  } catch {
-    return iso;
-  }
 }
