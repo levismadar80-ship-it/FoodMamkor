@@ -242,7 +242,7 @@ export default function EventsPage() {
             href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto self-center text-sm font-medium text-primary hover:underline"
           >
-            {isExp ? t("submit_experience") : t("add_event")} ←
+            {isExp ? t("submit_experience") : t("add_event")} →
           </Link>
         </div>
       </div>
