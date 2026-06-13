@@ -11,12 +11,14 @@ colors:
   primary: "#2e6853"
   primary-dark: "#2E4A2E"
   background: "#F5F0E8"
+  background-alt: "#EDE4D2"
   surface: "#FFFFFF"
   text: "#1C1A17"
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#8B6914"
   honey: "#C8821E"
+  gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
   green-50: "#EAF3DE"
   green-100: "#C8DCB3"
@@ -162,6 +164,13 @@ instead, and *Do's and Don'ts* for why.
 - **Background (`#F5F0E8`):** Warm cream. The universal page surface. **Never
   pure white as a page background** — pure white reads as "app", cream reads as
   "magazine". This is a hard brand LOCK (BRAND.md §3).
+- **Background-alt (`#EDE4D2`):** A subtle warm step down from `background`, for
+  **editorial tonal separation** — alternating adjacent section blocks by tone
+  instead of by horizontal rules (e.g. the `/about` Benefits + Values pair, MEH-135).
+  This is a *layout/surface* token, **not** a per-state background — the ADR-019
+  prohibition on darker/lighter background tokens applies to component *states*
+  (selected/loading/vacation), which still use opacity on cream. Both tones keep
+  AA: `text`/`fg-muted` pass ≥ 4.5:1 on `background-alt` as well as `background`.
 - **Surface (`#FFFFFF`):** Pure white, allowed **only** for content that sits
   on top of the cream page — cards, modals, inputs. Never the page itself.
 - **Text (`#1C1A17`):** Warm near-black for body copy and headings. Not
@@ -174,6 +183,12 @@ instead, and *Do's and Don'ts* for why.
   recede without a color shift.
 - **Accent (`#8B6914`):** Warm gold. Used **sparingly** — prices, "premium"
   highlights, pull-quotes. A second voice, never a second brand color.
+- **Gold-on-dark (`#E7C88A`):** The gold voice for **dark green surfaces only**
+  (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
+  `green-900`'s family). Same role as `accent`, lighter expression — numerals,
+  small glyph accents on dark panels (MEH-730; first consumer: the account
+  sheet). Never use it on cream/white — there it's the drift, `accent` is the
+  token.
 - **Border (`#E5DFD3`):** Warm hairline for card borders and dividers on cream.
   Low-contrast by design; structure should be felt, not drawn.
 - **Green scale (`green-50` … `green-900`):** A 6-stop tint scale of the one

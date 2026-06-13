@@ -82,6 +82,9 @@ function CardHeart({ producer, onCountChange }) {
 
   useEffect(() => {
     if (!user) return;
+    // MEH-730 (restored from pre-v4): clear the guest-saved flag the moment a
+    // user logs in — otherwise a heart saved as guest stays visually stuck
+    // "on" even when the account's real favorites say otherwise.
     setGuestSaved(false);
     let alive = true;
     ensureFavoritesLoaded().then(() => {
@@ -133,6 +136,10 @@ function CardHeart({ producer, onCountChange }) {
         await api.delete(`/users/me/favorites/${producer.id}`);
       }
     } catch (err) {
+      // MEH-730 (restored from pre-v4): 404 on DELETE means the favorite was
+      // already gone server-side — keep the heart un-filled and only revert
+      // the optimistic count decrement; a full state revert would re-fill
+      // the heart for a favorite that doesn't exist.
       if (!next && err?.response?.status === 404) {
         onCountChange?.(1);
         return;
@@ -254,9 +261,11 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </div>
         </Link>
 
-        {/* Badge row — bottom-start over the image (Assembly v2), max 2. */}
+        {/* Badge row — bottom-start over the image (Assembly v2), max 2.
+            MEH-76 chunk 4 (S12 §04-B): list density — verified renders the
+            icon-only seal; declared shows nothing (no placeholder). */}
         <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
-          <BadgeRow producer={producer} limit={2} />
+          <BadgeRow producer={producer} limit={2} surface="card" />
           {(producer.trust_tier ?? 1) >= 3 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
@@ -355,6 +364,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           )}
           {MethodIcon && (
             <span
+              role="img"
               className="inline-flex items-center text-primary shrink-0"
               aria-label={t("producer.card.aria.primary_contact", { method: METHOD_LABEL_KEY[primaryMethod] ? t(METHOD_LABEL_KEY[primaryMethod]) : "WhatsApp" })}
               data-testid="primary-method-hint"

@@ -12,8 +12,7 @@ export default function ProducerNotFound() {
         <Leaf
           size={72}
           weight="duotone"
-          color="#2e6853"
-          className="mx-auto mb-4"
+          className="mx-auto mb-4 text-primary"
           aria-hidden="true"
         />
         <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">

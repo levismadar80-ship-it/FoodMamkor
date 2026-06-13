@@ -67,6 +67,7 @@ export default function Footer() {
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
+    { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
   ];
 
@@ -184,14 +185,14 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-8"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-11 min-h-[44px]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
                 aria-label={t("nav.footer.newsletter_submit")}
-                className="absolute end-0 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition disabled:opacity-40"
+                className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
               >
                 {status === "loading" ? <ButtonSpinner /> : "→"}
               </button>
@@ -217,8 +218,10 @@ export default function Footer() {
             marginTop: "32px",
           }}
         >
+          {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
+              emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
           <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
-            © {new Date().getFullYear()} {t("footer.copyright")} 🌿
+            © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
           <ul className="flex items-center gap-4">
             {[

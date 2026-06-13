@@ -1,6 +1,7 @@
 import "../globals.css";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { MotionConfig } from "framer-motion";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
@@ -195,14 +196,21 @@ export default async function LocaleLayout({ children, params }) {
         />
       </head>
       <body className="font-body-md bg-background text-text min-h-screen flex flex-col pb-20 md:pb-0">
-        {/* rtl-ok: focus position for accessibility */}
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:right-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-[10000] focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
           {tSweep("skip_to_main")}
         </a>
         <NextIntlClientProvider>
           <AuthProvider>
             <LanguageProvider>
               <SmoothScrollProvider>
+                {/* MEH-788: global reduced-motion off-switch for ALL
+                    framer-motion (FadeInSection scroll-reveals, home hero/grid,
+                    etc.). reducedMotion="user" makes framer honor
+                    prefers-reduced-motion — its default is "never", which is why
+                    motion previously ignored the OS setting. CSS-driven motion
+                    (hover transitions, marquee, kenburns) is covered by the
+                    global @media block in globals.css. */}
+                <MotionConfig reducedMotion="user">
                 <Header />
                 {/* MEH-731: verify banner relocated out of the sticky <header>
                     to the top of <main> so the floating navbar pill stays pure
@@ -218,6 +226,7 @@ export default async function LocaleLayout({ children, params }) {
                 <CustomCursor />
                 <ChatWidget />
                 <InstallPrompt />
+                </MotionConfig>
               </SmoothScrollProvider>
             </LanguageProvider>
           </AuthProvider>

@@ -392,7 +392,6 @@ function AnalyticsSection({ analytics, profile }) {
     new_followers_this_week,
     average_rating,
     total_reviews,
-    home_products_count,
     views_by_day,
     top_cities,
     rank_in_city,
@@ -501,13 +500,6 @@ function AnalyticsSection({ analytics, profile }) {
           icon="⭐"
           value={average_rating ? average_rating.toFixed(1) : "—"}
           sub={t("simple_cards.rating_sub_template", { count: total_reviews })}
-        />
-        {/* TODO MEH-543: i18n after /neighbor activation post-launch */}
-        <SimpleCard
-          label="מוצרים פעילים במטבח"
-          icon="🥕"
-          value={home_products_count}
-          sub="מהמטבח של השכן"
         />
       </div>
 
@@ -673,17 +665,16 @@ function TopCitiesBarChart({ data }) {
 }
 
 // ============================================================
-// MEH-57: Profile strength checklist (6-item, matches backend scoring)
+// MEH-57: Profile strength checklist (5-item).
+// MEH-133: home-product item removed with /neighbor. Backend still allocates
+// its 25% weight to profile_strength → temporary drift (visible % can exceed
+// what the checklist accounts for); backend cleanup tracked in follow-up.
 // ============================================================
 
-// Items have stable keys for translation lookup; the home-product item
-// stays out of the keyed namespace per MEH-543 deferral (the
-// "מוצר פעיל במטבח" string stays hardcoded HE until /neighbor activates).
+// Items have stable keys for translation lookup.
 const STRENGTH_ITEMS = [
   { key: "image",    weight: 15, check: (p, a) => (p?.images?.length ?? 0) > 0 },
   { key: "desc",     weight: 20, check: (p, a) => (p?.description?.trim?.()?.length ?? 0) >= 50 },
-  // TODO MEH-543: i18n after /neighbor activation post-launch
-  { key: "product",  label: "מוצר פעיל במטבח", weight: 25, check: (p, a) => (a?.home_products_count ?? 0) > 0 },
   { key: "delivery", weight: 10, check: (p, a) => (p?.delivery_areas?.length ?? 0) > 0 },
   { key: "review",   weight: 15, check: (p, a) => (a?.total_reviews ?? 0) > 0 },
   { key: "phone",    weight: 15, check: (p, a) => !!p?.phone_verified },

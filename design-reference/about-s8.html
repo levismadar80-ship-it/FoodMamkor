@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S8 · MEH-? · /about — About page redesign · Direction D "Feature Standfirst"</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR BRAND TOKENS — verbatim from colors_and_type.css
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --primary:#2e6853; --primary-light:#3a7d64; --primary-dark:#2E4A2E;
+  --secondary:#4cb08b; --background:#F5F0E8; --site-text:#1C1A17;
+  --site-muted:#5c584f; --accent:#8B6914; --accent-warm:#E8823A;
+  --light:#EAF3DE; --border:#e8e0d0;
+  --font-headline:'Frank Ruhl Libre','Heebo',serif;
+  --font-english:'Cormorant Garamond',serif;
+  --font-body:'DM Sans','Heebo',system-ui,sans-serif;
+
+  /* spec-document chrome (annotation layer, NOT the brand surface) */
+  --doc-bg:#e7e1d6; --doc-ink:#2a2620; --doc-mute:#6f695e;
+  --doc-rule:rgba(42,38,32,0.16); --doc-mono:ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+
+html,body{background:var(--doc-bg); color:var(--doc-ink);
+  font-family:var(--font-body); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;}
+body{padding:48px 40px 100px; min-width:1180px;}
+
+.num{font-feature-settings:"tnum" 1,"lnum" 1; font-variant-numeric:tabular-nums lining-nums; direction:ltr; unicode-bidi:isolate;}
+
+/* ── DOC MASTHEAD ─────────────────────────────────────────────── */
+.doc{max-width:1760px; margin:0 auto;}
+.masthead{display:grid; grid-template-columns:1fr auto; align-items:end;
+  border-bottom:1px solid var(--doc-rule); padding-bottom:26px; margin-bottom:30px; gap:32px;}
+.phase-nav{display:inline-flex; gap:7px; align-items:center; margin-bottom:14px;
+  font-family:var(--doc-mono); font-size:11px; letter-spacing:.06em; color:var(--doc-mute);}
+.pip{display:inline-flex; align-items:center; gap:4px;}
+.pip i{width:7px; height:7px; border:1px solid rgba(42,38,32,.32); display:inline-block; border-radius:50%;}
+.pip.on i{background:var(--primary); border-color:var(--primary);}
+.pip.now i{background:var(--accent); border-color:var(--accent); outline:2px solid rgba(139,105,20,.22); outline-offset:2px;}
+.masthead h1{font-family:var(--font-headline); font-weight:900; font-size:42px; line-height:1.04; color:var(--doc-ink);}
+.masthead h1 em{font-family:var(--font-english); font-style:italic; font-weight:600; color:#6b4f0f;}
+.masthead .sub{font-family:var(--font-english); font-style:italic; font-size:18px; color:var(--doc-mute); margin-top:9px; max-width:78ch; line-height:1.5;}
+.masthead .sub code{font-family:var(--doc-mono); font-style:normal; font-size:12px; color:var(--primary-dark);}
+.stamp{font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--doc-mute); text-align:right; line-height:1.95;}
+.stamp strong{color:var(--doc-ink); font-weight:700;}
+.stamp .dot{color:var(--accent);}
+
+/* ── LEGEND (locked-copy convention) ──────────────────────────── */
+.legend{display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+  border:1px solid var(--doc-rule); border-radius:10px; padding:14px 20px; margin-bottom:34px;
+  background:rgba(255,255,255,.32);}
+.legend .lh{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-ink); font-weight:600;}
+.legend .item{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; color:var(--doc-mute);}
+.legend .item b{color:var(--doc-ink); font-weight:600;}
+.sw{width:26px; height:14px; border-radius:3px; flex:none;}
+.sw.verbatim{background:var(--background); border:1px solid var(--primary); position:relative;}
+.sw.verbatim::after{content:""; position:absolute; inset-inline-start:3px; top:3px; width:5px; height:5px; border-radius:50%; background:var(--primary);}
+.sw.port{background:var(--background); border:1px dashed var(--accent);}
+.sw.placeholder{background:repeating-linear-gradient(45deg,#cfc8ba,#cfc8ba 4px,#c2bbac 4px,#c2bbac 8px); border:1px solid #b6ae9e;}
+
+/* ── FRAME COLUMNS ────────────────────────────────────────────── */
+.frames{display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap;}
+.frame{min-width:0;}
+.cap{font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-mute);
+  display:flex; align-items:baseline; gap:12px; margin-bottom:14px;}
+.cap .num-i{font-family:var(--font-english); font-style:italic; font-size:22px; color:var(--accent); text-transform:none;}
+.cap .label{color:var(--doc-ink); font-size:13px; letter-spacing:.1em;}
+.cap .dims{font-family:var(--font-english); font-style:italic; font-size:13px; color:var(--accent); text-transform:none;}
+
+.vp{background:var(--background); border:1px solid rgba(42,38,32,.18); overflow:hidden; position:relative;
+  box-shadow:0 1px 0 rgba(42,38,32,.04);}
+.vp.mobile{width:375px;}
+.vp.desktop{width:1280px;}
+
+.capnote{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--doc-mute);
+  margin-top:16px; max-width:60ch; line-height:1.55;}
+.capnote b{font-family:var(--font-body); font-style:normal; font-weight:600; color:var(--doc-ink); font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;}
+.capnote code{font-family:var(--doc-mono); font-style:normal; font-size:11px; color:var(--primary-dark);}
+.capnote .v{color:var(--primary-dark); font-style:normal; font-weight:600;}
+.capnote .p{color:#7a5c0f; font-style:normal; font-weight:600;}
+
+/* ── DOC FOOTER (patterns / anti-patterns) ────────────────────── */
+.doc-foot{margin-top:64px; padding-top:34px; border-top:1px solid var(--doc-rule);
+  display:grid; grid-template-columns:1fr 1fr; gap:48px; max-width:1200px;}
+.doc-foot h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:16px;}
+.doc-foot ol,.doc-foot ul{list-style:none;}
+.doc-foot li{margin-bottom:14px; font-size:13.5px; line-height:1.55; color:var(--doc-mute); padding-inline-start:30px; position:relative;}
+.doc-foot .n{position:absolute; inset-inline-start:0; top:-2px; font-family:var(--font-english); font-style:italic; font-weight:600; font-size:18px; color:var(--accent);}
+.doc-foot li b{color:var(--doc-ink); font-weight:600;}
+.doc-foot .src{font-family:var(--font-english); font-style:italic; color:var(--primary-dark);}
+.doc-foot li .x{position:absolute; inset-inline-start:2px; top:0; color:#8B2E2E; font-weight:700;}
+
+/* ══════════════════════════════════════════════════════════════
+   ░░  THE MEHAMAKOR /about SURFACE  ░░
+   container-query responsive: base = mobile, ≥760cqw = desktop.
+   ══════════════════════════════════════════════════════════════ */
+.s8{
+  container-type:inline-size;
+  direction:rtl; font-family:var(--font-body); color:var(--site-text);
+  background:var(--background); position:relative; line-height:1.65;
+  --pad:22px; --prose:720px; --bleed:1200px;
+}
+.s8 *{box-sizing:border-box;}
+.s8::before{content:""; position:absolute; inset:0; pointer-events:none; z-index:0; opacity:.5;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.04 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+.s8 > *{position:relative; z-index:1;}
+
+.wrap{max-width:var(--prose); margin-inline:auto; padding-inline:var(--pad);}
+.bleed{max-width:var(--bleed); margin-inline:auto; padding-inline:var(--pad);}
+
+/* section rhythm — base mobile */
+.sec{padding-block:56px;}
+.sec.air{padding-block:80px;}            /* the two emotional blocks (borrowed from A) */
+
+/* section marker: thin gold top-rule + Cormorant italic numeral */
+.marker{display:flex; align-items:center; gap:14px; margin-bottom:26px;}
+.marker .rule{height:1px; width:46px; background:var(--accent); flex:none; opacity:.7;}
+.marker .nm{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:22px; color:var(--accent);}
+.marker .eb{font-family:var(--font-body); font-weight:500; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--site-muted);}
+
+/* ── HEADER / FOOTER / BOTTOMNAV PLACEHOLDERS (parallel track) ── */
+.ph-bar{background:repeating-linear-gradient(45deg,#dad3c6,#dad3c6 6px,#d2cabc 6px,#d2cabc 12px);
+  border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  color:#8d8675; font-size:10px; letter-spacing:.22em; text-transform:uppercase; font-weight:600; height:60px;}
+.ph-bar.foot{border-bottom:none; border-top:1px solid var(--border); height:120px; align-items:flex-start; padding-top:22px;}
+.ph-bar.nav{height:64px; border-top:1px solid var(--border); border-bottom:none;}
+
+/* ── 01 HERO ──────────────────────────────────────────────────── */
+.hero{padding-block:64px 48px;}
+.hero h1{font-family:var(--font-headline); font-weight:900; letter-spacing:-.02em; line-height:1.02;
+  font-size:clamp(33px,9.4cqw,46px); max-width:13ch;}
+.hero .sub{margin-top:24px; font-size:18px; line-height:1.6; color:var(--site-text); max-width:46ch;}
+
+/* ── 02 STORY ─────────────────────────────────────────────────── */
+.story .greet{font-family:var(--font-headline); font-weight:700; font-size:26px; line-height:1.2; margin-bottom:22px;}
+.story p{font-size:17px; line-height:1.65; margin-bottom:18px; color:var(--site-text);}
+.story p.muted-lead{color:var(--site-muted);}
+.story .col-portrait{margin-top:42px;}
+.portrait-fig{margin:0;}
+.portrait{width:100%; max-width:280px; aspect-ratio:3/4; border-radius:14px; border:1px solid var(--border);
+  position:relative; overflow:hidden; background:
+    radial-gradient(78% 52% at 50% 30%, #ead7b4, transparent 72%),
+    radial-gradient(130% 95% at 50% 116%, #41523c, transparent 66%),
+    linear-gradient(165deg, #cdbb96 0%, #9aa583 52%, #5c6a51 100%);}
+.portrait .cap-credit{position:absolute; inset-inline-start:14px; bottom:12px; font-family:var(--font-english);
+  font-style:italic; font-size:14px; color:#f3ecdd; text-shadow:0 1px 6px rgba(40,40,30,.5); letter-spacing:.01em;}
+.byline{margin-top:22px; border-inline-start:3px solid var(--accent); padding-inline-start:18px; max-width:340px;}
+.byline .eb{font-family:var(--font-body); font-weight:600; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); margin-bottom:10px;}
+.byline p{font-family:var(--font-english); font-style:italic; font-weight:500; font-size:18px; line-height:1.5; color:var(--site-text); margin-bottom:8px;}
+.byline p:last-child{margin-bottom:0;}
+
+/* ── ParallaxQuote DIVIDER (full-bleed, offset to START edge) ──── */
+.quote-div{padding-block:80px; position:relative; overflow:hidden;}
+.quote-div .inner{max-width:var(--bleed); margin-inline:auto; padding-inline:var(--pad);}
+.quote-div blockquote{margin:0; border-inline-start:2px solid var(--accent); padding-inline-start:24px;
+  max-width:16ch; margin-inline-end:auto;  /* anchored to START edge in RTL */
+  font-family:var(--font-headline); font-style:italic; font-weight:500;
+  font-size:clamp(29px,8.4cqw,34px); line-height:1.18; letter-spacing:-.01em; color:var(--primary-dark);}
+.quote-div .em-mark{font-family:var(--font-english); font-style:italic; font-size:15px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent); display:block; margin-bottom:20px; padding-inline-start:24px;}
+
+/* ── 03 BENEFITS (3 columns · 01—/02—/03— markers) ────────────── */
+.benefits .grid{display:grid; grid-template-columns:1fr; gap:40px; margin-top:8px;}
+.bn{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:30px; color:var(--accent);
+  display:inline-block; margin-bottom:14px;}
+.bn .em{color:var(--accent); opacity:.55; font-style:italic;}
+.benefit h3{font-family:var(--font-headline); font-weight:700; font-size:22px; line-height:1.25; margin-bottom:10px;}
+.benefit p{font-size:16px; line-height:1.6; color:var(--site-muted);}
+
+/* ── 04 TIPS (accordion) ──────────────────────────────────────── */
+.tips h2,.values h2,.contact h2,.stub h2,.cta h2{font-family:var(--font-headline); font-weight:700; letter-spacing:-.01em;
+  font-size:clamp(28px,5.4cqw,32px); line-height:1.1;}
+.tips .intro,.values .intro{font-size:17px; line-height:1.6; color:var(--site-muted); margin-top:16px; max-width:54ch;}
+.acc{margin-top:30px; border-top:1px solid var(--border);}
+details.tip{border-bottom:1px solid var(--border);}
+details.tip > summary{list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:20px 2px; font-family:var(--font-headline); font-weight:700; font-size:18px; line-height:1.3; color:var(--site-text);}
+details.tip > summary::-webkit-details-marker{display:none;}
+details.tip > summary .chev{flex:none; color:var(--accent); font-size:20px; transition:transform var(--dur,260ms) cubic-bezier(.25,1,.5,1);}
+details.tip[open] > summary .chev{transform:rotate(180deg);}
+details.tip .body{padding:0 2px 22px; font-size:16px; line-height:1.65; color:var(--site-muted); max-width:58ch;}
+details.tip > summary:focus-visible{outline:2px solid rgba(46,104,83,.4); outline-offset:3px; border-radius:4px;}
+
+/* ── 05 TESTIMONIALS (slim invitation band — STUB) ────────────── */
+.stub{text-align:center;}
+.stub .band{border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding-block:52px;}
+.stub h2{max-width:18ch; margin-inline:auto;}
+.stub .st-sub{font-family:var(--font-english); font-style:italic; font-size:19px; color:var(--site-muted); margin-top:16px; max-width:42ch; margin-inline:auto;}
+.stub a.invite{display:inline-flex; align-items:center; gap:8px; margin-top:26px; color:var(--primary); font-weight:600; font-size:16px; text-decoration:none; white-space:nowrap;}
+.stub a.invite i{font-size:17px; transition:transform var(--dur,260ms) ease;}
+.stub a.invite:hover{color:var(--primary-light);}
+.stub a.invite:hover i{transform:translateX(-4px);} /* RTL: forward = left */
+
+/* ── 06 VALUES (bordered editorial container · flexible) ───────── */
+.values .box{border:1px solid var(--border); border-radius:24px; padding:44px 34px; background:rgba(255,255,255,.34); margin-top:14px;}
+.values .vlist{margin-top:30px; display:grid; gap:28px;}
+.value .vn{font-family:var(--font-headline); font-weight:700; font-size:21px; color:var(--site-text);}
+.mehflag{display:inline-flex; align-items:center; gap:6px; margin-top:16px; font-family:var(--doc-mono);
+  font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent);
+  border:1px dashed rgba(139,105,20,.55); border-radius:5px; padding:4px 9px; background:rgba(139,105,20,.06);}
+.value p{font-size:16px; line-height:1.65; color:var(--site-muted); margin-top:8px;}
+.values .closing{margin-top:32px; padding-top:26px; border-top:1px solid var(--border);
+  font-family:var(--font-english); font-style:italic; font-weight:500; font-size:20px; line-height:1.45; color:var(--primary-dark); max-width:40ch;}
+
+/* ── 07 CTA ───────────────────────────────────────────────────── */
+.cta{text-align:center;}
+.cta h2{max-width:16ch; margin-inline:auto;}
+.cta .btns{display:flex; flex-wrap:wrap; gap:14px; justify-content:center; margin-top:30px;}
+.btn{display:inline-flex; align-items:center; gap:9px; min-height:52px; padding:14px 28px;
+  font-family:var(--font-body); font-weight:600; font-size:16px; border:1px solid transparent; border-radius:16px;
+  cursor:pointer; text-decoration:none; transition:background-color 300ms ease,color 300ms ease,border-color 300ms ease;}
+.btn-primary{background:var(--primary); color:#fff;}
+.btn-primary:hover{background:var(--primary-light);}
+.btn-primary i{font-size:19px;}
+.btn-outline{background:#fff; color:var(--primary); border-color:var(--primary);}
+.btn-outline:hover{background:var(--primary); color:#fff;}
+
+/* ── 08 CONTACT FORM ──────────────────────────────────────────── */
+.contact h2{max-width:18ch;}
+.contact .intro{font-size:17px; color:var(--site-muted); margin-top:14px; max-width:48ch; line-height:1.6;}
+.cform{margin-top:30px; display:grid; gap:18px; max-width:560px;}
+.field{display:grid; gap:8px;}
+.field label{font-size:13px; font-weight:600; color:var(--site-text); letter-spacing:.01em;}
+.field input,.field textarea{font-family:var(--font-body); font-size:16px; color:var(--site-text);
+  background:#fff; border:1px solid var(--border); border-radius:8px; padding:13px 15px; width:100%; resize:vertical;}
+.field input:focus,.field textarea:focus{outline:2px solid rgba(46,104,83,.4); outline-offset:1px; border-color:var(--primary);}
+.field textarea{min-height:120px; line-height:1.6;}
+.cform .submit{justify-self:start;}
+
+/* faint provenance hint: dashed gold underline on port-from-code blocks */
+.s8 [data-port]{text-decoration:underline; text-decoration-style:dashed; text-decoration-color:rgba(139,105,20,.34);
+  text-underline-offset:5px; text-decoration-thickness:1px;}
+
+/* ══════════════════════════════════════════════════════════════
+   DESKTOP — container ≥ 760px (only fires inside the 1280 frame)
+   ══════════════════════════════════════════════════════════════ */
+@container (min-width:760px){
+  .s8{--pad:48px;}
+  .sec{padding-block:80px;}
+  .sec.air{padding-block:120px;}
+  .ph-bar{height:72px;}
+  .ph-bar.foot{height:148px;}
+
+  .hero{padding-block:104px 60px;}
+  .hero h1{font-size:clamp(60px,5.9cqw,82px); max-width:15ch;}
+  .hero .sub{font-size:21px; max-width:42ch;}
+
+  /* Story = asymmetric 2-col: prose (start) + framed portrait standfirst (end) */
+  .story .wrap{max-width:1080px;}
+  .story .layout{display:grid; grid-template-columns:1fr 360px; gap:72px; align-items:start;}
+  .story .greet{font-size:32px; margin-bottom:26px;}
+  .story p{font-size:18px;}
+  .story .col-portrait{margin-top:6px; position:sticky; top:40px;}
+  .portrait{max-width:360px;}
+  .byline{max-width:360px;}
+
+  .quote-div blockquote{font-size:clamp(42px,4.1cqw,54px); max-width:18ch; padding-inline-start:34px;}
+  .quote-div .em-mark{padding-inline-start:34px;}
+
+  .benefits .grid{grid-template-columns:repeat(3,1fr); gap:48px;}
+  .bn{font-size:34px;}
+
+  .acc{max-width:820px;}
+  .values .box{padding:56px 56px;}
+  .values .vlist{grid-template-columns:1fr 1fr; gap:36px 56px;}
+  .contact .cform{grid-template-columns:1fr 1fr; gap:20px 24px;}
+  .contact .field.full{grid-column:1 / -1;}
+  .contact .cform .submit{grid-column:1 / -1;}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ░░ MASTHEAD ░░ -->
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S2</span><span>·</span>
+        <span class="pip on"><i></i>S5</span><span>·</span>
+        <span class="pip on"><i></i>S6</span><span>·</span>
+        <span class="pip on"><i></i>S7</span><span>·</span>
+        <span class="pip now"><i></i>S8</span>
+      </nav>
+      <h1>/about — <em>Feature Standfirst</em></h1>
+      <p class="sub">Direction&nbsp;D, locked. Editorial longread treatment of the existing <code>AboutClient.jsx</code> — visual transformation only, fixed 8-section inventory, copy ported verbatim from <code>origin/staging&nbsp;he.json</code>. Header / Footer / BottomNav are parallel-track placeholders.</p>
+    </div>
+    <div class="stamp">
+      Series&nbsp;<strong>S8</strong> <span class="dot">·</span> /about<br>
+      Mobile&nbsp;375 <span class="dot">→</span> Desktop&nbsp;1280<br>
+      RTL <span class="dot">·</span> <strong>feminine</strong> <span class="dot">·</span> 8 sections
+    </div>
+  </header>
+
+  <!-- ░░ LEGEND ░░ -->
+  <div class="legend">
+    <span class="lh">Copy provenance</span>
+    <span class="item"><span class="sw verbatim"></span><b>Verbatim</b> — character-exact from he.json (no underline)</span>
+    <span class="item"><span class="sw port"></span><b>Draft copy</b> — pending copy decision; code copy is canonical (dashed gold underline)</span>
+    <span class="item"><span class="sw placeholder"></span>Parallel-track chrome — zero design work</span>
+  </div>
+
+  <!-- ░░ FRAMES ░░ -->
+  <div class="frames">
+
+    <!-- ── MOBILE 375 ── -->
+    <div class="frame">
+      <div class="cap"><span class="num-i">a</span><span class="label">MOBILE</span><span class="dims">375 × scroll</span></div>
+      <div class="vp mobile"><div class="s8" data-mount="mobile"></div></div>
+      <p class="capnote"><b>Draft copy — pending copy decision; code copy is canonical.</b> <span class="v">Verbatim (he.json):</span> H1 · founder captions ×3 · ParallaxQuote · Values heading + 4 items + closing · CTA heading + both buttons. <span class="p">Draft (annotated on every block):</span> hero sub · story ¶1–5 (copy candidate under review, not approved) · benefits ×3 · tips items · testimonials stub · values intro · contact labels.</p>
+    </div>
+
+    <!-- ── DESKTOP 1280 ── -->
+    <div class="frame">
+      <div class="cap"><span class="num-i">b</span><span class="label">DESKTOP</span><span class="dims">1280 × scroll</span></div>
+      <div class="vp desktop"><div class="s8" data-mount="desktop"></div></div>
+      <p class="capnote"><b>Flex note · Values.</b> Bordered container annotated <code>copy may be revised post-MEH-742</code> — the <span dir="rtl">בטיחות</span> item is the exposed surface (2 sentences). Container absorbs paragraph-count changes; grid reflows. Tips accordion shows <b>one open</b> (¶1) + closed states. Founder portrait is the <i>real</i> 3:4 editorial photo in production — placeholder fill shown here.</p>
+    </div>
+
+  </div>
+
+  <!-- ░░ DOC FOOTER — patterns / anti-patterns ░░ -->
+  <div class="doc-foot">
+    <div>
+      <h4>3 patterns used</h4>
+      <ol>
+        <li><span class="n">1</span><b>Standfirst + numbered editorial markers.</b> Story portrait carries a byline standfirst; benefits & sections use Cormorant gold numerals as magazine devices, not corporate steps. <span class="src">— NYT Cooking feature pages</span></li>
+        <li><span class="n">2</span><b>Monumental offset pull-quote in negative space.</b> The ParallaxQuote breaks the prose column, anchored to the start edge, framed by 120/80 air. <span class="src">— Kinfolk (typography + whitespace)</span></li>
+        <li><span class="n">3</span><b>Ink-on-paper restraint; gold as sparing accent.</b> Flat cream canvas, hairline borders, no shadows — gold appears only as rules, numerals, the quote mark-rule. <span class="src">— natoora (editorial restraint)</span></li>
+      </ol>
+    </div>
+    <div>
+      <h4>2 anti-patterns avoided</h4>
+      <ul>
+        <li><span class="x">✕</span><b>No cookie-cutter feature cards.</b> Benefits are gold-numeral columns on open canvas — not boxed cards with rounded corners + colored left-border + icon (the SaaS/marketplace trope).</li>
+        <li><span class="x">✕</span><b>No AI-slop, no invented social proof.</b> No Inter/Roboto, no purple gradients, no glassmorphism, never pure white. Testimonials render as a slim invitation band — zero fabricated quotes or cards.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SURFACE TEMPLATE — cloned into mobile + desktop mounts
+     ══════════════════════════════════════════════════════════════ -->
+<template id="surface">
+
+  <!-- HEADER placeholder (parallel track) -->
+  <div class="ph-bar" aria-hidden="true">Header — parallel track</div>
+
+  <!-- 01 · HERO -->
+  <section class="sec hero">
+    <div class="wrap">
+      <h1>פעם היית צריכה לדעת את מי לשאול. עכשיו כבר לא</h1>
+      <p class="sub" data-port>אוכל מבתי עסק קטנים שבדקנו אישית — קרוב אלייך, בלי לחפש שעות.</p>
+    </div>
+  </section>
+
+  <!-- 02 · STORY (no heading — opens with greeting) -->
+  <section class="sec air story">
+    <div class="wrap">
+      <div class="layout">
+        <div class="col-prose">
+          <p class="greet">היי, אני ספיר</p>
+          <p class="muted-lead" data-port>לפני שנתיים מצאתי את עצמי עומדת מול מדף בסופר, קוראת רשימת רכיבים שלא הצלחתי לפענח. ידעתי שאי־שם בסביבה שלי יש אנשים שמכינים אוכל טוב, ישר מהמקור — פשוט לא ידעתי איך למצוא אותם.</p>
+          <p data-port>התחלתי לשאול. חברה הכירה אופה, שהכיר חוואית, שסיפרה לי על גבן שעובד שלוש שכונות מכאן. כל שם הגיע בלחישה, מפה לאוזן, כאילו זה איזה סוד ששומרים עליו.</p>
+          <p data-port>וזה בדיוק מה שהפריע לי. למה משהו כל כך בסיסי — לדעת מאיפה האוכל שלך מגיע — צריך להיות תלוי במזל, בקשרים, ובשאלה אם הכרת את האדם הנכון.</p>
+          <p data-port>אז התחלתי לבנות את המקום הזה בעצמי. בית עסק אחרי בית עסק, בדקתי מי עומדת מאחורי כל מוצר, איפה הוא מיוצר, ומה באמת נכנס פנימה — בלי קיצורי דרך.</p>
+          <p data-port>היום מהמקור הוא בדיוק זה: לא פרסומת ולא משלוחים, אלא מפה אמינה של אנשים אמיתיים שמכינים אוכל אמיתי, ממש לידך.</p>
+        </div>
+        <div class="col-portrait">
+          <figure class="portrait-fig">
+            <div class="portrait"></div>
+            <figcaption class="byline">
+              <div class="eb" style="letter-spacing:.04em;">ספיר · מהמקור</div>
+              <p>מייסדת מהמקור. תוכניתנית במקצועה, לומדת רפואה תזונתית.</p>
+              <p>את הקריטריונים — אני כותבת מתוך מה שאני בעצמי מחפשת באוכל.</p>
+            </figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ParallaxQuote DIVIDER (full-bleed · offset · START edge · NO attribution) ── -->
+  <section class="sec air quote-div" aria-label="quote">
+    <div class="inner">
+      <span class="em-mark">מהמקור</span>
+      <blockquote>אוכל טוב — לא שומרים לעצמנו</blockquote>
+    </div>
+  </section>
+
+  <!-- 03 · BENEFITS (3 columns · gold numerals) -->
+  <section class="sec benefits">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="eb">למה מהמקור</span></div>
+      <div class="grid">
+        <div class="benefit">
+          <span class="bn num">01<span class="em">—</span></span>
+          <h3 data-port>קרוב אלייך</h3>
+          <p data-port>בתי עסק מהאזור שלך, עם שרשרת קצרה ככל האפשר. פחות דרך, יותר טריות.</p>
+        </div>
+        <div class="benefit">
+          <span class="bn num">02<span class="em">—</span></span>
+          <h3 data-port>אפשר לסמוך</h3>
+          <p data-port>כל בית עסק נבדק אישית לפני שהוא עולה לאתר. אנחנו שואלות, מבררות, ולפעמים גם מבקרות — לפני שאומרות כן.</p>
+        </div>
+        <div class="benefit">
+          <span class="bn num">03<span class="em">—</span></span>
+          <h3 data-port>קהילה מקומית</h3>
+          <p data-port>כל קנייה תומכת ישירות באנשים מהשכונה — לא ברשת גדולה, אלא בבעלת עסק מהאזור שלך.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · TIPS (accordion) -->
+  <section class="sec tips">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="eb">צעדים ראשונים</span></div>
+      <h2 data-port>שאלות שכדאי לשאול</h2>
+      <p class="intro" data-port>כמה דברים קטנים שיעזרו לך להפיק את המרב מהחיפוש, ולהבין מה עומד מאחורי כל בית עסק שאת פוגשת כאן.</p>
+      <div class="acc">
+        <details class="tip" open>
+          <summary><span data-port>איך לבחור בית עסק שמתאים לי?</span><i class="ph-bold ph-caret-down chev" aria-hidden="true"></i></summary>
+          <div class="body" data-port>אפשר לסנן לפי קטגוריה, מרחק ממך, וזמינות. כל פרופיל מספר מי בעלת העסק, איפה היא נמצאת ואיך היא עובדת — כך שתוכלי לבחור לפי מה שחשוב לך באמת, לא לפי מי שצועק הכי חזק.</div>
+        </details>
+        <details class="tip">
+          <summary><span data-port>מה אנחנו בודקות לפני שעסק עולה לאתר?</span><i class="ph-bold ph-caret-down chev" aria-hidden="true"></i></summary>
+          <div class="body" data-port>כל בית עסק נבדק לפי ארבעה דברים — שקיפות, קרבה, איכות ובטיחות. את כולם פירטנו בהמשך העמוד, בחלק "כך אנחנו בוחרות".</div>
+        </details>
+        <details class="tip">
+          <summary><span data-port>איך יוצרות קשר עם בעלת העסק?</span><i class="ph-bold ph-caret-down chev" aria-hidden="true"></i></summary>
+          <div class="body" data-port>ישירות, דרך וואטסאפ. אין הזמנות דרכנו ואין עמלות — את מדברת עם האדם שמכין את האוכל, וסוגרת איתו בדיוק כמו שהיית עושה עם שכנה.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · TESTIMONIALS (slim invitation band — STUB, no items) -->
+  <section class="sec stub">
+    <div class="wrap">
+      <div class="band">
+        <h2 data-port>הסיפורים שעוד ייכתבו כאן</h2>
+        <p class="st-sub" data-port>המקום הזה שמור לסיפורים שלכן.</p>
+        <a class="invite" href="#contact" data-port>יש לך סיפור? ספרי לנו<i class="ph ph-arrow-left" aria-hidden="true"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · VALUES (bordered editorial container · flexible) -->
+  <section class="sec values">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="eb">הקריטריונים שלנו</span></div>
+      <div class="box">
+        <h2>כך אנחנו בוחרות</h2>
+        <p class="intro" data-port>לא כל בית עסק נכנס למהמקור. לפני שאנחנו מוסיפות מישהי, אנחנו בודקות ארבעה דברים — אותם דברים שהיינו רוצות לדעת בעצמנו לפני שאנחנו קונות.</p>
+        <div class="vlist">
+          <div class="value">
+            <span class="bn num">01<span class="em">—</span></span>
+            <div class="vn">שקיפות</div>
+            <p>את צריכה לדעת מי עומדת מאחורי המוצר שאת קונה. תמיד נספר לך מי בעלת בית העסק, איפה היא נמצאת, ואיך היא עובדת.</p>
+          </div>
+          <div class="value">
+            <span class="bn num">02<span class="em">—</span></span>
+            <div class="vn">קרבה</div>
+            <p>אנחנו מעדיפות בתי עסק קרובים אלייך, ושרשרת קצרה ככל האפשר — מהשדה אלייך.</p>
+          </div>
+          <div class="value">
+            <span class="bn num">03<span class="em">—</span></span>
+            <div class="vn">איכות</div>
+            <p>חומרי גלם אמיתיים שאת מזהה — בלי צבעי מאכל, בלי חומרים משמרים מיותרים, בלי תוספות מלאכותיות.</p>
+          </div>
+          <div class="value">
+            <span class="bn num">04<span class="em">—</span></span>
+            <div class="vn">בטיחות</div>
+            <p>מקום הכנה נקי, אחסון נכון, ועמידה ברגולציה הרלוונטית לקטגוריה. בקטגוריות מסוימות נדרש רישיון יצרן בישראל, ושם נבקש אותו. כאן אין פשרות.</p>
+            <p class="mehflag" dir="ltr"><i class="ph ph-flag" aria-hidden="true"></i>copy may be revised post-MEH-742</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · CTA -->
+  <section class="sec cta">
+    <div class="wrap">
+      <h2>בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.</h2>
+      <div class="btns">
+        <a class="btn btn-primary" href="#">הוסיפו את העסק שלך<i class="ph-fill ph-leaf" aria-hidden="true"></i></a>
+        <a class="btn btn-outline" href="#">גלי עסקים קרובים</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 · CONTACT FORM -->
+  <section class="sec contact" id="contact">
+    <div class="wrap">
+      <div class="marker"><span class="rule"></span><span class="eb">דברי איתנו</span></div>
+      <h2 data-port>כתבי לנו</h2>
+      <p class="intro">שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן</p>
+      <form class="cform" onsubmit="return false">
+        <div class="field"><label data-port>שם מלא</label><input type="text" placeholder="" autocomplete="name"></div>
+        <div class="field"><label data-port>אימייל</label><input type="text" placeholder="" autocomplete="email"></div>
+        <div class="field full"><label data-port>איך נוכל לעזור?</label><textarea placeholder=""></textarea></div>
+        <button type="submit" class="btn btn-primary submit" data-port>שלחי<i class="ph ph-paper-plane-tilt" aria-hidden="true"></i></button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER + BOTTOMNAV placeholders (parallel track) -->
+  <div class="ph-bar foot" aria-hidden="true">Footer — parallel track</div>
+  <div class="ph-bar nav only-mobile" aria-hidden="true" data-mobile-only>BottomNav — parallel track</div>
+
+</template>
+
+<script>
+(function(){
+  var tpl = document.getElementById('surface');
+  document.querySelectorAll('[data-mount]').forEach(function(mount){
+    mount.appendChild(tpl.content.cloneNode(true));
+    // every draft (non-verbatim) block literally carries the pending-decision annotation
+    mount.querySelectorAll('[data-port]').forEach(function(el){
+      el.setAttribute('title','draft copy — pending copy decision; code copy is canonical');
+    });
+    // BottomNav placeholder only appears on the mobile surface
+    if(mount.getAttribute('data-mount') !== 'mobile'){
+      var bn = mount.querySelector('[data-mobile-only]');
+      if(bn) bn.remove();
+    }
+  });
+})();
+</script>
+</body>
+</html>

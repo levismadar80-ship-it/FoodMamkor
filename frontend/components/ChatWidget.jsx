@@ -21,10 +21,9 @@ import api from "@/lib/api";
  * CookieBanner to reposition. Reads "cookieConsent" from localStorage.
  */
 
-// TODO MEH-543: i18n after /neighbor activation post-launch
 const OPENING_MESSAGE = {
   role: "assistant",
-  content: "היי 🌿 אני כאן לעזור! אפשר לשאול אותי איך נרשמים, איך מוצאים בתי עסק, או איך מפרסמים מוצר ביתי. מה תרצי לדעת?",
+  content: "היי 🌿 אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצי לדעת?",
 };
 
 // Suggested prompts — restructured April 2026 (feature/chatbot-plain-hebrew-v2)
@@ -32,27 +31,25 @@ const OPENING_MESSAGE = {
 // funnel questions ("what is this site?") with later-stage ones ("how do I
 // report a problem?") in random order, and phrased "האישור" without saying
 // what was being approved. New grouping:
-//   1-3: canonical hardcoded answers (see HARDCODED_ANSWERS)
-//   4-5: visitor orientation — "what is this?" + "is it free?"
-//   6:   buyer — contacting a business
-//   7:   visitor/buyer curiosity — the "neighbor's kitchen" section
-//   8:   seller follow-up — how long until their business is approved
-// Dropped: "איך מדווחים על בעיה?" (later-stage concern, not a first-visit Q).
+//   1-2: canonical hardcoded answers (see HARDCODED_ANSWERS)
+//   3-4: visitor orientation — "what is this?" + "is it free?"
+//   5:   buyer — contacting a business
+//   6:   seller follow-up — how long until their business is approved
+// Dropped: "איך מדווחים על בעיה?" (later-stage concern, not a first-visit Q);
+// "מהמטבח של השכן" / "מוצר ביתי" prompts (feature removed, MEH-133).
 const SUGGESTED_PROMPTS = [
   "איך נרשמים כבעלת עסק?",
   "איך מוצאים עסקים קרובים אליי?",
-  "איך מפרסמים מוצר ביתי?",
   "מה זה מהמקור?",
   "האם האתר בחינם?",
   "איך יוצרים קשר עם בית עסק?",
-  'מה זה "מהמטבח של השכן"?',
   "כמה זמן לוקח האישור של העסק?",
 ];
 
-// Hardcoded answers for the three canonical suggested prompts.
+// Hardcoded answers for the two canonical suggested prompts.
 // Clicking one of these returns an instant, consistent, free response —
 // no API call, no model drift, no Anthropic cost. Freeform questions
-// (including any of the 5 other suggested prompts that aren't in this
+// (including any of the 4 other suggested prompts that aren't in this
 // map) still go to Claude Haiku via POST /chat, which uses the matching
 // knowledge-base sections in backend/app/routers/chat.py::SYSTEM_PROMPT
 // so the answers stay consistent with these canonical ones.
@@ -72,8 +69,6 @@ const HARDCODED_ANSWERS = {
     "נרשמות דרך טופס פשוט בן 3 שלבים — חינם לגמרי! 🎉\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
     "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשי לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בעלת העסק 😊",
-  "איך מפרסמים מוצר ביתי?":
-    "נכנסי לעמוד 'מהמטבח של השכן', לחצי על 'פרסמי מוצר', מלאי את הטופס — וזהו! 🎉\nהצוות שלנו בודק את המוצר שלך ומאשר אותו בדרך כלל תוך שעות ספורות, ואז הוא מופיע בדף. הכתובת המדויקת שלך לא נחשפת — רק העיר והשכונה.",
 };
 
 export default function ChatWidget() {
@@ -273,7 +268,7 @@ export default function ChatWidget() {
               <div className="flex flex-col gap-2 pt-1">
                 {SUGGESTED_PROMPTS.map((p) => (
                   <button key={p} type="button" onClick={() => sendMessage(p)}
-                    className="text-right text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                    className="text-start text-xs text-primary bg-green-50 hover:bg-green-50/70 border border-border rounded-[8px] px-3 py-2 transition focus-visible:ring-2 focus-visible:ring-primary/40"
                   >{p}</button>
                 ))}
               </div>

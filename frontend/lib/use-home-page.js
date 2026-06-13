@@ -13,6 +13,7 @@ import { buildChipParams } from "@/lib/producer-filters";
 import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
+import { selectFeaturedProducer } from "@/lib/featured-producer";
 
 const PAGE_SIZE = 8;
 // MEH-521: minimum approved count before showing numeric stats.
@@ -47,7 +48,6 @@ export function useHomePage() {
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
   const router = useRouter();
   const [producers, setProducers] = useState([]);
-  const [homeProducts, setHomeProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
   // sessionStorage) are read in the initial useEffect below to avoid React
@@ -131,12 +131,6 @@ export function useHomePage() {
     const initChipParams = buildChipParams(initChips);
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
-    // Home-kitchen preview — just the 3 most recent, no filter.
-    // Full browse + filter lives on /neighbor.
-    api
-      .get("/home-products")
-      .then((r) => setHomeProducts(r.data))
-      .catch(() => setHomeProducts([]));
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
     // true and the skeleton dismisses — empty result hides the section
     // (showStatsCounter/showStatsFallback both false), which is the same
@@ -321,13 +315,18 @@ export function useHomePage() {
     .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 4);
 
+  // MEH-542: light up §10 "Meet a Producer" from a real producer — reuse the
+  // existing is_recommended flag (zero schema / zero new endpoint). Pure
+  // selection + mapping lives in lib/featured-producer.js (unit-tested);
+  // null ⇒ §10 self-hides (HomeStaticBlocks.jsx:199), no fictional content.
+  const featuredProducer = selectFeaturedProducer(producers);
+
   return {
     // i18n + auth
     t,
     user,
     // raw state
     producers,
-    homeProducts,
     categories,
     filters,
     chips,
@@ -355,6 +354,7 @@ export function useHomePage() {
     showStatsCounter,
     showStatsFallback,
     newestProducers,
+    featuredProducer,
     // handlers
     handleNearMe,
     handleCitySelected,

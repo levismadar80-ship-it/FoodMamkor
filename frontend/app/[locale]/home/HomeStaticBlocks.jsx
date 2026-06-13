@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf, House } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import HomeProductCard from "@/components/HomeProductCard";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 // PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
 // Tag display labels resolve via home.marquee.* — preserving the order
@@ -61,31 +61,76 @@ export function HomeMarquee() {
 }
 
 /**
- * FOUNDER QUOTE CARD (LAUNCH_CHECKLIST fix 4)
- * Hand-off between the abstract category grid and the concrete
- * producer grid. Establishes personal voice before browse mode.
+ * FEATURE BAND (S14 · MEH-788 Phase-3) — position 06 "texture moment".
+ * The editorial hand-off (quote → /about) restyled as the background-alt step
+ * that breaks the typography run: hand-cut seams both ends, quote at start,
+ * framed 3:2 IMG-03 plate + offset panel at end (5/7 grid desktop, stacked
+ * mobile). Copy is UNCHANGED (existing home.founder_quote.* — the S14 copy Δ
+ * reconciliation is separate/pending).
  */
+// MEH-788 IMG-03: produce shot for the §06 feature-band plate. Portrait source
+// (3732×4089) smart-cropped to the band's 3:2 via c_fill,g_auto (the helper) —
+// g_auto frames the produce instead of center-slicing. f_auto,q_auto + width
+// cap through optimizeCloudinary. REUSES: HomeFeaturedProducer (ar + g_auto).
+const FEATURE_IMAGE = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/home/feature-produce.jpg",
+  { aspectRatio: "3:2", width: 1000 },
+);
+
 export function HomeFounderQuote() {
   const t = useTranslations();
   return (
-    <FadeInSection className="max-w-4xl mx-auto px-4 mb-8">
-      <Link
-        href="/about"
-        className="group flex items-center gap-6 bg-white rounded-[20px] border border-border p-6 md:p-8 hover:shadow-[0_4px_24px_rgba(46,104,83,0.08)] transition focus-visible:ring-2 focus-visible:ring-primary/40"
-      >
-        <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center shrink-0" aria-hidden="true">
-          <Leaf size={36} weight="duotone" className="text-primary" />
+    <>
+      {/* hand-cut seam — cream → background-alt (DS gesture №4, globals.css) */}
+      <div className="seam-cut" aria-hidden="true" />
+      <section className="bg-background-alt">
+        <div className="max-w-6xl mx-auto px-4 md:px-12 py-12 md:py-16">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
+            {/* quote — start (5 cols) */}
+            <FadeInSection className="md:col-span-5">
+              {/* gold rule marker (decorative — no new copy) */}
+              <span className="block w-10 h-px bg-accent mb-4" aria-hidden="true" />
+              <Link
+                href="/about"
+                className="group block focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
+              >
+                <p className="font-headline-md italic text-text text-xl md:text-2xl leading-relaxed mb-2">
+                  &ldquo;{t("home.founder_quote.text")}&rdquo;
+                </p>
+                <p className="font-body-md text-sm text-primary group-hover:underline">
+                  {t("home.founder_quote.attribution")}
+                </p>
+              </Link>
+            </FadeInSection>
+
+            {/* IMG-03 plate — end (7 cols). Framed 3:2 inset: warm-white mat +
+                hairline + an offset cream panel behind it (depth by overlap,
+                zero shadows). MEH-788: the real produce shot is now wired
+                (FEATURE_IMAGE); the background-alt tone stays as the <img>'s
+                own backdrop so a slow load shows the plate, never a void. */}
+            <FadeInSection className="md:col-span-7" delay={0.1}>
+              <figure className="relative m-0">
+                <div
+                  className="absolute -bottom-3 -end-3 w-full h-full rounded-lg bg-background border border-border"
+                  aria-hidden="true"
+                />
+                <div className="relative rounded-lg bg-surface-card border border-border p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- raw <img>: this is a decorative editorial plate, not LCP content; next/image's fill wrapper would fight the 3:2 aspect box */}
+                  <img
+                    src={FEATURE_IMAGE}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-[3/2] w-full rounded-md object-cover bg-background-alt"
+                  />
+                </div>
+              </figure>
+            </FadeInSection>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="font-headline-md italic text-text text-lg md:text-xl leading-relaxed mb-2">
-            &ldquo;{t("home.founder_quote.text")}&rdquo;
-          </p>
-          <p className="font-body-md text-sm text-primary group-hover:underline">
-            {t("home.founder_quote.attribution")}
-          </p>
-        </div>
-      </Link>
-    </FadeInSection>
+      </section>
+      {/* hand-cut seam — background-alt → cream */}
+      <div className="seam-cut flip" aria-hidden="true" />
+    </>
   );
 }
 
@@ -138,42 +183,97 @@ export function HomeRecentlyViewed({ items }) {
 }
 
 /**
- * DEFERRED home-product preview (max 3). Hidden until MEH-543 launch.
- * Full browse at /neighbor.
- * Hidden entirely when the products list is empty.
+ * MEET A PRODUCER (P5 §10) — MEH-542, Direction A · split (design pass lock).
+ * A magazine feature on ONE בית עסק — photo beside an editorial story, larger
+ * and warmer than a ProducerCard (that stays the grid unit).
+ *
+ * Data-driven by design: `featured` is an editorial object authored per
+ * feature — null/missing ⇒ the section renders NOTHING (the prod state until
+ * a real business is featured). No fictional placeholder content ships; the
+ * design's persona example copy stays in the freeze file only. Frame copy
+ * (eyebrow / heading / CTA patterns) is locked from the freeze via
+ * home.featured.*.
+ *
+ * @param {?{
+ *   quote: string,        // feature headline — display line, no terminal period
+ *   story: string,        // short narrative paragraph (body prose, keeps periods)
+ *   name: string,         // first name — interpolated into both CTAs
+ *   attribution: string,  // "שם מלא · עסק, עיר" meta line (middle-dot rhythm)
+ *   category?: string,
+ *   city?: string,
+ *   photo?: string,       // Cloudinary URL — helper applies f_auto,q_auto
+ *   href?: string,        // producer-page target; meet-CTA hidden without it
+ *   writeHref?: string,   // WhatsApp target; write-CTA hidden without it
+ * }} props.featured
  */
-export function HomeKitchenPreview({ products, onWhatsAppClick }) {
-  const t = useTranslations();
-  if (!products.length) return null;
+export function HomeFeaturedProducer({ featured }) {
+  const t = useTranslations("home.featured");
+  if (!featured) return null;
+  const photo = featured.photo
+    ? optimizeCloudinary(featured.photo, { aspectRatio: "5:6", width: 900 })
+    : null;
+  const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <section
-      id="home-kitchen"
-      className="max-w-7xl mx-auto px-4 section-y border-t border-border scroll-mt-24"
-    >
-      <div className="flex items-baseline justify-between mb-6">
-        <h2
-          className="font-headline-md font-bold text-text inline-flex items-center gap-2"
-          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
-        >
-          <House size={32} weight="duotone" className="text-primary" aria-hidden="true" />
-          {t("home.kitchen.heading")}
-        </h2>
-        <Link
-          href="/neighbor"
-          className="text-primary hover:underline text-sm font-medium whitespace-nowrap"
-        >
-          {t("home.kitchen.see_more")}
-        </Link>
-      </div>
+    <section className="max-w-6xl mx-auto px-4 md:px-12 section-y">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
+        {/* photo — leading/start column (Direction A: image leads, 5:6) */}
+        <FadeInSection className="md:col-span-5">
+          <figure className="relative m-0 rounded-lg bg-surface-card border border-border p-2">
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photo}
+                alt={featured.name}
+                loading="lazy"
+                className="aspect-[5/6] w-full rounded-md object-cover"
+              />
+            ) : (
+              // tonal plate fallback — never a broken <img> (IMG-01 pattern)
+              <div className="aspect-[5/6] rounded-md bg-background-alt" aria-hidden="true" />
+            )}
+          </figure>
+        </FadeInSection>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.slice(0, 3).map((hp) => (
-          <HomeProductCard
-            key={hp.id}
-            product={hp}
-            onWhatsAppClick={() => onWhatsAppClick(hp.id)}
-          />
-        ))}
+        {/* editorial text — end column */}
+        <FadeInSection className="md:col-span-7" delay={0.1}>
+          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-1">{t("eyebrow")}</p>
+          <h2 className="font-headline-md text-xl font-bold text-text mb-4">{t("heading")}</h2>
+          {meta && <p className="text-sm text-fg-muted mb-3">{meta}</p>}
+          <p
+            className="font-headline-lg font-bold text-text leading-snug mb-4"
+            style={{ fontSize: "clamp(24px, 3vw, 36px)" }}
+          >
+            {featured.quote}
+          </p>
+          {featured.story && (
+            <p className="text-text/85 leading-relaxed mb-5 max-w-xl">{featured.story}</p>
+          )}
+          {featured.attribution && (
+            <p className="text-sm text-fg-muted mb-6">{featured.attribution}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-4">
+            {featured.href && (
+              <Link
+                href={featured.href}
+                className="inline-block bg-primary text-white px-6 py-2.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
+              >
+                {t("cta_meet", { name: featured.name })}
+              </Link>
+            )}
+            {featured.writeHref && (
+              <a
+                href={featured.writeHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline decoration-accent underline-offset-4 hover:text-primary-dark transition"
+              >
+                {t("cta_write", { name: featured.name })}
+              </a>
+            )}
+          </div>
+        </FadeInSection>
       </div>
     </section>
   );
@@ -188,6 +288,11 @@ export function HomeHowItWorks() {
     // id="how-it-works" — anchor target for the hero "איך זה עובד" link (MEH-643).
     <section id="how-it-works" className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection>
+        {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
+            ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("home.how_it_works.eyebrow")}
+        </p>
         <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.how_it_works.heading")}
         </h2>
@@ -209,6 +314,56 @@ export function HomeHowItWorks() {
   );
 }
 
+// MEH-525: row key order is the locked editorial order — do not re-sort.
+const COMPARISON_ROWS = ["row1", "row2", "row3"];
+
+/**
+ * COMPARISON STRIP — MEH-525 (copy LOCK 2026-06-13). Sits between How It
+ * Works and the For Business CTA. Two columns (סופר | מהמקור), 3 rows,
+ * S4 voice: cream page surface, hairline borders only, gold accent on the
+ * brand column — F1 flat, no shadows. Static, prop-free.
+ */
+export function HomeComparison() {
+  const t = useTranslations("home.comparison");
+  return (
+    <section className="max-w-7xl mx-auto px-4 section-y">
+      <FadeInSection>
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          {t("eyebrow")}
+        </p>
+        <h2
+          className="font-headline-lg font-bold text-text text-center mb-10"
+          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+        >
+          {t("heading")}
+        </h2>
+      </FadeInSection>
+      <FadeInSection>
+        <div className="max-w-3xl mx-auto border-y border-border divide-y divide-border" role="table" aria-label={t("heading")}>
+          <div role="row" className="grid grid-cols-2">
+            <div role="columnheader" className="py-3 pe-4 text-sm font-medium text-fg-muted">
+              {t("col_super")}
+            </div>
+            <div role="columnheader" className="py-3 ps-4 text-sm font-medium text-accent border-s border-border">
+              {t("col_brand")}
+            </div>
+          </div>
+          {COMPARISON_ROWS.map((row) => (
+            <div key={row} role="row" className="grid grid-cols-2">
+              <div role="cell" className="py-5 pe-4 text-fg-muted leading-relaxed">
+                {t(`${row}_super`)}
+              </div>
+              <div role="cell" className="py-5 ps-4 text-text font-medium leading-relaxed border-s border-border">
+                {t(`${row}_brand`)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </FadeInSection>
+    </section>
+  );
+}
+
 /**
  * CTA — "הוסיפי את העסק שלך". Static, prop-free.
  */
@@ -220,8 +375,16 @@ export function HomeCTA() {
         <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
+        {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
+            then curation, then the closing nudge) — body prose keeps periods. */}
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l1")}
+        </p>
+        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+          {t("home.cta.body_l2")}
+        </p>
         <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
-          {t("home.cta.body")}
+          {t("home.cta.body_l3")}
         </p>
         <Link
           href="/register/producer"

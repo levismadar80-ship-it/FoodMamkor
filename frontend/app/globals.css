@@ -28,6 +28,71 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
+/* ── MEH-788 S14 — texture primitives (CSS utility layer; the hex-token set
+   can't carry alpha gradients / masks — same rationale as the MEH-136 motion
+   utils above). Photography+Texture Hybrid (S14). No new hues. ───────────── */
+
+/* `--scrim-ink` (S14): contrast scrim for the hero text band. Warm ink =
+   rgb(28 26 23) ≡ the `text` token #1c1a17 (brand warmth, not pure black).
+   S14 hero discipline: ONLY H1 + subtitle ride this — the search card + CTAs
+   sit on cream below. MEH-788: the hero photo is now shorter (so the seam
+   search + primary CTA clear the laptop fold), which rides the 2-line H1
+   higher up the photo — so the dark band was extended (α ≥ .60 through 70%)
+   to hold AA at that height; the top ~30% still reveals produce.
+   AA (worst case = a blown-white highlight under the text): H1 top line
+   (~65% up on the shortest 380px desktop photo, α ≈ .65) ≈ 5.3:1 ≥ 4.5;
+   subtitle (lower, α ≥ .80) ≫ 6:1. Re-verify on the real hero-produce crop. */
+.scrim-ink {
+  background-image: linear-gradient(
+    to top,
+    rgb(28 26 23 / 0.88) 0%,
+    rgb(28 26 23 / 0.84) 46%,
+    rgb(28 26 23 / 0.60) 70%,
+    rgb(28 26 23 / 0.22) 88%,
+    rgb(28 26 23 / 0) 100%
+  );
+}
+
+/* `.seam-cut` (S14 DS gesture №4): a hand-cut paper deckle bridging a
+   cream ↔ background-alt section transition — the cream folds, nothing
+   floats. A thin divider strip (no asset, no shadow): solid background-alt
+   (#ede4d2 ≡ the `background-alt` token) with a torn TOP edge (~4px), so the
+   cream above shows through the tears; the alt section continues below it.
+   `.seam-cut.flip` mirrors it (scaleY) for the bottom edge of an alt block.
+   Decorative — always aria-hidden. */
+.seam-cut {
+  height: 13px;
+  margin-bottom: -1px;
+  background-repeat: repeat-x;
+  background-position: center bottom;
+  background-size: 40px 13px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='13'%3E%3Cpath d='M0,13 L40,13 L40,5 L36,7 L32,4 L28,6 L24,3 L20,6 L16,4 L12,7 L8,4 L4,6 L0,5 Z' fill='%23ede4d2'/%3E%3C/svg%3E");
+}
+.seam-cut.flip {
+  margin-bottom: 0;
+  margin-top: -1px;
+  transform: scaleY(-1);
+}
+
+/* ── MEH-788 — global reduced-motion off-switch (CSS layer) ────────────────
+   The site-wide kill for CSS-driven motion: every transition + animation
+   collapses to ~instant and smooth scrolling is disabled. Complements the
+   <MotionConfig reducedMotion="user"> at the layout root, which handles the
+   JS layer (framer-motion / FadeInSection reveals). Near-zero (not 0) keeps
+   transition/animation -end events firing so JS state machines don't stall.
+   Kenburns + marquee keep their own `animation: none` rules below; this is
+   the catch-all for everything else (hover transitions, fades, etc.). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* MEH-763: LTR-isolate numerals/ranges on RTL surfaces (counts, prices,
    distances, ratings) so digits + separators don't reorder under bidi. */
 .numeric { unicode-bidi: isolate; }
@@ -57,7 +122,7 @@ body {
      at 3% opacity. Adds organic "texture" without affecting legibility.
      Inline SVG keeps it CSS-only (no extra HTTP request). */
   background-color: #F5F0E8;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
   color: #1C1A17;
 }
 
