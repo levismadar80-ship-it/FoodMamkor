@@ -13,6 +13,7 @@ import { buildChipParams } from "@/lib/producer-filters";
 import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
+import { selectFeaturedProducer } from "@/lib/featured-producer";
 
 const PAGE_SIZE = 8;
 // MEH-521: minimum approved count before showing numeric stats.
@@ -314,30 +315,11 @@ export function useHomePage() {
     .toSorted((a, b) => (b.created_at || "").localeCompare(a.created_at || ""))
     .slice(0, 4);
 
-  // MEH-542: light up §10 "הכירו בית עסק" from a real producer — reuse the
-  // existing is_recommended ("מומלץ") editorial flag, zero schema / zero new
-  // endpoint. Feature the first recommended producer carrying a usable
-  // short_description (the magazine pull-quote); none ⇒ null ⇒ §10 self-hides
-  // (HomeStaticBlocks.jsx:199). No fictional content ever ships. attribution
-  // is intentionally omitted — redundant with the component's name · category,
-  // city meta line (HomeStaticBlocks.jsx:231).
-  // REUSES: frontend/components/ProducerCard.jsx:185 — slug→/[slug] href rule.
-  const featuredSource = producers.find(
-    (p) => p.is_recommended && (p.short_description || "").trim(),
-  );
-  const featuredProducer = featuredSource
-    ? {
-        name: featuredSource.name,
-        city: featuredSource.city,
-        category: featuredSource.categories?.[0]?.name,
-        photo: featuredSource.images?.[0],
-        quote: featuredSource.short_description.trim(),
-        story: (featuredSource.description || "").trim(),
-        href: featuredSource.slug
-          ? `/${featuredSource.slug}`
-          : `/producer/${featuredSource.id}`,
-      }
-    : null;
+  // MEH-542: light up §10 "Meet a Producer" from a real producer — reuse the
+  // existing is_recommended flag (zero schema / zero new endpoint). Pure
+  // selection + mapping lives in lib/featured-producer.js (unit-tested);
+  // null ⇒ §10 self-hides (HomeStaticBlocks.jsx:199), no fictional content.
+  const featuredProducer = selectFeaturedProducer(producers);
 
   return {
     // i18n + auth
