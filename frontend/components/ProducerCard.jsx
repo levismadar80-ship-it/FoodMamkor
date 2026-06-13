@@ -364,6 +364,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           )}
           {MethodIcon && (
             <span
+              role="img"
               className="inline-flex items-center text-primary shrink-0"
               aria-label={t("producer.card.aria.primary_contact", { method: METHOD_LABEL_KEY[primaryMethod] ? t(METHOD_LABEL_KEY[primaryMethod]) : "WhatsApp" })}
               data-testid="primary-method-hint"

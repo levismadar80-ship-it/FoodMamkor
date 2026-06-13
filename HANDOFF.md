@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-13 — MEH-230 (4/7) a11y audit + axe regression net (DRAFT)
+
+Report + axe-net only — **no UI/brand/focus fixes**, no sub-MEHs (per task scope). Branch `feature/meh-230-audit-a11y` cut off `origin/staging` (harness created the worktree branch off `main` — known CC bug #24516, 222-commit divergence — reset clean onto `origin/staging` before any work; `git reset --hard` was sandbox-denied so used `checkout -B` + branch delete/rename).
+
+- **Audit (8 vectors, 211 files):** **0 CRITICAL, 0 SERIOUS.** Codebase already has strong a11y hygiene (icon buttons all `aria-label`'d, 4 of 9 modals fully implement dialog+ESC+focus-trap, RTL uses logical props with documented `rtl-ok` exceptions that STAY). **31 MODERATE + 9 MINOR/INFO.** MODERATE = 8 contrast pairs below 4.5:1 (`text-accent` 4.48, `text-honey` 3.15/2.78, `green-300` 2.93/2.58, footer placeholder `white/40` 3.51) + 19 `outline-none`/border-only focus removals + 1 unlabeled input (`CategorySelector.jsx:31`) + 4 partial-modal gaps (`CityPickerModal` has none of dialog/ESC/trap; `ChatWidget`/`InstallPrompt` `aria-modal="false"` on a dialog role; `CategoryRequestModal` no focus trap). Full file:line evidence + Top-20 → `docs/audits/2026-06-13-a11y.md`.
+- **Axe net:** `frontend/e2e/flows/12-axe-a11y.spec.ts` — loads `/ /producers /producer/[id] /map /login /register`, asserts **0 critical/serious** (moderate/minor logged, not gated). `/producer/[id]` resolves a real producer via the `03-view-producer-detail` pattern (graceful skip if staging DB empty).
+- **Dep:** `@axe-core/playwright@^4.11.3` (dev) → resolves `axe-core@4.11.4` (patch within existing 4.11.x — **no major bumps**; peer `playwright-core >= 1.0.0` satisfied by `@playwright/test` 1.60.0). package.json + lockfile updated.
+- **Verify:** `npm run build` ✅; `tsc --noEmit -p .` ✅ (no spec errors); local `npm run start` serves `/` + `/login` 200. **Axe spec NOT run locally** — Chromium download blocked by sandbox egress (CLAUDE.md MEH-360 limitation); spec executes in CI (`e2e.yml`, Vercel preview, has the browser binary). Not claimed as passed.
+- **Docs:** new `docs/ACCESSIBILITY.md` (8 standing rules + how-to-run + tighten-the-gate note).
+- **Pending:** Sapir review + CI axe run. MODERATE backlog (contrast palette, focus indicators, modal semantics) intentionally deferred — not gated by the net so it stays green today and catches future critical/serious regressions.
 ## 2026-06-12 — MEH-794 backend /neighbor cleanup (chat.py KB + profile_strength) — narrowed after Phase 0
 
 **Branch `feature/meh-794-backend-neighbor-cleanup`** off `origin/staging` (which now contains #1050 — MEH-793 frontend merged). **Phase 0 found the ticket premise wrong:** `/home-products` is NOT a dead endpoint — it's a live subsystem (6 admin moderation endpoints, 24h rating-SMS background job, GDPR account-deletion cascade `auth.py:1280-1294`, AI-moderation service, Cloudinary-cleanup script, **3 DB tables**). Full removal is RED (DROP TABLE deny-listed + ADR-007 Expand-Contract) → **split to MEH-796** (Sapir approved narrowing).
