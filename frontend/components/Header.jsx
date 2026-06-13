@@ -84,9 +84,10 @@ export default function Header() {
   // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
   // MEH-734: same callback also drives the smart-sticky hide flag —
   // direction-tracked off the existing 60px threshold (no second constant,
-  // no second listener). At/above the threshold, while the mobile drawer is
-  // open, or while focus is inside the header, the pill stays visible; past
-  // it, scrolling down hides and any scroll up reveals.
+  // no second listener). At/above the threshold, or while focus is inside the
+  // header, the pill stays visible; past it, scrolling down hides and any
+  // scroll up reveals. (MEH-789 PR-B removed the mobile drawer, so there's no
+  // drawer-open state left to pin against.)
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
@@ -95,7 +96,7 @@ export default function Header() {
         const past = y >= 60;
         setScrolled(past);
         const focusWithin = headerRef.current?.contains(document.activeElement);
-        if (!past || menuOpen || focusWithin) setHidden(false);
+        if (!past || focusWithin) setHidden(false);
         else if (y > lastYRef.current) setHidden(true);
         else if (y < lastYRef.current) setHidden(false);
         lastYRef.current = y;
@@ -112,7 +113,7 @@ export default function Header() {
       window.removeEventListener("scroll", onScroll);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
-  }, [menuOpen]);
+  }, []);
 
   // Press "/" outside an input to open search.
   useEffect(() => {
