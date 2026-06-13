@@ -104,11 +104,23 @@ needed — a new `NN-*.spec.ts` under `e2e/flows/` is auto-discovered by
 > post-preview; treat a red axe run as a real a11y regression to fix, not a
 > merge blocker by policy.
 
+### What the gate ignores today (`GATE_IGNORE_RULES`)
+
+axe rates `color-contrast` and `link-in-text-block` as **serious**, but these
+are the site-wide contrast/brand-palette backlog the audit classifies MODERATE
+and defers (Vector 5/6 — brand-color change out of scope). The footer's
+low-contrast links/copy trip them on every route, so the spec lists both rule
+IDs in `GATE_IGNORE_RULES`: they're still reported to the console, just not
+gated. Without this the net would be red on day one and mask genuine new
+critical/serious regressions.
+
 ### Tightening the gate later
 
-To gate `moderate` too, add `"moderate"` to `GATE_IMPACTS` in the spec — only
-after the MODERATE backlog in the audit doc (contrast palette + 19 focus-
-indicator removals) is burned down, or the routes will go red.
+Two levers, both in `12-axe-a11y.spec.ts`: (1) remove a rule from
+`GATE_IGNORE_RULES` once its backlog (contrast palette + the 19 focus-indicator
+removals) is burned down; (2) add `"moderate"` to `GATE_IMPACTS` to gate the
+moderate tier. Do either only after the corresponding backlog in the audit doc
+is cleared, or the routes will go red.
 
 ### Dependency
 

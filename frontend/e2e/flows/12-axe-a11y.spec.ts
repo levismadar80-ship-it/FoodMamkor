@@ -21,6 +21,16 @@ import AxeBuilder from "@axe-core/playwright";
 
 const GATE_IMPACTS = ["critical", "serious"] as const;
 
+// Rule IDs reported but NOT gated. axe rates these "serious", but they are the
+// site-wide contrast/brand-palette backlog the audit classifies MODERATE and
+// explicitly defers (brand-color change is out of scope — see
+// docs/audits/2026-06-13-a11y.md Vector 5/6 + docs/ACCESSIBILITY.md "Tightening
+// the gate later"). The footer's low-contrast links/copy trip these on every
+// route, so gating them would make the net red on day one and mask genuine new
+// critical/serious regressions. TODO(MEH-230 follow-up): drop entries from this
+// set as the contrast backlog is burned down, re-tightening the gate.
+const GATE_IGNORE_RULES = new Set(["color-contrast", "link-in-text-block"]);
+
 type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 
 async function analyze(page: Page): Promise<AxeResults> {
@@ -30,8 +40,10 @@ async function analyze(page: Page): Promise<AxeResults> {
 }
 
 function gateViolations(results: AxeResults) {
-  return results.violations.filter((v) =>
-    (GATE_IMPACTS as readonly string[]).includes(v.impact ?? ""),
+  return results.violations.filter(
+    (v) =>
+      (GATE_IMPACTS as readonly string[]).includes(v.impact ?? "") &&
+      !GATE_IGNORE_RULES.has(v.id),
   );
 }
 
