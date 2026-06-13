@@ -15,6 +15,22 @@ Report + axe-net only — **no UI/brand/focus fixes**, no sub-MEHs (per task sco
 - **Verify:** `npm run build` ✅; `tsc --noEmit -p .` ✅ (no spec errors); local `npm run start` serves `/` + `/login` 200. **Axe spec NOT run locally** — Chromium download blocked by sandbox egress (CLAUDE.md MEH-360 limitation); spec executes in CI (`e2e.yml`, Vercel preview, has the browser binary). Not claimed as passed.
 - **Docs:** new `docs/ACCESSIBILITY.md` (8 standing rules + how-to-run + tighten-the-gate note).
 - **Pending:** Sapir review + CI axe run. MODERATE backlog (contrast palette, focus indicators, modal semantics) intentionally deferred — not gated by the net so it stays green today and catches future critical/serious regressions.
+## 2026-06-12 — MEH-794 backend /neighbor cleanup (chat.py KB + profile_strength) — narrowed after Phase 0
+
+**Branch `feature/meh-794-backend-neighbor-cleanup`** off `origin/staging` (which now contains #1050 — MEH-793 frontend merged). **Phase 0 found the ticket premise wrong:** `/home-products` is NOT a dead endpoint — it's a live subsystem (6 admin moderation endpoints, 24h rating-SMS background job, GDPR account-deletion cascade `auth.py:1280-1294`, AI-moderation service, Cloudinary-cleanup script, **3 DB tables**). Full removal is RED (DROP TABLE deny-listed + ADR-007 Expand-Contract) → **split to MEH-796** (Sapir approved narrowing).
+
+**Done (this PR, code-only):** (1) **chat.py** — stripped all neighbor/home-cook content from `SYSTEM_PROMPT` KB + stale prompt instructions; bot no longer answers "מה זה מהמטבח של השכן?". (2) **profile_strength** (`producer_me.py:644`) — removed home-product 25% weight, redistributed +5 across 5 signals (image 20·desc 25·delivery 15·review 20·phone 20 = 100); full profile reaches 100 again. +2 regression tests (`test_analytics.py`). ruff clean, py_compile clean.
+
+**Pending / next:** (a) **pytest deferred to CI** — no local Postgres (`password authentication failed`, MEH-360 sandbox class); CI provisions a Postgres service. Watch the `Backend tests (pytest)` check on the PR. (b) DRAFT PR → Sapir review. Backend-only + tests → can merge on green CI without mobile QA (Rule 23 exempts backend). (c) **MEH-796** (RED) decommissions the `home_products` subsystem + drops the 3 tables (Smadar runs the migration) — land after this + #1050. (d) taxonomy `מוצרים ביתיים` rename still a separate sibling, untouched. ⚠️ Coupling: do NOT deploy this between #1050 and itself — both merged → strength bar consistent.
+## 2026-06-13 — MEH-296 Chunk 1+2 (backend) merged to staging (PR #1095, squash `53a832c`)
+
+**Done:** two nullable producer contact channels — `facebook` (200) + `external_order_form` (500), migration `7346235e318b` (expand-only, down_revision `c1d2e3f4a5b6`). Exposed on `ProducerUpdate` / `ProducerDetailOut` (→ `ProducerOwnerOut`) / `_PRODUCER_WRITABLE_FIELDS`. API-boundary hardening: `primary_contact_method` 7-value guard (`whatsapp|phone|instagram|email|website|facebook|external_order`) on **both** `ProducerUpdate` + `ProducerRegister`; http(s)-only URL scheme guard on website/facebook/external_order_form (ProducerUpdate) + website (ProducerRegister) — also closes the pre-existing `website` `javascript:`/`data:` XSS gap (MEH-329). +5 pytest. All 6 required checks green; merged on Sapir's explicit MERGE.
+
+**⚠️ Migration ownership:** schema applied to the staging/prod DB **by Sapir via Railway Console** (`alembic upgrade head` → `7346235e318b`), NOT by CI/CD. Migrate-BEFORE-deploy: the deployed ORM `SELECT`s the new columns, so producer endpoints 500 until they exist. Same ordering for prod when staging→main.
+
+**Pending / next:** (a) **Chunk 3 — frontend** (register-wizard facebook field + producer-edit form + contact-CTA rendering for `facebook` / `external_order`); MEH-296 left OPEN (PR body says "Part of", no `Closes`). (b) **docs/DATA.md + .ai/diagrams/db-schema.md** NOT yet updated for the 2 columns — needs a PR (outside the HANDOFF/CHANGELOG direct-commit carve-out); fold into Chunk 3 or a quick docs PR. (c) `ProducerAdminCreate` still lacks the `primary_contact_method` guard (deferred by decision).
+
+**Decisions this session:** (1) Chunk-1 scope reconciled to `facebook` (mockup) + `external_order_form` (spec); spec's other proposed columns deferred (email/website already exist as contact_email/website). (2) URL fields stay `str | None` (no Pydantic `HttpUrl` — would change response types repo-wide); scheme-guard validator instead. (3) One-time documented exception: the migration file was authored via GitHub API `push_files` and the `EXPECTED_REV` bump by Sapir, because `backend/alembic/versions/**` + `.github/workflows/**` are L1 Edit/Write/**Bash**-denied — the deny boundary held against conversational authorization (security.md confirmed; meta-pattern #4 "never silently bypass").
 
 ## 2026-06-13 — MEH-258 security checklist: close the template-03 gap (DRAFT)
 
@@ -2737,3 +2753,46 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 
 | Ended (UTC)       | Branch                              | SHA       | Closes      | Reason |
 |-------------------|-------------------------------------|-----------|-------------|--------|
+
+---
+
+## Session — MEH-232 (6/7) Hebrew copy consistency audit (2026-06-13)
+
+**Branch:** `feature/meh-232-audit-copy` (from `staging`). Report-only — no
+frontend/copy edits, no DESIGN.md edits, no sub-MEHs opened.
+
+**Deliverables (both NEW):**
+- `docs/audits/2026-06-13-copy.md` — 7-vector audit, findings tables, OPEN
+  QUESTIONS, out-of-scope flags, Top-10 sub-MEH triage list. Counts/line-nums
+  verified against `origin/staging`.
+- `docs/COPY_STYLE.md` — copy SoT: masc→fem verb table, producer-term rules,
+  בית-עסק vs בעלת-עסק distinction, canonical spellings (PENDING Sapir for
+  WhatsApp/email), RTL-arrow rule (PENDING Sapir).
+
+**Finding counts:** V1 producer-terms = 3 (2 user-facing push notifs in
+`worker/index.js`); V2 arrows = 38 `←` (+ `→` already used ~26× → consistency
+decision); V3 masc verbs = 19; V4 = 2 spelling clusters (OPEN QUESTIONS);
+V5 placeholders = 0; V6 toasts = 0; V7 CTAs = 19 (overlaps V3).
+
+**OPEN QUESTIONS for Sapir (no guess made):**
+1. WhatsApp canonical: `וואטסאפ` (12×) vs `ווטסאפ` (11×) — even split + Latin
+   `WhatsApp` usage policy.
+2. Email canonical: `אימייל` (33×) vs `מייל` (~51×).
+3. Arrow direction: `←` (32×) vs `→` (~26×) used for the SAME affordance —
+   pick RTL-aware vs flat house style before any piecemeal fix.
+
+**Out-of-scope flags (report-only):** `מתווכת` in ToS is correct (disclaimer,
+not positioning); `marketplace` contrastive use at `he.json:2967` flagged for
+Sapir; `אוכל אמיתי` is approved brand copy.
+
+**Next:** Sapir resolves OQ1/2/3 → a follow-up sub-MEH normalizes `he.json`
+(the single highest-leverage file) + `worker/index.js`.
+## 2026-06-13 — MEH-229 (3/7) backend security audit (report-only)
+
+- **Branch:** `feature/meh-229-audit-security` (off `staging`).
+- **Output:** `docs/audits/2026-06-13-security.md` — REPORT-ONLY, no code touched.
+- **Result:** 0 CRITICAL / 0 HIGH / 0 MEDIUM / 2 LOW across all 8 vectors (IDOR, rate limits, input validation, secrets, SQLi, file upload, CORS, JWT).
+- **2 LOW:** `ProducerCreate.name` + `ProducerAdminCreate.name` lack explicit Pydantic `max_length` (rely on `String(200)` DB column → >200 char = 500 not 422). Defense-in-depth, not a breach.
+- **Top-5 pre-launch** (none gate launch): set `CORS_ORIGINS` in prod; set `JWT_SECRET_KEY` in prod; add `max_length` to the 2 name fields; confirm `TRUSTED_PROXY=1` on Railway.
+- **Notable:** all CRITICAL-class vectors closed — JWT pins HS256 allowlist (no alg=none), no hardcoded secrets, login rate-limited (5/min), SQL fully parameterized, IDOR ownership checks on every mutation, upload magic-byte validated.
+- **Next:** human reviews draft PR; remediation of the 2 LOW + deploy-config items tracked separately (not in this report-only PR).
