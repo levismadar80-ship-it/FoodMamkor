@@ -30,9 +30,13 @@ export const StatsSchema = z.object({
 });
 
 // GET /users/me/favorites → list[FavoriteOut].
-// The cache only reads producer_id (falls back to id); keep the rest loose.
+// Backend FavoriteOut.producer_id is a required, non-nullable UUID, so it
+// must be present for the parse to succeed — otherwise a payload of empty
+// objects would pass and the guard would be toothless (a malformed
+// response should route to the empty-cache fallback). `id` stays an
+// optional defensive fallback since the cache reads `producer_id ?? id`.
 export const FavoriteSchema = z.object({
-  producer_id: z.union([z.string(), z.number()]).nullable().optional(),
+  producer_id: z.union([z.string(), z.number()]),
   id: z.union([z.string(), z.number()]).nullable().optional(),
 });
 export const FavoritesResponseSchema = z.array(FavoriteSchema);

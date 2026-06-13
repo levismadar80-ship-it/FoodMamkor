@@ -60,16 +60,25 @@ describe("StatsSchema", () => {
 });
 
 describe("FavoritesResponseSchema", () => {
-  it("accepts FavoriteOut rows", () => {
+  it("accepts FavoriteOut rows (UUID producer_id, real backend shape)", () => {
     const result = FavoritesResponseSchema.safeParse([
-      { producer_id: "abc-123", created_at: "2026-01-01T00:00:00Z" },
-      { producer_id: 5 },
+      {
+        producer_id: "550e8400-e29b-41d4-a716-446655440000",
+        created_at: "2026-01-01T00:00:00Z",
+      },
+      { producer_id: "6ba7b810-9dad-11d1-80b4-00c04fd430c8" },
     ]);
     expect(result.success).toBe(true);
   });
 
   it("accepts an empty list", () => {
     expect(FavoritesResponseSchema.safeParse([]).success).toBe(true);
+  });
+
+  it("fails when a row is missing producer_id (toothless-guard regression)", () => {
+    // [{}] used to pass when producer_id was nullable+optional; the tightened
+    // schema must reject it so a malformed payload hits the empty-cache fallback.
+    expect(FavoritesResponseSchema.safeParse([{}]).success).toBe(false);
   });
 
   it("fails when not an array", () => {
