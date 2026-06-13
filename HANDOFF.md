@@ -2739,6 +2739,37 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 
 ---
 
+## Session — MEH-232 (6/7) Hebrew copy consistency audit (2026-06-13)
+
+**Branch:** `feature/meh-232-audit-copy` (from `staging`). Report-only — no
+frontend/copy edits, no DESIGN.md edits, no sub-MEHs opened.
+
+**Deliverables (both NEW):**
+- `docs/audits/2026-06-13-copy.md` — 7-vector audit, findings tables, OPEN
+  QUESTIONS, out-of-scope flags, Top-10 sub-MEH triage list. Counts/line-nums
+  verified against `origin/staging`.
+- `docs/COPY_STYLE.md` — copy SoT: masc→fem verb table, producer-term rules,
+  בית-עסק vs בעלת-עסק distinction, canonical spellings (PENDING Sapir for
+  WhatsApp/email), RTL-arrow rule (PENDING Sapir).
+
+**Finding counts:** V1 producer-terms = 3 (2 user-facing push notifs in
+`worker/index.js`); V2 arrows = 38 `←` (+ `→` already used ~26× → consistency
+decision); V3 masc verbs = 19; V4 = 2 spelling clusters (OPEN QUESTIONS);
+V5 placeholders = 0; V6 toasts = 0; V7 CTAs = 19 (overlaps V3).
+
+**OPEN QUESTIONS for Sapir (no guess made):**
+1. WhatsApp canonical: `וואטסאפ` (12×) vs `ווטסאפ` (11×) — even split + Latin
+   `WhatsApp` usage policy.
+2. Email canonical: `אימייל` (33×) vs `מייל` (~51×).
+3. Arrow direction: `←` (32×) vs `→` (~26×) used for the SAME affordance —
+   pick RTL-aware vs flat house style before any piecemeal fix.
+
+**Out-of-scope flags (report-only):** `מתווכת` in ToS is correct (disclaimer,
+not positioning); `marketplace` contrastive use at `he.json:2967` flagged for
+Sapir; `אוכל אמיתי` is approved brand copy.
+
+**Next:** Sapir resolves OQ1/2/3 → a follow-up sub-MEH normalizes `he.json`
+(the single highest-leverage file) + `worker/index.js`.
 ## 2026-06-13 — MEH-229 (3/7) backend security audit (report-only)
 
 - **Branch:** `feature/meh-229-audit-security` (off `staging`).
