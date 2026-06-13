@@ -68,6 +68,15 @@ export function HomeMarquee() {
  * mobile). Copy is UNCHANGED (existing home.founder_quote.* — the S14 copy Δ
  * reconciliation is separate/pending).
  */
+// MEH-788 IMG-03: produce shot for the §06 feature-band plate. Portrait source
+// (3732×4089) smart-cropped to the band's 3:2 via c_fill,g_auto (the helper) —
+// g_auto frames the produce instead of center-slicing. f_auto,q_auto + width
+// cap through optimizeCloudinary. REUSES: HomeFeaturedProducer (ar + g_auto).
+const FEATURE_IMAGE = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/home/feature-produce.jpg",
+  { aspectRatio: "3:2", width: 1000 },
+);
+
 export function HomeFounderQuote() {
   const t = useTranslations();
   return (
@@ -96,9 +105,9 @@ export function HomeFounderQuote() {
 
             {/* IMG-03 plate — end (7 cols). Framed 3:2 inset: warm-white mat +
                 hairline + an offset cream panel behind it (depth by overlap,
-                zero shadows). FEATURE_ID still pending → tonal fallback inside
-                the mat (never a broken <img>); drop a lazy <img>
-                (optimizeCloudinary, ar 3:2) in the inner frame when it lands. */}
+                zero shadows). MEH-788: the real produce shot is now wired
+                (FEATURE_IMAGE); the background-alt tone stays as the <img>'s
+                own backdrop so a slow load shows the plate, never a void. */}
             <FadeInSection className="md:col-span-7" delay={0.1}>
               <figure className="relative m-0">
                 <div
@@ -106,10 +115,13 @@ export function HomeFounderQuote() {
                   aria-hidden="true"
                 />
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  {/* IMG-03 empty state: tonal background-alt plate (no leaf
-                      box). A lazy <img> drops in here when the Cloudinary
-                      FEATURE_ID is provided. */}
-                  <div className="aspect-[3/2] rounded-md bg-background-alt" aria-hidden="true" />
+                  {/* eslint-disable-next-line @next/next/no-img-element -- raw <img>: this is a decorative editorial plate, not LCP content; next/image's fill wrapper would fight the 3:2 aspect box */}
+                  <img
+                    src={FEATURE_IMAGE}
+                    alt=""
+                    loading="lazy"
+                    className="aspect-[3/2] w-full rounded-md object-cover bg-background-alt"
+                  />
                 </div>
               </figure>
             </FadeInSection>
