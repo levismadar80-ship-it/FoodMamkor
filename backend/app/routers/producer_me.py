@@ -139,6 +139,8 @@ def update_my_producer(
         "whatsapp_group",
         "primary_contact_method",
         "contact_email",
+        "facebook",
+        "external_order_form",
         "slug",
         "top_product_name",
         "starting_price_label",

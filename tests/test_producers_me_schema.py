@@ -18,7 +18,12 @@ These tests pin the contract:
 Pure HTTP/DB tests, mirroring tests/test_producer_declaration.py. No
 Anthropic/email assertions (those layers fail-open in the test config).
 """
-from conftest import auth_header, make_producer, make_user
+from conftest import (
+    auth_header,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 
 # admin-only fields that ProducerOwnerOut must NOT serialize back to the
@@ -93,3 +98,75 @@ def test_admin_route_still_exposes_risk_fields(client, db):
     row = next((r for r in rows if r.get("risk_score") == 42), rows[0])
     assert "risk_score" in row
     assert "risk_reasoning" in row
+
+
+# --- MEH-296: contact-channel columns + boundary validators ---
+
+
+def test_put_producers_me_persists_contact_channels(client, db):
+    # Owner can set the new facebook + external_order_form channels; both
+    # round-trip through PUT response and a follow-up GET.
+    _, user = _make_owner(db, email="owner-channels@example.com")
+    resp = client.put(
+        "/producers/me",
+        json={
+            "facebook": "https://facebook.com/mybiz",
+            "external_order_form": "https://myshop.etsy.com/order",
+        },
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["facebook"] == "https://facebook.com/mybiz"
+    assert body["external_order_form"] == "https://myshop.etsy.com/order"
+    got = client.get("/producers/me", headers=auth_header(user)).json()
+    assert got["facebook"] == "https://facebook.com/mybiz"
+    assert got["external_order_form"] == "https://myshop.etsy.com/order"
+
+
+def test_put_producers_me_rejects_bad_contact_method(client, db):
+    # primary_contact_method is guarded to the 7-value set → 422.
+    _, user = _make_owner(db, email="owner-badmethod@example.com")
+    resp = client.put(
+        "/producers/me",
+        json={"primary_contact_method": "garbage"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_put_producers_me_accepts_instagram_contact_method(client, db):
+    # instagram is a newly-enumerated valid method → 200.
+    _, user = _make_owner(db, email="owner-instamethod@example.com")
+    resp = client.put(
+        "/producers/me",
+        json={"primary_contact_method": "instagram"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["primary_contact_method"] == "instagram"
+
+
+def test_put_producers_me_rejects_javascript_url(client, db):
+    # Non-http(s) schemes (XSS vector) are rejected on URL fields → 422.
+    # Also closes the pre-existing gap on `website` (MEH-296 / MEH-329).
+    _, user = _make_owner(db, email="owner-xssurl@example.com")
+    resp = client.put(
+        "/producers/me",
+        json={"website": "javascript:alert(1)"},
+        headers=auth_header(user),
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_register_producer_rejects_javascript_url(client, db):
+    # MEH-296: the same http(s) scheme guard applies on the PUBLIC
+    # registration path (ProducerRegister.website) → 422. Baseline payload
+    # is otherwise valid (phone added) so the 422 isolates the URL guard.
+    payload = {
+        **valid_producer_register_payload(),
+        "phone": "+972501234567",
+        "website": "javascript:alert(1)",
+    }
+    resp = client.post("/auth/register/producer", json=payload)
+    assert resp.status_code == 422, resp.text
