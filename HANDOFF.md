@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-13 — MEH-227 RTL physical→logical sweep (DRAFT)
+
+A prior read-only audit produced 19 FIX candidates; this session applied **17** on `feature/meh-227-rtl-logical-props` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
+
+- **Applied (17):** 15× `text-right`→`text-start` (all on `dir="rtl"` / RTL-inheriting elements ⇒ Hebrew pixel-identical, only `/en` LTR corrected — MEH-132 family); `layout.js:200` skip-link `focus:right-2`→`focus:start-2`; `AvailabilityBadge.jsx:51` `marginLeft`→`marginInlineEnd` (inline style).
+- **Excluded (2, on Sapir `go`):** `RecipeForm.jsx:32` (shared `baseInput` const → 3 `dir="ltr"` price fields) + `GroupBuyDetailClient.jsx:296` (`dir="ltr"` quantity). `text-right` correct in both locales; swap would regress. → **MEH-341**.
+- **Verify:** build green; ESLint **0 errors** (171 pre-existing warnings); diff exactly 17/17; grep confirms 0 of the 17 remain + 2 excluded intact.
+- **Pending:** Sapir deployed-preview QA + merge (DRAFT — no merge). 3 latent flags (CategorySelector chevron / MapClient `border-l` / ChatWidget FAB) + the 2 excluded `dir="ltr"` items all route to **MEH-341**.
+
 ## 2026-06-13 — MEH-542 light up §10 (DRAFT)
 
 **Follow-up to #1079** (which shipped the §10 "הכירו בית עסק" component dormant, `featured={null}`). This session lit it up with real data on `feature/meh-542-featured-producer` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).

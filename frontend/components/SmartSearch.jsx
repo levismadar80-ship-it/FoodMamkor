@@ -191,7 +191,7 @@ export default function SmartSearch({ placeholder, srLabel, className = "" }) {
           id="smart-search-listbox"
           role="listbox"
           data-testid="smart-search-dropdown"
-          className="absolute z-[1000] mt-2 w-full bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-right"
+          className="absolute z-[1000] mt-2 w-full bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
           {loading && !hasResults && (
