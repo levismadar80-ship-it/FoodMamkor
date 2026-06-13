@@ -251,6 +251,7 @@ export default function MapPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
+                aria-label={t("map.client.sort.aria_label")}
                 className="text-xs text-fg-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
               >
                 <option value="default">{t("map.client.sort.nearest")}</option>
