@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-13 — MEH-542 light up §10 (DRAFT)
+
+**Follow-up to #1079** (which shipped the §10 "הכירו בית עסק" component dormant, `featured={null}`). This session lit it up with real data on `feature/meh-542-featured-producer` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
+
+- **Data gate (Phase 0 → Sapir `go`):** chose **Path 1** — reuse the existing `is_recommended` flag (`models.py:71`, already on `ProducerListOut` `schemas.py:326`). **Zero schema, zero new endpoint.** Path 2 (new `is_featured` + editorial columns + Alembic) explicitly NOT taken.
+- **Change:** `use-home-page.js` derives `featuredProducer` (first `is_recommended` producer with a usable `short_description`); `page.js:194` passes it to `<HomeFeaturedProducer>`. attribution omitted (redundant with the component meta line). 2 files, +33/-5.
+- **Verify:** build green (homepage prerenders), lint 0 errors (7 pre-existing warnings), RTL/hex grep 0, /adversarial-review 0 blocking. `categories` confirmed present in `ProducerListOut:562` so `category` populates.
+- **Pending:** Sapir deployed-preview QA (375/360/390 viewports) + merge. §10 self-hides until a producer is both `is_recommended` AND has `short_description` — to see it on staging, an admin must flag a recommended producer that has a tagline.
+
 ## 2026-06-12/13 (overnight, batch #2) — MERGE-ALL wave + 4 task PRs
 
 **MERGE-ALL (Sapir 22:22):** the remaining session PRs merged — #1073 `9515b4a`, #1075 `6c95884`, #1076 `159560c`, #1081 `6c25ffa` (docs; one 405 "expected checks" retry per the known transient). All 8 first-batch PRs are now on staging.
