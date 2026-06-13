@@ -27,10 +27,14 @@ Large divergence (>50) indicates the harness created the branch off
 If detected:
 1. ABORT current work
 2. `git stash` (if uncommitted changes exist)
-3. `git checkout staging && git pull origin staging`
-4. `git checkout -b <correct-branch-name>`
+3. `git fetch origin staging` — do NOT use `git checkout staging && git
+   pull origin staging`: in the sandbox the local `staging` ref is often
+   divergent and `pull` aborts with *"Need to specify how to reconcile
+   divergent branches"*. Treat `origin/staging` as the only authoritative
+   ref (MEH-542, 2026-06-13 — this failed twice in one session).
+4. `git checkout -B <correct-branch-name> origin/staging`  # cut straight off origin
 5. `git stash pop`
-6. Re-verify divergence count is small
+6. Re-verify divergence count is small (`git rev-list --count HEAD ^origin/staging`)
 7. Resume work
 
 DO NOT continue with a main-based branch — rebase will fail with
