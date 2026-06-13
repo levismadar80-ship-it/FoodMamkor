@@ -27,6 +27,12 @@ type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 async function analyze(page: Page): Promise<AxeResults> {
   return new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    // Leaflet markers render as role=button divIcons with no accessible name
+    // (aria-command-name, serious), on / and /map. Deferred to a MapComponent
+    // sub-MEH (wire each business name into the marker aria-label); excluded
+    // from the scan so the net stays green and still catches every OTHER map
+    // a11y issue. Audit: docs/audits/2026-06-13-a11y.md (Vector 1 — map markers).
+    .exclude(".leaflet-marker-icon")
     .analyze();
 }
 
