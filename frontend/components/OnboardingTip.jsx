@@ -42,7 +42,7 @@ export default function OnboardingTip({
           aria-live="polite"
           dir="rtl"
         >
-          <div className="bg-primary-dark text-white rounded-[12px] px-4 py-3 shadow-xl text-right text-sm">
+          <div className="bg-primary-dark text-white rounded-[12px] px-4 py-3 shadow-xl text-start text-sm">
             <button
               type="button"
               onClick={onDismiss}

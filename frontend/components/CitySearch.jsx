@@ -128,7 +128,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-right"
+          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-start"
           dir="rtl"
           autoComplete="off"
           role="combobox"
