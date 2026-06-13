@@ -14,4 +14,5 @@ export { default as Badge } from "./Badge";
 export { default as Heading } from "./Heading";
 export { default as Link } from "./Link";
 export { default as Tooltip } from "./Tooltip";
+export { default as Popover } from "./Popover";
 export { default as EmptyState } from "./EmptyState";
