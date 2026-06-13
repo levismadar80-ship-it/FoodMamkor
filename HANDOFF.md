@@ -2726,3 +2726,15 @@ Branch: `feature/meh-366-i18n-scoping`. One file: `docs/i18n-migration-plan.md` 
 
 | Ended (UTC)       | Branch                              | SHA       | Closes      | Reason |
 |-------------------|-------------------------------------|-----------|-------------|--------|
+
+---
+
+## 2026-06-13 — MEH-229 (3/7) backend security audit (report-only)
+
+- **Branch:** `feature/meh-229-audit-security` (off `staging`).
+- **Output:** `docs/audits/2026-06-13-security.md` — REPORT-ONLY, no code touched.
+- **Result:** 0 CRITICAL / 0 HIGH / 0 MEDIUM / 2 LOW across all 8 vectors (IDOR, rate limits, input validation, secrets, SQLi, file upload, CORS, JWT).
+- **2 LOW:** `ProducerCreate.name` + `ProducerAdminCreate.name` lack explicit Pydantic `max_length` (rely on `String(200)` DB column → >200 char = 500 not 422). Defense-in-depth, not a breach.
+- **Top-5 pre-launch** (none gate launch): set `CORS_ORIGINS` in prod; set `JWT_SECRET_KEY` in prod; add `max_length` to the 2 name fields; confirm `TRUSTED_PROXY=1` on Railway.
+- **Notable:** all CRITICAL-class vectors closed — JWT pins HS256 allowlist (no alg=none), no hardcoded secrets, login rate-limited (5/min), SQL fully parameterized, IDOR ownership checks on every mutation, upload magic-byte validated.
+- **Next:** human reviews draft PR; remediation of the 2 LOW + deploy-config items tracked separately (not in this report-only PR).
