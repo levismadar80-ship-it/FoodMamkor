@@ -255,7 +255,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
           id="hero-search-listbox"
           role="listbox"
           data-testid="hero-search-dropdown"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-right"
+          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-start"
           dir="rtl"
         >
           {loading && !hasAutoResults && (
@@ -334,7 +334,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {showEmpty && (
         <div
           data-testid="hero-search-history"
-          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-right"
+          className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-start"
           dir="rtl"
         >
           {recentSearches.length > 0 ? (

@@ -32,7 +32,7 @@
       "discover": "Discover",
       "community": "Community",
       "businesses": "Businesses",
-      "trust": "Trust & Transparency",
+      "trust": "Transparency",
       "home": "Home",
       "map": "Map",
       "all_businesses": "All Businesses",
@@ -54,12 +54,12 @@
       "cta_pitch": "Do you have a local food business?",
       "cta_subpitch": "Join thousands of business owners on Mehamakor",
       "brand_aria": "Mehamakor — Home page",
-      "brand_tagline": "Straight from the source — local businesses, all in one place.",
+      "brand_tagline": "Straight from the source — local businesses, all in one place",
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
       "nav_discover": "Discover businesses",
-      "newsletter_heading": "Good food is meant to be shared.",
+      "newsletter_heading": "Good food is meant to be shared",
       "newsletter_tagline": "A new producer story every week, straight to your inbox",
       "newsletter_frequency": "Once a week. No spam. Unsubscribe anytime.",
       "newsletter_label": "Newsletter email",
@@ -225,7 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. No middlemen.",
+        "subtitle": "5 minutes. No commissions. The customer comes straight to you",
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
         "default_description": "Local business. More details coming soon.",
@@ -309,7 +309,7 @@
           "next_step2": "✓ Our team will review the request within 1-2 business days",
           "next_step3": "✓ After approval — the business appears on the map and in search",
           "dashboard_cta": "Go to my dashboard ←",
-          "share_msg": "Hi 🌿 I just joined Mehamakor — an Israeli directory connecting local businesses with people looking for real food. Come join: https://mehamakor.online/register/producer",
+          "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.online/register/producer",
           "share_cta": "Invite a neighbour",
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
@@ -358,11 +358,28 @@
       "submit": "Search"
     },
     "stats": {
-      "issue_prefix": "{month} issue —",
-      "businesses": "businesses",
+      "businesses": "businesses joined so far",
       "categories": "categories",
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
+    },
+    "featured": {
+      "eyebrow": "היכרות",
+      "heading": "מאחורי הקלעים",
+      "cta_meet": "להכיר את {name}",
+      "cta_write": "לכתוב ל{name}"
+    },
+    "comparison": {
+      "eyebrow": "ההבדל",
+      "heading": "מה שמשתנה בדרך",
+      "col_super": "סופר",
+      "col_brand": "מהמקור",
+      "row1_super": "מוצר על מדף",
+      "row1_brand": "אדם מאחורי המוצר",
+      "row2_super": "נסע רחוק",
+      "row2_brand": "גדל קרוב",
+      "row3_super": "עוד סל בקופה",
+      "row3_brand": "קשר ישיר עם מי שמייצרת"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -393,17 +410,20 @@
       "heading": "Recently viewed"
     },
     "how_it_works": {
-      "heading": "How it works",
+      "eyebrow": "How it works",
+      "heading": "Three steps",
       "step01_title": "Find",
-      "step01_text": "Discover local businesses near you — fresh vegetables, farm cheeses, sourdough bread",
+      "step01_text": "Discover businesses near you",
       "step02_title": "Connect",
-      "step02_text": "Talk directly with the business on WhatsApp, by phone, or on Instagram",
-      "step03_title": "Receive",
-      "step03_text": "Real, fresh food straight from the source — no middlemen, no quality compromises"
+      "step02_text": "Talk directly with the business",
+      "step03_title": "Buy",
+      "step03_text": "Straight from the source, however suits you"
     },
     "cta": {
       "heading": "Have a business? Join us",
-      "body": "If you are a business owner, farmer, or grower — join Israel's first directory for real food.",
+      "body_l1": "Mehamakor is the home of local food businesses in Israel.",
+      "body_l2": "Every business here is hand-picked. A full page, photos, a story — yours.",
+      "body_l3": "We'd love to meet.",
       "button": "Add Your Business"
     },
     "new_businesses": {
@@ -493,13 +513,13 @@
     },
     "login": {
       "title": "Sign in to Mehamakor | Mehamakor",
-      "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
+      "description": "Sign in to your Mehamakor account and discover local food businesses across Israel, near you.",
       "og_title": "Sign in to Mehamakor",
       "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
       "title": "Join Mehamakor | Mehamakor",
-      "description": "Join Mehamakor — Israel's real-food directory. Discover local food businesses and support quality producers near you.",
+      "description": "Join Mehamakor — discover and support local food businesses across Israel, near you.",
       "og_title": "Join Mehamakor",
       "og_description": "Create a free account to discover local food businesses, real food, and quality producers."
     },
@@ -511,7 +531,7 @@
     },
     "search": {
       "title": "Search results | Mehamakor",
-      "description": "Search local food businesses, producers, and real food on Mehamakor — Israel's real-food directory.",
+      "description": "Search and discover local food businesses across Israel on Mehamakor.",
       "og_title": "Search Mehamakor",
       "og_description": "Find local food businesses and real food easily."
     },
@@ -939,6 +959,7 @@
       },
       "business_count": "{count, plural, =0 {No businesses} one {1 business} other {# businesses}}",
       "sort": {
+        "aria_label": "Sort businesses",
         "nearest": "Nearest",
         "top_rated": "Top rated",
         "newest": "Newest"
@@ -2623,7 +2644,7 @@
     }
   },
   "footer": {
-    "copyright": "Mehamakor · Made with love in Israel"
+    "copyright": "Mehamakor"
   },
   "accessibility": {
     "meta_title": "Accessibility Statement | Mehamakor",
@@ -3396,7 +3417,7 @@
       "heading": "How communication works on Mehamakor",
       "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner.",
       "why_heading": "Why this way?",
-      "why_item_no_middlemen": "✓ No middlemen — you talk with the person who grew / prepared / baked it",
+      "why_item_no_middlemen": "✓ You know exactly who you're buying from — you talk with the person who grew / prepared / baked it",
       "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",
       "why_item_trust": "✓ Build real trust with the business",
       "cta_map": "Discover businesses on the map",

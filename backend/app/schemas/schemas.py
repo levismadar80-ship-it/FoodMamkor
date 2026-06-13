@@ -26,6 +26,43 @@ def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     return stripped
 
 
+# MEH-296: shared contact-channel guards, enforced at the API boundary.
+# `primary_contact_method` is a free-text column (MEH-17 / MEH-555 — no DB
+# enum); the 7-value set is validated on every write path. URL fields stay
+# `str | None` (no Pydantic HttpUrl — would change response types repo-wide)
+# but reject non-http(s) schemes (javascript:/data:) as defense-in-depth
+# layered with services/sanitization.py (MEH-329).
+_ALLOWED_CONTACT_METHODS = {
+    "whatsapp",
+    "phone",
+    "instagram",
+    "email",
+    "website",
+    "facebook",
+    "external_order",
+}
+
+
+def _contact_method_validator(value: str | None) -> str | None:
+    if value is not None and value not in _ALLOWED_CONTACT_METHODS:
+        raise ValueError(
+            "primary_contact_method חייב להיות אחד מ: "
+            + ", ".join(sorted(_ALLOWED_CONTACT_METHODS))
+        )
+    return value
+
+
+def _url_scheme_validator(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return stripped
+    if not stripped.lower().startswith(("http://", "https://")):
+        raise ValueError("כתובת אתר חייבת להתחיל ב-http:// או https://")
+    return stripped
+
+
 # --- Auth ---
 class UserRegister(BaseModel):
     email: EmailStr
@@ -103,6 +140,19 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
+
+    @field_validator("primary_contact_method")
+    @classmethod
+    def _validate_primary_contact_method(cls, v):
+        return _contact_method_validator(v)
+
+    # MEH-296: same http(s) scheme guard as ProducerUpdate. ProducerRegister
+    # only exposes `website` among the URL fields (no facebook /
+    # external_order_form columns here — those are owner-edit-only).
+    @field_validator("website")
+    @classmethod
+    def _validate_contact_urls(cls, v):
+        return _url_scheme_validator(v)
 
 
 class GoogleAuthRequest(BaseModel):
@@ -397,6 +447,9 @@ class ProducerUpdate(BaseModel):
     # MEH-17
     primary_contact_method: str | None = None
     contact_email: EmailStr | None = None
+    # MEH-296: extra contact channels (http(s) URL-guarded below).
+    facebook: str | None = None
+    external_order_form: str | None = None
     slug: str | None = None
     top_product_name: str | None = None
     starting_price_label: str | None = None
@@ -477,6 +530,16 @@ class ProducerUpdate(BaseModel):
             if len(q) > 80:
                 raise ValueError("כל שאלה מוגבלת ל-80 תווים")
         return filtered
+
+    @field_validator("primary_contact_method")
+    @classmethod
+    def _validate_primary_contact_method(cls, v):
+        return _contact_method_validator(v)
+
+    @field_validator("website", "facebook", "external_order_form")
+    @classmethod
+    def _validate_contact_urls(cls, v):
+        return _url_scheme_validator(v)
 
     @model_validator(mode="after")
     def _validate_location_mode(self):
@@ -653,6 +716,9 @@ class ProducerDetailOut(ProducerListOut):
     instagram: str | None = None
     website: str | None = None
     whatsapp_group: str | None = None
+    # MEH-296: extra contact channels (mirror website; owner-editable).
+    facebook: str | None = None
+    external_order_form: str | None = None
     products: list[ProductOut] = []
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0

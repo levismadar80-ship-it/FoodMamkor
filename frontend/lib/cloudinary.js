@@ -35,7 +35,8 @@ export function optimizeCloudinary(url, opts = {}) {
   if (Number.isInteger(width) && width > 0) {
     // Intentional: with aspectRatio, w_ rides c_fill — which MAY upscale a
     // smaller original (fill semantics). Width-only gets c_limit (never
-    // upscales). No caller combines both today; revisit if one does.
+    // upscales). HomeHero combines both (ar_16:9 + w_1920) — safe there
+    // because the 4032px hero original only ever downscales to 1920.
     if (!hasAspect) parts.push("c_limit");
     parts.push(`w_${width}`);
   }

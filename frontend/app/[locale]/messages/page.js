@@ -34,7 +34,7 @@ export default async function MessagesPage({ params }) {
       <p className="text-fg-muted leading-relaxed mb-6">
         {t("intro")}
       </p>
-      <div className="bg-background border border-border rounded-[16px] p-5 text-right mb-8">
+      <div className="bg-background border border-border rounded-[16px] p-5 text-start mb-8">
         <h2 className="font-semibold text-text mb-2">{t("why_heading")}</h2>
         <ul className="text-sm text-fg-muted space-y-2">
           <li>{t("why_item_no_middlemen")}</li>

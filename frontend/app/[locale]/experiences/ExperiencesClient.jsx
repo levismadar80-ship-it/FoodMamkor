@@ -5,9 +5,19 @@ import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
 import ExperienceCard from "@/components/ExperienceCard";
+
+// MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-8586455, 2953×1969)
+// replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
+// f_auto,q_auto via the helper. CSS cover crops the band; scrim below keeps AA.
+// REUSES: app/[locale]/home/HomeHero.jsx (optimizeCloudinary width cap, #1055)
+const HERO_BG = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/staging/pick-pexels-8586455.jpg",
+  { width: 1600 }
+);
 
 // API filter values are Hebrew strings (server enum). Localize labels via t().
 const CATEGORY_KEYS = [
@@ -57,8 +67,7 @@ export default function ExperiencesClient() {
           className="kenburns-right absolute"
           style={{
             inset: "-5%",
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1556909172-54557c7e4fb7?w=1600&auto=format&q=80&fm=webp)",
+            backgroundImage: `url(${HERO_BG})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}

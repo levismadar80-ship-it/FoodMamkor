@@ -433,6 +433,14 @@ def approve_producer(
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    # MEH-799: approval gate — a business never goes public without at least
+    # one photo. Validation only (no schema change); registration/publish
+    # flows untouched — the gate lives at the moment of approval.
+    if not producer.images:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
+        )
     producer.status = "approved"
     db.commit()
 
