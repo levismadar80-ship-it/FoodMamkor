@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-13 — MEH-258 security checklist: close the template-03 gap (DRAFT)
+
+GREEN-batch PR-C. Premise was "resume draft PR #982" — but **#982 is already merged** (2026-06-06T21:12:21Z, branch deleted), so there was nothing to resume. Phase 0 audited the **current staging** state of the MEH-258 DoD instead:
+
+- `docs/SECURITY-CHECKLIST.md` (18.5KB) — **already complete**: all 7 requested TRAPs (MEH-256/254/248/163+240/241/249/244, each with broken-pattern · why · fix · question-to-ask · how-to-verify) + an 8th deps TRAP + env-var table + per-PR checklist + category index. **Not rewritten.**
+- `CLAUDE.md` doc-map — **already links** `[SECURITY-CHECKLIST.md]` ("7 past-incident traps"). Left as-is (no duplicate pointer — smell #1).
+- **The only gap:** `docs/templates/03-claude-code-bug.md` did **not** reference the checklist (#982 deliberately skipped wiring it; the current MEH-258 DoD explicitly requires it). Added one additive `## 🔒 Security/auth bugs` section pointing at the checklist + the 7 TRAP IDs.
+
+- **Verify:** docs-only, no source touched → build trivially green. Branch `feature/meh-258-security-checklist-gaps` off `origin/staging`.
+- **Pending:** Sapir review. Flag: this reverses #982's deliberate template-03 omission, on the authority of the current DoD — veto-able.
+
 ## 2026-06-13 — MEH-801 item 1: retire the 2 "מתווכים" strings (DRAFT)
 
 Copy gate now Sapir-approved; replaced the 2 live forbidden-word hits (the pair flagged but left unedited in #1085's Phase 0) on `feature/meh-801-matvchim-copy` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).

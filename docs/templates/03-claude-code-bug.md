@@ -38,6 +38,18 @@
 
 ---
 
+## 🔒 Security / auth / permissions bugs — cross-check the TRAP checklist
+
+If the bug touches auth, permissions, rate limiting, IDOR, input validation,
+cascade deletes, or any `if settings.X:` / env-var-gated branch — read
+[docs/SECURITY-CHECKLIST.md](../SECURITY-CHECKLIST.md) **before** writing the
+fix. The confirmed-incident TRAPs (MEH-256 / 254 / 248 / 163+240 / 241 / 249 /
+244) each carry a *broken pattern → why → fix → question-to-ask → how-to-verify*;
+many "new" security bugs are a recurrence of one of them. Drop the matching
+TRAP's verify command straight into your `<verification_step>`.
+
+---
+
 ## 🧱 Prompt Structure (Opus 4.7 — recommended for non-trivial bugs)
 
 ```xml
