@@ -316,6 +316,40 @@ class TestProducerAnalytics:
         ).json()
         assert body["home_products_count"] == 1
 
+    def test_analytics_profile_strength_full_profile_reaches_100(self, client, db):
+        # MEH-794: the home-product signal was removed with /neighbor (MEH-793)
+        # and its 25% redistributed across the 5 remaining signals. A fully
+        # complete profile must still score exactly 100.
+        p = make_producer(db, delivery_cities=["תל אביב"])  # delivery → +15
+        p.description = "ד" * 60  # >= 50 chars → +25
+        p.images = ["https://example.com/a.jpg"]  # non-empty → +20
+        p.phone_verified = True  # → +20
+        p.reviews_count = 3  # total_reviews > 0 → +20
+        user = make_user(db, email="strength100@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        body = client.get(
+            "/producers/me/analytics", headers=auth_header(user)
+        ).json()
+        assert body["profile_strength"] == 100
+
+    def test_analytics_profile_strength_empty_profile_is_zero(self, client, db):
+        # No images / long description / delivery area / reviews / verified phone.
+        p = make_producer(db)
+        p.description = ""
+        p.images = []
+        p.phone_verified = False
+        p.reviews_count = 0
+        user = make_user(db, email="strength0@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        body = client.get(
+            "/producers/me/analytics", headers=auth_header(user)
+        ).json()
+        assert body["profile_strength"] == 0
+
 
 # ============================================================
 # Extended GET /admin/dashboard
