@@ -144,7 +144,14 @@ def test_signup_does_not_send_both_text_and_template(client, db, monkeypatch):
 
 def _approve(client, db, *, slug: str | None, phone: str | None = "0501112222"):
     admin = make_user(db, role="admin", email=f"admin-{slug or 'noslug'}@example.com")
-    producer = make_producer(db, name="חוות האישור", status="pending")
+    # MEH-799: the approve gate requires >=1 image — these tests assert the
+    # WhatsApp-hook contract, not the image gate.
+    producer = make_producer(
+        db,
+        name="חוות האישור",
+        status="pending",
+        images=["https://res.cloudinary.com/demo/image/upload/v1/test.jpg"],
+    )
     producer.phone = phone
     producer.slug = slug
     db.commit()
