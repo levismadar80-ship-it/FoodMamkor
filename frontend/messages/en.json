@@ -225,7 +225,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. No middlemen.",
+        "subtitle": "5 minutes. No commissions. The customer comes straight to you",
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
         "default_description": "Local business. More details coming soon.",
@@ -3416,7 +3416,7 @@
       "heading": "How communication works on Mehamakor",
       "intro": "There's no internal chat in the app — we believe in a direct, real connection between buyer and business. On every business card you'll find a WhatsApp button that connects you directly to the business owner.",
       "why_heading": "Why this way?",
-      "why_item_no_middlemen": "✓ No middlemen — you talk with the person who grew / prepared / baked it",
+      "why_item_no_middlemen": "✓ You know exactly who you're buying from — you talk with the person who grew / prepared / baked it",
       "why_item_direct_terms": "✓ Agree on price, delivery, and availability personally",
       "why_item_trust": "✓ Build real trust with the business",
       "cta_map": "Discover businesses on the map",
