@@ -68,7 +68,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             value={form.title}
             onChange={set("title")}
             required
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
             dir="rtl"
           />
         </div>
@@ -79,7 +79,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             value={form.description}
             onChange={set("description")}
             rows={2}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-right resize-none"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start resize-none"
             dir="rtl"
           />
         </div>
@@ -90,7 +90,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             value={form.product_name}
             onChange={set("product_name")}
             required
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
             dir="rtl"
           />
         </div>
@@ -100,7 +100,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             value={form.unit}
             onChange={set("unit")}
             placeholder={t("unit_placeholder")}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
             dir="rtl"
           />
         </div>
@@ -175,7 +175,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           <input
             value={form.city}
             onChange={set("city")}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
             dir="rtl"
           />
         </div>

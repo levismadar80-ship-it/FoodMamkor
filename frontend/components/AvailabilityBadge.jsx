@@ -48,7 +48,7 @@ const DOT_STYLE = {
   height: "8px",
   borderRadius: "50%",
   display: "inline-block",
-  marginLeft: "6px",
+  marginInlineEnd: "6px",
   flexShrink: 0,
 };
 
