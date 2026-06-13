@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-13 — MEH-801 item 1: retire the 2 "מתווכים" strings (DRAFT)
+
+Copy gate now Sapir-approved; replaced the 2 live forbidden-word hits (the pair flagged but left unedited in #1085's Phase 0) on `feature/meh-801-matvchim-copy` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
+
+- **Mapping (by context):** `auth.register.producer.subtitle` → **PRODUCER** (business-registration page, heading "תני לעסק שלך בית") → `הלקוחה מגיעה ישירות אלייך`; `sweep_tail.messages.why_item_no_middlemen` → **CONSUMER** (intro frames "הקונה", CTAs "גלי בתי עסק"/"המועדפים שלי") → `את יודעת בדיוק ממי את קונה`.
+- **Clause adaptations (both are clauses, not standalone taglines):** (1) producer line dropped into the 3-part tagline `5 דקות. בלי עמלות. …`, terminal period removed per the heading rule; (2) consumer line is the "✓ claim — explanation" head, and the explanation `אתם מדברים`→`את מדברת` was harmonized to feminine singular so the line agrees (same string, same meaning). Neither fit was awkward → no STOP.
+- **en.json:** faithful EN mirror, **provisional** pending the MEH-472 en wave (flagged in PR/CHANGELOG, not as an in-string marker).
+- **Verify:** `grep -rn מתווכים frontend/` → **0**; build green; lint **0 errors**; he.json + en.json JSON-valid; diff exactly 4 lines (2 he + 2 en) — no scope creep.
+- **Pending:** Sapir QA + merge (DRAFT — no merge). Scope was item 1 only; the other MEH-801 items are separate.
+
 ## 2026-06-13 — MEH-227 RTL physical→logical sweep (DRAFT)
 
 A prior read-only audit produced 19 FIX candidates; this session applied **17** on `feature/meh-227-rtl-logical-props` (cut off `origin/staging`; harness default `claude/*` branch rejected per repo rule).
