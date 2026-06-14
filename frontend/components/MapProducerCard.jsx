@@ -143,7 +143,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             className="text-primary text-[13px] font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
-{t("full_profile")} ←
+{t("full_profile")} →
           </Link>
         </div>
       </div>

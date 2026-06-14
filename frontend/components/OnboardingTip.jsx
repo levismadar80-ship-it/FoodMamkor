@@ -57,7 +57,7 @@ export default function OnboardingTip({
               onClick={onNext ?? onDismiss}
               className="mt-2 text-xs font-semibold text-green-50 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
             >
-              {ctaLabel} ←
+              {ctaLabel} →
             </button>
           </div>
           {/* Caret — points down toward the BottomNav tab */}
