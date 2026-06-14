@@ -108,13 +108,13 @@ function scheduleFridayNotifications() {
   const msToFri7 = msUntilNext(5, 7);
 
   setTimeout(() => {
-    showFridayNotification("🛒 מחר שישי", "5 יצרניות חדשות בשוק שלך — תכנני מראש");
+    showFridayNotification("🛒 מחר שישי", "5 בתי עסק חדשים בשוק שלך — תכנני מראש");
     // Re-schedule for next Thu 19:00 (7 days from now)
     setTimeout(scheduleFridayNotifications, msUntilNext(4, 19));
   }, msToThu19);
 
   setTimeout(() => {
-    showFridayNotification("☀️ בוקר טוב! שוק שישי", "יצרניות עם משלוח היום — כנסי לראות");
+    showFridayNotification("☀️ בוקר טוב! שוק שישי", "בתי עסק עם משלוח היום — כנסי לראות");
     // Re-schedule handled by Thu setTimeout above
   }, msToFri7);
 }
