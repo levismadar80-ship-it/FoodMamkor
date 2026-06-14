@@ -5,6 +5,48 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-14 — Overnight fix-wave batch (5 PRs, ALL MERGED to staging)
+
+- **Outcome:** the 4-audit fix-wave batch shipped and **all 5 PRs merged** to
+  `staging` (squash) on Sapir's explicit "merge all" instruction. Staging tip
+  after the wave: `c3555db`.
+  - **#1109** `302bd58` — MEH-229 security: `Field(max_length=200)` on
+    `ProducerCreate.name` + `ProducerAdminCreate.name` (clean 422 vs DB 500);
+    Pydantic-only, no Alembic. +2 pytest regression tests (passed in CI).
+  - **#1114** `9b5d563` — overnight batch morning summary / triage index.
+  - **#1105** `26f70e2` — MEH-230 a11y fix-wave: input `aria-label`, focus rings
+    on the 3 truly-bare inputs (Footer/ChatWidget/CitiesAutocomplete),
+    CityPickerModal dialog+ESC+focus-return. Caught 3 audit false positives
+    (wrappers already had `focus-within:ring`).
+  - **#1112** `cf2df60` — MEH-765 map marker keyboard a11y: `role="button"` +
+    `aria-label` on Leaflet divIcon pins via `marker.on("add")`
+    (`MapComponent.jsx`, central — /adversarial-review 0 must-fix).
+  - **#1108** `c3555db` — MEH-232 copy fix-wave: V1 producer terms, V4 spelling
+    (`וואטסאפ`/`אימייל`), V3/V7 verbs → **plural** (ADR-014), V2 forward arrows
+    `←`→`→`. Fixed one E2E text-locator broken by the `אימייל` rename.
+- **Task 5 (MEH-233 mobile audit):** NOT re-run — already delivered/merged
+  2026-06-08 (`docs/audits/2026-06-mobile-audit-MEH-233.md`, same scope);
+  re-run infeasible in-sandbox (no Playwright browsers, no backend). No dup.
+- **Merge mechanics:** #1109/#1114 clean; #1105/#1112/#1108 each hit the
+  expected `CHANGELOG.md` add/add conflict at the `## Unreleased` anchor →
+  resolved **accept-both** (all entries preserved). Merged only after the 6
+  required checks were green per PR (backend pytest/ruff skip on FE diffs).
+- **DECISIONS PENDING SAPIR (carried forward):**
+  1. **ADR-014 vs `COPY_STYLE.md §1`** — #1108 locked UI button verbs to
+     **plural** (ADR-014 > COPY_STYLE in Truth Hierarchy; precedent #1092). But
+     COPY_STYLE §1 still says "feminine, admin panel included". **Reconcile §1
+     with ADR-014** so the next copy PR doesn't re-litigate.
+  2. **a11y contrast backlog** → `docs/audits/contrast-brand-decisions.md` —
+     every item needs a brand-locked-token call (darken / restrict-to-large /
+     accept-risk).
+- **Next concrete step:** Sapir mobile + keyboard QA on the merged a11y/copy
+  surfaces (focus visibility, CityPickerModal ESC, map-pin Tab+Enter, Hebrew
+  copy). **Staging deploy health NOT smoke-verified** — CC sandbox can't reach
+  `*.up.railway.app` / Vercel (MEH-360 class); verify from your terminal.
+- **Known follow-ups (not filed):** MEH-765 Space-key activation on map pins;
+  lift the axe net `.exclude(".leaflet-marker-icon")` once #1112 is confirmed;
+  `en.json` `producers`→`businesses` parity (broader BRAND.md call).
+
 ## 2026-06-10 — MEH-734: smart-sticky navbar (DRAFT PR #1039 — Sapir QA + merges)
 
 - **Branch:** `feature/meh-734-smart-sticky-navbar` off **clean `staging`** (divergence 0,
