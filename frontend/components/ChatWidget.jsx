@@ -282,7 +282,7 @@ export default function ChatWidget() {
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
-              className="flex-1 min-w-0 bg-transparent outline-none text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
+              className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
             />
