@@ -185,7 +185,7 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none py-2 pe-11 min-h-[44px]"
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
