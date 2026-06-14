@@ -418,6 +418,23 @@ export default function MapComponent({
         keyboard: true,
       });
 
+      // MEH-765: keyboard a11y. `keyboard: true` (above) already makes the
+      // divIcon focusable (tabindex=0) and Leaflet maps Enter→click, so the
+      // bottom sheet opens from the keyboard. The remaining gap (axe
+      // `aria-command-name`) is the missing accessible NAME on the divIcon —
+      // unlike an <img> icon, a divIcon has no `alt`. Set role + aria-label on
+      // the actual element via the marker's `add` event, which fires each time
+      // the marker renders out of a cluster (so clustered/late-rendered pins
+      // get named too). Idempotent.
+      const markerLabel = p.name || t("marker_singular");
+      marker.on("add", () => {
+        const el = marker.getElement();
+        if (el) {
+          el.setAttribute("role", "button");
+          el.setAttribute("aria-label", markerLabel);
+        }
+      });
+
       marker.on("click", () => onProducerClickRef.current?.(p));
       marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
       marker.on("mouseout", () => onProducerHoverRef.current?.(null));
