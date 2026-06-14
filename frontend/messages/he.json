@@ -961,6 +961,7 @@
       },
       "business_count": "{count, plural, =0 {אין בתי עסק} one {בית עסק אחד} two {שני בתי עסק} other {# בתי עסק}}",
       "sort": {
+        "aria_label": "מיון בתי עסק",
         "nearest": "קרוב אליי",
         "top_rated": "הכי מדורגות",
         "newest": "חדש בשוק"

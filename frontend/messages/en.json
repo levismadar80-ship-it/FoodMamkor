@@ -309,7 +309,7 @@
           "next_step2": "✓ Our team will review the request within 1-2 business days",
           "next_step3": "✓ After approval — the business appears on the map and in search",
           "dashboard_cta": "Go to my dashboard ←",
-          "share_msg": "Hi 🌿 I just joined Mehamakor — an Israeli directory connecting local businesses with people looking for real food. Come join: https://mehamakor.online/register/producer",
+          "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.online/register/producer",
           "share_cta": "Invite a neighbour",
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
@@ -513,13 +513,13 @@
     },
     "login": {
       "title": "Sign in to Mehamakor | Mehamakor",
-      "description": "Sign in to your Mehamakor account — Israel's real-food directory. Discover local food businesses and quality producers near you.",
+      "description": "Sign in to your Mehamakor account and discover local food businesses across Israel, near you.",
       "og_title": "Sign in to Mehamakor",
       "og_description": "Sign in to discover local food businesses, save favorites, and support small local businesses."
     },
     "register": {
       "title": "Join Mehamakor | Mehamakor",
-      "description": "Join Mehamakor — Israel's real-food directory. Discover local food businesses and support quality producers near you.",
+      "description": "Join Mehamakor — discover and support local food businesses across Israel, near you.",
       "og_title": "Join Mehamakor",
       "og_description": "Create a free account to discover local food businesses, real food, and quality producers."
     },
@@ -531,7 +531,7 @@
     },
     "search": {
       "title": "Search results | Mehamakor",
-      "description": "Search local food businesses, producers, and real food on Mehamakor — Israel's real-food directory.",
+      "description": "Search and discover local food businesses across Israel on Mehamakor.",
       "og_title": "Search Mehamakor",
       "og_description": "Find local food businesses and real food easily."
     },
@@ -961,6 +961,7 @@
       },
       "business_count": "{count, plural, =0 {No businesses} one {1 business} other {# businesses}}",
       "sort": {
+        "aria_label": "Sort businesses",
         "nearest": "Nearest",
         "top_rated": "Top rated",
         "newest": "Newest"

@@ -34,6 +34,7 @@
     "zod": "^4.4.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@google/design.md": "^0.1.1",
     "@playwright/test": "^1.60.0",
     "@testing-library/jest-dom": "^6.9.1",
@@ -42,6 +43,7 @@
     "@types/node": "^25.9.1",
     "@types/react": "19.2.14",
     "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "autoprefixer": "^10.5.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.7",
