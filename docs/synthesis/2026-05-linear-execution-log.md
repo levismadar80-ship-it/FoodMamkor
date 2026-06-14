@@ -56,7 +56,7 @@ Priority allocation (per spec):
 **Full new description** (preview before save_issue):
 
 ```markdown
-> **🔄 MEH-596 synthesis update (2026-05-16):** Referenced as **Finding #F8** in `docs/synthesis/2026-05-discovery-redesign-synthesis.md`. Priority bumped Medium → High per synthesis recommendation. Sub 2 evidence: Pattern 3 (producer-as-protagonist — Etsy "Meet the maker" + CrowdFarming WTF blog) + §4.8 #3 (no Israeli editorial layer in 7-site study — open lane for mehamakor). See [synthesis Section 4](docs/synthesis/2026-05-discovery-redesign-synthesis.md) for full context. Source: MEH-596 (Sub 3/4 of MEH-592 epic).
+> **🔄 MEH-596 synthesis update (2026-05-16):** Referenced as **Finding #F8** in `docs/synthesis/2026-05-discovery-redesign-synthesis.md`. Priority bumped Medium → High per synthesis recommendation. Sub 2 evidence: Pattern 3 (producer-as-protagonist — Etsy "Meet the maker" + CrowdFarming WTF blog) + §4.8 #3 (no Israeli editorial layer in 7-site study — open lane for mehamakor). See [synthesis Section 4](./2026-05-discovery-redesign-synthesis.md) for full context. Source: MEH-596 (Sub 3/4 of MEH-592 epic).
 
 ---
 
@@ -109,7 +109,7 @@ Priority allocation (per spec):
 **Full new description** (preview before save_issue):
 
 ```markdown
-> **🔄 MEH-596 synthesis update (2026-05-16):** Referenced as **Finding #F9** in `docs/synthesis/2026-05-discovery-redesign-synthesis.md`. Priority bumped Medium → High per synthesis recommendation. Sub 2 evidence: §4.8 #3 (no Israeli competitor publishes verification criteria — open lane) + OFN transparency framing ("see how producer was paid") + CrowdFarming "80% to farmer" benchmark for trust-via-transparency. See [synthesis Section 4](docs/synthesis/2026-05-discovery-redesign-synthesis.md) for full context. Source: MEH-596 (Sub 3/4 of MEH-592 epic).
+> **🔄 MEH-596 synthesis update (2026-05-16):** Referenced as **Finding #F9** in `docs/synthesis/2026-05-discovery-redesign-synthesis.md`. Priority bumped Medium → High per synthesis recommendation. Sub 2 evidence: §4.8 #3 (no Israeli competitor publishes verification criteria — open lane) + OFN transparency framing ("see how producer was paid") + CrowdFarming "80% to farmer" benchmark for trust-via-transparency. See [synthesis Section 4](./2026-05-discovery-redesign-synthesis.md) for full context. Source: MEH-596 (Sub 3/4 of MEH-592 epic).
 
 ---
 
