@@ -943,7 +943,7 @@ the repo and it works.
 ### 2.3 Backend environment variables
 
 Open **Variables** tab. Add each of these (paste as key=value pairs using
-"Raw Editor"). See [`backend/.env.example`](./backend/.env.example) for the
+"Raw Editor"). See [`backend/.env.example`](../backend/.env.example) for the
 authoritative list.
 
 ```bash
@@ -1111,7 +1111,7 @@ If the root endpoint returns the welcome JSON **and** `/producers` returns a
 ### 3.2 Frontend environment variables
 
 Paste these into **Environment Variables** (scope: *Production, Preview,
-Development*). See [`frontend/.env.example`](./frontend/.env.example).
+Development*). See [`frontend/.env.example`](../frontend/.env.example).
 
 ```bash
 # Use the live Railway backend URL — no trailing slash
