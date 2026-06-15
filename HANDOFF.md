@@ -47,6 +47,38 @@
   lift the axe net `.exclude(".leaflet-marker-icon")` once #1112 is confirmed;
   `en.json` `producers`→`businesses` parity (broader BRAND.md call).
 
+## 2026-06-13 — Production release: `staging → main` (#1104, squash `894ccd4`) + MEH-542 close + retro
+
+- **Released `staging → main`** — PR #1104, squash `894ccd4`, **38 commits / 76 files**.
+  All 6 required checks green pre-merge (PR Checks, Deploy, Dependency Audit, ICU
+  parity, E2E, Claude PR Review). Drift safety verified first: the 212-commit
+  `main`/`staging` divergence is **pure squash-merge SHA drift** — `comm -13` showed
+  zero `main`-only files, merge-base was the prior-day `#1068`, and sampled hotfix
+  *content* (HOT-006 `buildJsonLd` locale param, MEH-771) confirmed already on
+  `staging`. No hotfix reverted; `staging` content strictly superseded `main`.
+- **#1039 (MEH-734 smart-sticky navbar) rode along.** It merged to `staging` at
+  21:48 UTC *during* the #1104 CI wait; the PR head auto-advanced `b631a30 → 17fa53c`,
+  CI re-ran on the 38-commit set, and the squash captured it. So MEH-734 shipped to
+  prod too — its DRAFT entry below is superseded (it's live).
+- **Prod migration auto-applies.** #1104 carries MEH-296's `7346235e318b` (expand-only:
+  nullable `facebook` + `external_order_form`). `Dockerfile:61` CMD runs
+  `alembic upgrade head` on container boot, so the Railway prod redeploy self-migrates —
+  no manual Railway Console step needed for prod (the staging manual-apply note was a
+  staging-timing artifact).
+- **MEH-542 fully closed earlier this session:** #1088 (`c9c81e5` — light up §10 from
+  `is_recommended` producer) + #1090 (`0db8b4d` — extract `selectFeaturedProducer` +
+  8 unit tests). Both merged to staging.
+- **Retro (Rule 13):** one finding shipped — #1103 (`b631a30`) rewrote the workflow.md
+  branch-base recovery to fetch + `checkout -B … origin/staging` instead of a local
+  `git pull` (which aborted twice this session on divergent local `staging`).
+- **Post-release state:** `staging` is **38 commits ahead of `main`** topologically —
+  expected post-squash drift (main got the single `894ccd4`; staging keeps its 38
+  individual SHAs). Content is in sync. No back-merge required unless desired.
+- **⚠️ Deferred to Sapir — prod smoke verification.** CC sandbox can't reach
+  `*.up.railway.app` / prod URLs (MEH-360 envoy block). Confirm
+  `https://mehamakor.co.il` + producer endpoints (the migrated columns) once Vercel +
+  Railway finish deploying.
+
 ## 2026-06-10 — MEH-734: smart-sticky navbar (DRAFT PR #1039 — Sapir QA + merges)
 
 - **Branch:** `feature/meh-734-smart-sticky-navbar` off **clean `staging`** (divergence 0,
