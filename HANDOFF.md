@@ -5,6 +5,20 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — MEH-773 Chunk B (integrity ORM parity + race handling) — draft PR opened (NOT merged)
+
+**Context:** Chunk A merged (PR #1145, models.py sync to migration `382128b23383`); Sapir applied the migration to staging. Chunk B is the app-layer follow-up.
+
+**Done (branch `feature/meh-773-chunkb-409-passive-deletes`, 5 commits + docs):**
+- `models.py` — `passive_deletes=True` on `Producer.otp_tokens` + `kashrut_requests` (closes latent kashrut delete-500; OTP covered).
+- `reports.py` — duplicate report unified to **409 + Hebrew** (pre-check + IntegrityError backstop). Frontend-safe (ReportButton reads `detail` generically).
+- `referrals.py` — race-loser → **idempotent 200** (contract wins over doc's 409).
+- `group_buys.py` — `with_for_update()` row lock + fresh `func.count` capacity check.
+- `tests/test_integrity_constraints.py` — 7 tests. pytest deferred to CI (no local Postgres).
+- Decisions (Sapir): reports=409-both, referrals=idempotent-200, MEH-755 band-aids **kept** (cleanup → follow-up ticket).
+
+**Pending / next:** draft PR awaiting Sapir review + merge (**DO NOT self-merge**). No migration (pure ORM/handler). **Follow-up ticket** to remove the now-redundant MEH-755 explicit OTP pre-deletes in `admin.py:357` + `auth.py:1330` (central files; deferred out of this PR).
+
 ## 2026-06-15 — Home UX audit (page 1/11) + staging visual-capture pipeline
 
 ### Home UX audit (2026-06-15) — page 1/11  (method: UX-AUDIT-PLAYBOOK.md, staging = truth)
