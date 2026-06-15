@@ -9,6 +9,13 @@
 - [ ] הפניה כפולה (referral) — לקרוא ל-`/referral/claim` פעמיים עם אותו קוד — שתי הפעמים **200**; השנייה מחזירה `referral already claimed` (אידמפוטנטי, לא 409)
 - [ ] מחיקת עסק עם נתונים נלווים — עסק עם OTP token + בקשת תו כשרות + משתמש מקושר → מחיקה דרך אדמין מצליחה (אין 500); הילדים נמחקים והמשתמש מאבד את `producer_id` (NULL)
 - [ ] קיבולת רכש קבוצתי — רכש עם `max_participants=2`, להצטרף עם 3 משתמשים שונים → השלישי מקבל **400** "קבוצת הרכש מלאה" (הספירה מדויקת תחת נעילת השורה)
+## MEH-805 — post-login redirect (3 senders → ?redirect=)
+- [ ] **Favorite gate** — לא מחוברת, לחצי ❤ על כרטיס בית עסק → toast "התחברי", לחצי על הלינק → אחרי login חוזרת לעמוד הקודם (לא לדף הבית). איך: `/login?redirect=%2F<slug>` ב-URL.
+- [ ] **Login modal** — טריגר ל-LoginPromptModal, לחצי "היכנסי" → אחרי login חוזרת ליעד.
+- [ ] **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
+- [ ] **Regression** — `/register/producer` (כבר היה תקין) עדיין מחזיר ל-`/register/producer` אחרי login.
+
+---
 
 ## Overnight design batch 2026-06-12/13 (PRs #1073–#1080)
 
