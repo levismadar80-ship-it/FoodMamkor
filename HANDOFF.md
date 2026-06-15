@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — MEH-296 Chunk 3d (admin + create-path parity) — PR opened (NOT merged); 3c closed no-op
+
+**Done:** closes the Chunk-2 `ProducerAdminCreate` deferral + the public `ProducerCreate` gap. **Backend:** both create schemas get `facebook`/`external_order_form` + URL-scheme guard (reuse Chunk-2 helpers); `ProducerAdminCreate` also gets the 7-value method guard; both `Producer(...)` constructors (`admin.py`, `services/producer_queries.py`) pass the fields; `auth.py` register allowlist 4→7 + instagram presence-check (facebook/external_order have no register field → accepted, set in dashboard). **Frontend:** admin `ProducerForm` 4→7 select + 2 value inputs + he/en keys. +4 pytest. No migration. DATA.md + db-schema.md updated. **3c closed as no-op** (register collects only phone → default=whatsapp by design; primary set in 3b dashboard).
+
+**Pending / next:** PR awaiting Sapir review + merge (**DO NOT self-merge**). ⚠️ `auth.py` = OWASP/HIGH-RISK → Rule 5a CVE web-search check applies. After merge, **MEH-296 can close** (1+2 backend · 3a display · 3b editor · 3c no-op · 3d parity) — Sapir confirms.
+
+**Decisions/flags:** (1) `ProducerRegister` NOT given facebook/external_order_form fields (register form doesn't collect them; the auth.py allowlist accepts them but they're value-less until the dashboard). (2) `ProducerCreate` gets the URL guard but NOT the method guard (it has no `primary_contact_method` field). (3) Commits combined where one file spans two spec-commits (schemas.py) — `git add -p` unavailable.
+
 ## 2026-06-15 — MEH-296 Chunk 3b (producer contact-channels editor) — PR #1137 opened (NOT merged)
 
 **Done:** new `ContactChannelsCard` in `producer/dashboard/page.js` (mirrors `CustomQuestionsCard`) — the **first producer-facing UI to edit contact channels** (was admin-only). 6 value fields via `ui/Input` (phone/instagram/website/contact_email/facebook/external_order_form) + a 7-method primary-channel radio → `PUT /producers/me` (all fields already in `_PRODUCER_WRITABLE_FIELDS`; **zero backend**). UX: all radios enabled, **validate-on-save** inline hint (`Warning` icon + red field, no disable, no while-typing errors); Chunk-2 server guards (http(s) scheme / 7-value) surfaced inline. Copy Sapir-approved (he/en parity 23/23, customer-action radio labels + phone-shared-number helper, emoji-free). Build green, ESLint 0 errors, RTL clean. 3 files, reused `ui/Input`. `whatsapp_group` skipped (card kept to the 7 methods).

@@ -57,6 +57,8 @@ erDiagram
         boolean grass_fed
         boolean organic_certified
         string kosher
+        string facebook "nullable — MEH-296, VARCHAR(200) — producer FB page/Messenger link"
+        string external_order_form "nullable — MEH-296, VARCHAR(500) — external order-form URL"
         int risk_score "nullable — MEH-509 PR3, Anthropic Haiku 0-100, fail-open NULL"
         text risk_reasoning "nullable — one-sentence Hebrew explanation, truncated to 500 chars"
         timestamp declared_at "nullable — MEH-759, tz-aware; binding tier-2 declaration timestamp"

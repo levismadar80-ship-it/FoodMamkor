@@ -159,6 +159,9 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
         phone=data.phone,
         instagram=data.instagram,
         website=data.website,
+        # MEH-296 3d: public-create parity for the new channels.
+        facebook=data.facebook,
+        external_order_form=data.external_order_form,
         # MEH-530: persisted as-is — None when not supplied. Conditional
         # required-vs-optional is gated by the router-level helper before
         # this function is called.
