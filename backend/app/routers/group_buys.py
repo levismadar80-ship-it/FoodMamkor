@@ -92,10 +92,7 @@ def commit_to_group_buy(
     # Without the lock two requests can both read commits < max_participants
     # and both insert, overshooting capacity (no unique constraint guards it).
     gb = (
-        db.query(GroupBuy)
-        .filter(GroupBuy.id == group_buy_id)
-        .with_for_update()
-        .first()
+        db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).with_for_update().first()
     )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")

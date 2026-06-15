@@ -14,6 +14,7 @@ unit-testable; the DB-level constraint tests prove the guard exists, and the
 API tests prove the surfaced behaviour. Mirrors the IntegrityError-recovery
 precedent in app/routers/reviews.py.
 """
+
 from datetime import datetime, timedelta
 
 import pytest
@@ -105,9 +106,7 @@ class TestProducerDeleteIntegrity:
                 expires_at=datetime.utcnow() + timedelta(minutes=10),
             )
         )
-        db.add(
-            KashrutBadgeRequest(producer_id=producer.id, badge_code="MEHADRIN")
-        )
+        db.add(KashrutBadgeRequest(producer_id=producer.id, badge_code="MEHADRIN"))
         db.commit()
         pid = producer.id
 
