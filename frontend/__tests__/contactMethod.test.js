@@ -24,9 +24,13 @@ const base = {
 };
 
 describe("CONTACT_METHODS", () => {
-  it("exposes the four supported methods", () => {
+  it("exposes the seven supported methods", () => {
+    // MEH-296: instagram/facebook/external_order added to the original four.
     expect(CONTACT_METHODS.map((m) => m.key).sort()).toEqual([
       "email",
+      "external_order",
+      "facebook",
+      "instagram",
       "phone",
       "website",
       "whatsapp",

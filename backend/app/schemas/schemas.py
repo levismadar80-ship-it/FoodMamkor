@@ -322,7 +322,9 @@ class ProductOut(BaseModel):
 
 # --- Producer ---
 class ProducerCreate(BaseModel):
-    name: str
+    # MEH-229: cap at the DB column width (models.py name = String(200)) so an
+    # over-length name returns a clean 422 instead of a DB-level 500.
+    name: str = Field(max_length=200)
     description: str | None = None
     city: str | None = None
     lat: float | None = None
@@ -344,7 +346,8 @@ class ProducerCreate(BaseModel):
 class ProducerAdminCreate(BaseModel):
     """Used by admin form — pre-approved, supports all extended fields."""
 
-    name: str
+    # MEH-229: mirror ProducerCreate — cap at the String(200) column width.
+    name: str = Field(max_length=200)
     contact_name: str | None = None
     description: str | None = None
     short_description: str | None = None

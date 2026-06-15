@@ -862,6 +862,24 @@ class TestProducers:
         assert row is not None
         assert row.status == "pending"
 
+    def test_post_producers_overlong_name_returns_422(self, client, db):
+        """MEH-229: name longer than the String(200) column → clean 422,
+        not a DB-level 500. Validates the ProducerCreate.name max_length cap."""
+        user = make_user(db, email="longname@example.com")
+        payload = {**self.VALID_PRODUCER_PAYLOAD, "name": "א" * 201}
+        resp = client.post("/producers", json=payload, headers=auth_header(user))
+        assert resp.status_code == 422
+
+    def test_admin_post_producers_overlong_name_returns_422(self, client, db):
+        """MEH-229: same cap mirrored on the admin ProducerAdminCreate surface."""
+        admin = make_user(db, role="admin", email="adminlongname@example.com")
+        resp = client.post(
+            "/admin/producers",
+            json={"name": "א" * 201, "city": "תל אביב"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422
+
     def test_post_producers_with_blocked_user_fails(self, client, db):
         """A blocked user should not be able to create producers — the
         get_current_user dep raises 403 for blocked accounts."""

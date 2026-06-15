@@ -73,7 +73,7 @@ export default async function MapPage() {
         <ul>
           {producers.map((p) => (
             <li key={p.id}>
-              <Link href={`/producers/${p.slug}`}>
+              <Link href={`/${p.slug}`}>
                 {p.name}{p.city ? ` — ${p.city}` : ""}
               </Link>
             </li>

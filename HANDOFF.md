@@ -5,6 +5,88 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — MEH-296 Chunk 3b (producer contact-channels editor) — PR #1137 opened (NOT merged)
+
+**Done:** new `ContactChannelsCard` in `producer/dashboard/page.js` (mirrors `CustomQuestionsCard`) — the **first producer-facing UI to edit contact channels** (was admin-only). 6 value fields via `ui/Input` (phone/instagram/website/contact_email/facebook/external_order_form) + a 7-method primary-channel radio → `PUT /producers/me` (all fields already in `_PRODUCER_WRITABLE_FIELDS`; **zero backend**). UX: all radios enabled, **validate-on-save** inline hint (`Warning` icon + red field, no disable, no while-typing errors); Chunk-2 server guards (http(s) scheme / 7-value) surfaced inline. Copy Sapir-approved (he/en parity 23/23, customer-action radio labels + phone-shared-number helper, emoji-free). Build green, ESLint 0 errors, RTL clean. 3 files, reused `ui/Input`. `whatsapp_group` skipped (card kept to the 7 methods).
+
+**Pending / next:** **PR #1137 awaiting Sapir final review + merge — DO NOT self-merge.** Then **3c** register de-hardcode (`RegisterProducerClient.jsx:255`, derive-default + Playwright, HIGH-RISK critical flow) + **3d** admin `ProducerForm` parity (**ripples into `schemas.py` `ProducerAdminCreate`** — the Chunk-2 deferral) + docs `DATA.md`/`db-schema.md`. MEH-296 stays OPEN (no `Closes`).
+
+**Decisions:** editor lives in the **dashboard** (Linear said "settings" but settings only links out — imprecise); radio UX = **inline-hint-on-save, not disable** (research-backed: GitLab/LogRocket).
+
+## 2026-06-14 — Overnight fix-wave batch (5 PRs, ALL MERGED to staging)
+
+- **Outcome:** the 4-audit fix-wave batch shipped and **all 5 PRs merged** to
+  `staging` (squash) on Sapir's explicit "merge all" instruction. Staging tip
+  after the wave: `c3555db`.
+  - **#1109** `302bd58` — MEH-229 security: `Field(max_length=200)` on
+    `ProducerCreate.name` + `ProducerAdminCreate.name` (clean 422 vs DB 500);
+    Pydantic-only, no Alembic. +2 pytest regression tests (passed in CI).
+  - **#1114** `9b5d563` — overnight batch morning summary / triage index.
+  - **#1105** `26f70e2` — MEH-230 a11y fix-wave: input `aria-label`, focus rings
+    on the 3 truly-bare inputs (Footer/ChatWidget/CitiesAutocomplete),
+    CityPickerModal dialog+ESC+focus-return. Caught 3 audit false positives
+    (wrappers already had `focus-within:ring`).
+  - **#1112** `cf2df60` — MEH-765 map marker keyboard a11y: `role="button"` +
+    `aria-label` on Leaflet divIcon pins via `marker.on("add")`
+    (`MapComponent.jsx`, central — /adversarial-review 0 must-fix).
+  - **#1108** `c3555db` — MEH-232 copy fix-wave: V1 producer terms, V4 spelling
+    (`וואטסאפ`/`אימייל`), V3/V7 verbs → **plural** (ADR-014), V2 forward arrows
+    `←`→`→`. Fixed one E2E text-locator broken by the `אימייל` rename.
+- **Task 5 (MEH-233 mobile audit):** NOT re-run — already delivered/merged
+  2026-06-08 (`docs/audits/2026-06-mobile-audit-MEH-233.md`, same scope);
+  re-run infeasible in-sandbox (no Playwright browsers, no backend). No dup.
+- **Merge mechanics:** #1109/#1114 clean; #1105/#1112/#1108 each hit the
+  expected `CHANGELOG.md` add/add conflict at the `## Unreleased` anchor →
+  resolved **accept-both** (all entries preserved). Merged only after the 6
+  required checks were green per PR (backend pytest/ruff skip on FE diffs).
+- **DECISIONS PENDING SAPIR (carried forward):**
+  1. **ADR-014 vs `COPY_STYLE.md §1`** — #1108 locked UI button verbs to
+     **plural** (ADR-014 > COPY_STYLE in Truth Hierarchy; precedent #1092). But
+     COPY_STYLE §1 still says "feminine, admin panel included". **Reconcile §1
+     with ADR-014** so the next copy PR doesn't re-litigate.
+  2. **a11y contrast backlog** → `docs/audits/contrast-brand-decisions.md` —
+     every item needs a brand-locked-token call (darken / restrict-to-large /
+     accept-risk).
+- **Next concrete step:** Sapir mobile + keyboard QA on the merged a11y/copy
+  surfaces (focus visibility, CityPickerModal ESC, map-pin Tab+Enter, Hebrew
+  copy). **Staging deploy health NOT smoke-verified** — CC sandbox can't reach
+  `*.up.railway.app` / Vercel (MEH-360 class); verify from your terminal.
+- **Known follow-ups (not filed):** MEH-765 Space-key activation on map pins;
+  lift the axe net `.exclude(".leaflet-marker-icon")` once #1112 is confirmed;
+  `en.json` `producers`→`businesses` parity (broader BRAND.md call).
+
+## 2026-06-13 — Production release: `staging → main` (#1104, squash `894ccd4`) + MEH-542 close + retro
+
+- **Released `staging → main`** — PR #1104, squash `894ccd4`, **38 commits / 76 files**.
+  All 6 required checks green pre-merge (PR Checks, Deploy, Dependency Audit, ICU
+  parity, E2E, Claude PR Review). Drift safety verified first: the 212-commit
+  `main`/`staging` divergence is **pure squash-merge SHA drift** — `comm -13` showed
+  zero `main`-only files, merge-base was the prior-day `#1068`, and sampled hotfix
+  *content* (HOT-006 `buildJsonLd` locale param, MEH-771) confirmed already on
+  `staging`. No hotfix reverted; `staging` content strictly superseded `main`.
+- **#1039 (MEH-734 smart-sticky navbar) rode along.** It merged to `staging` at
+  21:48 UTC *during* the #1104 CI wait; the PR head auto-advanced `b631a30 → 17fa53c`,
+  CI re-ran on the 38-commit set, and the squash captured it. So MEH-734 shipped to
+  prod too — its DRAFT entry below is superseded (it's live).
+- **Prod migration auto-applies.** #1104 carries MEH-296's `7346235e318b` (expand-only:
+  nullable `facebook` + `external_order_form`). `Dockerfile:61` CMD runs
+  `alembic upgrade head` on container boot, so the Railway prod redeploy self-migrates —
+  no manual Railway Console step needed for prod (the staging manual-apply note was a
+  staging-timing artifact).
+- **MEH-542 fully closed earlier this session:** #1088 (`c9c81e5` — light up §10 from
+  `is_recommended` producer) + #1090 (`0db8b4d` — extract `selectFeaturedProducer` +
+  8 unit tests). Both merged to staging.
+- **Retro (Rule 13):** one finding shipped — #1103 (`b631a30`) rewrote the workflow.md
+  branch-base recovery to fetch + `checkout -B … origin/staging` instead of a local
+  `git pull` (which aborted twice this session on divergent local `staging`).
+- **Post-release state:** `staging` is **38 commits ahead of `main`** topologically —
+  expected post-squash drift (main got the single `894ccd4`; staging keeps its 38
+  individual SHAs). Content is in sync. No back-merge required unless desired.
+- **⚠️ Deferred to Sapir — prod smoke verification.** CC sandbox can't reach
+  `*.up.railway.app` / prod URLs (MEH-360 envoy block). Confirm
+  `https://mehamakor.co.il` + producer endpoints (the migrated columns) once Vercel +
+  Railway finish deploying.
+
 ## 2026-06-10 — MEH-734: smart-sticky navbar (DRAFT PR #1039 — Sapir QA + merges)
 
 - **Branch:** `feature/meh-734-smart-sticky-navbar` off **clean `staging`** (divergence 0,
