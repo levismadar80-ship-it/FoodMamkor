@@ -14,6 +14,10 @@ vi.mock("@phosphor-icons/react", () => ({
   Phone: (props) => <span data-testid="icon-phone" {...props} />,
   Globe: (props) => <span data-testid="icon-globe" {...props} />,
   EnvelopeSimple: (props) => <span data-testid="icon-envelope" {...props} />,
+  // MEH-296: new primary-channel icons.
+  InstagramLogo: (props) => <span data-testid="icon-instagram" {...props} />,
+  FacebookLogo: (props) => <span data-testid="icon-facebook" {...props} />,
+  Receipt: (props) => <span data-testid="icon-receipt" {...props} />,
 }));
 
 const base = {

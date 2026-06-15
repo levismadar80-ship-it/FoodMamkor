@@ -699,7 +699,9 @@
       "contact": {
         "phone": "Phone",
         "website": "Website",
-        "email": "Email"
+        "email": "Email",
+        "facebook": "Facebook",
+        "external_order": "Order form"
       },
       "favorites": {
         "saved_login_prompt": "Saved — log in to see all your favorites",

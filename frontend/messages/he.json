@@ -699,7 +699,9 @@
       "contact": {
         "phone": "טלפון",
         "website": "אתר",
-        "email": "אימייל"
+        "email": "אימייל",
+        "facebook": "פייסבוק",
+        "external_order": "טופס הזמנות"
       },
       "favorites": {
         "saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
