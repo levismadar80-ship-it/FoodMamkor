@@ -21,8 +21,9 @@ import { HomeHero } from "@/app/[locale]/home/HomeHero";
 import { HomeCategoryGrid } from "@/app/[locale]/home/HomeCategoryGrid";
 import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { Sparkle } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
+import { buildHomeJsonLd } from "@/lib/seo";
 
 // MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
 // because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
@@ -41,6 +42,7 @@ const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b
 
 export default function HomePage() {
   const t = useTranslations();
+  const locale = useLocale();
   const {
     user,
     producers, categories, filters, chips,
@@ -58,6 +60,11 @@ export default function HomePage() {
 
   return (
     <div>
+      {/* MEH-804: homepage Organization + WebSite (SearchAction) JSON-LD. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildHomeJsonLd(locale)) }}
+      />
       <HomeHero
         fridayMode={fridayMode}
         geoLoading={geoLoading}

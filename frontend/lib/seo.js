@@ -321,6 +321,50 @@ export function buildJsonLd(producer, locale = "he") {
 }
 
 /**
+ * MEH-804: homepage site-level JSON-LD. Emits the Organization + WebSite
+ * graph (the homepage previously carried no structured data at all) plus a
+ * WebSite SearchAction so Google can surface the sitelinks search box keyed
+ * to the site root. Shares the `#organization` / `#website` @ids with
+ * buildJsonLd() (seo.js:297-315) so the cross-page entity graph stays
+ * consistent. Standalone — the homepage has no producer FoodEstablishment to
+ * describe. SearchAction target uses /search?q= (the real param, SearchClient.jsx:50).
+ */
+export function buildHomeJsonLd(locale = "he") {
+  const organization = {
+    "@type": "Organization",
+    "@id": `${SITE_URL}#organization`,
+    name: BRAND_NAME,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+  };
+
+  const webSite = {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}#website`,
+    url: SITE_URL,
+    name: BRAND_NAME,
+    inLanguage: IN_LANGUAGE[locale] ?? "he-IL",
+    publisher: { "@id": `${SITE_URL}#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [organization, webSite],
+  };
+}
+
+/**
  * Build Next.js metadata object. Used by generateMetadata on both routes.
  */
 export function buildProducerMetadata(producer) {
