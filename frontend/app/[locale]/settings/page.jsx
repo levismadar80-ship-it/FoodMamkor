@@ -810,7 +810,7 @@ function BusinessTab() {
       {/* Link to producer profile edit */}
       {status === "approved" && (
         <div className="text-center">
-          <Link href="/producer/edit" className="text-sm text-primary hover:underline">
+          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
             {t("edit_profile_link")}
           </Link>
         </div>
