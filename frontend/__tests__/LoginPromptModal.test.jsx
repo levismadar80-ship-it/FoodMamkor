@@ -63,7 +63,7 @@ describe("LoginPromptModal", () => {
       />,
     );
     const link = screen.getByText("היכנסי");
-    expect(link.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2F42");
+    expect(link.getAttribute("href")).toBe("/login?next=%2Fproducer%2F42");
   });
 
   it("calls onClose when X button is clicked", () => {

@@ -75,7 +75,7 @@ export default function NewExperienceClient() {
   // Gate: must be logged in to submit
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/login?redirect=/experiences/new");
+      router.push("/login?next=/experiences/new");
     }
   }, [user, authLoading, router]);
 
