@@ -622,7 +622,7 @@
       "aria_declared": "בית עסק מוצהר"
     },
     "detail": {
-      "loading_fresh": "טוענת עסקים טריים...",
+      "loading_fresh": "בטעינה…",
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
       "aria": {
@@ -646,7 +646,7 @@
           "heading": "אירועים קרובים",
           "free": "חינם",
           "register": "הרשמה לאירוע →",
-          "show_all_count": "{count, plural, one {הציגי את האירוע} two {הציגי את שני האירועים} other {הציגי את כל # האירועים}}"
+          "show_all_count": "הצגת כל האירועים"
         },
         "products": {
           "heading": "מוצרים"
@@ -686,13 +686,13 @@
         },
         "show_on_map": "הצג במפה",
         "referral_msg": "גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/{code}",
-        "referral_cta": "שתפי וקבלי 10%"
+        "referral_cta": "שתפו וקבלו 10%"
       },
       "contact_sidebar": {
-        "join_whatsapp_group": "הצטרפי לקבוצת וואטסאפ"
+        "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"
       },
       "sticky_bar": {
-        "vacation_msg": "שלחי הודעה — יחזרו בקרוב"
+        "vacation_msg": "שלחו הודעה"
       }
     },
     "card": {
@@ -1046,7 +1046,7 @@
     "mini": {
       "default_label": "מיקום",
       "open_in_waze": "פתחי ב",
-      "open_in_google": "פתחי ב"
+      "open_in_google": "פתיחה ב"
     },
     "bottom_sheet": {
       "title": "בתי עסק באזור",
@@ -3413,7 +3413,7 @@
         "primary_website": "אתר",
         "primary_facebook": "פייסבוק",
         "primary_external_order": "טופס הזמנות",
-        "hint_empty": "מלאי את השדה הזה כדי שישמש כערוץ הראשי",
+        "hint_empty": "מלאו את השדה הזה כדי שישמש כערוץ הראשי",
         "error_summary": "כדי להגדיר ערוץ ראשי צריך למלא את השדה שלו",
         "save_cta": "שמירת ערוצי קשר",
         "saving": "שומרים…",
