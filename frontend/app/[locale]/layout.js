@@ -13,7 +13,7 @@ import Toaster from "@/components/Toaster";
 import CookieBanner from "@/components/CookieBanner";
 import SmoothScrollProvider from "@/components/SmoothScrollProvider";
 import CustomCursor from "@/components/CustomCursor";
-import ChatWidget from "@/components/ChatWidget";
+import ChatWidgetLazy from "@/components/ChatWidgetLazy";
 import InstallPrompt from "@/components/InstallPrompt";
 import ClarityScript from "@/components/ClarityScript";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -224,7 +224,7 @@ export default async function LocaleLayout({ children, params }) {
                 <Toaster />
                 <CookieBanner />
                 <CustomCursor />
-                <ChatWidget />
+                <ChatWidgetLazy />
                 <InstallPrompt />
                 </MotionConfig>
               </SmoothScrollProvider>
