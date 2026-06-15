@@ -861,7 +861,13 @@ function ContactChannelsCard({ profile, onSave }) {
   const upd = (field, value) => {
     setForm((f) => ({ ...f, [field]: value }));
     setSaved(false);
-    if (hintField === field) setHintField(null);
+    // Clear a stale empty-primary hint/summary when its backing field is
+    // edited, OR when the primary method changes (the prior hint targeted a
+    // field that may no longer back the chosen method). PR #1137 review.
+    if (hintField === field || field === "primary_contact_method") {
+      setHintField(null);
+      setErrorMsg(null);
+    }
   };
 
   const handleSave = async () => {
