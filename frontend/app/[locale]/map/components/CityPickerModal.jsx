@@ -1,7 +1,11 @@
+"use client";
+
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
+import { useFocusReturn } from "@/lib/use-focus-return";
 
 /**
  * MEH-58 Phase 3: city picker overlay shown when the user toggles
@@ -29,14 +33,24 @@ const POPULAR_CITIES = [
 
 export default function CityPickerModal({ open, onClose, onSelectCity }) {
   const t = useTranslations();
+
+  // MEH-230: restore focus to the trigger on close + WCAG 2.1 §2.1.2 ESC-to-close.
+  useFocusReturn(open);
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div role="dialog" aria-modal="true" aria-labelledby="city-picker-title" className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="bg-surface-floating rounded-lg border border-border w-full max-w-sm p-5 relative">
         <button type="button" onClick={onClose} className="absolute top-3 start-3 w-8 h-8 rounded-full hover:bg-green-50 flex items-center justify-center text-fg-muted" aria-label={t("common.aria.close")}>
           <X size={16} weight="bold" />
         </button>
-        <h3 className="font-headline-md text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
+        <h3 id="city-picker-title" className="font-headline-md text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
         <div className="flex flex-wrap gap-2 mb-4">
           {POPULAR_CITIES.map(({ key, canonical }) => (

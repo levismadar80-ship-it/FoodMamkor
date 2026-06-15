@@ -14,6 +14,12 @@ import { useOnboarding } from "@/lib/use-onboarding";
 import { isFridayMode } from "@/lib/friday-mode";
 import { CATEGORY_CARDS, matchCategoryId } from "@/lib/home-categories";
 import { selectFeaturedProducer } from "@/lib/featured-producer";
+import {
+  CategoriesResponseSchema,
+  StatsSchema,
+  ProducerSchema,
+  ProducersResponseSchema,
+} from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
 // MEH-521: minimum approved count before showing numeric stats.
@@ -122,7 +128,15 @@ export function useHomePage() {
     setFilters(initFilters);
     setChips(initChips);
 
-    api.get("/categories").then((r) => setCategories(r.data)).catch(() => {});
+    // Rule-19: validate the shape before trusting it; on parse failure
+    // keep categories empty (same as the network-error branch below).
+    api
+      .get("/categories")
+      .then((r) => {
+        const parsed = CategoriesResponseSchema.safeParse(r.data);
+        setCategories(parsed.success ? parsed.data : []);
+      })
+      .catch(() => {});
     // Apply any filters + chips already in the URL on first load (shared/bookmarked URLs).
     // Use local vars — state setters above are async and won't be reflected yet.
     const initParams = {};
@@ -135,7 +149,15 @@ export function useHomePage() {
     // true and the skeleton dismisses — empty result hides the section
     // (showStatsCounter/showStatsFallback both false), which is the same
     // behavior we had before, just CLS-safe (skeleton bridged the gap).
-    api.get("/stats").then((r) => setStats(r.data)).catch(() => setStats({}));
+    // Rule-19: a malformed /stats payload degrades to {} (section hides),
+    // identical to the network-error branch — never crashes the counter.
+    api
+      .get("/stats")
+      .then((r) => {
+        const parsed = StatsSchema.safeParse(r.data);
+        setStats(parsed.success ? parsed.data : {});
+      })
+      .catch(() => setStats({}));
     // Task 13 + MEH-11: load recently viewed producer IDs from
     // localStorage. The helper applies a 7-day TTL and gracefully
     // ignores legacy storage shapes.
@@ -143,7 +165,15 @@ export function useHomePage() {
     if (ids.length > 0) {
       Promise.all(
         ids.map((id) =>
-          api.get(`/producers/${id}`).then((r) => r.data).catch(() => null),
+          api
+            .get(`/producers/${id}`)
+            // Rule-19: a malformed producer is dropped (null), then
+            // filtered out by `.filter(Boolean)` below — never rendered.
+            .then((r) => {
+              const parsed = ProducerSchema.safeParse(r.data);
+              return parsed.success ? parsed.data : null;
+            })
+            .catch(() => null),
         ),
       ).then((results) => setRecentlyViewed(results.filter(Boolean)));
     }
@@ -208,7 +238,11 @@ export function useHomePage() {
     api
       .get("/producers", { params })
       .then((r) => {
-        setProducers(r.data);
+        // Rule-19: validate the home grid feed (NOT the map feed — that's
+        // MEH-779). On parse failure show an empty grid rather than
+        // crashing on a malformed row.
+        const parsed = ProducersResponseSchema.safeParse(r.data);
+        setProducers(parsed.success ? parsed.data : []);
         // Only reset visibleCount when the user actually changed filters
         // (i.e. was given `params`). The initial load and the back-from-
         // producer load should keep the restored visibleCount.

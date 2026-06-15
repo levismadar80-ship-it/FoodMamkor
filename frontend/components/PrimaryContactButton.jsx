@@ -1,6 +1,14 @@
 "use client";
 
-import { WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import {
+  WhatsappLogo,
+  Phone,
+  Globe,
+  EnvelopeSimple,
+  InstagramLogo,
+  FacebookLogo,
+  Receipt,
+} from "@phosphor-icons/react";
 import {
   getPrimaryContactHref,
   getPrimaryContactLabel,
@@ -37,6 +45,23 @@ const VARIANTS = {
     Icon: EnvelopeSimple,
     className:
       "bg-primary-dark text-white hover:bg-primary focus-visible:ring-primary-dark/40",
+  },
+  // MEH-296: new primary channels. Brand-token classes only (no invented
+  // colors); distinct per-channel treatment is a design-polish follow-up.
+  instagram: {
+    Icon: InstagramLogo,
+    className:
+      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+  facebook: {
+    Icon: FacebookLogo,
+    className:
+      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
+  },
+  external_order: {
+    Icon: Receipt,
+    className:
+      "bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary/40",
   },
 };
 

@@ -14,6 +14,7 @@
  */
 
 import api from "./api";
+import { FavoritesResponseSchema } from "@/lib/api-schemas";
 
 let ids = new Set();
 let loaded = false;
@@ -45,7 +46,10 @@ export function ensureFavoritesLoaded() {
   loadingPromise = api
     .get("/users/me/favorites")
     .then((res) => {
-      const list = Array.isArray(res.data) ? res.data : [];
+      // Rule-19: validate the favorites payload; a malformed response
+      // yields an empty cache (the safe default this module already used).
+      const parsed = FavoritesResponseSchema.safeParse(res.data);
+      const list = parsed.success ? parsed.data : [];
       ids = new Set(list.map((f) => f.producer_id ?? f.id).filter(Boolean));
       loaded = true;
       notify();

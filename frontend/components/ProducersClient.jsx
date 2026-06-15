@@ -279,7 +279,7 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              {chip.icon} {chip.label}
+              {chip.label}
             </button>
           ))}
           {cityFilter && (
