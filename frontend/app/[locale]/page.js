@@ -40,6 +40,14 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
 const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
 const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80&fm=webp";
 
+// MEH-809: gate the "עסקים חדשים" section on catalog depth. With a thin catalog
+// the "last added" producers ARE the same businesses already shown in the
+// recommended grid above, so the section reads as a duplicate. Hide it until
+// the total distinct inventory is deep enough (the simpler of the two MEH-809
+// thresholds — total count, not a set-difference against the grid). Render
+// gate only; no producer API/data change.
+const NEW_SECTION_MIN_PRODUCERS = 8;
+
 export default function HomePage() {
   const t = useTranslations();
   const locale = useLocale();
@@ -179,7 +187,7 @@ export default function HomePage() {
       {/* =========================
           NEW PRODUCERS (last 4 added)
           ========================= */}
-      {newestProducers.length > 0 && (
+      {producers.length >= NEW_SECTION_MIN_PRODUCERS && newestProducers.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 pb-20">
           <h2 className="font-headline-lg font-bold text-text mb-8 flex items-center gap-2" style={{ fontSize: "clamp(26px, 3vw, 36px)" }}>
             <Sparkle size={16} className="text-current" />
