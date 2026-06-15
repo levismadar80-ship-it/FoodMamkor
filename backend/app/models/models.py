@@ -19,7 +19,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
 
@@ -1052,7 +1052,12 @@ class PhoneOtpToken(Base):
     used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    producer = relationship("Producer", backref="otp_tokens")
+    # MEH-773 (Chunk B): passive_deletes defers child cleanup to the DB
+    # ON DELETE CASCADE (producer_id is NOT NULL) instead of the ORM
+    # unit-of-work trying to nullify it → NotNullViolation 500 (MEH-755).
+    producer = relationship(
+        "Producer", backref=backref("otp_tokens", passive_deletes=True)
+    )
 
 
 class KashrutBadgeRequest(Base):
@@ -1080,7 +1085,12 @@ class KashrutBadgeRequest(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    producer = relationship("Producer", backref="kashrut_requests")
+    # MEH-773 (Chunk B): passive_deletes defers to DB ON DELETE CASCADE —
+    # closes the latent NotNullViolation on producer delete (kashrut_requests
+    # had no explicit pre-delete, unlike phone_otp_tokens / MEH-755).
+    producer = relationship(
+        "Producer", backref=backref("kashrut_requests", passive_deletes=True)
+    )
     reviewer = relationship("User", backref="kashrut_reviews")
 
 

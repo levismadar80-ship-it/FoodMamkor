@@ -191,7 +191,8 @@ home_product_ratings (
 
 reports (
   id uuid PK, reporter_id FK, producer_id FK,
-  reason text, created_at
+  reason text, created_at,
+  UNIQUE(reporter_id, producer_id)   -- uq_report_reporter_producer (MEH-773)
 )
 ```
 
@@ -601,7 +602,7 @@ DELETE /reviews/{id}             auth  — owner or admin
 ### Reports (`app/routers/reports.py`)
 
 ```
-POST /producers/{id}/report      auth  — 3 reports auto-flag for admin
+POST /producers/{id}/report      auth  — 3 reports auto-flag for admin; 409 if already reported (MEH-773)
 GET  /admin/reports              admin
 ```
 

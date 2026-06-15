@@ -29,7 +29,7 @@ erDiagram
         string city
         string phone
         string role "consumer|producer|admin"
-        uuid producer_id FK "nullable, links to owned producer"
+        uuid producer_id FK "nullable, links to owned producer; ON DELETE SET NULL (MEH-773)"
         string google_id UK
         string apple_id UK
         boolean is_blocked
@@ -223,6 +223,15 @@ erDiagram
         timestamp created_at
     }
 ```
+
+> **MEH-773 integrity constraints (migration `382128b23383` + Chunk B ORM):**
+> `reports` has `UNIQUE(reporter_id, producer_id)` (`uq_report_reporter_producer`)
+> and `referral_clicks` has `UNIQUE(referee_id)` (`uq_referral_one_per_referee`)
+> — one report per (reporter, producer), one referral credit per referee.
+> `users.producer_id` is `ON DELETE SET NULL`. `phone_otp_tokens` and
+> `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
+> `passive_deletes=True`, so deleting a producer cascades children at the DB
+> layer instead of the ORM nullifying a NOT-NULL column.
 
 ## 4. Analytics + marketing
 
