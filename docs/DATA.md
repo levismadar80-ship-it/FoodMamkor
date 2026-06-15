@@ -76,7 +76,7 @@ producers (
   id uuid PK,
   name, description, short_description,
   city, lat float, lng float,
-  phone, instagram, website, whatsapp_group,
+  phone, instagram, website, whatsapp_group, facebook, external_order_form,
   status: pending|approved|rejected|inactive,
   images text[],
   is_verified bool,
