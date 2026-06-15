@@ -3388,6 +3388,31 @@
           "phone": "טלפון מאומת"
         }
       },
+      "contact_channels": {
+        "heading": "ערוצי קשר",
+        "subtitle": "בחרי אילו ערוצים להציג, ומה יהיה הערוץ הראשי — הוא מופיע ככפתור הגדול בעמוד העסק שלך.",
+        "field_phone": "טלפון",
+        "phone_field_helper": "המספר הזה משמש גם לוואטסאפ וגם לשיחות",
+        "field_instagram": "אינסטגרם (שם משתמש)",
+        "field_website": "אתר (קישור)",
+        "field_email": "אימייל",
+        "field_facebook": "פייסבוק (קישור)",
+        "field_external_order": "טופס הזמנות (קישור)",
+        "primary_legend": "הערוץ הראשי",
+        "primary_whatsapp": "וואטסאפ — הלקוחות שולחות הודעה",
+        "primary_phone": "טלפון — הלקוחות מתקשרות",
+        "primary_instagram": "אינסטגרם",
+        "primary_email": "אימייל",
+        "primary_website": "אתר",
+        "primary_facebook": "פייסבוק",
+        "primary_external_order": "טופס הזמנות",
+        "hint_empty": "מלאי את השדה הזה כדי שישמש כערוץ הראשי",
+        "error_summary": "כדי להגדיר ערוץ ראשי צריך למלא את השדה שלו",
+        "save_cta": "שמירת ערוצי קשר",
+        "saving": "שומרים...",
+        "saved": "נשמר",
+        "save_error": "השמירה נכשלה. נסו שוב."
+      },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",
         "tooltip": "השאלות שיופיעו ללקוחה לפני שתשלח לך הודעת וואטסאפ — חוסך לך הסברים חוזרים. עד 5 שאלות.",
