@@ -17,13 +17,15 @@
 ## 1. Audience & gender — the core rule
 
 Mehamakor addresses a **feminine "את"** by default (both buyers and business
-owners are addressed in the feminine singular). Every UI verb, CTA, toast,
+owners are addressed in the feminine singular). Every UI verb, toast,
 placeholder, and aria-label uses the **feminine imperative**. This is not a
 per-page choice — it is product-wide, admin panel included.
 
 > Plural / generic framings (`הצטרפו`, `בעלות עסק`) remain acceptable where the
 > copy deliberately addresses a group; the rule below targets the **singular
 > imperative** drift specifically.
+
+> **CTAs/buttons — defer to [ADR-014](./decisions/ADR-014-voice-rules-hebrew-hybrid.md) (higher in Truth Hierarchy):** functional UI CTAs/buttons use the **plural imperative** (`הוסיפו עסק`, `גלו עסקים`); narrative / brand-"we" surfaces stay **feminine**. ADR-014 is the arbiter for CTA voice — do not re-litigate per-PR.
 
 ### Masculine → feminine verb table
 
