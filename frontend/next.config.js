@@ -99,6 +99,14 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Perf: barrel-optimize large icon/animation packages so a named import
+  // (`import { Heart } from "@phosphor-icons/react"`) only pulls the icons
+  // actually used instead of the whole barrel. Phosphor is NOT in Next's
+  // default optimize list (unlike lucide-react), and ~89 files import from
+  // it. framer-motion benefits similarly. App-wide First-Load-JS reduction.
+  experimental: {
+    optimizePackageImports: ["@phosphor-icons/react", "framer-motion"],
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
