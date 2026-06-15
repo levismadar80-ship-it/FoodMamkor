@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — Home UX audit (page 1/11) + staging visual-capture pipeline
+
+### Home UX audit (2026-06-15) — page 1/11  (method: UX-AUDIT-PLAYBOOK.md, staging = truth)
+Merged to staging:
+- #1147 voice→ADR-014 (קבלו הכל cookie banner; טעינת מפה… map loaders) — MEH-808, squash 9203817
+- #1148 new-section gate (hides "עסקים חדשים" when producers.length < 8) — MEH-809, squash 8b140d4. Shipped on TOTAL-count threshold; strict "≥8 not-already-in-recommended" = available 1-line follow-up.
+Open:
+- MEH-807 hero (cold / no warm image) — report-only, NOT a code bug. Fix = upload Cloudinary asset public_id `home/hero-produce` (acct dfzpscjks) → fixes staging+prod. Stays open for asset.
+- twt test producer heads both curated rails — clean staging seed + verify not on prod.
+- Producer-card thumbnails imageless (real photos pending) — P3.
+- 🍪 cookie emoji removal — still pending in H2a session (Refs MEH-657), not in this batch.
+- Mobile bottom-clutter (cookie banner + chat-FAB + BottomNav overlap) — folded into MEH-789.
+Verify after staging redeploy: PR-3 copy live; PR-4 gate hides at ~5 producers, no empty gap (un-run mobile-QA).
+
+### Staging visual-capture pipeline (reusable, audit pages 2–11)
+CC-web env → Network access = Custom + `staging.mehamakor.online` (keep package-manager defaults). Staging is Vercel-protected → Playwright sends `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET` + `x-vercel-set-bypass-cookie: true`, target `/he`. Prefer DOM/text probe (headings + scrollHeight + img counts) over moving PNGs. Full method in UX-AUDIT-PLAYBOOK.md. (Token = CC env var; value never in docs.)
+
 ## 2026-06-15 — MEH-296 Chunk 3d (admin + create-path parity) — PR opened (NOT merged); 3c closed no-op
 
 **Done:** closes the Chunk-2 `ProducerAdminCreate` deferral + the public `ProducerCreate` gap. **Backend:** both create schemas get `facebook`/`external_order_form` + URL-scheme guard (reuse Chunk-2 helpers); `ProducerAdminCreate` also gets the 7-value method guard; both `Producer(...)` constructors (`admin.py`, `services/producer_queries.py`) pass the fields; `auth.py` register allowlist 4→7 + instagram presence-check (facebook/external_order have no register field → accepted, set in dashboard). **Frontend:** admin `ProducerForm` 4→7 select + 2 value inputs + he/en keys. +4 pytest. No migration. DATA.md + db-schema.md updated. **3c closed as no-op** (register collects only phone → default=whatsapp by design; primary set in 3b dashboard).
