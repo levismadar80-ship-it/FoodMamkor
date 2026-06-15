@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PencilSimple } from "@phosphor-icons/react";
+import { PencilSimple, Warning } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import Input from "@/components/ui/Input";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -370,6 +371,16 @@ export default function ProducerDashboardPage() {
           <CustomQuestionsCard
             profile={profile}
             onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+          />
+        </div>
+      )}
+
+      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
+      {profile && (
+        <div className="mt-6">
+          <ContactChannelsCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           />
         </div>
       )}
@@ -791,6 +802,161 @@ function CustomQuestionsCard({ profile, onSave }) {
       <button
         onClick={handleSave}
         disabled={saving}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-296 Chunk 3b: producer-facing contact-channels editor.
+// Mirrors CustomQuestionsCard — local form seeded from profile, saves the
+// contact subset via PUT /producers/me. The 7-value method guard + http(s)
+// URL guard run server-side (Chunk 2, schemas.ProducerUpdate); 422 detail is
+// surfaced inline. whatsapp + phone both back onto the `phone` value field.
+// ============================================================
+
+const PRIMARY_METHODS = [
+  "whatsapp",
+  "phone",
+  "instagram",
+  "email",
+  "website",
+  "facebook",
+  "external_order",
+];
+
+// Which value field backs each primary method (empty-on-save guard).
+const METHOD_FIELD = {
+  whatsapp: "phone",
+  phone: "phone",
+  instagram: "instagram",
+  email: "contact_email",
+  website: "website",
+  facebook: "facebook",
+  external_order: "external_order_form",
+};
+
+function ContactChannelsCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.contact_channels");
+  const seed = {
+    phone: profile?.phone || "",
+    instagram: profile?.instagram || "",
+    website: profile?.website || "",
+    contact_email: profile?.contact_email || "",
+    facebook: profile?.facebook || "",
+    external_order_form: profile?.external_order_form || "",
+    primary_contact_method: profile?.primary_contact_method || "whatsapp",
+  };
+  const [form, setForm] = useState(seed);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [hintField, setHintField] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty = Object.keys(seed).some((k) => form[k] !== seed[k]);
+
+  const upd = (field, value) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setSaved(false);
+    // Clear a stale empty-primary hint/summary when its backing field is
+    // edited, OR when the primary method changes (the prior hint targeted a
+    // field that may no longer back the chosen method). PR #1137 review.
+    if (hintField === field || field === "primary_contact_method") {
+      setHintField(null);
+      setErrorMsg(null);
+    }
+  };
+
+  const handleSave = async () => {
+    // Validate on save (not while typing): the chosen primary method must
+    // have its backing value field filled. Inline hint + block, no disable.
+    const backing = METHOD_FIELD[form.primary_contact_method];
+    if (backing && !form[backing].trim()) {
+      setHintField(backing);
+      setErrorMsg(t("error_summary"));
+      return;
+    }
+    setHintField(null);
+    setErrorMsg(null);
+    setSaving(true);
+    setSaved(false);
+    try {
+      const payload = {
+        phone: form.phone.trim() || null,
+        instagram: form.instagram.trim() || null,
+        website: form.website.trim() || null,
+        contact_email: form.contact_email.trim() || null,
+        facebook: form.facebook.trim() || null,
+        external_order_form: form.external_order_form.trim() || null,
+        primary_contact_method: form.primary_contact_method,
+      };
+      await api.put("/producers/me", payload);
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      // Surface the Chunk-2 server guards (scheme / 7-value) inline.
+      const detail = err?.response?.data?.detail;
+      setErrorMsg(typeof detail === "string" ? detail : t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fieldError = (field) => (hintField === field ? t("hint_empty") : undefined);
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="space-y-3">
+        <Input type="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}
+          onChange={(e) => upd("phone", e.target.value)} error={fieldError("phone")} />
+        <Input type="text" dir="ltr" label={t("field_instagram")} value={form.instagram}
+          onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
+        <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
+          onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
+        <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
+          onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
+        <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
+          onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
+        <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
+          onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />
+      </div>
+
+      <fieldset className="mt-5">
+        <legend className="text-sm font-medium text-text mb-2">{t("primary_legend")}</legend>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {PRIMARY_METHODS.map((m) => (
+            <label key={m} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="radio"
+                name="primary_contact_method"
+                value={m}
+                checked={form.primary_contact_method === m}
+                onChange={() => upd("primary_contact_method", m)}
+                className="accent-primary"
+              />
+              <span>{t(`primary_${m}`)}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
