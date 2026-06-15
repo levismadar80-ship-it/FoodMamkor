@@ -941,7 +941,7 @@
   },
   "map": {
     "client": {
-      "loading_map": "טוענת מפה...",
+      "loading_map": "טעינת מפה...",
       "title": "מפת בתי עסק",
       "errors": {
         "no_gps": "הדפדפן שלך לא תומך ב-GPS",
@@ -1024,7 +1024,7 @@
       "heading_ssr": "בתי עסק על המפה"
     },
     "homepage_mini": {
-      "loading": "טוענת מפה...",
+      "loading": "טעינת מפה...",
       "pre_launch_hint": "בקרוב מאוד — בתי עסק ראשונים מצטרפים השבוע",
       "aria": "תצוגה מקדימה של המפה",
       "dot_caption": "כל בית עסק על המפה",
@@ -1310,6 +1310,13 @@
           "primary_contact_phone": "טלפון",
           "primary_contact_website": "אתר",
           "primary_contact_email": "אימייל",
+          "primary_contact_instagram": "אינסטגרם",
+          "primary_contact_facebook": "פייסבוק",
+          "primary_contact_external_order": "טופס הזמנות",
+          "facebook": "פייסבוק (קישור)",
+          "facebook_placeholder": "https://facebook.com/...",
+          "external_order_form": "טופס הזמנות (קישור)",
+          "external_order_form_placeholder": "https://...",
           "contact_email": "אימייל ליצירת קשר",
           "contact_email_placeholder": "business@example.com",
           "city": "עיר / אזור",
@@ -2231,7 +2238,7 @@
     "cookie_banner": {
       "aria_label": "הסכמה לעוגיות",
       "message": "🍪 אנחנו משתמשים בעוגיות לשיפור החוויה — <link>מדיניות פרטיות</link>",
-      "accept_all": "קבלי הכל",
+      "accept_all": "קבלו הכל",
       "essential_only": "רק הכרחיים"
     },
     "lightbox": {

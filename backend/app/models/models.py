@@ -250,7 +250,11 @@ class User(Base):
     city = Column(String(100))
     phone = Column(String(20))
     role = Column(String(20), default="consumer")  # consumer | producer | admin
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
@@ -598,6 +602,13 @@ class HomeProduct(Base):
 
 class Report(Base):
     __tablename__ = "reports"
+    # MEH-773: one report per (reporter, producer) — closes the
+    # check-then-act race (matches migration 382128b23383).
+    __table_args__ = (
+        UniqueConstraint(
+            "reporter_id", "producer_id", name="uq_report_reporter_producer"
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reporter_id = Column(
@@ -939,6 +950,11 @@ class ReferralClick(Base):
     """MEH-49: tracks when a referee registers via a referrer's /ref/{code} link."""
 
     __tablename__ = "referral_clicks"
+    # MEH-773: one referral credit per referee (matches migration
+    # 382128b23383).
+    __table_args__ = (
+        UniqueConstraint("referee_id", name="uq_referral_one_per_referee"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     referrer_id = Column(
