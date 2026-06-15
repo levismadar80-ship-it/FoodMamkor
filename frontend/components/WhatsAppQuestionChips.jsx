@@ -31,12 +31,13 @@ export default function WhatsAppQuestionChips({ producer }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block font-body-md text-primary transition hover:bg-green-50"
+              className="inline-flex items-center font-body-md text-primary transition hover:bg-green-50"
               style={{
                 border: "1px solid #e8e0d0",
                 borderRadius: "20px",
                 padding: "6px 12px",
                 fontSize: "12px",
+                minBlockSize: "44px",
               }}
             >
               {q}
