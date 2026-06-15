@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — MEH-296 Chunk 3b (producer contact-channels editor) — PR #1137 opened (NOT merged)
+
+**Done:** new `ContactChannelsCard` in `producer/dashboard/page.js` (mirrors `CustomQuestionsCard`) — the **first producer-facing UI to edit contact channels** (was admin-only). 6 value fields via `ui/Input` (phone/instagram/website/contact_email/facebook/external_order_form) + a 7-method primary-channel radio → `PUT /producers/me` (all fields already in `_PRODUCER_WRITABLE_FIELDS`; **zero backend**). UX: all radios enabled, **validate-on-save** inline hint (`Warning` icon + red field, no disable, no while-typing errors); Chunk-2 server guards (http(s) scheme / 7-value) surfaced inline. Copy Sapir-approved (he/en parity 23/23, customer-action radio labels + phone-shared-number helper, emoji-free). Build green, ESLint 0 errors, RTL clean. 3 files, reused `ui/Input`. `whatsapp_group` skipped (card kept to the 7 methods).
+
+**Pending / next:** **PR #1137 awaiting Sapir final review + merge — DO NOT self-merge.** Then **3c** register de-hardcode (`RegisterProducerClient.jsx:255`, derive-default + Playwright, HIGH-RISK critical flow) + **3d** admin `ProducerForm` parity (**ripples into `schemas.py` `ProducerAdminCreate`** — the Chunk-2 deferral) + docs `DATA.md`/`db-schema.md`. MEH-296 stays OPEN (no `Closes`).
+
+**Decisions:** editor lives in the **dashboard** (Linear said "settings" but settings only links out — imprecise); radio UX = **inline-hint-on-save, not disable** (research-backed: GitLab/LogRocket).
+
 ## 2026-06-14 — Overnight fix-wave batch (5 PRs, ALL MERGED to staging)
 
 - **Outcome:** the 4-audit fix-wave batch shipped and **all 5 PRs merged** to

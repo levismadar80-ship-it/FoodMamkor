@@ -3388,6 +3388,31 @@
           "phone": "Verified phone"
         }
       },
+      "contact_channels": {
+        "heading": "Contact channels",
+        "subtitle": "Choose which channels to show, and which is primary — it appears as the big button on your business page.",
+        "field_phone": "Phone",
+        "phone_field_helper": "This number is used for both WhatsApp and calls",
+        "field_instagram": "Instagram (username)",
+        "field_website": "Website (link)",
+        "field_email": "Email",
+        "field_facebook": "Facebook (link)",
+        "field_external_order": "Order form (link)",
+        "primary_legend": "Primary channel",
+        "primary_whatsapp": "WhatsApp — customers message you",
+        "primary_phone": "Phone — customers call you",
+        "primary_instagram": "Instagram",
+        "primary_email": "Email",
+        "primary_website": "Website",
+        "primary_facebook": "Facebook",
+        "primary_external_order": "Order form",
+        "hint_empty": "Fill in this field to use it as your primary channel",
+        "error_summary": "To set a primary channel, fill in its field",
+        "save_cta": "Save contact channels",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
       "custom_questions": {
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
