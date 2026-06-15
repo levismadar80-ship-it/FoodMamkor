@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { EnvelopeSimple, Globe, InstagramLogo, Phone, WhatsappLogo } from "@phosphor-icons/react";
+import { EnvelopeSimple, FacebookLogo, Globe, InstagramLogo, Phone, Receipt, WhatsappLogo } from "@phosphor-icons/react";
 
 import FollowButton from "@/components/FollowButton";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
@@ -125,6 +125,41 @@ export default function ContactSidebar({
             >
               <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
               <span className="truncate">{producer.contact_email}</span>
+            </a>
+          )}
+          {/* MEH-296 — facebook tile. Skipped when facebook IS the primary
+              CTA (redundant with the big button), mirroring the email tile. */}
+          {producer.facebook?.trim() && getPrimaryMethod(producer) !== "facebook" && (
+            <a
+              href={
+                producer.facebook.trim().startsWith("http")
+                  ? producer.facebook.trim()
+                  : `https://${producer.facebook.trim()}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
+              onClick={() => trackContactClick(producer.id, "facebook")}
+            >
+              <FacebookLogo size={18} weight="duotone" className="text-primary shrink-0" />
+              {t("producer.card.contact.facebook")}
+            </a>
+          )}
+          {/* MEH-296 — external order-form tile. Skipped when it IS primary. */}
+          {producer.external_order_form?.trim() && getPrimaryMethod(producer) !== "external_order" && (
+            <a
+              href={
+                producer.external_order_form.trim().startsWith("http")
+                  ? producer.external_order_form.trim()
+                  : `https://${producer.external_order_form.trim()}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
+              onClick={() => trackContactClick(producer.id, "external_order")}
+            >
+              <Receipt size={18} weight="duotone" className="text-primary shrink-0" />
+              {t("producer.card.contact.external_order")}
             </a>
           )}
         </div>
