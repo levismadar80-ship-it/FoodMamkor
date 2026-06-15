@@ -1535,6 +1535,53 @@ class TestReservedSlugs:
             )
             assert resp.status_code == 400, f"Expected 400 for slug '{reserved}'"
 
+    # --- MEH-296 3d: admin + public contact-channel parity ---
+
+    def test_admin_create_persists_new_contact_channels(self, client, db):
+        admin = make_user(db, role="admin")
+        resp = client.post(
+            "/admin/producers",
+            json={
+                "name": "חנות ערוצים",
+                "city": "חיפה",
+                "facebook": "https://facebook.com/mybiz",
+                "external_order_form": "https://shop.example.com/order",
+            },
+            headers=auth_header(admin),
+        )
+        assert resp.status_code in (200, 201), resp.text
+        body = resp.json()
+        assert body["facebook"] == "https://facebook.com/mybiz"
+        assert body["external_order_form"] == "https://shop.example.com/order"
+
+    def test_admin_create_rejects_bad_contact_method(self, client, db):
+        admin = make_user(db, role="admin")
+        resp = client.post(
+            "/admin/producers",
+            json={"name": "עסק טוב", "city": "חיפה", "primary_contact_method": "garbage"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422, resp.text
+
+    def test_admin_create_rejects_javascript_facebook(self, client, db):
+        admin = make_user(db, role="admin")
+        resp = client.post(
+            "/admin/producers",
+            json={"name": "עסק טוב", "city": "חיפה", "facebook": "javascript:alert(1)"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 422, resp.text
+
+    def test_public_create_rejects_javascript_website(self, client, db):
+        # ProducerCreate (public POST /producers) URL-scheme guard.
+        user = make_user(db, email="pub-create@example.com")
+        resp = client.post(
+            "/producers",
+            json={"name": "עסק חדש", "website": "javascript:alert(1)"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422, resp.text
+
     def test_admin_create_with_reserved_name_auto_suffixes_slug(self, client, db):
         """When name auto-generates a reserved slug, the slug should be suffixed."""
         admin = make_user(db, role="admin")
