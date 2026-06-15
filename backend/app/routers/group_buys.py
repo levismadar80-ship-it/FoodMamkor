@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import (
@@ -87,14 +88,30 @@ def commit_to_group_buy(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    gb = db.query(GroupBuy).filter(GroupBuy.id == group_buy_id).first()
+    # MEH-773: lock the group_buy row so concurrent commits serialize.
+    # Without the lock two requests can both read commits < max_participants
+    # and both insert, overshooting capacity (no unique constraint guards it).
+    gb = (
+        db.query(GroupBuy)
+        .filter(GroupBuy.id == group_buy_id)
+        .with_for_update()
+        .first()
+    )
     if not gb:
         raise HTTPException(status_code=404, detail="קבוצת הרכש לא נמצאה")
     if gb.status != "open":
         raise HTTPException(status_code=400, detail="קבוצת הרכש אינה פתוחה להצטרפות")
     if gb.deadline < datetime.utcnow():
         raise HTTPException(status_code=400, detail="המועד האחרון חלף")
-    if gb.max_participants and len(gb.commits) >= gb.max_participants:
+
+    # MEH-773: fresh count under the lock — gb.commits is a cached
+    # relationship and can be stale within the serialized critical section.
+    current_count = (
+        db.query(func.count(GroupBuyCommit.id))
+        .filter(GroupBuyCommit.group_buy_id == group_buy_id)
+        .scalar()
+    )
+    if gb.max_participants and current_count >= gb.max_participants:
         raise HTTPException(status_code=400, detail="קבוצת הרכש מלאה")
 
     existing = (
@@ -117,7 +134,7 @@ def commit_to_group_buy(
     db.add(commit)
 
     # Auto-fund when min_participants reached
-    new_count = len(gb.commits) + 1
+    new_count = current_count + 1
     if new_count >= gb.min_participants:
         gb.status = "funded"
 
