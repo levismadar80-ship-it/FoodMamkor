@@ -159,6 +159,9 @@ def admin_create_producer(
         # MEH-17
         primary_contact_method=data.primary_contact_method or "whatsapp",
         contact_email=data.contact_email,
+        # MEH-296 3d: admin-create parity for the new channels.
+        facebook=data.facebook,
+        external_order_form=data.external_order_form,
         slug=slug,
         top_product_name=data.top_product_name,
         price_range=data.price_range,

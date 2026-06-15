@@ -332,6 +332,10 @@ class ProducerCreate(BaseModel):
     phone: str | None = None
     instagram: str | None = None
     website: str | None = None
+    # MEH-296 3d: public-create parity (URL fields only; ProducerCreate has
+    # no primary_contact_method, so only the URL-scheme guard applies below).
+    facebook: str | None = None
+    external_order_form: str | None = None
     category_ids: list[int] = []
     # MEH-530: see ProducerRegister for the validation rationale.
     producer_license_number: str | None = Field(default=None, max_length=20)
@@ -341,6 +345,12 @@ class ProducerCreate(BaseModel):
     @classmethod
     def _validate_name_letters(cls, v: str) -> str:
         return _min_letters_validator(v)
+
+    # MEH-296 3d: http(s) scheme guard on the URL fields (reuse Chunk-2 helper).
+    @field_validator("website", "facebook", "external_order_form")
+    @classmethod
+    def _validate_contact_urls(cls, v):
+        return _url_scheme_validator(v)
 
 
 class ProducerAdminCreate(BaseModel):
@@ -361,6 +371,9 @@ class ProducerAdminCreate(BaseModel):
     # MEH-17
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
+    # MEH-296 3d: admin parity with ProducerUpdate's contact channels.
+    facebook: str | None = None
+    external_order_form: str | None = None
     slug: str | None = None
     top_product_name: str | None = None
     price_range: str | None = None
@@ -400,6 +413,17 @@ class ProducerAdminCreate(BaseModel):
     @classmethod
     def _sanitize_admin_notes(cls, v):
         return sanitize_text(v, max_length=2000)
+
+    # MEH-296 3d: same boundary guards as ProducerUpdate (reuse Chunk-2 helpers).
+    @field_validator("primary_contact_method")
+    @classmethod
+    def _validate_primary_contact_method(cls, v):
+        return _contact_method_validator(v)
+
+    @field_validator("website", "facebook", "external_order_form")
+    @classmethod
+    def _validate_contact_urls(cls, v):
+        return _url_scheme_validator(v)
 
     @model_validator(mode="after")
     def _validate_location_mode(self):
