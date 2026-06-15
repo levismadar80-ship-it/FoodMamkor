@@ -1,11 +1,12 @@
+// MEH-657: dietary/trust chips are text-only (Emoji LOCK v2 / a11y) — no icon glyphs.
 export const CHIPS_CONFIG = [
-  { key: "kosher",        label: "כשר",         icon: "✡️" },
-  { key: "organic",       label: "אורגני",       icon: "🌿" },
-  { key: "gluten_free",   label: "ללא גלוטן",    icon: "🌾" },
-  { key: "vegan",         label: "טבעוני",       icon: "🥦" },
-  { key: "lactose_free",  label: "ללא לקטוז",    icon: "🥛" },
-  { key: "has_delivery",  label: "משלוח",        icon: "🚚" },
-  { key: "verified",      label: "מאומת בלבד",   icon: "✅" },
+  { key: "kosher",        label: "כשר" },
+  { key: "organic",       label: "אורגני" },
+  { key: "gluten_free",   label: "ללא גלוטן" },
+  { key: "vegan",         label: "טבעוני" },
+  { key: "lactose_free",  label: "ללא לקטוז" },
+  { key: "has_delivery",  label: "משלוח" },
+  { key: "verified",      label: "מאומת בלבד" },
 ];
 
 export const CHIPS_DEFAULT = {

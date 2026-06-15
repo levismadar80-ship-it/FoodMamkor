@@ -435,14 +435,14 @@
       "free": "Free"
     },
     "marquee": {
-      "tag_unprocessed": "🌿 Unprocessed",
-      "tag_pasture": "🥩 Pasture-raised",
-      "tag_organic": "🧀 Organic",
-      "tag_sourdough": "🍞 Sourdough",
-      "tag_extra_virgin": "🫒 Extra virgin",
-      "tag_fresh_real": "🌱 Fresh and real",
-      "tag_verified": "✅ Verified",
-      "tag_local": "📍 Local"
+      "tag_unprocessed": "Unprocessed",
+      "tag_pasture": "Pasture-raised",
+      "tag_organic": "Organic",
+      "tag_sourdough": "Sourdough",
+      "tag_extra_virgin": "Extra virgin",
+      "tag_fresh_real": "Fresh and real",
+      "tag_verified": "Verified",
+      "tag_local": "Local"
     },
     "story_block": {
       "founder_quote": "Once you know where to buy from — there's no going back.",
