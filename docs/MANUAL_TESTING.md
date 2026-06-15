@@ -3,6 +3,14 @@
 
 ---
 
+## MEH-805 — post-login redirect (3 senders → ?redirect=)
+- [ ] **Favorite gate** — לא מחוברת, לחצי ❤ על כרטיס בית עסק → toast "התחברי", לחצי על הלינק → אחרי login חוזרת לעמוד הקודם (לא לדף הבית). איך: `/login?redirect=%2F<slug>` ב-URL.
+- [ ] **Login modal** — טריגר ל-LoginPromptModal, לחצי "היכנסי" → אחרי login חוזרת ליעד.
+- [ ] **פרסום חוויה** — `/experiences/new` כשלא מחוברת → redirect ל-login → אחרי login נוחתת על `/experiences/new` (לא על `/`).
+- [ ] **Regression** — `/register/producer` (כבר היה תקין) עדיין מחזיר ל-`/register/producer` אחרי login.
+
+---
+
 ## Overnight design batch 2026-06-12/13 (PRs #1073–#1080)
 
 - [ ] רצועת אמון (MEH-524) — דף הבית עם ≥5 עסקים ב-/stats — רצועה בקרם עם מספרים בזהב נטוי: "N בתי עסק שהצטרפו עד היום · M קטגוריות · מכל רחבי הארץ"; מתחת לסף — "מתחילות עכשיו · בכל רחבי הארץ"; אף פעם לא "0"

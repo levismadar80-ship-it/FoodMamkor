@@ -119,7 +119,7 @@ function CardHeart({ producer, onCountChange }) {
         duration: 5000,
         action: {
           label: t("producer.card.favorites.login_cta"),
-          href: `/login?next=${encodeURIComponent(nextPath)}`,
+          href: `/login?redirect=${encodeURIComponent(nextPath)}`,
         },
       });
       return;
