@@ -78,7 +78,7 @@ export default function LoginPromptModal({
 
   if (!open) return null;
 
-  const loginHref = `/login?next=${encodeURIComponent(nextPath)}`;
+  const loginHref = `/login?redirect=${encodeURIComponent(nextPath)}`;
 
   return (
     <div
