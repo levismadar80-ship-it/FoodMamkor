@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — UX-audit page 2/11 (/producer) follow-up batch — 3 DRAFT PRs
+
+3 independent DRAFT PRs off `staging` (no merges — Sapir is merge authority):
+- **#1155** `feature/docs-ux-audit-playbook` — commits `docs/UX-AUDIT-PLAYBOOK.md` (real Drive method, versioned SoT; HANDOFF:10/:23 citations now resolve). Docs-only.
+- **#1157** `feature/meh-811-812-producer-i18n` — MEH-811 **no-op** (open_orders key already at `group_buys.availability.card_label`, wired by AvailabilityBadge via MEH-806) + MEH-812 ADR-014 voice (6 producer-detail strings he/en, `show_all_count` flattened both locales for ICU parity, `open_in_waze` sibling fixed per review). `referral_msg` held (outbound-share exemption). MiniMap exact copy `פתיחה במפות Google` **deferred** (needs `MiniMap.jsx:88` suffix removal — coupled component follow-up). E2E `14-language-toggle` failure = pre-existing flake, unrelated, non-required.
+- **#1158** `feature/meh-813-814-producer-header` — MEH-813 tap-targets ≥44px (WhatsAppQuestionChips/MiniMap/ShareButton) + MEH-814 emoji strip (DeliveryBlock/ProducerHeader 🚚→Truck, 🌾🌿 stripped+label revealed). **Deferred:** BadgeRow chips tap-area (ProducerCard-central ripple, design call) + ✡️/🍞 emoji (MEH-683). Emoji systemic (57 files) → not extended (MEH-657/688).
+
+**Open follow-ups (not filed):** (1) MiniMap label exact-copy coupling (#1157+component); (2) BadgeRow ≥44px tap-area design decision (2.5.5 vs 2.5.8); (3) producer-header mobile chip coherence (grass_fed/organic text vs delivery icon vs kosher emoji) → MEH-683; (4) systemic JSX emoji → MEH-657/688.
+
 ## 2026-06-15 — Home UX audit (page 1/11) + staging visual-capture pipeline
 
 ### Home UX audit (2026-06-15) — page 1/11  (method: UX-AUDIT-PLAYBOOK.md, staging = truth)
