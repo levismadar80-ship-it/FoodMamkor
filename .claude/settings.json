@@ -314,7 +314,6 @@
       "Bash(npm uninstall*)",
       "Bash(curl -X DELETE*)",
       "Bash(curl -X POST*)",
-      "Edit(backend/alembic/versions/**)",
       "Edit(backend/app/main.py)",
       "Edit(backend/app/config.py)",
       "Edit(.github/workflows/**)",
