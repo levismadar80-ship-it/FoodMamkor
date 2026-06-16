@@ -36,7 +36,7 @@ const OPENING_MESSAGE = {
 //   5:   buyer — contacting a business
 //   6:   seller follow-up — how long until their business is approved
 // Dropped: "איך מדווחים על בעיה?" (later-stage concern, not a first-visit Q);
-// "מהמטבח של השכן" / "מוצר ביתי" prompts (feature removed, MEH-133).
+// plus the removed home-cook ("neighbor") feature prompts (MEH-133).
 const SUGGESTED_PROMPTS = [
   "איך נרשמים כבעלת עסק?",
   "איך מוצאים עסקים קרובים אליי?",
