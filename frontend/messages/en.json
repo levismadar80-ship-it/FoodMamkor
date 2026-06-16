@@ -2367,6 +2367,11 @@
       "all": "All businesses",
       "search_results": "Results for:"
     },
+    "search_input": {
+      "label": "Search businesses",
+      "placeholder": "Sourdough bread, goat cheese, organic vegetables",
+      "submit": "Search"
+    },
     "discovery": {
       "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
       "all_count": "{count, plural, one {The only business} other {All {count} businesses}}",
