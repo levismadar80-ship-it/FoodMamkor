@@ -2348,7 +2348,16 @@
     },
     "category_selector": {
       "label": "קטגוריה",
-      "search_placeholder": "חפשי קטגוריה...",
+      "search_label": "חיפוש קטגוריה",
+      "search_placeholder": "לדוגמה: גבינה, לחם, סבון",
+      "popular_descs": {
+        "dairy": "גבינות, יוגורט, חמאה",
+        "bread": "מאפים, חלות, עוגות",
+        "meat": "טרי, כשר, מהחווה",
+        "oil": "שמן זית, שמנים מובחרים",
+        "veg": "מהשדה, עונתי, אורגני",
+        "care": "סבונים, מוצרי רחצה"
+      },
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
