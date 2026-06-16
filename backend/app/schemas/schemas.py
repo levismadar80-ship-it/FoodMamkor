@@ -626,6 +626,9 @@ class ProducerListOut(BaseModel):
     has_delivery: bool = False
     pickup_points: bool = False
     kosher: str | None = None
+    # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
+    # Moved up from ProducerDetailOut so the /map card can show open/closed status.
+    opening_hours: str | None = None
     is_available_today: bool = False
     # MEH-12: durable availability status (available | full | vacation).
     availability_status: str = "available"
@@ -752,8 +755,8 @@ class ProducerDetailOut(ProducerListOut):
     created_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
-    # MEH-102: weekly opening hours. Format: "Sun-Thu 09:00-18:00, Fri 09:00-14:00"
-    opening_hours: str | None = None
+    # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
+    # the /map card can read it too).
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
 
