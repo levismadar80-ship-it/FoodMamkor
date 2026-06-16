@@ -283,7 +283,7 @@ function RegisterPageBody() {
               onBlur={() => setNameTouched(true)}
               required
               aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-md px-3 py-2 text-start transition ${
+              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-start transition ${
                 nameInvalid
                   ? "border-red-400"
                   : nameValid
@@ -310,7 +310,7 @@ function RegisterPageBody() {
               required
               aria-invalid={emailInvalid || undefined}
               // text-right kept: email input is dir="ltr"; physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-              className={`w-full border rounded-md px-3 py-2 text-right transition ${
+              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-right transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
