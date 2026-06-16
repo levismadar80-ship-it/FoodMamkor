@@ -11,7 +11,9 @@ import en from "../messages/en.json";
 // and removes each from BASELINE (the second test forces that hygiene).
 
 const HEBREW = /[֐-׿]/; // U+0590–U+05FF
-const BRAND = "מהמקור"; // legitimately appears inline in otherwise-English strings
+// i18n-ok — the brand name is the test subject (stripped before scanning),
+// not display copy; it legitimately appears inline in otherwise-English strings.
+const BRAND = "מהמקור";
 
 const BASELINE = new Set([
   "nav.add_business_short",
