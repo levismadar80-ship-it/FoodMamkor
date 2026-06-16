@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -14,6 +14,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
+import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
@@ -32,15 +33,38 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  * Touches:  Cloudinary (register/hero-box-produce, via optimizeCloudinary).
  * History:  MEH-306 (password policy); MEH-328 (OWASP ack flow); MEH-49
  *           (referral); MEH-788 (split-editorial image pane; headline-lg
- *           parity + value-prop strip removal, mirrors MEH-131).
+ *           parity + value-prop strip removal, mirrors MEH-131); MEH-837
+ *           (OAuth success honors clamped ?redirect= — Suspense boundary
+ *           added for useSearchParams, mirrors LoginClient).
  */
 
 export default function RegisterClient() {
+  return (
+    <Suspense fallback={<RegisterPageFallback />}>
+      <RegisterPageBody />
+    </Suspense>
+  );
+}
+
+function RegisterPageFallback() {
+  return (
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
+      <ButtonSpinner />
+    </div>
+  );
+}
+
+function RegisterPageBody() {
   const t = useTranslations();
   // MEH-628: scoped translator for password-policy failure copy.
   const tValidation = useTranslations("auth.passwordValidation");
   const { register } = useAuth();
   const router = useRouter();
+  const params = useSearchParams();
+  // MEH-837: honor a post-signup ?redirect= the same way /login does, clamped
+  // to an internal path via the MEH-810 helper (open-redirect guard). Missing/
+  // empty/external → "/" (preserves prior hardcoded behavior).
+  const redirectTo = safeInternalRedirect(params.get("redirect"));
   const [form, setForm] = useState({ email: "", name: "", password: "" });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
@@ -259,7 +283,7 @@ export default function RegisterClient() {
               onBlur={() => setNameTouched(true)}
               required
               aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-md px-3 py-2 text-start transition ${
+              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-start transition ${
                 nameInvalid
                   ? "border-red-400"
                   : nameValid
@@ -286,7 +310,7 @@ export default function RegisterClient() {
               required
               aria-invalid={emailInvalid || undefined}
               // text-right kept: email input is dir="ltr"; physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-              className={`w-full border rounded-md px-3 py-2 text-right transition ${
+              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-right transition ${
                 emailInvalid
                   ? "border-red-400"
                   : emailValid
@@ -369,13 +393,13 @@ export default function RegisterClient() {
             <div className="space-y-2.5">
               {googleConfigured && (
                 <GoogleAuthButton
-                  onSuccess={() => router.push("/")}
+                  onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}
               {appleConfigured && (
                 <AppleAuthButton
-                  onSuccess={() => router.push("/")}
+                  onSuccess={() => router.push(redirectTo)}
                   onError={(msg) => setError(msg)}
                 />
               )}

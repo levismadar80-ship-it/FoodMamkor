@@ -252,7 +252,10 @@ function LoginPageBody() {
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setPasswordTouched(true)}
                 required
-                minLength={8}
+                // MEH-835: DO NOT add a minLength floor — login validates the
+                // stored hash only (OWASP), so legacy <8-char accounts must be
+                // able to sign in. Empty-submit is still blocked via formIsValid
+                // (password.length >= 1). Regression of MEH-418.
                 aria-invalid={passwordInvalid || undefined}
                 className={`w-full min-h-[54px] rounded-[8px] ps-11 pe-12 py-3.5 bg-surface-card text-text outline-none transition focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   passwordInvalid
