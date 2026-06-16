@@ -52,7 +52,7 @@ export default function ShareButton({ url, title, description, city, category })
   return (
     <button
       onClick={handleShare}
-      className="inline-flex items-center gap-2 bg-white border border-border px-3 py-2 min-h-[44px] rounded-[8px] hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="inline-flex items-center justify-center gap-2 bg-white border border-border px-3 py-2 min-h-[44px] min-w-[44px] rounded-[8px] hover:bg-green-50 transition text-sm focus-visible:ring-2 focus-visible:ring-primary/40"
       title={t("copy_link")}
       aria-label={t("modal_title")}
     >

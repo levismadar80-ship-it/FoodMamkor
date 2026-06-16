@@ -5,6 +5,61 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-829 backend fields (PR #1179, draft) + MEH-836 migration-toil (draft)
+
+**MEH-829 (S7 Chunk A backend) — PR #1179 DRAFT, branch `feature/meh-829-s7-backend-fields` (`17ce184`):** added `Producer.address` (String(255) nullable) + `ProducerRegister.address`(max 255)/`short_description`(max 160), wired both explicitly into BOTH `register_producer` ctors (`auth.py:475` upgrade + `:573` new-reg — handler uses explicit-assign, not `model_dump`). **Migration NOT in PR** — `versions/**` deny-listed; op snippet + `down_revision=382128b23383` handed to Sapir in the PR body. CI `Backend tests` red is the **expected `alembic check` drift gate** (model column w/o migration); resolves when Sapir adds+applies the migration + bumps `EXPECTED_REV`/db-schema.md. Review autofix landed: `address` max_length=255 (`17ce184`). NOT merged — Sapir migration + green CI first.
+
+**MEH-836 (migration-toil reduction) — this branch `feature/meh-836-migration-toil`, draft PR:** docs-only on CC side — `.claude/rules/db.md`, `docs/MIGRATIONS.md`, `docs/EXECUTION_PROTOCOL.md`, CHANGELOG, HANDOFF. Removes the `EXPECTED_REV` manual-bump toil (drift fully covered by `alembic check` + `upgrade head`) and lifts the `versions/**` Edit/Write deny so CC can author hand-written migrations. **2 sensitive files (`pr-checks.yml` + `.claude/settings.json`) are Sapir-applied — Part A + Part B diffs live in the PR body.** ⚠️ Open judgment call surfaced to Sapir: the `Verify alembic schema` step name "(36 tables + baseline revision)" references the REV check → needs "+ baseline revision" dropped when the assertion is removed (REV + TABLES share one step but are separate `if`s — separable, not entangled). LOW-RISK. NOT merged.
+
+**Next:** MEH-836 unblocks future CC-authored migrations (incl. potentially MEH-829's `address` migration once #1179's Part-B settings change lands). S7 restructure Chunk B (form split) consumes the 829 fields.
+
+## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
+
+- page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
+- page 4/11 (/map) audit complete — MEH-824/825/826-Gap1+4 merged; 826 Gap2/3 deferred; 828 e2e fix; deferred design-judgment: F5 mobile-H1, LocationModal timing, F6 CitySearch 37px (→MEH-233)
+
+## 2026-06-16 — MEH-827: lock ProducerCard hover spec in DESIGN.md (doc-only, draft PR)
+
+Doc-only lock so a future ProducerCard re-port can't reinstate the v4-mock gold underline (it's a nav-only active indicator, deliberately not on the card — Sapir, v4). Added a "Hover (shipped spec — LOCKED)" sub-bullet under Components → "Cards (ProducerCard et al.)" in `docs/DESIGN.md`: name → `text-primary` · border → `border-primary` · image scale 1.02 · NO gold underline. `ProducerCard.jsx` (central) intentionally untouched — a no-op comment would trip adversarial-review. No token values changed; `npm run build` green (token auto-export intact). Branch `feature/meh-827-producercard-hover-lock` off staging. Draft PR — doc-only, no mobile QA (DoD exception).
+
+## 2026-06-16 — UX-audit page 3/11 (/search) — complete
+
+**Page 3/11 (/search) UX audit complete.** Ledger of the cluster:
+- **MEH-818** (#1162 ✅ merged `1fecc72`) — /search empty-state: 44px tap targets + plural-voice copy.
+- **MEH-820** (#1164 ✅ merged `c6de8ca`) — /producers free-text search `<input>` (`?q=` + `?focus=1`), reuses existing q machinery.
+- **MEH-819** — banked (IA decision: /search vs /producers?q= two parallel results pages; MEH-820 was Step 1, Step 2 = repoint nav, deferred).
+- **MEH-822** — E2E smoke test for the /producers search submit path (banked follow-up; kept out of MEH-820 to honor its locked 3-file scope).
+- **MEH-823** (this PR) — /search voice cleanup: `search.submit` "חפשי"→"חפשו", `search.empty_prompt` "הקלידי ביטוי…"→"מה תרצו למצוא?" (value-only, he.json). Other feminine-singular in the `search` namespace reported (3 placeholders: `cities_autocomplete`/`city_search`/`address_search`) — not fixed, out of scope.
+
+## 2026-06-16 — Design-port coverage audit + MEH-821 for-businesses port (draft PR)
+
+**Audit (READ-ONLY, origin/main):** classified ~36 user-facing routes. Result: 23 PORTED · 8 N/A (auth chrome/legal, all token-based) · **0 regressions** (every Done port ticket — MEH-763/76/132/135/131/134/534 — resolves to a PORTED surface). STEP 4: staging only 5 commits ahead of main (docs + MEH-288), all 7 design ports already released to main, nothing done-but-unreleased. **Mapping correction:** the brief's "business=MEH-76" is a misattribution — MEH-76 = producer business-home (`ProducerDetail`, PORTED), NOT `/about/for-businesses`.
+
+**MEH-821 (the single gap, now built):** the for-businesses cluster (5 routes / 3 files) was the only NOT-PORTED set and had no covering ticket. Ported `components/GuideArticle.jsx` (shared by 3 guides) + `for-businesses/page.js` + `for-businesses/guides/page.js` — all hex consts + inline `style={{}}` → canonical ADR-019 token classes (mirrors `AboutClient.jsx`). grep clean (0 hex / 0 inline-style), Hebrew copy byte-identical, all 5 routes still ● SSG, build green, ESLint 0 errors, net −143 LOC. Branch `claude/youthful-ptolemy-e5um5u` (remote session, at staging tip). **Draft PR — Sapir mobile QA on all 5 routes (RTL), no self-merge (Rule 23).**
+
+## 2026-06-16 — MEH-657 follow-up: /map filter chips → text-only — ✅ merged (#1151)
+
+**Done (squash `5af53ae3`, merged to staging):** stripped the inline glyph prefix from all 7 `TOGGLE_CHIPS` labels in `frontend/lib/map-chips.js` (`🚚 משלוח אליי`→`משלוח אליי`, `✓ מאומתים`, `🌿 אורגני`, `🐄 גראס פד`, `🌾 ללא גלוטן`, `🥦 טבעוני`, `🥛 ללא לקטוז`). Hardcoded Hebrew labels (no i18n keys → no en parity). Renders via `ChipScrollRow` (`FilterChipsBar`) + `useMapFilters` active-tag list (`label: c.label`) — both now text-only. `TOGGLE_CHIPS` is `/map`-only (separate from the Home/`/producers` `CHIPS_CONFIG` done in #1140). Build green, vitest 56/0 (mapChips + ProducerCard), ESLint 0 errors, all 6 required CI green. Merge needed **two** CHANGELOG Accept-Both syncs (staging advanced mid-flight) + rode out a transient account-level GitHub API rate limit.
+
+**Completes the site-wide emoji→text chip sweep:** Home ticker + Home/`/producers` `CHIPS_CONFIG` (#1140) + `/map` toggles (#1151).
+
+**Pending / next (decision for Sapir):** DB-backed **producer category emoji** (`🥦 ירקות`, `🥖 מאפים` … in `CATEGORY_CHIPS`) still carry emoji — deliberately scoped out (separate data-layer surface; original Emoji LOCK left category glyphs untouched). Open a follow-up ticket or leave as-is — awaiting call. (Also still open from the H2a batch: `🍪` cookie emoji removal, Refs MEH-657.)
+
+## 2026-06-16 — auto-batch pass: MEH-288 built (draft PR) + MEH-203 Phase A mockup + triage
+
+**Autonomous `auto-batch` label pass (Mehamakor team).** Classified 11 labeled issues; only 2 were FRESH/Backlog and buildable — the rest were Done (MEH-806 merged #1152/#1157), active in other sessions (MEH-807 + the In-Progress set: 793/233/258/800/798/785, no open PR/branch on remote → SKIP, collision risk). Triage table → `MERGE-QUEUE.md`. No open PRs mapped to any auto-batch issue (all 11 open PRs are dependabot + 1 pr-checks patch).
+
+- **MEH-288** — `ProfileCompletenessCard` on `/producer/dashboard` (above analytics). New component + i18n (`dashboard.producer.completeness.*`, he/en) + mount + `__tests__/ProfileCompletenessCard.test.jsx` (5/5). Heuristic untouched. Build green, ESLint 0 errors, RTL clean. Branch `feature/meh-288-completeness-card`. **Draft PR — Sapir mobile QA + preview, no self-merge.** Unblocks MEH-290 step 1.
+- **MEH-203 Phase A** — static mockup only at `frontend/public/meh-203-mockup.html` (category selector redesign: search + popular chips). **STOP for Sapir design review** before Phase B (code) — per issue 2-phase gate.
+
+## 2026-06-16 — UX-audit page 2/11 (/producer) follow-up — 3 PRs MERGED (Sapir authorized "merge all")
+
+- **#1155** ✅ merged `ba2ad57` — `docs/UX-AUDIT-PLAYBOOK.md` (real Drive method, versioned SoT; HANDOFF:10/:23 citations resolve).
+- **#1157** ✅ merged `9cf1b1d` — MEH-811 no-op (open_orders already at `group_buys.availability.card_label`, wired by AvailabilityBadge via MEH-806) + MEH-812 ADR-014 voice (6 producer-detail strings he/en, `show_all_count` flattened both locales for ICU parity, `open_in_waze` sibling). `Closes MEH-812` only — MEH-811 = duplicate of Done MEH-806 (canceled, not closed).
+- **#1159** — MEH-813 tap-targets ≥44px (WhatsAppQuestionChips/MiniMap/ShareButton) + MEH-814 emoji strip (DeliveryBlock/ProducerHeader 🚚→Truck, 🌾🌿 stripped+label revealed). `Refs MEH-813` (BadgeRow tap-area deferred → **MEH-813 stays open**) / `Closes MEH-814`.
+
+**Open follow-ups (not filed):** (1) MiniMap exact copy `פתיחה במפות Google` — needs he.json + `MiniMap.jsx:88` suffix (coupled); (2) BadgeRow ≥44px tap-area design call (2.5.5 vs 2.5.8) → MEH-813 open; (3) producer-header mobile chip coherence (grass_fed/organic text vs delivery icon vs kosher emoji) → MEH-683; (4) systemic JSX emoji (57 files) → MEH-657/688. ⚠️ #1159 mobile-QA (highlights-strip wrap @375) NOT eyeballed — Vercel preview lacks producer data; analytically overflow-free (flex-wrap).
+
 ## 2026-06-15 — MEH-773 Chunk B (integrity ORM parity + race handling) — draft PR opened (NOT merged)
 
 **Context:** Chunk A merged (PR #1145, models.py sync to migration `382128b23383`); Sapir applied the migration to staging. Chunk B is the app-layer follow-up.

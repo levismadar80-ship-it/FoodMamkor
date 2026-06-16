@@ -299,15 +299,16 @@
           "generic": "Connection error — please try again."
         },
         "success": {
-          "heading": "You're in!",
+          "heading": "We've got your details",
+          "signature": "Warmly, Sapir",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
           "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
           "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
-          "next_step1": "✓ Complete the profile from the dashboard — photos, description, deliveries",
-          "next_step2": "✓ Our team will review the request within 1-2 business days",
-          "next_step3": "✓ After approval — the business appears on the map and in search",
+          "next_step1": "Personal review",
+          "next_step2": "Intro call",
+          "next_step3": "Your page goes live",
           "dashboard_cta": "Go to my dashboard ←",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.online/register/producer",
           "share_cta": "Invite a neighbour",
@@ -646,7 +647,7 @@
           "heading": "Upcoming events",
           "free": "Free",
           "register": "Register for event →",
-          "show_all_count": "{count, plural, one {Show the event} other {Show all # events}}"
+          "show_all_count": "Show all events"
         },
         "products": {
           "heading": "Products"
@@ -2348,7 +2349,16 @@
     },
     "category_selector": {
       "label": "Category",
-      "search_placeholder": "Search categories...",
+      "search_label": "Search category",
+      "search_placeholder": "e.g. cheese, bread, soap",
+      "popular_descs": {
+        "dairy": "Cheeses, yogurt, butter",
+        "bread": "Baked goods, challah, cakes",
+        "meat": "Fresh, kosher, from the farm",
+        "oil": "Olive oil, select oils",
+        "veg": "From the field, seasonal, organic",
+        "care": "Soaps, bath products"
+      },
       "section_results": "Results",
       "section_popular": "Popular",
       "no_results_prefix": "Can't find your category?",
@@ -2366,6 +2376,11 @@
     "title": {
       "all": "All businesses",
       "search_results": "Results for:"
+    },
+    "search_input": {
+      "label": "Search businesses",
+      "placeholder": "Sourdough bread, goat cheese, organic vegetables",
+      "submit": "Search"
     },
     "discovery": {
       "found_count": "{count, plural, =0 {No businesses found} one {1 business found} other {{count} businesses found}}",
@@ -3379,6 +3394,27 @@
         "views_chart_empty": "No data yet",
         "top_cities_title": "Top cities",
         "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
+      },
+      "completeness": {
+        "red_headline": "Your profile is missing critical details",
+        "red_sub": "Without them, customers won't see you on the map or in search",
+        "yellow_low_headline": "Your profile is {percent}% ready",
+        "yellow_low_sub": "A few more details and you can start getting customers",
+        "yellow_high_headline": "Almost there — {percent}% ready",
+        "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
+        "green_headline": "Profile complete",
+        "next_step_prefix": "Next step:",
+        "cta": "Complete profile",
+        "cta_aria": "Complete your profile",
+        "ring_aria": "Profile completeness: {percent}%",
+        "fields": {
+          "city": "City",
+          "coords": "Location on the map",
+          "delivery": "Delivery areas",
+          "contact": "Contact details (phone/Instagram)",
+          "category": "Category",
+          "image": "Main photo"
+        }
       },
       "strength": {
         "heading": "Profile strength",

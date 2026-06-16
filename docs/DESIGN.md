@@ -293,6 +293,11 @@ front matter for the normative token bindings.
   16px radius, 24px desktop padding. Captions and metadata use the `muted`
   foreground (`card-caption`). Loading uses `card-skeleton` (cream + `fg-muted`,
   opacity-on-cream) — never a gray placeholder block.
+  - **Hover (shipped spec — LOCKED):** name → `text-primary` · border →
+    `border-primary` · image scale 1.02. **NO gold underline** — the
+    `after:bg-accent` underline is a **nav-only** active indicator, deliberately
+    not on the card (Sapir, v4). The v4 mock showed it on name-hover; it was
+    intentionally not shipped. A future re-port must not reintroduce it.
 - **Inputs:** white `surface`, `text` foreground, `border` hairline, 8px
   radius. Dividers use the `border` token.
 - **Price tags / premium accents:** `accent` gold, used sparingly with

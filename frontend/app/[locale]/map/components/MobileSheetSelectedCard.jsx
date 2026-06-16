@@ -1,9 +1,14 @@
 import { useTranslations } from "next-intl";
-import { Leaf, X } from "@phosphor-icons/react";
+import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
-import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
+import {
+  getPrimaryContactHref,
+  getPrimaryMethod,
+  getPrimaryContactLabel,
+  isPrimaryExternal,
+} from "@/lib/contact-method";
 
 /**
  * Pinned-card variant of <DesktopMiniPopup/> for the mobile bottom
@@ -36,14 +41,21 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   if (!selectedProducer) return null;
   const sp = selectedProducer;
   const spImg = optimizeCloudinary(sp.images?.[0]);
-  // Source line :814 defines `spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}``
-  // but never uses it. Preserved verbatim per regression rule 1
-  // (grep before delete) — do not remove.
+  // MEH-826: full-profile fallback href (now used when no primary CTA href).
   const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
-  const spPhone = normalizePhone(sp.phone);
+  // MEH-826: dynamic primary CTA — mirrors MapProducerCard.jsx contact-method wiring.
+  const primaryHref = getPrimaryContactHref(sp);
+  const primaryMethod = getPrimaryMethod(sp);
+  const ctaExternal = primaryMethod === "whatsapp" || isPrimaryExternal(sp);
+  const CtaIcon =
+    { whatsapp: WhatsappLogo, phone: Phone, website: Globe, email: EnvelopeSimple }[primaryMethod] ||
+    WhatsappLogo;
   return (
-    <div className="mb-3 bg-surface-floating rounded-md border border-primary overflow-hidden">
-      <div className="relative w-full h-[140px]">
+    <div className="mb-3 bg-surface-floating rounded-md border border-primary">
+      {/* MEH-824: clip moved from the card root to the image wrapper so the
+          card root is NOT a scroll container — required for the sticky CTA
+          below to bind to the sheet's scroll area, not the card. */}
+      <div className="relative w-full h-[140px] overflow-hidden rounded-t-md">
         {spImg ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
@@ -61,17 +73,34 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
       <div className="p-3">
         <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "18px" }}>{sp.name}</h3>
         <p className="text-[13px] text-fg-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
-        {(sp.is_verified || sp.is_organic || sp.is_kosher) && (
+        {/* MEH-826: removed dead is_organic/is_kosher bindings (payload uses
+            organic_certified/kosher; design has no dietary badge here). */}
+        {sp.is_verified && (
           <div className="flex flex-wrap gap-1 mt-1.5">
-            {sp.is_verified && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>}
-            {sp.is_organic && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.organic")}</span>}
-            {sp.is_kosher && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.kosher")}</span>}
+            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>
           </div>
         )}
-        {spPhone && (
-          <a href={getWhatsAppHref(spPhone, t("map.popup.whatsapp_greeting", { name: sp.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 font-medium text-sm">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
-            WhatsApp
+        {/* MEH-824 sticky + min-h-[44px] preserved. MEH-826: CTA is now dynamic
+           per primary_contact_method; null href → fall back to the full-profile
+           link (mirrors MapProducerCard.jsx). */}
+        {primaryHref ? (
+          <a
+            href={primaryHref}
+            target={ctaExternal ? "_blank" : undefined}
+            rel={ctaExternal ? "noopener noreferrer" : undefined}
+            onClick={() => { if (primaryMethod === "whatsapp") pingWhatsAppBeacon(sp.id); }}
+            aria-label={getPrimaryContactLabel(sp)}
+            className={`${primaryMethod === "whatsapp" ? "btn-whatsapp" : "bg-primary text-white"} sticky bottom-0 z-10 mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 min-h-[44px] font-medium text-sm`}
+          >
+            <CtaIcon size={16} weight="fill" aria-hidden="true" />
+            {getPrimaryContactLabel(sp)}
+          </a>
+        ) : (
+          <a
+            href={spHref}
+            className="bg-primary text-white sticky bottom-0 z-10 mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 min-h-[44px] font-medium text-sm"
+          >
+            {t("map.producer_card.full_profile")} →
           </a>
         )}
       </div>
