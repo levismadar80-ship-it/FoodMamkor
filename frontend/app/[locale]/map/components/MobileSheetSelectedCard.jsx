@@ -42,8 +42,11 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
   const spPhone = normalizePhone(sp.phone);
   return (
-    <div className="mb-3 bg-surface-floating rounded-md border border-primary overflow-hidden">
-      <div className="relative w-full h-[140px]">
+    <div className="mb-3 bg-surface-floating rounded-md border border-primary">
+      {/* MEH-824: clip moved from the card root to the image wrapper so the
+          card root is NOT a scroll container — required for the sticky CTA
+          below to bind to the sheet's scroll area, not the card. */}
+      <div className="relative w-full h-[140px] overflow-hidden rounded-t-md">
         {spImg ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
@@ -69,7 +72,11 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
           </div>
         )}
         {spPhone && (
-          <a href={getWhatsAppHref(spPhone, t("map.popup.whatsapp_greeting", { name: sp.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 font-medium text-sm">
+          /* MEH-824: sticky bottom-0 pins the primary CTA to the sheet fold
+             (45vh) so it stays reachable without scrolling the card; min-h-44
+             for the AA tap target. Opaque btn-whatsapp bg + z-10 keep it clean
+             over scrolling content. */
+          <a href={getWhatsAppHref(spPhone, t("map.popup.whatsapp_greeting", { name: sp.name || "" }))} target="_blank" rel="noopener noreferrer" onClick={() => pingWhatsAppBeacon(sp.id)} className="btn-whatsapp sticky bottom-0 z-10 mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 min-h-[44px] font-medium text-sm">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M20.52 3.48A11.9 11.9 0 0012.04 0C5.45 0 .1 5.35.1 11.94c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 005.77 1.47h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.41z"/></svg>
             WhatsApp
           </a>
