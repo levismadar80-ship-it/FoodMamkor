@@ -2352,12 +2352,12 @@
       "search_label": "Search category",
       "search_placeholder": "e.g. cheese, bread, soap",
       "popular_descs": {
-        "dairy": "גבינות, יוגורט, חמאה",
-        "bread": "מאפים, חלות, עוגות",
-        "meat": "טרי, כשר, מהחווה",
-        "oil": "שמן זית, שמנים מובחרים",
-        "veg": "מהשדה, עונתי, אורגני",
-        "care": "סבונים, מוצרי רחצה"
+        "dairy": "Cheeses, yogurt, butter",
+        "bread": "Baked goods, challah, cakes",
+        "meat": "Fresh, kosher, from the farm",
+        "oil": "Olive oil, select oils",
+        "veg": "From the field, seasonal, organic",
+        "care": "Soaps, bath products"
       },
       "section_results": "Results",
       "section_popular": "Popular",
