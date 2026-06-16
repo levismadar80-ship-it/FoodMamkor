@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-838: /register field height ≥44px (draft PR, stacked on 837)
+
+`feature/meh-838-register-field-height` off `feature/meh-837` (same file, sequential). name+email inputs `px-3 py-2` (~42px) → added `min-h-[44px]` (WCAG 2.5.5; login siblings are 54px). 2-line diff, no copy/logic/frozen changes. Build green. Stacked PR — base = 837 branch, retargets to staging when #1188 merges. Draft — Sapir mobile QA.
+
 ## 2026-06-16 — UX-audit page 6/11 (/login+/register) batch — 4 draft PRs
 
 Manual batch off the page-6 audit (MEH-835/832/837/838). Each = one draft PR off staging; Sapir merges (Rule 23). MEH-132 freeze respected (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred — design Phase 0 vs S9.
