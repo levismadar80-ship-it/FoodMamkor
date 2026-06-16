@@ -165,7 +165,7 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== Comparison — ההבדל · layout A (3-stop gold-dot path) · MEH-841 (supersedes MEH-525) ======== */}
+      {/* ======== Comparison — layout A (3-stop gold-dot path) · MEH-841 (supersedes MEH-525) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-4 md:px-12">
           <Eyebrow>{tCompare("eyebrow")}</Eyebrow>
