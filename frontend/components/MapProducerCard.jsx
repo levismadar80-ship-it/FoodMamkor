@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Star, Truck, Leaf, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
 import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
+import { parseHours, computeStatus } from "@/lib/hours";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -20,6 +21,11 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
   const { color: categoryColor } = styleForProducer(p);
+
+  // MEH-826: open/closed-now status from the shared lib/hours parser.
+  const th = useTranslations("opening_hours");
+  const hoursMap = parseHours(p.opening_hours);
+  const hoursStatus = hoursMap ? computeStatus(hoursMap) : null;
 
   const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
     ? p.delivery_areas.find((d) => d.city === userCity)
@@ -100,6 +106,27 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </p>
           )}
         </div>
+
+        {/* MEH-826: open/closed-now line with clock — numerals LTR-isolated */}
+        {hoursStatus && (
+          <p className={`text-[12px] mt-1 inline-flex items-center gap-1 flex-wrap ${hoursStatus.isOpen ? "text-primary" : "text-fg-muted"}`}>
+            <Clock size={12} weight="regular" aria-hidden="true" />
+            {hoursStatus.isOpen ? (
+              <>
+                <span>{th("open_now")}</span>
+                <span aria-hidden="true">·</span>
+                <span dir="ltr">{hoursStatus.openTime}–{hoursStatus.closeTime}</span>
+              </>
+            ) : (
+              <span>
+                {th("closed_now")}
+                {hoursStatus.nextDayKey
+                  ? ` ${th("opens_at", { day: hoursStatus.nextIsTomorrow ? th("tomorrow") : th(`weekdays.${hoursStatus.nextDayKey}`), time: hoursStatus.nextTime })}`
+                  : ""}
+              </span>
+            )}
+          </p>
+        )}
 
         {/* Pills row */}
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">

@@ -14,6 +14,9 @@ export const ProducerSchema = z.object({
   is_verified: z.boolean().optional(),
   plan: z.string().optional(),
   images: z.array(z.string()).optional().default([]),
+  // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
+  // z.object strip would drop it before MapProducerCard's open/closed line.
+  opening_hours: z.string().nullable().optional(),
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.
