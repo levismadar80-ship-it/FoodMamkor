@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — UX-audit page 6/11 (/login+/register) batch — 4 draft PRs
+
+Manual batch off the page-6 audit (MEH-835/832/837/838). Each = one draft PR off staging; Sapir merges (Rule 23). MEH-132 freeze respected (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred — design Phase 0 vs S9.
+- **MEH-835** `feature/meh-835-login-minlength` — removed `minLength={8}` (`LoginClient.jsx:255`), regression of MEH-418 (legacy <8-char lockout). Empty-guard intact. Build green. Draft PR.
+- **MEH-832** `feature/meh-832-register-family-voice` — register-family fem-singular UI → plural (value-only he.json), excl. both "הצטרפי" CTAs. (in progress)
+- **MEH-837** `feature/meh-837-register-oauth-redirect` — /register OAuth honors clamped redirectTo (reuse safe-redirect). (in progress)
+- **MEH-838** `feature/meh-838-register-field-height` off 837 — name+email ≥44px. (in progress)
+
 ## 2026-06-16 — MEH-837: /register OAuth honors clamped redirect (draft PR)
 
 `feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
