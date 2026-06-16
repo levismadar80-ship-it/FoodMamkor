@@ -332,7 +332,6 @@
       "Edit(package-lock.json)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
-      "Write(backend/alembic/versions/**)",
       "Write(.github/workflows/**)",
       "Write(.claude/settings.json)",
       "Write(.env*)"
