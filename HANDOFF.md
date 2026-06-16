@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — UX-audit page 6/11 (/login+/register) batch — 4 draft PRs
+
+Manual batch off the page-6 audit (MEH-835/832/837/838). Each = one draft PR off staging; Sapir merges (Rule 23). MEH-132 freeze respected (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred — design Phase 0 vs S9.
+- **MEH-835** `feature/meh-835-login-minlength` — removed `minLength={8}` (`LoginClient.jsx:255`), regression of MEH-418 (legacy <8-char lockout). Empty-guard intact. Build green. Draft PR.
+- **MEH-832** `feature/meh-832-register-family-voice` — register-family fem-singular UI → plural (value-only he.json), excl. both "הצטרפי" CTAs. (in progress)
+- **MEH-837** `feature/meh-837-register-oauth-redirect` — /register OAuth honors clamped redirectTo (reuse safe-redirect). (in progress)
+- **MEH-838** `feature/meh-838-register-field-height` off 837 — name+email ≥44px. (in progress)
+
 ## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
 
 - page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
