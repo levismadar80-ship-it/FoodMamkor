@@ -3380,6 +3380,27 @@
         "top_cities_title": "Top cities",
         "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
       },
+      "completeness": {
+        "red_headline": "Your profile is missing critical details",
+        "red_sub": "Without them, customers won't see you on the map or in search",
+        "yellow_low_headline": "Your profile is {percent}% ready",
+        "yellow_low_sub": "A few more details and you can start getting customers",
+        "yellow_high_headline": "Almost there — {percent}% ready",
+        "yellow_high_sub": "Just {count} more details until your profile is complete",
+        "green_headline": "Profile complete",
+        "next_step_prefix": "Next step:",
+        "cta": "Complete profile",
+        "cta_aria": "Complete your profile",
+        "ring_aria": "Profile completeness: {percent}%",
+        "fields": {
+          "city": "City",
+          "coords": "Location on the map",
+          "delivery": "Delivery areas",
+          "contact": "Contact details (phone/Instagram)",
+          "category": "Category",
+          "image": "Main photo"
+        }
+      },
       "strength": {
         "heading": "Profile strength",
         "tooltip": "Score across 6 criteria: photo, description, active product, delivery area, first review, verified phone. Above 80% — customers trust more.",
