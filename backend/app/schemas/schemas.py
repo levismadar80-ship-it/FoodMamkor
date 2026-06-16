@@ -111,7 +111,7 @@ class ProducerRegister(BaseModel):
     description: str | None = None
     short_description: str | None = Field(default=None, max_length=160)
     city: str | None = None
-    address: str | None = None
+    address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
