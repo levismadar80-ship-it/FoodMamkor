@@ -9,9 +9,25 @@
 
 `feature/meh-838-register-field-height` off `feature/meh-837` (same file, sequential). name+email inputs `px-3 py-2` (~42px) → added `min-h-[44px]` (WCAG 2.5.5; login siblings are 54px). 2-line diff, no copy/logic/frozen changes. Build green. Stacked PR — base = 837 branch, retargets to staging when #1188 merges. Draft — Sapir mobile QA.
 
+## 2026-06-16 — UX-audit page 6/11 (/login+/register) batch — 4 draft PRs
+
+Manual batch off the page-6 audit (MEH-835/832/837/838). Each = one draft PR off staging; Sapir merges (Rule 23). MEH-132 freeze respected (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred — design Phase 0 vs S9.
+- **MEH-835** `feature/meh-835-login-minlength` — removed `minLength={8}` (`LoginClient.jsx:255`), regression of MEH-418 (legacy <8-char lockout). Empty-guard intact. Build green. Draft PR.
+- **MEH-832** `feature/meh-832-register-family-voice` — register-family fem-singular UI → plural (value-only he.json), excl. both "הצטרפי" CTAs. (in progress)
+- **MEH-837** `feature/meh-837-register-oauth-redirect` — /register OAuth honors clamped redirectTo (reuse safe-redirect). (in progress)
+- **MEH-838** `feature/meh-838-register-field-height` off 837 — name+email ≥44px. (in progress)
+
 ## 2026-06-16 — MEH-837: /register OAuth honors clamped redirect (draft PR)
 
 `feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
+
+## 2026-06-16 — MEH-829 backend fields (PR #1179, draft) + MEH-836 migration-toil (draft)
+
+**MEH-829 (S7 Chunk A backend) — PR #1179 DRAFT, branch `feature/meh-829-s7-backend-fields` (`17ce184`):** added `Producer.address` (String(255) nullable) + `ProducerRegister.address`(max 255)/`short_description`(max 160), wired both explicitly into BOTH `register_producer` ctors (`auth.py:475` upgrade + `:573` new-reg — handler uses explicit-assign, not `model_dump`). **Migration NOT in PR** — `versions/**` deny-listed; op snippet + `down_revision=382128b23383` handed to Sapir in the PR body. CI `Backend tests` red is the **expected `alembic check` drift gate** (model column w/o migration); resolves when Sapir adds+applies the migration + bumps `EXPECTED_REV`/db-schema.md. Review autofix landed: `address` max_length=255 (`17ce184`). NOT merged — Sapir migration + green CI first.
+
+**MEH-836 (migration-toil reduction) — this branch `feature/meh-836-migration-toil`, draft PR:** docs-only on CC side — `.claude/rules/db.md`, `docs/MIGRATIONS.md`, `docs/EXECUTION_PROTOCOL.md`, CHANGELOG, HANDOFF. Removes the `EXPECTED_REV` manual-bump toil (drift fully covered by `alembic check` + `upgrade head`) and lifts the `versions/**` Edit/Write deny so CC can author hand-written migrations. **2 sensitive files (`pr-checks.yml` + `.claude/settings.json`) are Sapir-applied — Part A + Part B diffs live in the PR body.** ⚠️ Open judgment call surfaced to Sapir: the `Verify alembic schema` step name "(36 tables + baseline revision)" references the REV check → needs "+ baseline revision" dropped when the assertion is removed (REV + TABLES share one step but are separate `if`s — separable, not entangled). LOW-RISK. NOT merged.
+
+**Next:** MEH-836 unblocks future CC-authored migrations (incl. potentially MEH-829's `address` migration once #1179's Part-B settings change lands). S7 restructure Chunk B (form split) consumes the 829 fields.
 
 ## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
 
