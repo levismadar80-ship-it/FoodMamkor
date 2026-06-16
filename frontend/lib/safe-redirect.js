@@ -4,8 +4,10 @@
  *           path so an attacker-supplied param can't bounce the user off-site.
  * Does NOT: parse or validate full URLs — it deliberately only accepts paths
  *           that begin with a single "/". Anything else falls back.
- * Related:  app/[locale]/login/LoginClient.jsx:61 (the sole consumer).
- * History:  MEH-810 (creation) — open-redirect hardening; sibling of MEH-805.
+ * Related:  app/[locale]/login/LoginClient.jsx:63 and
+ *           app/[locale]/register/RegisterClient.jsx (consumers).
+ * History:  MEH-810 (creation) — open-redirect hardening; sibling of MEH-805;
+ *           MEH-837 (added /register OAuth-success as a second consumer).
  */
 
 // Accept only a leading single "/" NOT followed by "/" or "\".

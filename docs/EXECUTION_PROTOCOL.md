@@ -139,7 +139,6 @@ The autonomy system exists to **maximize Smadar's leverage**:
       "npm publish*"
     ],
     "Edit": [
-      "backend/alembic/versions/**",
       "backend/app/main.py",
       "backend/app/config.py",
       ".github/workflows/**",
@@ -156,6 +155,12 @@ The autonomy system exists to **maximize Smadar's leverage**:
   }
 }
 ```
+
+> **MEH-836:** `backend/alembic/versions/**` was removed from the Edit
+> deny list (paired with the same removal in `.claude/settings.json`,
+> Edit + Write). CC may now author hand-written revision files; the
+> `Bash(alembic upgrade*/downgrade*)` denies stay (apply is automatic on
+> Dockerfile boot, never a manual CC step).
 
 ---
 

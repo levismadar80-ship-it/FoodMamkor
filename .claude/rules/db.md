@@ -33,12 +33,16 @@ Before any PR that touches `backend/app/models/`, `backend/app/routers/`,
 or `backend/app/auth.py`:
 
 1. Generate Alembic revision: see [docs/MIGRATIONS.md](../../docs/MIGRATIONS.md).
-2. Update `EXPECTED_REV` in `.github/workflows/pr-checks.yml` (CI drift
-   gate). Current head must match the new revision.
-3. Update [.ai/diagrams/db-schema.md](../../.ai/diagrams/db-schema.md)
+2. Update [.ai/diagrams/db-schema.md](../../.ai/diagrams/db-schema.md)
    if columns/tables changed.
-4. Verify locally: drop tables → `alembic upgrade head` → confirm
+3. Verify locally: drop tables → `alembic upgrade head` → confirm
    `/health` returns 200 and `/producers` works.
+
+> **MEH-836:** the old `EXPECTED_REV` bump step is gone — model↔migration
+> drift is now caught by `alembic check` alone (no hardcoded head to keep
+> in sync). `EXPECTED_TABLES` still bumps for migrations that add/drop a
+> table. CC may now author hand-written revision files under
+> `backend/alembic/versions/**`; apply stays automatic on Dockerfile boot.
 
 ---
 
