@@ -75,7 +75,7 @@ export default function ProducersClient({
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
 
   // MEH-820: free-text search box driving the existing q filter.
-  const [searchInput, setSearchInput] = useState(() => searchParams.get("q") || "");
+  const [searchInput, setSearchInput] = useState(() => searchQ);
   const searchInputRef = useRef(null);
   const shouldFocus = searchParams.get("focus") === "1";
 
@@ -301,7 +301,6 @@ export default function ProducersClient({
             placeholder={t("search_input.placeholder")}
             dir="rtl"
             className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
-            aria-label={t("search_input.label")}
           />
         </div>
         <button
