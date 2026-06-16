@@ -5,6 +5,33 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-15 — MEH-773 Chunk B (integrity ORM parity + race handling) — draft PR opened (NOT merged)
+
+**Context:** Chunk A merged (PR #1145, models.py sync to migration `382128b23383`); Sapir applied the migration to staging. Chunk B is the app-layer follow-up.
+
+**Done (branch `feature/meh-773-chunkb-409-passive-deletes`, 5 commits + docs):**
+- `models.py` — `passive_deletes=True` on `Producer.otp_tokens` + `kashrut_requests` (closes latent kashrut delete-500; OTP covered).
+- `reports.py` — duplicate report unified to **409 + Hebrew** (pre-check + IntegrityError backstop). Frontend-safe (ReportButton reads `detail` generically).
+- `referrals.py` — race-loser → **idempotent 200** (contract wins over doc's 409).
+- `group_buys.py` — `with_for_update()` row lock + fresh `func.count` capacity check.
+- `tests/test_integrity_constraints.py` — 7 tests. pytest deferred to CI (no local Postgres).
+- Decisions (Sapir): reports=409-both, referrals=idempotent-200, MEH-755 band-aids **kept** (cleanup → follow-up ticket).
+
+**Pending / next:** draft PR awaiting Sapir review + merge (**DO NOT self-merge**). No migration (pure ORM/handler). **Follow-up ticket** to remove the now-redundant MEH-755 explicit OTP pre-deletes in `admin.py:357` + `auth.py:1330` (central files; deferred out of this PR).
+## 2026-06-15 — Session close-out: MEH-296 COMPLETE + MEH-799/806 Done
+
+**MEH-296 — Contact routing: producer chooses how customers reach her. ✅ COMPLETE — all chunks shipped, issue Done.**
+- **Chunks 1+2** (#1095, `53a832c`) — backend: `facebook` + `external_order_form` columns (migration `7346235e318b`) + the API-boundary guards (7-value `primary_contact_method` + http(s) URL-scheme on `ProducerUpdate`/`ProducerRegister`).
+- **Chunk 3a** (#1120, `8929995`) — display: `contact-method.js` 7 methods + `PrimaryContactButton` variants + `ContactSidebar` facebook/external_order tiles.
+- **Chunk 3b** (#1137, `f1730f5`) — producer dashboard contact-channels editor (`ContactChannelsCard`; validate-on-save inline hint; reuses `ui/Input`).
+- **Chunk 3c — closed as no-op (0 files).** Rationale: register collects only `phone`, so "derive-default from the first filled channel" always yields `whatsapp` = the existing hardcode; the register default is `whatsapp` by design (phone-only collection on the OWASP-hardened flow), and the producer sets her real primary in the **3b dashboard editor**.
+- **Chunk 3d** (#1143, `0db5dde`) — admin + create-path parity: `ProducerAdminCreate` + `ProducerCreate` get the 2 fields + guards; admin `ProducerForm` 4→7 select + inputs; `auth.py` register allowlist 4→7.
+- **Migration `7346235e318b` applied to staging + prod (verified by Sapir, 2026-06-15).** MEH-296 → **Done**.
+
+**MEH-799 — approve gate requires ≥1 image. ✅ Done.** Was **already shipped in #1082** (guard at `admin.py:442-445`, verbatim Hebrew detail, before side-effects; +2 tests in `test_admin_approval_transitions.py`). This session confirmed it = no-op; no PR.
+
+**MEH-806 — AvailabilityBadge i18n. ✅ Done** (#1152, `b0136f5`). Root cause was a **namespace mismatch** (component read empty `producer.availability`; the 7 keys live under `group_buys.availability`) — not a missing key. One-line repoint, zero duplication (vs adding a second copy — MEH-271 two-owners smell).
+
 ## 2026-06-15 — Home UX audit (page 1/11) + staging visual-capture pipeline
 
 ### Home UX audit (2026-06-15) — page 1/11  (method: UX-AUDIT-PLAYBOOK.md, staging = truth)

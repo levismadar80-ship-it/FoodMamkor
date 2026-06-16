@@ -2,6 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user, require_admin
@@ -36,9 +37,9 @@ def report_producer(
         .first()
     )
     if existing:
-        raise HTTPException(
-            status_code=400, detail="You already reported this producer"
-        )
+        # MEH-773: 409 + Hebrew, unified with the IntegrityError race
+        # backstop below so a duplicate report has one behavior.
+        raise HTTPException(status_code=409, detail="כבר דיווחת על בית עסק זה")
 
     report = Report(
         reporter_id=user.id,
@@ -46,7 +47,14 @@ def report_producer(
         reason=data.reason,
     )
     db.add(report)
-    db.commit()
+    # MEH-773: uq_report_reporter_producer backstops the check-then-act
+    # race above — a concurrent duplicate raises IntegrityError instead of
+    # inserting a second row; convert it to the same 409 the pre-check uses.
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="כבר דיווחת על בית עסק זה")
 
     # Check if 3+ reports — auto-flag
     count = (
