@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-657 follow-up: /map filter chips → text-only — ✅ merged (#1151)
+
+**Done (squash `5af53ae3`, merged to staging):** stripped the inline glyph prefix from all 7 `TOGGLE_CHIPS` labels in `frontend/lib/map-chips.js` (`🚚 משלוח אליי`→`משלוח אליי`, `✓ מאומתים`, `🌿 אורגני`, `🐄 גראס פד`, `🌾 ללא גלוטן`, `🥦 טבעוני`, `🥛 ללא לקטוז`). Hardcoded Hebrew labels (no i18n keys → no en parity). Renders via `ChipScrollRow` (`FilterChipsBar`) + `useMapFilters` active-tag list (`label: c.label`) — both now text-only. `TOGGLE_CHIPS` is `/map`-only (separate from the Home/`/producers` `CHIPS_CONFIG` done in #1140). Build green, vitest 56/0 (mapChips + ProducerCard), ESLint 0 errors, all 6 required CI green. Merge needed **two** CHANGELOG Accept-Both syncs (staging advanced mid-flight) + rode out a transient account-level GitHub API rate limit.
+
+**Completes the site-wide emoji→text chip sweep:** Home ticker + Home/`/producers` `CHIPS_CONFIG` (#1140) + `/map` toggles (#1151).
+
+**Pending / next (decision for Sapir):** DB-backed **producer category emoji** (`🥦 ירקות`, `🥖 מאפים` … in `CATEGORY_CHIPS`) still carry emoji — deliberately scoped out (separate data-layer surface; original Emoji LOCK left category glyphs untouched). Open a follow-up ticket or leave as-is — awaiting call. (Also still open from the H2a batch: `🍪` cookie emoji removal, Refs MEH-657.)
+
 ## 2026-06-16 — auto-batch pass: MEH-288 built (draft PR) + MEH-203 Phase A mockup + triage
 
 **Autonomous `auto-batch` label pass (Mehamakor team).** Classified 11 labeled issues; only 2 were FRESH/Backlog and buildable — the rest were Done (MEH-806 merged #1152/#1157), active in other sessions (MEH-807 + the In-Progress set: 793/233/258/800/798/785, no open PR/branch on remote → SKIP, collision risk). Triage table → `MERGE-QUEUE.md`. No open PRs mapped to any auto-batch issue (all 11 open PRs are dependabot + 1 pr-checks patch).
