@@ -12,7 +12,7 @@ vi.mock("next-intl", () => ({
       yellow_low_headline: "הפרופיל שלך {percent}% מוכן",
       yellow_low_sub: "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
       yellow_high_headline: "כמעט שם — {percent}% מוכן",
-      yellow_high_sub: "רק {count, plural, one {פרט אחד} other {# פרטים}} עד שהפרופיל מלא",
+      yellow_high_sub: "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהפרופיל מלא",
       green_headline: "הפרופיל מלא",
       next_step_prefix: "השלב הבא:",
       cta: "השלימי פרופיל",
@@ -29,10 +29,10 @@ vi.mock("next-intl", () => ({
     // Resolve {var, plural, one {…} other {…}} (mirrors next-intl ICU) before
     // simple {var} interpolation, so plural-aware copy is tested faithfully.
     const withPlurals = raw.replace(
-      /\{(\w+), plural, one \{([^}]*)\} other \{([^}]*)\}\}/g,
-      (_, k, one, other) => {
+      /\{(\w+), plural, one \{([^}]*)\} two \{([^}]*)\} other \{([^}]*)\}\}/g,
+      (_, k, one, two, other) => {
         const n = vars[k];
-        const branch = n === 1 ? one : other;
+        const branch = n === 1 ? one : n === 2 ? two : other;
         return branch.replace(/#/g, String(n));
       },
     );
