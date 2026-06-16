@@ -370,17 +370,10 @@
       "cta_meet": "להכיר את {name}",
       "cta_write": "לכתוב ל{name}"
     },
-    "comparison": {
+    "comparison_teaser": {
       "eyebrow": "ההבדל",
       "heading": "מה שמשתנה בדרך",
-      "col_super": "סופר",
-      "col_brand": "מהמקור",
-      "row1_super": "מוצר על מדף",
-      "row1_brand": "אדם מאחורי המוצר",
-      "row2_super": "נסע רחוק",
-      "row2_brand": "גדל קרוב",
-      "row3_super": "עוד סל בקופה",
-      "row3_brand": "קשר ישיר עם מי שמייצרת"
+      "cta": "גלו את ההבדל"
     },
     "categories": {
       "eyebrow": "קטגוריות",
@@ -2090,6 +2083,16 @@
     }
   },
   "about": {
+    "comparison": {
+      "eyebrow": "ההבדל",
+      "heading": "מה שמשתנה בדרך",
+      "row1_brand": "את יודעת בדיוק מי מאחורי זה",
+      "row1_super": "בסופר — שם על אריזה, אם בכלל",
+      "row2_brand": "קרוב אלייך, מגיע טרי",
+      "row2_super": "בסופר — מי יודע מאיפה ומתי",
+      "row3_brand": "ישירות מול מי שמייצרת",
+      "row3_super": "בסופר — עוד פריט בעגלה"
+    },
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",

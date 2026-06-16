@@ -12,7 +12,7 @@ import {
   HomeMarquee,
   HomeFounderQuote,
   HomeHowItWorks,
-  HomeComparison,
+  HomeComparisonTeaser,
   HomeFeaturedProducer,
   HomeRecentlyViewed,
   HomeCTA,
@@ -225,9 +225,9 @@ export default function HomePage() {
 
       <HomeHowItWorks />
 
-      {/* MEH-525: comparison strip — locked between How It Works and the
-          For Business CTA (P5 sections 12/13). */}
-      <HomeComparison />
+      {/* MEH-841 (supersedes MEH-525): the full comparison moved to /about;
+          a one-line teaser here links to it, keeping the home slot calm. */}
+      <HomeComparisonTeaser />
 
       {/* =========================
           PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
