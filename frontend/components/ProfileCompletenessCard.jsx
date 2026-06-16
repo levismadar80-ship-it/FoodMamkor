@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { producerCompleteness } from "@/lib/producer-completeness";
+import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
  * ProfileCompletenessCard — MEH-288.
@@ -36,14 +36,11 @@ const TOTAL_FIELDS = 5;
 // to a stable i18n key for the "next step" label, so the dashboard stays fully
 // localised. Two fields get a friendlier label than the heuristic's internal
 // one (קואורדינטות → "מיקום על המפה", תמונה → "תמונה ראשית"), per the spec.
-const FIELD_KEY = {
-  "עיר": "city",
-  "קואורדינטות": "coords",
-  "אזורי משלוח": "delivery",
-  "פרטי קשר (טלפון/אינסטגרם)": "contact",
-  "קטגוריה": "category",
-  "תמונה": "image",
-};
+// MEH-831: label→slug derived by inverting COMPLETENESS_FIELDS (the heuristic's
+// own labels) — no mirrored Hebrew literals to drift out of sync.
+const FIELD_KEY = Object.fromEntries(
+  Object.entries(COMPLETENESS_FIELDS).map(([slug, label]) => [label, slug]),
+);
 
 // Ring stroke per priority. Raw hex in the SVG stroke attribute follows the
 // existing inline-SVG precedent in the dashboard (ViewsLineChart, page.js:613).
