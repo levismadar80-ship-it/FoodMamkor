@@ -19,7 +19,6 @@ Branch `feature/meh-841-comparison-to-about` off staging. **Supersedes MEH-525**
 - **Gates green:** build (home + /about SSG), lint 0 err, RTL 0 physical, hex 0, מתווכים/מגזין 0.
 - **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about section + home teaser; then mark ready + merge. **TODO i18n EN** for both new key blocks (filed in PR body).
 - **5 code files + 3 docs.** No backend, no tokens, no other sections touched.
->>>>>>> origin/staging
 
 ## 2026-06-16 — Page-6 audit batch COMPLETE (4 draft PRs)
 
