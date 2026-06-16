@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-838: /register field height ≥44px (draft PR, stacked on 837)
+
+`feature/meh-838-register-field-height` off `feature/meh-837` (same file, sequential). name+email inputs `px-3 py-2` (~42px) → added `min-h-[44px]` (WCAG 2.5.5; login siblings are 54px). 2-line diff, no copy/logic/frozen changes. Build green. Stacked PR — base = 837 branch, retargets to staging when #1188 merges. Draft — Sapir mobile QA.
+
 ## 2026-06-16 — MEH-837: /register OAuth honors clamped redirect (draft PR)
 
 `feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
