@@ -12,6 +12,15 @@
 - **Doc-sync (this branch):** `.ai/diagrams/db-schema.md` gains the `address` column (rule 12 follow-up). PR-body stale "bump EXPECTED_REV" note is moot post-MEH-836.
 - **Next:** S7 Chunk B (form split) consumes city/address/short_description — awaiting the restructure spec.
 
+## 2026-06-16 — MEH-841 comparison home→/about + layout A + copy refresh (DRAFT PR)
+
+Branch `feature/meh-841-comparison-to-about` off staging. **Supersedes MEH-525** (placement + copy lock reopened, Sapir-approved). One PR → staging, DRAFT.
+- **Done:** comparison removed from home (`HomeComparison`/`COMPARISON_ROWS` deleted from `HomeStaticBlocks.jsx`); `HomeComparisonTeaser` put in its place (`page.js:230`) → links `/about`. New layout-A comparison section on `/about` between Pull-quote and Benefits (`AboutClient.jsx`, gold-dot spine, 3 stops, refreshed direction-א copy). i18n `home.comparison.*` → `about.comparison.*` + `home.comparison_teaser.*` (he real; en = HE-mirror). CHANGELOG + MANUAL_TESTING updated.
+- **Gates green:** build (home + /about SSG), lint 0 err, RTL 0 physical, hex 0, מתווכים/מגזין 0.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about section + home teaser; then mark ready + merge. **TODO i18n EN** for both new key blocks (filed in PR body).
+- **5 code files + 3 docs.** No backend, no tokens, no other sections touched.
+>>>>>>> origin/staging
+
 ## 2026-06-16 — Page-6 audit batch COMPLETE (4 draft PRs)
 
 Manual batch off /login+/register audit (page 6/11). All 4 = draft PRs off staging, Sapir merges (Rule 23). MEH-132 freeze respected throughout (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred per batch.

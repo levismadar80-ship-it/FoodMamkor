@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -314,51 +314,33 @@ export function HomeHowItWorks() {
   );
 }
 
-// MEH-525: row key order is the locked editorial order — do not re-sort.
-const COMPARISON_ROWS = ["row1", "row2", "row3"];
-
 /**
- * COMPARISON STRIP — MEH-525 (copy LOCK 2026-06-13). Sits between How It
- * Works and the For Business CTA. Two columns (סופר | מהמקור), 3 rows,
- * S4 voice: cream page surface, hairline borders only, gold accent on the
- * brand column — F1 flat, no shadows. Static, prop-free.
+ * COMPARISON TEASER — MEH-841 (supersedes MEH-525 placement). The full
+ * comparison moved to /about as an early narrative beat; here only a calm
+ * one-line teaser remains, linking to /about. S4 voice: cream surface,
+ * hairline-free, gold accent on the link only — flat, no shadows. Static.
  */
-export function HomeComparison() {
-  const t = useTranslations("home.comparison");
+export function HomeComparisonTeaser() {
+  const t = useTranslations("home.comparison_teaser");
   return (
-    <section className="max-w-7xl mx-auto px-4 section-y">
+    <section className="max-w-3xl mx-auto px-4 section-y text-center">
       <FadeInSection>
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-2">
           {t("eyebrow")}
         </p>
         <h2
-          className="font-headline-lg font-bold text-text text-center mb-10"
+          className="font-headline-lg font-bold text-text mb-5"
           style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
         >
           {t("heading")}
         </h2>
-      </FadeInSection>
-      <FadeInSection>
-        <div className="max-w-3xl mx-auto border-y border-border divide-y divide-border" role="table" aria-label={t("heading")}>
-          <div role="row" className="grid grid-cols-2">
-            <div role="columnheader" className="py-3 pe-4 text-sm font-medium text-fg-muted">
-              {t("col_super")}
-            </div>
-            <div role="columnheader" className="py-3 ps-4 text-sm font-medium text-accent border-s border-border">
-              {t("col_brand")}
-            </div>
-          </div>
-          {COMPARISON_ROWS.map((row) => (
-            <div key={row} role="row" className="grid grid-cols-2">
-              <div role="cell" className="py-5 pe-4 text-fg-muted leading-relaxed">
-                {t(`${row}_super`)}
-              </div>
-              <div role="cell" className="py-5 ps-4 text-text font-medium leading-relaxed border-s border-border">
-                {t(`${row}_brand`)}
-              </div>
-            </div>
-          ))}
-        </div>
+        <Link
+          href="/about"
+          className="inline-flex items-center gap-2 text-accent font-medium hover:underline"
+        >
+          {t("cta")}
+          <ArrowLeft size={18} aria-hidden="true" />
+        </Link>
       </FadeInSection>
     </section>
   );

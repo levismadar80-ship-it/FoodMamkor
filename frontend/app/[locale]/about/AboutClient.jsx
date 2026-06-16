@@ -34,11 +34,16 @@ const VALUES = [
   { key: "quality", n: "03" },
   { key: "safety", n: "04" },
 ];
+// MEH-841: 3-stop comparison path (gold-dot spine). Order is the locked
+// editorial order — do not re-sort.
+const COMPARE_STOPS = ["row1", "row2", "row3"];
 
 export default function AboutPage() {
   const t = useTranslations("about.consumer");
   // MEH-534: cross-link label to the /about/process page (process namespace).
   const tProcess = useTranslations("process");
+  // MEH-841: comparison strip ported from home — sibling namespace, not consumer.*
+  const tCompare = useTranslations("about.comparison");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
@@ -157,6 +162,33 @@ export default function AboutPage() {
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
+        </div>
+      </FadeInSection>
+
+      {/* ======== Comparison — layout A (3-stop gold-dot path) · MEH-841 (supersedes MEH-525) ======== */}
+      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
+          <Eyebrow>{tCompare("eyebrow")}</Eyebrow>
+          <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight mb-8 md:mb-10">
+            {tCompare("heading")}
+          </h2>
+          {/* vertical gold-dot spine — hairline border on the start edge; dots are CSS, no icons */}
+          <ol className="relative ms-1 border-s border-border space-y-8 md:space-y-10">
+            {COMPARE_STOPS.map((row) => (
+              <li key={row} className="relative ps-6 md:ps-8">
+                <span
+                  aria-hidden="true"
+                  className="absolute start-0 top-1.5 -ms-[5px] block w-2.5 h-2.5 rounded-full bg-accent"
+                />
+                <p className="font-headline-md font-bold text-primary-dark text-[21px] md:text-2xl leading-snug">
+                  {tCompare(`${row}_brand`)}
+                </p>
+                <p className="font-body-md text-fg-muted text-base leading-relaxed mt-1.5">
+                  {tCompare(`${row}_super`)}
+                </p>
+              </li>
+            ))}
+          </ol>
         </div>
       </FadeInSection>
 
