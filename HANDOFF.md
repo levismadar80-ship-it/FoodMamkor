@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-829 + MEH-836 MERGED (S7 Chunk A backend + migration-toil)
+
+- **MEH-836** #1183 ✅ merged (`a13801a`) — migration-toil docs; Sapir applied Part A (`pr-checks.yml` `EXPECTED_REV` removal) + Part B (`settings.json` `versions/**` deny lift). CC may now author hand-written migrations; drift caught by `alembic check` alone.
+- **MEH-829** #1179 ✅ merged (`50e71cf`) — `Producer.address` (String(255) nullable) + `ProducerRegister.address`(255)/`short_description`(160); both `register_producer` ctors wired explicitly (`:475` upgrade + `:573` new-reg). Migration **`b7a4c2e1f9d3`** (Sapir-authored; CC had written an identical duplicate `4352e48f802c` in parallel — discarded **unpushed** to avoid a forked alembic chain). Auto-applies on Railway boot; freeze respected.
+- **Doc-sync (this branch):** `.ai/diagrams/db-schema.md` gains the `address` column (rule 12 follow-up). PR-body stale "bump EXPECTED_REV" note is moot post-MEH-836.
+- **Next:** S7 Chunk B (form split) consumes city/address/short_description — awaiting the restructure spec.
+
 ## 2026-06-16 — Page-6 audit batch COMPLETE (4 draft PRs)
 
 Manual batch off /login+/register audit (page 6/11). All 4 = draft PRs off staging, Sapir merges (Rule 23). MEH-132 freeze respected throughout (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred per batch.

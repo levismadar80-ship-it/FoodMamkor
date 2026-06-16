@@ -43,6 +43,7 @@ erDiagram
         string slug UK "nullable"
         string description
         string city
+        string address "nullable — MEH-829, VARCHAR(255); collected at register (S7 frame 01/03)"
         float lat "indexed with lng"
         float lng
         string status "pending|approved|rejected"
