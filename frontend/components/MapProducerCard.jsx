@@ -8,6 +8,8 @@ import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
 import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
 import { parseHours, computeStatus } from "@/lib/hours";
+import { useUserLocation } from "@/lib/user-location";
+import { haversineKm, formatDistance } from "@/lib/distance";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -26,6 +28,16 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const th = useTranslations("opening_hours");
   const hoursMap = parseHours(p.opening_hours);
   const hoursStatus = hoursMap ? computeStatus(hoursMap) : null;
+
+  // MEH-826: client-side distance — haversine(user GPS, producer lat/lng).
+  // GPS is read from sessionStorage (useUserLocation); no fetch, no radius
+  // param, no backend. Shows only for GPS users (null otherwise). Mirrors
+  // ProducerCard.jsx:191-197.
+  const userLoc = useUserLocation();
+  const distanceLabel =
+    userLoc && p.lat != null && p.lng != null
+      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng))
+      : null;
 
   const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
     ? p.delivery_areas.find((d) => d.city === userCity)
@@ -125,6 +137,13 @@ export default function MapProducerCard({ producer, active, onClick }) {
                   : ""}
               </span>
             )}
+          </p>
+        )}
+
+        {/* MEH-826: distance from the GPS user — full label LTR-isolated (bidi) */}
+        {distanceLabel && (
+          <p className="text-[12px] text-fg-muted mt-1">
+            <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
           </p>
         )}
 
