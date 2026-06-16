@@ -109,7 +109,9 @@ class ProducerRegister(BaseModel):
     # Producer details
     producer_name: str
     description: str | None = None
+    short_description: str | None = Field(default=None, max_length=160)
     city: str | None = None
+    address: str | None = None
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None

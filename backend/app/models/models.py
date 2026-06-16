@@ -48,6 +48,7 @@ class Producer(Base):
     description = Column(Text)
     short_description = Column(Text, nullable=True)
     city = Column(String(100))
+    address = Column(String(255), nullable=True)
     lat = Column(Float)
     lng = Column(Float)
     phone = Column(String(20))
