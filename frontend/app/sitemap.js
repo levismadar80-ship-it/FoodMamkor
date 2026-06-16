@@ -42,11 +42,10 @@ export default async function sitemap() {
     { path: "/events", priority: 0.8, changeFrequency: "daily" },
     { path: "/about", priority: 0.6, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
-    { path: "/register", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/login", priority: 0.3, changeFrequency: "monthly" },
-    // MEH-667: /contact + /search added post-MEH-658 (gave them per-page SEO metadata).
-    { path: "/contact", priority: 0.3, changeFrequency: "monthly" },
-    { path: "/search", priority: 0.3, changeFrequency: "monthly" },
+    // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
+    // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility
+    // route), so emitting them here produced GSC "Submitted URL marked 'noindex'".
+    // The sitemap lists indexable URLs only; the pages' noindex directives stay.
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },
   ];
   const staticPages = staticDefs.flatMap(({ path, priority, changeFrequency }) =>
