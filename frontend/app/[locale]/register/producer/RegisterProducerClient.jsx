@@ -359,7 +359,7 @@ function RegisterProducerPageBody() {
         {/* Step 1: Account */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
                 no Google/Apple client_id is configured. */}
@@ -437,7 +437,7 @@ function RegisterProducerPageBody() {
         {/* Step 2: Business basics */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
