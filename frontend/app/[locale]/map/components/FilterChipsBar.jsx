@@ -54,9 +54,9 @@ export default function FilterChipsBar({
                   : onToggleChipClick(tag.key)
               }
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
-              className="inline-flex items-center min-h-[44px] -my-2.5"
+              className="group inline-flex items-center min-h-[44px] -my-2.5"
             >
-              <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] hover:bg-green-50/80 transition">
+              <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] group-hover:bg-green-50/80 transition">
                 <span aria-hidden="true">×</span>
                 {tag.label}
               </span>
