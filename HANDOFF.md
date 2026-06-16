@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — UX-audit page 3/11 (/search) — complete
+
+**Page 3/11 (/search) UX audit complete.** Ledger of the cluster:
+- **MEH-818** (#1162 ✅ merged `1fecc72`) — /search empty-state: 44px tap targets + plural-voice copy.
+- **MEH-820** (#1164 ✅ merged `c6de8ca`) — /producers free-text search `<input>` (`?q=` + `?focus=1`), reuses existing q machinery.
+- **MEH-819** — banked (IA decision: /search vs /producers?q= two parallel results pages; MEH-820 was Step 1, Step 2 = repoint nav, deferred).
+- **MEH-822** — E2E smoke test for the /producers search submit path (banked follow-up; kept out of MEH-820 to honor its locked 3-file scope).
+- **MEH-823** (this PR) — /search voice cleanup: `search.submit` "חפשי"→"חפשו", `search.empty_prompt` "הקלידי ביטוי…"→"מה תרצו למצוא?" (value-only, he.json). Other feminine-singular in the `search` namespace reported (3 placeholders: `cities_autocomplete`/`city_search`/`address_search`) — not fixed, out of scope.
+
 ## 2026-06-16 — Design-port coverage audit + MEH-821 for-businesses port (draft PR)
 
 **Audit (READ-ONLY, origin/main):** classified ~36 user-facing routes. Result: 23 PORTED · 8 N/A (auth chrome/legal, all token-based) · **0 regressions** (every Done port ticket — MEH-763/76/132/135/131/134/534 — resolves to a PORTED surface). STEP 4: staging only 5 commits ahead of main (docs + MEH-288), all 7 design ports already released to main, nothing done-but-unreleased. **Mapping correction:** the brief's "business=MEH-76" is a misattribution — MEH-76 = producer business-home (`ProducerDetail`, PORTED), NOT `/about/for-businesses`.
