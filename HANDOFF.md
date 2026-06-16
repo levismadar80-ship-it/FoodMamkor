@@ -5,6 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
+
+- page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
+- page 4/11 (/map) audit complete — MEH-824/825/826-Gap1+4 merged; 826 Gap2/3 deferred; 828 e2e fix; deferred design-judgment: F5 mobile-H1, LocationModal timing, F6 CitySearch 37px (→MEH-233)
+
 ## 2026-06-16 — MEH-827: lock ProducerCard hover spec in DESIGN.md (doc-only, draft PR)
 
 Doc-only lock so a future ProducerCard re-port can't reinstate the v4-mock gold underline (it's a nav-only active indicator, deliberately not on the card — Sapir, v4). Added a "Hover (shipped spec — LOCKED)" sub-bullet under Components → "Cards (ProducerCard et al.)" in `docs/DESIGN.md`: name → `text-primary` · border → `border-primary` · image scale 1.02 · NO gold underline. `ProducerCard.jsx` (central) intentionally untouched — a no-op comment would trip adversarial-review. No token values changed; `npm run build` green (token auto-export intact). Branch `feature/meh-827-producercard-hover-lock` off staging. Draft PR — doc-only, no mobile QA (DoD exception).
