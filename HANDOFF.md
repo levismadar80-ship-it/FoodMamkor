@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — auto-batch pass: MEH-288 built (draft PR) + MEH-203 Phase A mockup + triage
+
+**Autonomous `auto-batch` label pass (Mehamakor team).** Classified 11 labeled issues; only 2 were FRESH/Backlog and buildable — the rest were Done (MEH-806 merged #1152/#1157), active in other sessions (MEH-807 + the In-Progress set: 793/233/258/800/798/785, no open PR/branch on remote → SKIP, collision risk). Triage table → `MERGE-QUEUE.md`. No open PRs mapped to any auto-batch issue (all 11 open PRs are dependabot + 1 pr-checks patch).
+
+- **MEH-288** — `ProfileCompletenessCard` on `/producer/dashboard` (above analytics). New component + i18n (`dashboard.producer.completeness.*`, he/en) + mount + `__tests__/ProfileCompletenessCard.test.jsx` (5/5). Heuristic untouched. Build green, ESLint 0 errors, RTL clean. Branch `feature/meh-288-completeness-card`. **Draft PR — Sapir mobile QA + preview, no self-merge.** Unblocks MEH-290 step 1.
+- **MEH-203 Phase A** — static mockup only at `frontend/public/meh-203-mockup.html` (category selector redesign: search + popular chips). **STOP for Sapir design review** before Phase B (code) — per issue 2-phase gate.
+
 ## 2026-06-16 — UX-audit page 2/11 (/producer) follow-up — 3 PRs MERGED (Sapir authorized "merge all")
 
 - **#1155** ✅ merged `ba2ad57` — `docs/UX-AUDIT-PLAYBOOK.md` (real Drive method, versioned SoT; HANDOFF:10/:23 citations resolve).
