@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — MEH-837: /register OAuth honors clamped redirect (draft PR)
+
+`feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
+
 ## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
 
 - page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
