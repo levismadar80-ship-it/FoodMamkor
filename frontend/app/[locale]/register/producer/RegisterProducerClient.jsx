@@ -359,7 +359,7 @@ function RegisterProducerPageBody() {
         {/* Step 1: Account */}
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.account.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
                 no Google/Apple client_id is configured. */}
@@ -437,7 +437,7 @@ function RegisterProducerPageBody() {
         {/* Step 2: Business basics */}
         {step === 2 && (
           <div className="space-y-4">
-            <h2 className="font-headline-md text-lg font-bold">{t("auth.register.producer.steps.business.title")}</h2>
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
@@ -783,6 +783,8 @@ function RegisterProducerPageBody() {
                 <li>{t("auth.register.producer.success.next_step3")}</li>
               </ul>
             </div>
+            {/* MEH-132: S7 06A founder sign-off */}
+            <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button

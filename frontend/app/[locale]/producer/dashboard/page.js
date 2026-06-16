@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
+import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import Input from "@/components/ui/Input";
 
 function VanityLinkCard({ slug }) {
@@ -310,6 +311,12 @@ export default function ProducerDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* MEH-288: profile-completeness card — surfaces the existing
+          producerCompleteness() heuristic to the owner, above the analytics
+          stats. Guarded on `profile` (the full /producers/me record carries
+          the fields the heuristic reads). */}
+      {profile && <ProfileCompletenessCard producer={profile} />}
 
       {/* Analytics stat cards */}
       {analytics ? (

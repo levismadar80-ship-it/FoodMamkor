@@ -102,35 +102,17 @@ export default async function FaqForBusinessesPage({ params }) {
   const t = await getTranslations({ locale, namespace: "about_business" });
   const jsonLd = buildFaqJsonLd(t);
   return (
-    <main
-      className="min-h-screen"
-      style={{ backgroundColor: "#F5F0E8", color: "#1C1A17" }}
-    >
+    <main className="min-h-screen bg-background text-text">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 sm:mb-14">
-          <p
-            className="text-xs sm:text-sm mb-3"
-            style={{
-              color: "#8B6914",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
+          <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
             {t("eyebrow")}
           </p>
-          <h1
-            className="font-headline-lg mb-4"
-            style={{
-              color: "#2E4A2E",
-              fontSize: "clamp(28px, 6vw, 44px)",
-              lineHeight: 1.15,
-              fontWeight: 900,
-            }}
-          >
+          <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {t("heading")}
           </h1>
         </header>
@@ -138,14 +120,7 @@ export default async function FaqForBusinessesPage({ params }) {
         <div className="flex flex-col gap-10 sm:gap-12">
           {CATEGORIES.map((cat) => (
             <section key={cat.key}>
-              <h2
-                className="font-headline-md mb-4"
-                style={{
-                  color: "#2e6853",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                }}
-              >
+              <h2 className="font-headline-md mb-4 text-primary text-[20px] font-bold">
                 {t(`categories.${cat.key}`)}
               </h2>
               <ul className="flex flex-col gap-3">
@@ -153,32 +128,18 @@ export default async function FaqForBusinessesPage({ params }) {
                   <li key={item.key}>
                     <details
                       open={item.open || undefined}
-                      className="group rounded-lg border bg-white transition-colors"
-                      style={{
-                        borderColor: "rgba(46,104,83,0.18)",
-                      }}
+                      className="group rounded-lg border border-border bg-white transition-colors"
                     >
-                      <summary
-                        className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2e6853]/40 rounded-lg"
-                        style={{
-                          color: "#1C1A17",
-                          fontSize: "17px",
-                          fontWeight: 600,
-                        }}
-                      >
+                      <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-[17px] font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
                         <span
                           aria-hidden="true"
-                          className="shrink-0 transition-transform group-open:rotate-45 text-2xl leading-none"
-                          style={{ color: "#2e6853" }}
+                          className="shrink-0 transition-transform group-open:rotate-45 text-2xl leading-none text-primary"
                         >
                           +
                         </span>
                       </summary>
-                      <div
-                        className="px-5 pb-5 pt-1 text-[15px] leading-relaxed"
-                        style={{ color: "#3a3a3a" }}
-                      >
+                      <div className="px-5 pb-5 pt-1 text-[15px] leading-relaxed text-text/90">
                         {renderAnswer(t(`faq.${item.key}.a`))}
                       </div>
                     </details>
@@ -189,15 +150,14 @@ export default async function FaqForBusinessesPage({ params }) {
           ))}
         </div>
 
-        <footer className="mt-14 sm:mt-16 border-t pt-8" style={{ borderColor: "rgba(46,104,83,0.18)" }}>
-          <p className="text-base mb-4" style={{ color: "#3a3a3a" }}>
+        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
+          <p className="text-base mb-4 text-text/90">
             {t("footer_intro_prefix")}{" "}
             <a
               href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline"
-              style={{ color: "#2e6853" }}
+              className="underline text-primary"
             >
               @meha_makor
             </a>{" "}
@@ -205,13 +165,7 @@ export default async function FaqForBusinessesPage({ params }) {
           </p>
           <a
             href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90"
-            style={{
-              backgroundColor: "#2e6853",
-              color: "white",
-              borderRadius: "8px",
-              padding: "12px 22px",
-            }}
+            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-lg px-[22px] py-3"
           >
             {t("cta")}
           </a>

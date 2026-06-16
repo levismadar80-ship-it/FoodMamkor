@@ -26,7 +26,7 @@ export default function DeliveryBlock({ nationwide, cities = [], producer }) {
       <div className="flex flex-wrap gap-2 mb-4">
         {nationwide ? (
           <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium">
-            🚚 {t("nationwide")}
+            <Truck size={14} className="text-current ms-1" aria-hidden="true" />{t("nationwide")}
           </span>
         ) : cities.length > 0 ? (
           cities.map((city) => (

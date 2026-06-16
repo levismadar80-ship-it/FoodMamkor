@@ -104,7 +104,7 @@ function SearchPageBody() {
 
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex items-center gap-2 mb-6 max-w-xl">
-        <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 py-2.5 bg-white focus-within:ring-2 focus-within:ring-primary/40">
+        <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 py-2.5 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
           <MagnifyingGlass size={18} color="#6B6B6B" weight="regular" aria-hidden="true" />
           <input
             ref={inputRef}
@@ -119,7 +119,7 @@ function SearchPageBody() {
         </div>
         <button
           type="submit"
-          className="bg-primary text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition"
+          className="bg-primary text-white px-4 py-2.5 rounded-full text-sm font-medium hover:bg-primary-dark transition min-h-[44px] min-w-[44px] flex items-center justify-center"
         >
           {t("submit")}
         </button>

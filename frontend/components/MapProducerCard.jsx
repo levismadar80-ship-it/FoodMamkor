@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Star, Truck, Leaf, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
 import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
+import { parseHours, computeStatus } from "@/lib/hours";
+import { useUserLocation } from "@/lib/user-location";
+import { haversineKm, formatDistance } from "@/lib/distance";
 
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
@@ -20,6 +23,21 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
   const { color: categoryColor } = styleForProducer(p);
+
+  // MEH-826: open/closed-now status from the shared lib/hours parser.
+  const th = useTranslations("opening_hours");
+  const hoursMap = parseHours(p.opening_hours);
+  const hoursStatus = hoursMap ? computeStatus(hoursMap) : null;
+
+  // MEH-826: client-side distance — haversine(user GPS, producer lat/lng).
+  // GPS is read from sessionStorage (useUserLocation); no fetch, no radius
+  // param, no backend. Shows only for GPS users (null otherwise). Mirrors
+  // ProducerCard.jsx:191-197.
+  const userLoc = useUserLocation();
+  const distanceLabel =
+    userLoc && p.lat != null && p.lng != null
+      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng))
+      : null;
 
   const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
     ? p.delivery_areas.find((d) => d.city === userCity)
@@ -100,6 +118,34 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </p>
           )}
         </div>
+
+        {/* MEH-826: open/closed-now line with clock — numerals LTR-isolated */}
+        {hoursStatus && (
+          <p className={`text-[12px] mt-1 inline-flex items-center gap-1 flex-wrap ${hoursStatus.isOpen ? "text-primary" : "text-fg-muted"}`}>
+            <Clock size={12} weight="regular" aria-hidden="true" />
+            {hoursStatus.isOpen ? (
+              <>
+                <span>{th("open_now")}</span>
+                <span aria-hidden="true">·</span>
+                <span dir="ltr">{hoursStatus.openTime}–{hoursStatus.closeTime}</span>
+              </>
+            ) : (
+              <span>
+                {th("closed_now")}
+                {hoursStatus.nextDayKey
+                  ? ` ${th("opens_at", { day: hoursStatus.nextIsTomorrow ? th("tomorrow") : th(`weekdays.${hoursStatus.nextDayKey}`), time: hoursStatus.nextTime })}`
+                  : ""}
+              </span>
+            )}
+          </p>
+        )}
+
+        {/* MEH-826: distance from the GPS user — full label LTR-isolated (bidi) */}
+        {distanceLabel && (
+          <p className="text-[12px] text-fg-muted mt-1">
+            <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
+          </p>
+        )}
 
         {/* Pills row */}
         <div className="flex items-center gap-1.5 mt-1 flex-wrap">

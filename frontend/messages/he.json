@@ -299,15 +299,16 @@
           "generic": "שגיאת תקשורת — נסי שוב."
         },
         "success": {
-          "heading": "הצטרפת!",
+          "heading": "קיבלנו את הפרטים שלך",
+          "signature": "בשמחה, ספיר",
           "tier_trust": "כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. תג 'מאומת' מתווסף כשמוגש מסמך רישוי או פטור רשמי, ואנחנו בודקות אותו.",
           "body_with_whatsapp": "שלחנו לך הודעת WhatsApp עם קישור להשלמת הפרופיל. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.",
           "body_no_whatsapp": "הרשמה הושלמה! השלימי את הפרופיל ישירות מהדשבורד. הבקשה ממתינה לאישור — בדרך כלל תוך 1-2 ימי עסקים.",
           "whatsapp_warning": "לא קיבלת הודעת WhatsApp? ייתכן שמספר הטלפון שגוי, או שתוכלי להמשיך ולהשלים את הפרופיל ישירות מהדשבורד.",
           "next_heading": "מה הלאה?",
-          "next_step1": "✓ השלימי את הפרופיל מהדשבורד — תמונות, תיאור, משלוחים",
-          "next_step2": "✓ הצוות שלנו יבדוק את הבקשה תוך 1-2 ימי עסקים",
-          "next_step3": "✓ אחרי האישור — העסק יופיע במפה ובחיפוש",
+          "next_step1": "בדיקה אישית",
+          "next_step2": "שיחת היכרות",
+          "next_step3": "הדף עולה לאוויר",
           "dashboard_cta": "לדשבורד שלי →",
           "share_msg": "היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל אמיתי. מוזמנת להצטרף: https://mehamakor.online/register/producer",
           "share_cta": "הזמיני שכנה",
@@ -622,7 +623,7 @@
       "aria_declared": "בית עסק מוצהר"
     },
     "detail": {
-      "loading_fresh": "טוענת עסקים טריים...",
+      "loading_fresh": "בטעינה…",
       "not_found": "לא מצאנו את בית העסק הזה — עדיין",
       "breadcrumb_home": "בית",
       "aria": {
@@ -646,7 +647,7 @@
           "heading": "אירועים קרובים",
           "free": "חינם",
           "register": "הרשמה לאירוע →",
-          "show_all_count": "{count, plural, one {הציגי את האירוע} two {הציגי את שני האירועים} other {הציגי את כל # האירועים}}"
+          "show_all_count": "הצגת כל האירועים"
         },
         "products": {
           "heading": "מוצרים"
@@ -686,13 +687,13 @@
         },
         "show_on_map": "הצג במפה",
         "referral_msg": "גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/{code}",
-        "referral_cta": "שתפי וקבלי 10%"
+        "referral_cta": "שתפו וקבלו 10%"
       },
       "contact_sidebar": {
-        "join_whatsapp_group": "הצטרפי לקבוצת וואטסאפ"
+        "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"
       },
       "sticky_bar": {
-        "vacation_msg": "שלחי הודעה — יחזרו בקרוב"
+        "vacation_msg": "שלחו הודעה"
       }
     },
     "card": {
@@ -1045,8 +1046,8 @@
     },
     "mini": {
       "default_label": "מיקום",
-      "open_in_waze": "פתחי ב",
-      "open_in_google": "פתחי ב"
+      "open_in_waze": "פתיחה ב",
+      "open_in_google": "פתיחה ב"
     },
     "bottom_sheet": {
       "title": "בתי עסק באזור",
@@ -2348,7 +2349,16 @@
     },
     "category_selector": {
       "label": "קטגוריה",
-      "search_placeholder": "חפשי קטגוריה...",
+      "search_label": "חיפוש קטגוריה",
+      "search_placeholder": "לדוגמה: גבינה, לחם, סבון",
+      "popular_descs": {
+        "dairy": "גבינות, יוגורט, חמאה",
+        "bread": "מאפים, חלות, עוגות",
+        "meat": "טרי, כשר, מהחווה",
+        "oil": "שמן זית, שמנים מובחרים",
+        "veg": "מהשדה, עונתי, אורגני",
+        "care": "סבונים, מוצרי רחצה"
+      },
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
@@ -2366,6 +2376,11 @@
     "title": {
       "all": "כל בתי העסק",
       "search_results": "תוצאות עבור:"
+    },
+    "search_input": {
+      "label": "חיפוש בתי עסק",
+      "placeholder": "לחם מחמצת, גבינת עזים, ירקות אורגניים",
+      "submit": "חיפוש"
     },
     "discovery": {
       "found_count": "{count, plural, =0 {לא נמצאו בתי עסק} one {נמצא בית עסק אחד} two {נמצאו {count} בתי עסק} other {נמצאו {count} בתי עסק}}",
@@ -2505,15 +2520,15 @@
     "title_results": "תוצאות חיפוש עבור \"{q}\"",
     "input_placeholder": "לחם מחמצת, ביצים אורגניות, ירקות ופירות",
     "input_aria": "חיפוש",
-    "submit": "חפשי",
-    "no_results_hint": "לא מצאנו התאמות — נסי מילה אחרת או גלי לפי קטגוריות",
+    "submit": "חפשו",
+    "no_results_hint": "לא מצאנו התאמות — נסו מילה אחרת או גלו לפי קטגוריות",
     "results_count": "{totalHits, plural, one {תוצאה אחת} two {{totalHits} תוצאות} other {{totalHits} תוצאות}}",
-    "empty_prompt": "הקלידי ביטוי בשדה החיפוש בראש הדף.",
+    "empty_prompt": "מה תרצו למצוא?",
     "section_producers": "בתי עסק",
     "section_products": "מוצרים",
     "product_by_prefix": "אצל",
-    "empty_title": "לא מצאנו התאמות — נסי מילה אחרת",
-    "empty_subtitle": "נסי לשנות את החיפוש או לעיין בקטגוריות בדף הבית.",
+    "empty_title": "לא מצאנו התאמות — נסו מילה אחרת",
+    "empty_subtitle": "נסו לשנות את החיפוש או לעיין בקטגוריות בדף הבית.",
     "empty_home_cta": "חזרה לדף הבית",
     "hero": {
       "submit_aria": "חפש",
@@ -3380,6 +3395,27 @@
         "top_cities_title": "ערים מובילות",
         "top_cities_empty": "עוד אין נתוני ערים — לקוחות שלא התחברו לא מדווחים עיר."
       },
+      "completeness": {
+        "red_headline": "הפרופיל שלך חסר פרטים קריטיים",
+        "red_sub": "בלעדיהם לקוחות לא יראו אותך במפה ובחיפוש",
+        "yellow_low_headline": "הפרופיל שלך {percent}% מוכן",
+        "yellow_low_sub": "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
+        "yellow_high_headline": "כמעט שם — {percent}% מוכן",
+        "yellow_high_sub": "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהפרופיל מלא",
+        "green_headline": "הפרופיל מלא",
+        "next_step_prefix": "השלב הבא:",
+        "cta": "השלימי פרופיל",
+        "cta_aria": "השלימי את הפרופיל שלך",
+        "ring_aria": "השלמת פרופיל: {percent}%",
+        "fields": {
+          "city": "עיר",
+          "coords": "מיקום על המפה",
+          "delivery": "אזורי משלוח",
+          "contact": "פרטי קשר (טלפון/אינסטגרם)",
+          "category": "קטגוריה",
+          "image": "תמונה ראשית"
+        }
+      },
       "strength": {
         "heading": "חוזק פרופיל",
         "tooltip": "ציון לפי 6 קריטריונים: תמונה, תיאור, מוצר פעיל, אזור משלוח, ביקורת ראשונה, טלפון מאומת. מעל 80% — לקוחות סומכות יותר.",
@@ -3413,7 +3449,7 @@
         "primary_website": "אתר",
         "primary_facebook": "פייסבוק",
         "primary_external_order": "טופס הזמנות",
-        "hint_empty": "מלאי את השדה הזה כדי שישמש כערוץ הראשי",
+        "hint_empty": "מלאו את השדה הזה כדי שישמש כערוץ הראשי",
         "error_summary": "כדי להגדיר ערוץ ראשי צריך למלא את השדה שלו",
         "save_cta": "שמירת ערוצי קשר",
         "saving": "שומרים…",

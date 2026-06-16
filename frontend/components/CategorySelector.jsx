@@ -2,8 +2,42 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Check, Leaf, MagnifyingGlass } from "@phosphor-icons/react";
+import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
-const POPULAR_COUNT = 6;
+/**
+ * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
+ *
+ * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
+ * a 2-col card grid, bespoke hand-drawn glyphs (CategoryIcons.jsx) for the 6
+ * popular categories + a Phosphor Leaf fallback for the other 14, and a live
+ * name+desc filter that DIMS (not hides) non-matching cards. The data contract
+ * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
+ * still feed form.category_ids — so the mount (RegisterProducerClient.jsx:546)
+ * and the MEH-530 license logic that reads form.category_ids need zero changes.
+ *
+ * Does NOT: own the license field (RegisterProducerClient.jsx — MEH-530), the
+ * taxonomy (backend/seed_data.py — 20 DB categories), or routing.
+ * Related: components/CategoryIcons.jsx (glyph paths); lib/home-categories.js
+ * (the homepage marketing-group variant — intentionally a separate concept).
+ * History: MEH-203 (S7 card re-skin; emoji-pill grid → card grid + dim-filter).
+ */
+
+// Popular-6 rest-state config. `name` matches the real DB category name
+// (backend/seed_data.py) so the glyph attaches to the right row; `desc` comes
+// from forms.category_selector.popular_descs keyed by glyph slug (i18n, Hebrew
+// in both locales for now — DB category names are Hebrew-only). The other 14
+// categories surface via search with a Leaf fallback, name-only.
+const POPULAR = [
+  { name: "חלב וגבינות", glyph: "dairy" },
+  { name: "לחמים ואפייה", glyph: "bread" },
+  { name: "בשר ודגים", glyph: "meat" },
+  { name: "שמנים", glyph: "oil" },
+  { name: "ירקות", glyph: "veg" },
+  { name: "סבונים טבעיים", glyph: "care" },
+];
+const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
+const POPULAR_NAMES = POPULAR.map((p) => p.name);
 
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
@@ -11,30 +45,55 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
   const [expanded, setExpanded] = useState(false);
 
   const q = query.trim().toLowerCase();
-  const filtered = q ? categories.filter((c) => c.name.includes(q)) : null;
-  const noResults = q.length > 0 && filtered.length === 0;
 
-  const more = categories.slice(POPULAR_COUNT);
-  const shown = q ? filtered : expanded ? categories : categories.slice(0, POPULAR_COUNT);
+  // Ordered universe: popular-6 first (in POPULAR order), then the rest in DB
+  // order. A popular row missing from the API (seed drift) is simply skipped.
+  const popularCats = POPULAR.map((p) => categories.find((c) => c.name === p.name)).filter(Boolean);
+  const restCats = categories.filter((c) => !POPULAR_NAMES.includes(c.name));
+  const ordered = [...popularCats, ...restCats];
+
+  const descFor = (c) => {
+    const p = POPULAR_BY_NAME[c.name];
+    return p ? t(`popular_descs.${p.glyph}`) : "";
+  };
+  const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
+
+  const matched = q ? ordered.filter(isMatch) : [];
+  const noResults = q.length > 0 && matched.length === 0;
+
+  // EMPTY → popular-6 (expandable to all 20). QUERY → all 20 with matches
+  // first; non-matches stay rendered but dimmed (never removed).
+  const shown = q
+    ? [...matched, ...ordered.filter((c) => !isMatch(c))]
+    : expanded
+      ? ordered
+      : popularCats;
+
   const sectionLabel = q ? t("section_results") : t("section_popular");
 
   return (
-    <div>
+    <div role="group" aria-label={t("label")}>
       <p className="font-medium mb-2 text-sm">
         {t("label")} <span className="text-red-700">*</span>
       </p>
 
+      {/* Search — magnifier on the start side, 16px font to avoid iOS zoom. */}
+      <label htmlFor="category-search" className="block text-sm font-medium text-text mb-1">
+        {t("search_label")}
+      </label>
       <div className="relative mb-3">
-        <span className="absolute top-1/2 right-3 -translate-y-1/2 text-fg-muted text-sm pointer-events-none select-none">
-          🔍
-        </span>
+        <MagnifyingGlass
+          size={18}
+          className="absolute start-3.5 top-1/2 -translate-y-1/2 text-fg-muted pointer-events-none"
+          aria-hidden="true"
+        />
         <input
-          type="text"
+          id="category-search"
+          type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("search_placeholder")}
-          aria-label={t("search_placeholder")}
-          className="w-full border border-[#e5e0d8] rounded-[10px] py-2 pr-9 pl-3 text-sm bg-[#faf8f4] focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+          className="w-full border border-border rounded-[10px] ps-[46px] pe-3 py-2 text-base bg-surface-card text-text focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
           dir="rtl"
         />
       </div>
@@ -49,34 +108,62 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
       ) : (
         <>
           <p className="text-xs text-fg-muted mb-2">{sectionLabel}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {shown.map((cat) => {
               const selected = selectedIds.includes(cat.id);
+              const dimmed = q.length > 0 && !isMatch(cat);
+              const desc = descFor(cat);
+              const popular = POPULAR_BY_NAME[cat.name];
+              const Glyph = popular ? CATEGORY_ICONS[popular.glyph] : null;
               return (
                 <button
                   key={cat.id}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => onChange(cat.id)}
-                  className={`inline-flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition min-h-[40px] ${
+                  className={[
+                    "relative grid grid-cols-[46px_1fr] items-center gap-[14px] text-start",
+                    "rounded-[14px] border p-4 md:p-[18px] min-h-[78px] transition",
                     selected
-                      ? "bg-primary text-white border-primary"
-                      : "bg-[#F5F0E8] text-text border-[#e5e0d8] hover:border-primary hover:bg-primary/5"
-                  }`}
+                      ? "border-primary bg-green-50"
+                      : "border-border bg-surface-card hover:border-primary",
+                    dimmed ? "opacity-[.32]" : "",
+                  ].join(" ")}
                 >
-                  {cat.emoji} {cat.name}
-                  {selected && <span className="ms-0.5 text-[11px]">✓</span>}
+                  <span
+                    className={`flex items-center justify-center ${selected ? "text-primary" : "text-primary-dark"}`}
+                    aria-hidden="true"
+                  >
+                    {Glyph ? <Glyph size={46} strokeWidth={5.5} /> : <Leaf size={46} weight="light" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">
+                      {cat.name}
+                    </span>
+                    {desc && (
+                      <span className="block text-[12.5px] text-fg-muted mt-0.5 leading-snug">{desc}</span>
+                    )}
+                  </span>
+                  <span
+                    className={`absolute top-3.5 end-3.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white transition-opacity ${
+                      selected ? "opacity-100" : "opacity-0"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <Check size={14} weight="bold" />
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {!q && more.length > 0 && (
+          {!q && restCats.length > 0 && (
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
               className="mt-2 text-sm text-primary hover:underline block"
             >
-              {expanded ? t("show_less") : t("show_more", { count: more.length })}
+              {expanded ? t("show_less") : t("show_more", { count: restCats.length })}
             </button>
           )}
         </>

@@ -3,77 +3,11 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 
-// Day name constants. DAY_ABBR (English) is the API axis — used to parse
-// backend strings like "Sun-Thu 09:00-18:00". DAY_KEYS maps each index to
-// its translation key so display labels follow the active locale.
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+import { DAY_ABBR, DAY_KEYS, parseHours, computeStatus } from "@/lib/hours";
 
-// Parse "Sun-Thu 09:00-18:00, Fri 09:00-14:00" into a map of dayIndex → {open, close} | null
-function parseHours(raw) {
-  if (!raw) return null;
-  const map = {}; // dayIndex → { open: "09:00", close: "18:00" } or null (closed)
-  const entries = raw.split(",").map((s) => s.trim()).filter(Boolean);
-
-  for (const entry of entries) {
-    const match = entry.match(/^([A-Za-z]+)(?:-([A-Za-z]+))?\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/);
-    if (!match) continue;
-    const [, startDay, endDay, open, close] = match;
-    const startIdx = DAY_ABBR.findIndex((d) => d.toLowerCase() === startDay.toLowerCase());
-    if (startIdx === -1) continue;
-    const endIdx = endDay
-      ? DAY_ABBR.findIndex((d) => d.toLowerCase() === endDay.toLowerCase())
-      : startIdx;
-    if (endIdx === -1) continue;
-    // Handle week wrap (e.g. Thu-Sun would be odd but guard it)
-    const indices = endIdx >= startIdx
-      ? Array.from({ length: endIdx - startIdx + 1 }, (_, i) => startIdx + i)
-      : [startIdx];
-    for (const i of indices) map[i] = { open, close };
-  }
-  return Object.keys(map).length > 0 ? map : null;
-}
-
-// Convert "HH:MM" string to minutes since midnight
-function toMinutes(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
-
-// Given parsed map, compute current status in Israel timezone.
-// Returns { isOpen, closeTime?, nextDayKey?, nextTime?, nextIsTomorrow? }.
-// Day labels are resolved at the JSX layer via t() so this stays locale-agnostic.
-function computeStatus(map) {
-  const now = new Date();
-  // Israel timezone
-  const ilStr = now.toLocaleString("en-US", { timeZone: "Asia/Jerusalem" });
-  const il = new Date(ilStr);
-  const dayIdx = il.getDay(); // 0=Sun…6=Sat
-  const nowMin = il.getHours() * 60 + il.getMinutes();
-
-  const todayHours = map[dayIdx];
-  if (todayHours) {
-    const openMin = toMinutes(todayHours.open);
-    const closeMin = toMinutes(todayHours.close);
-    if (nowMin >= openMin && nowMin < closeMin) {
-      return { isOpen: true, closeTime: todayHours.close };
-    }
-  }
-
-  // Find next open slot
-  for (let d = 1; d <= 7; d++) {
-    const nextIdx = (dayIdx + d) % 7;
-    if (map[nextIdx]) {
-      return {
-        isOpen: false,
-        nextDayKey: DAY_KEYS[nextIdx],
-        nextTime: map[nextIdx].open,
-        nextIsTomorrow: d === 1,
-      };
-    }
-  }
-  return { isOpen: false };
-}
+// MEH-826: the parser + Israel-tz status were extracted to lib/hours so the
+// compact /map card shares one parser instead of duplicating it. This
+// component renders the full detail-page section (status line + day table).
 
 export default function OpeningHours({ opening_hours }) {
   const t = useTranslations("opening_hours");

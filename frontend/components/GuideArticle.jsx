@@ -18,13 +18,9 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/constants";
 
-const PRIMARY = "#2e6853";
-const PRIMARY_DARK = "#2E4A2E";
-const BODY_INK = "#1C1A17";
-const BODY_PROSE = "#3a3a3a";
-const EYEBROW_GOLD = "#8B6914";
-const BG_CREAM = "#F5F0E8";
-const RULE_GREEN_ALPHA = "rgba(46,104,83,0.18)";
+// MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
+// text-primary-dark, text-text, text-accent, bg-background, border-border) —
+// was module-scope hex consts + inline style props.
 
 function InlineBold({ text, idBase }) {
   // **bold** segments → <strong>; \n → <br>; everything else passes through.
@@ -57,8 +53,7 @@ function renderBlock(block, i) {
       return (
         <h2
           key={key}
-          className="font-headline-md mt-10 mb-3 sm:mt-12"
-          style={{ color: PRIMARY, fontSize: "22px", fontWeight: 700 }}
+          className="font-headline-md mt-10 mb-3 sm:mt-12 text-primary text-[22px] font-bold"
         >
           {block.text}
         </h2>
@@ -67,8 +62,7 @@ function renderBlock(block, i) {
       return (
         <h3
           key={key}
-          className="font-headline-md mt-8 mb-2"
-          style={{ color: PRIMARY_DARK, fontSize: "18px", fontWeight: 700 }}
+          className="font-headline-md mt-8 mb-2 text-primary-dark text-[18px] font-bold"
         >
           {block.text}
         </h3>
@@ -77,8 +71,7 @@ function renderBlock(block, i) {
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8]"
-          style={{ color: BODY_PROSE }}
+          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] text-text/90"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -91,7 +84,7 @@ function renderBlock(block, i) {
           ? "list-disc ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]"
           : "list-decimal ms-6 mb-4 space-y-2 text-[16px] sm:text-[17px] leading-[1.8]";
       return (
-        <Tag key={key} className={listClass} style={{ color: BODY_PROSE }}>
+        <Tag key={key} className={`${listClass} text-text/90`}>
           {block.items.map((item, j) => (
             <li key={`${key}-${j}`}>
               <InlineBold text={item} idBase={`${key}-${j}`} />
@@ -104,32 +97,20 @@ function renderBlock(block, i) {
       return (
         <blockquote
           key={key}
-          className="border-s-4 ps-4 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic"
-          style={{
-            borderColor: PRIMARY,
-            color: BODY_INK,
-            backgroundColor: "rgba(46,104,83,0.04)",
-            paddingTop: "10px",
-            paddingBottom: "10px",
-          }}
+          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic text-text bg-primary/[0.04]"
         >
           <InlineBold text={block.text} idBase={key} />
         </blockquote>
       );
     case "hr":
       return (
-        <hr
-          key={key}
-          className="my-8"
-          style={{ border: "none", borderTop: `1px solid ${RULE_GREEN_ALPHA}` }}
-        />
+        <hr key={key} className="my-8 border-0 border-t border-border" />
       );
     case "callout":
       return (
         <p
           key={key}
-          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] italic"
-          style={{ color: PRIMARY_DARK }}
+          className="mb-4 text-[16px] sm:text-[17px] leading-[1.8] italic text-primary-dark"
         >
           <InlineBold text={block.text} idBase={key} />
         </p>
@@ -147,38 +128,17 @@ export default function GuideArticle({
   backHref = "/about/for-businesses/guides",
 }) {
   return (
-    <main
-      className="min-h-screen"
-      style={{ backgroundColor: BG_CREAM, color: BODY_INK }}
-    >
+    <main className="min-h-screen bg-background text-text">
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
-          <p
-            className="text-xs sm:text-sm mb-3"
-            style={{
-              color: EYEBROW_GOLD,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
+          <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
             מדריך לבעלות עסק · קריאה כ-{readMinutes} דקות
           </p>
-          <h1
-            className="font-headline-lg mb-3"
-            style={{
-              color: PRIMARY_DARK,
-              fontSize: "clamp(28px, 6vw, 44px)",
-              lineHeight: 1.15,
-              fontWeight: 900,
-            }}
-          >
+          <h1 className="font-headline-lg mb-3 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {title}
           </h1>
           {subtitle ? (
-            <p
-              className="italic text-[17px] sm:text-[18px] leading-relaxed"
-              style={{ color: BODY_PROSE }}
-            >
+            <p className="italic text-[17px] sm:text-[18px] leading-relaxed text-text/90">
               {subtitle}
             </p>
           ) : null}
@@ -186,23 +146,16 @@ export default function GuideArticle({
 
         <div>{blocks.map(renderBlock)}</div>
 
-        <footer
-          className="mt-14 sm:mt-16 border-t pt-8"
-          style={{ borderColor: RULE_GREEN_ALPHA }}
-        >
-          <p
-            className="text-[15px] mb-2 font-headline-md"
-            style={{ color: BODY_INK, fontWeight: 600 }}
-          >
+        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
+          <p className="text-[15px] mb-2 font-headline-md text-text font-semibold">
             ספיר שנפ
           </p>
-          <p className="text-[14px] mb-6" style={{ color: BODY_PROSE }}>
+          <p className="text-[14px] mb-6 text-text/90">
             מייסדת · {BRAND_NAME} · mehamakor.co.il
           </p>
           <Link
             href={backHref}
-            className="inline-flex items-center gap-2 text-[15px] underline"
-            style={{ color: PRIMARY }}
+            className="inline-flex items-center gap-2 text-[15px] underline text-primary"
           >
             ← חזרה למדריכים
           </Link>
