@@ -2348,7 +2348,16 @@
     },
     "category_selector": {
       "label": "Category",
-      "search_placeholder": "Search categories...",
+      "search_label": "Search category",
+      "search_placeholder": "e.g. cheese, bread, soap",
+      "popular_descs": {
+        "dairy": "גבינות, יוגורט, חמאה",
+        "bread": "מאפים, חלות, עוגות",
+        "meat": "טרי, כשר, מהחווה",
+        "oil": "שמן זית, שמנים מובחרים",
+        "veg": "מהשדה, עונתי, אורגני",
+        "care": "סבונים, מוצרי רחצה"
+      },
       "section_results": "Results",
       "section_popular": "Popular",
       "no_results_prefix": "Can't find your category?",
