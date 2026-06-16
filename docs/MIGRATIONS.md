@@ -94,21 +94,22 @@ DATABASE_URL=postgresql://... .venv/bin/alembic current
 
 ```
 Postgres 15 service (fresh DB)
-  → alembic upgrade head
-  → psql verify: alembic_version = ef8fb1858f5b
-  → psql verify: table count (excl. alembic_version) = 34
-  → alembic check                ← MEH-492
+  → alembic upgrade head          ← broken-chain gate (revision / down_revision)
+  → psql verify: table count (excl. alembic_version) = EXPECTED_TABLES
+  → alembic check                ← MEH-492 — sole model↔migration drift gate
   → pytest
 ```
 
 **כשה-gate נכשל:**
-- `alembic_version` שגוי → migration chain שבורה (revision חסר, down_revision שגוי)
+- `alembic upgrade head` נכשל → migration chain שבורה (revision חסר, down_revision שגוי) — נתפס ישירות ב-upgrade. **MEH-836** הסיר את ה-assertion על `EXPECTED_REV` / `alembic_version` (היה toil ידני; `alembic check` + upgrade מכסים את אותו class).
 - `table count` שגוי → טבלה נוספה/נמחקה ב-migration בלי לעדכן את `EXPECTED_TABLES`
 - `alembic check` נכשל (MEH-492) → drift בין `Base.metadata` (מודלים) לסכמה ש-`upgrade head` יצרה. הסיבה הקלאסית: הוסיפי שדה ל-`models.py` בלי `alembic revision --autogenerate`. הפלט מצביע על העמודה/הטבלה החסרה. תיקון: ג'נרטי revision חדש, הריצי `upgrade head` מקומית, ופחתי לעדכן את `EXPECTED_TABLES` אם זו טבלה חדשה.
 
 כאשר מוסיפים טבלה חדשה: עדכני `EXPECTED_TABLES=34` → `EXPECTED_TABLES=35` (וכן הלאה) ב-pr-checks.yml.
 
 **מקומית, לפני PR:** `cd backend && uv run alembic check` — אם CI ייכשל, זה ייכשל מקומית קודם. דורש Postgres רץ + `alembic upgrade head` ניקיון לפני זה.
+
+**MEH-836 — CC רשאית לכתוב migrations:** עם הסרת ה-deny על `backend/alembic/versions/**` (Edit+Write ב-`.claude/settings.json`), Claude Code יכולה לחבר revision כתוב-ביד בעצמה (hand-written, לא `--autogenerate`). ה-apply נשאר אוטומטי ב-boot של ה-Dockerfile (`alembic upgrade head`) — אין צעד ידני להחלת המיגרציה.
 
 ---
 
@@ -145,12 +146,12 @@ Migration כותבת DDL ישיר (CREATE/ALTER) ללא IF NOT EXISTS.
 
 ---
 
-## עדכון EXPECTED_TABLES ו-EXPECTED_REV לאחר merge
+## עדכון EXPECTED_TABLES לאחר merge
 
-לאחר שה-baseline revision עצמו משתנה (מיגרציה שמוסיפה טבלאות):
+לאחר מיגרציה שמוסיפה או מוחקת טבלה:
 
 1. הרצי `alembic upgrade head` מקומית.
-2. השגי את ה-revision: `alembic current`.
-3. ספרי טבלאות: `psql ... -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> 'alembic_version';"`.
-4. עדכני `EXPECTED_REV` ו-`EXPECTED_TABLES` ב-`.github/workflows/pr-checks.yml`.
-5. עדכני את השורה הראשונה של קובץ זה (Baseline).
+2. ספרי טבלאות: `psql ... -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name <> 'alembic_version';"`.
+3. עדכני `EXPECTED_TABLES` ב-`.github/workflows/pr-checks.yml`.
+
+> **MEH-836:** `EXPECTED_REV` הוסר מ-`pr-checks.yml` — אין יותר head hardcoded לשמור מסונכרן (היה toil ידני בכל מיגרציה). drift מודל↔מיגרציה נתפס ע"י `alembic check` בלבד; chain שבורה ע"י `alembic upgrade head`. רק `EXPECTED_TABLES` (כשנוספת/נמחקת טבלה) עדיין דורש עדכון ידני.
