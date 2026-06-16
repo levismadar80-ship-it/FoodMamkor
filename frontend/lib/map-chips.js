@@ -28,14 +28,15 @@ export const CATEGORY_CHIPS = [
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
 // independent; category is radio-group. NO "פתוחים השבוע" chip
 // (is_available_today field does not exist on producers).
+// MEH-657: map filter chips are text-only (Emoji LOCK v2 / a11y) — no glyph prefix.
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  label: "🚚 משלוח אליי" },
-  { key: "verified",      label: "✓ מאומתים" },
-  { key: "organic",       label: "🌿 אורגני" },
-  { key: "grass_fed",     label: "🐄 גראס פד" },
-  { key: "gluten_free",   label: "🌾 ללא גלוטן" },
-  { key: "vegan",         label: "🥦 טבעוני" },
-  { key: "lactose_free",  label: "🥛 ללא לקטוז" },
+  { key: "has_delivery",  label: "משלוח אליי" },
+  { key: "verified",      label: "מאומתים" },
+  { key: "organic",       label: "אורגני" },
+  { key: "grass_fed",     label: "גראס פד" },
+  { key: "gluten_free",   label: "ללא גלוטן" },
+  { key: "vegan",         label: "טבעוני" },
+  { key: "lactose_free",  label: "ללא לקטוז" },
 ];
 
 /**
