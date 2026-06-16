@@ -97,7 +97,7 @@ function renderBlock(block, i) {
       return (
         <blockquote
           key={key}
-          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic text-text bg-primary/5"
+          className="border-s-4 border-primary ps-4 py-2.5 my-5 text-[16px] sm:text-[17px] leading-[1.8] italic text-text bg-primary/[0.04]"
         >
           <InlineBold text={block.text} idBase={key} />
         </blockquote>
