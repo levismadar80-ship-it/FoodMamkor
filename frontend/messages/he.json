@@ -2367,6 +2367,11 @@
       "all": "כל בתי העסק",
       "search_results": "תוצאות עבור:"
     },
+    "search_input": {
+      "label": "חיפוש בתי עסק",
+      "placeholder": "לחם מחמצת, גבינת עזים, ירקות אורגניים",
+      "submit": "חיפוש"
+    },
     "discovery": {
       "found_count": "{count, plural, =0 {לא נמצאו בתי עסק} one {נמצא בית עסק אחד} two {נמצאו {count} בתי עסק} other {נמצאו {count} בתי עסק}}",
       "all_count": "{count, plural, one {כל בית עסק} two {כל שני בתי העסק} other {כל {count} בתי העסק}}",

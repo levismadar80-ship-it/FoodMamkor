@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -72,6 +73,21 @@ export default function ProducersClient({
   const sentinelRef = useRef(null);
 
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
+
+  // MEH-820: free-text search box driving the existing q filter.
+  const [searchInput, setSearchInput] = useState(() => searchParams.get("q") || "");
+  const searchInputRef = useRef(null);
+  const shouldFocus = searchParams.get("focus") === "1";
+
+  // ?focus=1 → focus the input on mount (mirrors SearchClient.jsx:59-63).
+  useEffect(() => {
+    if (shouldFocus) searchInputRef.current?.focus();
+  }, [shouldFocus]);
+
+  // Keep the box in sync when q is cleared elsewhere (🔍 chip ×, clear all).
+  useEffect(() => {
+    setSearchInput(searchQ);
+  }, [searchQ]);
 
   const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
   const displayItems = hasActiveChips
@@ -198,6 +214,16 @@ export default function ProducersClient({
     trackEvent("producers_city_filter", { city });
   };
 
+  // MEH-820: submit/Enter → reuse the existing q machinery (no new fetch logic).
+  // Empty term flows through the same clear-q path as the 🔍 chip ×.
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    const term = searchInput.trim();
+    setSearchQ(term);
+    syncUrl(chips, cityFilter, term);
+    fetchFiltered(chips, cityFilter, term);
+  };
+
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
@@ -254,6 +280,37 @@ export default function ProducersClient({
 
       {/* Recently viewed strip */}
       <RecentlyViewedStrip />
+
+      {/* MEH-820: free-text search — drives the existing ?q= filter */}
+      <form
+        role="search"
+        onSubmit={handleSearchSubmit}
+        className="flex items-center gap-2 mb-3 max-w-xl"
+      >
+        <label htmlFor="producers-search-input" className="sr-only">
+          {t("search_input.label")}
+        </label>
+        <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
+          <MagnifyingGlass size={18} color="#6B6B6B" weight="regular" aria-hidden="true" />
+          <input
+            id="producers-search-input"
+            ref={searchInputRef}
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t("search_input.placeholder")}
+            dir="rtl"
+            className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
+            aria-label={t("search_input.label")}
+          />
+        </div>
+        <button
+          type="submit"
+          className="bg-primary text-white px-4 min-h-[44px] rounded-full text-sm font-medium hover:bg-primary-dark transition"
+        >
+          {t("search_input.submit")}
+        </button>
+      </form>
 
       {/* Chip row */}
       <ChipScrollRow
