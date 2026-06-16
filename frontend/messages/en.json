@@ -646,7 +646,7 @@
           "heading": "Upcoming events",
           "free": "Free",
           "register": "Register for event →",
-          "show_all_count": "{count, plural, one {Show the event} other {Show all # events}}"
+          "show_all_count": "Show all events"
         },
         "products": {
           "heading": "Products"
