@@ -53,7 +53,10 @@ const DOT_STYLE = {
 };
 
 export default function AvailabilityBadge({ status, variant = "card" }) {
-  const t = useTranslations("producer.availability");
+  // MEH-806: keys live under group_buys.availability (shared availability copy,
+  // historical namespace) — producer.availability was empty, so every label
+  // rendered the raw key path.
+  const t = useTranslations("group_buys.availability");
   const normalized = STATUS_CONFIG[status] ? status : "available";
   const config = STATUS_CONFIG[normalized];
 

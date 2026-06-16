@@ -11,6 +11,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
+import { safeInternalRedirect } from "@/lib/safe-redirect";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -58,7 +59,8 @@ function LoginPageBody() {
   const t = useTranslations("auth.login");
   const router = useRouter();
   const params = useSearchParams();
-  const redirectTo = params.get("redirect") || "/";
+  // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
+  const redirectTo = safeInternalRedirect(params.get("redirect"));
   const { login } = useAuth();
   const [email, setEmail] = useState(params.get("email") || "");
   const [password, setPassword] = useState("");

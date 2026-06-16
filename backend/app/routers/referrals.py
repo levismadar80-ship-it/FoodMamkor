@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -44,5 +45,13 @@ def claim_referral(
         created_at=datetime.utcnow(),
     )
     db.add(click)
-    db.commit()
+    # MEH-773: uq_referral_one_per_referee backstops the check-then-act race
+    # above. This endpoint is contractually idempotent (see docstring), so a
+    # concurrent duplicate resolves to the same 200 no-op as the `already`
+    # branch — NOT a 409. Mirrors the IntegrityError recovery in reviews.py.
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return {"detail": "referral already claimed"}
     return {"detail": "referral claimed", "referrer": referrer.name}

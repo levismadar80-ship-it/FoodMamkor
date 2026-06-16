@@ -100,6 +100,9 @@ const EMPTY = {
   // MEH-17
   primary_contact_method: "whatsapp",
   contact_email: "",
+  // MEH-296 3d
+  facebook: "",
+  external_order_form: "",
   city: "",
   lat: "",
   lng: "",
@@ -170,6 +173,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-17
         primary_contact_method: initial.primary_contact_method ?? "whatsapp",
         contact_email: initial.contact_email ?? "",
+        // MEH-296 3d
+        facebook: initial.facebook ?? "",
+        external_order_form: initial.external_order_form ?? "",
         short_description: initial.short_description ?? "",
         top_product_name: initial.top_product_name ?? "",
         price_range: initial.price_range ?? initial.starting_price_label ?? "",
@@ -353,6 +359,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               <option value="phone">{t("producers.form.fields.primary_contact_phone")}</option>
               <option value="website">{t("producers.form.fields.primary_contact_website")}</option>
               <option value="email">{t("producers.form.fields.primary_contact_email")}</option>
+              <option value="instagram">{t("producers.form.fields.primary_contact_instagram")}</option>
+              <option value="facebook">{t("producers.form.fields.primary_contact_facebook")}</option>
+              <option value="external_order">{t("producers.form.fields.primary_contact_external_order")}</option>
             </select>
           </Field>
           <Field label={t("producers.form.fields.contact_email")}>
@@ -362,6 +371,25 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("contact_email", e.target.value)}
               className={inputClass}
               placeholder={t("producers.form.fields.contact_email_placeholder")}
+              dir="ltr"
+            />
+          </Field>
+          {/* MEH-296 3d — new contact channels */}
+          <Field label={t("producers.form.fields.facebook")}>
+            <input
+              value={form.facebook}
+              onChange={(e) => update("facebook", e.target.value)}
+              className={inputClass}
+              placeholder={t("producers.form.fields.facebook_placeholder")}
+              dir="ltr"
+            />
+          </Field>
+          <Field label={t("producers.form.fields.external_order_form")}>
+            <input
+              value={form.external_order_form}
+              onChange={(e) => update("external_order_form", e.target.value)}
+              className={inputClass}
+              placeholder={t("producers.form.fields.external_order_form_placeholder")}
               dir="ltr"
             />
           </Field>

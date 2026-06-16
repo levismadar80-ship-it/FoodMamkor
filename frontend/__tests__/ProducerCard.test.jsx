@@ -434,7 +434,7 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(msg).toMatch(/שמרתי/);
     expect(opts.duration).toBe(5000);
     expect(opts.action.label).toBe("התחברי");
-    expect(opts.action.href).toMatch(/^\/login\?next=/);
+    expect(opts.action.href).toMatch(/^\/login\?redirect=/);
   });
 
   it("guest tap does NOT hit the API", () => {

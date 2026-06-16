@@ -396,7 +396,16 @@ async def register_producer(
     # cannot leak email existence (an attacker probing the endpoint sees
     # the same 422 regardless of whether the email is registered).
     method = (data.primary_contact_method or "whatsapp").strip().lower()
-    if method not in {"whatsapp", "phone", "website", "email"}:
+    # MEH-296 3d: align with the 7-value ProducerRegister schema guard.
+    if method not in {
+        "whatsapp",
+        "phone",
+        "instagram",
+        "email",
+        "website",
+        "facebook",
+        "external_order",
+    }:
         raise HTTPException(status_code=422, detail="אמצעי קשר לא נתמך")
     if method in {"whatsapp", "phone"} and not (data.phone or "").strip():
         raise HTTPException(
@@ -407,6 +416,15 @@ async def register_producer(
         raise HTTPException(
             status_code=422,
             detail="חובה להזין כתובת אתר עבור אמצעי הקשר הנבחר",
+        )
+    # MEH-296 3d: instagram has a ProducerRegister field → presence-check it.
+    # facebook/external_order have NO ProducerRegister field (the producer
+    # sets those later via the dashboard editor), so they pass without a
+    # presence check rather than 422-ing a value the form can't collect.
+    if method == "instagram" and not (data.instagram or "").strip():
+        raise HTTPException(
+            status_code=422,
+            detail="חובה להזין אינסטגרם עבור אמצעי הקשר הנבחר",
         )
     if method == "email" and not (data.contact_email or "").strip():
         raise HTTPException(

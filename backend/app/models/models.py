@@ -19,7 +19,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 from app.database import Base
 
@@ -250,7 +250,11 @@ class User(Base):
     city = Column(String(100))
     phone = Column(String(20))
     role = Column(String(20), default="consumer")  # consumer | producer | admin
-    producer_id = Column(UUID(as_uuid=True), ForeignKey("producers.id"), nullable=True)
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     google_id = Column(String(200), unique=True, nullable=True)
     apple_id = Column(String(200), unique=True, nullable=True)
     is_blocked = Column(Boolean, default=False)
@@ -598,6 +602,13 @@ class HomeProduct(Base):
 
 class Report(Base):
     __tablename__ = "reports"
+    # MEH-773: one report per (reporter, producer) — closes the
+    # check-then-act race (matches migration 382128b23383).
+    __table_args__ = (
+        UniqueConstraint(
+            "reporter_id", "producer_id", name="uq_report_reporter_producer"
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reporter_id = Column(
@@ -939,6 +950,11 @@ class ReferralClick(Base):
     """MEH-49: tracks when a referee registers via a referrer's /ref/{code} link."""
 
     __tablename__ = "referral_clicks"
+    # MEH-773: one referral credit per referee (matches migration
+    # 382128b23383).
+    __table_args__ = (
+        UniqueConstraint("referee_id", name="uq_referral_one_per_referee"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     referrer_id = Column(
@@ -1036,7 +1052,12 @@ class PhoneOtpToken(Base):
     used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    producer = relationship("Producer", backref="otp_tokens")
+    # MEH-773 (Chunk B): passive_deletes defers child cleanup to the DB
+    # ON DELETE CASCADE (producer_id is NOT NULL) instead of the ORM
+    # unit-of-work trying to nullify it → NotNullViolation 500 (MEH-755).
+    producer = relationship(
+        "Producer", backref=backref("otp_tokens", passive_deletes=True)
+    )
 
 
 class KashrutBadgeRequest(Base):
@@ -1064,7 +1085,12 @@ class KashrutBadgeRequest(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    producer = relationship("Producer", backref="kashrut_requests")
+    # MEH-773 (Chunk B): passive_deletes defers to DB ON DELETE CASCADE —
+    # closes the latent NotNullViolation on producer delete (kashrut_requests
+    # had no explicit pre-delete, unlike phone_otp_tokens / MEH-755).
+    producer = relationship(
+        "Producer", backref=backref("kashrut_requests", passive_deletes=True)
+    )
     reviewer = relationship("User", backref="kashrut_reviews")
 
 

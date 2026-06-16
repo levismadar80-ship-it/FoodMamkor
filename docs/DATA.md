@@ -76,7 +76,7 @@ producers (
   id uuid PK,
   name, description, short_description,
   city, lat float, lng float,
-  phone, instagram, website, whatsapp_group,
+  phone, instagram, website, whatsapp_group, facebook, external_order_form,
   status: pending|approved|rejected|inactive,
   images text[],
   is_verified bool,
@@ -191,7 +191,8 @@ home_product_ratings (
 
 reports (
   id uuid PK, reporter_id FK, producer_id FK,
-  reason text, created_at
+  reason text, created_at,
+  UNIQUE(reporter_id, producer_id)   -- uq_report_reporter_producer (MEH-773)
 )
 ```
 
@@ -601,7 +602,7 @@ DELETE /reviews/{id}             auth  — owner or admin
 ### Reports (`app/routers/reports.py`)
 
 ```
-POST /producers/{id}/report      auth  — 3 reports auto-flag for admin
+POST /producers/{id}/report      auth  — 3 reports auto-flag for admin; 409 if already reported (MEH-773)
 GET  /admin/reports              admin
 ```
 
