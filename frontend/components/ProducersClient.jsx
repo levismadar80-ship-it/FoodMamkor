@@ -291,7 +291,7 @@ export default function ProducersClient({
           {t("search_input.label")}
         </label>
         <div className="flex-1 flex items-center gap-2 border border-border rounded-full px-4 min-h-[44px] bg-white focus-within:ring-2 focus-within:ring-primary/40">
-          <MagnifyingGlass size={18} color="#6B6B6B" weight="regular" aria-hidden="true" />
+          <MagnifyingGlass size={18} weight="regular" aria-hidden="true" className="text-fg-muted" />
           <input
             id="producers-search-input"
             ref={searchInputRef}
@@ -299,7 +299,6 @@ export default function ProducersClient({
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("search_input.placeholder")}
-            dir="rtl"
             className="flex-1 bg-transparent outline-none text-text placeholder:text-fg-muted text-sm"
           />
         </div>
