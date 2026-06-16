@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — Page-6 audit batch COMPLETE (4 draft PRs)
+
+Manual batch off /login+/register audit (page 6/11). All 4 = draft PRs off staging, Sapir merges (Rule 23). MEH-132 freeze respected throughout (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred per batch.
+- **MEH-835** #1185 — login `minLength={8}` removed (MEH-418 regression). Build green, Vercel ✅, claude[bot] clean (1 Should-Consider test suggestion, declined — out of single-file scope).
+- **MEH-837** #1188 — /register OAuth honors clamped `?redirect=` (safe-redirect reuse + Suspense). Build green, Vercel ✅. claude[bot] 1 Should-Consider (vitest integration test, declined — ticket scope = no other files).
+- **MEH-838** #1189 — /register name+email `min-h-[44px]`. Stacked on 837 (base=837 branch, retargets on #1188 merge). Build green, Vercel ✅, claude[bot] fully clean.
+- **MEH-832** — register-family voice, **safe-5 subset** (4 producer imperatives + login arrow ←). Ticket-vs-ADR conflict on `נסי שוב`/loading/consent/welcome surfaced → Sapir chose "ship safe-5 + flag rest"; flagged set documented in PR + CHANGELOG, NOT changed.
+
+**Open for Sapir:** whether to (a) sweep all ~60 app-wide `נסי שוב`/loading strings as a separate broad voice ticket, or (b) leave per ADR-014 house-voice. MEH-132 Phase 2 owns the "הצטרפי" CTA voice (E2E-selector restructure).
+
 ## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
 
 - page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
