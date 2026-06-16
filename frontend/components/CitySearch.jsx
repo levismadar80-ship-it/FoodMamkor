@@ -115,6 +115,7 @@ export default function CitySearch({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
+        {/* MEH-833: min-h-[44px] on input enforces the WCAG 2.5.5 / iOS touch-target floor on every CitySearch surface */}
         <input
           ref={inputRef}
           id={id}
@@ -128,7 +129,7 @@ export default function CitySearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={inputPlaceholder}
-          className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-start"
+          className="flex-1 min-w-0 min-h-[44px] bg-transparent outline-none text-text placeholder:text-fg-muted text-start"
           dir="rtl"
           autoComplete="off"
           role="combobox"
