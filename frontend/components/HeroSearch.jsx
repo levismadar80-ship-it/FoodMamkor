@@ -10,7 +10,7 @@ import { highlightMatch } from "@/lib/highlightMatch";
 /**
  * HeroSearch — hero autocomplete for the homepage (MEH-99).
  *
- * Routes to /producers?q= on submit (vs SmartSearch → /search?q=).
+ * Routes to /producers?q= on submit.
  *
  * Three dropdown states:
  *   empty + focused + recent exist    → recent searches (🕐, localStorage)
