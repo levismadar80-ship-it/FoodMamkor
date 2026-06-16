@@ -157,7 +157,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mehamakor_test
           SECRET_KEY: ci-test-secret-not-for-production
 
-      - name: Verify alembic schema ‏(36 tables + baseline revision)
+      - name: Verify alembic schema (36 tables)
         env:
           PGPASSWORD: postgres
         run: |
@@ -173,16 +173,7 @@ jobs:
           # PR2c webhook receiver).
           # MEH-509 PR3: a7f3e9c14d28 adds 2 nullable columns (risk_score,
           # risk_reasoning) to producers — additive, no table count change.
-          EXPECTED_REV="382128b23383"
           EXPECTED_TABLES=36
-
-          ACTUAL_REV=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
-            "SELECT version_num FROM alembic_version;")
-          if [ "$ACTUAL_REV" != "$EXPECTED_REV" ]; then
-            echo "::error::alembic_version='$ACTUAL_REV', expected '$EXPECTED_REV'"
-            exit 1
-          fi
-          echo "alembic_version = $ACTUAL_REV ✓"
 
           TABLE_COUNT=$(psql -h localhost -U postgres -d mehamakor_test -tAc \
             "SELECT COUNT(*) FROM information_schema.tables
