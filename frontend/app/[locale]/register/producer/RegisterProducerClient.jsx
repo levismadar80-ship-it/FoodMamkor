@@ -783,6 +783,8 @@ function RegisterProducerPageBody() {
                 <li>{t("auth.register.producer.success.next_step3")}</li>
               </ul>
             </div>
+            {/* MEH-132: S7 06A founder sign-off */}
+            <p className="font-headline-md text-text text-center mb-6">{t("auth.register.producer.success.signature")}</p>
             <p className="text-xs text-fg-muted mb-6 text-center leading-relaxed">{t("auth.register.producer.success.tier_trust")}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
