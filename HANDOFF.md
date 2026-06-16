@@ -9,6 +9,14 @@
 
 `feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
 
+## 2026-06-16 — MEH-829 backend fields (PR #1179, draft) + MEH-836 migration-toil (draft)
+
+**MEH-829 (S7 Chunk A backend) — PR #1179 DRAFT, branch `feature/meh-829-s7-backend-fields` (`17ce184`):** added `Producer.address` (String(255) nullable) + `ProducerRegister.address`(max 255)/`short_description`(max 160), wired both explicitly into BOTH `register_producer` ctors (`auth.py:475` upgrade + `:573` new-reg — handler uses explicit-assign, not `model_dump`). **Migration NOT in PR** — `versions/**` deny-listed; op snippet + `down_revision=382128b23383` handed to Sapir in the PR body. CI `Backend tests` red is the **expected `alembic check` drift gate** (model column w/o migration); resolves when Sapir adds+applies the migration + bumps `EXPECTED_REV`/db-schema.md. Review autofix landed: `address` max_length=255 (`17ce184`). NOT merged — Sapir migration + green CI first.
+
+**MEH-836 (migration-toil reduction) — this branch `feature/meh-836-migration-toil`, draft PR:** docs-only on CC side — `.claude/rules/db.md`, `docs/MIGRATIONS.md`, `docs/EXECUTION_PROTOCOL.md`, CHANGELOG, HANDOFF. Removes the `EXPECTED_REV` manual-bump toil (drift fully covered by `alembic check` + `upgrade head`) and lifts the `versions/**` Edit/Write deny so CC can author hand-written migrations. **2 sensitive files (`pr-checks.yml` + `.claude/settings.json`) are Sapir-applied — Part A + Part B diffs live in the PR body.** ⚠️ Open judgment call surfaced to Sapir: the `Verify alembic schema` step name "(36 tables + baseline revision)" references the REV check → needs "+ baseline revision" dropped when the assertion is removed (REV + TABLES share one step but are separate `if`s — separable, not entangled). LOW-RISK. NOT merged.
+
+**Next:** MEH-836 unblocks future CC-authored migrations (incl. potentially MEH-829's `address` migration once #1179's Part-B settings change lands). S7 restructure Chunk B (form split) consumes the 829 fields.
+
 ## 2026-06-16 — UX-audit pages 3–4 complete + MEH-828 e2e fix
 
 - page 3/11 (/search) audit complete — MEH-818/820/823 merged, 819 banked, 822 E2E open
