@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — UX-audit page 2/11 (/producer) follow-up — 3 PRs MERGED (Sapir authorized "merge all")
+
+- **#1155** ✅ merged `ba2ad57` — `docs/UX-AUDIT-PLAYBOOK.md` (real Drive method, versioned SoT; HANDOFF:10/:23 citations resolve).
+- **#1157** ✅ merged `9cf1b1d` — MEH-811 no-op (open_orders already at `group_buys.availability.card_label`, wired by AvailabilityBadge via MEH-806) + MEH-812 ADR-014 voice (6 producer-detail strings he/en, `show_all_count` flattened both locales for ICU parity, `open_in_waze` sibling). `Closes MEH-812` only — MEH-811 = duplicate of Done MEH-806 (canceled, not closed).
+- **#1159** — MEH-813 tap-targets ≥44px (WhatsAppQuestionChips/MiniMap/ShareButton) + MEH-814 emoji strip (DeliveryBlock/ProducerHeader 🚚→Truck, 🌾🌿 stripped+label revealed). `Refs MEH-813` (BadgeRow tap-area deferred → **MEH-813 stays open**) / `Closes MEH-814`.
+
+**Open follow-ups (not filed):** (1) MiniMap exact copy `פתיחה במפות Google` — needs he.json + `MiniMap.jsx:88` suffix (coupled); (2) BadgeRow ≥44px tap-area design call (2.5.5 vs 2.5.8) → MEH-813 open; (3) producer-header mobile chip coherence (grass_fed/organic text vs delivery icon vs kosher emoji) → MEH-683; (4) systemic JSX emoji (57 files) → MEH-657/688. ⚠️ #1159 mobile-QA (highlights-strip wrap @375) NOT eyeballed — Vercel preview lacks producer data; analytically overflow-free (flex-wrap).
+
 ## 2026-06-15 — MEH-773 Chunk B (integrity ORM parity + race handling) — draft PR opened (NOT merged)
 
 **Context:** Chunk A merged (PR #1145, models.py sync to migration `382128b23383`); Sapir applied the migration to staging. Chunk B is the app-layer follow-up.

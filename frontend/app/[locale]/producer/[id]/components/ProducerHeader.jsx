@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { MapPin, Heart, Star } from "@phosphor-icons/react";
+import { MapPin, Heart, Star, Truck } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
@@ -123,17 +123,17 @@ export default function ProducerHeader({
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              🌾<span className="hidden sm:inline"> {t("producer.detail.header.attr.grass_fed")}</span>
+              {t("producer.detail.header.attr.grass_fed")}
             </span>
           )}
           {producer.organic_certified && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              🌿<span className="hidden sm:inline"> {t("producer.detail.header.attr.organic")}</span>
+              {t("producer.detail.header.attr.organic")}
             </span>
           )}
           {producer.delivery_areas?.length > 0 && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              🚚<span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
+              <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
           {producer.kosher && (
