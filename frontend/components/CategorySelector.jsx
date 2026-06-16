@@ -24,15 +24,17 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
  */
 
 // Popular-6 rest-state config. `name` matches the real DB category name
-// (backend/seed_data.py) so the glyph + desc attach to the right row; the
-// other 14 categories surface via search with a Leaf fallback, name-only.
+// (backend/seed_data.py) so the glyph attaches to the right row; `desc` comes
+// from forms.category_selector.popular_descs keyed by glyph slug (i18n, Hebrew
+// in both locales for now — DB category names are Hebrew-only). The other 14
+// categories surface via search with a Leaf fallback, name-only.
 const POPULAR = [
-  { name: "חלב וגבינות", glyph: "dairy", desc: "גבינות, יוגורט, חמאה" },
-  { name: "לחמים ואפייה", glyph: "bread", desc: "מאפים, חלות, עוגות" },
-  { name: "בשר ודגים", glyph: "meat", desc: "טרי, כשר, מהחווה" },
-  { name: "שמנים", glyph: "oil", desc: "שמן זית, שמנים מובחרים" },
-  { name: "ירקות", glyph: "veg", desc: "מהשדה, עונתי, אורגני" },
-  { name: "סבונים טבעיים", glyph: "care", desc: "סבונים, מוצרי רחצה" },
+  { name: "חלב וגבינות", glyph: "dairy" },
+  { name: "לחמים ואפייה", glyph: "bread" },
+  { name: "בשר ודגים", glyph: "meat" },
+  { name: "שמנים", glyph: "oil" },
+  { name: "ירקות", glyph: "veg" },
+  { name: "סבונים טבעיים", glyph: "care" },
 ];
 const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
 const POPULAR_NAMES = POPULAR.map((p) => p.name);
@@ -50,7 +52,10 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
   const restCats = categories.filter((c) => !POPULAR_NAMES.includes(c.name));
   const ordered = [...popularCats, ...restCats];
 
-  const descFor = (c) => POPULAR_BY_NAME[c.name]?.desc || "";
+  const descFor = (c) => {
+    const p = POPULAR_BY_NAME[c.name];
+    return p ? t(`popular_descs.${p.glyph}`) : "";
+  };
   const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
 
   const matched = q ? ordered.filter(isMatch) : [];
