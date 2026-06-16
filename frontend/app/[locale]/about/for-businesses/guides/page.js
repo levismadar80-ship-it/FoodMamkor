@@ -36,13 +36,9 @@ export async function generateMetadata({ params }) {
   };
 }
 
-const PRIMARY = "#2e6853";
-const PRIMARY_DARK = "#2E4A2E";
-const BODY_INK = "#1C1A17";
-const BODY_PROSE = "#3a3a3a";
-const EYEBROW_GOLD = "#8B6914";
-const BG_CREAM = "#F5F0E8";
-const CARD_BORDER = "rgba(46,104,83,0.18)";
+// MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
+// text-primary-dark, text-text, text-accent, bg-background, border-border) —
+// was module-scope hex consts + inline style props.
 
 const GUIDES = [
   { slug: "business-story", nsKey: "business_story", readMinutes: 4 },
@@ -57,37 +53,16 @@ export default async function GuidesIndexPage({ params }) {
   const t = await getTranslations({ locale, namespace: "guides" });
   const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
-    <main
-      className="min-h-screen"
-      style={{ backgroundColor: BG_CREAM, color: BODY_INK }}
-    >
+    <main className="min-h-screen bg-background text-text">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 sm:mb-14">
-          <p
-            className="text-xs sm:text-sm mb-3"
-            style={{
-              color: EYEBROW_GOLD,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
+          <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
             {ti("eyebrow")}
           </p>
-          <h1
-            className="font-headline-lg mb-4"
-            style={{
-              color: PRIMARY_DARK,
-              fontSize: "clamp(28px, 6vw, 44px)",
-              lineHeight: 1.15,
-              fontWeight: 900,
-            }}
-          >
+          <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {ti("heading")}
           </h1>
-          <p
-            className="text-[17px] sm:text-[18px] leading-relaxed"
-            style={{ color: BODY_PROSE }}
-          >
+          <p className="text-[17px] sm:text-[18px] leading-relaxed text-text/90">
             {ti("intro")}
           </p>
         </header>
@@ -97,39 +72,18 @@ export default async function GuidesIndexPage({ params }) {
             <li key={g.slug}>
               <Link
                 href={`/about/for-businesses/guides/${g.slug}`}
-                className="block rounded-lg border bg-white p-5 sm:p-6 transition-colors hover:shadow-sm focus-visible:outline-none focus-visible:ring-2"
-                style={{ borderColor: CARD_BORDER }}
+                className="block rounded-lg border border-border bg-white p-5 sm:p-6 transition-colors hover:shadow-sm focus-visible:outline-none focus-visible:ring-2"
               >
-                <p
-                  className="text-[11px] sm:text-[12px] mb-2"
-                  style={{
-                    color: EYEBROW_GOLD,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                  }}
-                >
+                <p className="text-[11px] sm:text-[12px] mb-2 text-accent tracking-[0.1em] uppercase">
                   {ti("minutes_label", { minutes: g.readMinutes })}
                 </p>
-                <h2
-                  className="font-headline-md mb-2"
-                  style={{
-                    color: PRIMARY_DARK,
-                    fontSize: "20px",
-                    fontWeight: 700,
-                  }}
-                >
+                <h2 className="font-headline-md mb-2 text-primary-dark text-[20px] font-bold">
                   {t(`${g.nsKey}.title`)}
                 </h2>
-                <p
-                  className="text-[15px] sm:text-[16px] leading-relaxed mb-3"
-                  style={{ color: BODY_PROSE }}
-                >
+                <p className="text-[15px] sm:text-[16px] leading-relaxed mb-3 text-text/90">
                   {ti(`card_previews.${g.nsKey}`)}
                 </p>
-                <span
-                  className="inline-flex items-center gap-2 text-[14px]"
-                  style={{ color: PRIMARY, fontWeight: 600 }}
-                >
+                <span className="inline-flex items-center gap-2 text-[14px] text-primary font-semibold">
                   {ti("cta")}
                 </span>
               </Link>
@@ -137,18 +91,14 @@ export default async function GuidesIndexPage({ params }) {
           ))}
         </ul>
 
-        <footer
-          className="mt-14 sm:mt-16 border-t pt-8"
-          style={{ borderColor: CARD_BORDER }}
-        >
-          <p className="text-[15px]" style={{ color: BODY_PROSE }}>
+        <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
+          <p className="text-[15px] text-text/90">
             {ti("footer_prefix")}{" "}
             <a
               href="https://www.instagram.com/meha_makor"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline"
-              style={{ color: PRIMARY }}
+              className="underline text-primary"
             >
               @meha_makor
             </a>

@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-16 — Design-port coverage audit + MEH-821 for-businesses port (draft PR)
+
+**Audit (READ-ONLY, origin/main):** classified ~36 user-facing routes. Result: 23 PORTED · 8 N/A (auth chrome/legal, all token-based) · **0 regressions** (every Done port ticket — MEH-763/76/132/135/131/134/534 — resolves to a PORTED surface). STEP 4: staging only 5 commits ahead of main (docs + MEH-288), all 7 design ports already released to main, nothing done-but-unreleased. **Mapping correction:** the brief's "business=MEH-76" is a misattribution — MEH-76 = producer business-home (`ProducerDetail`, PORTED), NOT `/about/for-businesses`.
+
+**MEH-821 (the single gap, now built):** the for-businesses cluster (5 routes / 3 files) was the only NOT-PORTED set and had no covering ticket. Ported `components/GuideArticle.jsx` (shared by 3 guides) + `for-businesses/page.js` + `for-businesses/guides/page.js` — all hex consts + inline `style={{}}` → canonical ADR-019 token classes (mirrors `AboutClient.jsx`). grep clean (0 hex / 0 inline-style), Hebrew copy byte-identical, all 5 routes still ● SSG, build green, ESLint 0 errors, net −143 LOC. Branch `claude/youthful-ptolemy-e5um5u` (remote session, at staging tip). **Draft PR — Sapir mobile QA on all 5 routes (RTL), no self-merge (Rule 23).**
+
 ## 2026-06-16 — MEH-657 follow-up: /map filter chips → text-only — ✅ merged (#1151)
 
 **Done (squash `5af53ae3`, merged to staging):** stripped the inline glyph prefix from all 7 `TOGGLE_CHIPS` labels in `frontend/lib/map-chips.js` (`🚚 משלוח אליי`→`משלוח אליי`, `✓ מאומתים`, `🌿 אורגני`, `🐄 גראס פד`, `🌾 ללא גלוטן`, `🥦 טבעוני`, `🥛 ללא לקטוז`). Hardcoded Hebrew labels (no i18n keys → no en parity). Renders via `ChipScrollRow` (`FilterChipsBar`) + `useMapFilters` active-tag list (`label: c.label`) — both now text-only. `TOGGLE_CHIPS` is `/map`-only (separate from the Home/`/producers` `CHIPS_CONFIG` done in #1140). Build green, vitest 56/0 (mapChips + ProducerCard), ESLint 0 errors, all 6 required CI green. Merge needed **two** CHANGELOG Accept-Both syncs (staging advanced mid-flight) + rode out a transient account-level GitHub API rate limit.
