@@ -102,7 +102,10 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
     // MEH-828: accept slug-routed detail pages too. Slug producers (e.g.
     // /teva-pure) never hit /producer/{id}, so includes("/producer/") timed
     // out and the axe scan silently never ran. Mirror 03-view-producer-detail:
-    // anything off the /producers listing is a detail page.
+    // anything off the /producers listing is a detail page. Trade-off (vs the
+    // old "fail loudly on error/redirect" predicate): this is permissive — a
+    // redirect/404 would also pass — accepted deliberately to match 03; the
+    // h1 assertion below still guards against auditing a blank/unrendered page.
     await page.waitForURL((url) => !url.pathname.startsWith("/producers"), {
       timeout: 20_000,
     });
