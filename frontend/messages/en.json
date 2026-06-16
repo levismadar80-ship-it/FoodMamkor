@@ -3386,7 +3386,7 @@
         "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
         "yellow_high_headline": "Almost there — {percent}% ready",
-        "yellow_high_sub": "Just {count} more details until your profile is complete",
+        "yellow_high_sub": "Just {count, plural, one {# more detail} other {# more details}} until your profile is complete",
         "green_headline": "Profile complete",
         "next_step_prefix": "Next step:",
         "cta": "Complete profile",

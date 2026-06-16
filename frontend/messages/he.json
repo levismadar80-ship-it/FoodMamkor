@@ -3386,7 +3386,7 @@
         "yellow_low_headline": "הפרופיל שלך {percent}% מוכן",
         "yellow_low_sub": "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
         "yellow_high_headline": "כמעט שם — {percent}% מוכן",
-        "yellow_high_sub": "רק {count} פרטים עד שהפרופיל מלא",
+        "yellow_high_sub": "רק {count, plural, one {פרט אחד} other {# פרטים}} עד שהפרופיל מלא",
         "green_headline": "הפרופיל מלא",
         "next_step_prefix": "השלב הבא:",
         "cta": "השלימי פרופיל",

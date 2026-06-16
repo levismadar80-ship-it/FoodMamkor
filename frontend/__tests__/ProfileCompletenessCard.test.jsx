@@ -12,7 +12,7 @@ vi.mock("next-intl", () => ({
       yellow_low_headline: "הפרופיל שלך {percent}% מוכן",
       yellow_low_sub: "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
       yellow_high_headline: "כמעט שם — {percent}% מוכן",
-      yellow_high_sub: "רק {count} פרטים עד שהפרופיל מלא",
+      yellow_high_sub: "רק {count, plural, one {פרט אחד} other {# פרטים}} עד שהפרופיל מלא",
       green_headline: "הפרופיל מלא",
       next_step_prefix: "השלב הבא:",
       cta: "השלימי פרופיל",
@@ -26,7 +26,17 @@ vi.mock("next-intl", () => ({
       "fields.image": "תמונה ראשית",
     };
     const raw = flat[key] ?? key;
-    return raw.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
+    // Resolve {var, plural, one {…} other {…}} (mirrors next-intl ICU) before
+    // simple {var} interpolation, so plural-aware copy is tested faithfully.
+    const withPlurals = raw.replace(
+      /\{(\w+), plural, one \{([^}]*)\} other \{([^}]*)\}\}/g,
+      (_, k, one, other) => {
+        const n = vars[k];
+        const branch = n === 1 ? one : other;
+        return branch.replace(/#/g, String(n));
+      },
+    );
+    return withPlurals.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? `{${k}}`);
   },
 }));
 
@@ -90,8 +100,9 @@ describe("ProfileCompletenessCard", () => {
     // Only image missing → 80%, yellow-high.
     render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
     expect(screen.getByText("כמעט שם — 80% מוכן")).toBeInTheDocument();
+    // count=1 (only image missing) → ICU singular grammar, not "רק 1 פרטים".
     expect(
-      screen.getByText("רק 1 פרטים עד שהפרופיל מלא"),
+      screen.getByText("רק פרט אחד עד שהפרופיל מלא"),
     ).toBeInTheDocument();
   });
 });

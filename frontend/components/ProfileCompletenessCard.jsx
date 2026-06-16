@@ -148,7 +148,12 @@ export default function ProfileCompletenessCard({ producer }) {
     sub = t("yellow_low_sub");
   }
 
-  const nextKey = FIELD_KEY[missing[0]] || "image";
+  // Map the heuristic's raw HE label → a friendlier i18n key. The heuristic is
+  // scope-locked (never edited here), but defend against a future rename: an
+  // unmapped value falls back to the heuristic's OWN raw label rather than
+  // silently mislabelling the next step (e.g. always showing "תמונה ראשית").
+  const nextKey = FIELD_KEY[missing[0]];
+  const nextStepLabel = nextKey ? t(`fields.${nextKey}`) : missing[0];
 
   return (
     <div className="bg-background border border-border rounded-[16px] p-6 md:p-8 mb-8">
@@ -168,7 +173,7 @@ export default function ProfileCompletenessCard({ producer }) {
           <p className="text-sm md:text-base text-fg-muted mt-1">{sub}</p>
           <p className="text-sm text-text mt-3">
             <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
-            {t(`fields.${nextKey}`)}
+            {nextStepLabel}
           </p>
         </div>
       </div>
