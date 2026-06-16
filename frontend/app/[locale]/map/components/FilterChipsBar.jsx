@@ -42,6 +42,9 @@ export default function FilterChipsBar({
           aria-live="polite"
         >
           {activeFilterTags.map((tag) => (
+            // MEH-825: ≥44px hit area via the transparent button (min-h-[44px]
+            // + -my-2.5 keeps the visible row compact); the visible pill is the
+            // inner span (~24px, AA floor).
             <button
               key={`${tag.kind}:${tag.key}`}
               type="button"
@@ -51,16 +54,18 @@ export default function FilterChipsBar({
                   : onToggleChipClick(tag.key)
               }
               aria-label={t("map.filter.aria.remove", { label: tag.label })}
-              className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-0.5 text-[11px] hover:bg-green-50/80 transition"
+              className="inline-flex items-center min-h-[44px] -my-2.5"
             >
-              <span aria-hidden="true">×</span>
-              {tag.label}
+              <span className="inline-flex items-center gap-1 rounded-md bg-green-50 text-primary px-2 py-1 text-[11px] hover:bg-green-50/80 transition">
+                <span aria-hidden="true">×</span>
+                {tag.label}
+              </span>
             </button>
           ))}
           <button
             type="button"
             onClick={resetAllFilters}
-            className="text-primary text-[11px] no-underline hover:opacity-80 transition"
+            className="inline-flex items-center min-h-[44px] -my-2.5 text-primary text-[11px] no-underline hover:opacity-80 transition"
           >
             {t("map.filter.clear_all")}
           </button>
