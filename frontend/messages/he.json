@@ -2348,7 +2348,8 @@
     },
     "category_selector": {
       "label": "קטגוריה",
-      "search_placeholder": "חפשי קטגוריה...",
+      "search_label": "חיפוש קטגוריה",
+      "search_placeholder": "לדוגמה: גבינה, לחם, סבון",
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",

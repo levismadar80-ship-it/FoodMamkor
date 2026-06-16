@@ -2348,7 +2348,8 @@
     },
     "category_selector": {
       "label": "Category",
-      "search_placeholder": "Search categories...",
+      "search_label": "Search category",
+      "search_placeholder": "e.g. cheese, bread, soap",
       "section_results": "Results",
       "section_popular": "Popular",
       "no_results_prefix": "Can't find your category?",
