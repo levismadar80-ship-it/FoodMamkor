@@ -35,12 +35,12 @@ export function errorMessage(err) {
   // Offline / network unreachable — axios sets no `response`
   if (!err?.response) {
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
-      return "אין חיבור לאינטרנט. בדקי את הרשת ונסי שוב.";
+      return "אין חיבור לאינטרנט. בדקו את הרשת ונסו שוב.";
     }
     if (err?.code === "ECONNABORTED") {
-      return "השרת לוקח זמן יותר מהרגיל. נסי שוב בעוד רגע.";
+      return "השרת לוקח זמן יותר מהרגיל. נסו שוב בעוד רגע.";
     }
-    return "לא הצלחתי להתחבר לשרת. נסי שוב בעוד רגע.";
+    return "לא הצלחתי להתחבר לשרת. נסו שוב בעוד רגע.";
   }
 
   const status = err.response.status;
@@ -61,15 +61,15 @@ export function errorMessage(err) {
     return typeof detail === "string" && detail ? detail : "הפריט לא נמצא.";
   }
   if (status === 429) {
-    return "יותר מדי ניסיונות. נסי שוב בעוד כמה דקות.";
+    return "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.";
   }
 
   // 5xx — our problem
   if (status >= 500) {
-    return "השרת לא זמין כרגע. נסי שוב בעוד רגע.";
+    return "השרת לא זמין כרגע. נסו שוב בעוד רגע.";
   }
 
-  return "משהו השתבש. נסי שוב.";
+  return "משהו השתבש. נסו שוב.";
 }
 
 /**
