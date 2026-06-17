@@ -12,17 +12,17 @@ import { CircleNotch } from "@phosphor-icons/react";
  *     {loading ? (
  *       <span className="inline-flex items-center gap-2">
  *         <ButtonSpinner />
- *         שולחת...
+ *         בשליחה...
  *       </span>
  *     ) : (
- *       "שלחי"
+ *       "שלחו"
  *     )}
  *   </button>
  *
  * Consumers should:
  *   - Keep `disabled={loading}` on the button so the user can't submit twice
- *   - Pick contextually-appropriate feminine verb text ("שולחת", "נרשמת",
- *     "מתחברת", "מצטרפת", etc.) — CLAUDE.md micro-copy rule: feminine voice
+ *   - Pick a contextually-appropriate gerund-noun ("בשליחה", "בהרשמה",
+ *     "בהתחברות", etc.) — ADR-014: UI loading/error = plural/gerund, not feminine
  *   - Reset loading state in `finally` / on error so the button recovers
  *
  * Size defaults to 16px which pairs well with text at the typical button

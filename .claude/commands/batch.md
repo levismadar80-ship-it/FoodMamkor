@@ -74,6 +74,20 @@ git diff --staged | grep -E "(הוסיפי|הצטרפי|בואי|הזיני)" &&
 ```
 Any hit on a copy file → STOP and ask Smadar before proceeding.
 
+**Bucket-A error/loading canary (MEH-846).** ADR-014 locks UI error/loading
+to plural/gerund. This guard catches *re-introduced* feminine error/loading
+copy. It is anchored to **added** lines (`^\+`) so a future cleanup that
+*removes* feminine strings does not block itself, and ellipsis-anchored
+(ASCII `...` **and** Unicode `…`) on the loading participles so it skips
+prose mentions (legal/FAQ). The list covers the feminine participles plus
+the masculine/neutral strays that occur as loading labels (`טוען`, `שומר`,
+`בודק`, `מעדכן`, `מייבא`); any *other* gendered loading participle is still
+non-compliant under ADR-014 even if absent here — convert it to gerund:
+```bash
+git diff --staged | grep -E "^\+.*((טוענת|שולחת|שומרת|מוחקת|יוצרת|בודקת|נרשמת|מאמתת|מחפשת|מפרסמת|מתנתקת|מצרפת|מבטלת|מוסיפה|מעלה|טוען|שומר|בודק|מעדכן|מייבא)(\.\.\.|…)|נסי שוב)" && echo "STOP — Bucket-A non-compliant error/loading detected (ADR-014, MEH-846)" && exit 1 || true
+```
+Any hit → switch to plural/gerund (`נסו שוב`, `בטעינה…`, `טעינת X…`) before proceeding.
+
 ---
 
 ## Section 5 — STOP conditions

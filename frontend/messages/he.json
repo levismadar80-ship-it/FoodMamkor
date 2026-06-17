@@ -84,7 +84,7 @@
       "too_short": "סיסמתך חייבת להכיל לפחות {min} תווים",
       "too_common": "הסיסמה הזו דלפה ברשת — בחרי סיסמה אחרת",
       "same_as_current": "הסיסמה החדשה זהה לקודמת — בחרי סיסמה שונה",
-      "fallback": "הסיסמה לא עומדת בדרישות, נסי משהו ארוך וייחודי יותר"
+      "fallback": "הסיסמה לא עומדת בדרישות, נסו משהו ארוך וייחודי יותר"
     },
     "passwordRecovery": {
       "forgot": {
@@ -93,15 +93,15 @@
         "success_main": "✓ אם האימייל קיים במערכת — ישלח קישור לאיפוס",
         "success_contact_prefix": "לא קיבלת? צרי קשר:",
         "email_placeholder": "האימייל שלך",
-        "submit_sending": "שולח...",
+        "submit_sending": "בשליחה...",
         "submit": "שלחי קישור לאיפוס",
         "back_to_login": "חזרה להתחברות",
         "errors": {
-          "send_failed": "שגיאה בשליחה, נסי שוב מאוחר יותר"
+          "send_failed": "שגיאה בשליחה, נסו שוב מאוחר יותר"
         }
       },
       "reset": {
-        "loading": "טוען...",
+        "loading": "בטעינה...",
         "invalid_link": "קישור האיפוס לא תקין",
         "request_new_link": "בקשי קישור חדש",
         "title": "סיסמה חדשה",
@@ -113,23 +113,23 @@
         "toggle_hide": "הסתירי סיסמה",
         "success_title": "✓ הסיסמה עודכנה בהצלחה",
         "success_subtitle": "מעבירים אותך לדף הכניסה...",
-        "submit_updating": "מעדכן...",
+        "submit_updating": "בעדכון...",
         "submit": "עדכני סיסמה",
         "errors": {
           "too_short": "הסיסמה חייבת להכיל לפחות {min} תווים",
           "mismatch": "הסיסמאות אינן תואמות",
           "invalid_token": "קישור האיפוס לא תקין. בקשי קישור חדש.",
           "expired_token": "קישור האיפוס פג תוקף. בקשי קישור חדש.",
-          "generic": "שגיאה בעדכון הסיסמה, נסי שוב"
+          "generic": "שגיאה בעדכון הסיסמה, נסו שוב"
         }
       }
     },
     "verifyEmail": {
-      "loading_title": "מאמתת...",
+      "loading_title": "באימות...",
       "loading_subtitle": "אנא המתיני",
-      "fallback_loading": "טוענת...",
+      "fallback_loading": "בטעינה...",
       "success_title": "האימייל אומת בהצלחה!",
-      "success_subtitle": "מעבירה אותך לאתר...",
+      "success_subtitle": "מעבירים אותך לאתר...",
       "success_cta": "המשיכי לאתר",
       "error_title": "האימות נכשל",
       "error_cta": "חזרי לאתר",
@@ -139,7 +139,7 @@
       }
     },
     "login": {
-      "loading": "טוען...",
+      "loading": "בטעינה...",
       "title": "כניסה למהמקור",
       "welcome": "טוב לראות אותך שוב",
       "hero_overlay": "טרי · מקומי · מהמקור",
@@ -211,23 +211,23 @@
         },
         "actions": {
           "submit": "הצטרפי",
-          "submitting": "נרשמת..."
+          "submitting": "בהרשמה..."
         },
         "errors": {
-          "generic": "משהו השתבש, נסי שוב"
+          "generic": "משהו השתבש, נסו שוב"
         },
         "email_sent": {
           "title": "בדקי את תיבת האימייל שלך",
           "body": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.",
-          "hint": "לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.",
+          "hint": "לא קיבלתם? בדקו בספאם או נסו שוב בעוד דקה.",
           "back_home": "חזרה לדף הראשי"
         }
       },
       "producer": {
         "heading": "תנו לעסק שלך בית",
         "subtitle": "5 דקות. בלי עמלות. הלקוחה מגיעה ישירות אלייך",
-        "loading": "טוען...",
-        "loading_form": "טוען טופס הרשמה...",
+        "loading": "בטעינה...",
+        "loading_form": "טעינת טופס הרשמה...",
         "default_description": "בית עסק מקומי. עוד פרטים בקרוב.",
         "prefill_notice": "מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.",
         "upgrade_banner": {
@@ -288,7 +288,7 @@
           "next": "הבא →",
           "back": "שלב קודם",
           "submit": "הצטרפי →",
-          "submitting": "שולחת...",
+          "submitting": "בשליחה...",
           "write_later": "אני אכתוב אחר כך",
           "edit_description": "ערכו תיאור",
           "add_license": "יש לי רישיון יצרן ↓",
@@ -296,7 +296,7 @@
         },
         "errors": {
           "already_has_producer": "כבר יש לך עסק רשום בחשבון זה.",
-          "generic": "שגיאת תקשורת — נסי שוב."
+          "generic": "שגיאת תקשורת — נסו שוב."
         },
         "success": {
           "heading": "קיבלנו את הפרטים שלך",
@@ -314,7 +314,7 @@
           "share_cta": "הזמיני שכנה",
           "inbox_title": "בדקי את תיבת האימייל שלך",
           "inbox_body": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקי את תיבת הדואר.",
-          "inbox_hint": "לא קיבלת? בדקי בספאם או נסי שוב בעוד דקה.",
+          "inbox_hint": "לא קיבלתם? בדקו בספאם או נסו שוב בעוד דקה.",
           "back_home": "חזרה לדף הראשי"
         }
       }
@@ -472,7 +472,7 @@
       "aria": "ציטוט"
     },
     "skeleton": {
-      "loading_businesses": "טוענת עסקים טריים"
+      "loading_businesses": "טעינת עסקים טריים"
     },
     "star_rating": {
       "count_aria": "{count, plural, one {דירוג אחד} two {{count} דירוגים} other {({count} דירוגים)}}"
@@ -700,7 +700,7 @@
       "favorites": {
         "saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
         "login_cta": "התחברי",
-        "error": "משהו השתבש, נסי שוב",
+        "error": "משהו השתבש, נסו שוב",
         "remove": "הסר ממועדפים",
         "add": "הוסיפו למועדפים",
       "aria": "שמירה"
@@ -755,13 +755,13 @@
       "servings_label": "מספר מנות",
       "image_label": "תמונה",
       "image_remove": "הסירי תמונה",
-      "image_uploading": "מעלה...",
+      "image_uploading": "בהעלאה...",
       "image_upload": "העלאת תמונה",
       "related_products_label": "מוצרים קשורים",
       "related_products_hint": "(מתכון מקדם מוצרים שלך)",
-      "products_loading": "טוענת מוצרים...",
+      "products_loading": "טעינת מוצרים...",
       "no_products": "עדיין אין מוצרים בעסק שלך. אפשר לפרסם את המתכון בלי קישור.",
-      "submit_saving": "שומרת...",
+      "submit_saving": "בשמירה...",
       "submit": "שמירת מתכון",
       "cancel": "ביטול",
       "toast_updated": "המתכון עודכן",
@@ -769,7 +769,7 @@
       "errors": {
         "upload_image_failed": "שגיאה בהעלאת תמונה",
         "rejected_default": "התוכן אינו עומד בקריטריונים שלנו",
-        "generic": "משהו השתבש, נסי שוב"
+        "generic": "משהו השתבש, נסו שוב"
       }
     },
     "dashboard": {
@@ -777,7 +777,7 @@
       "heading": "המתכונים שלי",
       "btn_close_form": "סגרי",
       "btn_open_form": "+ פרסום מתכון חדש",
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "empty_title": "עדיין לא פרסמת מתכונים",
       "empty_description": "מתכון מקדם את המוצרים שלך — שתפי איך הלקוחות שלך משתמשות בהם בבית.",
       "empty_cta": "+ פרסום מתכון חדש",
@@ -794,7 +794,7 @@
     "edit": {
       "back": "← חזרה למתכונים",
       "heading": "עריכת מתכון",
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "not_found": "המתכון לא נמצא"
     }
   },
@@ -822,7 +822,7 @@
       "cta_join": "אני רוצה להצטרף!"
     },
     "detail": {
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "not_found_title": "קבוצת הרכש לא נמצאה",
       "back_to_list": "חזרה לקבוצות הרכש",
       "back_to_list_arrow": "← חזרה לקבוצות הרכש",
@@ -839,13 +839,13 @@
       "quantity_label": "כמות",
       "phone_label": "טלפון ליצירת קשר",
       "phone_placeholder": "050-1234567",
-      "submitting": "מצרפת...",
+      "submitting": "בצירוף...",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
       "login_required": "יש להתחבר כדי להצטרף לקבוצת רכש",
       "committed_confirm": "✅ הצטרפת לקבוצת רכש זו",
       "committed_units": " ({count} יחידות)",
-      "cancelling": "מבטלת...",
+      "cancelling": "בביטול...",
       "cancel_cta": "בטלי את ההצטרפות",
       "cancel_confirm": "לבטל את ההצטרפות?",
       "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
@@ -853,7 +853,7 @@
       "share_text": "הצטרפי לקבוצת רכש — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "ישראל",
       "errors": {
-        "generic": "משהו השתבש, נסי שוב",
+        "generic": "משהו השתבש, נסו שוב",
         "cancel_failed": "לא הצלחנו לבטל"
       }
     },
@@ -868,7 +868,7 @@
       "heading": "קבוצות הרכש שלי",
       "btn_close_form": "סגרי",
       "btn_open_form": "+ קבוצת רכש חדשה",
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "empty_title": "קבוצות רכש = מחיר סיטונאי ללקוחות שלך",
       "empty_description": "את קובעת מינימום משתתפות ותאריך. אם לא מגיעים למינימום — אף אחת לא משלמת. מושלם לשחיטה של כבש שלם, ליום אריזת סלסלות, או להזמנת עגלים קבוצתית.",
       "empty_cta": "+ צרי קבוצה ראשונה",
@@ -890,10 +890,10 @@
         "deadline_label": "מועד אחרון",
         "city_label": "עיר",
         "required_marker": " *",
-        "submitting": "יוצרת...",
+        "submitting": "ביצירה...",
         "submit": "צרי קבוצת רכש",
         "errors": {
-          "generic": "משהו השתבש, נסי שוב"
+          "generic": "משהו השתבש, נסו שוב"
         }
       }
     },
@@ -916,7 +916,7 @@
       "arranged": "משלוחים בתיאום מראש — צרי קשר לפרטים"
     },
     "follow": {
-      "error_generic": "משהו השתבש, נסי שוב",
+      "error_generic": "משהו השתבש, נסו שוב",
       "following": "עוקבת",
       "follow_aria": "עקבי אחרי עסק זה",
       "unfollowed_toast": "הפסקת לעקוב",
@@ -940,8 +940,8 @@
       "errors": {
         "no_gps": "הדפדפן שלך לא תומך ב-GPS",
         "permission_denied": "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
-        "position_unavailable": "המיקום שלך לא זמין. נסי מאוחר יותר.",
-        "timeout": "לקח יותר מדי זמן. נסי שוב.",
+        "position_unavailable": "המיקום שלך לא זמין. נסו מאוחר יותר.",
+        "timeout": "לקח יותר מדי זמן. נסו שוב.",
         "gps_unknown": "לא הצלחנו לקבל את המיקום שלך"
       },
       "aria": {
@@ -962,7 +962,7 @@
       }
     },
     "errors": {
-      "load_failed": "לא הצלחנו לטעון עסקים — נסי שוב",
+      "load_failed": "לא הצלחנו לטעון עסקים — נסו שוב",
       "invalid_search": "חיפוש לא תקין"
     },
     "city_picker": {
@@ -986,7 +986,7 @@
     "card_list": {
       "empty": {
         "heading": "לא נמצאו עסקים",
-        "body": "נסי להזיז את המפה או לשנות מסננים.",
+        "body": "נסו להזיז את המפה או לשנות מסננים.",
         "reset_filters": "אפסי סינון"
       }
     },
@@ -1053,11 +1053,11 @@
   },
   "admin": {
     "common": {
-      "loading": "טוען...",
-      "loading_f": "טוענת...",
-      "saving": "שומר...",
-      "saving_f": "שומרת...",
-      "sending": "שולחת...",
+      "loading": "בטעינה...",
+      "loading_f": "בטעינה...",
+      "saving": "בשמירה...",
+      "saving_f": "בשמירה...",
+      "sending": "בשליחה...",
       "save": "שמרו",
       "saved": "✓ נשמר",
       "saved_check": "נשמר ✓",
@@ -1153,7 +1153,7 @@
       },
       "health": {
         "heading": "בריאות שרת — שעה אחרונה",
-        "waiting_traffic": "מחכה לתנועה...",
+        "waiting_traffic": "בהמתנה לתנועה...",
         "requests_count": "{count} בקשות",
         "response_time_avg": "זמן תגובה ממוצע",
         "requests_per_minute": "בקשות לדקה",
@@ -1185,7 +1185,7 @@
       },
       "preview": {
         "title": "תצוגה מקדימה של הייבוא",
-        "importing": "מייבא...",
+        "importing": "בייבוא...",
         "confirm": "אשר ייבוא ({count})",
         "stats": {
           "to_import": "לייבוא",
@@ -1254,7 +1254,7 @@
         "all_complete": "כל בתי העסק שלמים",
         "empty": "אין בתי עסק להצגה",
         "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה.",
-        "delete_error": "מחיקת בית העסק נכשלה. נסי שוב."
+        "delete_error": "מחיקת בית העסק נכשלה. נסו שוב."
       },
       "toggle": {
         "invalid_transition": "לא ניתן לשנות סטטוס במצב הנוכחי — יש לאשר או לדחות את העסק דרך כפתורי האישור/דחייה."
@@ -1274,7 +1274,7 @@
         },
         "submit_create": "צור עסק",
         "submit_update": "שמרו שינויים",
-        "uploading": "מעלה...",
+        "uploading": "בהעלאה...",
         "sections": {
           "basic": "פרטי בסיס",
           "categories_tags": "קטגוריות ותגיות",
@@ -1482,7 +1482,7 @@
         "status": "סטטוס",
         "actions": "פעולות"
       },
-      "loading_leads": "טוענת לידים...",
+      "loading_leads": "טעינת לידים...",
       "empty": "אין לידים להצגה. לחצי על \"+ ליד חדש\" כדי להתחיל.",
       "actions": {
         "prefill": "הכן פרופיל",
@@ -1492,11 +1492,11 @@
       },
       "toasts": {
         "status_updated": "הסטטוס עודכן",
-        "status_failed": "לא הצלחנו לעדכן — נסי שוב",
+        "status_failed": "לא הצלחנו לעדכן — נסו שוב",
         "link_copied": "הלינק הועתק ללוח",
-        "prefill_failed": "לא הצלחנו להכין לינק — נסי שוב",
+        "prefill_failed": "לא הצלחנו להכין לינק — נסו שוב",
         "lead_deleted": "הליד נמחק",
-        "delete_failed": "לא הצלחנו למחוק — נסי שוב",
+        "delete_failed": "לא הצלחנו למחוק — נסו שוב",
         "lead_added": "ליד נוסף",
         "duplicate": "ליד דומה כבר קיים",
         "generic_error": "משהו השתבש",
@@ -1514,7 +1514,7 @@
         "website_placeholder": "אתר (אופציונלי)",
         "notes_placeholder": "הערות פנימיות",
         "name_required": "שם הוא שדה חובה",
-        "submit_saving": "שומרת...",
+        "submit_saving": "בשמירה...",
         "submit": "הוסיפי"
       },
       "modal_script": {
@@ -1523,7 +1523,7 @@
       },
       "modal_wa": {
         "title": "הודעת WhatsApp אל {name}",
-        "preparing": "מכינה לינק פרופיל...",
+        "preparing": "הכנת לינק פרופיל...",
         "copy": "העתק",
         "open": "פתח ב-WhatsApp",
         "close": "סגור"
@@ -1569,7 +1569,7 @@
       "reject_modal": {
         "title": "דחיית בקשה",
         "placeholder": "סיבת דחייה (אופציונלי)",
-        "submitting": "שולחת...",
+        "submitting": "בשליחה...",
         "submit": "דחי"
       },
       "badges": {
@@ -1628,21 +1628,21 @@
         "date": "תאריך",
         "actions": "פעולות"
       },
-      "loading": "טוענת ביקורות...",
+      "loading": "טעינת ביקורות...",
       "empty": "אין ביקורות להצגה",
       "stars_aria": "{stars} כוכבים",
       "delete_aria": "מחקי ביקורת של {user}",
-      "deleting": "מוחקת...",
+      "deleting": "במחיקה...",
       "delete": "מחקי",
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
       "deleted_toast": "הביקורת נמחקה",
-      "delete_error": "משהו השתבש, נסי שוב"
+      "delete_error": "משהו השתבש, נסו שוב"
     },
     "settings": {
       "title": "הגדרות",
-      "load_error": "שגיאה בטעינת הגדרות — נסי לרענן את הדף.",
+      "load_error": "שגיאה בטעינת הגדרות — נסו לרענן את הדף.",
       "sections": {
         "notifications": "התראות",
         "freemium": "Freemium",
@@ -1688,13 +1688,13 @@
       },
       "tests": {
         "not_configured": "✗ לא מוגדר",
-        "testing": "בודק...",
+        "testing": "בבדיקה...",
         "connected": "✓ מחובר",
         "test_btn": "בדוק"
       },
       "save": {
         "confirm_prefix": "האם לשמור את השינויים הבאים?",
-        "saving": "שומר...",
+        "saving": "בשמירה...",
         "submit": "שמרו הגדרות",
         "nothing_to_save_title": "אין שינויים לשמירה",
         "unsaved_count": "{count} שינויים לא שמורים"
@@ -1727,7 +1727,7 @@
       "page_editor": {
         "title_placeholder": "כותרת",
         "body_placeholder": "תוכן (Markdown נתמך)",
-        "saving": "שומר...",
+        "saving": "בשמירה...",
         "save": "שמרו",
         "saved": "נשמר ✓"
       }
@@ -1905,8 +1905,8 @@
       "view_calendar": "לוח שנה",
       "filter_city_label": "חיפוש לפי עיר",
       "filter_city_placeholder": "שם עיר או יישוב",
-      "loading_events": "טוענים אירועים...",
-      "loading_experiences": "טוענים חוויות...",
+      "loading_events": "טעינת אירועים...",
+      "loading_experiences": "טעינת חוויות...",
       "empty_events_title": "אין כאן אירועים שתואמים לסינון — עדיין",
       "empty_events_body": "נסו להרחיב את האזור, או לנקות את הקטגוריה. שווה לבדוק שוב בקרוב",
       "empty_events_cta": "נקו את הסינון",
@@ -1935,7 +1935,7 @@
       "other": "אחר"
     },
     "detail": {
-      "loading": "טוענים את האירוע...",
+      "loading": "טעינת האירוע...",
       "not_found": "לא מצאנו את האירוע הזה",
       "back_to_all": "← חזרה לכל האירועים",
       "register": "להרשמה →",
@@ -1973,7 +1973,7 @@
       "cross_link_events": "מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד →",
       "filter_city_label": "סנן לפי עיר",
       "filter_city_placeholder": "חפשי עיר...",
-      "loading": "טוענת חוויות...",
+      "loading": "טעינת חוויות...",
       "empty_title": "לא מצאנו חוויות שתואמות לסינון — עדיין",
       "empty_cta": "הגישי את החוויה הראשונה →"
     },
@@ -1988,7 +1988,7 @@
       "other": "אחר"
     },
     "detail": {
-      "loading": "טוענת את החוויה...",
+      "loading": "טעינת החוויה...",
       "not_found": "לא מצאנו את החוויה הזו",
       "back_to_all": "← חזרה לכל החוויות",
       "all_experiences": "← כל החוויות",
@@ -2015,7 +2015,7 @@
       "free": "חינם"
     },
     "new": {
-      "auth_loading": "טוענת...",
+      "auth_loading": "בטעינה...",
       "breadcrumb_home": "בית",
       "breadcrumb_experiences": "חוויות",
       "breadcrumb_submit": "הגשה",
@@ -2025,7 +2025,7 @@
       "field_title_placeholder": "לדוגמה: סדנת אפיית לחם מחמצת",
       "field_description": "תיאור מפורט *",
       "field_description_placeholder": "ספרי על החוויה — מה תלמדו, מה יהיה, למי זה מתאים...",
-      "checking_content": "בודקת תוכן...",
+      "checking_content": "בדיקת תוכן...",
       "rejected_fallback": "התוכן לא מתאים לפלטפורמה",
       "field_category": "קטגוריה",
       "category_none": "ללא",
@@ -2050,21 +2050,21 @@
       "is_recurring": "החוויה חוזרת (שבועי / חודשי)",
       "recurring_placeholder": "לדוגמה: כל יום שישי 9:00–12:00",
       "cancel": "ביטול",
-      "submitting": "שולחת...",
+      "submitting": "בשליחה...",
       "cannot_publish": "לא ניתן לפרסם",
       "submit_cta": "שלחי לאישור",
       "toast_submitted": "החוויה נשלחה לאישור",
       "error_title_short": "הכותרת קצרה מדי",
       "error_description_short": "התיאור חייב להיות לפחות 20 תווים",
       "error_date_required": "חובה לבחור תאריך",
-      "error_generic": "שגיאה בשליחת החוויה. נסי שוב."
+      "error_generic": "שגיאה בשליחת החוויה. נסו שוב."
     }
   },
   "errors": {
     "boundary": {
-      "heading": "משהו השתבש — נסי שוב",
+      "heading": "משהו השתבש — נסו שוב",
       "message": "הדף לא הצליח להיטען הפעם. לרוב זה עובד בפעם השנייה.",
-      "retry": "נסי שוב",
+      "retry": "נסו שוב",
       "home": "חזרי לדף הבית",
       "contact_prefix": "אם זה ממשיך,",
       "contact_link": "כתבי לנו"
@@ -2184,9 +2184,9 @@
         "message_label": "איך נוכל לעזור?",
         "message_placeholder": "ספרי לנו על מה את רוצה לדבר...",
         "submit": "שלחי",
-        "submit_loading": "שולחת...",
+        "submit_loading": "בשליחה...",
         "success_toast": "תודה! נחזור אליך בקרוב 🌿",
-        "error_toast": "משהו השתבש, נסי שוב"
+        "error_toast": "משהו השתבש, נסו שוב"
       }
     }
   },
@@ -2199,7 +2199,7 @@
       "aria_label": "בחירת עיר",
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
-      "geo_loading": "מחפשת...",
+      "geo_loading": "בחיפוש...",
       "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
       "current_location_fallback": "מיקום נוכחי",
       "skip": "דלגי לעכשיו",
@@ -2217,11 +2217,11 @@
       "examples_placeholder": "דוגמאות למוצרים (אופציונלי)",
       "examples_hint": "קומבוצ'ה, קפיר, וואטר קפיר...",
       "submit": "שלחי בקשה",
-      "submit_loading": "שולחת...",
+      "submit_loading": "בשליחה...",
       "close": "סגרי",
       "toasts": {
         "success": "תודה! הבקשה התקבלה. בינתיים, בחרי את הקטגוריה הקרובה ביותר.",
-        "error": "שגיאה בשליחת הבקשה — נסי שוב"
+        "error": "שגיאה בשליחת הבקשה — נסו שוב"
       }
     },
     "install_prompt": {
@@ -2340,7 +2340,7 @@
       "toggle_show": "הציגי סיסמה",
       "toggle_hide": "הסתירי סיסמה",
       "min_length": "לפחות {min} תווים",
-      "checking": "בודק...",
+      "checking": "בבדיקה...",
       "not_breached": "לא דלפה ברשת",
       "different_from_current": "שונה מהקודמת — נבדק בשרת",
       "strength": {
@@ -2390,7 +2390,7 @@
       "all_count": "{count, plural, one {כל בית עסק} two {כל שני בתי העסק} other {כל {count} בתי העסק}}",
       "showing_count": "מציגות {loaded} מתוך {total} בתי עסק",
       "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד} two {הצגנו את כל שני בתי העסק} other {הצגנו את כל {count} בתי העסק}}",
-      "loading_more_aria": "טוענת עוד בתי עסק"
+      "loading_more_aria": "טעינת בתי עסק נוספים"
     },
     "recently_viewed": {
       "aria": "ביקרת לאחרונה",
@@ -2405,7 +2405,7 @@
       "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",
       "no_match_filters": "לא מצאנו בתי עסק שמתאימים לסינון הזה",
       "search_hint": "נסי מילה אחרת או גלי לפי קטגוריה",
-      "filters_hint": "נסי להסיר אחד מהסינונים",
+      "filters_hint": "נסו להסיר אחד מהסינונים",
       "category_chips": {
         "beef": "בשר",
         "cheese": "גבינה",
@@ -2446,15 +2446,15 @@
     "body_placeholder": "איך הייתה החוויה שלך?",
     "submit": "פרסמי ביקורת",
     "submit_update": "עדכני ביקורת",
-    "submit_saving": "שומרת...",
+    "submit_saving": "בשמירה...",
     "cancel": "ביטול",
     "error_invalid_stars": "בחרי דירוג בין 1 ל-5 כוכבים",
     "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
-    "error_generic": "משהו השתבש, נסי שוב",
+    "error_generic": "משהו השתבש, נסו שוב",
     "saved_toast": "הביקורת שלך נשמרה",
     "wa_gate_message": "לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת",
     "login_prompt": "<login>התחברי</login> כדי לכתוב ביקורת",
-    "loading": "טוענת ביקורות...",
+    "loading": "טעינת ביקורות...",
     "owner_empty_title": "ביקורות ראשונות מגיעות אחרי כמה לקוחות",
     "owner_empty_description": "ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין.",
     "owner_empty_cta": "שתפי את הפרופיל בוואטסאפ",
@@ -2492,7 +2492,7 @@
     "notify_success": "🎉 נרשמת! נעדכן אותך כשפרמיום יושק.",
     "email_placeholder": "האימייל שלך",
     "notify_cta": "עדכנו אותי כשיושק",
-    "notify_submitting": "שולח..."
+    "notify_submitting": "בשליחה..."
   },
   "contact": {
     "title": "דברי איתנו",
@@ -2507,7 +2507,7 @@
     "field_email_label": "אימייל *",
     "field_message_label": "איך נוכל לעזור? *",
     "submit": "שליחה",
-    "submit_loading": "שולחת...",
+    "submit_loading": "בשליחה...",
     "open_mail_fallback": "פתיחת אימייל ישירות →",
     "error_default": "שליחת הטופס נכשלה. ניתן לשלוח אלינו אימייל ישירות לכתובת למטה.",
     "mailto_subject": "פנייה דרך האתר",
@@ -2535,7 +2535,7 @@
     "empty_home_cta": "חזרה לדף הבית",
     "hero": {
       "submit_aria": "חפש",
-      "loading": "טוענת תוצאות...",
+      "loading": "טעינת תוצאות...",
       "no_results_for": "אין תוצאות עבור",
       "section_producers": "🏪 בתי עסק",
       "section_categories": "🏷️ קטגוריות",
@@ -2545,7 +2545,7 @@
       "remove_recent_aria": "הסר {q} מהחיפושים האחרונים"
     },
     "smart": {
-      "loading": "טוענת תוצאות...",
+      "loading": "טעינת תוצאות...",
       "no_results_for": "אין תוצאות עבור",
       "section_producers": "בתי עסק",
       "section_products": "מוצרים",
@@ -2579,7 +2579,7 @@
       "saved_toast_first_time": "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט",
       "saved_toast": "נשמר למועדפים",
       "removed_toast": "הוסר מהמועדפים",
-      "error_generic": "משהו השתבש, נסי שוב",
+      "error_generic": "משהו השתבש, נסו שוב",
       "add_aria": "הוסיפו למועדפים",
       "remove_aria": "הסר ממועדפים",
       "inline_label": "שמרו",
@@ -2589,7 +2589,7 @@
   "rate": {
     "invalid_link": "קישור לא תקין",
     "error_generic": "שגיאה בשליחה",
-    "loading": "טוענת...",
+    "loading": "בטעינה...",
     "thanks_title": "תודה!",
     "thanks_message": "הדירוג שלך נשמר. זה עוזר לקהילה.",
     "heading": "איך היה?",
@@ -2664,7 +2664,7 @@
       "title": "כרטיס אינסטגרם מוכן",
       "generating": "מייצר",
       "download": "הורד",
-      "uploading": "מעלה...",
+      "uploading": "בהעלאה...",
       "save_cloudinary": "שמרו ל-Cloudinary",
       "copy_caption": "העתיקי caption",
       "copied": "✅ הועתק!"
@@ -3274,10 +3274,10 @@
   },
   "dashboard": {
     "producer": {
-      "loading_data": "טוענת נתונים...",
-      "loading_analytics": "טוענת סטטיסטיקות...",
-      "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסי שוב בעוד רגע",
-      "error_questions_save": "שגיאה בשמירה — נסי שוב",
+      "loading_data": "טעינת נתונים...",
+      "loading_analytics": "טעינת סטטיסטיקות...",
+      "error_availability_update": "לא הצלחנו לעדכן את מצב הזמינות — נסו שוב בעוד רגע",
+      "error_questions_save": "שגיאה בשמירה — נסו שוב",
       "vanity_link": {
         "label": "🔗 הלינק שלי",
         "copied": "✅ הועתק!",
@@ -3307,17 +3307,17 @@
         "title": "אימות טלפון העסק",
         "description": "נשלח קוד בן 6 ספרות לוואטסאפ של מספר העסק. האימות מעביר את העסק לסקירת הצוות.",
         "send_cta": "שלחי קוד אימות",
-        "sending": "שולחת...",
+        "sending": "בשליחה...",
         "resend_in": "אפשר לשלוח קוד נוסף בעוד {seconds} שניות",
         "code_label": "קוד אימות",
         "code_placeholder": "קוד בן 6 ספרות",
         "confirm_cta": "אמתי",
-        "confirming": "מאמתת...",
+        "confirming": "באימות...",
         "success": "הטלפון אומת! העסק הועבר לסקירת הצוות.",
-        "error_invalid": "קוד שגוי או שפג תוקפו. נסי שוב.",
+        "error_invalid": "קוד שגוי או שפג תוקפו. נסו שוב.",
         "error_no_phone": "לא נמצא מספר טלפון בפרופיל. הוסיפי מספר טלפון ואז אמתי.",
-        "error_generic": "משהו השתבש. נסי שוב.",
-        "error_rate_limited": "יותר מדי ניסיונות. נסי שוב עוד מעט."
+        "error_generic": "משהו השתבש. נסו שוב.",
+        "error_rate_limited": "יותר מדי ניסיונות. נסו שוב עוד מעט."
       },
       "holiday_catalog_cta": "עדכני את הקטלוג →",
       "availability": {
@@ -3455,7 +3455,7 @@
         "hint_empty": "מלאו את השדה הזה כדי שישמש כערוץ הראשי",
         "error_summary": "כדי להגדיר ערוץ ראשי צריך למלא את השדה שלו",
         "save_cta": "שמירת ערוצי קשר",
-        "saving": "שומרים…",
+        "saving": "בשמירה…",
         "saved": "נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
@@ -3465,7 +3465,7 @@
         "subtitle": "אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך",
         "placeholder": "דוגמה: אילו סוגי גבינות יש השבוע?",
         "save_cta": "שמרי שאלות",
-        "saving": "שומרת...",
+        "saving": "בשמירה...",
         "saved": "✓ נשמר"
       },
       "bio": {
@@ -3473,12 +3473,12 @@
         "intro": "הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.",
         "source_placeholder": "@handle / קישור אינסטגרם / תיאור חופשי",
         "generate_cta": "צרי ביו",
-        "generating": "יוצרת...",
+        "generating": "ביצירה...",
         "save_cta": "שמרי ביו",
-        "saving": "שומרת...",
+        "saving": "בשמירה...",
         "saved": "✓ נשמר",
-        "error_empty_bio": "לא הצלחנו לייצר ביו — נסי שוב עם טקסט אחר",
-        "error_generate": "שגיאה ביצירת הביו — נסי שוב",
+        "error_empty_bio": "לא הצלחנו לייצר ביו — נסו שוב עם טקסט אחר",
+        "error_generate": "שגיאה ביצירת הביו — נסו שוב",
         "error_save": "שגיאה בשמירת הביו"
       }
     }
@@ -3499,7 +3499,7 @@
     "followers": {
       "back_link": "← לוח הבקרה",
       "heading": "העוקבות שלי",
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "empty_title": "עוד אין עוקבות — וזה בסדר",
       "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ.",
       "share_cta": "העתיקי קישור לשיתוף",
@@ -3509,7 +3509,7 @@
       "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות."
     },
     "alert_prefs": {
-      "loading": "טוען...",
+      "loading": "בטעינה...",
       "heading": "הודעי לי כש...",
       "close_aria": "סגור",
       "row_new_event": "אירועים חדשים",
@@ -3521,9 +3521,9 @@
       "push_enable": "הפעילי התראות דחיפה (PWA)",
       "push_active": "התראות דחיפה פעילות",
       "save_cta": "שמרו הגדרות",
-      "saving": "שומר...",
+      "saving": "בשמירה...",
       "save_success_toast": "הגדרות עודכנו",
-      "save_error_toast": "שגיאה בשמירה, נסי שוב"
+      "save_error_toast": "שגיאה בשמירה, נסו שוב"
     },
     "layout": {
       "skip_to_main": "דילוג לתוכן"
@@ -3549,10 +3549,10 @@
       "field_image_placeholder": "https://res.cloudinary.com/...",
       "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
       "field_registration_url_placeholder": "https://...",
-      "submit_publishing": "מפרסמת...",
+      "submit_publishing": "בפרסום...",
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
-      "error_generic": "שגיאה ביצירת האירוע — נסי שוב.",
+      "error_generic": "שגיאה ביצירת האירוע — נסו שוב.",
       "crumb_dashboard": "ניהול העסק",
       "crumb_current": "אירוע חדש",
       "subtitle": "סדנה, סיור, שוק, קטיף או ימי פתיחה — פרסמי כאן",
@@ -3568,12 +3568,12 @@
   "settings": {
     "common": {
       "page_heading": "הגדרות חשבון",
-      "loading": "טוענת...",
+      "loading": "בטעינה...",
       "tabs_aria": "טאבים",
       "tab_profile": "פרופיל",
       "tab_security": "אבטחה",
       "tab_business": "העסק שלי",
-      "saving": "שומרת...",
+      "saving": "בשמירה...",
       "save_cta": "שמרי",
       "optional_suffix": "(אופציונלי)"
     },
@@ -3583,11 +3583,11 @@
       "avatar_aria": "שינוי תמונת פרופיל",
       "avatar_hint": "לחצי על התמונה לשינוי",
       "saved_msg": "הפרטים נשמרו",
-      "save_error_fallback": "לא הצלחנו לשמור. נסי שוב.",
+      "save_error_fallback": "לא הצלחנו לשמור. נסו שוב.",
       "upload_type_error": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
       "upload_size_error": "הקובץ גדול מדי — מקסימום 5MB",
       "avatar_uploaded_msg": "תמונת הפרופיל עודכנה",
-      "avatar_upload_error_fallback": "שגיאה בהעלאת התמונה — נסי שוב",
+      "avatar_upload_error_fallback": "שגיאה בהעלאת התמונה — נסו שוב",
       "field_name_label": "שם מלא",
       "field_city_label": "עיר",
       "field_city_placeholder": "לדוגמה: תל אביב",
@@ -3610,7 +3610,7 @@
       "status_suspended": "החשבון מושעה זמנית.",
       "support_cta_short": "צרי קשר",
       "stats_heading": "סטטיסטיקות",
-      "stats_loading": "טוענת...",
+      "stats_loading": "בטעינה...",
       "stat_views": "צפיות",
       "stat_favorites": "מועדפים",
       "stat_reviews": "ביקורות",
@@ -3626,7 +3626,7 @@
       "errors": {
         "upload_type": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
         "upload_size": "הקובץ גדול מדי — מקסימום 5MB",
-        "upload_failed_fallback": "שגיאה בהעלאת תמונה — נסי שוב",
+        "upload_failed_fallback": "שגיאה בהעלאת תמונה — נסו שוב",
         "name_required": "שם המוצר הוא שדה חובה",
         "price_required": "הכניסי מחיר",
         "price_min_too_low": "המחיר חייב להיות לפחות 1 ₪",
@@ -3658,13 +3658,13 @@
         "image_alt": "תמונה",
         "image_remove": "הסר",
         "image_upload_cta": "העלי תמונה",
-        "image_uploading": "מעלה..."
+        "image_uploading": "בהעלאה..."
       },
       "save_edit_cta": "שמרי שינויים",
-      "save_edit_saving": "שומרת...",
+      "save_edit_saving": "בשמירה...",
       "cancel_edit_cta": "בטלי",
       "add_submit_cta": "הוסיפי מוצר",
-      "add_submitting": "מוסיפה...",
+      "add_submitting": "בהוספה...",
       "card": {
         "edit_aria_template": "ערכי {name}",
         "delete_aria_template": "מחקי {name}"
@@ -3673,7 +3673,7 @@
     "security": {
       "common": {
         "cancel": "ביטול",
-        "error_retry": "שגיאה — נסי שוב"
+        "error_retry": "שגיאה — נסו שוב"
       },
       "password": {
         "oauth_tabpanel_aria": "שינוי סיסמה",
@@ -3691,14 +3691,14 @@
         "save_toast": "הסיסמה עודכנה בהצלחה",
         "error_fallback": "שגיאה בעדכון הסיסמה",
         "submit_cta": "עדכני סיסמה",
-        "submit_saving": "שומרת..."
+        "submit_saving": "בשמירה..."
       },
       "logout_all": {
         "heading": "יציאה מכל המכשירים",
         "body": "מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.",
         "confirm_prompt": "לאשר יציאה מכל המכשירים?",
         "confirm_submit": "כן, יציאה",
-        "confirm_submitting": "מתנתקת..."
+        "confirm_submitting": "בהתנתקות..."
       },
       "danger_zone": {
         "heading": "מחיקת חשבון",
@@ -3706,7 +3706,7 @@
         "delete_cta": "מחקי חשבון",
         "confirm_email_label": "הקלידי את האימייל שלך לאישור",
         "submit_cta": "אישור מחיקה",
-        "submit_deleting": "מוחקת...",
+        "submit_deleting": "במחיקה...",
         "grace_heading": "בקשת המחיקה התקבלה",
         "grace_body": "החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.",
         "back_to_login": "חזרי לדף הכניסה"

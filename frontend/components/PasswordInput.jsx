@@ -26,7 +26,7 @@
  *
  * Failures the input renders inline (preview):
  *   - "✓ N תווים" / "○ N תווים"     — sync; reflects the immediate value
- *   - "✓ לא דלפה ברשת" / "○ לא דלפה ברשת" / "בודק..." — async / pending
+ *   - "✓ לא דלפה ברשת" / "○ לא דלפה ברשת" / "בבדיקה..." — async / pending
  *   - "○ שונה מהקודמת — נבדק בשרת"   — informational only (when prop set)
  *
  * Failures the parent page renders (post-submit):
