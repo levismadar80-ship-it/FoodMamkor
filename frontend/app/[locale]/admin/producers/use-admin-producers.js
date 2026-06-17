@@ -60,6 +60,8 @@ function useProducersData() {
 // is threaded out to AdminProducersTable to disable the in-flight button.
 function useProducerActions(loadAllProducers) {
   const t = useTranslations("admin");
+  // MEH-848: errorMessage() copy now lives under the error.* namespace.
+  const tError = useTranslations("error");
   const { run, isBusy } = useAdminAction();
   const quickApprove = (id) =>
     run(`approve:${id}`, async () => {
@@ -81,7 +83,7 @@ function useProducerActions(loadAllProducers) {
         showToast.error(
           err?.response?.status === 409
             ? t("producers.toggle.invalid_transition")
-            : errorMessage(err),
+            : errorMessage(err, tError),
         ),
     );
   const deleteProducer = (id, name) => {

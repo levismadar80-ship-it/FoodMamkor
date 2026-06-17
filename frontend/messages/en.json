@@ -159,8 +159,7 @@
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
-      "register_cta": "Join →",
-      "generic_error": "Something went wrong, please try again"
+      "register_cta": "Join →"
     },
     "oauth": {
       "google_error": "Google sign-in failed",
@@ -212,9 +211,6 @@
         "actions": {
           "submit": "Join",
           "submitting": "Signing up..."
-        },
-        "errors": {
-          "generic": "Something went wrong, try again"
         },
         "email_sent": {
           "title": "Check your inbox",
@@ -338,7 +334,18 @@
   },
   "error": {
     "try_again": "Error, please try again",
-    "generic": "Something went wrong, try again"
+    "generic": "Something went wrong, try again",
+    "mapper": {
+      "offline": "No internet connection. Check your network and try again.",
+      "timeout": "The server is taking longer than usual. Try again in a moment.",
+      "network": "Couldn't connect to the server. Try again in a moment.",
+      "bad_request": "The submitted data is invalid.",
+      "unauthorized": "Your session expired. Sign in again to continue.",
+      "forbidden": "You don't have permission for this action.",
+      "not_found": "Item not found.",
+      "rate_limited": "Too many attempts. Try again in a few minutes.",
+      "server": "The server is unavailable right now. Try again in a moment."
+    }
   },
   "home": {
     "hero": {
@@ -700,7 +707,6 @@
       "favorites": {
         "saved_login_prompt": "Saved — log in to see all your favorites",
         "login_cta": "Log in",
-        "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
         "aria": "Save"
@@ -768,8 +774,7 @@
       "toast_created": "Recipe sent for approval",
       "errors": {
         "upload_image_failed": "Image upload failed",
-        "rejected_default": "Content does not meet our criteria",
-        "generic": "Something went wrong, please try again"
+        "rejected_default": "Content does not meet our criteria"
       }
     },
     "dashboard": {
@@ -853,7 +858,6 @@
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
       "errors": {
-        "generic": "Something went wrong, please try again",
         "cancel_failed": "Cancellation failed"
       }
     },
@@ -891,10 +895,7 @@
         "city_label": "City",
         "required_marker": " *",
         "submitting": "Creating...",
-        "submit": "Create group buy",
-        "errors": {
-          "generic": "Something went wrong, please try again"
-        }
+        "submit": "Create group buy"
       }
     },
     "availability": {
@@ -916,7 +917,6 @@
       "arranged": "Delivery by arrangement — contact for details"
     },
     "follow": {
-      "error_generic": "Something went wrong, please try again",
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
@@ -1638,8 +1638,7 @@
       "confirm_delete": "Delete the review by {user} on {producer}?",
       "default_user": "User",
       "default_producer": "the business",
-      "deleted_toast": "Review deleted",
-      "delete_error": "Something went wrong, please try again"
+      "deleted_toast": "Review deleted"
     },
     "settings": {
       "title": "Settings",
@@ -2186,8 +2185,7 @@
         "message_placeholder": "Tell us what you'd like to talk about...",
         "submit": "Send",
         "submit_loading": "Sending...",
-        "success_toast": "Thanks! We'll get back to you soon 🌿",
-        "error_toast": "Something went wrong, please try again"
+        "success_toast": "Thanks! We'll get back to you soon 🌿"
       }
     }
   },
@@ -2451,7 +2449,6 @@
     "cancel": "Cancel",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
-    "error_generic": "Something went wrong, please try again",
     "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
     "login_prompt": "<login>Sign in</login> to write a review",
@@ -2580,7 +2577,6 @@
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
       "removed_toast": "Removed from favorites",
-      "error_generic": "Something went wrong, please try again",
       "add_aria": "Add to favorites",
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",

@@ -22,6 +22,8 @@ import InfoTooltip from "@/components/InfoTooltip";
  */
 export default function AdminReviewsPage() {
   const t = useTranslations("admin");
+  // MEH-848: shared generic error copy (collapsed from admin.reviews.delete_error).
+  const tError = useTranslations("error");
   const locale = useLocale();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +61,7 @@ export default function AdminReviewsPage() {
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
       showToast.success(t("reviews.deleted_toast"));
     } catch {
-      showToast.error(t("reviews.delete_error"));
+      showToast.error(tError("generic"));
     } finally {
       setDeletingId(null);
     }
