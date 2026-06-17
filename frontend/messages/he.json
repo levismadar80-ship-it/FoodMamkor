@@ -113,7 +113,7 @@
         "toggle_hide": "הסתירי סיסמה",
         "success_title": "✓ הסיסמה עודכנה בהצלחה",
         "success_subtitle": "מעבירים אותך לדף הכניסה...",
-        "submit_updating": "מעדכן...",
+        "submit_updating": "בעדכון...",
         "submit": "עדכני סיסמה",
         "errors": {
           "too_short": "הסיסמה חייבת להכיל לפחות {min} תווים",
@@ -129,7 +129,7 @@
       "loading_subtitle": "אנא המתיני",
       "fallback_loading": "בטעינה...",
       "success_title": "האימייל אומת בהצלחה!",
-      "success_subtitle": "מעבירה אותך לאתר...",
+      "success_subtitle": "מעבירים אותך לאתר...",
       "success_cta": "המשיכי לאתר",
       "error_title": "האימות נכשל",
       "error_cta": "חזרי לאתר",
@@ -227,7 +227,7 @@
         "heading": "תנו לעסק שלך בית",
         "subtitle": "5 דקות. בלי עמלות. הלקוחה מגיעה ישירות אלייך",
         "loading": "בטעינה...",
-        "loading_form": "טוען טופס הרשמה...",
+        "loading_form": "טעינת טופס הרשמה...",
         "default_description": "בית עסק מקומי. עוד פרטים בקרוב.",
         "prefill_notice": "מילאנו עבורך את פרטי העסק — אפשר לעדכן כל שדה לפני המשך.",
         "upgrade_banner": {
@@ -1055,7 +1055,7 @@
     "common": {
       "loading": "בטעינה...",
       "loading_f": "בטעינה...",
-      "saving": "שומר...",
+      "saving": "בשמירה...",
       "saving_f": "בשמירה...",
       "sending": "בשליחה...",
       "save": "שמרו",
@@ -1153,7 +1153,7 @@
       },
       "health": {
         "heading": "בריאות שרת — שעה אחרונה",
-        "waiting_traffic": "מחכה לתנועה...",
+        "waiting_traffic": "בהמתנה לתנועה...",
         "requests_count": "{count} בקשות",
         "response_time_avg": "זמן תגובה ממוצע",
         "requests_per_minute": "בקשות לדקה",
@@ -1185,7 +1185,7 @@
       },
       "preview": {
         "title": "תצוגה מקדימה של הייבוא",
-        "importing": "מייבא...",
+        "importing": "בייבוא...",
         "confirm": "אשר ייבוא ({count})",
         "stats": {
           "to_import": "לייבוא",
@@ -1523,7 +1523,7 @@
       },
       "modal_wa": {
         "title": "הודעת WhatsApp אל {name}",
-        "preparing": "מכינה לינק פרופיל...",
+        "preparing": "הכנת לינק פרופיל...",
         "copy": "העתק",
         "open": "פתח ב-WhatsApp",
         "close": "סגור"
@@ -1688,13 +1688,13 @@
       },
       "tests": {
         "not_configured": "✗ לא מוגדר",
-        "testing": "בודק...",
+        "testing": "בבדיקה...",
         "connected": "✓ מחובר",
         "test_btn": "בדוק"
       },
       "save": {
         "confirm_prefix": "האם לשמור את השינויים הבאים?",
-        "saving": "שומר...",
+        "saving": "בשמירה...",
         "submit": "שמרו הגדרות",
         "nothing_to_save_title": "אין שינויים לשמירה",
         "unsaved_count": "{count} שינויים לא שמורים"
@@ -1727,7 +1727,7 @@
       "page_editor": {
         "title_placeholder": "כותרת",
         "body_placeholder": "תוכן (Markdown נתמך)",
-        "saving": "שומר...",
+        "saving": "בשמירה...",
         "save": "שמרו",
         "saved": "נשמר ✓"
       }
@@ -1905,7 +1905,7 @@
       "view_calendar": "לוח שנה",
       "filter_city_label": "חיפוש לפי עיר",
       "filter_city_placeholder": "שם עיר או יישוב",
-      "loading_events": "טוענים אירועים...",
+      "loading_events": "טעינת אירועים...",
       "loading_experiences": "טעינת חוויות...",
       "empty_events_title": "אין כאן אירועים שתואמים לסינון — עדיין",
       "empty_events_body": "נסו להרחיב את האזור, או לנקות את הקטגוריה. שווה לבדוק שוב בקרוב",
@@ -1935,7 +1935,7 @@
       "other": "אחר"
     },
     "detail": {
-      "loading": "טוענים את האירוע...",
+      "loading": "טעינת האירוע...",
       "not_found": "לא מצאנו את האירוע הזה",
       "back_to_all": "← חזרה לכל האירועים",
       "register": "להרשמה →",
@@ -2340,7 +2340,7 @@
       "toggle_show": "הציגי סיסמה",
       "toggle_hide": "הסתירי סיסמה",
       "min_length": "לפחות {min} תווים",
-      "checking": "בודק...",
+      "checking": "בבדיקה...",
       "not_breached": "לא דלפה ברשת",
       "different_from_current": "שונה מהקודמת — נבדק בשרת",
       "strength": {
@@ -3455,7 +3455,7 @@
         "hint_empty": "מלאו את השדה הזה כדי שישמש כערוץ הראשי",
         "error_summary": "כדי להגדיר ערוץ ראשי צריך למלא את השדה שלו",
         "save_cta": "שמירת ערוצי קשר",
-        "saving": "שומרים…",
+        "saving": "בשמירה…",
         "saved": "נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
@@ -3521,7 +3521,7 @@
       "push_enable": "הפעילי התראות דחיפה (PWA)",
       "push_active": "התראות דחיפה פעילות",
       "save_cta": "שמרו הגדרות",
-      "saving": "שומר...",
+      "saving": "בשמירה...",
       "save_success_toast": "הגדרות עודכנו",
       "save_error_toast": "שגיאה בשמירה, נסו שוב"
     },
