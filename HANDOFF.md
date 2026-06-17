@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
+
+Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
+- **Done (A):** `lib/errors.js` `errorMessage(err)`→`errorMessage(err, t)` (`error`-scoped translator); 9 status sentences → `error.mapper.*` (he+en, verbatim); 2 importers + `showErrorToast` updated; `errors.test.js` rewritten to key contract. **(B):** 11 duplicate `"משהו השתבש, נסו שוב"` keys collapsed → `error.generic`; 10 consumers repointed (incl. central `ProducerCard`, auth `Login`/`Register`); 11 keys deleted both locales (orphan `group_buys.follow.error_generic` + 2 emptied `errors:{}` removed). `ProducerCard.test.jsx` + `useAdminAction.test.js` mocks updated.
+- **Spec correction (meta-pattern #1):** the 3 "broken refs" (GroupBuyDetail:134/RecipeForm:141/dashboard-group-buys:54) verified **present + correct in both locales** → plain dedup, **NOT** labeled bugfix. No `error.retry` added; `error.try_again` untouched.
+- **Gates green:** build (all SSG), vitest 625 pass, ESLint 0 errors, en-locale canary green, he/en parity intact. Adversarial-review passed (no dangling deleted-key refs).
+- **⚠️ Overlaps MEH-846 (#1199)** — both edit `lib/errors.js`+`he.json`. 2nd-to-merge resolves `lib/errors.js` toward the i18n version (846's plural-fix mooted by the move). Sequence with Sapir.
+- **Pending (Sapir):** mobile QA error toasts on the Vercel preview (login/register/card-favorite/review/group-buy) → mark ready + merge. No self-merge (Rule 23).
+
 ## 2026-06-17 — MEH-844 auth regression sentinels (tests-only, DRAFT PR)
 
 Branch `feature/meh-844-auth-sentinel-tests` off staging. Two vitest sentinels, **mocks only, zero production change**.

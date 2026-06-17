@@ -159,8 +159,7 @@
       "reset_success": "הסיסמה עודכנה בהצלחה — אפשר להתחבר",
       "or": "או",
       "no_account": "אין לך חשבון?",
-      "register_cta": "הצטרפו ←",
-      "generic_error": "משהו השתבש, נסו שוב"
+      "register_cta": "הצטרפו ←"
     },
     "oauth": {
       "google_error": "שגיאה בהתחברות עם Google",
@@ -212,9 +211,6 @@
         "actions": {
           "submit": "הצטרפי",
           "submitting": "בהרשמה..."
-        },
-        "errors": {
-          "generic": "משהו השתבש, נסו שוב"
         },
         "email_sent": {
           "title": "בדקי את תיבת האימייל שלך",
@@ -338,7 +334,18 @@
   },
   "error": {
     "try_again": "שגיאה, נסו שוב",
-    "generic": "משהו השתבש, נסו שוב"
+    "generic": "משהו השתבש, נסו שוב",
+    "mapper": {
+      "offline": "אין חיבור לאינטרנט. בדקו את הרשת ונסו שוב.",
+      "timeout": "השרת לוקח זמן יותר מהרגיל. נסו שוב בעוד רגע.",
+      "network": "לא הצלחתי להתחבר לשרת. נסו שוב בעוד רגע.",
+      "bad_request": "הנתונים שנשלחו לא תקינים.",
+      "unauthorized": "הסשן שלך פג. התחברי שוב כדי להמשיך.",
+      "forbidden": "אין הרשאה לפעולה זו.",
+      "not_found": "הפריט לא נמצא.",
+      "rate_limited": "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.",
+      "server": "השרת לא זמין כרגע. נסו שוב בעוד רגע."
+    }
   },
   "home": {
     "hero": {
@@ -700,7 +707,6 @@
       "favorites": {
         "saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
         "login_cta": "התחברי",
-        "error": "משהו השתבש, נסו שוב",
         "remove": "הסר ממועדפים",
         "add": "הוסיפו למועדפים",
       "aria": "שמירה"
@@ -768,8 +774,7 @@
       "toast_created": "המתכון נשלח לאישור",
       "errors": {
         "upload_image_failed": "שגיאה בהעלאת תמונה",
-        "rejected_default": "התוכן אינו עומד בקריטריונים שלנו",
-        "generic": "משהו השתבש, נסו שוב"
+        "rejected_default": "התוכן אינו עומד בקריטריונים שלנו"
       }
     },
     "dashboard": {
@@ -853,7 +858,6 @@
       "share_text": "הצטרפי לקבוצת רכש — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "ישראל",
       "errors": {
-        "generic": "משהו השתבש, נסו שוב",
         "cancel_failed": "לא הצלחנו לבטל"
       }
     },
@@ -891,10 +895,7 @@
         "city_label": "עיר",
         "required_marker": " *",
         "submitting": "ביצירה...",
-        "submit": "צרי קבוצת רכש",
-        "errors": {
-          "generic": "משהו השתבש, נסו שוב"
-        }
+        "submit": "צרי קבוצת רכש"
       }
     },
     "availability": {
@@ -916,7 +917,6 @@
       "arranged": "משלוחים בתיאום מראש — צרי קשר לפרטים"
     },
     "follow": {
-      "error_generic": "משהו השתבש, נסו שוב",
       "following": "עוקבת",
       "follow_aria": "עקבי אחרי עסק זה",
       "unfollowed_toast": "הפסקת לעקוב",
@@ -1637,8 +1637,7 @@
       "confirm_delete": "למחוק את הביקורת של {user} על {producer}?",
       "default_user": "משתמשת",
       "default_producer": "העסק",
-      "deleted_toast": "הביקורת נמחקה",
-      "delete_error": "משהו השתבש, נסו שוב"
+      "deleted_toast": "הביקורת נמחקה"
     },
     "settings": {
       "title": "הגדרות",
@@ -2185,8 +2184,7 @@
         "message_placeholder": "ספרי לנו על מה את רוצה לדבר...",
         "submit": "שלחי",
         "submit_loading": "בשליחה...",
-        "success_toast": "תודה! נחזור אליך בקרוב 🌿",
-        "error_toast": "משהו השתבש, נסו שוב"
+        "success_toast": "תודה! נחזור אליך בקרוב 🌿"
       }
     }
   },
@@ -2450,7 +2448,6 @@
     "cancel": "ביטול",
     "error_invalid_stars": "בחרי דירוג בין 1 ל-5 כוכבים",
     "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
-    "error_generic": "משהו השתבש, נסו שוב",
     "saved_toast": "הביקורת שלך נשמרה",
     "wa_gate_message": "לחצי על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת",
     "login_prompt": "<login>התחברי</login> כדי לכתוב ביקורת",
@@ -2579,7 +2576,6 @@
       "saved_toast_first_time": "נשמר! כל המועדפים שלך מחכים בעמוד המועדפים שבתפריט",
       "saved_toast": "נשמר למועדפים",
       "removed_toast": "הוסר מהמועדפים",
-      "error_generic": "משהו השתבש, נסו שוב",
       "add_aria": "הוסיפו למועדפים",
       "remove_aria": "הסר ממועדפים",
       "inline_label": "שמרו",

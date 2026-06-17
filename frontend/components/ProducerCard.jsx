@@ -147,7 +147,7 @@ function CardHeart({ producer, onCountChange }) {
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
-      showToast.error(t("producer.card.favorites.error"));
+      showToast.error(t("error.generic"));
     }
   };
 
