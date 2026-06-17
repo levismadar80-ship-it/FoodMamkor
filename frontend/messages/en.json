@@ -2,7 +2,7 @@
   "nav": {
     "discover": "Discover",
     "explore": "Explore",
-    "add_business_short": "הוסיפו עסק",
+    "add_business_short": "Add a business",
     "map": "Map",
     "events": "Events",
     "about": "About",
@@ -344,8 +344,8 @@
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
-      "cta_primary": "גלו עסקים",
-      "how_it_works": "איך זה עובד",
+      "cta_primary": "Discover businesses",
+      "how_it_works": "How it works",
       "friday_subtitle": "Friday is here What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
@@ -365,18 +365,18 @@
       "fallback": "Starting now · across Israel"
     },
     "featured": {
-      "eyebrow": "היכרות",
-      "heading": "מאחורי הקלעים",
-      "cta_meet": "להכיר את {name}",
-      "cta_write": "לכתוב ל{name}"
+      "eyebrow": "Get to know",
+      "heading": "Behind the scenes",
+      "cta_meet": "Meet {name}",
+      "cta_write": "Message {name}"
     },
     "comparison_teaser": {
-      "eyebrow": "ההבדל",
-      "heading": "מה שמשתנה בדרך",
-      "cta": "גלו את ההבדל"
+      "eyebrow": "The difference",
+      "heading": "What changes along the way",
+      "cta": "See the difference"
     },
     "categories": {
-      "eyebrow": "קטגוריות",
+      "eyebrow": "Categories",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
       "aria": "Show category: {name}"
@@ -703,7 +703,7 @@
         "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
-      "aria": "שמירה"
+        "aria": "Save"
       },
       "aria": {
         "image_missing": "{name} — image missing",
@@ -2084,14 +2084,14 @@
   },
   "about": {
     "comparison": {
-      "eyebrow": "ההבדל",
-      "heading": "מה שמשתנה בדרך",
-      "row1_brand": "את יודעת בדיוק מי מאחורי זה",
-      "row1_super": "בסופר — שם על אריזה, אם בכלל",
-      "row2_brand": "קרוב אלייך, מגיע טרי",
-      "row2_super": "בסופר — מי יודע מאיפה ומתי",
-      "row3_brand": "ישירות מול מי שמייצרת",
-      "row3_super": "בסופר — עוד פריט בעגלה"
+      "eyebrow": "The difference",
+      "heading": "What changes along the way",
+      "row1_brand": "You know exactly who's behind it",
+      "row1_super": "At the supermarket — a name on a package, if that",
+      "row2_brand": "Close to you, arrives fresh",
+      "row2_super": "At the supermarket — who knows from where or when",
+      "row3_brand": "Straight from whoever makes it",
+      "row3_super": "At the supermarket — just another item in the cart"
     },
     "consumer": {
       "hero": {
