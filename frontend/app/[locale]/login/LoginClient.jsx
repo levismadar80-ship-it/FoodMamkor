@@ -57,6 +57,8 @@ function LoginPageFallback() {
 
 function LoginPageBody() {
   const t = useTranslations("auth.login");
+  // MEH-848: shared generic error copy (collapsed from auth.login.generic_error).
+  const tError = useTranslations("error");
   const router = useRouter();
   const params = useSearchParams();
   // MEH-810: clamp ?redirect= to an internal path (open-redirect guard).
@@ -89,7 +91,7 @@ function LoginPageBody() {
       await login(email, password);
       router.push(redirectTo);
     } catch (err) {
-      setError(err.response?.data?.detail || t("generic_error"));
+      setError(err.response?.data?.detail || tError("generic"));
     } finally {
       setLoading(false);
     }

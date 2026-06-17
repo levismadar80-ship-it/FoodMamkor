@@ -27,6 +27,8 @@ import AlertPrefsPanel from "./AlertPrefsPanel";
  */
 export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
   const t = useTranslations("favorites.button");
+  // MEH-848: shared generic error copy (collapsed from favorites.button.error_generic).
+  const tError = useTranslations("error");
   const { user } = useAuth();
   const [favorited, setFavorited] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,7 +76,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         }
       }
     } catch {
-      showToast.error(t("error_generic"));
+      showToast.error(tError("generic"));
     }
     setLoading(false);
   };

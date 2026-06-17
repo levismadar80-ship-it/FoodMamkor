@@ -146,7 +146,7 @@ function RegisterPageBody() {
         // on policy rejection. Map the first to the matching Hebrew string.
         setError(firstFailureMessage(detail.failures, tValidation));
       } else {
-        setError(typeof detail === "string" ? detail : t("auth.register.consumer.errors.generic"));
+        setError(typeof detail === "string" ? detail : t("error.generic"));
       }
     } finally {
       setLoading(false);

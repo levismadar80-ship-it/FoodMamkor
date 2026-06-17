@@ -51,6 +51,8 @@ function toInt(v) {
 
 export default function RecipeForm({ mode = "create", initial, onSaved, onCancel }) {
   const t = useTranslations("recipes.form");
+  // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
+  const tError = useTranslations("error");
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -138,7 +140,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       } else if (typeof detail === "string") {
         setError(detail);
       } else {
-        setError(t("errors.generic"));
+        setError(tError("generic"));
       }
     } finally {
       setSubmitting(false);

@@ -80,6 +80,8 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
  */
 export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
   const t = useTranslations("reviews");
+  // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
+  const tError = useTranslations("error");
   const locale = useLocale();
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
@@ -174,7 +176,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      setError(err.response?.data?.detail || tError("generic"));
     } finally {
       setSubmitting(false);
     }

@@ -7,6 +7,8 @@ import { useAdminAction } from "@/lib/use-admin-action";
 // UIS Pattern A hook (MEH-228): double-submit lock + error surface + reset.
 vi.mock("@/lib/toast", () => ({ showToast: { error: vi.fn() } }));
 vi.mock("@/lib/errors", () => ({ errorMessage: (e) => `mapped:${e.message}` }));
+// MEH-848: the hook now reads useTranslations("error") for errorMessage copy.
+vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
 
 function deferred() {
   let resolve, reject;
