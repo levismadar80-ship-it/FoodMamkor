@@ -125,7 +125,7 @@
       }
     },
     "verifyEmail": {
-      "loading_title": "מאמתת...",
+      "loading_title": "באימות...",
       "loading_subtitle": "אנא המתיני",
       "fallback_loading": "בטעינה...",
       "success_title": "האימייל אומת בהצלחה!",
@@ -755,7 +755,7 @@
       "servings_label": "מספר מנות",
       "image_label": "תמונה",
       "image_remove": "הסירי תמונה",
-      "image_uploading": "מעלה...",
+      "image_uploading": "בהעלאה...",
       "image_upload": "העלאת תמונה",
       "related_products_label": "מוצרים קשורים",
       "related_products_hint": "(מתכון מקדם מוצרים שלך)",
@@ -839,13 +839,13 @@
       "quantity_label": "כמות",
       "phone_label": "טלפון ליצירת קשר",
       "phone_placeholder": "050-1234567",
-      "submitting": "מצרפת...",
+      "submitting": "בצירוף...",
       "submit_join": "אני רוצה להצטרף!",
       "submit_login": "כניסה להצטרפות",
       "login_required": "יש להתחבר כדי להצטרף לקבוצת רכש",
       "committed_confirm": "✅ הצטרפת לקבוצת רכש זו",
       "committed_units": " ({count} יחידות)",
-      "cancelling": "מבטלת...",
+      "cancelling": "בביטול...",
       "cancel_cta": "בטלי את ההצטרפות",
       "cancel_confirm": "לבטל את ההצטרפות?",
       "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
@@ -1274,7 +1274,7 @@
         },
         "submit_create": "צור עסק",
         "submit_update": "שמרו שינויים",
-        "uploading": "מעלה...",
+        "uploading": "בהעלאה...",
         "sections": {
           "basic": "פרטי בסיס",
           "categories_tags": "קטגוריות ותגיות",
@@ -1906,7 +1906,7 @@
       "filter_city_label": "חיפוש לפי עיר",
       "filter_city_placeholder": "שם עיר או יישוב",
       "loading_events": "טוענים אירועים...",
-      "loading_experiences": "טוענים חוויות...",
+      "loading_experiences": "טעינת חוויות...",
       "empty_events_title": "אין כאן אירועים שתואמים לסינון — עדיין",
       "empty_events_body": "נסו להרחיב את האזור, או לנקות את הקטגוריה. שווה לבדוק שוב בקרוב",
       "empty_events_cta": "נקו את הסינון",
@@ -2199,7 +2199,7 @@
       "aria_label": "בחירת עיר",
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
-      "geo_loading": "מחפשת...",
+      "geo_loading": "בחיפוש...",
       "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
       "current_location_fallback": "מיקום נוכחי",
       "skip": "דלגי לעכשיו",
@@ -2664,7 +2664,7 @@
       "title": "כרטיס אינסטגרם מוכן",
       "generating": "מייצר",
       "download": "הורד",
-      "uploading": "מעלה...",
+      "uploading": "בהעלאה...",
       "save_cloudinary": "שמרו ל-Cloudinary",
       "copy_caption": "העתיקי caption",
       "copied": "✅ הועתק!"
@@ -3312,7 +3312,7 @@
         "code_label": "קוד אימות",
         "code_placeholder": "קוד בן 6 ספרות",
         "confirm_cta": "אמתי",
-        "confirming": "מאמתת...",
+        "confirming": "באימות...",
         "success": "הטלפון אומת! העסק הועבר לסקירת הצוות.",
         "error_invalid": "קוד שגוי או שפג תוקפו. נסו שוב.",
         "error_no_phone": "לא נמצא מספר טלפון בפרופיל. הוסיפי מספר טלפון ואז אמתי.",
@@ -3549,7 +3549,7 @@
       "field_image_placeholder": "https://res.cloudinary.com/...",
       "field_registration_url_label": "לינק הרשמה חיצוני (אופציונלי)",
       "field_registration_url_placeholder": "https://...",
-      "submit_publishing": "מפרסמת...",
+      "submit_publishing": "בפרסום...",
       "submit": "פרסמו אירוע",
       "cancel": "ביטול",
       "error_generic": "שגיאה ביצירת האירוע — נסו שוב.",
@@ -3658,13 +3658,13 @@
         "image_alt": "תמונה",
         "image_remove": "הסר",
         "image_upload_cta": "העלי תמונה",
-        "image_uploading": "מעלה..."
+        "image_uploading": "בהעלאה..."
       },
       "save_edit_cta": "שמרי שינויים",
       "save_edit_saving": "בשמירה...",
       "cancel_edit_cta": "בטלי",
       "add_submit_cta": "הוסיפי מוצר",
-      "add_submitting": "מוסיפה...",
+      "add_submitting": "בהוספה...",
       "card": {
         "edit_aria_template": "ערכי {name}",
         "delete_aria_template": "מחקי {name}"
@@ -3698,7 +3698,7 @@
         "body": "מבטלת את כל הסשנים הפעילים ומחדשת את האסימון — כולל המכשיר הנוכחי.",
         "confirm_prompt": "לאשר יציאה מכל המכשירים?",
         "confirm_submit": "כן, יציאה",
-        "confirm_submitting": "מתנתקת..."
+        "confirm_submitting": "בהתנתקות..."
       },
       "danger_zone": {
         "heading": "מחיקת חשבון",
