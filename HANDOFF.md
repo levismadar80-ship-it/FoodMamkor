@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-849 /about Benefits re-angle (Option B) — DRAFT PR
+
+Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n swap, one PR → staging, DRAFT.** Resolves the Benefits↔Values near-verbatim dup on /about via Option B (Sapir 17/06, copy LOCKED): Benefits → discovery·convenience·local-economy; Values stays = criteria.
+- **Done:** swapped the 6 `about.consumer.benefits.{local,trust,community}.{title,body}` values in `he.json` (heading "למה מהמקור" + keys unchanged) → `מה שלא הכרת` / `הכל במקום אחד` / `קנייה שתומכת`; `en.json` = HE-mirror of the same strings. CHANGELOG + HANDOFF updated.
+- **Gates green:** build (/about + / SSG, 0 err), ESLint 0 errors, he+en JSON-valid, מתווכים/מגזין 0 in changed lines. Screenshots mobile-375 + desktop captured (benefits band renders 01/02/03 with the new copy).
+- **Locked / do-NOT-touch:** "בעלי עסקים" in `community.body` = deliberate generic-plural (Sapir) — never convert to feminine in a future audit; reader-address stays feminine ("שתגלי"). `AboutClient.jsx` / Values / Comparison / tokens untouched.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge. **TODO i18n EN** — en.json benefits values are HE-mirror (per MEH-472).
+- **2 files only** (he.json + en.json). No backend, no JSX, no tokens.
+
 ## 2026-06-17 — MEH-847 S7 Chunk B wizard skeleton split — ✅ MERGED (#1203)
 
 **Merged to staging (`e4e985a`, squash, Refs MEH-132).** Keystone of the S7 3→5 re-architecture. `RegisterProducerClient.jsx` only; structural, freeze byte-identical. **B1** STEP enum (single source for ~16 literals, behavior-identical) → **B2** split step-2 into DETAILS(name+phone) / CATEGORY(CategorySelector+license) / STORY(description **relocated** + declarations gate + submit) + nav shell (free-advance) + stepper array expanded. OAuth/upgrade→DETAILS, submit→CONFIRM(5), declarations gate + confirmation split unchanged. Build green; the only red = non-required `language-toggle` Playwright flake. Sapir merged directly (CC was GitHub-API rate-limited mid-merge).
