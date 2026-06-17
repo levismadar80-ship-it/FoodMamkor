@@ -1,25 +1,13 @@
-"""
-Module:   test_category_popular_drift
-Purpose:  Drift-guard — every "popular" category the register CategorySelector
-          highlights with a hand-drawn glyph must still exist as a real DB
-          category name. A rename in seed_data.py that orphans a popular chip
-          would otherwise silently fall back to the generic Leaf icon with no
-          error; this turns that silent degradation into a red test.
-Does NOT: import the frontend (POPULAR is a JS literal — not reachable from
-          pytest). POPULAR_NAMES below is a deliberate mirror of
-          frontend/components/CategorySelector.jsx:32-37 — the same accepted
-          pattern as frontend/lib/license-required-categories.js (Hebrew name
-          literals mirroring the backend source of truth).
-Related:  backend/seed_data.py:9 (CATEGORIES — source of truth);
-          frontend/components/CategorySelector.jsx:31-38 (POPULAR).
-History:  MEH-831 (POPULAR re-scope → resolution (c): backend drift-guard).
-"""
+# MEH-831: drift-guard for the register CategorySelector POPULAR chips.
+# POPULAR (a frontend literal) highlights 6 categories by Hebrew name; a rename
+# in seed_data.py that orphans one would silently fall back to the Leaf glyph.
+# Asserting POPULAR_NAMES ⊆ seed_data.CATEGORIES turns that into a red test.
 
 from seed_data import CATEGORIES
 
-# Mirror of CategorySelector.jsx POPULAR[].name. Source of truth =
-# seed_data.CATEGORIES; keep this list in sync with the frontend if the
-# popular set ever changes.
+# POPULAR_NAMES mirrors CategorySelector.jsx:32-37 (accepted literal-mirror
+# pattern, cf. lib/license-required-categories.js). seed_data.CATEGORIES is the
+# enforced source of truth — this test fails if any name drifts out of it.
 POPULAR_NAMES = [
     "חלב וגבינות",
     "לחמים ואפייה",
