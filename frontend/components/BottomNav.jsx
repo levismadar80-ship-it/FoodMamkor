@@ -19,10 +19,14 @@ import AccountSheet from "@/components/AccountSheet";
  *
  * Replaces the MEH-20 full-width bottom bar with the signature floating cream
  * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-843:
- * the per-tab solid-green highlight became a sliding green-tint indicator
- * (framer shared-layout, layoutId="navIndicator" across the 3 route tabs only)
- * + Phosphor fill-on-active + a 4px dot + 11px DM Sans labels. The account tab
- * mirrors the same quiet tint statically (no layoutId — it isn't a route).
+ * the per-tab solid-green highlight became a green-tint indicator across the 3
+ * route tabs + Phosphor fill-on-active + 11px DM Sans labels. MEH-852: the
+ * indicator is now a SINGLE nav-level capsule that measures the active tab's
+ * rect and animates left+width with a DIRECTIONAL liquid-stretch (leading edge
+ * springs snappier than width → it elongates along the travel path, then
+ * settles; per ADR-023). The active dot was removed — tint + green ink + filled
+ * icon already identify the active tab. The account tab mirrors the same quiet
+ * tint statically (not on the indicator track — it isn't a route).
  *
  * The account tab is NOT a route — it toggles the warm-dark AccountSheet
  * (favorites / settings / language / logout + the quiet "יש לך בית עסק?"
@@ -100,23 +104,43 @@ export default function BottomNav() {
     { id: "about", href: "/about", Icon: Flower, label: t("nav.about") },
   ];
 
-  // MEH-843: positioning context (`relative`) for the absolute tint capsule +
-  // dot. Active = green ink over the quiet bg-primary/10 capsule; idle = muted.
+  // MEH-852: single directional liquid-stretch indicator. A nav-level capsule
+  // (not a per-tab layoutId) measures the ACTIVE route tab's rect and animates
+  // left+width — the leading edge springs snappier than width, so it elongates
+  // along the travel path then contracts (ADR-023). RTL-safe: offsetLeft/Width
+  // are real measured rects, direction-agnostic. Re-measures on resize.
+  const navRef = useRef(null);
+  const tabRefs = useRef([]);
+  const [indicator, setIndicator] = useState(null);
+  const activeRouteIndex = destinations.findIndex((d) => isActive(d.href));
+  useEffect(() => {
+    const measure = () => {
+      const el = tabRefs.current[activeRouteIndex];
+      const nav = navRef.current;
+      if (!el || !nav) return setIndicator(null);
+      setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+    measure();
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [activeRouteIndex]);
+
+  // Active = green ink (text-primary) over the shared tint indicator; idle =
+  // muted. `relative` keeps icon/label (z-10) above the z-0 capsule.
   const tabCls = (active) =>
     [
-      "relative w-full min-w-[64px] min-h-[56px] flex flex-col items-center justify-center gap-[3px]",
+      "relative w-full min-w-[64px] min-h-[60px] flex flex-col items-center justify-center gap-[3px]",
       "rounded-full px-1 py-1.5 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       active ? "text-primary" : "text-fg-muted",
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
   const labelCls = "relative z-10 font-body text-[11px] font-medium leading-none";
 
-  // MEH-843: 4px active dot, absolute bottom-center so it adds zero layout shift
-  // between active (with dot) and idle (without) tabs.
-  // rtl-ok: left-1/2 -translate-x-1/2 = direction-neutral horizontal-center idiom.
-  const dotCls = "absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary z-10 pointer-events-none";
-  const dot = <span aria-hidden="true" className={dotCls} />;
-  // Static tint capsule for the account tab (no layoutId — not on the route track).
+  // Static tint capsule for the account tab (not on the route track — the route
+  // tabs share the single MEH-852 liquid-stretch indicator instead).
   const capsuleCls = "absolute inset-0 rounded-full bg-primary/10 z-0 pointer-events-none";
 
   return (
@@ -139,16 +163,41 @@ export default function BottomNav() {
             globals.css) replaces the opaque bg-background + border; shadow kept.
             backdrop-filter is never animated — the chunk-2 hide is transform-only. */}
         <nav
+          ref={navRef}
           aria-label={t("nav.mobile_label")}
-          className="w-full max-w-[343px] flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
+          className="relative w-full max-w-[300px] flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
         >
+          {/* MEH-852: single directional liquid-stretch indicator for the active
+              route tab (replaces the per-tab layoutId capsule). Leading edge
+              (left) springs snappier than width → elongates along travel, then
+              settles. prefers-reduced-motion → instant (MotionConfig, layout.js).
+              rtl-ok: left/width are measured real rects (offsetLeft/offsetWidth),
+              direction-agnostic — not physical Tailwind classes. */}
+          {indicator && (
+            <motion.div
+              aria-hidden="true"
+              className="absolute top-1.5 bottom-1.5 rounded-full bg-primary/10 z-0 pointer-events-none"
+              initial={false}
+              animate={{ left: indicator.left, width: indicator.width }}
+              transition={{
+                left: { type: "spring", stiffness: 700, damping: 34, mass: 1 },
+                width: { type: "spring", stiffness: 320, damping: 30, mass: 1 },
+              }}
+            />
+          )}
           {destinations.map((tab, idx) => {
             const active = isActive(tab.href);
             const Icon = tab.Icon;
             // Onboarding step 2 → map tab (idx 1).
             const showStep2 = idx === 1 && onboardStep === 2;
             return (
-              <div key={tab.id} className="relative flex-1 flex">
+              <div
+                key={tab.id}
+                ref={(el) => {
+                  tabRefs.current[idx] = el;
+                }}
+                className="relative flex-1 flex"
+              >
                 {showStep2 && (
                   <OnboardingTip
                     show
@@ -163,17 +212,8 @@ export default function BottomNav() {
                   className={tabCls(active)}
                   aria-current={active ? "page" : undefined}
                 >
-                  {/* MEH-843: shared-layout indicator — slides between the active
-                      route tab via layoutId; reduced-motion handled globally by
-                      <MotionConfig reducedMotion="user"> (layout.js). */}
-                  {active && (
-                    <motion.div
-                      layoutId="navIndicator"
-                      transition={{ type: "spring", stiffness: 520, damping: 32, mass: 1 }}
-                      className={capsuleCls}
-                      aria-hidden="true"
-                    />
-                  )}
+                  {/* MEH-852: the active tint is the shared nav-level indicator
+                      above — no per-tab capsule here anymore. */}
                   <Icon
                     size={22}
                     weight={active ? "fill" : "regular"}
@@ -181,7 +221,6 @@ export default function BottomNav() {
                     className="relative z-10"
                   />
                   <span className={labelCls}>{tab.label}</span>
-                  {active && dot}
                 </Link>
               </div>
             );
@@ -231,7 +270,6 @@ export default function BottomNav() {
                 />
               )}
               <span className={labelCls}>{t("nav.account")}</span>
-              {sheetOpen && dot}
             </button>
           </div>
         </nav>
