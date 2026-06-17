@@ -5,6 +5,19 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-789 nav refinement (MEH-843) — ✅ ALL 4 PRs MERGED
+
+**All four merged to staging in brand-first order:** #1198 MEH-842/ADR-023 brand foundation (`d484efe`) → #1193 chunk 1 sliding indicator + spring (`9f0bd21`) → #1202 chunk 2 hide-on-scroll (`008c454`) → #1204 chunk 3 frosted glass (`d009b87`, `.nav-pill-glass`). BottomNav now: a tinted capsule springs between the 3 route tabs (ADR-023's single sanctioned spring), the pill hides on scroll-down / reveals on scroll-up, and the shell is a frosted warm-glass surface with opaque + reduced-transparency fallbacks. Each chunk: HIGH-RISK central → `/adversarial-review` (0 blockers) + Sapir QA + DRAFT→merge.
+
+**Open / next:**
+- **Sapir mobile QA on staging** — verify the full nav stack together, esp. chunk-3 glass on a **CPU-throttled profile**: no blur jank during the hide-slide; `prefers-reduced-transparency`→opaque; no-`backdrop-filter` browser→opaque fallback. If blur janks → lower/drop it (chunk-3 stop-condition).
+- **MEH-843 ticket** — PRs were "Part of MEH-789" (not Closes); close MEH-843 manually if the refinement is considered done.
+- **Known minor (documented, self-healing):** if the body scrolls behind an open AccountSheet, the pill can read hidden after the sheet closes until the next scroll-up — out of spec scope, no fix shipped.
+
+**Process notes (this session):**
+- GitHub API rate-limit drained mid-session (heavy CI status polling) → the final merges (#1202/#1204) went through Sapir's UI; CC's merge calls were 429-blocked. (Same condition the MEH-847 entry below notes.)
+- **Stale `origin/staging` ref scare:** a `git fetch` rode inside a denied compound Bash command and silently didn't run, making chunk 3 (#1204) momentarily look absent from staging. A clean standalone `git fetch origin staging` (`086b78e..1b1575a`) confirmed it present. Lesson: re-fetch standalone before trusting a "missing commit" negative (CLAUDE.md known-bug-pattern — verify negatives against fresh git).
+
 ## 2026-06-17 — MEH-847 S7 Chunk B wizard skeleton split — ✅ MERGED (#1203)
 
 **Merged to staging (`e4e985a`, squash, Refs MEH-132).** Keystone of the S7 3→5 re-architecture. `RegisterProducerClient.jsx` only; structural, freeze byte-identical. **B1** STEP enum (single source for ~16 literals, behavior-identical) → **B2** split step-2 into DETAILS(name+phone) / CATEGORY(CategorySelector+license) / STORY(description **relocated** + declarations gate + submit) + nav shell (free-advance) + stepper array expanded. OAuth/upgrade→DETAILS, submit→CONFIRM(5), declarations gate + confirmation split unchanged. Build green; the only red = non-required `language-toggle` Playwright flake. Sapir merged directly (CC was GitHub-API rate-limited mid-merge).
