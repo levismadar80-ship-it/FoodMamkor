@@ -222,6 +222,10 @@ export default function MapPage() {
     />
   );
 
+  // MEH-826: "near you · {region}" subhead — prefer the user's city, fall back
+  // to the active city filter. Empty → subhead hidden (no dangling separator).
+  const mapRegion = userCityCtx.city || filters.cityFilter;
+
   return (
     <>
       {/* =================== DESKTOP (lg+) — split view =================== */}
@@ -246,8 +250,14 @@ export default function MapPage() {
             {filterChipsBar}
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-fg-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
+            <div className="flex items-start justify-between mb-3">
+              {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
+              <div>
+                <p className="text-xs text-fg-muted">{t("map.client.business_count", { count: filters.visibleProducers.length })}</p>
+                {mapRegion && (
+                  <p className="text-[11px] text-fg-muted mt-0.5">{t("map.client.subhead", { region: mapRegion })}</p>
+                )}
+              </div>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
