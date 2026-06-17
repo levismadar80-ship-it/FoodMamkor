@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-844 auth regression sentinels (tests-only, DRAFT PR)
+
+Branch `feature/meh-844-auth-sentinel-tests` off staging. Two vitest sentinels, **mocks only, zero production change**.
+- **Done:** `__tests__/LoginMinLengthSentinel.test.jsx` (password input has no `minLength` — guards MEH-835/418) + `__tests__/RegisterOAuthRedirect.test.jsx` (real `safeInternalRedirect` via OAuth `onSuccess`: `/favorites`→`/favorites`, `https://evil.com`→`/`, `//evil.com`→`/` — guards MEH-837/810).
+- **Gates:** vitest 623 pass (+4), ESLint 0 errors (2 warn-mode `consistent-function-scoping` on the repo-standard `useTranslations` mock).
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI.
+- Sibling of the open MEH-846 PR (#1199); independent branch off staging.
+
 ## 2026-06-16 — MEH-841 comparison home→/about + layout A + copy refresh (DRAFT PR)
 
 Branch `feature/meh-841-comparison-to-about` off staging. **Supersedes MEH-525** (placement + copy lock reopened, Sapir-approved). One PR → staging, DRAFT.
