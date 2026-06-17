@@ -20,6 +20,11 @@ import {
 } from "@/lib/license-required-categories";
 
 const DRAFT_KEY = "producer_registration_draft";
+// MEH-847 (S7 Chunk B): wizard step enum — single source for every step
+// literal so the planned 3→5 frame re-index (B2) resolves through one place.
+// B1 keeps the current 3-step mapping (account → business → confirm); the
+// numeric values are unchanged so behavior is byte-identical.
+const STEP = { ACCOUNT: 1, BUSINESS: 2, CONFIRM: 3 };
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
 // MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
@@ -67,11 +72,11 @@ function RegisterProducerPageBody() {
   // Wrapped in try/catch — localStorage can throw on quota / private-mode.
   const [step, setStep] = useState(() => {
     try {
-      if (typeof window !== "undefined" && localStorage.getItem("token")) return 2;
+      if (typeof window !== "undefined" && localStorage.getItem("token")) return STEP.BUSINESS;
     } catch {
       // private browsing / storage disabled — fall through to step 1
     }
-    return 1;
+    return STEP.ACCOUNT;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -128,7 +133,7 @@ function RegisterProducerPageBody() {
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
-    if (isUpgrade && step === 1) setStep(2);
+    if (isUpgrade && step === STEP.ACCOUNT) setStep(STEP.BUSINESS);
   }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-669: admins cannot register as producers. Backend rejects with
@@ -285,7 +290,7 @@ function RegisterProducerPageBody() {
       }
       // Non-upgrade: no token, no refreshUser. Step 3 renders the
       // inbox-check UI keyed on didUpgrade === false.
-      setStep(3);
+      setStep(STEP.CONFIRM);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
@@ -304,7 +309,7 @@ function RegisterProducerPageBody() {
 
   // Don't show step 1 (account form) until we know whether user is logged in —
   // prevents the flash of email/password inputs for already-authenticated users.
-  if (authLoading && step === 1) {
+  if (authLoading && step === STEP.ACCOUNT) {
     return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
   }
 
@@ -315,7 +320,7 @@ function RegisterProducerPageBody() {
         <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
 
         {/* MEH-143: logged-in upgrade banner */}
-        {isUpgrade && step < 3 && (
+        {isUpgrade && step < STEP.CONFIRM && (
           <div className="bg-green-50 border border-primary/30 rounded-md px-4 py-3 mb-4 text-sm text-text flex items-start gap-2">
             <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
@@ -325,7 +330,7 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
-        {showDraftBanner && step < 3 && (
+        {showDraftBanner && step < STEP.CONFIRM && (
           <div className="bg-green-50 border border-primary/20 rounded-md px-4 py-3 mb-4 flex items-center justify-between text-sm">
             <span className="text-text">{t("auth.register.producer.draft.prompt")}</span>
             <div className="flex gap-3">
@@ -335,9 +340,9 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
-        {step < 3 && !isUpgrade && (
+        {step < STEP.CONFIRM && !isUpgrade && (
           <div className="flex justify-center gap-4 mb-8">
-            {[1, 2].map((s) => (
+            {[STEP.ACCOUNT, STEP.BUSINESS].map((s) => (
               <span
                 key={s}
                 dir="ltr"
@@ -357,7 +362,7 @@ function RegisterProducerPageBody() {
         )}
 
         {/* Step 1: Account */}
-        {step === 1 && (
+        {step === STEP.ACCOUNT && (
           <div className="space-y-4">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
 
@@ -366,7 +371,7 @@ function RegisterProducerPageBody() {
             <ProducerOAuthButtons
               onSuccess={async () => {
                 await refreshUser();
-                setStep(2);
+                setStep(STEP.BUSINESS);
               }}
               onError={(msg, meta) => {
                 if (meta?.redirectToLogin) {
@@ -425,7 +430,7 @@ function RegisterProducerPageBody() {
                   return;
                 }
                 setStepError("");
-                setStep(2);
+                setStep(STEP.BUSINESS);
               }}
               className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition"
             >
@@ -435,7 +440,7 @@ function RegisterProducerPageBody() {
         )}
 
         {/* Step 2: Business basics */}
-        {step === 2 && (
+        {step === STEP.BUSINESS && (
           <div className="space-y-4">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
@@ -693,7 +698,7 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(1); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+                <button onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               )}
               <button
                 onClick={() => {
@@ -756,7 +761,7 @@ function RegisterProducerPageBody() {
             existing "הצטרפת!" success UI with token-backed dashboard CTA.
             Non-upgrade path renders the OWASP-aligned inbox-check screen
             — identical body across new-email / collision branches. */}
-        {step === 3 && didUpgrade && (
+        {step === STEP.CONFIRM && didUpgrade && (
           <div className="text-center py-8">
             <div className="mb-4 flex justify-center">
               <CheckCircle size={64} weight="fill" className="text-primary" aria-hidden="true" />
@@ -805,7 +810,7 @@ function RegisterProducerPageBody() {
             </div>
           </div>
         )}
-        {step === 3 && !didUpgrade && (
+        {step === STEP.CONFIRM && !didUpgrade && (
           <div className="text-center py-8">
             <div className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
               <EnvelopeSimple size={32} className="text-fg-muted" aria-hidden="true" />
