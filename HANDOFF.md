@@ -15,6 +15,28 @@ Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n s
 - **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge.
 - **1 code file only** (`he.json`). No en.json, no backend, no JSX, no tokens.
 
+## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
+
+Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
+- **Done (A):** `lib/errors.js` `errorMessage(err)`→`errorMessage(err, t)` (`error`-scoped translator); 9 status sentences → `error.mapper.*` (he+en, verbatim); 2 importers + `showErrorToast` updated; `errors.test.js` rewritten to key contract. **(B):** 11 duplicate `"משהו השתבש, נסו שוב"` keys collapsed → `error.generic`; 10 consumers repointed (incl. central `ProducerCard`, auth `Login`/`Register`); 11 keys deleted both locales (orphan `group_buys.follow.error_generic` + 2 emptied `errors:{}` removed). `ProducerCard.test.jsx` + `useAdminAction.test.js` mocks updated.
+- **Spec correction (meta-pattern #1):** the 3 "broken refs" (GroupBuyDetail:134/RecipeForm:141/dashboard-group-buys:54) verified **present + correct in both locales** → plain dedup, **NOT** labeled bugfix. No `error.retry` added; `error.try_again` untouched.
+- **Gates green:** build (all SSG), vitest 625 pass, ESLint 0 errors, en-locale canary green, he/en parity intact. Adversarial-review passed (no dangling deleted-key refs).
+- **⚠️ Overlaps MEH-846 (#1199)** — both edit `lib/errors.js`+`he.json`. 2nd-to-merge resolves `lib/errors.js` toward the i18n version (846's plural-fix mooted by the move). Sequence with Sapir.
+- **Pending (Sapir):** mobile QA error toasts on the Vercel preview (login/register/card-favorite/review/group-buy) → mark ready + merge. No self-merge (Rule 23).
+
+## 2026-06-17 — MEH-789 nav refinement (MEH-843) — ✅ ALL 4 PRs MERGED
+
+**All four merged to staging in brand-first order:** #1198 MEH-842/ADR-023 brand foundation (`d484efe`) → #1193 chunk 1 sliding indicator + spring (`9f0bd21`) → #1202 chunk 2 hide-on-scroll (`008c454`) → #1204 chunk 3 frosted glass (`d009b87`, `.nav-pill-glass`). BottomNav now: a tinted capsule springs between the 3 route tabs (ADR-023's single sanctioned spring), the pill hides on scroll-down / reveals on scroll-up, and the shell is a frosted warm-glass surface with opaque + reduced-transparency fallbacks. Each chunk: HIGH-RISK central → `/adversarial-review` (0 blockers) + Sapir QA + DRAFT→merge.
+
+**Open / next:**
+- **Sapir mobile QA on staging** — verify the full nav stack together, esp. chunk-3 glass on a **CPU-throttled profile**: no blur jank during the hide-slide; `prefers-reduced-transparency`→opaque; no-`backdrop-filter` browser→opaque fallback. If blur janks → lower/drop it (chunk-3 stop-condition).
+- **MEH-843 ticket** — PRs were "Part of MEH-789" (not Closes); close MEH-843 manually if the refinement is considered done.
+- **Known minor (documented, self-healing):** if the body scrolls behind an open AccountSheet, the pill can read hidden after the sheet closes until the next scroll-up — out of spec scope, no fix shipped.
+
+**Process notes (this session):**
+- GitHub API rate-limit drained mid-session (heavy CI status polling) → the final merges (#1202/#1204) went through Sapir's UI; CC's merge calls were 429-blocked. (Same condition the MEH-847 entry below notes.)
+- **Stale `origin/staging` ref scare:** a `git fetch` rode inside a denied compound Bash command and silently didn't run, making chunk 3 (#1204) momentarily look absent from staging. A clean standalone `git fetch origin staging` (`086b78e..1b1575a`) confirmed it present. Lesson: re-fetch standalone before trusting a "missing commit" negative (CLAUDE.md known-bug-pattern — verify negatives against fresh git).
+
 ## 2026-06-17 — MEH-847 S7 Chunk B wizard skeleton split — ✅ MERGED (#1203)
 
 **Merged to staging (`e4e985a`, squash, Refs MEH-132).** Keystone of the S7 3→5 re-architecture. `RegisterProducerClient.jsx` only; structural, freeze byte-identical. **B1** STEP enum (single source for ~16 literals, behavior-identical) → **B2** split step-2 into DETAILS(name+phone) / CATEGORY(CategorySelector+license) / STORY(description **relocated** + declarations gate + submit) + nav shell (free-advance) + stepper array expanded. OAuth/upgrade→DETAILS, submit→CONFIRM(5), declarations gate + confirmation split unchanged. Build green; the only red = non-required `language-toggle` Playwright flake. Sapir merged directly (CC was GitHub-API rate-limited mid-merge).

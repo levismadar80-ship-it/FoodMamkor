@@ -14,7 +14,7 @@ vi.mock("next-intl", () => ({
       "producer.card.contact.email": "אימייל",
       "producer.card.favorites.saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
       "producer.card.favorites.login_cta": "התחברי",
-      "producer.card.favorites.error": "משהו השתבש, נסי שוב",
+      "error.generic": "משהו השתבש, נסו שוב",
       "producer.card.favorites.remove": "הסר ממועדפים",
       "producer.card.favorites.add": "הוסף למועדפים",
       "producer.card.favorites.aria": "שמירה",

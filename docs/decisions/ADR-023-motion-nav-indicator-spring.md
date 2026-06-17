@@ -14,6 +14,7 @@ Permit ONE restrained spring, scoped to the BottomNav active-indicator position 
 - recommended: framer `transition={{ type:"spring", stiffness:520, damping:32, mass:1 }}` (tune in QA); conservative fallback = tween `cubic-bezier(.34,1.4,.5,1)`
 - `prefers-reduced-motion` → instant (already global: CSS @media + `<MotionConfig reducedMotion="user">` — no extra work)
 - backdrop-filter is never animated (reuse the MEH-732 guardrail)
+- The indicator may additionally use a subtle DIRECTIONAL liquid-stretch during travel: it elongates along the travel axis between the old and new tab, then contracts to the target (animate position + width/scaleX with a restrained spring). Moderate intensity, tunable in QA. prefers-reduced-motion → instant, no stretch.
 
 Everywhere else stays no-spring: reveals (FadeInSection), buttons, cards, page/route transitions, hover — all keep fade+slide / `ease-quart`.
 
@@ -27,3 +28,4 @@ Everywhere else stays no-spring: reveals (FadeInSection), buttons, cards, page/r
 - Pure ease-out tween (no spring): on-policy but reads flat vs the IG/WA reference chosen.
 - Spring allowed globally: unbounded bounce risk; contradicts the editorial-calm DNA.
 - True iOS Liquid Glass motion: native-only, not web-reproducible.
+- SVG gooey/metaball stretch (true IG / iOS-26 Liquid-Glass look): rejected for web — animating an SVG filter on a moving element is GPU-heavy on mid-range Android and double-costs with the pill's existing backdrop-filter glass. The native effect is Apple-only (glassEffectID/GlassEffectContainer).

@@ -44,6 +44,8 @@ export default function AboutPage() {
   const tProcess = useTranslations("process");
   // MEH-841: comparison strip ported from home — sibling namespace, not consumer.*
   const tCompare = useTranslations("about.comparison");
+  // MEH-848: shared generic error copy (collapsed from about.consumer.contact.error_toast).
+  const tError = useTranslations("error");
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
@@ -61,7 +63,7 @@ export default function AboutPage() {
       setForm({ name: "", email: "", message: "" });
     } catch (error) {
       setContactStatus("error");
-      setContactMsg(error.response?.data?.detail || t("contact.error_toast"));
+      setContactMsg(error.response?.data?.detail || tError("generic"));
     }
   };
 

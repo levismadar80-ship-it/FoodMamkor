@@ -1817,6 +1817,15 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - [ ] **אין GPS** — `/he/map` בלי אישור מיקום (או דחייה) → אף כרטיס לא מציג שורת מרחק — תוצאה מצופה: השורה נעלמת בחן, שאר הכרטיס תקין
 - [ ] **/en** — אותו כרטיס באנגלית → המרחק עדיין בפורמט העברי המשותף (`formatDistance`), עקבי עם `ProducerCard`
 
+## MEH-848 — error toasts collapsed to error.generic (i18n refactor)
+
+11 הודעות שגיאה כלליות כפולות אוחדו למפתח אחד `error.generic`; `lib/errors.js` עבר ל-i18n. **Copy-only — הטקסט צריך להישאר זהה.** לבדוק שהטוסט/הודעת השגיאה עדיין מופיע בעברית תקינה (לא מפתח גולמי כמו `error.generic`).
+
+- [ ] **התחברות נכשלת** — `/he/login` עם פרטים שגויים → הודעת "משהו השתבש, נסו שוב" (או ה-detail מהשרת) — לא מחרוזת מפתח
+- [ ] **מועדף בכרטיס (ProducerCard)** — לחיצה על לב כשמנותקים/כשל רשת → טוסט "משהו השתבש, נסו שוב"
+- [ ] **שליחת ביקורת נכשלת** (`ReviewsSection`) + **קבוצת רכש** (`GroupBuyDetailClient`) → אותה הודעה כללית
+- [ ] **/en** — אותם מסכים באנגלית → "Something went wrong, try again" (לא מפתח גולמי, פריטי he/en זהים)
+
 ## /map list heading + subhead (MEH-826 Gap 3)
 
 שורת הספירה ברשימת ה-`/map` (desktop split-view) נושאת את הקופי הנעול + subhead "קרוב אליך · {region}" מתחתיה. ה-h1 הסמנטי ("מפת בתי עסק") נשאר.
