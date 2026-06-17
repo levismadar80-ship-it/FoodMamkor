@@ -20,11 +20,8 @@ import {
 } from "@/lib/license-required-categories";
 
 const DRAFT_KEY = "producer_registration_draft";
-// MEH-847 (S7 Chunk B): wizard step enum — single source for every step
-// literal so the planned 3→5 frame re-index (B2) resolves through one place.
-// B1 keeps the current 3-step mapping (account → business → confirm); the
-// numeric values are unchanged so behavior is byte-identical.
-const STEP = { ACCOUNT: 1, BUSINESS: 2, CONFIRM: 3 };
+// MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
+const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
 // MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
@@ -72,7 +69,7 @@ function RegisterProducerPageBody() {
   // Wrapped in try/catch — localStorage can throw on quota / private-mode.
   const [step, setStep] = useState(() => {
     try {
-      if (typeof window !== "undefined" && localStorage.getItem("token")) return STEP.BUSINESS;
+      if (typeof window !== "undefined" && localStorage.getItem("token")) return STEP.DETAILS;
     } catch {
       // private browsing / storage disabled — fall through to step 1
     }
@@ -133,7 +130,7 @@ function RegisterProducerPageBody() {
 
   // Sync step when auth resolves (user may load after initial render).
   useEffect(() => {
-    if (isUpgrade && step === STEP.ACCOUNT) setStep(STEP.BUSINESS);
+    if (isUpgrade && step === STEP.ACCOUNT) setStep(STEP.DETAILS);
   }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // MEH-669: admins cannot register as producers. Backend rejects with
@@ -342,7 +339,7 @@ function RegisterProducerPageBody() {
 
         {step < STEP.CONFIRM && !isUpgrade && (
           <div className="flex justify-center gap-4 mb-8">
-            {[STEP.ACCOUNT, STEP.BUSINESS].map((s) => (
+            {[STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].map((s) => (
               <span
                 key={s}
                 dir="ltr"
@@ -371,7 +368,7 @@ function RegisterProducerPageBody() {
             <ProducerOAuthButtons
               onSuccess={async () => {
                 await refreshUser();
-                setStep(STEP.BUSINESS);
+                setStep(STEP.DETAILS);
               }}
               onError={(msg, meta) => {
                 if (meta?.redirectToLogin) {
@@ -430,7 +427,7 @@ function RegisterProducerPageBody() {
                   return;
                 }
                 setStepError("");
-                setStep(STEP.BUSINESS);
+                setStep(STEP.DETAILS);
               }}
               className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition"
             >
@@ -440,7 +437,7 @@ function RegisterProducerPageBody() {
         )}
 
         {/* Step 2: Business basics */}
-        {step === STEP.BUSINESS && (
+        {step === STEP.DETAILS && (
           <div className="space-y-4">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
@@ -454,78 +451,6 @@ function RegisterProducerPageBody() {
               className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
               dir="rtl"
             />
-
-            {/* MEH-532: description is moved to the prominent slot directly
-                below the business name. Submit is never blocked on it —
-                the "אני אכתוב אחר כך" link fills a default and disables the
-                textarea so motivated sellers add a real story while everyone
-                else still ships. localStorage flag surfaces a future
-                dashboard reminder. */}
-            <div>
-              <label
-                htmlFor="producer-description"
-                className="block text-sm font-medium text-text mb-1 text-start"
-              >
-                {t("auth.register.producer.fields.description_label")}
-              </label>
-              <p className="text-xs text-fg-muted mb-2 text-start">
-                {t("auth.register.producer.fields.description_hint")}
-              </p>
-              <textarea
-                id="producer-description"
-                value={form.description}
-                onChange={set("description")}
-                disabled={descriptionDisabled}
-                placeholder={descriptionPlaceholder}
-                rows={6}
-                className="w-full border rounded-md ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
-                dir="rtl"
-              />
-              {!descriptionDisabled ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // MEH-619: snapshot pre-click text so the matching
-                    // "ערוך תיאור" undo link can restore it.
-                    descriptionBeforeDisableRef.current = form.description || "";
-                    setAndSave((prev) => ({ ...prev, description: t("auth.register.producer.default_description") }));
-                    setDescriptionDisabled(true);
-                    try {
-                      localStorage.setItem(DESCRIPTION_PENDING_KEY, "true");
-                    } catch {
-                      // private browsing / storage disabled — flag is best-effort
-                    }
-                  }}
-                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
-                >
-                  {t("auth.register.producer.actions.write_later")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    // MEH-619: restore the pre-click description, re-enable
-                    // the textarea, drop the pending-flag so a future
-                    // dashboard-reminder surface doesn't treat this as still
-                    // pending. setAndSave persists the restored text back to
-                    // the localStorage draft in the same write.
-                    setAndSave((prev) => ({
-                      ...prev,
-                      description: descriptionBeforeDisableRef.current,
-                    }));
-                    setDescriptionDisabled(false);
-                    try {
-                      localStorage.removeItem(DESCRIPTION_PENDING_KEY);
-                    } catch {
-                      // private browsing / storage disabled — best-effort
-                    }
-                  }}
-                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
-                >
-                  {t("auth.register.producer.actions.edit_description")}
-                </button>
-              )}
-            </div>
 
             <div>
               <input
@@ -548,6 +473,22 @@ function RegisterProducerPageBody() {
               </p>
             </div>
 
+            <div className="flex gap-3">
+              {!isUpgrade && (
+                <button onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              )}
+              <button
+                onClick={() => setStep(STEP.CATEGORY)}
+                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
+              >
+                {t("auth.register.producer.actions.next")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === STEP.CATEGORY && (
+          <div className="space-y-4">
             <CategorySelector
               categories={categories}
               selectedIds={form.category_ids}
@@ -644,6 +585,92 @@ function RegisterProducerPageBody() {
               </button>
             )}
 
+            <div className="flex gap-3">
+              <button onClick={() => { setStepError(""); setError(""); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              <button
+                onClick={() => setStep(STEP.STORY)}
+                className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
+              >
+                {t("auth.register.producer.actions.next")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === STEP.STORY && (
+          <div className="space-y-4">
+            {/* MEH-532: description is moved to the prominent slot directly
+                below the business name. Submit is never blocked on it —
+                the "אני אכתוב אחר כך" link fills a default and disables the
+                textarea so motivated sellers add a real story while everyone
+                else still ships. localStorage flag surfaces a future
+                dashboard reminder. */}
+            <div>
+              <label
+                htmlFor="producer-description"
+                className="block text-sm font-medium text-text mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.description_label")}
+              </label>
+              <p className="text-xs text-fg-muted mb-2 text-start">
+                {t("auth.register.producer.fields.description_hint")}
+              </p>
+              <textarea
+                id="producer-description"
+                value={form.description}
+                onChange={set("description")}
+                disabled={descriptionDisabled}
+                placeholder={descriptionPlaceholder}
+                rows={6}
+                className="w-full border rounded-md ps-3 pe-3 py-2 text-start min-h-[9rem] md:min-h-[12rem] disabled:bg-green-50 disabled:text-fg-muted disabled:cursor-not-allowed"
+                dir="rtl"
+              />
+              {!descriptionDisabled ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // MEH-619: snapshot pre-click text so the matching
+                    // "ערוך תיאור" undo link can restore it.
+                    descriptionBeforeDisableRef.current = form.description || "";
+                    setAndSave((prev) => ({ ...prev, description: t("auth.register.producer.default_description") }));
+                    setDescriptionDisabled(true);
+                    try {
+                      localStorage.setItem(DESCRIPTION_PENDING_KEY, "true");
+                    } catch {
+                      // private browsing / storage disabled — flag is best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
+                >
+                  {t("auth.register.producer.actions.write_later")}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    // MEH-619: restore the pre-click description, re-enable
+                    // the textarea, drop the pending-flag so a future
+                    // dashboard-reminder surface doesn't treat this as still
+                    // pending. setAndSave persists the restored text back to
+                    // the localStorage draft in the same write.
+                    setAndSave((prev) => ({
+                      ...prev,
+                      description: descriptionBeforeDisableRef.current,
+                    }));
+                    setDescriptionDisabled(false);
+                    try {
+                      localStorage.removeItem(DESCRIPTION_PENDING_KEY);
+                    } catch {
+                      // private browsing / storage disabled — best-effort
+                    }
+                  }}
+                  className="text-xs text-primary underline mt-1 hover:text-primary-dark"
+                >
+                  {t("auth.register.producer.actions.edit_description")}
+                </button>
+              )}
+            </div>
+
             {/* MEH-759 Chunk C: three separate affirmative acts — ToS/privacy
                 consent (chrome, plural), the binding licensing declaration
                 (first-person), and the conditional grower declaration. ADR-014
@@ -697,9 +724,7 @@ function RegisterProducerPageBody() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
-              {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
-              )}
+              <button onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
                 onClick={() => {
                   // Clear stale error first so the next failure renders a
