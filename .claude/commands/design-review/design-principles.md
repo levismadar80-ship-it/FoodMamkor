@@ -90,7 +90,7 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Visible focus state on every interactive element (not default browser outline — branded ring).
 - [ ] Hover states on desktop feel instant (≤ 150ms, ease-out).
 - [ ] Transitions 150–300ms with `ease-in-out`. No bouncy/spring animations except for Ken Burns hero.
-- [ ] Exception (ADR-023): the BottomNav active-indicator may use ONE restrained spring (≤~10% overshoot, ~200–260ms); prefers-reduced-motion → instant. No other element may spring.
+- [ ] Exception (ADR-023): the BottomNav active-indicator may use ONE restrained spring (≤~10% overshoot, ~200–260ms), and may include a subtle directional liquid-stretch during travel (ADR-023; no gooey/metaball filter); prefers-reduced-motion → instant. No other element may spring.
 - [ ] Destructive actions (delete account, reject report) require confirmation.
 - [ ] Loading states — skeleton for lists, spinner for single-component async actions.
 - [ ] Empty states — illustration or emoji + single-sentence feminine copy + primary CTA.

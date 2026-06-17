@@ -953,7 +953,8 @@
         "label": "סנן לפי עיר",
         "placeholder": "חפשי עיר..."
       },
-      "business_count": "{count, plural, =0 {אין בתי עסק} one {בית עסק אחד} two {שני בתי עסק} other {# בתי עסק}}",
+      "business_count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}",
+      "subhead": "קרוב אליך · {region}",
       "sort": {
         "aria_label": "מיון בתי עסק",
         "nearest": "קרוב אליי",
