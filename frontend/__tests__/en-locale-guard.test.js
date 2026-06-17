@@ -15,28 +15,10 @@ const HEBREW = /[֐-׿]/; // U+0590–U+05FF
 // not display copy; it legitimately appears inline in otherwise-English strings.
 const BRAND = "מהמקור";
 
-const BASELINE = new Set([
-  "nav.add_business_short",
-  "home.hero.cta_primary",
-  "home.hero.how_it_works",
-  "home.featured.eyebrow",
-  "home.featured.heading",
-  "home.featured.cta_meet",
-  "home.featured.cta_write",
-  "home.comparison_teaser.eyebrow",
-  "home.comparison_teaser.heading",
-  "home.comparison_teaser.cta",
-  "home.categories.eyebrow",
-  "producer.card.favorites.aria",
-  "about.comparison.eyebrow",
-  "about.comparison.heading",
-  "about.comparison.row1_brand",
-  "about.comparison.row1_super",
-  "about.comparison.row2_brand",
-  "about.comparison.row2_super",
-  "about.comparison.row3_brand",
-  "about.comparison.row3_super",
-]);
+// BASELINE — pre-existing leaks that were temporarily allowlisted. MEH-840
+// Part B swept all 20 to English, so the baseline is now empty: any Hebrew in
+// en.json (the brand name aside) fails the guard outright.
+const BASELINE = new Set([]);
 
 function hebrewKeys(obj, prefix = "") {
   const out = [];
