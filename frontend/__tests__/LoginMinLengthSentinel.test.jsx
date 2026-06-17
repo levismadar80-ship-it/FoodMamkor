@@ -55,10 +55,8 @@ describe("MEH-844 sentinel — /login password input has no minLength floor", ()
     expect(pw).toBeRequired();
 
     // The regression: MEH-835/MEH-418. A minLength here re-breaks legacy login.
-    // Assert both spellings: React's `minLength` prop emits the lowercase
-    // `minlength` DOM attribute; jest-dom normalises case but the literal
-    // lowercase check removes any ambiguity for future readers.
-    expect(pw).not.toHaveAttribute("minLength");
+    // React's `minLength` prop emits the lowercase `minlength` DOM attribute;
+    // assert the literal stored form.
     expect(pw).not.toHaveAttribute("minlength");
   });
 });

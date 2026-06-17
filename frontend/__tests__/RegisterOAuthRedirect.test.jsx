@@ -84,7 +84,9 @@ describe("MEH-844 — /register OAuth success honors clamped ?redirect= (real sa
   });
 
   function clickGoogleWith(redirect) {
-    paramsRef.current = new URLSearchParams(`redirect=${redirect}`);
+    // Object form percent-encodes the value regardless of content (a future
+    // value containing & or = won't split into extra params).
+    paramsRef.current = new URLSearchParams({ redirect });
     render(<RegisterClient />);
     fireEvent.click(screen.getByTestId("google-oauth"));
   }
