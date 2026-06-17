@@ -703,7 +703,7 @@
         "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
-      "aria": "Save"
+        "aria": "Save"
       },
       "aria": {
         "image_missing": "{name} — image missing",
