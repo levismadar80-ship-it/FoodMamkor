@@ -5,7 +5,7 @@ import Link from "next/link";
 // home-tab match fires on the localized homepage. next/navigation's is
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
 import { usePathname } from "@/i18n/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
@@ -31,8 +31,9 @@ import AccountSheet from "@/components/AccountSheet";
  *
  * Transitional: the legacy hamburger drawer still lives in Header.jsx until
  * the Header minimal-top PR (MEH-789 PR-B), so secondary items are briefly
- * reachable from both. Bottom-pill hide-on-scroll (reuse MEH-734) is deferred
- * to a follow-up — this PR is the visual/structural port.
+ * reachable from both. MEH-789 (chunk 2): the pill hides on scroll-down /
+ * reveals on scroll-up (rAF + 60px threshold, mirrored inline from
+ * Header.jsx:91-116), staying visible while the account sheet is open.
  */
 export default function BottomNav() {
   const pathname = usePathname();
@@ -44,6 +45,41 @@ export default function BottomNav() {
   // only on open-state transitions — an inline arrow would re-fire it on every
   // re-render while the sheet is open and bounce keyboard focus.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
+
+  // MEH-789 (chunk 2): hide-on-scroll-down / reveal-on-scroll-up for the
+  // floating pill. State + rAF/last-Y refs mirror Header.jsx:57-64.
+  const [hidden, setHidden] = useState(false);
+  const rafRef = useRef(null);
+  const lastYRef = useRef(0);
+
+  // MEH-789 (chunk 2): rAF-throttled scroll listener mirrored inline from
+  // Header.jsx:91-116 (MEH-29/734). Intentional copy — a shared hook
+  // extraction is a separate ticket; do NOT DRY this against Header here.
+  // Down past the 60px threshold hides the pill; any scroll up — or being
+  // near the top — reveals. The sheet-open guard is applied at render
+  // (hidden && !sheetOpen), so this listener stays pure and stable ([] deps).
+  useEffect(() => {
+    const onScroll = () => {
+      if (rafRef.current) return;
+      rafRef.current = window.requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (y < 60) setHidden(false);
+        else if (y > lastYRef.current) setHidden(true);
+        else if (y < lastYRef.current) setHidden(false);
+        lastYRef.current = y;
+        rafRef.current = null;
+      });
+    };
+    // Seed last-Y with the restored offset so a reload / back-forward at a
+    // scrolled position isn't read as a downward delta (mirrors MEH-734).
+    lastYRef.current = window.scrollY;
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   // MEH-669: hide the business entry from producers + admins (defense-in-depth;
   // auth.py:432 is the server authority). Threaded into the sheet as showBiz.
@@ -87,7 +123,16 @@ export default function BottomNav() {
     <>
       {/* Floating shell — centers the pill, reserves safe-area + 16px gutter. */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-4"
+        className={[
+          "md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-4",
+          // MEH-789 (chunk 2): transform-only slide, never backdrop-filter.
+          // motion-reduce → instant (mirrors Header MEH-734). translate-y is
+          // vertical (direction-neutral — no RTL concern); 120% clears the
+          // pill + drop-shadow + safe-area inset. Held visible while the sheet
+          // is open so the account control never slides off under its own sheet.
+          "transition-transform duration-base ease-quart motion-reduce:transition-none",
+          hidden && !sheetOpen ? "translate-y-[120%]" : "translate-y-0",
+        ].join(" ")}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
       >
         <nav
