@@ -28,6 +28,36 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
+/* ── MEH-789 (chunk 3) — `.nav-pill-glass`: frosted "warm glass" surface for
+   the floating BottomNav pill (ADR-023 / MEH-842 design-principles note;
+   extends the MEH-732 desktop pill-glass). Lives in the utility layer, not a
+   DESIGN.md token: the @google/design.md exporter drops rgba + backdrop-filter
+   (same rationale as the motion utils above). GUARDRAIL: backdrop-filter is
+   NEVER animated/transitioned — the chunk-2 hide is transform(translateY) only.
+   Cascade order matters: base (opaque fallback) → @supports (translucent +
+   blur) → @media reduced-transparency (forces opaque again, must come LAST so
+   it overrides @supports at equal specificity). ─────────────────────────── */
+.nav-pill-glass {
+  background: #FFFEFB; /* ≡ surface-floating */
+  border: 1px solid #E9E3D6;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav-pill-glass {
+    background: rgba(255, 254, 251, 0.62);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav-pill-glass {
+    background: #FFFEFB;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid #E9E3D6;
+  }
+}
+
 /* ── MEH-788 S14 — texture primitives (CSS utility layer; the hex-token set
    can't carry alpha gradients / masks — same rationale as the MEH-136 motion
    utils above). Photography+Texture Hybrid (S14). No new hues. ───────────── */

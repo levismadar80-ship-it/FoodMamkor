@@ -135,9 +135,12 @@ export default function BottomNav() {
         ].join(" ")}
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
       >
+        {/* MEH-789 (chunk 3): frosted warm-glass surface (.nav-pill-glass in
+            globals.css) replaces the opaque bg-background + border; shadow kept.
+            backdrop-filter is never animated — the chunk-2 hide is transform-only. */}
         <nav
           aria-label={t("nav.mobile_label")}
-          className="w-full max-w-[343px] flex items-stretch justify-between gap-1 p-1.5 rounded-full bg-background border border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
+          className="w-full max-w-[343px] flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
         >
           {destinations.map((tab, idx) => {
             const active = isActive(tab.href);
