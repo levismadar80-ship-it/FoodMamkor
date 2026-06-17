@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-846 ADR-014 Bucket-A voice sweep (DRAFT PR)
+
+Branch `feature/meh-846-bucket-a-voice-sweep` off staging. App-wide error/loading feminine → plural/gerund, **one mechanical copy-only PR**. Resolves the MEH-832 open question (sweep, not house-voice).
+- **Done:** `he.json` 96 value replacements (count-asserted script `/tmp/sweep_he.py`); 4 hardcoded components (`ChatWidget`, `ui/Button` aria + test + JSDoc, `events/page.js`, `experiences/[id]/page.js`); `lib/errors.js` (admin-only mapper — Phase-0 call-graph); `ButtonSpinner.jsx` JSDoc (anti-pattern doc); canary in `batch.md` §4 (ellipsis + `^\+` anchored).
+- **Gates green:** vitest 619 pass, build (all routes SSG), ESLint 0 errors, canary 0 hits on swept tree, en.json key-parity intact.
+- **Excluded (locked):** 2489 `נרשמת!` (success), 2404 mixed Bucket-B. **MEH-808**: its Bucket-A item already merged (#1147) → 808 reduces to Bucket B (update after merge).
+- **Phase-0 load-bearing fact:** `lib/errors.js` is NOT the central error source (2 admin importers, returns string). The ~25 retry strings are inline-duplicated; a real shared `errors.retry` key is a separate refactor (out of scope).
+- **Pending (Sapir):** copy review of the diff (DoD copy-only — no per-string mobile QA); then mark ready + merge. Stale feminine values remain in independent test mocks (FavoriteButton/CategoryRequestModal/AdminReviews/PaginationCounter) — green doubles, optional follow-up.
+
 ## 2026-06-16 — MEH-841 comparison home→/about + layout A + copy refresh (DRAFT PR)
 
 Branch `feature/meh-841-comparison-to-about` off staging. **Supersedes MEH-525** (placement + copy lock reopened, Sapir-approved). One PR → staging, DRAFT.

@@ -65,11 +65,11 @@ describe("ui/Button", () => {
   });
 
   describe("loading state", () => {
-    it("sets aria-busy, the feminine aria-label, and disables the button", () => {
+    it("sets aria-busy, the gerund aria-label, and disables the button", () => {
       render(<Button loading>שמירה</Button>);
       const btn = screen.getByRole("button");
       expect(btn).toHaveAttribute("aria-busy", "true");
-      expect(btn).toHaveAttribute("aria-label", "טוענת…");
+      expect(btn).toHaveAttribute("aria-label", "בטעינה…");
       expect(btn).toBeDisabled();
     });
 
