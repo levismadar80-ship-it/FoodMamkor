@@ -90,6 +90,7 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Visible focus state on every interactive element (not default browser outline — branded ring).
 - [ ] Hover states on desktop feel instant (≤ 150ms, ease-out).
 - [ ] Transitions 150–300ms with `ease-in-out`. No bouncy/spring animations except for Ken Burns hero.
+- [ ] Exception (ADR-023): the BottomNav active-indicator may use ONE restrained spring (≤~10% overshoot, ~200–260ms); prefers-reduced-motion → instant. No other element may spring.
 - [ ] Destructive actions (delete account, reject report) require confirmation.
 - [ ] Loading states — skeleton for lists, spinner for single-component async actions.
 - [ ] Empty states — illustration or emoji + single-sentence feminine copy + primary CTA.
@@ -115,6 +116,7 @@ generic SaaS checklist shipped with the workflow.
 ### Header / BottomNav
 - [ ] Persistent across pages except `/map` full-screen.
 - [ ] BottomNav: 4–5 items max, active state uses primary color + filled icon.
+- [ ] BottomNav pill surface = frosted 'warm glass' (`.nav-pill-glass`, added in implementation; extends MEH-732 pill-glass): translucent cream + backdrop-blur + opaque surface-floating (#FFFEFB) fallback; backdrop-filter never animated.
 - [ ] Header: brand wordmark on start side; profile/search on end side.
 - [ ] Both icons 24px, tap target 44×44px.
 
