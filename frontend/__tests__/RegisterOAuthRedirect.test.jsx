@@ -79,6 +79,8 @@ vi.mock("@/components/PasswordInput", async () => {
 describe("MEH-844 — /register OAuth success honors clamped ?redirect= (real safeInternalRedirect)", () => {
   beforeEach(() => {
     mockPush.mockClear();
+    // Explicit isolation — don't inherit a prior test's redirect param.
+    paramsRef.current = new URLSearchParams("");
   });
 
   function clickGoogleWith(redirect) {
