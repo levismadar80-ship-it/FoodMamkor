@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-847 S7 Chunk B wizard skeleton split — ✅ MERGED (#1203)
+
+**Merged to staging (`e4e985a`, squash, Refs MEH-132).** Keystone of the S7 3→5 re-architecture. `RegisterProducerClient.jsx` only; structural, freeze byte-identical. **B1** STEP enum (single source for ~16 literals, behavior-identical) → **B2** split step-2 into DETAILS(name+phone) / CATEGORY(CategorySelector+license) / STORY(description **relocated** + declarations gate + submit) + nav shell (free-advance) + stepper array expanded. OAuth/upgrade→DETAILS, submit→CONFIRM(5), declarations gate + confirmation split unchanged. Build green; the only red = non-required `language-toggle` Playwright flake. Sapir merged directly (CC was GitHub-API rate-limited mid-merge).
+
+**Open / next:**
+- **MEH-847 ticket likely still OPEN** — PR was `Refs MEH-132` (no `Closes MEH-847`); close the chunk ticket manually if desired.
+- **Playwright nav-flow test** (testing.md Rule 5, register critical flow) — deferred; decide this-vs-Chunk-E. Can't author+verify locally (sandbox, MEH-360).
+- **Chunk C** (frame-01 content: city + address inputs wired to the MEH-829 columns, business-name placement, 4 RPC token hits) · **Chunk D** (frame-03: tagline=short_description + char-count + "הופכות לכתבה" card) · **Chunk E** (chrome: reassurance card, stepper 01-06 active-states, numerals, per-frame error-states).
+
 ## 2026-06-17 — MEH-844 auth regression sentinels (tests-only, DRAFT PR)
 
 Branch `feature/meh-844-auth-sentinel-tests` off staging. Two vitest sentinels, **mocks only, zero production change**.
