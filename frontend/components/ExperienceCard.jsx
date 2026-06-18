@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CookingPot } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 
@@ -63,8 +64,10 @@ export default function ExperienceCard({ experience: ex }) {
           )}
         </div>
       ) : (
-        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
-          🍳
+        <div className="h-44 bg-green-50 flex items-center justify-center">
+          {/* MEH-862: Phosphor placeholder replaces the no-image emoji (LOCK v2).
+              CookingPot mirrors EventsClient category icon for cooking/workshop. */}
+          <CookingPot size={48} weight="duotone" className="text-primary/50" aria-hidden="true" />
         </div>
       )}
       <div className="p-4 flex-1 flex flex-col">
