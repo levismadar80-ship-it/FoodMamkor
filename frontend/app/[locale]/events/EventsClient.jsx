@@ -210,7 +210,7 @@ export default function EventsPage() {
             {isExp ? t("h1_experiences") : t("title")}
           </h1>
           <p className="text-base md:text-xl text-fg-muted md:text-background/85 mt-2 leading-snug">
-            {t("subtitle")}
+            {isExp ? t("subtitle_experiences") : t("subtitle")}
           </p>
         </div>
       </section>
