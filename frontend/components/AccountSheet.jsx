@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, Globe, User } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, Globe, User, ArrowUpLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -20,7 +20,10 @@ import LanguageToggle from "@/components/LanguageToggle";
  *           frontend/components/LanguageToggle.jsx (embedded language row),
  *           frontend/components/Header.jsx (legacy drawer it supersedes —
  *           removed in the Header minimal-top PR, MEH-789 PR-B).
- * History:  MEH-789 (creation, 2026-06-10; bottom nav system port, PR-A).
+ * History:  MEH-789 (creation, 2026-06-10; bottom nav system port, PR-A);
+ *           MEH-868 (chrome polish: "↗" dingbat → Phosphor ArrowUpLeft;
+ *           plural logout via account.menu.logout; static non-interactive
+ *           language row; safe-area-derived sheet offset).
  */
 export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const t = useTranslations();
@@ -68,6 +71,11 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const liCls = "border-b border-white/10 last:border-b-0";
   const rowCls =
     "flex items-center gap-3 w-full min-h-[48px] px-1 text-start text-[14.5px] font-medium text-background transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring";
+  // MEH-868: the language row is a non-interactive wrapper — the toggle inside
+  // is the only control. It must not carry a tap-target min-height or a
+  // focus-ring it can never receive; py-2.5 preserves the list rhythm instead.
+  const staticRowCls =
+    "flex items-center gap-3 w-full px-1 py-2.5 text-start text-[14.5px] font-medium text-background";
   const iconCls = "text-background/65";
 
   return (
@@ -85,7 +93,10 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
         aria-modal="true"
         aria-label={t("nav.account")}
         dir="rtl"
-        className="fixed inset-x-4 bottom-[88px] z-[1002] rounded-[20px] bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
+        // MEH-868: clear the floating pill AND the safe-area inset (the pill
+        // itself rides above safe-area via calc(env(safe-area-inset-bottom)+16px),
+        // so a flat 88px overlapped it on notched devices).
+        className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+88px)] z-[1002] rounded-[20px] bg-green-900 border border-white/10 p-[22px] shadow-[0_12px_40px_rgba(20,50,40,0.45)]"
       >
         {/* Head — avatar · name · state */}
         <div className="flex items-center gap-3 pb-4 border-b border-white/10">
@@ -135,20 +146,20 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
           </li>
           {showBiz && (
             <li className={liCls}>
-              {/* Quiet "for businesses" entry — gold icon + ↗ only. MEH-669-gated. */}
+              {/* Quiet "for businesses" entry — gold icon + outbound arrow. MEH-669-gated. */}
               <Link href="/register/producer" onClick={onClose} className={rowCls}>
                 {/* MEH-730: gold-on-dark token replaces the amber-200 stopgap. */}
                 <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
                 {t("account.sheet.biz_cta")}
-                <span className="ms-auto font-english italic text-base text-gold-on-dark" aria-hidden="true">
-                  ↗
-                </span>
+                {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (RTL-correct
+                    onward diagonal; ms-auto pins it to the row end). */}
+                <ArrowUpLeft size={16} weight="bold" className="ms-auto text-gold-on-dark" aria-hidden="true" />
               </Link>
             </li>
           )}
           {/* Language — not a button (embeds the LanguageToggle control 1:1). */}
           <li className={liCls}>
-            <div className={rowCls + " text-background/65 text-[13.5px]"}>
+            <div className={staticRowCls + " text-background/65 text-[13.5px]"}>
               <Globe size={19} weight="regular" className={iconCls} aria-hidden="true" />
               {t("nav.language")}
               <span className="ms-auto inline-flex items-center gap-1.5">
@@ -170,7 +181,9 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
                 className={rowCls + " text-background/65 text-[13.5px]"}
               >
                 <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
-                {t("nav.logout")}
+                {/* MEH-868: plural voice (ADR-014) — reuse the existing plural
+                    account.menu.logout instead of the singular nav.logout. */}
+                {t("account.menu.logout")}
               </button>
             </li>
           )}

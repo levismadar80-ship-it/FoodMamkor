@@ -11,7 +11,8 @@ export const OLD_TO_NEW = {
   nav_favorites: "nav.favorites",
   nav_admin: "nav.admin",
   nav_login: "nav.login",
-  nav_logout: "nav.logout",
+  // MEH-868: nav_logout alias removed — nav.logout was deleted in this PR
+  // (AccountSheet now uses the plural account.menu.logout; no live consumer).
   nav_add_business: "nav.add_business",
   nav_mobile_label: "nav.mobile_label",
   nav_profile: "nav.profile",

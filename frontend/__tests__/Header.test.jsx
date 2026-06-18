@@ -37,7 +37,6 @@ vi.mock("next-intl", () => {
     "nav.neighbor": "מהשכן",
     "nav.about": "אודות",
     "nav.login": "כניסה לחשבון",
-    "nav.logout": "התנתק",
     "nav.add_business": "הוסיפי את העסק שלך",
     "nav.favorites": "מועדפים",
     "nav.admin": "אדמין",
@@ -72,6 +71,8 @@ vi.mock("@phosphor-icons/react", () => ({
   List: (props) => <span data-testid="icon-hamburger" {...props} />,
   MagnifyingGlass: (props) => <span data-testid="icon-search" {...props} />,
   X: (props) => <span data-testid="icon-close" {...props} />,
+  // MEH-868: add-business CTA arrow glyph → Phosphor ArrowUpLeft.
+  ArrowUpLeft: (props) => <span data-testid="icon-arrow-up-left" {...props} />,
   // MEH-475: Globe used by the new LanguageToggle child component.
   Globe: (props) => <span data-testid="icon-globe" {...props} />,
 }));
