@@ -7,17 +7,15 @@ import { formatEventDate } from "@/lib/format-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
- * Card for an experience (community workshop).
- * Shared between:
- *   - /experiences grid
- *   - /events (when the "חוויות" tab is active)
- *   - /experiences/mine (host's own submissions)
+ * Card for an experience (community workshop). Rendered by the
+ * /experiences grid (ExperiencesClient) — the sole consumer (MEH-863:
+ * the prior "/events" + "/experiences/mine" entries were stale; those
+ * surfaces no longer import this component).
  *
- * Reuses the visual language of the existing EventCard inline in
- * EventsClient.jsx so the two feel consistent when rendered side by
- * side. Deliberately does NOT show status badges — approved is the
- * only state the public grid shows, and the owner's "mine" view uses
- * a dedicated status pill in its own client file.
+ * Reuses the visual language of the EventCard inline in EventsClient.jsx
+ * so experiences and producer events feel consistent. Deliberately does
+ * NOT show status badges — the public grid only ever lists approved
+ * experiences.
  */
 
 function formatTime(t) {
