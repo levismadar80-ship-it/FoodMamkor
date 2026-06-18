@@ -15,6 +15,31 @@ Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n s
 - **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge.
 - **1 code file only** (`he.json`). No en.json, no backend, no JSX, no tokens.
 
+## 2026-06-18 — MEH-817 quarantine flaky language-toggle E2E — DRAFT PR
+
+Branch `feature/meh-817-quarantine-lang-toggle` off staging. **Tests-only, one PR → staging, DRAFT.** Stops the chronic non-required `Playwright E2E` red on `14-language-toggle.spec.ts`.
+- **Done:** `test()` → `test.fixme()` on the single block (`e2e/flows/14-language-toggle.spec.ts:8`) + a root-cause `// QUARANTINED — Ref MEH-817` comment. Body unchanged. No other file/test/config touched.
+- **Root cause (read-only Phase 0, class b):** EN→HE flips to the unprefixed default-locale path `/`, whose locale is `NEXT_LOCALE`-cookie-resolved under `as-needed` (`i18n/routing.js:3-7`). `router.replace`'s cookie-write (`LanguageToggle.jsx:63`) races the RSC fetch → middleware (`middleware.js:4`) intermittently resolves `/` as en → `useLocale()` stuck "en" 20s. Always the return-to-default assertion (`:31`), never the to-`/en` one (`:24`). `localStorage` shim ruled out (`[]`-dep, no remount). Real fix = deferred next-intl routing family (MEH-817, Triage), gated behind `Disallow: /en/` until Wave 5 (MEH-475).
+- **No masking:** no `waitForTimeout`, no loosened assertion, no component/routing/config change.
+- **Gates:** lint 0 (e2e eslint-ignored), build green, Playwright collects test 14 as known-skip (no longer reds `--fail-on-flaky-tests`).
+- **Follow-up:** promote MEH-817 out of Triage + link this flake as runtime evidence; un-quarantine when it ships.
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI. `Refs MEH-817` (NOT Closes).
+
+## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
+
+**Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
+- **Open / next:** MEH-826 ticket was `Refs` (not `Closes`) — close manually if the parity scope is considered done. Deferred sub-items from the Linear recon (separate tickets, NOT this PR): Gap 2-hours (`opening_hours` on ListOut + open/closed status component) and the verified-badge map work (MEH-766).
+- **Minor (documented, no fix):** desktop en copy says "in your area" vs mobile "in this area" — cosmetic, out of scope; noted on the PR.
+
+## 2026-06-17 — MEH-789 nav follow-ups (MEH-851 + MEH-852) — ✅ BOTH MERGED
+
+**Both merged to staging.** **MEH-851 (#1208, `f7e769c`, docs-only):** ADR-023 amendment sanctioning a subtle directional liquid-stretch on the nav indicator (+ gooey/metaball SVG rejected for web) + design-principles carve-out — brand-first, landed before the impl. **MEH-852 (#1210, `b8a27df`, `BottomNav.jsx` only):** Sapir mobile-QA polish — (1) active dot removed; (2) IG proportions (tab `min-h 56→60`, nav `max-w 343→300`); (3) directional liquid-stretch indicator (one nav-level capsule measuring the active tab's rect via `navRef`/`tabRefs`/`ResizeObserver`, animating `left`+`width` with two springs — leading edge 700 > width 320 → elongate-then-contract; RTL-safe; reduced-motion → instant). `/adversarial-review` clean. Also merged the docs PR #1206 (`5cae75c`, CHANGELOG/HANDOFF for MEH-842 + chunks 1–3).
+
+**Open / next:**
+- **Sapir mobile QA on staging** — the full nav stack together: indicator stretch intensity (tunable — say if too much/little), no dot, taller+narrower pill, reduced-motion → instant, hide-on-scroll + glass + account sheet intact.
+- **MEH-851/852/843 tickets** — PRs were "Part of MEH-789" (no `Closes`), per the locked convention; close manually if considered done. The MEH-789 epic stays open for PR-B (minimal-top Header) if still planned.
+- **Process note:** GitHub API rate-limit recurred mid-session; some merges went via Sapir's UI. A stale-`origin/staging`-ref scare (a `git fetch` skipped inside a denied compound Bash command) was resolved by a clean standalone re-fetch — verify "missing commit" negatives against a fresh fetch (CLAUDE.md known-bug-pattern).
+
 ## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
 
 Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
