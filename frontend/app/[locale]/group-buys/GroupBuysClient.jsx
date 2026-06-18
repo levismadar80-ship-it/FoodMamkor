@@ -55,11 +55,13 @@ function GroupBuyCard({ gb }) {
         )}
 
         {/* Price display */}
+        {/* MEH-863 F11: dir="ltr" on currency+number so ₪ + digits render
+            correctly in the RTL context (mirrors ExperienceCard's price span). */}
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-primary">
+          <span dir="ltr" className="text-2xl font-bold text-primary">
             ₪{Number(gb.price_per_unit_group).toFixed(0)}
           </span>
-          <span className="text-sm text-fg-muted line-through">
+          <span dir="ltr" className="text-sm text-fg-muted line-through">
             ₪{Number(gb.price_per_unit_regular).toFixed(0)}
           </span>
           {gb.unit && <span className="text-xs text-fg-muted">{t("unit_prefix", { unit: gb.unit })}</span>}
@@ -89,7 +91,7 @@ function GroupBuyCard({ gb }) {
           </span>
           <Link
             href={`/group-buys/${gb.id}`}
-            className="bg-primary text-white text-sm px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
+            className="min-h-[44px] inline-flex items-center justify-center bg-primary text-white text-sm px-4 py-1.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
           >
             {funded ? t("cta_funded_details") : t("cta_join")}
           </Link>
@@ -101,8 +103,10 @@ function GroupBuyCard({ gb }) {
 
 export default function GroupBuysClient() {
   const t = useTranslations("group_buys.list");
+  const tErr = useTranslations();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
 
@@ -113,12 +117,16 @@ export default function GroupBuysClient() {
 
   const load = async () => {
     setLoading(true);
+    setError(false);
     try {
       const params = { status: statusFilter };
       if (city) params.city = city;
       const r = await api.get("/group-buys", { params });
       setItems(r.data);
     } catch {
+      // MEH-863 F12: surface the failure (error state + retry) instead of
+      // swallowing it into the empty state (MEH-325 silent-except pattern).
+      setError(true);
       setItems([]);
     } finally {
       setLoading(false);
@@ -138,10 +146,8 @@ export default function GroupBuysClient() {
             backgroundPosition: "center",
           }}
         />
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(to bottom, rgba(46,74,46,0.82) 0%, rgba(46,74,46,0.92) 100%)" }}
-        />
+        {/* MEH-863 F-scrim: gradient via the primary-dark token (was raw rgba). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/[0.82] to-primary-dark/[0.92]" />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
             {t("hero_title")}
@@ -173,7 +179,8 @@ export default function GroupBuysClient() {
               <button
                 key={s.key}
                 onClick={() => setStatusFilter(s.key)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition border ${
+                aria-pressed={statusFilter === s.key}
+                className={`min-h-[44px] inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-medium transition border ${
                   statusFilter === s.key
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-fg-muted border-border hover:border-primary"
@@ -190,6 +197,17 @@ export default function GroupBuysClient() {
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-64 rounded-[16px] bg-border animate-pulse" />
             ))}
+          </div>
+        ) : error ? (
+          // MEH-863 F12: distinct error state with retry (not the empty state).
+          <div className="text-center py-20">
+            <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
+            <button
+              onClick={load}
+              className="min-h-[44px] inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition"
+            >
+              {tErr("errors.boundary.retry")}
+            </button>
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20 text-fg-muted">
