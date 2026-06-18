@@ -49,11 +49,16 @@ export default function AboutPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
+  // MEH-855: per-submit counter so the status live region remounts on every
+  // attempt — two identical repeat errors share a message string but must
+  // still re-announce to screen readers.
+  const [submitCount, setSubmitCount] = useState(0);
   const [openTip, setOpenTip] = useState(0);
   const [imgFailed, setImgFailed] = useState(false);
 
   const handleContact = async (event) => {
     event.preventDefault();
+    setSubmitCount((count) => count + 1);
     setContactStatus("loading");
     setContactMsg("");
     try {
@@ -417,10 +422,10 @@ export default function AboutPage() {
 
             {contactMsg && (
               <p
-                // MEH-855: key forces remount per message so the live region
-                // re-announces on repeat submits (error → success), not just
-                // first insertion (SRs announce on insert, not attr mutation).
-                key={`${contactStatus}-${contactMsg}`}
+                // MEH-855: key includes a per-submit counter so the live region
+                // remounts on every attempt — even two identical errors in a row —
+                // since SRs announce on insertion, not attribute/text mutation.
+                key={`${contactStatus}-${submitCount}`}
                 role={contactStatus === "error" ? "alert" : "status"}
                 aria-live={contactStatus === "error" ? "assertive" : "polite"}
                 className={`md:col-span-2 text-sm ${
