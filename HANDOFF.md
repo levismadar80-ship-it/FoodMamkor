@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-18 — MEH-852 final nav size tune — ✅ MERGED (#1215)
+
+**Merged to staging (`bc001ce`, squash, Part of MEH-789).** Closes the MEH-852 proportions item (Sapir height-tuner demo). `BottomNav.jsx` only — dimensions + label typography; the indicator/liquid-stretch, glass, and hide-on-scroll logic are unchanged. Wide pill (`w-full`, shell `px-[14px]` ~14px side gutters, tabs `flex-1`), deliberately slim **56px** height (`h-14`, `rounded-full` = 28px radius), tab `min-h-[44px]` (≥44 tap floor, ~86px wide), labels 10.5px/600. `/adversarial-review` + calibration bot both clean; build green, RTL 0, hex 0.
+
+**MEH-789 nav epic now fully landed on staging:** #1198/#1193/#1202/#1204 (MEH-842 foundation + chunks 1–3), #1208 (MEH-851 ADR-023 liquid-stretch amendment), #1210 (MEH-852 polish), #1215 (MEH-852 size tune); session docs #1206/#1213 (+ this entry's PR).
+
+**Open / next:** Sapir mobile QA of the finished nav on staging (stretch feel, 56px slim height, wide pill, labels); close the MEH-789/843/851/852 tickets if considered done (PRs were "Part of", no auto-close). MEH-789 epic stays open if PR-B (minimal-top Header) is still planned.
+
 ## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
 
 **Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
