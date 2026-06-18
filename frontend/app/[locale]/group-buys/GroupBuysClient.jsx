@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ShoppingCart } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -192,7 +193,11 @@ export default function GroupBuysClient() {
           </div>
         ) : items.length === 0 ? (
           <div className="text-center py-20 text-fg-muted">
-            <p className="text-4xl mb-4">🛒</p>
+            {/* MEH-862: Phosphor placeholder replaces the empty-state emoji
+                (LOCK v2), mirrors the /experiences empty-state icon treatment. */}
+            <div className="mb-4 flex justify-center">
+              <ShoppingCart size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+            </div>
             <p className="text-lg font-medium">{t("empty_title")}</p>
             <p className="text-sm mt-1">{t("empty_subtitle")}</p>
           </div>
