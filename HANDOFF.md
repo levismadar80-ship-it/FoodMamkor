@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
+
+**Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
+- **Open / next:** MEH-826 ticket was `Refs` (not `Closes`) — close manually if the parity scope is considered done. Deferred sub-items from the Linear recon (separate tickets, NOT this PR): Gap 2-hours (`opening_hours` on ListOut + open/closed status component) and the verified-badge map work (MEH-766).
+- **Minor (documented, no fix):** desktop en copy says "in your area" vs mobile "in this area" — cosmetic, out of scope; noted on the PR.
+
 ## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
 
 Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
