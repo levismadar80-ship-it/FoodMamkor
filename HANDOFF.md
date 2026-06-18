@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-18 — MEH-817 quarantine flaky language-toggle E2E — DRAFT PR
+
+Branch `feature/meh-817-quarantine-lang-toggle` off staging. **Tests-only, one PR → staging, DRAFT.** Stops the chronic non-required `Playwright E2E` red on `14-language-toggle.spec.ts`.
+- **Done:** `test()` → `test.fixme()` on the single block (`e2e/flows/14-language-toggle.spec.ts:8`) + a root-cause `// QUARANTINED — Ref MEH-817` comment. Body unchanged. No other file/test/config touched.
+- **Root cause (read-only Phase 0, class b):** EN→HE flips to the unprefixed default-locale path `/`, whose locale is `NEXT_LOCALE`-cookie-resolved under `as-needed` (`i18n/routing.js:3-7`). `router.replace`'s cookie-write (`LanguageToggle.jsx:63`) races the RSC fetch → middleware (`middleware.js:4`) intermittently resolves `/` as en → `useLocale()` stuck "en" 20s. Always the return-to-default assertion (`:31`), never the to-`/en` one (`:24`). `localStorage` shim ruled out (`[]`-dep, no remount). Real fix = deferred next-intl routing family (MEH-817, Triage), gated behind `Disallow: /en/` until Wave 5 (MEH-475).
+- **No masking:** no `waitForTimeout`, no loosened assertion, no component/routing/config change.
+- **Gates:** lint 0 (e2e eslint-ignored), build green, Playwright collects test 14 as known-skip (no longer reds `--fail-on-flaky-tests`).
+- **Follow-up:** promote MEH-817 out of Triage + link this flake as runtime evidence; un-quarantine when it ships.
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI. `Refs MEH-817` (NOT Closes).
+
 ## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
 
 **Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
