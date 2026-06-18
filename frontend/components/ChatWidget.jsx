@@ -8,17 +8,20 @@ import api from "@/lib/api";
  * ChatWidget — floating Q&A bot, all screen sizes.
  *
  * Launcher:
- *   Mobile: icon-only circle. bottom-32 when cookie banner visible,
- *     bottom-20 when dismissed. right-4. z-1100. (rtl-ok: comment-only)
- *   Desktop: pill with text on first visit, icon-only after user has
- *     opened once (chatWasOpened in localStorage). bottom-6 right-6. (rtl-ok: comment-only)
+ *   Mobile: icon-only circle, pinned to the end/inline edge. MEH-850: bottom =
+ *     safe-area + pill-clearance + var(--cookie-banner-h, 0) via calc() — it
+ *     self-clears the cookie banner when shown and sits just above the BottomNav
+ *     pill when dismissed. z-9999.
+ *   Desktop: pill with text on first visit, icon-only after user has opened
+ *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
+ *     inline-end. (rtl-ok: comment-only)
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
  *   Mobile: full-width from bottom. Desktop: 360px bottom-right.
  *
- * Coexistence: listens for "cookie-consent" CustomEvent from
- * CookieBanner to reposition. Reads "cookieConsent" from localStorage.
+ * Coexistence: positioning reads the `--cookie-banner-h` CSS var published by
+ * CookieBanner (MEH-850) — no JS event handshake.
  */
 
 const OPENING_MESSAGE = {
@@ -91,19 +94,9 @@ export default function ChatWidget() {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // ── Cookie banner visibility (for mobile positioning) ──
-  const [bannerUp, setBannerUp] = useState(false);
-  useEffect(() => {
-    const check = () => {
-      try {
-        const v = localStorage.getItem("cookieConsent");
-        setBannerUp(v !== "all" && v !== "essential");
-      } catch (e) { setBannerUp(false); }
-    };
-    check();
-    window.addEventListener("cookie-consent", check);
-    return () => window.removeEventListener("cookie-consent", check);
-  }, []);
+  // MEH-850: cookie-banner clearance is now handled purely in CSS via the
+  // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
+  // bottom calc() below — no JS visibility state / event listener needed.
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
@@ -171,11 +164,16 @@ export default function ChatWidget() {
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
 
   // ── Positioning (all inline — no Tailwind specificity fights) ──
-  const mobileBottom = bannerUp ? 128 : 80; // bottom-32 vs bottom-20
+  // MEH-850: mobile bottom = safe-area + pill-clearance(72px) + 16px gap +
+  // var(--cookie-banner-h, 0px). The var is published by CookieBanner while it's
+  // shown, so the FAB self-clears the banner at ANY height and falls back to
+  // sitting above the pill when the banner is gone — no fixed-px banner guess.
+  const MOBILE_LAUNCHER_BOTTOM =
+    "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px))";
   const launcherStyle = {
     position: "fixed", zIndex: 9999,
     right: isDesktop ? 24 : 16,
-    bottom: isDesktop ? 24 : mobileBottom,
+    bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
   const panelStyle = {
     position: "fixed", zIndex: 9999,
