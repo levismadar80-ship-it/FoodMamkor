@@ -417,6 +417,10 @@ export default function AboutPage() {
 
             {contactMsg && (
               <p
+                // MEH-855: key forces remount per message so the live region
+                // re-announces on repeat submits (error → success), not just
+                // first insertion (SRs announce on insert, not attr mutation).
+                key={`${contactStatus}-${contactMsg}`}
                 role={contactStatus === "error" ? "alert" : "status"}
                 aria-live={contactStatus === "error" ? "assertive" : "polite"}
                 className={`md:col-span-2 text-sm ${
