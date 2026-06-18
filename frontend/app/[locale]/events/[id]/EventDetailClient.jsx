@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Leaf, MapPin } from "@phosphor-icons/react";
+import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
@@ -87,7 +87,8 @@ export default function EventDetailClient() {
 
         <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
-            <span aria-hidden>📅</span>
+            {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
+            <Calendar size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
             {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
             {event.event_time && ` · ${event.event_time.slice(0, 5)}`}
           </p>
@@ -98,12 +99,16 @@ export default function EventDetailClient() {
             </p>
           )}
           <p className="flex items-center gap-2 text-accent font-semibold">
-            <span aria-hidden>💰</span>
+            {/* MEH-857: emoji to Phosphor. text-accent (not text-primary) so the
+                glyph leads in this row's accent color — same principle as MapPin
+                leading its row in text-primary at :96. */}
+            <Coins size={16} weight="duotone" className="text-accent inline align-[-3px]" aria-hidden="true" />
             {event.price > 0 ? `₪${event.price}` : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
-              <span aria-hidden>👥</span>
+              {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
+              <UsersThree size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
               {t("participants_limit", { n: event.max_participants })}
             </p>
           )}
