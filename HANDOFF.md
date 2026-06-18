@@ -13,6 +13,12 @@
 
 **Open (non-blocking):** register E2E coverage ticket — flagged 3× (nav-flow + city/address + tagline payload); recommend one dedicated spec rather than per-chunk re-raise.
 
+## 2026-06-18 — bottom-region stacking (MEH-850) + homepage map center (MEH-856) — ✅ BOTH MERGED
+
+**Two bug fixes, both merged to staging.** **MEH-850 (#1223, `7e965f3`):** coordinated cookie-banner / nav-pill / chat-FAB stacking via a shared `--cookie-banner-h` CSS var (CookieBanner publishes its live height; FAB self-clears it via calc; banner above pill + mobile layout stacked so text/buttons fit). Kept the `cookie-consent` event for ClarityScript analytics; BottomNav untouched. **MEH-856 (#1221, `b082b66`):** homepage mini-map `fitBounds` to the business markers (padding + maxZoom 11) instead of a static Tel-Aviv@z8 frame → default view sits on the Israel business base, not east.
+
+**Open / next:** Sapir mobile QA both on staging (360/375/390 — MEH-850 with the cookie banner SHOWN and DISMISSED; MEH-856 default map frame). Deferred follow-ups (flagged, not done): helper-effect unit tests (`FitToBusinesses`, the ResizeObserver var) — better as MEH-847 Playwright assertions; reconcile the `.claude/rules/rtl.md` z-index ledger (`cookie:9998`) with the actual global-chrome stacking (pill 1000 / cookie 1100 / chat 9999).
+
 ## 2026-06-18 — MEH-852 final nav size tune — ✅ MERGED (#1215)
 
 **Merged to staging (`bc001ce`, squash, Part of MEH-789).** Closes the MEH-852 proportions item (Sapir height-tuner demo). `BottomNav.jsx` only — dimensions + label typography; the indicator/liquid-stretch, glass, and hide-on-scroll logic are unchanged. Wide pill (`w-full`, shell `px-[14px]` ~14px side gutters, tabs `flex-1`), deliberately slim **56px** height (`h-14`, `rounded-full` = 28px radius), tab `min-h-[44px]` (≥44 tap floor, ~86px wide), labels 10.5px/600. `/adversarial-review` + calibration bot both clean; build green, RTL 0, hex 0.
