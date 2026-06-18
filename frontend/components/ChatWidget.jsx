@@ -12,8 +12,9 @@ import api from "@/lib/api";
  *     safe-area + pill-clearance + var(--cookie-banner-h, 0) via calc() — it
  *     self-clears the cookie banner when shown and sits just above the BottomNav
  *     pill when dismissed. z-9999.
- *   Desktop: pill with text on first visit, icon-only after user has
- *     opened once (chatWasOpened in localStorage). bottom-6 end-6. (rtl-ok: comment-only)
+ *   Desktop: pill with text on first visit, icon-only after user has opened
+ *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
+ *     inline-end. (rtl-ok: comment-only)
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
