@@ -43,6 +43,11 @@ import { styleForProducer } from "@/lib/map-categories";
 const ISRAEL_CENTER = [32.0853, 34.7818];
 const ISRAEL_ZOOM = 8;
 
+// MEH-856: fitBounds tuning — padding (px) around the marker cluster + a zoom
+// cap so a single/few producers don't over-zoom to street level.
+const FIT_PADDING = [40, 40];
+const FIT_MAX_ZOOM = 11;
+
 // MEH-604: above-the-fold means IntersectionObserver fires immediately —
 // not useful as a deferral mechanism. Replaced with setTimeout(200) +
 // chained requestIdleCallback so Leaflet bundle evaluation lands OUT of
@@ -115,7 +120,7 @@ function FitToBusinesses({ points }) {
   useEffect(() => {
     if (!points || points.length === 0) return;
     const latlngs = points.map((p) => [p.lat, p.lng]);
-    map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 11 });
+    map.fitBounds(L.latLngBounds(latlngs), { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM });
   }, [map, points]);
   return null;
 }
