@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-18 — MEH-860 S7 Chunk D (frame 03 STORY) — ✅ MERGED (#1226)
+
+**Merged to staging (`85b4e36`, squash, Refs MEH-132).** `short_description` (tagline) wired into the STORY frame **above** the existing long-story `description` (byte-identical; MEH-532/619 toggle untouched). 4 sites: `EMPTY_FORM` + tagline `<input>` (label `במשפט אחד`, placeholder `מה שהכי חשוב שידעו עליך`, `maxLength={160}`, `set("short_description")` event-based) + live **N/160 char-count** (mirrors `dashboard/page.js:1053`) + **copy-only reassurance card** (`story_card.title/body` — "הסיפור שלך הופך לעמוד העסק") + shared submit `body` (both registration + upgrade paths). Backend (MEH-829) already accepts it (cap 160). **Card styling = brand tokens `bg-background border border-primary/20`** (NOT the `bg-green-50` banners — those are ADR-019 state-color debt Chunk E cleans; brand-token choice is forward-compatible). he.json ONLY (MEH-472 freeze; en stale). Freeze byte-identical (grep-verified); build green. Copy logged in `docs/COPY_BANK.md` Section 4.
+
+**S7 board:** Chunk A ✅ · B ✅ · C ✅ · **D ✅** — frames 01–03 content complete. **Chunk E (last)** = chrome (reassurance "כל בית עסק עובר אישור אישי", stepper 01–06 active-states, Cormorant numerals) + **per-frame error-states / 9 `bg-green-50`+red state-color debt cleanup** (ADR-019, no state-color palette).
+
+**Open (non-blocking):** register E2E coverage ticket — flagged 3× (nav-flow + city/address + tagline payload); recommend one dedicated spec rather than per-chunk re-raise.
+
 ## 2026-06-18 — bottom-region stacking (MEH-850) + homepage map center (MEH-856) — ✅ BOTH MERGED
 
 **Two bug fixes, both merged to staging.** **MEH-850 (#1223, `7e965f3`):** coordinated cookie-banner / nav-pill / chat-FAB stacking via a shared `--cookie-banner-h` CSS var (CookieBanner publishes its live height; FAB self-clears it via calc; banner above pill + mobile layout stacked so text/buttons fit). Kept the `cookie-consent` event for ClarityScript analytics; BottomNav untouched. **MEH-856 (#1221, `b082b66`):** homepage mini-map `fitBounds` to the business markers (padding + maxZoom 11) instead of a static Tel-Aviv@z8 frame → default view sits on the Israel business base, not east.
