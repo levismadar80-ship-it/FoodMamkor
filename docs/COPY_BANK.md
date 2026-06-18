@@ -289,6 +289,28 @@
 | **Why** | נספח א' / פס"ד קירשנר — "grown on my own plot only" is the legal line between license-exempt and license-required produce. Folds into the same `declaration_accepted` submission (no new API field). |
 | **MEH** | MEH-759 Chunk C (source ADR-022) |
 
+### /register/producer — Tagline (frame 03 STORY, "במשפט אחד")
+| Field | Value |
+|---|---|
+| **Label (he)** | `במשפט אחד` |
+| **Placeholder (he)** | `מה שהכי חשוב שידעו עליך` |
+| **i18n keys** | `auth.register.producer.fields.tagline_label` / `.tagline_placeholder` |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (STORY frame — `short_description` input, `maxLength={160}` + live N/160 char-count, above the long-story `description`) |
+| **Status** | ✅ (MEH-860, PR #1226, 2026-06-18) |
+| **Why** | NN/G microcontent brevity + BoldBrush headline-above-bio convention — a one-line "dek" above the long story. he.json ONLY (MEH-472 HE-mirror freeze; en stale). |
+| **MEH** | MEH-860 (S7 Chunk D) |
+
+### /register/producer — Story reassurance card (frame 03)
+| Field | Value |
+|---|---|
+| **Title (he)** | `הסיפור שלך הופך לעמוד העסק` |
+| **Body (he)** | `מה שתכתבי כאן הופך לעמוד העסק שלך במהמקור — המקום שבו לקוחות פוגשים אותך לפני שהם פוגשים את מה שאת מוכרת. לא תיאור מוצר. סיפור.` |
+| **i18n keys** | `auth.register.producer.story_card.title` / `.body` |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (STORY frame — copy-only card, brand tokens `bg-background border border-primary/20`, no preview/logic) |
+| **Status** | ✅ (MEH-860, PR #1226, 2026-06-18) |
+| **Why** | Frames the magazine thesis — the story becomes the producer's page. "עמוד עריכותי" rejected as internal jargon → "עמוד העסק" (explicit). he.json ONLY (MEH-472). |
+| **MEH** | MEH-860 (S7 Chunk D) |
+
 ### Welcome email — Consumer
 | Field | Value |
 |---|---|
