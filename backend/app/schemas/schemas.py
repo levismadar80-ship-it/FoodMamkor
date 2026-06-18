@@ -467,6 +467,9 @@ class ProducerUpdate(BaseModel):
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
+    # MEH-829: editable street address (private — admin/owner only on the *Out
+    # side). Mirrors the ProducerRegister cap.
+    address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
@@ -743,6 +746,10 @@ class ProducerListOut(BaseModel):
 
 
 class ProducerDetailOut(ProducerListOut):
+    # MEH-829: producer.address is intentionally NOT exposed here — this detail
+    # endpoint is public; the street address is admin/owner-only (see
+    # ProducerAdminOut / ProducerOwnerOut), per the producer_license_number
+    # privacy-first precedent.
     contact_name: str | None = None
     phone: str | None = None
     instagram: str | None = None
@@ -773,6 +780,10 @@ class ProducerDetailOut(ProducerListOut):
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-829: street address submitted at registration — admin-visible (+ owner
+    # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
+    # the producer_license_number privacy precedent.
+    address: str | None = None
     # MEH-509 PR3: admin-only risk surface. NULL on both = "not scored yet
     # OR Anthropic call failed (fail-open)" — frontend renders the grey
     # "אין מידע" badge. Never exposed via ProducerDetailOut (public).
@@ -799,6 +810,9 @@ class ProducerAdminOut(ProducerDetailOut):
 # admin table, AdminProducersTable.jsx:181).
 class ProducerOwnerOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-829: owner sees her own submitted street address (private — not on the
+    # public DetailOut/ListOut).
+    address: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
