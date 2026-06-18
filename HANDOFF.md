@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-17 — MEH-849 /about Benefits re-angle (Option B) — DRAFT PR
+
+Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n swap, one PR → staging, DRAFT.** Resolves the Benefits↔Values near-verbatim dup on /about via Option B (Sapir 17/06, copy LOCKED): Benefits → discovery·convenience·local-economy; Values stays = criteria.
+- **Done:** swapped the 6 `about.consumer.benefits.{local,trust,community}.{title,body}` values in `he.json` (heading "למה מהמקור" + keys unchanged) → `מה שלא הכרת` / `הכל במקום אחד` / `קנייה שתומכת`. **`en.json` NOT touched** — see below. CHANGELOG + HANDOFF updated.
+- **en.json decision (CI catch):** the planned HE-mirror **failed CI** — `__tests__/en-locale-guard.test.js` (MEH-840, 2026-06-16, BASELINE now empty) fails on any Hebrew in `en.json`. HE-mirror is no longer a valid convention there, and `testing.md` forbids weakening the guard via the baseline. Resolution (Sapir): keep the original Option-A English benefit copy in `en.json`. ⚠️ **The 6 en values are now stale vs he** (pre-Option-B angle) — real EN translation deferred to the MEH-472 EN wave. Noted in PR body + CHANGELOG.
+- **Gates green:** build (/about + / SSG, 0 err), ESLint 0 errors, he+en JSON-valid, en-locale-guard green, מתווכים/מגזין 0 in changed lines. Screenshots mobile-375 + desktop captured (benefits band renders 01/02/03 with the new copy).
+- **Locked / do-NOT-touch:** "בעלי עסקים" in `community.body` = deliberate generic-plural (Sapir) — never convert to feminine in a future audit; reader-address stays feminine ("שתגלי"). `AboutClient.jsx` / Values / Comparison / tokens untouched.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge.
+- **1 code file only** (`he.json`). No en.json, no backend, no JSX, no tokens.
+
 ## 2026-06-18 — MEH-817 quarantine flaky language-toggle E2E — DRAFT PR
 
 Branch `feature/meh-817-quarantine-lang-toggle` off staging. **Tests-only, one PR → staging, DRAFT.** Stops the chronic non-required `Playwright E2E` red on `14-language-toggle.spec.ts`.
