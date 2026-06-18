@@ -17,10 +17,12 @@
  * History:  MEH-538 (creation, 2026-05-15); MEH-604 (2026-05-16 — moved
  *             above the fold; IntersectionObserver replaced with
  *             setTimeout(200) + chained requestIdleCallback; skeleton
- *             extracted to HomepageMiniMapSkeleton.jsx).
+ *             extracted to HomepageMiniMapSkeleton.jsx);
+ *           MEH-856 (2026-06-18 — default view fitBounds to the business
+ *             markers instead of a static Tel-Aviv frame).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -33,12 +35,18 @@ import "leaflet/dist/leaflet.css";
 import api from "@/lib/api";
 import { styleForProducer } from "@/lib/map-categories";
 
-// MEH-538: Tel Aviv (population center) — Q1 answer. Chosen over /map's
-// Jerusalem (31.7683, 35.2137) because this is a full-country preview
-// at zoom 8 and the population center gives a more representative initial
-// view. Documented in the PR description.
+// MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
+// only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
+// markers on load so the default view sits on the business base (density), not a
+// fixed Tel-Aviv frame. (Chosen over /map's Jerusalem 31.7683,35.2137 as a
+// neutral country-level fallback before the marker bounds are known.)
 const ISRAEL_CENTER = [32.0853, 34.7818];
 const ISRAEL_ZOOM = 8;
+
+// MEH-856: fitBounds tuning — padding (px) around the marker cluster + a zoom
+// cap so a single/few producers don't over-zoom to street level.
+const FIT_PADDING = [40, 40];
+const FIT_MAX_ZOOM = 11;
 
 // MEH-604: above-the-fold means IntersectionObserver fires immediately —
 // not useful as a deferral mechanism. Replaced with setTimeout(200) +
@@ -100,6 +108,20 @@ function CanvasClickToFullMap() {
       map.off("click", onClick);
     };
   }, [map, router]);
+  return null;
+}
+
+// MEH-856: frame the initial view on the actual business base — fitBounds to the
+// plottable markers with padding + a maxZoom cap so a single/few producers don't
+// over-zoom. Overrides the static ISRAEL_CENTER/ZOOM (which stay as the pre-fit
+// initial value). lat/lng are geographic — not directional, no RTL flip.
+function FitToBusinesses({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!points || points.length === 0) return;
+    const latlngs = points.map((p) => [p.lat, p.lng]);
+    map.fitBounds(L.latLngBounds(latlngs), { padding: FIT_PADDING, maxZoom: FIT_MAX_ZOOM });
+  }, [map, points]);
   return null;
 }
 
@@ -170,10 +192,16 @@ export default function HomepageMiniMap() {
   // Q4: "plottable" = lat AND lng both present. Empty state shows when
   // zero plottable markers (not when zero producers, since a producer
   // without coords contributes nothing to the map).
-  const plottable =
-    Array.isArray(producers)
-      ? producers.filter((p) => p.lat != null && p.lng != null)
-      : null;
+  // MEH-856: memoized so FitToBusinesses keys on a STABLE reference (changes
+  // only when `producers` changes). Without this, the filtered array was a new
+  // ref every render → the fitBounds effect re-fired and fought user pan.
+  const plottable = useMemo(
+    () =>
+      Array.isArray(producers)
+        ? producers.filter((p) => p.lat != null && p.lng != null)
+        : null,
+    [producers],
+  );
 
   return (
     <section
@@ -207,6 +235,7 @@ export default function HomepageMiniMap() {
               />
               <DisableNonClickZoom />
               <CanvasClickToFullMap />
+              <FitToBusinesses points={plottable} />
               {plottable.map((producer) => (
                 <Marker
                   key={producer.id}
