@@ -35,9 +35,23 @@ export default function EventDetailClient() {
   }, [id]);
 
   if (loading) {
+    // MEH-858 F7: geometry-matched skeleton (was a bare centered line) — mirrors
+    // the detail layout so it doesn't jump on hydrate. Cream-toned bg-border/60
+    // pulse per ADR-019, same idiom as the list SkeletonRows. aria-label keeps
+    // the SR "loading" announcement.
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-        {t("loading")}
+      <div aria-busy="true" aria-label={t("loading")}>
+        <div className="h-[360px] bg-border/60 animate-pulse" />
+        <div className="max-w-3xl mx-auto px-4 py-12">
+          <span className="block w-24 h-6 rounded-full bg-border/60 animate-pulse mb-3" />
+          <span className="block w-3/4 h-10 rounded bg-border/60 animate-pulse mb-4" />
+          <div className="flex flex-wrap gap-4 mb-6">
+            <span className="w-40 h-4 rounded bg-border/60 animate-pulse" />
+            <span className="w-28 h-4 rounded bg-border/60 animate-pulse" />
+            <span className="w-20 h-4 rounded bg-border/60 animate-pulse" />
+          </div>
+          <span className="block w-full h-32 rounded-[16px] bg-border/60 animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -126,21 +140,21 @@ export default function EventDetailClient() {
               href={event.registration_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
             >
               {t("register")}
             </a>
           ) : (
             <Link
               href={`/producer/${event.producer_id}`}
-              className="bg-primary text-white px-6 py-3 rounded-[8px] font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
             >
               {t("contact_producer")}
             </Link>
           )}
           <Link
             href="/events"
-            className="border border-primary text-primary px-6 py-3 rounded-[8px] font-medium hover:bg-green-50 transition"
+            className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
           >
             {t("all_events")}
           </Link>
