@@ -815,13 +815,14 @@
     "list": {
       "hero_title": "קבוצות רכש",
       "hero_subtitle": "קנו ביחד וחסכו — מוצרים מקומיים במחיר קבוצתי",
+      "cross_link_producers": "מחפשים את בתי העסק עצמם? כל בתי העסק המקומיים →",
       "filter_city_label": "סנני לפי עיר",
       "filter_city_placeholder": "כל הערים",
       "status_open": "פתוחות",
       "status_funded": "ממומנות",
       "status_fulfilled": "הושלמו",
-      "empty_title": "אין קבוצות רכש כרגע",
-      "empty_subtitle": "בדקי שוב בקרוב"
+      "empty_title": "עדיין אין קבוצות רכש פעילות",
+      "empty_subtitle": "כשבתי עסק יפתחו קבוצות — תמצאו אותן כאן"
     },
     "card": {
       "funded_banner": "המחיר נפתח!",

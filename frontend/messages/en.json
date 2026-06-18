@@ -807,13 +807,14 @@
     "list": {
       "hero_title": "Group buys",
       "hero_subtitle": "Buy together and save — local products at a group price",
+      "cross_link_producers": "Looking for the businesses themselves? All local businesses →",
       "filter_city_label": "Filter by city",
       "filter_city_placeholder": "All cities",
       "status_open": "Open",
       "status_funded": "Funded",
       "status_fulfilled": "Fulfilled",
-      "empty_title": "No group buys right now",
-      "empty_subtitle": "Check back soon"
+      "empty_title": "No active group-buys yet",
+      "empty_subtitle": "When businesses open group-buys, you'll find them here"
     },
     "card": {
       "funded_banner": "Price unlocked!",

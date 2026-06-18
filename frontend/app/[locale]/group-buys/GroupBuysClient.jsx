@@ -159,6 +159,15 @@ export default function GroupBuysClient() {
       </section>
 
       <div className="max-w-5xl mx-auto px-4 py-10">
+        {/* MEH-871 F13: cross-link to the businesses listing (parity with the
+            /experiences → /events cross-link). */}
+        <Link
+          href="/producers"
+          className="inline-block mb-6 text-sm text-fg-muted hover:text-primary transition"
+        >
+          {t("cross_link_producers")}
+        </Link>
+
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-8 items-end">
           <div className="w-56">
