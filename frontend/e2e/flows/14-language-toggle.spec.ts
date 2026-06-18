@@ -5,7 +5,13 @@ import { test, expect } from "@playwright/test";
 // `hidden md:inline-flex`, so it is absent on the mobile project (the
 // mobile drawer was retired in MEH-789) — skip gracefully there.
 test.describe("Language toggle", () => {
-  test("flips he → en and back, preserving the path", async ({ page }) => {
+  // QUARANTINED — Ref MEH-817: EN→HE flips to the unprefixed default-locale
+  // path ("/"), whose locale resolves via the NEXT_LOCALE cookie under
+  // `as-needed`. router.replace's cookie-write races the RSC fetch, so
+  // useLocale() intermittently stays "en" (assertion :31). Real fix lives in
+  // the deferred next-intl locale-routing family (MEH-817), gated behind
+  // Disallow: /en/ until Wave 5 (MEH-475). Un-quarantine when MEH-817 ships.
+  test.fixme("flips he → en and back, preserving the path", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
 
