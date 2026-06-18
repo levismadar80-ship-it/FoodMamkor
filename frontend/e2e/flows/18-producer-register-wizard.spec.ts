@@ -3,18 +3,21 @@ import { test, expect } from "@playwright/test";
 /**
  * MEH-866 — producer-register wizard end-to-end (the rendered flow).
  *
- * // MEH-360: verify on preview — Playwright is blocked in the CC sandbox
- * (envoy denies *.up.railway.app + the Vercel preview). This spec is WRITTEN,
- * not run here; it runs against the Vercel preview deploy in CI / by Sapir.
+ * Selectors are `data-testid`-based per docs/E2E-LOCATORS.md (MEH-495):
+ * new E2E specs locate via getByTestId so Hebrew copy / i18n sweeps can't
+ * silently break them. The matching testids were added to the wizard frames
+ * in this same PR (RegisterProducerClient.jsx — testid-only, additive).
+ *
+ * // MEH-360: this spec RUNS on the Vercel preview deploy (in CI / by Sapir),
+ * not in the CC sandbox — envoy denies the preview + *.up.railway.app there.
  *
  * Complements the vitest layer (__tests__/RegisterProducerClient.test.jsx),
- * which already pins nav + submit-body shape + char-count with mocks. This
- * spec drives the REAL rendered 5-frame wizard (MEH-847 nav · MEH-853
- * city/address · MEH-860 tagline) from ACCOUNT → CONFIRM and asserts the
- * non-upgrade success state. No overlap with MEH-830 (CategorySelector).
- *
- * Selectors come from he.json (frozen producer-register strings), queried by
- * placeholder / role — no invented copy, no new production testid.
+ * which pins nav + submit-body shape + char-count with mocks. This spec drives
+ * the REAL rendered 5-frame wizard (MEH-847 nav · MEH-853 city/address ·
+ * MEH-860 tagline) from ACCOUNT → CONFIRM and asserts the non-upgrade success
+ * state. No overlap with MEH-830 (CategorySelector — its card is the one
+ * locator kept name-based below: it's a DB seed category, not frozen UI copy,
+ * and the component is out of this ticket's scope).
  */
 
 const REGISTER_POST = "**/auth/register/producer";
@@ -48,31 +51,41 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.goto("/register/producer");
 
     // ── ACCOUNT ──
-    await page.getByPlaceholder("שם מלא *").fill("טסט בדיקה");
-    await page.getByPlaceholder("אימייל *").fill(`wizard+${Date.now()}@mehamakor.online`);
-    await page.getByPlaceholder("סיסמה *").fill("Abcdefgh1234"); // ≥12 (passwordValid)
-    await page.getByRole("button", { name: "הבא →" }).click();
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await page.getByTestId("register-account-name").fill("טסט בדיקה");
+    await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
+    await page.getByTestId("register-account-password").fill("Abcdefgh1234"); // ≥12 (passwordValid)
+    await page.getByTestId("register-account-next").click();
 
     // ── DETAILS (frame 01) — producer_name + phone + city + address ──
-    await page.getByPlaceholder("שם העסק *").fill("העסק שלי");
-    await page.getByPlaceholder("טלפון WhatsApp * (0501234567)").fill("0501234567");
-    await page.getByPlaceholder("יישוב").fill("תל אביב"); // CitySearch input
-    await page.getByPlaceholder("כתובת").fill("הרצל 1");
-    await page.getByRole("button", { name: "הבא →" }).click();
+    await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    await page.getByTestId("register-details-name").fill("העסק שלי");
+    await page.getByTestId("register-details-phone").fill("0501234567");
+    // city: CitySearch (out of scope) owns the input; testid is on the parent
+    // wrapper, so reach the role="combobox" input inside it.
+    await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-address").fill("הרצל 1");
+    await page.getByTestId("register-details-next").click();
 
     // ── CATEGORY (frame 02) — pick the first popular card (non-agricultural) ──
-    await page.getByText("חלב וגבינות").click();
-    await page.getByRole("button", { name: "הבא →" }).click();
+    // CategorySelector card is name-based (DB seed category, not UI copy),
+    // scoped under the frame testid. MEH-830 owns the component.
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
+    await page.getByTestId("register-category-next").click();
 
     // ── STORY (frame 03) — tagline (short_description) + declarations ──
-    await page.getByPlaceholder("מה שהכי חשוב שידעו עליך").fill("הכי טרי שיש");
+    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+    await page.getByTestId("register-story-tagline").fill("הכי טרי שיש");
     // ToS + binding declaration (non-agri → no farmer checkbox). Check all shown.
-    for (const cb of await page.getByRole("checkbox").all()) {
+    for (const cb of await page.getByTestId("register-frame-story").getByRole("checkbox").all()) {
       await cb.check();
     }
-    await page.getByRole("button", { name: "הצטרפי →" }).click();
+    await page.getByTestId("register-story-submit").click();
 
     // ── CONFIRM (frame, non-upgrade) — inbox-check success state ──
-    await expect(page.getByText(/בדקי/)).toBeVisible({ timeout: 10_000 });
+    // testid assertion (not getByText) so the /בדקי/ heading-vs-body
+    // strict-mode ambiguity can't resurface on copy edits.
+    await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
   });
 });
