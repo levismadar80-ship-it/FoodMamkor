@@ -13,6 +13,26 @@
 
 **Open / next:** Sapir mobile QA of the finished nav on staging (stretch feel, 56px slim height, wide pill, labels); close the MEH-789/843/851/852 tickets if considered done (PRs were "Part of", no auto-close). MEH-789 epic stays open if PR-B (minimal-top Header) is still planned.
 
+## 2026-06-17 — MEH-849 /about Benefits re-angle (Option B) — DRAFT PR
+
+Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n swap, one PR → staging, DRAFT.** Resolves the Benefits↔Values near-verbatim dup on /about via Option B (Sapir 17/06, copy LOCKED): Benefits → discovery·convenience·local-economy; Values stays = criteria.
+- **Done:** swapped the 6 `about.consumer.benefits.{local,trust,community}.{title,body}` values in `he.json` (heading "למה מהמקור" + keys unchanged) → `מה שלא הכרת` / `הכל במקום אחד` / `קנייה שתומכת`. **`en.json` NOT touched** — see below. CHANGELOG + HANDOFF updated.
+- **en.json decision (CI catch):** the planned HE-mirror **failed CI** — `__tests__/en-locale-guard.test.js` (MEH-840, 2026-06-16, BASELINE now empty) fails on any Hebrew in `en.json`. HE-mirror is no longer a valid convention there, and `testing.md` forbids weakening the guard via the baseline. Resolution (Sapir): keep the original Option-A English benefit copy in `en.json`. ⚠️ **The 6 en values are now stale vs he** (pre-Option-B angle) — real EN translation deferred to the MEH-472 EN wave. Noted in PR body + CHANGELOG.
+- **Gates green:** build (/about + / SSG, 0 err), ESLint 0 errors, he+en JSON-valid, en-locale-guard green, מתווכים/מגזין 0 in changed lines. Screenshots mobile-375 + desktop captured (benefits band renders 01/02/03 with the new copy).
+- **Locked / do-NOT-touch:** "בעלי עסקים" in `community.body` = deliberate generic-plural (Sapir) — never convert to feminine in a future audit; reader-address stays feminine ("שתגלי"). `AboutClient.jsx` / Values / Comparison / tokens untouched.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge.
+- **1 code file only** (`he.json`). No en.json, no backend, no JSX, no tokens.
+
+## 2026-06-18 — MEH-817 quarantine flaky language-toggle E2E — DRAFT PR
+
+Branch `feature/meh-817-quarantine-lang-toggle` off staging. **Tests-only, one PR → staging, DRAFT.** Stops the chronic non-required `Playwright E2E` red on `14-language-toggle.spec.ts`.
+- **Done:** `test()` → `test.fixme()` on the single block (`e2e/flows/14-language-toggle.spec.ts:8`) + a root-cause `// QUARANTINED — Ref MEH-817` comment. Body unchanged. No other file/test/config touched.
+- **Root cause (read-only Phase 0, class b):** EN→HE flips to the unprefixed default-locale path `/`, whose locale is `NEXT_LOCALE`-cookie-resolved under `as-needed` (`i18n/routing.js:3-7`). `router.replace`'s cookie-write (`LanguageToggle.jsx:63`) races the RSC fetch → middleware (`middleware.js:4`) intermittently resolves `/` as en → `useLocale()` stuck "en" 20s. Always the return-to-default assertion (`:31`), never the to-`/en` one (`:24`). `localStorage` shim ruled out (`[]`-dep, no remount). Real fix = deferred next-intl routing family (MEH-817, Triage), gated behind `Disallow: /en/` until Wave 5 (MEH-475).
+- **No masking:** no `waitForTimeout`, no loosened assertion, no component/routing/config change.
+- **Gates:** lint 0 (e2e eslint-ignored), build green, Playwright collects test 14 as known-skip (no longer reds `--fail-on-flaky-tests`).
+- **Follow-up:** promote MEH-817 out of Triage + link this flake as runtime evidence; un-quarantine when it ships.
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI. `Refs MEH-817` (NOT Closes).
+
 ## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
 
 **Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
