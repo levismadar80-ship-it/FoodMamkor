@@ -3,6 +3,16 @@
 
 ---
 
+## MEH-853 — /register/producer frame 01 (DETAILS): city + address
+
+- [ ] **city autocomplete** — בפריים DETAILS (אחרי שם העסק/טלפון), הקלידי 2+ תווים בשדה "יישוב" — **תוצאה מצופה:** נפתח dropdown של ערים; בחירה ממלאת את השדה; ה-✕ מנקה אותו (reuse של CitySearch, MEH-213 — אין טקסט חופשי).
+- [ ] **city בpayload** — מלאי יישוב + השלימי הרשמה — **תוצאה מצופה:** ב-DevTools Network, ה-POST ל-`/auth/register/producer` נושא `"city": "<העיר>"`.
+- [ ] **address free-text** — שדה "כתובת" מקבל טקסט חופשי (לא חובה) — **תוצאה מצופה:** נשמר ב-`form.address` ונשלח כ-`"address"` ב-payload.
+- [ ] **שני המסלולים** — גם בהרשמה חדשה וגם במסלול upgrade (משתמשת מחוברת) — **תוצאה מצופה:** city+address נשלחים בשניהם (ה-body משותף מעל ענף `!isUpgrade`).
+- [ ] **Regression** — OAuth עדיין נוחת על DETAILS; declarations עדיין חוסמות submit; שדה רישיון עדיין מופיע ל-ירקות/פירות — **תוצאה מצופה:** ללא שינוי (freeze).
+
+---
+
 ## MEH-288 — ProfileCompletenessCard on producer dashboard
 
 כרטיס "השלמת פרופיל" בראש `/producer/dashboard`, מעל קלפי ה-analytics. נכנסות כבעלת עסק (role=producer).
