@@ -143,6 +143,19 @@ class ProducerRegister(BaseModel):
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
 
+    # MEH-829: same bleach/XSS defense-in-depth as description above — these two
+    # were collected on the public registration path without the strip their
+    # ProducerUpdate twins already run.
+    @field_validator("short_description")
+    @classmethod
+    def _sanitize_short_description(cls, v):
+        return sanitize_text(v, max_length=160)
+
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=255)
+
     @field_validator("primary_contact_method")
     @classmethod
     def _validate_primary_contact_method(cls, v):
