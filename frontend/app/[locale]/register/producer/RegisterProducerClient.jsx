@@ -368,7 +368,7 @@ function RegisterProducerPageBody() {
 
         {/* Step 1: Account */}
         {step === STEP.ACCOUNT && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="register-frame-account">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
@@ -390,6 +390,7 @@ function RegisterProducerPageBody() {
             <h3 className="text-sm font-medium text-fg-muted pt-2">{t("auth.register.producer.steps.account.email_section")}</h3>
 
             <input
+              data-testid="register-account-name"
               placeholder={t("auth.register.producer.fields.name")}
               value={form.name}
               onChange={set("name")}
@@ -398,6 +399,7 @@ function RegisterProducerPageBody() {
             />
             <input
               type="email"
+              data-testid="register-account-email"
               placeholder={t("auth.register.producer.fields.email")}
               value={form.email}
               onChange={set("email")}
@@ -410,6 +412,7 @@ function RegisterProducerPageBody() {
             <div>
               <input
                 type="password"
+                data-testid="register-account-password"
                 placeholder={t("auth.register.producer.fields.password")}
                 value={form.password}
                 onChange={set("password")}
@@ -421,6 +424,7 @@ function RegisterProducerPageBody() {
             </div>
             {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
             <button
+              data-testid="register-account-next"
               onClick={() => {
                 if (!form.name || !form.email || !form.password) {
                   setStepError(t("auth.register.producer.validation.all_required"));
@@ -446,13 +450,14 @@ function RegisterProducerPageBody() {
 
         {/* Step 2: Business basics */}
         {step === STEP.DETAILS && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="register-frame-details">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.business.title")}</h2>
             <p className="text-sm text-fg-muted">
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
 
             <input
+              data-testid="register-details-name"
               placeholder={t("auth.register.producer.fields.producer_name")}
               value={form.producer_name}
               onChange={set("producer_name")}
@@ -462,6 +467,7 @@ function RegisterProducerPageBody() {
 
             <div>
               <input
+                data-testid="register-details-phone"
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
@@ -484,6 +490,7 @@ function RegisterProducerPageBody() {
             {/* MEH-853: frame-01 city — reuses the MEH-201 CitySearch
                 autocomplete (MEH-213: free-text city forbidden). CitySearch
                 emits a string, so it can't use the event-based set() helper. */}
+            <div data-testid="register-details-city">
             <CitySearch
               id="producer-city"
               label={t("auth.register.producer.fields.city")}
@@ -491,8 +498,10 @@ function RegisterProducerPageBody() {
               value={form.city}
               onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
             />
+            </div>
 
             <input
+              data-testid="register-details-address"
               placeholder={t("auth.register.producer.fields.address")}
               value={form.address}
               onChange={set("address")}
@@ -502,9 +511,10 @@ function RegisterProducerPageBody() {
 
             <div className="flex gap-3">
               {!isUpgrade && (
-                <button onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+                <button data-testid="register-details-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.ACCOUNT); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               )}
               <button
+                data-testid="register-details-next"
                 onClick={() => setStep(STEP.CATEGORY)}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
               >
@@ -515,7 +525,7 @@ function RegisterProducerPageBody() {
         )}
 
         {step === STEP.CATEGORY && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="register-frame-category">
             <CategorySelector
               categories={categories}
               selectedIds={form.category_ids}
@@ -613,8 +623,9 @@ function RegisterProducerPageBody() {
             )}
 
             <div className="flex gap-3">
-              <button onClick={() => { setStepError(""); setError(""); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              <button data-testid="register-category-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
+                data-testid="register-category-next"
                 onClick={() => setStep(STEP.STORY)}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
               >
@@ -625,7 +636,7 @@ function RegisterProducerPageBody() {
         )}
 
         {step === STEP.STORY && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-testid="register-frame-story">
             {/* MEH-860: frame-03 tagline (short_description) — the one-line
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
@@ -638,6 +649,7 @@ function RegisterProducerPageBody() {
               </label>
               <input
                 id="producer-tagline"
+                data-testid="register-story-tagline"
                 value={form.short_description}
                 onChange={set("short_description")}
                 maxLength={160}
@@ -780,8 +792,9 @@ function RegisterProducerPageBody() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
-              <button onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
+                data-testid="register-story-submit"
                 onClick={() => {
                   // Clear stale error first so the next failure renders a
                   // visible reset (otherwise the same error text appears
@@ -892,7 +905,7 @@ function RegisterProducerPageBody() {
           </div>
         )}
         {step === STEP.CONFIRM && !didUpgrade && (
-          <div className="text-center py-8">
+          <div className="text-center py-8" data-testid="register-frame-confirm">
             <div className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
               <EnvelopeSimple size={32} className="text-fg-muted" aria-hidden="true" />
             </div>
