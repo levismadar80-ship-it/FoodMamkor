@@ -11,6 +11,15 @@
 - **Open / next:** MEH-826 ticket was `Refs` (not `Closes`) — close manually if the parity scope is considered done. Deferred sub-items from the Linear recon (separate tickets, NOT this PR): Gap 2-hours (`opening_hours` on ListOut + open/closed status component) and the verified-badge map work (MEH-766).
 - **Minor (documented, no fix):** desktop en copy says "in your area" vs mobile "in this area" — cosmetic, out of scope; noted on the PR.
 
+## 2026-06-17 — MEH-789 nav follow-ups (MEH-851 + MEH-852) — ✅ BOTH MERGED
+
+**Both merged to staging.** **MEH-851 (#1208, `f7e769c`, docs-only):** ADR-023 amendment sanctioning a subtle directional liquid-stretch on the nav indicator (+ gooey/metaball SVG rejected for web) + design-principles carve-out — brand-first, landed before the impl. **MEH-852 (#1210, `b8a27df`, `BottomNav.jsx` only):** Sapir mobile-QA polish — (1) active dot removed; (2) IG proportions (tab `min-h 56→60`, nav `max-w 343→300`); (3) directional liquid-stretch indicator (one nav-level capsule measuring the active tab's rect via `navRef`/`tabRefs`/`ResizeObserver`, animating `left`+`width` with two springs — leading edge 700 > width 320 → elongate-then-contract; RTL-safe; reduced-motion → instant). `/adversarial-review` clean. Also merged the docs PR #1206 (`5cae75c`, CHANGELOG/HANDOFF for MEH-842 + chunks 1–3).
+
+**Open / next:**
+- **Sapir mobile QA on staging** — the full nav stack together: indicator stretch intensity (tunable — say if too much/little), no dot, taller+narrower pill, reduced-motion → instant, hide-on-scroll + glass + account sheet intact.
+- **MEH-851/852/843 tickets** — PRs were "Part of MEH-789" (no `Closes`), per the locked convention; close manually if considered done. The MEH-789 epic stays open for PR-B (minimal-top Header) if still planned.
+- **Process note:** GitHub API rate-limit recurred mid-session; some merges went via Sapir's UI. A stale-`origin/staging`-ref scare (a `git fetch` skipped inside a denied compound Bash command) was resolved by a clean standalone re-fetch — verify "missing commit" negatives against a fresh fetch (CLAUDE.md known-bug-pattern).
+
 ## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
 
 Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
