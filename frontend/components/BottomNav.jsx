@@ -20,7 +20,7 @@ import AccountSheet from "@/components/AccountSheet";
  * Replaces the MEH-20 full-width bottom bar with the signature floating cream
  * pill: 4 DESTINATIONS (גלו · מפה · אודות · חשבון), zero actions. MEH-843:
  * the per-tab solid-green highlight became a green-tint indicator across the 3
- * route tabs + Phosphor fill-on-active + 11px DM Sans labels. MEH-852: the
+ * route tabs + Phosphor fill-on-active + 10.5px DM Sans labels. MEH-852: the
  * indicator is now a SINGLE nav-level capsule that measures the active tab's
  * rect and animates left+width with a DIRECTIONAL liquid-stretch (leading edge
  * springs snappier than width → it elongates along the travel path, then
@@ -132,12 +132,12 @@ export default function BottomNav() {
   // muted. `relative` keeps icon/label (z-10) above the z-0 capsule.
   const tabCls = (active) =>
     [
-      "relative w-full min-w-[64px] min-h-[60px] flex flex-col items-center justify-center gap-[3px]",
+      "relative w-full min-w-[64px] min-h-[44px] flex flex-col items-center justify-center gap-[4px]",
       "rounded-full px-1 py-1.5 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       active ? "text-primary" : "text-fg-muted",
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
-  const labelCls = "relative z-10 font-body text-[11px] font-medium leading-none";
+  const labelCls = "relative z-10 font-body text-[10.5px] font-semibold leading-none";
 
   // Static tint capsule for the account tab (not on the route track — the route
   // tabs share the single MEH-852 liquid-stretch indicator instead).
@@ -145,10 +145,11 @@ export default function BottomNav() {
 
   return (
     <>
-      {/* Floating shell — centers the pill, reserves safe-area + 16px gutter. */}
+      {/* Floating shell — full-width row with ~14px side gutters (px) + a
+          safe-area-inset + 16px bottom gutter; holds the wide pill. */}
       <div
         className={[
-          "md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-4",
+          "md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px]",
           // MEH-789 (chunk 2): transform-only slide, never backdrop-filter.
           // motion-reduce → instant (mirrors Header MEH-734). translate-y is
           // vertical (direction-neutral — no RTL concern); 120% clears the
@@ -161,11 +162,14 @@ export default function BottomNav() {
       >
         {/* MEH-789 (chunk 3): frosted warm-glass surface (.nav-pill-glass in
             globals.css) replaces the opaque bg-background + border; shadow kept.
-            backdrop-filter is never animated — the chunk-2 hide is transform-only. */}
+            backdrop-filter is never animated — the chunk-2 hide is transform-only.
+            MEH-852 size tune: wide pill (w-full, ~14px side margins from the shell
+            px) at a deliberately slim h-14 (56px, Material standard); rounded-full
+            = 28px radius (height/2). Tabs flex-1, evenly spread. */}
         <nav
           ref={navRef}
           aria-label={t("nav.mobile_label")}
-          className="relative w-full max-w-[300px] flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
+          className="relative w-full h-14 flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
         >
           {/* MEH-852: single directional liquid-stretch indicator for the active
               route tab (replaces the per-tab layoutId capsule). Leading edge
