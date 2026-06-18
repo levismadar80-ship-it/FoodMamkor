@@ -49,11 +49,16 @@ export default function AboutPage() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
+  // MEH-855: per-submit counter so the status live region remounts on every
+  // attempt — two identical repeat errors share a message string but must
+  // still re-announce to screen readers.
+  const [submitCount, setSubmitCount] = useState(0);
   const [openTip, setOpenTip] = useState(0);
   const [imgFailed, setImgFailed] = useState(false);
 
   const handleContact = async (event) => {
     event.preventDefault();
+    setSubmitCount((count) => count + 1);
     setContactStatus("loading");
     setContactMsg("");
     try {
@@ -273,14 +278,13 @@ export default function AboutPage() {
                     }`}
                   />
                 </button>
-                {openTip === i && (
-                  <div
-                    id={`tip-panel-${i}`}
-                    className="pb-6 font-body-md text-base text-fg-muted leading-relaxed max-w-[58ch]"
-                  >
-                    {t(`tips.${key}.answer`)}
-                  </div>
-                )}
+                <div
+                  id={`tip-panel-${i}`}
+                  hidden={openTip !== i}
+                  className="pb-6 font-body-md text-base text-fg-muted leading-relaxed max-w-[58ch]"
+                >
+                  {t(`tips.${key}.answer`)}
+                </div>
               </div>
             ))}
           </div>
@@ -360,11 +364,12 @@ export default function AboutPage() {
               <input
                 id="contact-name"
                 type="text"
+                autoComplete="name"
                 required
                 placeholder={t("contact.name_placeholder")}
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
-                className="w-full bg-white border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
               />
             </div>
             <div className="grid gap-2">
@@ -374,11 +379,12 @@ export default function AboutPage() {
               <input
                 id="contact-email"
                 type="email"
+                autoComplete="email"
                 required
-                placeholder="you@example.com"
+                placeholder={t("contact.email_placeholder")}
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
-                className="w-full bg-white border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
                 dir="ltr"
               />
             </div>
@@ -393,7 +399,7 @@ export default function AboutPage() {
                 placeholder={t("contact.message_placeholder")}
                 value={form.message}
                 onChange={(event) => setForm({ ...form, message: event.target.value })}
-                className="w-full bg-white border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-y min-h-[120px] leading-relaxed"
+                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition resize-y min-h-[120px] leading-relaxed"
               />
             </div>
             <button
@@ -416,8 +422,12 @@ export default function AboutPage() {
 
             {contactMsg && (
               <p
-                role="status"
-                aria-live="polite"
+                // MEH-855: key includes a per-submit counter so the live region
+                // remounts on every attempt — even two identical errors in a row —
+                // since SRs announce on insertion, not attribute/text mutation.
+                key={`${contactStatus}-${submitCount}`}
+                role={contactStatus === "error" ? "alert" : "status"}
+                aria-live={contactStatus === "error" ? "assertive" : "polite"}
                 className={`md:col-span-2 text-sm ${
                   contactStatus === "success" ? "text-primary" : "text-red-600"
                 }`}
