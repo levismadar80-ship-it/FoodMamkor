@@ -2185,7 +2185,7 @@
         "message_placeholder": "Tell us what you'd like to talk about...",
         "submit": "Send",
         "submit_loading": "Sending...",
-        "success_toast": "Thanks! We'll get back to you soon 🌿"
+        "success_toast": "Thanks! We'll get back to you soon"
       }
     }
   },
