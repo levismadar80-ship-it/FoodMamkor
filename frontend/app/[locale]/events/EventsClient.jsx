@@ -222,7 +222,7 @@ export default function EventsPage() {
             role="tab"
             aria-selected={!isExp}
             onClick={() => switchTab("events")}
-            className={`pb-3 pt-2 text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               !isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -232,7 +232,7 @@ export default function EventsPage() {
             role="tab"
             aria-selected={isExp}
             onClick={() => switchTab("experiences")}
-            className={`pb-3 pt-2 text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
+            className={`pb-3 pt-2 min-h-[44px] inline-flex items-center text-sm md:text-base font-semibold border-b-2 -mb-px transition ${
               isExp ? "border-primary text-primary" : "border-transparent text-fg-muted hover:text-primary"
             }`}
           >
@@ -240,7 +240,7 @@ export default function EventsPage() {
           </button>
           <Link
             href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
-            className="ms-auto self-center text-sm font-medium text-primary hover:underline"
+            className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
             {isExp ? t("submit_experience") : t("add_event")} →
           </Link>
@@ -270,7 +270,7 @@ export default function EventsPage() {
               // accessible name on every viewport (MEH-134 — a11y + E2E locator).
               aria-label={t("view_list")}
               onClick={() => setView("list")}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
                 view === "list" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
               }`}
             >
@@ -282,7 +282,7 @@ export default function EventsPage() {
               aria-selected={view === "calendar"}
               aria-label={t("view_calendar")}
               onClick={() => setView("calendar")}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition ${
+              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 min-h-[44px] text-sm font-medium transition ${
                 view === "calendar" ? "bg-primary text-white" : "text-fg-muted hover:text-primary"
               }`}
             >
@@ -319,9 +319,11 @@ export default function EventsPage() {
             {groupedByMonth.map((group) => (
               <section key={group.key}>
                 <div className="flex items-baseline gap-2.5 pt-6 pb-1.5">
-                  <span className="font-headline-md text-2xl font-bold text-text leading-none">
+                  {/* MEH-858 F4: month divider is the h2 rung (was a span) so
+                      the outline is h1 → h2 → h3 with no skipped level. */}
+                  <h2 className="font-headline-md text-2xl font-bold text-text leading-none">
                     {group.monthLabel}
-                  </span>
+                  </h2>
                   <span className="font-english italic text-base font-medium text-accent numeric">
                     {group.yearLabel}
                   </span>
@@ -380,11 +382,10 @@ function EntryRow({ entry, freeLabel }) {
       </div>
       {/* body */}
       <div className="py-4 md:py-5 ps-3 pe-4 min-w-0">
-        <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] ${accentText}`}>
-          <Icon size={14} weight="bold" />
-          {entry.category}
-        </div>
-        <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text mt-1 leading-snug">
+        {/* MEH-858 F5: category eyebrow removed — it duplicated the pill chip
+            below (and uppercase tracking was a no-op on Hebrew). The glyph now
+            leads the chip, so the category shows once, still with its icon. */}
+        <h3 className="font-headline-md text-lg md:text-2xl font-bold text-text leading-snug">
           {entry.title}
         </h3>
         {meta && <p className="text-sm text-fg-muted mt-1">{meta}</p>}
@@ -393,7 +394,10 @@ function EntryRow({ entry, freeLabel }) {
         )}
         <div className="flex items-center gap-2 mt-3 flex-wrap">
           {entry.category && (
-            <span className={`text-xs px-2.5 py-1 rounded-full ${catChip}`}>{entry.category}</span>
+            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full ${catChip}`}>
+              <Icon size={12} weight="bold" aria-hidden="true" />
+              {entry.category}
+            </span>
           )}
           {isFree ? (
             <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
@@ -419,9 +423,11 @@ function EmptyState({ tab, t, onReset }) {
       <div className="grid place-items-center w-[76px] h-[76px] rounded-full bg-accent/10 border border-accent/25 text-accent">
         <Icon size={36} />
       </div>
-      <h4 className="font-headline-md text-2xl font-bold text-text mt-5 max-w-[22ch] leading-snug">
+      {/* MEH-858 F4: empty-state title is h2 (was h4) — only heading under the
+          page h1 when the feed is empty, so h1 → h2 with no skip. */}
+      <h2 className="font-headline-md text-2xl font-bold text-text mt-5 max-w-[22ch] leading-snug">
         {isExp ? t("empty_experiences_title") : t("empty_events_title")}
-      </h4>
+      </h2>
       <p className="text-sm text-fg-muted mt-2.5 max-w-[30ch] leading-relaxed">
         {isExp ? t("empty_experiences_body") : t("empty_events_body")}
       </p>
