@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { InstagramLogo, ArrowLeft } from "@phosphor-icons/react";
+import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
@@ -34,7 +34,8 @@ import { BRAND_NAME } from "@/lib/constants";
  * on the dark surface (≥6.3:1 vs the prior #6a8a6a 2.6:1 / #9ab89a 4.3:1
  * fails); added the IS-5568 accessibility-statement link; nav-column h3
  * dropped Hebrew uppercase/tracking; sr-only <h2> anchors the heading
- * hierarchy; the newsletter submit "→" became a Phosphor ArrowLeft.
+ * hierarchy; both footer arrows (CTA + newsletter submit) became Phosphor
+ * ArrowRight + rtl:rotate-180 — bidi-correct (forward in both he and en).
  *
  * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
  * consolidated the brand palette to a single green and retired the prior
@@ -102,7 +103,9 @@ export default function Footer() {
               }}
             >
               {t("nav.footer.add_business")}
-              <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              {/* MEH-867: bidi-correct — points forward in both locales
+                  (ArrowRight in LTR/en; rtl:rotate-180 flips it leftward in he). */}
+              <ArrowRight size={14} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
             </Link>
             <div className="text-center sm:text-start">
               <p className="font-headline-md text-white" style={{ fontSize: "14px" }}>
@@ -200,9 +203,10 @@ export default function Footer() {
                 {status === "loading" ? (
                   <ButtonSpinner />
                 ) : (
-                  // MEH-867: RTL-correct submit affordance — leftward = forward
-                  // in RTL reading direction; replaces a raw "→" glyph.
-                  <ArrowLeft size={18} weight="bold" aria-hidden="true" />
+                  // MEH-867: bidi-correct submit affordance — ArrowRight points
+                  // forward in LTR/en; rtl:rotate-180 flips it leftward (forward
+                  // in RTL reading direction). Replaces a raw "→" glyph.
+                  <ArrowRight size={18} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
                 )}
               </button>
             </form>
