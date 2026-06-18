@@ -544,6 +544,13 @@ class ProducerUpdate(BaseModel):
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
 
+    # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
+    # bleach strip as the register path (_sanitize_address on ProducerRegister).
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=255)
+
     @field_validator("availability_status")
     @classmethod
     def _validate_availability_status(cls, v):
