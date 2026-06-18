@@ -22,7 +22,7 @@
  *             markers instead of a static Tel-Aviv frame).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -114,7 +114,8 @@ function FitToBusinesses({ points }) {
   const map = useMap();
   useEffect(() => {
     if (!points || points.length === 0) return;
-    map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 11 });
+    const latlngs = points.map((p) => [p.lat, p.lng]);
+    map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 11 });
   }, [map, points]);
   return null;
 }
@@ -186,10 +187,16 @@ export default function HomepageMiniMap() {
   // Q4: "plottable" = lat AND lng both present. Empty state shows when
   // zero plottable markers (not when zero producers, since a producer
   // without coords contributes nothing to the map).
-  const plottable =
-    Array.isArray(producers)
-      ? producers.filter((p) => p.lat != null && p.lng != null)
-      : null;
+  // MEH-856: memoized so FitToBusinesses keys on a STABLE reference (changes
+  // only when `producers` changes). Without this, the filtered array was a new
+  // ref every render → the fitBounds effect re-fired and fought user pan.
+  const plottable = useMemo(
+    () =>
+      Array.isArray(producers)
+        ? producers.filter((p) => p.lat != null && p.lng != null)
+        : null,
+    [producers],
+  );
 
   return (
     <section
@@ -223,7 +230,7 @@ export default function HomepageMiniMap() {
               />
               <DisableNonClickZoom />
               <CanvasClickToFullMap />
-              <FitToBusinesses points={plottable.map((p) => [p.lat, p.lng])} />
+              <FitToBusinesses points={plottable} />
               {plottable.map((producer) => (
                 <Marker
                   key={producer.id}
