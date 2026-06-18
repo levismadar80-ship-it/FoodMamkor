@@ -34,6 +34,7 @@ const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
   city: "", address: "",
+  short_description: "",
   category_ids: [],
   // MEH-530: optional at the form level. Backend 422s when any selected
   // category requires a license and this is empty — helper at
@@ -251,6 +252,7 @@ function RegisterProducerPageBody() {
         // strips/empty-string normalises); we still send what we have so the
         // story shows up on the producer page immediately after approval.
         description: form.description,
+        short_description: form.short_description,
         phone: form.phone,
         // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
         // paths (shared body above the !isUpgrade branch).
@@ -624,6 +626,35 @@ function RegisterProducerPageBody() {
 
         {step === STEP.STORY && (
           <div className="space-y-4">
+            {/* MEH-860: frame-03 tagline (short_description) — the one-line
+                "dek" above the long story. Plain text input (event-based
+                set(), like address); the long description below is byte-identical. */}
+            <div>
+              <label
+                htmlFor="producer-tagline"
+                className="block text-sm font-medium text-text mb-1 text-start"
+              >
+                {t("auth.register.producer.fields.tagline_label")}
+              </label>
+              <input
+                id="producer-tagline"
+                value={form.short_description}
+                onChange={set("short_description")}
+                maxLength={160}
+                placeholder={t("auth.register.producer.fields.tagline_placeholder")}
+                className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
+                dir="rtl"
+              />
+              <p className="text-xs text-fg-muted mt-1">{form.short_description.length}/160</p>
+            </div>
+
+            {/* MEH-860: copy-only reassurance card — frames the magazine thesis
+                (the story becomes the producer's page). No logic, no preview. */}
+            <div className="bg-background border border-primary/20 rounded-md px-4 py-3 text-sm">
+              <p className="font-medium text-text mb-1 text-start">{t("auth.register.producer.story_card.title")}</p>
+              <p className="text-fg-muted text-start leading-relaxed">{t("auth.register.producer.story_card.body")}</p>
+            </div>
+
             {/* MEH-532: description is moved to the prominent slot directly
                 below the business name. Submit is never blocked on it —
                 the "אני אכתוב אחר כך" link fills a default and disables the
