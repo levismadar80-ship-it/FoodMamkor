@@ -7,7 +7,7 @@ import { usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, ArrowUpLeft } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -290,7 +290,10 @@ export default function Header() {
                 style={textShadow}
               >
                 {t("nav.add_business_short")}
-                <span className="inline-block scale-x-[-1] opacity-70" aria-hidden="true">↗</span>
+                {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
+                    correct "onward" diagonal; mirrors the prior scale-x flip)
+                    — Phosphor-only, matching the CTA-row arrow affordance. */}
+                <ArrowUpLeft size={14} weight="bold" className="opacity-70" aria-hidden="true" />
               </Link>
             )}
 
