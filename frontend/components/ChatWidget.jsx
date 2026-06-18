@@ -161,9 +161,9 @@ export default function ChatWidget() {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
       if (e.response?.status === 429) {
-        setError("שלחתם הרבה הודעות בזמן קצר — נסו שוב בעוד דקה 🌱");
+        setError("שלחתם הרבה הודעות בזמן קצר — נסו שוב בעוד דקה");
       } else {
-        setError("משהו השתבש 🌱 נסו שוב בעוד רגע");
+        setError("משהו השתבש — נסו שוב בעוד רגע");
       }
     } finally { setSending(false); }
   };
