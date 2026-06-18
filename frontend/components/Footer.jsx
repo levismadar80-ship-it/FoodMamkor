@@ -200,8 +200,8 @@ export default function Footer() {
                 {status === "loading" ? (
                   <ButtonSpinner />
                 ) : (
-                  // MEH-867: RTL-correct submit affordance — ArrowLeft points
-                  // toward the start (forward in RTL); replaces a raw "→" glyph.
+                  // MEH-867: RTL-correct submit affordance — leftward = forward
+                  // in RTL reading direction; replaces a raw "→" glyph.
                   <ArrowLeft size={18} weight="bold" aria-hidden="true" />
                 )}
               </button>
