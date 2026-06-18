@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CookingPot } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
  * Card for an experience (community workshop).
@@ -47,9 +48,15 @@ export default function ExperienceCard({ experience: ex }) {
     >
       {ex.image_url ? (
         <div className="relative">
+          {/* MEH-863 F7: route the (possibly user-submitted) image through the
+              Cloudinary helper for f_auto,q_auto + width cap; non-Cloudinary
+              URLs pass through unchanged. F8: role+aria-label so the
+              CSS-background image is announced to assistive tech. */}
           <div
             className="h-44 bg-cover bg-center"
-            style={{ backgroundImage: `url(${ex.image_url})` }}
+            style={{ backgroundImage: `url(${optimizeCloudinary(ex.image_url, { width: 800 })})` }}
+            role="img"
+            aria-label={ex.title}
           />
           {spotsBadge && (
             <span
@@ -75,9 +82,11 @@ export default function ExperienceCard({ experience: ex }) {
           {formatEventDate(ex.event_date, locale)}
           {ex.event_time && ` · ${formatTime(ex.event_time)}`}
         </p>
-        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
+        {/* MEH-863 F2: h2 (not h3) — card titles sit directly under the page
+            h1 with no h2 between, and this matches GroupBuyCard's level. */}
+        <h2 className="font-headline-md text-xl font-bold text-text mb-1">
           {ex.title}
-        </h3>
+        </h2>
         <p className="text-sm text-fg-muted mb-2">
           {ex.host?.name || t("host_fallback")}
           {ex.city ? ` · ${ex.city}` : ""}
