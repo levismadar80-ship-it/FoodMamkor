@@ -796,8 +796,8 @@
       "status_open": "Open",
       "status_funded": "Funded",
       "status_fulfilled": "Fulfilled",
-      "empty_title": "No group buys right now",
-      "empty_subtitle": "Check back soon"
+      "empty_title": "No active group-buys yet",
+      "empty_subtitle": "When businesses open group-buys, you'll find them here"
     },
     "card": {
       "funded_banner": "Price unlocked!",
