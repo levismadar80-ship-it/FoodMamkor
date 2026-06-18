@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import CategorySelector from "@/components/CategorySelector";
+import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
@@ -32,6 +33,7 @@ const FARMER_DECLARATION_CATEGORIES = ["ירקות", "פירות"];
 const EMPTY_FORM = {
   email: "", name: "", password: "",
   producer_name: "", description: "", phone: "",
+  city: "", address: "",
   category_ids: [],
   // MEH-530: optional at the form level. Backend 422s when any selected
   // category requires a license and this is empty — helper at
@@ -250,6 +252,10 @@ function RegisterProducerPageBody() {
         // story shows up on the producer page immediately after approval.
         description: form.description,
         phone: form.phone,
+        // MEH-853: frame-01 (DETAILS) — sent on both registration + upgrade
+        // paths (shared body above the !isUpgrade branch).
+        city: form.city,
+        address: form.address,
         category_ids: form.category_ids,
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
@@ -472,6 +478,25 @@ function RegisterProducerPageBody() {
                 {t("auth.register.producer.fields.phone_hint")}
               </p>
             </div>
+
+            {/* MEH-853: frame-01 city — reuses the MEH-201 CitySearch
+                autocomplete (MEH-213: free-text city forbidden). CitySearch
+                emits a string, so it can't use the event-based set() helper. */}
+            <CitySearch
+              id="producer-city"
+              label={t("auth.register.producer.fields.city")}
+              placeholder={t("auth.register.producer.fields.city")}
+              value={form.city}
+              onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
+            />
+
+            <input
+              placeholder={t("auth.register.producer.fields.address")}
+              value={form.address}
+              onChange={set("address")}
+              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
+              dir="rtl"
+            />
 
             <div className="flex gap-3">
               {!isUpgrade && (
