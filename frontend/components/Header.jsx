@@ -293,8 +293,9 @@ export default function Header() {
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
                     correct "onward" diagonal; mirrors the prior scale-x flip)
                     — Phosphor-only, matching the CTA-row arrow affordance.
-                    MEH-877: KEPT (not bidi-flipped) — diagonal outbound/external-
-                    link convention, direction-neutral by intent (rtl.md exception). */}
+                    MEH-877: KEPT (not bidi-flipped) — design intent is a diagonal
+                    outbound/external-link arrow, direction-neutral by convention
+                    (not an rtl.md-listed exception). */}
                 <ArrowUpLeft size={14} weight="bold" className="opacity-70" aria-hidden="true" />
               </Link>
             )}
