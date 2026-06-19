@@ -18,18 +18,20 @@
 // as the wire format; localize via the labelKey at render time. Base sets
 // carry NO "all" entry — filters add it via withAll(); forms map key→value.
 
-export const EVENT_CATEGORIES = [
+// MEH-869: frozen — page.js aliases EVENT_CATEGORIES by reference, so a stray
+// push/splice at a call-site would corrupt the shared export for the session.
+export const EVENT_CATEGORIES = Object.freeze([
   { key: "סדנה", labelKey: "workshop" },
   { key: "סיור", labelKey: "tour" },
   { key: "שוק", labelKey: "market" },
   { key: "קטיף", labelKey: "harvest" },
   { key: "טעימות", labelKey: "tasting" },
   { key: "אחר", labelKey: "other" },
-];
+]);
 
 // Narrower set for community experiences — different vocabulary than the
 // producer-farm events above.
-export const EXPERIENCE_CATEGORIES = [
+export const EXPERIENCE_CATEGORIES = Object.freeze([
   { key: "בישול", labelKey: "cooking" },
   { key: "תזונה", labelKey: "nutrition" },
   { key: "סיור אוכל", labelKey: "food_tour" },
@@ -37,7 +39,7 @@ export const EXPERIENCE_CATEGORIES = [
   { key: "טעימות", labelKey: "tasting" },
   { key: "סדנה", labelKey: "workshop" },
   { key: "אחר", labelKey: "other" },
-];
+]);
 
 // Filter chip rows prepend an "all" option; create-form selects do not.
 export function withAll(categories) {
