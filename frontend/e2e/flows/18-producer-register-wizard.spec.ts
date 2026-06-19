@@ -101,7 +101,10 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-account-email").fill("not-an-email");
     await page.getByTestId("register-account-password").fill("Abcdefgh1234");
     await page.getByTestId("register-account-next").click();
-    await expect(page.getByRole("alert")).toBeVisible(); // stepError
+    // Scope under the frame testid — Next.js injects a doc-root
+    // <div role="alert" id="__next-route-announcer__"> that would otherwise
+    // make a bare getByRole("alert") ambiguous (strict-mode).
+    await expect(page.getByTestId("register-frame-account").getByRole("alert")).toBeVisible(); // stepError
     await expect(page.getByTestId("register-frame-account")).toBeVisible(); // gate blocked
 
     // fix the email → advance to DETAILS
@@ -129,7 +132,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     // ── STORY: submit WITHOUT the declarations → submit error as role="alert" ──
     await expect(page.getByTestId("register-frame-story")).toBeVisible();
     await page.getByTestId("register-story-submit").click();
-    await expect(page.getByRole("alert")).toBeVisible(); // submit-gate error
+    await expect(page.getByTestId("register-frame-story").getByRole("alert")).toBeVisible(); // submit-gate error
     await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
   });
 });
