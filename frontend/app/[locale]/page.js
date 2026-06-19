@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import ProducerCard from "@/components/ProducerCard";
 import ParallaxQuote from "@/components/ParallaxQuote";
@@ -37,8 +38,8 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
 });
 
 // PREMIUM_DESIGN: parallax divider images between sections.
+// MEH-879: content-first reorder dropped the 2nd divider; only IMAGE_1 remains.
 const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
-const PARALLAX_IMAGE_2 = "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&auto=format&q=80&fm=webp";
 
 // MEH-809: gate the "עסקים חדשים" section on catalog depth. With a thin catalog
 // the "last added" producers ARE the same businesses already shown in the
@@ -59,12 +60,19 @@ export default function HomePage() {
     fridayMode, step0Visible, userCity,
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
-    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, showStatsFallback, newestProducers,
+    statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
     featuredProducer,
     handleNearMe, handleCitySelected, handleCategoryCardClick,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
+
+  // MEH-879: banner single-slot — at most ONE of {FridayStrip, HolidayBanner,
+  // LocationBanner} renders. Precedence Friday > Holiday > Location. Each
+  // banner keeps its own internal show-condition and reports it up; a lower-
+  // precedence banner is `suppressed` (renders null) when a higher one shows.
+  const [fridayVisible, setFridayVisible] = useState(false);
+  const [holidayVisible, setHolidayVisible] = useState(false);
 
   return (
     <div>
@@ -87,22 +95,25 @@ export default function HomePage() {
           200ms post-FCP via setTimeout + rIC inside the component. */}
       <HomepageMiniMap />
 
-      {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only */}
-      {fridayMode && <FridayDeliveryStrip city={userCity} />}
+      {/* MEH-50: שוק שישי strip — shown Thu 18:00 → Fri 14:00 only.
+          MEH-879: highest banner precedence — reports visibility so Holiday +
+          Location yield to it. */}
+      {fridayMode && (
+        <FridayDeliveryStrip city={userCity} onVisibilityChange={setFridayVisible} />
+      )}
 
       {/* =========================
-          TRUST STRIP — MEH-524 (copy LOCK 2026-06-13, F4 Option B) over the
-          MEH-521 threshold + MEH-607 F10 skeleton:
-          - Renders ONLY when businesses >= 5 (STATS_DISPLAY_THRESHOLD in
-            use-home-page.js); below it the MEH-521 fallback stays.
-          - S4 quiet-strip voice: cream + hairline borders (the old bg-primary
-            bar was the F4 mockup's "Wolt-style marketplace-tier" anti-pattern);
-            numerals = gold italic per S4, LTR-isolated (bidi).
-          - Numbers are STATIC (the count-up component was dropped here): its
-            animation starts at zero, and the lock forbids rendering a zero
-            count in any state.
-          - No verified-claim wording — over-claim guard (MEH-579). Numbers
-            from /stats, never hardcoded.
+          TRUST STRIP — MEH-879 re-anchor (over MEH-524 lock / MEH-521
+          threshold / MEH-607 F10 skeleton):
+          - LEADS with the already-live, approved verification phrase
+            "עסקים שכבר בדקנו בשבילך" (reused from home.hero.subtitle) — the
+            trust now reads at ANY catalog depth, not just >= 5.
+          - The /stats COUNT line is DEMOTED to a quiet secondary line, shown
+            only at >= 5 (showStatsCounter). The MEH-521 "מתחילות עכשיו" <5
+            fallback no longer LEADS (low counts = negative social proof).
+          - S4 quiet-strip voice preserved: cream + hairline borders; numerals
+            gold italic, LTR-isolated (bidi). Numbers from /stats, never
+            hardcoded. Stats logic (use-home-page.js flags) unchanged.
           ========================= */}
       {!statsLoaded && (
         <section className="bg-background border-y border-border py-4 text-center" aria-busy="true">
@@ -111,32 +122,38 @@ export default function HomePage() {
           </p>
         </section>
       )}
-      {showStatsCounter && (
+      {statsLoaded && (
         <section className="bg-background border-y border-border py-4 text-center">
           <p className="font-body-md text-base text-text tracking-wide">
-            <span dir="ltr" className="font-english italic font-semibold text-2xl text-accent tabular-nums align-middle">
-              {statsProducersCount}
-            </span>{" "}
-            {t("home.stats.businesses")}
-            &nbsp;·&nbsp;
-            <span dir="ltr" className="font-english italic font-semibold text-2xl text-accent tabular-nums align-middle">
-              {statsCategoriesCount}
-            </span>{" "}
-            {t("home.stats.categories")}
-            &nbsp;·&nbsp;
-            {t("home.stats.countrywide")}
+            {t("home.trust.lead")}
           </p>
-        </section>
-      )}
-      {showStatsFallback && (
-        <section className="bg-background border-y border-border py-4 text-center">
-          <p className="font-body-md text-base text-text tracking-wide">{t("home.stats.fallback")}</p>
+          {showStatsCounter && (
+            <p className="font-body-sm text-sm text-fg-muted tracking-wide mt-1">
+              <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
+                {statsProducersCount}
+              </span>{" "}
+              {t("home.stats.businesses")}
+              &nbsp;·&nbsp;
+              <span dir="ltr" className="font-english italic font-semibold text-lg text-accent tabular-nums align-middle">
+                {statsCategoriesCount}
+              </span>{" "}
+              {t("home.stats.categories")}
+              &nbsp;·&nbsp;
+              {t("home.stats.countrywide")}
+            </p>
+          )}
         </section>
       )}
 
-      {/* MEH-41: location banner — appears after 3s if no city saved */}
+      {/* MEH-41: location banner — appears after 3s if no city saved.
+          MEH-879: lowest banner precedence — suppressed when Friday or Holiday
+          is showing. */}
       <div className="mt-6">
-        <LocationBanner hasCity={!!userCity} onOpenModal={() => setLocationModalOpen(true)} />
+        <LocationBanner
+          hasCity={!!userCity}
+          onOpenModal={() => setLocationModalOpen(true)}
+          suppressed={(fridayMode && fridayVisible) || holidayVisible}
+        />
       </div>
 
       {/* MEH-41: location modal — shared between hero button + banner */}
@@ -146,9 +163,14 @@ export default function HomePage() {
         onSelectCity={handleCitySelected}
       />
 
-      {/* MEH-55: holiday banner — visible 7 days before and during a holiday */}
+      {/* MEH-55: holiday banner — visible 7 days before and during a holiday.
+          MEH-879: 2nd banner precedence — reports visibility (so Location
+          yields) and is suppressed when the Friday strip is showing. */}
       <div className="mt-4">
-        <HolidayBanner />
+        <HolidayBanner
+          suppressed={fridayMode && fridayVisible}
+          onVisibilityChange={setHolidayVisible}
+        />
       </div>
 
       <HomeCategoryGrid
@@ -158,8 +180,6 @@ export default function HomePage() {
       />
 
       <HomeMarquee />
-
-      <HomeFounderQuote />
 
       <HomeRecentlyViewed items={recentlyViewed} />
 
@@ -210,6 +230,12 @@ export default function HomePage() {
           ========================= */}
       <HomeFeaturedProducer featured={featuredProducer} />
 
+      {/* MEH-879: content-first IA — HowItWorks + FounderQuote relocated below
+          the producer content (was between Marquee and ProducersGrid). */}
+      <HomeHowItWorks />
+
+      <HomeFounderQuote />
+
       {/* =========================
           PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
           First full-bleed divider. Ken Burns lives inside ParallaxQuote.
@@ -223,23 +249,9 @@ export default function HomePage() {
         height="400px"
       />
 
-      <HomeHowItWorks />
-
       {/* MEH-841 (supersedes MEH-525): the full comparison moved to /about;
           a one-line teaser here links to it, keeping the home slot calm. */}
       <HomeComparisonTeaser />
-
-      {/* =========================
-          PARALLAX DIVIDER 2 (PREMIUM_DESIGN)
-          Visual breather before the events block. Quote is intentionally
-          shorter than the first divider so the page has rhythm.
-          ========================= */}
-      <ParallaxQuote
-        image={PARALLAX_IMAGE_2}
-        quote={t("home.story_block.seasonal_heading")}
-        overlayOpacity={0.55}
-        height="340px"
-      />
 
       {/* =========================
           UPCOMING EVENTS PREVIEW (Task 6)

@@ -42,7 +42,7 @@ function ProducerMiniCard({ producer }) {
   );
 }
 
-export default function FridayDeliveryStrip({ city }) {
+export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
   const [producers, setProducers] = useState([]);
@@ -59,7 +59,14 @@ export default function FridayDeliveryStrip({ city }) {
       .catch(() => {});
   }, [city]);
 
-  if (producers.length === 0) return null;
+  // MEH-879: report show-state up to the homepage banner single-slot so
+  // lower-precedence banners (Holiday, Location) can yield to this strip.
+  const visible = producers.length > 0;
+  useEffect(() => {
+    onVisibilityChange?.(visible);
+  }, [visible, onVisibilityChange]);
+
+  if (!visible) return null;
 
   return (
     <section
