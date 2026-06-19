@@ -128,7 +128,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // MEH-328 Chunk D: success path lands on the OWASP-aligned inbox-check
     // screen. Identical body across new-email / collision branches; no
     // access_token in response, no auto-login.
-    await expect(page.getByText(/בדקי את תיבת האימייל שלך/)).toBeVisible({
+    await expect(page.getByText(/בדקו את תיבת האימייל שלכם/)).toBeVisible({
       timeout: 20_000,
     });
   });
@@ -163,7 +163,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     // Confirm input on /reset-password has placeholder "אישור סיסמה"
     // (no <label>); use getByPlaceholder, not getByLabel.
     await page.getByPlaceholder("אישור סיסמה").fill(SHORT_PASSWORD);
-    await page.getByRole("button", { name: /עדכני סיסמה/ }).click();
+    await page.getByRole("button", { name: /עדכנו סיסמה/ }).click();
     // Scope to role="alert" — the form-level error div on /reset-password.
     // getByText would also match the always-visible page subtitle ("הזיני
     // סיסמה חדשה לפחות 12 תווים") and the inline PasswordInput tile,

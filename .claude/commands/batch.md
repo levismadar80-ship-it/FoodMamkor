@@ -104,7 +104,6 @@ git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צר�
 Any hit on a customer-facing string → switch to plural (`גלו`, `בחרו`, `שלחו`,
 `חזרו`, `צרו`, …) before proceeding.
 
-
 ---
 
 ## Section 5 — STOP conditions
