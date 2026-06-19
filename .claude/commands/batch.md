@@ -97,9 +97,13 @@ Each verb is wrapped in leading+trailing word-boundary char-classes
 `נסיעה`/`מצרים`). **Exempt (not in the list, will not fire):** `הצטרפי` (Q3
 entry-CTA, feminine ALLOWED), `admin/settings/dashboard` backoffice, and
 `/about` + `/about/for-businesses` narrative (`about_business.*`) — those keep
-feminine by policy; a hit there is a false positive, eyeball and proceed:
+feminine by policy; a hit there is a false positive, eyeball and proceed.
+**Imperatives only** — the 2nd-person pronoun/possessive + future class
+(`את`/`שלך`/`אלייך`/`תוכלי`/`קיבלת`/non-CTA `ספרי`/hero) is **deferred to
+MEH-885**, so those are intentionally NOT in this list and stay feminine for
+now. Also out: `הזמיני` (HOLD — producer share CTA):
 ```bash
-git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צרי|עדכני|שלחי|פתחי|הגישי|נסי|צפי|עקבי|בטלי|סנני|סנן|גלגלי|לחצי|דרגי|השלימי|הזמיני|דברי|שתפי|המשיכי|תוכלי|קיבלת|הוסיפי|כתבי)[ \",.<—\)]" && echo "STOP — feminine-singular UI imperative re-introduced (ADR-014, MEH-872)" && exit 1 || true
+git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צרי|עדכני|שלחי|פתחי|הגישי|נסי|צפי|עקבי|בטלי|סנני|סנן|גלגלי|לחצי|דרגי|השלימי|דברי|שתפי|המשיכי|הוסיפי|כתבי|מצאי|פרסמי|הציעי|הירשמי|הודיעי|חפשי|מרכזי|התחברי)[ \",.<—\)]" && echo "STOP — feminine-singular UI imperative re-introduced (ADR-014, MEH-872)" && exit 1 || true
 ```
 Any hit on a customer-facing string → switch to plural (`גלו`, `בחרו`, `שלחו`,
 `חזרו`, `צרו`, …) before proceeding.
