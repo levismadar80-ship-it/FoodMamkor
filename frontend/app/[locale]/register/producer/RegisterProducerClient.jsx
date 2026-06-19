@@ -327,7 +327,7 @@ function RegisterProducerPageBody() {
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < STEP.CONFIRM && (
           <div className="bg-green-50 border border-primary/30 rounded-md px-4 py-3 mb-4 text-sm text-text flex items-start gap-2">
-            <Leaf size={16} weight="duotone" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+            <Leaf size={16} className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               <span className="block">{t("auth.register.producer.upgrade_banner.connected_with", { email: user.email })}</span>
               <span className="block">{t("auth.register.producer.upgrade_banner.attached_to_account")}</span>
@@ -362,7 +362,7 @@ function RegisterProducerPageBody() {
 
         {prefillToken && prefillApplied && (
           <div className="bg-green-50 text-primary border border-primary/30 rounded-md p-3 mb-4 text-sm inline-flex items-center gap-2">
-            <Leaf size={16} weight="duotone" aria-hidden="true" className="shrink-0" />
+            <Leaf size={16} aria-hidden="true" className="shrink-0" />
             {t("auth.register.producer.prefill_notice")}
           </div>
         )}

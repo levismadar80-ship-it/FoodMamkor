@@ -253,7 +253,7 @@ function RegisterPageBody() {
             className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
           >
-            <Leaf size={32} weight="duotone" className="text-primary" aria-hidden="true" />
+            <Leaf size={32} className="text-primary" aria-hidden="true" />
           </div>
           {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
               parity with LoginClient's welcome headline (MEH-131 precedent). */}

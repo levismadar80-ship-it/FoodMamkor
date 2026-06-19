@@ -456,7 +456,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("organic_certified", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            <Leaf size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.organic_certified")}
+            <Leaf size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.organic_certified")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -465,7 +465,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               onChange={(e) => update("grass_fed", e.target.checked)}
               className="w-4 h-4 accent-primary"
             />
-            <Cow size={16} weight="duotone" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
+            <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">

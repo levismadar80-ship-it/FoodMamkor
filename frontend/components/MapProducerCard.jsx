@@ -91,7 +91,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             className="object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} weight="duotone" className="text-primary/40" /></div>
+          <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} className="text-primary/40" /></div>
         )}
         {/* Category color dot — bottom-end corner of thumbnail */}
         <span

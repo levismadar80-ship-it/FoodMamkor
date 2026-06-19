@@ -102,7 +102,7 @@ function SettingsPageBody() {
           icon={
             <UserCircle
               size={16}
-              weight={tab === "profile" ? "fill" : "duotone"}
+              weight={tab === "profile" ? "fill" : "regular"}
             />
           }
         >
@@ -112,7 +112,7 @@ function SettingsPageBody() {
           active={tab === "security"}
           onClick={() => selectTab("security")}
           icon={
-            <Lock size={16} weight={tab === "security" ? "fill" : "duotone"} />
+            <Lock size={16} weight={tab === "security" ? "fill" : "regular"} />
           }
         >
           {tCommon("tab_security")}
@@ -125,7 +125,7 @@ function SettingsPageBody() {
             icon={
               <Storefront
                 size={16}
-                weight={tab === "business" ? "fill" : "duotone"}
+                weight={tab === "business" ? "fill" : "regular"}
               />
             }
           >
@@ -1385,7 +1385,7 @@ function SupportModal({ onClose }) {
           href="mailto:support@mehamakor.online"
           className="flex items-center gap-3 rounded-[14px] border border-border px-4 py-3 hover:bg-green-50 transition"
         >
-          <EnvelopeSimple size={22} weight="duotone" className="text-primary shrink-0" />
+          <EnvelopeSimple size={22} className="text-primary shrink-0" />
           <div>
             <p className="text-sm font-medium">{t("email_label")}</p>
             <p className="text-xs text-fg-muted">support@mehamakor.online</p>

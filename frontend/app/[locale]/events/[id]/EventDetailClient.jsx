@@ -60,7 +60,7 @@ export default function EventDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+          <Leaf size={56} className="text-primary" aria-hidden="true" />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/events" className="text-primary hover:underline">
@@ -102,13 +102,13 @@ export default function EventDetailClient() {
         <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
             {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
-            <Calendar size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
+            <Calendar size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
             {formatEventDate(event.event_date, locale, DETAIL_DATE_OPTIONS)}
             {event.event_time && ` · ${event.event_time.slice(0, 5)}`}
           </p>
           {event.location && (
             <p className="flex items-center gap-2">
-              <MapPin size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
+              <MapPin size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
               {event.location}{event.city && `, ${event.city}`}
             </p>
           )}
@@ -116,13 +116,13 @@ export default function EventDetailClient() {
             {/* MEH-857: emoji to Phosphor. text-accent (not text-primary) so the
                 glyph leads in this row's accent color — same principle as MapPin
                 leading its row in text-primary at :96. */}
-            <Coins size={16} weight="duotone" className="text-accent inline align-[-3px]" aria-hidden="true" />
+            <Coins size={16} className="text-accent inline align-[-3px]" aria-hidden="true" />
             {event.price > 0 ? `₪${event.price}` : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
               {/* MEH-857: emoji to Phosphor, mirrors MapPin markup at :96 */}
-              <UsersThree size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
+              <UsersThree size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
               {t("participants_limit", { n: event.max_participants })}
             </p>
           )}
