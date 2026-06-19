@@ -27,7 +27,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from "react-leaflet";
-import { ArrowLeft, MapTrifold } from "@phosphor-icons/react";
+import { ArrowRight, MapTrifold } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -274,7 +274,10 @@ export default function HomepageMiniMap() {
             className="inline-flex items-center gap-1 text-primary hover:text-primary-dark text-sm font-medium"
           >
             {t("open_full")}
-            <ArrowLeft size={16} weight="bold" aria-hidden="true" />
+            {/* MEH-877: bidi-correct CTA arrow (Footer MEH-867 pattern) —
+                forward in both locales: ArrowRight in LTR/en, rtl:rotate-180
+                flips it leftward in he. */}
+            <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
           </Link>
         </div>
       </div>

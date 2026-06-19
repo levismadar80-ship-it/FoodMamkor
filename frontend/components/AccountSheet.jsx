@@ -152,7 +152,10 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
                 <Storefront size={19} weight="regular" className="text-gold-on-dark" aria-hidden="true" />
                 {t("account.sheet.biz_cta")}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (RTL-correct
-                    onward diagonal; ms-auto pins it to the row end). */}
+                    onward diagonal; ms-auto pins it to the row end).
+                    MEH-877: KEPT (not bidi-flipped) — design intent is a diagonal
+                    outbound/external-link arrow, direction-neutral by convention
+                    (not an rtl.md-listed exception). */}
                 <ArrowUpLeft size={16} weight="bold" className="ms-auto text-gold-on-dark" aria-hidden="true" />
               </Link>
             </li>
