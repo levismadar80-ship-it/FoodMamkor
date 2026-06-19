@@ -90,14 +90,14 @@
       "reset": {
         "loading": "בטעינה...",
         "invalid_link": "קישור האיפוס לא תקין",
-        "request_new_link": "בקשי קישור חדש",
+        "request_new_link": "בקשו קישור חדש",
         "title": "סיסמה חדשה",
-        "subtitle": "הזיני סיסמה חדשה (לפחות {min} תווים)",
+        "subtitle": "הזינו סיסמה חדשה (לפחות {min} תווים)",
         "password_placeholder": "סיסמה חדשה",
         "password_aria": "סיסמה חדשה",
         "confirm_placeholder": "אישור סיסמה",
-        "toggle_show": "הציגי סיסמה",
-        "toggle_hide": "הסתירי סיסמה",
+        "toggle_show": "הציגו סיסמה",
+        "toggle_hide": "הסתירו סיסמה",
         "success_title": "✓ הסיסמה עודכנה בהצלחה",
         "success_subtitle": "מעבירים אותך לדף הכניסה...",
         "submit_updating": "בעדכון...",
@@ -105,15 +105,15 @@
         "errors": {
           "too_short": "הסיסמה חייבת להכיל לפחות {min} תווים",
           "mismatch": "הסיסמאות אינן תואמות",
-          "invalid_token": "קישור האיפוס לא תקין. בקשי קישור חדש.",
-          "expired_token": "קישור האיפוס פג תוקף. בקשי קישור חדש.",
+          "invalid_token": "קישור האיפוס לא תקין. בקשו קישור חדש.",
+          "expired_token": "קישור האיפוס פג תוקף. בקשו קישור חדש.",
           "generic": "שגיאה בעדכון הסיסמה, נסו שוב"
         }
       }
     },
     "verifyEmail": {
       "loading_title": "באימות...",
-      "loading_subtitle": "אנא המתיני",
+      "loading_subtitle": "אנא המתינו",
       "fallback_loading": "בטעינה...",
       "success_title": "האימייל אומת בהצלחה!",
       "success_subtitle": "מעבירים אותך לאתר...",
@@ -929,7 +929,7 @@
     "holiday_banner": {
       "approaching": "{name} מתקרב {emoji}",
       "aria": "הודעת חג",
-      "close_aria": "סגרי"
+      "close_aria": "סגרו"
     }
   },
   "map": {
@@ -970,18 +970,18 @@
       "subheading": "בחרו עיר כדי לסנן לפי משלוח",
       "other": {
         "label": "עיר אחרת",
-        "placeholder": "הקלידי שם עיר..."
+        "placeholder": "הקלידו שם עיר..."
       },
-      "skip": "דלגי"
+      "skip": "דלגו"
     },
     "popup": {
       "whatsapp_greeting": "היי! מצאתי אותך במהמקור — {name}"
     },
     "filter": {
       "aria": {
-        "remove": "הסירי סינון {label}"
+        "remove": "הסירו סינון {label}"
       },
-      "clear_all": "× נקי הכל"
+      "clear_all": "× נקו הכל"
     },
     "card_list": {
       "empty": {
@@ -1002,7 +1002,7 @@
         "center_on_me": "מרכזו את המפה על המיקום שלי",
         "categories": "קטגוריות"
       },
-      "show_all": "הצגי הכל"
+      "show_all": "הציגו הכל"
     },
     "sheet": {
       "badge": {
@@ -2195,14 +2195,14 @@
       "title": "איפה את?",
       "subtitle": "נמצא עסקים קרובים אליך",
       "search_label": "חיפוש עיר",
-      "search_placeholder": "הקלידי שם עיר...",
+      "search_placeholder": "הקלידו שם עיר...",
       "aria_label": "בחירת עיר",
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
       "geo_loading": "בחיפוש...",
       "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
       "current_location_fallback": "מיקום נוכחי",
-      "skip": "דלגי לעכשיו",
+      "skip": "דלגו לעכשיו",
       "popular_cities": {
         "tel_aviv": "תל אביב",
         "jerusalem": "ירושלים",
@@ -2218,7 +2218,7 @@
       "examples_hint": "קומבוצ'ה, קפיר, וואטר קפיר...",
       "submit": "שלחו בקשה",
       "submit_loading": "בשליחה...",
-      "close": "סגרי",
+      "close": "סגרו",
       "toasts": {
         "success": "תודה! הבקשה התקבלה. בינתיים, בחרו את הקטגוריה הקרובה ביותר.",
         "error": "שגיאה בשליחת הבקשה — נסו שוב"
@@ -2230,13 +2230,13 @@
       "ios_instructions": "לחצו על <share>שתף</share> ← <add>הוסף למסך הבית</add>",
       "android_subtitle": "הוסיפו לדף הבית — חוויה כמו אפליקציה, בלי App Store",
       "android_cta": "הוסיפו",
-      "dismiss_aria": "סגרי"
+      "dismiss_aria": "סגרו"
     },
     "login_prompt": {
-      "default_message": "כדי לשמור עסקים אוהבים — היכנסי",
-      "close_aria": "סגרי חלונית",
+      "default_message": "כדי לשמור עסקים אוהבים — היכנסו",
+      "close_aria": "סגרו חלונית",
       "title": "רוצה לשמור?",
-      "login_cta": "היכנסי",
+      "login_cta": "היכנסו",
       "dismiss_cta": "אולי אחר כך"
     },
     "cookie_banner": {
@@ -2247,7 +2247,7 @@
     },
     "lightbox": {
       "aria_label": "תצוגת תמונה",
-      "close_aria": "סגרי תצוגה",
+      "close_aria": "סגרו תצוגה",
       "image_alt": "תמונה {current} מתוך {total}",
       "prev_aria": "תמונה קודמת",
       "next_aria": "תמונה הבאה"
@@ -2337,8 +2337,8 @@
     "password": {
       "placeholder_default": "סיסמה",
       "aria_label_default": "סיסמה",
-      "toggle_show": "הציגי סיסמה",
-      "toggle_hide": "הסתירי סיסמה",
+      "toggle_show": "הציגו סיסמה",
+      "toggle_hide": "הסתירו סיסמה",
       "min_length": "לפחות {min} תווים",
       "checking": "בבדיקה...",
       "not_breached": "לא דלפה ברשת",
@@ -2399,7 +2399,7 @@
     "filters": {
       "city_chip": "בעיר שלי",
       "filter_by": "מסנן לפי:",
-      "clear_all": "נקי הכל"
+      "clear_all": "נקו הכל"
     },
     "empty": {
       "no_match_search": "לא מצאנו בתי עסק עבור \"{q}\"",
@@ -2414,7 +2414,7 @@
         "oil": "שמן",
         "honey": "דבש"
       },
-      "clear_all_show_all": "נקי הכל והצגי הכל"
+      "clear_all_show_all": "נקו הכל והציגו הכל"
     },
     "catalog_empty": {
       "title": "הרשימה בדרך",
@@ -2554,7 +2554,7 @@
     },
     "cities_autocomplete": {
       "remove_aria": "הסר {city}",
-      "placeholder": "הקלידי שם עיר..."
+      "placeholder": "הקלידו שם עיר..."
     },
     "city_search": {
       "placeholder": "חפשו עיר...",
@@ -2565,7 +2565,7 @@
     }
   },
   "favorites": {
-    "alerts_aria": "הגדרי התראות",
+    "alerts_aria": "הגדרו התראות",
     "breadcrumb_home": "בית",
     "breadcrumb_favorites": "מועדפים",
     "title": "המועדפים שלי",
@@ -2581,7 +2581,7 @@
       "add_aria": "הוסיפו למועדפים",
       "remove_aria": "הסר ממועדפים",
       "inline_label": "שמרו",
-      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסי"
+      "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו"
     }
   },
   "rate": {
@@ -2616,7 +2616,7 @@
     "copied_toast": "הקישור הועתק"
   },
   "gallery": {
-    "open_aria": "הגדלי תמונה {current}",
+    "open_aria": "הגדלו תמונה {current}",
     "image_alt": "תמונה {current}",
     "prev_aria": "תמונה קודמת",
     "next_aria": "תמונה הבאה",
@@ -3508,7 +3508,7 @@
     },
     "alert_prefs": {
       "loading": "בטעינה...",
-      "heading": "הודעי לי כש...",
+      "heading": "הודיעו לי כש...",
       "close_aria": "סגור",
       "row_new_event": "אירועים חדשים",
       "row_new_product": "מוצרים חדשים",
@@ -3516,7 +3516,7 @@
       "row_whatsapp_opt_in": "שלחי ב-WhatsApp",
       "push_denied_toast": "הרשאת התראות נדחתה",
       "push_blocked": "התראות דחיפה חסומות בדפדפן",
-      "push_enable": "הפעילי התראות דחיפה (PWA)",
+      "push_enable": "הפעילו התראות דחיפה (PWA)",
       "push_active": "התראות דחיפה פעילות",
       "save_cta": "שמרו הגדרות",
       "saving": "בשמירה...",

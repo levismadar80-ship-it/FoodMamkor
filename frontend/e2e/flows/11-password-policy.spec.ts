@@ -165,7 +165,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await page.getByPlaceholder("אישור סיסמה").fill(SHORT_PASSWORD);
     await page.getByRole("button", { name: /עדכנו סיסמה/ }).click();
     // Scope to role="alert" — the form-level error div on /reset-password.
-    // getByText would also match the always-visible page subtitle ("הזיני
+    // getByText would also match the always-visible page subtitle ("הזינו
     // סיסמה חדשה לפחות 12 תווים") and the inline PasswordInput tile,
     // tripping strict-mode.
     await expect(
