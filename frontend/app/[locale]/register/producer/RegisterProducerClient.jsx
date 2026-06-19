@@ -351,6 +351,7 @@ function RegisterProducerPageBody() {
               <span
                 key={s}
                 dir="ltr"
+                aria-current={s === step ? "step" : undefined}
                 className={`font-english italic text-2xl leading-none ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
               >
                 {String(s).padStart(2, "0")}
@@ -370,6 +371,12 @@ function RegisterProducerPageBody() {
         {step === STEP.ACCOUNT && (
           <div className="space-y-4" data-testid="register-frame-account">
             <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.account.title")}</h2>
+
+            {/* MEH-880 (S7 Chunk E1): copy-only reassurance card — mirrors the
+                Chunk-D story_card pattern (brand tokens only, no state-color). */}
+            <div className="bg-background border border-primary/20 rounded-md px-4 py-3 text-sm" data-testid="register-account-reassurance">
+              <p className="text-text text-start">{t("auth.register.producer.account_reassurance")}</p>
+            </div>
 
             {/* MEH-170 — Step 0 OAuth on top. Unmounts gracefully when
                 no Google/Apple client_id is configured. */}
