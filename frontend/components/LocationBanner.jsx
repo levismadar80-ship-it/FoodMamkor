@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 const DISMISS_KEY = "location_banner_dismissed";
 
-export default function LocationBanner({ hasCity, onOpenModal }) {
+export default function LocationBanner({ hasCity, onOpenModal, suppressed = false }) {
   const t = useTranslations("location.banner");
   const [visible, setVisible] = useState(false);
 
@@ -17,7 +17,9 @@ export default function LocationBanner({ hasCity, onOpenModal }) {
     return () => clearTimeout(timer);
   }, [hasCity]);
 
-  if (!visible || hasCity) return null;
+  // MEH-879: lowest banner precedence — `suppressed` (Friday or Holiday is
+  // showing) forces null so at most one banner occupies the slot.
+  if (suppressed || !visible || hasCity) return null;
 
   const dismiss = () => {
     setVisible(false);
