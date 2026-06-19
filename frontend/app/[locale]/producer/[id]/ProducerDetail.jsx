@@ -130,7 +130,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
                   : "border-transparent text-fg-muted"
               }`}
             >
-              <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "duotone"} />
+              <tab.Icon size={18} weight={activeTab === tab.key ? "fill" : "regular"} />
               {tab.label}
             </button>
           ))}

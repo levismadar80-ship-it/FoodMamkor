@@ -121,7 +121,7 @@ export default function AdminLayout({ children }) {
                 }`}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon size={18} weight={active ? "fill" : "duotone"} />
+                <Icon size={18} weight={active ? "fill" : "regular"} />
                 <span className="flex-1">{t(`layout.nav.${n.key}`)}</span>
                 {showBadge && (
                   <span
@@ -157,7 +157,7 @@ export default function AdminLayout({ children }) {
                   active ? "bg-primary text-white" : "text-green-50/70"
                 }`}
               >
-                <Icon size={14} weight="duotone" />
+                <Icon size={14} />
                 {t(`layout.nav.${n.key}`)}
               </Link>
             );

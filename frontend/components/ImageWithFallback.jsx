@@ -47,7 +47,7 @@ export default function ImageWithFallback({
           ...style,
         }}
       >
-        <Leaf size={40} weight="duotone" className="text-primary/70" aria-hidden="true" />
+        <Leaf size={40} className="text-primary/70" aria-hidden="true" />
       </div>
     );
   }

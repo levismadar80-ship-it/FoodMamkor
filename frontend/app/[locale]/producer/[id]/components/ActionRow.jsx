@@ -65,7 +65,7 @@ export default function ActionRow({
             className="flex items-center justify-center gap-2 border border-border text-primary-dark px-4 min-h-[44px] rounded-md hover:border-primary transition text-sm font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
             aria-label={t("producer.detail.action_row.aria.show_on_map")}
           >
-            <MapTrifold size={16} weight="duotone" />
+            <MapTrifold size={16} />
             {t("producer.detail.action_row.show_on_map")}
           </button>
         )}

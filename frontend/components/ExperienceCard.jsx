@@ -72,7 +72,7 @@ export default function ExperienceCard({ experience: ex }) {
         <div className="h-44 bg-green-50 flex items-center justify-center">
           {/* MEH-862: Phosphor placeholder replaces the no-image emoji (LOCK v2).
               CookingPot mirrors EventsClient category icon for cooking/workshop. */}
-          <CookingPot size={48} weight="duotone" className="text-primary/50" aria-hidden="true" />
+          <CookingPot size={48} className="text-primary/50" aria-hidden="true" />
         </div>
       )}
       <div className="p-4 flex-1 flex flex-col">

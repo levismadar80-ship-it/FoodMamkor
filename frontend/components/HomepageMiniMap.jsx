@@ -129,7 +129,7 @@ function PreviewSkeleton() {
   const t = useTranslations("map.homepage_mini");
   return (
     <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
-      <MapTrifold size={48} weight="duotone" className="text-primary/30" />
+      <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("loading")}</p>
     </div>
   );
@@ -139,7 +139,7 @@ function PreviewEmpty() {
   const t = useTranslations("map.homepage_mini");
   return (
     <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
-      <MapTrifold size={48} weight="duotone" className="text-primary/40" />
+      <MapTrifold size={48} className="text-primary/40" />
       <p className="text-text text-sm">
         {t("pre_launch_hint")} 🌿
       </p>

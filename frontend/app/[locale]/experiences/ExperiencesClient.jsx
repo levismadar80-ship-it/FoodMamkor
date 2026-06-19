@@ -158,7 +158,7 @@ export default function ExperiencesClient() {
         ) : experiences.length === 0 ? (
           <div className="text-center py-16">
             <div className="mb-4 flex justify-center">
-              <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+              <Leaf size={56} className="text-primary" aria-hidden="true" />
             </div>
             <p className="text-fg-muted">
               {t("empty_title")}

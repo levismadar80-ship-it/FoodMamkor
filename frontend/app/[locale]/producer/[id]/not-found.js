@@ -11,7 +11,6 @@ export default function ProducerNotFound() {
       <div className="text-center max-w-md">
         <Leaf
           size={72}
-          weight="duotone"
           className="mx-auto mb-4 text-primary"
           aria-hidden="true"
         />
@@ -26,14 +25,14 @@ export default function ProducerNotFound() {
             href="/map"
             className="inline-flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-full hover:bg-primary-dark transition font-medium focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <MapTrifold size={18} weight="duotone" />
+            <MapTrifold size={18} />
             {t("discover")}
           </Link>
           <Link
             href="/"
             className="inline-flex items-center justify-center gap-2 border border-primary text-primary px-6 py-3 rounded-full hover:bg-green-50 transition font-medium"
           >
-            <House size={18} weight="duotone" />
+            <House size={18} />
             {t("home")}
           </Link>
         </div>

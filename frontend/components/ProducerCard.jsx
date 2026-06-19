@@ -370,7 +370,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               data-testid="primary-method-hint"
               data-method={primaryMethod}
             >
-              <MethodIcon size={18} weight="duotone" aria-hidden="true" />
+              <MethodIcon size={18} aria-hidden="true" />
             </span>
           )}
         </div>

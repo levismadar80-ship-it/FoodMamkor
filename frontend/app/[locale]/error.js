@@ -25,7 +25,6 @@ export default function GlobalError({ error, reset }) {
         </Link>
         <WarningCircle
           size={72}
-          weight="duotone"
           color="#2e6853"
           className="mx-auto mb-5"
           aria-hidden="true"

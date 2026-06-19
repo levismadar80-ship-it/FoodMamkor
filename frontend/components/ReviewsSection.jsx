@@ -306,7 +306,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           />
         ) : (
           <div className="text-center py-8">
-            <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
+            <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
             <p className="text-fg-muted">{t("empty_message")}</p>
           </div>
         )

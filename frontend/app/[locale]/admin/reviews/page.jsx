@@ -191,7 +191,7 @@ export default function AdminReviewsPage() {
                         className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-red-400/40"
                         aria-label={t("reviews.delete_aria", { user: r.user_name || t("reviews.default_user") })}
                       >
-                        <Trash size={14} weight="duotone" />
+                        <Trash size={14} />
                         {deletingId === r.id ? t("reviews.deleting") : t("reviews.delete")}
                       </button>
                     </td>

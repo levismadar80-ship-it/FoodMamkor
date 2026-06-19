@@ -56,7 +56,7 @@ export default function ExperienceDetailClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-center">
         <div className="mb-4 flex justify-center">
-          <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+          <Leaf size={56} className="text-primary" aria-hidden="true" />
         </div>
         <p className="text-fg-muted mb-6">{t("not_found")}</p>
         <Link href="/experiences" className="text-primary hover:underline">
@@ -146,7 +146,7 @@ export default function ExperienceDetailClient() {
           </p>
           {ex.city && (
             <p className="flex items-center gap-2">
-              <MapPin size={16} weight="duotone" className="text-primary inline align-[-3px]" aria-hidden="true" />
+              <MapPin size={16} className="text-primary inline align-[-3px]" aria-hidden="true" />
               {ex.city}
               {ex.address && ` · ${ex.address}`}
             </p>

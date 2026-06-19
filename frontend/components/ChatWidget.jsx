@@ -202,7 +202,7 @@ export default function ChatWidget() {
         aria-label={open ? "סגרי את הצ׳אט" : "שאלי אותנו"}
         aria-expanded={open}
       >
-        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
+        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
         {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלי אותי</span>}
       </button>
 
@@ -218,7 +218,7 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
+              <ChatCircleDots size={20} aria-hidden="true" />
               <span className="font-headline-md font-bold text-base">שאלי אותנו</span>
             </div>
             <button
