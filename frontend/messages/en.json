@@ -1,4 +1,7 @@
 {
+  "a11y": {
+    "loading": "Loading…"
+  },
   "nav": {
     "discover": "Discover",
     "explore": "Explore",
