@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -82,12 +83,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
         className="shrink-0 w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative bg-green-50"
       >
         {imgSrc ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={imgSrc}
             alt={p.name || ""}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            sizes="(max-width: 1179px) 72px, 88px"
+            className="object-cover"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} weight="duotone" className="text-primary/40" /></div>
