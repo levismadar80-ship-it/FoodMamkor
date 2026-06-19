@@ -146,11 +146,12 @@ export function useHomePage() {
     Object.assign(initParams, initChipParams);
     loadProducers(initParams);
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
-    // true and the skeleton dismisses — empty result hides the section
-    // (showStatsCounter/showStatsFallback both false), which is the same
-    // behavior we had before, just CLS-safe (skeleton bridged the gap).
-    // Rule-19: a malformed /stats payload degrades to {} (section hides),
-    // identical to the network-error branch — never crashes the counter.
+    // true and the skeleton dismisses (CLS-safe — skeleton bridged the gap).
+    // MEH-879/881: with stats `{}` the trust band shows the verification
+    // LEAD alone ("עסקים שכבר בדקנו בשבילך"); the count secondary stays
+    // hidden because showStatsCounter is false (< threshold).
+    // Rule-19: a malformed /stats payload degrades to {} the same way as the
+    // network-error branch — lead-only, never crashes the counter.
     api
       .get("/stats")
       .then((r) => {
@@ -342,7 +343,6 @@ export function useHomePage() {
   const statsProducersCount = stats?.producers_count || producers.length;
   const statsCategoriesCount = stats?.categories_count || categories.length || 6;
   const showStatsCounter = statsLoaded && statsProducersCount >= STATS_DISPLAY_THRESHOLD;
-  const showStatsFallback = statsLoaded && !showStatsCounter && statsProducersCount > 0;
 
   // Newest producers (last 4 by created_at if available, else first 4)
   const newestProducers = producers
@@ -386,7 +386,6 @@ export function useHomePage() {
     statsCategoriesCount,
     statsLoaded,
     showStatsCounter,
-    showStatsFallback,
     newestProducers,
     featuredProducer,
     // handlers
