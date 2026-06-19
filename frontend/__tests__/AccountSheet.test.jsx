@@ -70,6 +70,10 @@ describe("AccountSheet", () => {
     );
     expect(logout).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+    // order is contractual: logout() must fire before the sheet closes
+    expect(logout.mock.invocationCallOrder[0]).toBeLessThan(
+      onClose.mock.invocationCallOrder[0],
+    );
   });
 
   it("renders favorites + settings nav links with correct hrefs", () => {
