@@ -71,7 +71,7 @@ export default function FavoritesClient() {
         className="mb-4"
       />
       <h1 className="font-headline-lg text-3xl font-bold mb-8 text-text inline-flex items-center gap-2">
-        <Heart size={28} weight="fill" className="text-red-500" aria-hidden="true" />
+        <Heart size={28} weight="fill" className="text-primary" aria-hidden="true" />
         {t("title")}
       </h1>
 
