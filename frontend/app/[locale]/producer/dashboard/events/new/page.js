@@ -7,18 +7,9 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
-
-// API category values are Hebrew strings (server-side enum). Keep keys
-// as the wire format; localize labels via t() at render time. Mirrors
-// EventsClient.jsx's CATEGORY_KEYS so /en shows English option text.
-const CATEGORY_KEYS = [
-  { key: "סדנה", labelKey: "workshop" },
-  { key: "סיור", labelKey: "tour" },
-  { key: "שוק", labelKey: "market" },
-  { key: "קטיף", labelKey: "harvest" },
-  { key: "טעימות", labelKey: "tasting" },
-  { key: "אחר", labelKey: "other" },
-];
+// MEH-869: shared category set — aliased on import (no transform; the
+// create-form select reads the base {key,labelKey} shape directly, no "all").
+import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 
 export default function NewEventPage() {
   const router = useRouter();

@@ -9,6 +9,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
 import ExperienceCard from "@/components/ExperienceCard";
+import { EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-8586455, 2953×1969)
 // replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
@@ -19,17 +20,8 @@ const HERO_BG = optimizeCloudinary(
   { width: 1600 }
 );
 
-// API filter values are Hebrew strings (server enum). Localize labels via t().
-const CATEGORY_KEYS = [
-  { key: "", labelKey: "all" },
-  { key: "בישול", labelKey: "cooking" },
-  { key: "תזונה", labelKey: "nutrition" },
-  { key: "סיור אוכל", labelKey: "food_tour" },
-  { key: "חקלאות", labelKey: "agriculture" },
-  { key: "טעימות", labelKey: "tasting" },
-  { key: "סדנה", labelKey: "workshop" },
-  { key: "אחר", labelKey: "other" },
-];
+// MEH-869: shared category set (lib/event-categories.js); withAll() adds "all".
+const CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 
 export default function ExperiencesClient() {
   const t = useTranslations("experiences.list");

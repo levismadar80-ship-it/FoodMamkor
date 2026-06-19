@@ -24,6 +24,7 @@ import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import CalendarView from "@/components/CalendarView";
+import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
 
 // MEH-134: S10 "The Almanac" visual port. Events API + filter logic +
 // date formatting (lib/format-date.js) untouched — layout layer only.
@@ -32,30 +33,11 @@ import CalendarView from "@/components/CalendarView";
 // so ExperienceCard.jsx is no longer imported here (still owns
 // /experiences + /mine). Calendar view keeps CalendarView as-is.
 
-// API filter values are Hebrew strings (server-side enum). Keep keys
-// as the wire format; localize labels via t().
-const CATEGORY_KEYS = [
-  { key: "", labelKey: "all" },
-  { key: "סדנה", labelKey: "workshop" },
-  { key: "סיור", labelKey: "tour" },
-  { key: "שוק", labelKey: "market" },
-  { key: "קטיף", labelKey: "harvest" },
-  { key: "טעימות", labelKey: "tasting" },
-  { key: "אחר", labelKey: "other" },
-];
+// MEH-869: category sets moved to the shared lib/event-categories.js
+// (were duplicated across 5 call-sites). withAll() prepends the "all" chip.
+const CATEGORY_KEYS = withAll(EVENT_CATEGORIES);
 
-// Narrower set for the experiences tab — these come from the
-// community side, not producer farms, so the vocabulary is different.
-const EXPERIENCE_CATEGORY_KEYS = [
-  { key: "", labelKey: "all" },
-  { key: "בישול", labelKey: "cooking" },
-  { key: "תזונה", labelKey: "nutrition" },
-  { key: "סיור אוכל", labelKey: "food_tour" },
-  { key: "חקלאות", labelKey: "agriculture" },
-  { key: "טעימות", labelKey: "tasting" },
-  { key: "סדנה", labelKey: "workshop" },
-  { key: "אחר", labelKey: "other" },
-];
+const EXPERIENCE_CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 
 // Category glyph per wire value (Phosphor only — ADR-013). Falls back to
 // CalendarBlank for any unmapped/free-text category.
