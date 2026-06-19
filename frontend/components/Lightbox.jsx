@@ -121,6 +121,10 @@ export default function Lightbox({ images = [], startIndex = 0, onClose }) {
         </div>
 
         {images.length > 1 && (
+          // MEH-877: carousel prev/next glyph arrows — RTL-correct as-is via
+          // logical end-4/start-4 positioning. Intentionally NOT bidi-flipped
+          // (documented rtl.md exception "Carousel prev/next arrows"); do not
+          // re-flag in future bidi sweeps.
           <>
             {/* end-4 = visual right in RTL = "previous" */}
             <button

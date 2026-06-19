@@ -342,6 +342,10 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           </div>
 
           {pages > 1 && (
+            // MEH-877: carousel prev/next pair — RTL-correct as-is (prev→right,
+            // next→left in Hebrew reading order). Intentionally NOT bidi-flipped:
+            // documented rtl.md exception ("Carousel prev/next arrows"). Do not
+            // re-flag in future bidi sweeps.
             <div className="flex items-center justify-center gap-3 mt-6">
               <button
                 onClick={() => fetchPage(page - 1)}
