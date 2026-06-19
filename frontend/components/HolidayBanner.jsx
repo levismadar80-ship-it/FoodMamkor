@@ -9,7 +9,7 @@ import api from "@/lib/api";
 
 const DISMISS_KEY = "holiday_banner_dismissed";
 
-export default function HolidayBanner() {
+export default function HolidayBanner({ suppressed = false, onVisibilityChange }) {
   const t = useTranslations("producer.holiday_banner");
   const [holiday, setHoliday] = useState(null);
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
@@ -34,7 +34,16 @@ export default function HolidayBanner() {
     resolve();
   }, []);
 
-  if (!holiday || dismissed) return null;
+  // MEH-879: report show-state up to the homepage banner single-slot so the
+  // lower-precedence Location banner yields. Reports the banner's OWN
+  // condition (independent of `suppressed`, which only gates the final render
+  // when a higher-precedence banner — the Friday strip — is showing).
+  const wouldShow = !!holiday && !dismissed;
+  useEffect(() => {
+    onVisibilityChange?.(wouldShow);
+  }, [wouldShow, onVisibilityChange]);
+
+  if (suppressed || !holiday || dismissed) return null;
 
   const dismiss = () => {
     setDismissed(true);
