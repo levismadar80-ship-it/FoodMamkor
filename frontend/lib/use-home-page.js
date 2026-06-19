@@ -148,8 +148,8 @@ export function useHomePage() {
     // MEH-607: on error, set `{}` (not leave `null`) so statsLoaded flips
     // true and the skeleton dismisses (CLS-safe — skeleton bridged the gap).
     // MEH-879/881: with stats `{}` the trust band shows the verification
-    // LEAD alone ("עסקים שכבר בדקנו בשבילך"); the count secondary stays
-    // hidden because showStatsCounter is false (< threshold).
+    // LEAD alone (home.trust.lead); the count secondary stays hidden
+    // because showStatsCounter is false (< threshold).
     // Rule-19: a malformed /stats payload degrades to {} the same way as the
     // network-error branch — lead-only, never crashes the counter.
     api
