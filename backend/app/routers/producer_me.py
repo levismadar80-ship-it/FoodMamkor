@@ -131,6 +131,7 @@ def update_my_producer(
         "description",
         "short_description",
         "city",
+        "address",  # MEH-829: owner can edit her own street address (private)
         "lat",
         "lng",
         "phone",
