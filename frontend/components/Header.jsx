@@ -57,7 +57,7 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   // MEH-734: smart-sticky hide-on-scroll-down / reveal-on-scroll-up.
-  // eslint-disable-next-line no-unused-vars -- MEH-884 Chunk 2 re-wires `hidden` to trust strip
+  // eslint-disable-next-line -- MEH-884 Chunk 2 re-wires `hidden` to trust strip (retained, intentionally unused this chunk)
   const [hidden, setHidden] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
