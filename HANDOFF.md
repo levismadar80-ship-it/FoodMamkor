@@ -5,6 +5,43 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-19 — UX-audit program 11/11 COMPLETE + shipped — session checkpoint
+
+**🏁 MILESTONE: the UX/UI audit program (pages 1–11) is 11/11 COMPLETE and shipped to `staging`.**
+
+**Session merges to `staging` (squash, all green):**
+- **MEH-864** tab-aware `/events` subtitle — #1236
+- **MEH-871** `/group-buys` listing copy — #1238 (**F13 cross-link EXCLUDED** per Sapir revision; only the warm-plural empty-state shipped, `בדקי` removed)
+- **MEH-867** footer compliance (AA contrast + IS-5568 a11y link + tokens) — #1235
+- **MEH-868** chrome polish (Phosphor arrows, plural logout, a11y) — #1237
+- **MEH-873** `global-error.js` root boundary (branded + Sentry) — #1241
+- **MEH-874** content `<img>` → `next/image` (8 images, 0 eslint-disable left) — #1242
+- **MEH-875** sitemap +4 routes (`/experiences`, `/group-buys`, `/about/process`, `/about/for-businesses`); robots host verified == `SITE_URL` (no-op) — #1240
+- **MEH-876** global a11y/loading polish (`role=status`+`aria-busy`+sr-only; secondary-button focus rings) — #1243
+- **MEH-878** AccountSheet vitest suite (logout + nav + auth-state) — #1244
+
+**In-flight YELLOW (draft PRs expected next):**
+- **MEH-869** — DRY extraction → new `lib/event-categories.js`
+- **MEH-872** — Bucket-B voice sweep (app-wide)
+- **MEH-877** — bidi, re-scoped component-only
+
+**🔒 LOCKED decisions (source of truth — do NOT re-litigate):**
+- **MEH-872:** `value_props` → plural; **headings/submit stay Q3-feminine**; `סנן`/`סנני` → plural `סננו`; COPY_BANK reconcile empty-states → ADR-014 **and delete the duplicate block (L508-529)**; canary extended.
+- **MEH-869:** new file is **`lib/event-categories.js`** (`categories.js` is already taken by MEH-472); the experience array is duplicated **3×**; verify byte-identical via DOM snapshot.
+- **MEH-877:** re-scoped **component-only**; i18n-baked arrows → **deferred to the EN wave (MEH-472)**; `guides.*` separators **excluded**; outbound diagonal arrow = **keep** (external-link convention).
+
+**Deferred:**
+- **`bg-green-50` token** (MEH-876) — no semantic token exists; do NOT invent → **fold into ADR-019 / MEH-725** token-debt track.
+- **#1244 Hebrew test-fixture nit** — declined (no CI/functional impact).
+
+**Bucket-B precedent (clarification, NOT a fresh decision):** the doctrine is **ADR-014** (UI → plural); warmth is preserved *as plural*. This is applying existing doctrine, not a new call.
+
+**Linear cap event:** hit the free-tier issue limit → **archived 18 old Done** issues (76, 122, 131, 134, 135, 195, 201, 214, 434, 452, 524, 534, 542, 559, 568, 631, 634, 635). **Recommend enabling an auto-archive setting** to avoid recurrence.
+
+**Cross-session note:** **MEH-864 was touched by 2 sessions** (this one + `session_012YMKCn…`); verified equivalent + merged (no duplication).
+
+**Open / parked:** MEH-132 (S7 Chunk E) · MEH-233 (mobile) · MEH-754 (OTP) · MEH-793 (`/neighbor`) · honey-pot SQL · MEH-808 (folds into MEH-872).
+
 ## 2026-06-18 — MEH-866 register-wizard test coverage + E2E-LOCATORS testid — ✅ MERGED (#1234)
 
 **Merged to staging (`145805c`, squash, Refs MEH-132 / Closes MEH-866).** Closes the register E2E coverage gap flagged 3× during S7 Chunks B/C/D. **vitest** (`__tests__/RegisterProducerClient.test.jsx`, 4 tests): ACCOUNT validation gate, 5-frame nav + back, char-count `N/160`, submit-body shape. **Playwright** (`e2e/flows/18-producer-register-wizard.spec.ts`): real ACCOUNT→CONFIRM journey — **green on the Vercel preview** (first real run of the testid path). **E2E-LOCATORS (MEH-495):** spec is `getByTestId` throughout; added `data-testid` to `RegisterProducerClient.jsx` — **testid-only / additive** (5 frame containers, 6 nav buttons, 5 inputs, 1 submit, 1 city wrapper), zero logic change, all 6 freeze anchors byte-identical (grep-proven). City (out-of-scope CitySearch) → testid on wrapper + `getByRole("combobox")`; category card (out-of-scope CategorySelector/MEH-830) → DB-name scoped under the frame testid; both E2E-LOCATORS-legal. Fixed a strict-mode CONFIRM assertion (`/בדקי/` → `register-frame-confirm`). HIGH-RISK central-form scope exception Sapir-authorized; full WAIT-gate review pre-push.
