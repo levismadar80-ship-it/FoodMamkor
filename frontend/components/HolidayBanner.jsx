@@ -15,14 +15,10 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
   useEffect(() => {
-    // MEH-882: resolve the (synchronous, date-based) holiday IMMEDIATELY so the
-    // homepage banner single-slot decision never waits on the network. The
-    // prior code awaited /holiday-mode BEFORE calling getActiveHoliday — on a
-    // slow connection that delayed holiday-visibility past LocationBanner's 3s
-    // reveal timer, so Location flashed in then got suppressed once holiday
-    // resolved. getActiveHoliday is pure/date-based (holidays.js:98); the
-    // /holiday-mode call only UPGRADES to an admin-forced holiday, so it runs
-    // as a non-blocking override after the date-based holiday is applied.
+    // MEH-882: getActiveHoliday() is pure/date-based (holidays.js:98) — only
+    // /holiday-mode upgrades to an admin override, so resolve synchronously and
+    // never block the banner slot on the network (was: await → Location flashed
+    // past its 3s timer).
     const apply = (h) => {
       if (!h) return;
       const dismissedKey = `${DISMISS_KEY}_${h.key}`;
@@ -33,6 +29,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
 
     apply(getActiveHoliday());
 
+    // Residual flash: an override naming a DIFFERENT key than an already-active
+    // date holiday re-applies after first paint (rare admin case).
     api
       .get("/holiday-mode")
       .then((r) => {
