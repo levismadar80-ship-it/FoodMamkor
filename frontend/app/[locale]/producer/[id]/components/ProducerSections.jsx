@@ -131,9 +131,11 @@ export default function ProducerSections({
                   className="bg-white rounded-md border border-border p-4 flex gap-4"
                 >
                   {ev.image_url && (
-                    <img
+                    <Image
                       src={ev.image_url}
                       alt={ev.title}
+                      width={64}
+                      height={64}
                       className="w-16 h-16 rounded-sm object-cover flex-shrink-0"
                     />
                   )}
