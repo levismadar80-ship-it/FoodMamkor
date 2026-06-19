@@ -3,15 +3,12 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import ProducerCard from "@/components/ProducerCard";
-import ParallaxQuote from "@/components/ParallaxQuote";
 import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import {
-  HomeMarquee,
-  HomeFounderQuote,
   HomeHowItWorks,
   HomeComparisonTeaser,
   HomeFeaturedProducer,
@@ -36,10 +33,6 @@ const HomepageMiniMap = dynamic(() => import("@/components/HomepageMiniMap"), {
   ssr: false,
   loading: () => <HomepageMiniMapSkeleton />,
 });
-
-// PREMIUM_DESIGN: parallax divider images between sections.
-// MEH-879: content-first reorder dropped the 2nd divider; only IMAGE_1 remains.
-const PARALLAX_IMAGE_1 = "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=1600&auto=format&q=80&fm=webp";
 
 // MEH-809: gate the "עסקים חדשים" section on catalog depth. With a thin catalog
 // the "last added" producers ARE the same businesses already shown in the
@@ -179,8 +172,6 @@ export default function HomePage() {
         selectedCategory={filters.category}
       />
 
-      <HomeMarquee />
-
       <HomeRecentlyViewed items={recentlyViewed} />
 
       <HomeProducersGrid
@@ -230,24 +221,9 @@ export default function HomePage() {
           ========================= */}
       <HomeFeaturedProducer featured={featuredProducer} />
 
-      {/* MEH-879: content-first IA — HowItWorks + FounderQuote relocated below
-          the producer content (was between Marquee and ProducersGrid). */}
+      {/* MEH-879/883: content-first IA — HowItWorks sits below the producer
+          content; the marquee + both founder quotes were removed (MEH-883). */}
       <HomeHowItWorks />
-
-      <HomeFounderQuote />
-
-      {/* =========================
-          PARALLAX DIVIDER 1 (PREMIUM_DESIGN)
-          First full-bleed divider. Ken Burns lives inside ParallaxQuote.
-          Uses the farm-field Unsplash asset from docs/archive/PREMIUM_DESIGN.md.
-          ========================= */}
-      <ParallaxQuote
-        image={PARALLAX_IMAGE_1}
-        quote={t("home.story_block.founder_quote")}
-        attribution={t("home.story_block.founder_attribution")}
-        overlayOpacity={0.6}
-        height="400px"
-      />
 
       {/* MEH-841 (supersedes MEH-525): the full comparison moved to /about;
           a one-line teaser here links to it, keeping the home slot calm. */}

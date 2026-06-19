@@ -110,7 +110,7 @@
    <MotionConfig reducedMotion="user"> at the layout root, which handles the
    JS layer (framer-motion / FadeInSection reveals). Near-zero (not 0) keeps
    transition/animation -end events firing so JS state machines don't stall.
-   Kenburns + marquee keep their own `animation: none` rules below; this is
+   Kenburns keeps its own `animation: none` rule below; this is
    the catch-all for everything else (hover transitions, fades, etc.). */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -334,49 +334,6 @@ body.sheet-open .cookie-banner {
   .kenburns-right,
   .kenburns-left {
     animation: none;
-  }
-}
-
-/* Marquee — infinite horizontal scroll of small hype tags. The track
-   renders the list twice so translating -50% creates a seamless loop. */
-@keyframes marquee {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
-}
-.marquee-track {
-  animation: marquee 25s linear infinite;
-  display: flex;
-  align-items: center;
-  gap: 48px;
-  width: max-content;
-  will-change: transform;
-}
-.marquee-track:hover {
-  animation-play-state: paused;
-}
-/* Polish: fade marquee in/out at the edges so words don't pop abruptly.
-   Applied on the wrapper (.marquee-edge-fade), not the track, so the
-   mask doesn't scroll with the content. */
-.marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 48px,
-    #000 calc(100% - 48px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 48px,
-    #000 calc(100% - 48px),
-    transparent 100%
-  );
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-    transform: none;
   }
 }
 
