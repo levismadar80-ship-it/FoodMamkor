@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
 test.describe("RTL layout regression", () => {
   test("login page — password eye toggle is on the physical right side of input", async ({ page }) => {
     await page.goto("/login");
-    const toggle = page.locator("button[aria-label='הציגי סיסמה']").first();
+    const toggle = page.locator("button[aria-label='הציגו סיסמה']").first();
     await expect(toggle).toBeVisible();
     const toggleBox = await toggle.boundingBox();
     const input = page.locator("input[type='password']").first();
