@@ -27,9 +27,9 @@ test.describe("GPS button on /map", () => {
     );
 
     // LocationModal (z-[9000]) opens 800ms after mount when no userCity is saved and
-    // visually masks the GPS button (z-[1000]). Dismiss it via "דלגי לעכשיו" if present.
+    // visually masks the GPS button (z-[1000]). Dismiss it via "דלגו לעכשיו" if present.
     // MEH-262 / MEH-263 — intentional flow fix, not a workaround.
-    const skipBtn = page.getByRole("button", { name: "דלגי לעכשיו" });
+    const skipBtn = page.getByRole("button", { name: "דלגו לעכשיו" });
     try {
       await skipBtn.waitFor({ state: "visible", timeout: 2000 });
       await skipBtn.click();
@@ -40,7 +40,7 @@ test.describe("GPS button on /map", () => {
 
     // :visible scopes to the active map container — MapClient renders twice
     // (desktop lg:grid + mobile lg:hidden); both produce a GPS button in the DOM.
-    const gpsBtn = page.locator('[aria-label="מרכזי את המפה על המיקום שלי"]:visible');
+    const gpsBtn = page.locator('[aria-label="מרכזו את המפה על המיקום שלי"]:visible');
     await expect(gpsBtn).toBeVisible({ timeout: 20_000 });
 
     // Clicking should not throw; we verify no JS error is logged.

@@ -19,7 +19,7 @@ test.describe("Lightbox", () => {
     await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 20_000 });
 
     // Gallery image button — only exists when the producer has ≥1 photo
-    const imageBtn = page.locator('[aria-label^="הגדלי תמונה"]').first();
+    const imageBtn = page.locator('[aria-label^="הגדלו תמונה"]').first();
     if ((await imageBtn.count()) === 0) {
       test.skip(true, "No gallery images on this producer — skipping lightbox test");
       return;
@@ -32,7 +32,7 @@ test.describe("Lightbox", () => {
     await expect(dialog).toBeVisible({ timeout: 5_000 });
 
     // Close button should be focused
-    const closeBtn = dialog.locator('[aria-label="סגרי תצוגה"]');
+    const closeBtn = dialog.locator('[aria-label="סגרו תצוגה"]');
     await expect(closeBtn).toBeFocused();
 
     // ESC closes the lightbox

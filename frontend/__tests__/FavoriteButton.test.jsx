@@ -7,10 +7,10 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const flat = {
       // modals.login_prompt (chunk 3)
-      default_message: "כדי לשמור עסקים אוהבים — היכנסי",
-      close_aria: "סגרי חלונית",
+      default_message: "כדי לשמור עסקים אוהבים — היכנסו",
+      close_aria: "סגרו חלונית",
       title: "רוצה לשמור? 🌿",
-      login_cta: "היכנסי",
+      login_cta: "היכנסו",
       dismiss_cta: "אולי אחר כך",
       // favorites.button (chunk 4b)
       saved_toast_first_time: "נשמר! תמצאי את המועדפים בלשונית ❤️ בתחתית",
@@ -20,7 +20,7 @@ vi.mock("next-intl", () => ({
       add_aria: "הוסף למועדפים",
       remove_aria: "הסר ממועדפים",
       inline_label: "שמור",
-      login_prompt_message: "כדי לשמור עסקים אוהבים — היכנסי",
+      login_prompt_message: "כדי לשמור עסקים אוהבים — היכנסו",
     };
     return flat[key] ?? key;
   },
@@ -94,7 +94,7 @@ describe("FavoriteButton", () => {
     // Modal appears with the spec message
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
-      screen.getByText("כדי לשמור עסקים אוהבים — היכנסי"),
+      screen.getByText("כדי לשמור עסקים אוהבים — היכנסו"),
     ).toBeInTheDocument();
   });
 

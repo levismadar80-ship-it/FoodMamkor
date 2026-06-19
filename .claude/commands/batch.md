@@ -88,6 +88,32 @@ git diff --staged | grep -E "^\+.*((טוענת|שולחת|שומרת|מוחקת|
 ```
 Any hit → switch to plural/gerund (`נסו שוב`, `בטעינה…`, `טעינת X…`) before proceeding.
 
+**Bucket-A imperative canary (MEH-872).** Extends the MEH-846 guard to the
+feminine-singular *imperatives* swept to plural in the MEH-872 voice pass
+(register CTAs, filters, errors, modals, reviews, favorites, map, group-buys,
+experiences). Same `^\+` added-lines anchor (a removal-sweep can't self-block).
+Each verb is wrapped in leading+trailing word-boundary char-classes
+(`[ ">]…[ ",.<—\)]`) so substrings don't false-fire (e.g. `גלילה`/`רגלי`/
+`נסיעה`/`מצרים`). **Exempt (not in the list, will not fire):** `הצטרפי` (Q3
+entry-CTA, feminine ALLOWED), `admin/settings/dashboard` backoffice, and
+`/about` + `/about/for-businesses` narrative (`about_business.*`) — those keep
+feminine by policy; a hit there is a false positive, eyeball and proceed.
+**Imperatives only** — the 2nd-person pronoun/possessive + future class
+(`את`/`שלך`/`אלייך`/`תוכלי`/`קיבלת`/non-CTA `ספרי`/hero) is **deferred to
+MEH-885**, so those are intentionally NOT in this list and stay feminine for
+now. Also out: `הזמיני` (HOLD — producer share CTA), and `נקי` (collides with
+the adjective "clean", e.g. `about.consumer.values.safety` "מקום הכנה נקי" — its
+3 imperative occurrences were swept by line, but it's too noisy to guard).
+**Several of the newer verbs (`סגרי`/`הסירי`/`הציגי`/`הסתירי`/`הזיני`/`הפעילי`)
+also live legitimately in HOLD backoffice + producer-form namespaces**
+(`admin/settings/dashboard/recipes/experiences`) where they stay feminine by
+policy — a hit there is a false positive, eyeball the namespace and proceed:
+```bash
+git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צרי|עדכני|שלחי|פתחי|הגישי|נסי|צפי|עקבי|בטלי|סנני|סנן|גלגלי|לחצי|דרגי|השלימי|דברי|שתפי|המשיכי|הוסיפי|כתבי|מצאי|פרסמי|הציעי|הירשמי|הודיעי|חפשי|חיפשי|מרכזי|התחברי|הצגי|הציגי|הסתירי|הסירי|סגרי|בקשי|הקלידי|היכנסי|דלגי|הזיני|המתיני|הגדרי|הגדלי|הודעי|הפעילי)[ \",.<—\)]" && echo "STOP — feminine-singular UI imperative re-introduced (ADR-014, MEH-872)" && exit 1 || true
+```
+Any hit on a customer-facing string → switch to plural (`גלו`, `בחרו`, `שלחו`,
+`חזרו`, `צרו`, …) before proceeding.
+
 ---
 
 ## Section 5 — STOP conditions
