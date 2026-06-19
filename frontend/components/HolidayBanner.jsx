@@ -15,23 +15,28 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
   useEffect(() => {
-    async function resolve() {
-      let overrideKey = null;
-      try {
-        const r = await api.get("/holiday-mode");
-        if (r.data.enabled && r.data.key) overrideKey = r.data.key;
-      } catch { /* fail-open */ }
-
-      const h = getActiveHoliday(overrideKey);
+    // MEH-882: getActiveHoliday() is pure/date-based (holidays.js:98) — only
+    // /holiday-mode upgrades to an admin override, so resolve synchronously and
+    // never block the banner slot on the network (was: await → Location flashed
+    // past its 3s timer).
+    const apply = (h) => {
       if (!h) return;
-
       const dismissedKey = `${DISMISS_KEY}_${h.key}`;
       if (sessionStorage.getItem(dismissedKey)) return;
-
       setHoliday(h);
       setDismissed(false);
-    }
-    resolve();
+    };
+
+    apply(getActiveHoliday());
+
+    // Residual flash: an override naming a DIFFERENT key than an already-active
+    // date holiday re-applies after first paint (rare admin case).
+    api
+      .get("/holiday-mode")
+      .then((r) => {
+        if (r.data?.enabled && r.data?.key) apply(getActiveHoliday(r.data.key));
+      })
+      .catch(() => { /* fail-open — the date-based holiday is already applied */ });
   }, []);
 
   // MEH-879: report show-state up to the homepage banner single-slot so the
