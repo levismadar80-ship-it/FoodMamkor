@@ -19,7 +19,7 @@ function ProducerMiniCard({ producer }) {
   return (
     <Link
       href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
-      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white hover:shadow-md transition-shadow group"
+      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white transition group"
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">

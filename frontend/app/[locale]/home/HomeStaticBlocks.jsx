@@ -28,7 +28,7 @@ export function HomeRecentlyViewed({ items }) {
             <Link
               key={p.id}
               href={href}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (

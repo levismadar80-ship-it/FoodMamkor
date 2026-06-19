@@ -30,7 +30,7 @@ function GroupBuyCard({ gb }) {
   const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
 
   return (
-    <div className="bg-white rounded-[16px] border border-border shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+    <div className="bg-white rounded-[16px] border border-border transition overflow-hidden flex flex-col">
       {/* Status banner */}
       {funded && (
         <div className="bg-primary text-white text-xs font-medium text-center py-1">

@@ -42,7 +42,7 @@ export default function ExperienceCard({ experience: ex }) {
   return (
     <Link
       href={`/experiences/${ex.id}`}
-      className="bg-background border border-border rounded-[16px] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col"
+      className="bg-background border border-border rounded-[16px] overflow-hidden transition flex flex-col"
     >
       {ex.image_url ? (
         <div className="relative">
