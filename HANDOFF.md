@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-19 — MEH-880 S7 Chunk E1 (ACCOUNT reassurance card + stepper aria-current) — ✅ MERGED (#1250)
+
+**Merged to staging (`098d462`, squash, Refs MEH-132 / Closes MEH-880).** First slice of the last S7 chunk. Two additive, no-logic changes to `RegisterProducerClient.jsx`: (1) copy-only reassurance card `"כל בית עסק עובר אישור אישי"` in the ACCOUNT frame, after the `h2`, **above** OAuth — single `<p>`, brand tokens (`bg-background border border-primary/20`, `text-start`), no state-color (ADR-019), `data-testid="register-account-reassurance"` (21st testid; 20 frozen MEH-866 testids unchanged); (2) `aria-current="step"` on the current stepper numeral (a11y; `undefined` when not current). Copy he.json only (MEH-472; en stale — same as Chunk-D `story_card`). Freeze byte-identical; build green; **Playwright `18-…` green on preview** (additive testid, no renames). Phase-0 re-anchor resolved 4 stale-design contradictions (stepper 01–04 not 01–06; Cormorant E1-3 no-op; "9 state-color" = 5 brand-legal green + 4 reds; testids 20 not 17).
+
+**S7 board:** Chunk A ✅ · B ✅ · C ✅ · D ✅ · E2E (MEH-866) ✅ · **E1 ✅**. **Remaining: Chunk E2** — the 4 error-state reds (`RPC` 425/475/480/792) → opacity-on-cream + fg-muted a11y (the real ADR-019 fix); the 5 `bg-green-50` are brand-legal tint, OUT. Reviewer FYI (out of MEH-880 scope): `/en/register/producer` renders raw keys for the producer-register namespace (he-only under MEH-472) — pre-existing, belongs to the EN translation wave, not E2.
+
 ## 2026-06-19 — UX-audit program 11/11 COMPLETE + shipped — session checkpoint
 
 **🏁 MILESTONE: the UX/UI audit program (pages 1–11) is 11/11 COMPLETE and shipped to `staging`.**
