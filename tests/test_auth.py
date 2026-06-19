@@ -366,12 +366,10 @@ class TestProducerSignupPolicy:
         assert resp.status_code == 422
 
     def test_register_producer_rejects_bad_contact_method(self, client):
-        # MEH-296 residual: the shared _contact_method_validator guards
-        # ProducerRegister (schemas.py) — an out-of-set value 422s at Pydantic
-        # request-validation, BEFORE the MEH-328 generic-success handler runs,
-        # so the anti-enumeration response cannot mask it. Mirrors
-        # test_put_producers_me_rejects_bad_contact_method (ProducerUpdate) and
-        # test_admin_create_rejects_bad_contact_method (ProducerAdminCreate).
+        # MEH-296: ProducerRegister's primary_contact_method guard. The 422
+        # fires at FastAPI request-body validation, BEFORE the MEH-328
+        # generic-success handler runs, so the anti-enumeration response
+        # cannot mask it.
         resp = client.post(
             "/auth/register/producer",
             json={**self.VALID_REG, "primary_contact_method": "garbage"},
