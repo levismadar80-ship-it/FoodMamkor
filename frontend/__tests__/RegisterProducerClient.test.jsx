@@ -149,3 +149,43 @@ describe("RegisterProducerClient — wizard nav + submit body (MEH-866)", () => 
     expect(body).toMatchObject({ email: "t@example.com", name: "טסט" });
   });
 });
+
+// MEH-886: assert the 4 MEH-883 error-state a11y wirings so a silent ARIA-drop
+// is caught — phone aria-invalid + aria-describedby (inline as-you-type), and
+// role="alert" on the ACCOUNT stepError + STORY submit error (form-level).
+describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
+  it("ACCOUNT validation error is exposed as role=alert", async () => {
+    render(<RegisterProducerClient />);
+    await screen.findByText(`${K}.steps.account.title`);
+    fireEvent.change(ph("name"), { target: { value: "טסט" } });
+    fireEvent.change(ph("email"), { target: { value: "not-an-email" } });
+    fireEvent.change(ph("password"), { target: { value: "Abcdefgh1234" } });
+    fireEvent.click(nextBtn());
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.email_invalid`);
+  });
+
+  it("phone field exposes aria-invalid + aria-describedby only when invalid", async () => {
+    render(<RegisterProducerClient />);
+    await fillAccountToDetails();
+    const phone = screen.getByTestId("register-details-phone");
+    // valid number → no error wiring
+    fireEvent.change(phone, { target: { value: "0501234567" } });
+    expect(phone).not.toHaveAttribute("aria-invalid");
+    expect(phone).not.toHaveAttribute("aria-describedby");
+    // invalid number → aria-invalid="true" + describedby → the error id
+    fireEvent.change(phone, { target: { value: "12" } });
+    expect(phone).toHaveAttribute("aria-invalid", "true");
+    expect(phone).toHaveAttribute("aria-describedby", "register-phone-error");
+    expect(document.getElementById("register-phone-error")).toBeInTheDocument();
+  });
+
+  it("STORY submit validation error is exposed as role=alert", async () => {
+    render(<RegisterProducerClient />);
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    // submit without checking the declaration boxes → blocked by the gate
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+});

@@ -88,4 +88,48 @@ test.describe("Producer register wizard (5-frame)", () => {
     // strict-mode ambiguity can't resurface on copy edits.
     await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
   });
+
+  // MEH-886: assert the MEH-883 error-state a11y wirings on the real DOM —
+  // ACCOUNT stepError + STORY submit error as role="alert", and the phone
+  // field's aria-invalid + aria-describedby (inline as-you-type).
+  test("error states expose ARIA (role=alert + phone aria-invalid/describedby)", async ({ page }) => {
+    await page.goto("/register/producer");
+
+    // ── ACCOUNT: invalid email → stepError announced as role="alert" ──
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await page.getByTestId("register-account-name").fill("טסט בדיקה");
+    await page.getByTestId("register-account-email").fill("not-an-email");
+    await page.getByTestId("register-account-password").fill("Abcdefgh1234");
+    await page.getByTestId("register-account-next").click();
+    await expect(page.getByRole("alert")).toBeVisible(); // stepError
+    await expect(page.getByTestId("register-frame-account")).toBeVisible(); // gate blocked
+
+    // fix the email → advance to DETAILS
+    await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
+    await page.getByTestId("register-account-next").click();
+
+    // ── DETAILS: invalid phone → aria-invalid + aria-describedby → the error id ──
+    await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    const phone = page.getByTestId("register-details-phone");
+    await page.getByTestId("register-details-name").fill("העסק שלי");
+    await phone.fill("12"); // invalid IL number
+    await expect(phone).toHaveAttribute("aria-invalid", "true");
+    await expect(phone).toHaveAttribute("aria-describedby", "register-phone-error");
+    await expect(page.locator("#register-phone-error")).toBeVisible();
+    await phone.fill("0501234567"); // valid → wiring clears
+    await expect(phone).not.toHaveAttribute("aria-invalid");
+
+    // advance DETAILS → CATEGORY → STORY (city + address to satisfy the form)
+    await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-address").fill("הרצל 1");
+    await page.getByTestId("register-details-next").click();
+    await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
+    await page.getByTestId("register-category-next").click();
+
+    // ── STORY: submit WITHOUT the declarations → submit error as role="alert" ──
+    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+    await page.getByTestId("register-story-submit").click();
+    await expect(page.getByRole("alert")).toBeVisible(); // submit-gate error
+    await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
+  });
 });
