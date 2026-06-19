@@ -8,9 +8,9 @@
  * `suppressed` prop that forces null.
  *
  * This test mounts the three REAL banner components inside a harness that
- * mirrors page.js's exact slot wiring (page.js:91/150/139 region), drives
- * each banner's own condition via mocked deps, and asserts the exactly-one
- * (and the none) outcomes.
+ * mirrors HomePage's slot wiring (the `{fridayMode && <FridayDeliveryStrip>}`
+ * + `<HolidayBanner>` + `<LocationBanner>` block), drives each banner's own
+ * condition via mocked deps, and asserts the exactly-one (and none) outcomes.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useState } from "react";
