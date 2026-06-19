@@ -429,7 +429,7 @@ function RegisterProducerPageBody() {
               />
               <PasswordStrength password={form.password} />
             </div>
-            {stepError && <p className="text-red-500 text-sm">{stepError}</p>}
+            {stepError && <p role="alert" className="text-red-500 text-sm">{stepError}</p>}
             <button
               data-testid="register-account-next"
               onClick={() => {
@@ -478,13 +478,15 @@ function RegisterProducerPageBody() {
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
+                aria-invalid={form.phone && !validateIsraeliPhone(form.phone) ? "true" : undefined}
+                aria-describedby={form.phone && !validateIsraeliPhone(form.phone) ? "register-phone-error" : undefined}
                 className={`w-full border rounded-md px-3 py-2 ${
                   form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
                 }`}
                 dir="ltr"
               />
               {form.phone && !validateIsraeliPhone(form.phone) && (
-                <p className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{t("auth.register.producer.validation.phone_invalid")}</p>
+                <p id="register-phone-error" className="text-xs text-red-500 mt-1 inline-flex items-center gap-1"><X size={14} className="text-current" />{t("auth.register.producer.validation.phone_invalid")}</p>
               )}
               {form.phone && validateIsraeliPhone(form.phone) && (
                 <p className="text-xs text-primary mt-1">{t("auth.register.producer.validation.phone_valid")}</p>
@@ -796,7 +798,7 @@ function RegisterProducerPageBody() {
             {/* MEH-328 Chunk D: emailExistsSubmitError render block removed.
                 Non-upgrade collisions return identical 200 ack → step 3
                 inbox-check UI. Upgrade-path 409 still surfaces via `error`. */}
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p role="alert" className="text-red-500 text-sm">{error}</p>}
 
             <div className="flex gap-3">
               <button data-testid="register-story-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.CATEGORY); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
