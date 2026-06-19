@@ -1,4 +1,7 @@
 {
+  "a11y": {
+    "loading": "טוען…"
+  },
   "nav": {
     "discover": "גלו",
     "explore": "גלו",
