@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
@@ -115,11 +116,13 @@ export function HomeFounderQuote() {
                   aria-hidden="true"
                 />
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- raw <img>: this is a decorative editorial plate, not LCP content; next/image's fill wrapper would fight the 3:2 aspect box */}
-                  <img
+                  {/* MEH-874: next/image with intrinsic 3:2 dims keeps the editorial plate's aspect box without a fill wrapper. */}
+                  <Image
                     src={FEATURE_IMAGE}
                     alt=""
-                    loading="lazy"
+                    width={1200}
+                    height={800}
+                    sizes="(max-width: 768px) 100vw, 58vw"
                     className="aspect-[3/2] w-full rounded-md object-cover bg-background-alt"
                   />
                 </div>
@@ -159,10 +162,12 @@ export function HomeRecentlyViewed({ items }) {
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
-                  <img
+                  <Image
                     src={imgSrc}
                     alt={p.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    fill
+                    sizes="160px"
+                    className="object-cover group-hover:scale-105 transition duration-300"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-primary">
@@ -222,11 +227,12 @@ export function HomeFeaturedProducer({ featured }) {
         <FadeInSection className="md:col-span-5">
           <figure className="relative m-0 rounded-lg bg-surface-card border border-border p-2">
             {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={photo}
                 alt={featured.name}
-                loading="lazy"
+                width={500}
+                height={600}
+                sizes="(max-width: 768px) 100vw, 42vw"
                 className="aspect-[5/6] w-full rounded-md object-cover"
               />
             ) : (
