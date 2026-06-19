@@ -355,6 +355,9 @@
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
     },
+    "trust": {
+      "lead": "Businesses we've already vetted for you."
+    },
     "featured": {
       "eyebrow": "Get to know",
       "heading": "Behind the scenes",
