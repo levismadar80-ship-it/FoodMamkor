@@ -365,6 +365,19 @@ class TestProducerSignupPolicy:
         )
         assert resp.status_code == 422
 
+    def test_register_producer_rejects_bad_contact_method(self, client):
+        # MEH-296 residual: the shared _contact_method_validator guards
+        # ProducerRegister (schemas.py) — an out-of-set value 422s at Pydantic
+        # request-validation, BEFORE the MEH-328 generic-success handler runs,
+        # so the anti-enumeration response cannot mask it. Mirrors
+        # test_put_producers_me_rejects_bad_contact_method (ProducerUpdate) and
+        # test_admin_create_rejects_bad_contact_method (ProducerAdminCreate).
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_REG, "primary_contact_method": "garbage"},
+        )
+        assert resp.status_code == 422, resp.text
+
     def test_producer_signup_breached_password_rejected(self, client):
         # Override the autouse HIBP=False stub to simulate a breach hit.
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
