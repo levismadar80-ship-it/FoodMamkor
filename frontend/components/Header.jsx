@@ -57,6 +57,7 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   // MEH-734: smart-sticky hide-on-scroll-down / reveal-on-scroll-up.
+  // eslint-disable-next-line no-unused-vars -- MEH-884 Chunk 2 re-wires `hidden` to trust strip
   const [hidden, setHidden] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -160,16 +161,12 @@ export default function Header() {
   return (
     <header
       ref={headerRef}
-      // MEH-734: a descendant gaining focus reveals the pill — a hidden nav
-      // must never hold focus on an off-screen control (focus-trap guard).
-      onFocusCapture={() => setHidden(false)}
+      // MEH-884: hide-on-scroll detached — the nav now STAYS sticky at the top
+      // on scroll-down (no slide-out) and still fades transparent→solid on the
+      // homepage. The hidden/setHidden/lastYRef machinery is retained but
+      // unused this chunk; Chunk 2 re-wires it to the trust strip.
       className={[
         "sticky top-0 z-[1000]",
-        // MEH-734: transform-only slide (no layout shift, never backdrop-
-        // filter). motion-reduce → instant toggle, no slide. -120% clears the
-        // pill plus its drop-shadow.
-        "transition-transform duration-base ease-quart motion-reduce:transition-none",
-        hidden ? "-translate-y-[120%]" : "translate-y-0",
       ].join(" ")}
     >
       {/* Local darkening gradient — only over the hero (transparent). Keeps
