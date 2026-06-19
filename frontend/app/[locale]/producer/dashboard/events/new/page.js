@@ -7,11 +7,9 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
-import { EVENT_CATEGORIES } from "@/lib/event-categories";
-
-// MEH-869: shared category set (lib/event-categories.js). Create-form select
-// reads the base {key,labelKey} shape directly (no "all" chip).
-const CATEGORY_KEYS = EVENT_CATEGORIES;
+// MEH-869: shared category set — aliased on import (no transform; the
+// create-form select reads the base {key,labelKey} shape directly, no "all").
+import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
 
 export default function NewEventPage() {
   const router = useRouter();

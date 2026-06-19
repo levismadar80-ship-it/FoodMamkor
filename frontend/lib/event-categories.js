@@ -17,9 +17,15 @@
 // API filter/wire values are Hebrew strings (server-side enum). Keep `key`
 // as the wire format; localize via the labelKey at render time. Base sets
 // carry NO "all" entry — filters add it via withAll(); forms map key→value.
+//
+// MEH-869: DO NOT translate the `key` values — they're the backend's Hebrew
+// enum wire format (Event.category / Experience.category String columns); the
+// labelKey, not the key, is the i18n surface. If the server enum ever migrates
+// to English keys, this is the single file to update.
 
-// MEH-869: frozen — page.js aliases EVENT_CATEGORIES by reference, so a stray
-// push/splice at a call-site would corrupt the shared export for the session.
+// MEH-869: Object.freeze is shallow — it seals the array (no push/splice on the
+// by-reference alias in page.js); the {key,labelKey} items stay mutable, but no
+// consumer mutates them.
 export const EVENT_CATEGORIES = Object.freeze([
   { key: "סדנה", labelKey: "workshop" },
   { key: "סיור", labelKey: "tour" },
