@@ -23,7 +23,7 @@ function FavoriteCardWrapper({ fav }) {
         onClick={() => setOpen((v) => !v)}
         title={t("alerts_aria")}
         aria-label={t("alerts_aria")}
-        className="absolute top-2 end-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow text-primary hover:scale-105 transition z-10"
+        className="absolute top-2 end-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-primary transition z-10"
       >
         <Bell size={16} weight={open ? "fill" : "regular"} aria-hidden="true" />
       </button>
