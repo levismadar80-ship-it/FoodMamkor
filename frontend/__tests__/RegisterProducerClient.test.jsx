@@ -183,9 +183,9 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
     render(<RegisterProducerClient />);
     await fillAccountToDetails();
     await fillDetailsToStory();
-    // submit without checking the declaration boxes → blocked by the gate
+    // submit without checking the declaration boxes → blocked at the ToS gate
     fireEvent.click(screen.getByText(`${K}.actions.submit`));
-    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.terms_required`);
     expect(api.post).not.toHaveBeenCalled();
   });
 });
