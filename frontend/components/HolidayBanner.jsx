@@ -15,23 +15,30 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
   useEffect(() => {
-    async function resolve() {
-      let overrideKey = null;
-      try {
-        const r = await api.get("/holiday-mode");
-        if (r.data.enabled && r.data.key) overrideKey = r.data.key;
-      } catch { /* fail-open */ }
-
-      const h = getActiveHoliday(overrideKey);
+    // MEH-882: resolve the (synchronous, date-based) holiday IMMEDIATELY so the
+    // homepage banner single-slot decision never waits on the network. The
+    // prior code awaited /holiday-mode BEFORE calling getActiveHoliday — on a
+    // slow connection that delayed holiday-visibility past LocationBanner's 3s
+    // reveal timer, so Location flashed in then got suppressed once holiday
+    // resolved. getActiveHoliday is pure/date-based (holidays.js:98); the
+    // /holiday-mode call only UPGRADES to an admin-forced holiday, so it runs
+    // as a non-blocking override after the date-based holiday is applied.
+    const apply = (h) => {
       if (!h) return;
-
       const dismissedKey = `${DISMISS_KEY}_${h.key}`;
       if (sessionStorage.getItem(dismissedKey)) return;
-
       setHoliday(h);
       setDismissed(false);
-    }
-    resolve();
+    };
+
+    apply(getActiveHoliday());
+
+    api
+      .get("/holiday-mode")
+      .then((r) => {
+        if (r.data?.enabled && r.data?.key) apply(getActiveHoliday(r.data.key));
+      })
+      .catch(() => { /* fail-open — the date-based holiday is already applied */ });
   }, []);
 
   // MEH-879: report show-state up to the homepage banner single-slot so the
