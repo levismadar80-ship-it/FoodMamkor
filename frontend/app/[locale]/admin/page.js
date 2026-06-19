@@ -78,7 +78,7 @@ export default function AdminDashboard() {
             }`}
           >
             <div className="flex items-start justify-between">
-              <c.Icon size={28} weight="duotone" aria-hidden="true" className="text-primary" />
+              <c.Icon size={28} aria-hidden="true" className="text-primary" />
               <span className="text-3xl font-bold text-primary">{c.value}</span>
             </div>
             <p className="text-xs text-muted mt-2">
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
               href="/admin/producers?status=pending"
               className="bg-yellow-50 border border-yellow-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-yellow-100 transition"
             >
-              <HourglassSimple size={28} weight="duotone" aria-hidden="true" className="text-yellow-600" />
+              <HourglassSimple size={28} aria-hidden="true" className="text-yellow-600" />
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.producers_waiting", { count: s.pending_producers })}</p>
                 <p className="text-xs text-muted">{t("dashboard.alerts.click_to_handle")}</p>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
               href="/admin/content"
               className="bg-orange-50 border border-orange-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-orange-100 transition"
             >
-              <Package size={28} weight="duotone" aria-hidden="true" className="text-orange-500" />
+              <Package size={28} aria-hidden="true" className="text-orange-500" />
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.hidden_home_products", { count: s.hidden_home_products })}</p>
                 <p className="text-xs text-muted">{t("dashboard.alerts.for_review")}</p>
@@ -279,7 +279,7 @@ function DeltaCard({ label, value, Icon, totalLabel }) {
   return (
     <div className="bg-white border border-border rounded-[12px] p-4">
       <div className="flex items-start justify-between mb-1">
-        <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
+        <Icon size={24} aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">+{value}</span>
       </div>
       <p className="text-xs text-muted">{label}</p>
@@ -295,7 +295,7 @@ function SimpleStat({ label, value, Icon, href }) {
       className="bg-white border border-border rounded-[12px] p-4 hover:shadow-sm transition block"
     >
       <div className="flex items-start justify-between mb-1">
-        <Icon size={24} weight="duotone" aria-hidden="true" className="text-primary" />
+        <Icon size={24} aria-hidden="true" className="text-primary" />
         <span className="text-3xl font-bold text-primary">{value}</span>
       </div>
       <p className="text-xs text-muted">{label}</p>

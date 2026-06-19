@@ -311,7 +311,7 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
               <p className="whitespace-pre-wrap">{ex.description}</p>
               {ex.address && (
                 <p className="text-fg-muted inline-flex items-center gap-1">
-                  <MapPin size={14} weight="duotone" className="text-primary" aria-hidden="true" />
+                  <MapPin size={14} className="text-primary" aria-hidden="true" />
                   {ex.address}
                 </p>
               )}

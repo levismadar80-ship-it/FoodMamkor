@@ -22,7 +22,7 @@ function MapLoadingState() {
   const t = useTranslations();
   return (
     <div className="w-full h-full rounded-md bg-background animate-pulse flex flex-col items-center justify-center gap-3">
-      <MapTrifold size={48} weight="duotone" className="text-primary/30" />
+      <MapTrifold size={48} className="text-primary/30" />
       <p className="text-fg-muted text-sm">{t("map.client.loading_map")}</p>
     </div>
   );
@@ -120,7 +120,7 @@ export default function MapPane({
       {!mapMoved && visibleProducers.length === 0 && allProducers.length > 0 && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] bg-surface-floating rounded-lg border border-border p-6 text-center max-w-[280px]" role="status">
-          <Leaf size={44} weight="duotone" className="text-primary mx-auto mb-3" aria-hidden="true" />
+          <Leaf size={44} className="text-primary mx-auto mb-3" aria-hidden="true" />
           <h3 className="font-headline-md text-lg font-bold text-text mb-2">{t("map.pane.empty.heading")}</h3>
           <p className="text-fg-muted text-sm mb-4">{t("map.pane.empty.body")}</p>
           <Link href="/register/producer" className="inline-block bg-primary text-white px-4 py-2 rounded-sm text-sm hover:bg-primary-dark transition">{t("map.pane.empty.cta")}</Link>

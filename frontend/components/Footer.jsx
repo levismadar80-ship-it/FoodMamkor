@@ -144,7 +144,7 @@ export default function Footer() {
               aria-label={t("nav.footer.instagram_aria")}
               className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
-              <InstagramLogo size={20} weight="duotone" aria-hidden="true" />
+              <InstagramLogo size={20} aria-hidden="true" />
               <span className="font-body-md">@meha_makor</span>
             </a>
           </div>

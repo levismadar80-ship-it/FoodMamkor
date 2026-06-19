@@ -69,7 +69,7 @@ export default function FollowButton({ producerId }) {
         </>
       ) : (
         <>
-          <BellSlash size={16} weight="duotone" />
+          <BellSlash size={16} />
           {t("follow_aria")}
         </>
       )}

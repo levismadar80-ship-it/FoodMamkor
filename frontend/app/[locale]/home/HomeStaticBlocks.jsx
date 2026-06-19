@@ -41,7 +41,7 @@ export function HomeRecentlyViewed({ items }) {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-primary">
-                    <Leaf size={32} weight="duotone" aria-hidden="true" />
+                    <Leaf size={32} aria-hidden="true" />
                   </div>
                 )}
               </div>
