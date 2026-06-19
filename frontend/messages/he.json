@@ -364,8 +364,7 @@
     "stats": {
       "businesses": "בתי עסק שהצטרפו עד היום",
       "categories": "קטגוריות",
-      "countrywide": "מכל רחבי הארץ",
-      "fallback": "מתחילות עכשיו · בכל רחבי הארץ"
+      "countrywide": "מכל רחבי הארץ"
     },
     "trust": {
       "lead": "עסקים שכבר בדקנו בשבילך"
@@ -446,8 +445,7 @@
     },
     "story_block": {
       "founder_quote": "אחרי שיודעים מאיפה לקנות — אי אפשר לחזור לאחור.",
-      "founder_attribution": "— ספיר, מייסדת מהמקור",
-      "seasonal_heading": "כל עונה — טעם אחר"
+      "founder_attribution": "— ספיר, מייסדת מהמקור"
     }
   },
   "common": {
