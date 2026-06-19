@@ -106,6 +106,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     // make a bare getByRole("alert") ambiguous (strict-mode).
     await expect(page.getByTestId("register-frame-account").getByRole("alert")).toBeVisible(); // stepError
     await expect(page.getByTestId("register-frame-account")).toBeVisible(); // gate blocked
+    await expect(page.getByTestId("register-frame-details")).not.toBeVisible(); // did NOT silently advance
 
     // fix the email → advance to DETAILS
     await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
@@ -134,5 +135,6 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-story-submit").click();
     await expect(page.getByTestId("register-frame-story").getByRole("alert")).toBeVisible(); // submit-gate error
     await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
+    await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible(); // did NOT silently advance to CONFIRM
   });
 });

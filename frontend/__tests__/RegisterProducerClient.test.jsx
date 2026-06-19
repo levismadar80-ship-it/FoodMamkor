@@ -172,7 +172,9 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
     fireEvent.change(phone, { target: { value: "0501234567" } });
     expect(phone).not.toHaveAttribute("aria-invalid");
     expect(phone).not.toHaveAttribute("aria-describedby");
-    // invalid number → aria-invalid="true" + describedby → the error id
+    // invalid number → aria-invalid="true" + describedby → the error id.
+    // (phone validation is synchronous on onChange — no debounce — so the
+    // assertions below need no waitFor; mirrors the production RPC condition.)
     fireEvent.change(phone, { target: { value: "12" } });
     expect(phone).toHaveAttribute("aria-invalid", "true");
     expect(phone).toHaveAttribute("aria-describedby", "register-phone-error");
