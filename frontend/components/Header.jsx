@@ -221,10 +221,13 @@ export default function Header() {
         <nav
           aria-label={t("nav.main_label")}
           className={[
-            // MEH-732 Composition B: flex space-between — lead group (logo +
-            // links) at the start, action cluster at the end, one air gap
-            // between. Replaces the MEH-643 grid-cols-[auto_1fr_auto] layout.
-            "w-full max-w-[940px] flex items-center justify-between rounded-full border",
+            // MEH-890 chunk 1 (layout-only): the pill hugs its content and
+            // centers (parent flex-col items-center) instead of spreading
+            // edge-to-edge. Lead group (logo + links) and action cluster sit
+            // together with one ~32px air gap (gap-8) — no central void.
+            // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
+            // spread (itself a replacement for the MEH-643 grid layout).
+            "w-auto max-w-[92vw] flex items-center gap-8 rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
@@ -244,8 +247,8 @@ export default function Header() {
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
-                width={106}
-                height={40}
+                width={122}
+                height={46}
                 priority
                 style={
                   transparent
