@@ -5,11 +5,21 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-20 — MEH-890 Chunk 2/2: rest-state skin (glass-at-rest pill + drop hero scrim) — ✅ MERGED (#1273, `85f5970`) → MEH-890 complete
+
+**Branch `feature/meh-890-nav-skin` off `staging`. `Header.jsx` only (RED central).** Final chunk. Pill at rest gets its **own soft glass surface** so it floats and stays legible **without** the dark hero scrim: `bg-background/70 + 12px blur` (opaque fallback) + hairline border + resting shadow — **lighter than scrolled `/85`**. Black hero scrim `<div>` (`:179–188`) **removed entirely**. At-rest ink flips light → **DARK** (matches scrolled) across all pill elements; **logo no longer inverted; no pill text-shadow**. CTA `הוסיפו עסק` → **filled green** (`bg-action-primary text-white`, mirrors `ui/Button.jsx:32`); `כניסה` stays a quiet text link. Surface-aware light branches + `transparent`/`textShadow` props dropped from `NavLink` / `LoginAccount` / `UserMenu` (real cleanup, net `+52/-74`).
+
+**Trust strip (MEH-884) kept CREAM.** Re-grep flagged that removing the scrim stranded the surface-free strip's light ink — design call: cream stays (light-ink+shadow is the robust over-photo pattern; dark ink over a multi-tone photo is fragile). Strengthened its `textShadow` `0.6/4px → 0.7/6px` to carry legibility solo. Strip JSX/copy/`SealCheck` byte-identical; the shared `textShadow` const is now strip-only.
+
+Scrolled state + inner pages unchanged; mobile `md:hidden` layout preserved (mobile pill inherits the at-rest glass — surface is shared). RTL: 0 physical props. File-header docstring updated to describe the new two-state model. `/adversarial-review` clean; all 19 checks green; Sapir mobile QA passed; merged `85f5970` (squash). `Refs MEH-890` (NOT Closes — orchestrator manages closure).
+
+**MEH-890 is structurally COMPLETE** (Chunk 1 #1269 geometry + Chunk 2 #1273 skin). **Open follow-up flagged in spec:** "Issue B" (search-on-scroll fast-follow) — not opened yet; ticket-it-when-needed. Parent epic **MEH-789** remains In Progress (bottom nav done; this finishes the top).
+
 ## 2026-06-20 — MEH-890 Chunk 1/2: compact + centered desktop top-nav pill (layout only) — ✅ MERGED (#1269, `b93d7da`)
 
 **Branch `feature/meh-890-compact-nav-pill` off `staging`. `Header.jsx` only (RED central).** Chunk 1 of 2 of the homepage rest-state nav rework. The pill no longer spreads edge-to-edge: `w-full max-w-[940px] … justify-between` → **`w-auto max-w-[92vw] flex items-center gap-8`** (hug-content + centered via the existing `flex-col items-center` shell `:193`; one ~32px air gap, no central void). Logo enlarged `106×40 → 122×46` (~+15%, ratio preserved) for hero prominence; invert filter untouched. **Layout only** — surface branches (`:233`/`:237`), ink, the hero scrim (`:179–188`), `.nav-pill-glass`, CTA fill, links, LanguageToggle, login, MEH-884 trust strip all byte-identical; at-rest legibility unchanged (scrim still present). RTL-safe (3 direction-neutral classes). `/adversarial-review-size` clean (comment-only net-positive). All required checks green; merged `b93d7da` (squash) after Sapir mobile QA. `Refs MEH-890` (NOT Closes — issue open for Chunk 2). Part of MEH-789.
 
-**Next:** Chunk 2 — the skin pass (glass-at-rest + dark ink + **drop the hero scrim** `:179–188` + CTA `הוסיפו עסק`→filled green; `כניסה` stays quiet). ⚠️ Re-grep all Phase-0 line numbers first — this chunk shifted them (`Header.jsx` now 479 lines). Same branch/PR convention; RED central → chunked + Skeptic + `/adversarial-review`. Spec not yet drafted.
+**Next:** Chunk 2 was shipped same-day — see entry above (#1273, `85f5970`).
 
 ## 2026-06-19 — MEH-886 register E2E: assert MEH-883 error-state ARIA — ✅ MERGED (#1259)
 
