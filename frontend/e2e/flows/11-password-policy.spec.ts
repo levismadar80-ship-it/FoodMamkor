@@ -159,7 +159,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
       page.getByRole("heading", { name: /^סיסמה חדשה$/ }),
     ).toBeVisible();
 
-    await page.getByLabel(/^סיסמה חדשה$/).fill(SHORT_PASSWORD);
+    // transient double-mount, tolerate — MEH-891
+    await page.getByLabel(/^סיסמה חדשה$/).first().fill(SHORT_PASSWORD);
     // Confirm input on /reset-password has placeholder "אישור סיסמה"
     // (no <label>); use getByPlaceholder, not getByLabel.
     await page.getByPlaceholder("אישור סיסמה").fill(SHORT_PASSWORD);
@@ -177,7 +178,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     page,
   }) => {
     await page.goto("/reset-password?token=fake-token-for-policy-check");
-    await page.getByLabel(/^סיסמה חדשה$/).fill(DENY_LISTED_12);
+    // transient double-mount, tolerate — MEH-891
+    await page.getByLabel(/^סיסמה חדשה$/).first().fill(DENY_LISTED_12);
     await expect(
       page.getByText(/הסיסמה הזו דלפה ברשת/),
     ).toBeVisible({ timeout: 5000 });
