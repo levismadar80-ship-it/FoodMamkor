@@ -34,9 +34,10 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
  *   by an aborted run is trivially identifiable in the admin queue.
  *
  * Required CI env (graceful-skip when absent — mirrors 10-producer-oauth-409):
- *   E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD — the seeded staging admin
- *   (ADMIN_EMAIL / ADMIN_PASSWORD on the backend). NOT yet wired into
- *   e2e.yml; see PR description.
+ *   SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD — the seeded staging admin. These
+ *   are the SAME secrets the staging smoke job already uses (staging-smoke.yml;
+ *   backend/.env.example), so no new env var is introduced. They still need to
+ *   be passed through to the Playwright step in e2e.yml; see PR description.
  */
 
 const TAG = `E2E-MEH216-${Date.now()}`;
@@ -51,8 +52,8 @@ const LNG = 34.7818;
 // the fail-open Cloudinary cleanup on DELETE.
 const TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
 
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || "";
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || "";
+const ADMIN_EMAIL = process.env.SMOKE_ADMIN_EMAIL || "";
+const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD || "";
 
 interface QueueProducer {
   id: string;
@@ -78,7 +79,7 @@ async function adminLogin(request: APIRequestContext): Promise<string> {
   });
   expect(
     res.ok(),
-    `admin login failed (${res.status()}) — check E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD`,
+    `admin login failed (${res.status()}) — check SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD`,
   ).toBeTruthy();
   return (await res.json()).access_token as string;
 }
@@ -90,7 +91,7 @@ test.describe("Publish → approve → visible (MEH-216 critical path)", () => {
   }) => {
     test.skip(
       !ADMIN_EMAIL || !ADMIN_PASSWORD,
-      "E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD not configured — admin-driven path unavailable",
+      "SMOKE_ADMIN_EMAIL/SMOKE_ADMIN_PASSWORD not configured — admin-driven path unavailable",
     );
     // Run on ONE project only: this spec creates a real staging producer, and
     // the /auth/register limiter quota is shared across CI runs (frontend/e2e/
