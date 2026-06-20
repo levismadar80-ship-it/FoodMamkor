@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-20 — MEH-890 Chunk 1/2: compact + centered desktop top-nav pill (layout only) — ✅ MERGED (#1269, `b93d7da`)
+
+**Branch `feature/meh-890-compact-nav-pill` off `staging`. `Header.jsx` only (RED central).** Chunk 1 of 2 of the homepage rest-state nav rework. The pill no longer spreads edge-to-edge: `w-full max-w-[940px] … justify-between` → **`w-auto max-w-[92vw] flex items-center gap-8`** (hug-content + centered via the existing `flex-col items-center` shell `:193`; one ~32px air gap, no central void). Logo enlarged `106×40 → 122×46` (~+15%, ratio preserved) for hero prominence; invert filter untouched. **Layout only** — surface branches (`:233`/`:237`), ink, the hero scrim (`:179–188`), `.nav-pill-glass`, CTA fill, links, LanguageToggle, login, MEH-884 trust strip all byte-identical; at-rest legibility unchanged (scrim still present). RTL-safe (3 direction-neutral classes). `/adversarial-review-size` clean (comment-only net-positive). All required checks green; merged `b93d7da` (squash) after Sapir mobile QA. `Refs MEH-890` (NOT Closes — issue open for Chunk 2). Part of MEH-789.
+
+**Next:** Chunk 2 — the skin pass (glass-at-rest + dark ink + **drop the hero scrim** `:179–188` + CTA `הוסיפו עסק`→filled green; `כניסה` stays quiet). ⚠️ Re-grep all Phase-0 line numbers first — this chunk shifted them (`Header.jsx` now 479 lines). Same branch/PR convention; RED central → chunked + Skeptic + `/adversarial-review`. Spec not yet drafted.
+
 ## 2026-06-19 — MEH-886 register E2E: assert MEH-883 error-state ARIA — ✅ MERGED (#1259)
 
 **Merged to staging (`60480b0`, squash, Closes MEH-886).** Test-only follow-up to the #1255 reviewer flag — guards the MEH-883 a11y wirings against a silent ARIA-drop. **vitest** (+3): ACCOUNT `stepError` `role=alert`; phone `aria-invalid`+`aria-describedby` only-when-invalid; STORY submit error `role=alert` (`terms_required`). **Playwright** (+1, verify-on-preview): same on the real DOM + `not.toBeVisible()` on the next frame after each gate (proves no silent advance). No production/he/en change; 21 testids unchanged. **Self-caught during CI:** a bare `getByRole("alert")` strict-mode-collided with Next's doc-root `__next-route-announcer__` on the real DOM (absent in jsdom → vitest green but Playwright red) → scoped the alert assertions under the frame testid; vitest 7/7 + Playwright green.
