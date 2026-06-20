@@ -1523,7 +1523,7 @@
         "warm_title": "Warm",
         "warm_body": "Hi {name} 🌿\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for real local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}",
         "professional_title": "Professional",
-        "professional_body": "Hello {name}, I'm reaching out from Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
+        "professional_body": "Hello {name}, I'm reaching out from Mehamakor. We present local food businesses in Israel to the people looking for them. If you're after repeat customers, we'd love to feature your business.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
       },
@@ -2632,8 +2632,8 @@
   },
   "directory": {
     "disclaimer": {
-      "brand_is_prefix": "is a",
-      "directory_only": "directory-only platform. The seller bears full responsibility for products and licensing.",
+      "brand_is_prefix": "presents",
+      "directory_only": "business information only. The seller bears full responsibility for products and licensing.",
       "prices_set_by_businesses": "Prices are set by the businesses themselves."
     }
   },
@@ -2771,7 +2771,7 @@
       },
       "who": {
         "title": "1. Who we are",
-        "body": "\"Mehamakor\" (the \"site\" or \"platform\") is a directory platform that connects local food businesses and natural-care producers with buyers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
+        "body": "\"Mehamakor\" (the \"site\") presents local food businesses and natural-care producers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
       },
       "data": {
         "title": "2. What data we collect",
@@ -2886,7 +2886,7 @@
   },
   "terms": {
     "meta_title": "Terms of Use | Mehamakor",
-    "meta_description": "Terms of use for Mehamakor — a directory platform connecting local food businesses with buyers across Israel.",
+    "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
     "date_label": "Last updated: April 2026",
     "sections": {
@@ -2900,7 +2900,7 @@
       },
       "service": {
         "title": "1. Nature of the service",
-        "body": "\"Mehamakor\" (the \"platform\" or \"site\") is a <b>directory-only</b> platform connecting local food businesses with buyers across Israel. The platform <b>does not sell</b> products, is not a party to any transaction, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
+        "body": "\"Mehamakor\" (the \"site\") presents business information only and is not a party to any transaction; it <b>does not sell</b> products, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
       },
       "licensing": {
         "title": "2. Seller responsibility for licensing",
