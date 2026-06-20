@@ -156,6 +156,30 @@ class ProducerRegister(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
+    # MEH-870: letter-floor parity for the PUBLIC registration path. The
+    # _min_letters_validator already guards ProducerCreate.name /
+    # HomeProductCreate.title against punctuation-only values; ProducerRegister
+    # collected short_description (tagline) + address with only the bleach
+    # strip above. Stacked AFTER the sanitize validators (bleach first, then
+    # count letters), mirroring HomeProductCreate's _sanitize_title →
+    # _validate_title_letters. Both fields are optional, so an absent value
+    # (None — incl. bleach-emptied input) stays valid; only a PROVIDED value
+    # must clear the ≥3-letter floor.
+    # REUSES: backend/app/schemas/schemas.py:16 (_min_letters_validator)
+    @field_validator("short_description")
+    @classmethod
+    def _validate_short_description_letters(cls, v):
+        if v is None:
+            return v
+        return _min_letters_validator(v)
+
+    @field_validator("address")
+    @classmethod
+    def _validate_address_letters(cls, v):
+        if v is None:
+            return v
+        return _min_letters_validator(v)
+
     @field_validator("primary_contact_method")
     @classmethod
     def _validate_primary_contact_method(cls, v):
