@@ -39,17 +39,21 @@ import LanguageToggle from "@/components/LanguageToggle";
  *     (same as scrolled), logo NOT inverted, no scrim. Only the surface-free
  *     trust strip above the pill keeps cream ink + its own (strengthened)
  *     text-shadow over the hero.
- *   - scrolled   → scrolled OR any inner page (no hero): MEH-732 pill-only
- *     glass — translucent cream (`bg-background/85`) + 12px backdrop-blur where
- *     supported, solid `bg-background` fallback via `supports-[backdrop-filter]`,
- *     1px `border-border`, green resting shadow, dark ink. Layout (MEH-890
- *     chunk 1): compact + centered pill — lead group [logo + links] · gap-8 ·
- *     action cluster — across both states.
+ *   - scrolled   → scrolled OR any inner page (no hero): MEH-896 chunk 2
+ *     LIGHTER translucent glass — `bg-background/60` (was /85 pre-chunk-2)
+ *     + 12px backdrop-blur where supported, solid `bg-background` fallback
+ *     via `supports-[backdrop-filter]`, 1px `border-border`, green resting
+ *     shadow, dark ink. Lighter than the solid hero search card so the nav
+ *     stays the lighter member of the rounded-white family (Gestalt: same
+ *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
+ *     compact centered pill at ~50px effective height — lead group
+ *     [logo + links] · gap-8 · action cluster — across both states.
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
- * active link = gold underline. MEH-732 SUPERSEDES the MEH-638 "no glass"
- * lock for the pill (pill-only glass, never a full-width band). Transition
- * never animates backdrop-filter (background + shadow only).
+ * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
+ * underline). MEH-732 SUPERSEDES the MEH-638 "no glass" lock for the pill
+ * (pill-only glass, never a full-width band). Transition never animates
+ * backdrop-filter (background + shadow only).
  *
  * MEH-789 PR-B: the mobile hamburger + drawer were RETIRED — BottomNav
  * (PR-A) owns mobile navigation; its AccountSheet carries favorites /
@@ -211,15 +215,15 @@ export default function Header() {
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart",
             transparent
-              // MEH-890 chunk 2: at rest the pill now carries its OWN soft
-              // glass — translucent cream /70 (lighter than the scrolled /85)
-              // + 12px blur where supported, opaque bg-background fallback,
-              // hairline border + resting shadow → floats over the hero with no
-              // scrim. Dark ink (below), geometry (py-3 px-5) from chunk 1 kept.
-              ? "bg-background supports-[backdrop-filter]:bg-background/70 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-3 px-5"
-              // MEH-732 pill-only glass (scrolled / inner pages — unchanged):
-              // translucent cream /85 + blur, solid bg-background fallback.
-              : "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-2.5 px-4",
+              // MEH-890 chunk 2 + MEH-896 chunk 2: at rest the pill carries
+              // soft glass — translucent cream /70 + 12px blur (opaque fallback),
+              // hairline border, resting shadow. py-3 → py-0.5 (slim ~50px pill;
+              // tap floors enforced per-child below, not by pill chrome).
+              ? "bg-background supports-[backdrop-filter]:bg-background/70 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-5"
+              // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
+              // reads lighter than the solid hero search card (Gestalt: same
+              // family, different weight). py-2.5 → py-0.5 (slim pill match).
+              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-4",
           ].join(" ")}
         >
           {/* LEAD GROUP — logo + nav links together (internal gap 36px).
@@ -229,8 +233,12 @@ export default function Header() {
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
-                width={122}
-                height={46}
+                // MEH-896 chunk 2: 122×46 → 101×38 (≈17% reduction, aspect
+                // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
+                // the slim pill (~50px); tap target preserved by the wrapper
+                // Link's min-h-[44px] above.
+                width={101}
+                height={38}
                 priority
               />{/* MEH-890 chunk 2: logo no longer inverted — it sits on the
                    at-rest glass pill now, not a bare/scrimmed hero. */}
@@ -319,23 +327,22 @@ export default function Header() {
 }
 
 /**
- * Nav link with the MEH-643 gold-underline active indicator (replaces the
- * MEH-29 primary border-b). MEH-890 chunk 2: ink is now always dark — the
- * pill carries a glass surface in every state, so the surface-aware light
- * branch (and its over-hero text-shadow) were dropped. Underline = gold accent.
+ * Nav link — MEH-896 chunk 2 soft active-chip (replaces the MEH-643 gold
+ * underline). Active = brand-primary tint pill (bg-primary/10) + primary
+ * ink + semibold — two cues (shape + color), AA. Inactive = plain text-text
+ * with primary-ink hover. min-h-[44px] keeps each link a ≥44px tap target
+ * independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active }) {
-  const ink = active ? "text-text" : "text-text hover:text-primary";
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       className={[
-        "relative text-sm font-medium py-2 transition-colors duration-fast ease-quart",
-        ink,
+        "inline-flex items-center min-h-[44px] px-3 rounded-full text-sm transition-colors duration-fast ease-quart focus-ring",
         active
-          ? "after:content-[''] after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-accent"
-          : "",
+          ? "bg-primary/10 text-primary font-semibold"
+          : "text-text font-medium hover:text-primary",
       ].join(" ")}
     >
       {label}
