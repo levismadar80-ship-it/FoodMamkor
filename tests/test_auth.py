@@ -365,6 +365,17 @@ class TestProducerSignupPolicy:
         )
         assert resp.status_code == 422
 
+    def test_register_producer_rejects_bad_contact_method(self, client):
+        # MEH-296: ProducerRegister's primary_contact_method guard. The 422
+        # fires at FastAPI request-body validation, BEFORE the MEH-328
+        # generic-success handler runs, so the anti-enumeration response
+        # cannot mask it.
+        resp = client.post(
+            "/auth/register/producer",
+            json={**self.VALID_REG, "primary_contact_method": "garbage"},
+        )
+        assert resp.status_code == 422, resp.text
+
     def test_producer_signup_breached_password_rejected(self, client):
         # Override the autouse HIBP=False stub to simulate a breach hit.
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
