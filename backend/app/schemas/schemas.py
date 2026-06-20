@@ -1993,3 +1993,23 @@ class VacationModeState(BaseModel):
 class RiskScoreResponse(BaseModel):
     score: int | None = None
     reasoning: str | None = None
+
+
+# --- Admin: undelivered WhatsApp messages (admin_whatsapp.py) ---
+# MEH-771 Chunk C: shape of GET /admin/whatsapp/failed. One row per
+# outbound message that did NOT reach the recipient (status='failed' or
+# 'window_expired') in the last 7 days. error_code / error_message /
+# updated_at are nullable — populated by the webhook reconcile path
+# (Chunk B) when Meta returns an error object, or left NULL when the
+# status was set at send time (e.g. immediate window_expired).
+class OutboundMessageAdminOut(BaseModel):
+    id: UUID
+    to_phone: str
+    kind: str
+    status: str
+    error_code: int | None = None
+    error_message: str | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}

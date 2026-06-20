@@ -1077,6 +1077,7 @@
         "kashrut": "כשרות",
         "reports": "דיווחים",
         "category_requests": "בקשות קטגוריה",
+        "whatsapp_failures": "הודעות שלא נמסרו",
         "analytics": "אנליטיקס",
         "settings": "הגדרות",
         "help": "עזרה"
@@ -1739,6 +1740,25 @@
         "reject": "דחי",
         "merge": "מיזגי",
         "reset": "אפסי"
+      }
+    },
+    "whatsapp_failures": {
+      "title": "הודעות וואטסאפ שלא נמסרו",
+      "subtitle": "7 הימים האחרונים — לקוחות שלא קיבלו את ההודעה",
+      "empty": "אין הודעות שלא נמסרו ב-7 הימים האחרונים — מצוין",
+      "load_error": "שגיאה בטעינת ההודעות",
+      "columns": {
+        "phone": "מספר נמען",
+        "kind": "סוג הודעה",
+        "status": "סטטוס",
+        "error_code": "קוד שגיאה",
+        "error_message": "פירוט שגיאה",
+        "sent_at": "נשלחה",
+        "updated_at": "עודכנה"
+      },
+      "status": {
+        "failed": "נכשלה",
+        "window_expired": "חלון 24 שעות נסגר"
       }
     },
     "group_buys": {
