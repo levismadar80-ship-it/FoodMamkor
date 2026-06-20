@@ -34,12 +34,17 @@ export async function generateMetadata({ params }) {
 // EventsClient uses useSearchParams() to keep the ?tab=experiences
 // deep-link in the URL. Next.js 14 requires a Suspense boundary
 // around any component that reads search params in the App Router.
-export default function EventsPage() {
+export default async function EventsPage({ params }) {
+  // MEH-858 F2: Suspense fallback was a hardcoded HE string (leaked Hebrew on
+  // /en). Wire the existing events.list.loading_events key — same rendered
+  // string in HE, proper EN parity. Server component → getTranslations.
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "events.list" });
   return (
     <Suspense
       fallback={
         <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
-          טוענת אירועים...
+          {t("loading_events")}
         </div>
       }
     >

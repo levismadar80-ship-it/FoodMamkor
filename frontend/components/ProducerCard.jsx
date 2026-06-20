@@ -147,7 +147,7 @@ function CardHeart({ producer, onCountChange }) {
       setFavorited(!next);
       setFavoritedLocal(producer.id, !next);
       onCountChange?.(next ? -1 : 1);
-      showToast.error(t("producer.card.favorites.error"));
+      showToast.error(t("error.generic"));
     }
   };
 
@@ -370,7 +370,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               data-testid="primary-method-hint"
               data-method={primaryMethod}
             >
-              <MethodIcon size={18} weight="duotone" aria-hidden="true" />
+              <MethodIcon size={18} aria-hidden="true" />
             </span>
           )}
         </div>

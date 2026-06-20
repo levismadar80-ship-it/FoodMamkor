@@ -475,7 +475,9 @@ async def register_producer(
         producer = Producer(
             name=data.producer_name,
             description=data.description,
+            short_description=data.short_description,
             city=data.city,
+            address=data.address,
             lat=data.lat,
             lng=data.lng,
             phone=data.phone,
@@ -571,7 +573,9 @@ async def register_producer(
         producer = Producer(
             name=data.producer_name,
             description=data.description,
+            short_description=data.short_description,
             city=data.city,
+            address=data.address,
             lat=data.lat,
             lng=data.lng,
             phone=data.phone,

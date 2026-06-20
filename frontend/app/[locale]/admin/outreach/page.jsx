@@ -123,7 +123,7 @@ export default function AdminOutreachPage() {
           onClick={() => setScriptOpen(true)}
           className="text-sm text-primary hover:underline inline-flex items-center gap-1.5"
         >
-          <Phone size={16} weight="duotone" aria-hidden="true" />
+          <Phone size={16} aria-hidden="true" />
           {t("outreach.call_script_btn")}
         </button>
       </div>
@@ -448,7 +448,7 @@ function ScriptModal({ onClose }) {
         className="bg-white rounded-[16px] p-6 max-w-lg w-full"
       >
         <h2 className="font-headline-md text-xl font-bold mb-3 inline-flex items-center gap-2">
-          <Phone size={20} weight="duotone" className="text-primary" aria-hidden="true" />
+          <Phone size={20} className="text-primary" aria-hidden="true" />
           {t("outreach.modal_script.title")}
         </h2>
         <pre className="whitespace-pre-wrap text-sm text-text font-body-md leading-relaxed">

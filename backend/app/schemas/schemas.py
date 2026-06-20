@@ -26,6 +26,25 @@ def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     return stripped
 
 
+_ALNUM_REGEX = re.compile(r"[א-תa-zA-Z0-9]")
+
+
+def _min_alnum_validator(value: str | None) -> str | None:
+    # MEH-870: address-specific floor. Unlike _min_letters_validator (≥3
+    # letters — right for names/taglines), an address need only contain at
+    # least one letter OR digit. This still rejects punctuation-only input
+    # ("---") but accepts legitimate short/numeric Israeli forms the letter
+    # floor would over-reject: "123", the P.O. box "ת.ד. 123" (→ "תד", 2
+    # letters), "רח' הרצל 5". Optional field: None (incl. bleach-emptied
+    # input) stays valid.
+    if value is None:
+        return value
+    stripped = value.strip()
+    if not _ALNUM_REGEX.search(stripped):
+        raise ValueError("שדה זה חייב להכיל לפחות אות או ספרה אחת")
+    return stripped
+
+
 # MEH-296: shared contact-channel guards, enforced at the API boundary.
 # `primary_contact_method` is a free-text column (MEH-17 / MEH-555 — no DB
 # enum); the 7-value set is validated on every write path. URL fields stay
@@ -109,7 +128,9 @@ class ProducerRegister(BaseModel):
     # Producer details
     producer_name: str
     description: str | None = None
+    short_description: str | None = Field(default=None, max_length=160)
     city: str | None = None
+    address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
@@ -140,6 +161,47 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _sanitize_description(cls, v):
         return sanitize_text(v, max_length=2000)
+
+    # MEH-829: same bleach/XSS defense-in-depth as description above — these two
+    # were collected on the public registration path without the strip their
+    # ProducerUpdate twins already run.
+    @field_validator("short_description")
+    @classmethod
+    def _sanitize_short_description(cls, v):
+        return sanitize_text(v, max_length=160)
+
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=255)
+
+    # MEH-870: reject punctuation-only values on the PUBLIC registration path,
+    # which collected short_description (tagline) + address with only the bleach
+    # strip above. Stacked AFTER the sanitize validators (bleach first, then the
+    # floor), mirroring HomeProductCreate's _sanitize_title → _validate_title_letters.
+    # Two different floors, by field semantics:
+    #   short_description → ≥3 letters (same as ProducerCreate.name / titles).
+    #   address           → ≥1 letter-or-digit only. The ≥3-letter floor
+    #     over-rejects valid Israeli addresses ("123", P.O. box "ת.ד. 123" → "תד",
+    #     2 letters); an address need only not be punctuation-only.
+    # Both fields optional → an absent value (None, incl. bleach-emptied input)
+    # stays valid; only a PROVIDED value must clear its floor.
+    # REUSES: backend/app/schemas/schemas.py:16 (_min_letters_validator)
+    @field_validator("short_description")
+    @classmethod
+    def _validate_short_description_letters(cls, v):
+        # Guard is load-bearing: _min_letters_validator(None) coerces None → ""
+        # and raises (HOT-003), which would reject an absent optional tagline.
+        # _validate_address_alnum below needs no guard — _min_alnum_validator
+        # handles None internally.
+        if v is None:
+            return v
+        return _min_letters_validator(v)
+
+    @field_validator("address")
+    @classmethod
+    def _validate_address_alnum(cls, v):
+        return _min_alnum_validator(v)
 
     @field_validator("primary_contact_method")
     @classmethod
@@ -465,6 +527,9 @@ class ProducerUpdate(BaseModel):
     description: str | None = None
     short_description: str | None = None
     city: str | None = None
+    # MEH-829: editable street address (private — admin/owner only on the *Out
+    # side). Mirrors the ProducerRegister cap.
+    address: str | None = Field(default=None, max_length=255)
     lat: float | None = None
     lng: float | None = None
     phone: str | None = None
@@ -525,6 +590,13 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_short_description(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-829: sanitize the owner-editable address on PATCH /producers/me, same
+    # bleach strip as the register path (_sanitize_address on ProducerRegister).
+    @field_validator("address")
+    @classmethod
+    def _sanitize_address(cls, v):
+        return sanitize_text(v, max_length=255)
 
     @field_validator("availability_status")
     @classmethod
@@ -741,6 +813,10 @@ class ProducerListOut(BaseModel):
 
 
 class ProducerDetailOut(ProducerListOut):
+    # MEH-829: producer.address is intentionally NOT exposed here — this detail
+    # endpoint is public; the street address is admin/owner-only (see
+    # ProducerAdminOut / ProducerOwnerOut), per the producer_license_number
+    # privacy-first precedent.
     contact_name: str | None = None
     phone: str | None = None
     instagram: str | None = None
@@ -771,6 +847,10 @@ class ProducerDetailOut(ProducerListOut):
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-829: street address submitted at registration — admin-visible (+ owner
+    # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
+    # the producer_license_number privacy precedent.
+    address: str | None = None
     # MEH-509 PR3: admin-only risk surface. NULL on both = "not scored yet
     # OR Anthropic call failed (fail-open)" — frontend renders the grey
     # "אין מידע" badge. Never exposed via ProducerDetailOut (public).
@@ -797,6 +877,9 @@ class ProducerAdminOut(ProducerDetailOut):
 # admin table, AdminProducersTable.jsx:181).
 class ProducerOwnerOut(ProducerDetailOut):
     producer_license_number: str | None = None
+    # MEH-829: owner sees her own submitted street address (private — not on the
+    # public DetailOut/ListOut).
+    address: str | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---

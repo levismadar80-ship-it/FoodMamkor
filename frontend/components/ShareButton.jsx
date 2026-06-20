@@ -56,7 +56,7 @@ export default function ShareButton({ url, title, description, city, category })
       title={t("copy_link")}
       aria-label={t("modal_title")}
     >
-      <ShareNetwork size={16} weight="duotone" aria-hidden="true" />
+      <ShareNetwork size={16} aria-hidden="true" />
       <span className="hidden sm:inline">{t("trigger")}</span>
     </button>
   );

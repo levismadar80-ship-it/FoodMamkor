@@ -1,6 +1,16 @@
-export default function Loading() {
+import { getTranslations } from "next-intl/server";
+
+export default async function Loading() {
+  // MEH-876: announce the loading state to assistive tech (the skeleton is
+  // otherwise silent decorative markup).
+  const t = await getTranslations("a11y");
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div
+      className="max-w-7xl mx-auto px-4 py-8"
+      role="status"
+      aria-busy="true"
+    >
+      <span className="sr-only">{t("loading")}</span>
       <div className="h-8 w-48 bg-border rounded-[12px] animate-pulse mb-8" />
       {[0, 1].map((row) => (
         <div key={row} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

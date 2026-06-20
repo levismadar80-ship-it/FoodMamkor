@@ -6,7 +6,7 @@ import { render, screen } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     const flat = {
-      open_aria: `הגדלי תמונה ${vars?.current ?? ""}`.trim(),
+      open_aria: `הגדלו תמונה ${vars?.current ?? ""}`.trim(),
       image_alt: `תמונה ${vars?.current ?? ""}`.trim(),
       prev_aria: "תמונה קודמת",
       next_aria: "תמונה הבאה",

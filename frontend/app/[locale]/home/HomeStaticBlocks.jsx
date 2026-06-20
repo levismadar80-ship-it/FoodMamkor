@@ -1,138 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Leaf } from "@phosphor-icons/react";
+import Image from "next/image";
+import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-
-// PREMIUM_DESIGN: hype tags that scroll in the marquee between sections.
-// Tag display labels resolve via home.marquee.* — preserving the order
-// matters for the loop animation. The keys are the data axis.
-const MARQUEE_KEYS = [
-  "tag_unprocessed",
-  "tag_pasture",
-  "tag_organic",
-  "tag_sourdough",
-  "tag_extra_virgin",
-  "tag_fresh_real",
-  "tag_verified",
-  "tag_local",
-];
-
-/**
- * MARQUEE STRIP (PREMIUM_DESIGN)
- * Infinite scrolling hype tags between categories + producers.
- * The list is rendered twice so the -50% translate loops cleanly.
- * Pauses on hover; respects prefers-reduced-motion.
- */
-export function HomeMarquee() {
-  const t = useTranslations("home.marquee");
-  return (
-    <div
-      className="bg-primary overflow-hidden marquee-edge-fade"
-      style={{
-        padding: "14px 0",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-        borderBottom: "1px solid rgba(255,255,255,0.1)",
-      }}
-      aria-hidden="true"
-    >
-      <div className="marquee-track">
-        {[0, 1].map((loop) => (
-          <div key={loop} className="flex items-center" style={{ gap: "48px" }}>
-            {MARQUEE_KEYS.map((key) => (
-              <span
-                key={`${loop}-${key}`}
-                className="font-body-md whitespace-nowrap text-green-50"
-                style={{
-                  fontSize: 14,
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {t(key)}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/**
- * FEATURE BAND (S14 · MEH-788 Phase-3) — position 06 "texture moment".
- * The editorial hand-off (quote → /about) restyled as the background-alt step
- * that breaks the typography run: hand-cut seams both ends, quote at start,
- * framed 3:2 IMG-03 plate + offset panel at end (5/7 grid desktop, stacked
- * mobile). Copy is UNCHANGED (existing home.founder_quote.* — the S14 copy Δ
- * reconciliation is separate/pending).
- */
-// MEH-788 IMG-03: produce shot for the §06 feature-band plate. Portrait source
-// (3732×4089) smart-cropped to the band's 3:2 via c_fill,g_auto (the helper) —
-// g_auto frames the produce instead of center-slicing. f_auto,q_auto + width
-// cap through optimizeCloudinary. REUSES: HomeFeaturedProducer (ar + g_auto).
-const FEATURE_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/home/feature-produce.jpg",
-  { aspectRatio: "3:2", width: 1000 },
-);
-
-export function HomeFounderQuote() {
-  const t = useTranslations();
-  return (
-    <>
-      {/* hand-cut seam — cream → background-alt (DS gesture №4, globals.css) */}
-      <div className="seam-cut" aria-hidden="true" />
-      <section className="bg-background-alt">
-        <div className="max-w-6xl mx-auto px-4 md:px-12 py-12 md:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
-            {/* quote — start (5 cols) */}
-            <FadeInSection className="md:col-span-5">
-              {/* gold rule marker (decorative — no new copy) */}
-              <span className="block w-10 h-px bg-accent mb-4" aria-hidden="true" />
-              <Link
-                href="/about"
-                className="group block focus-visible:ring-2 focus-visible:ring-primary/40 rounded-md"
-              >
-                <p className="font-headline-md italic text-text text-xl md:text-2xl leading-relaxed mb-2">
-                  &ldquo;{t("home.founder_quote.text")}&rdquo;
-                </p>
-                <p className="font-body-md text-sm text-primary group-hover:underline">
-                  {t("home.founder_quote.attribution")}
-                </p>
-              </Link>
-            </FadeInSection>
-
-            {/* IMG-03 plate — end (7 cols). Framed 3:2 inset: warm-white mat +
-                hairline + an offset cream panel behind it (depth by overlap,
-                zero shadows). MEH-788: the real produce shot is now wired
-                (FEATURE_IMAGE); the background-alt tone stays as the <img>'s
-                own backdrop so a slow load shows the plate, never a void. */}
-            <FadeInSection className="md:col-span-7" delay={0.1}>
-              <figure className="relative m-0">
-                <div
-                  className="absolute -bottom-3 -end-3 w-full h-full rounded-lg bg-background border border-border"
-                  aria-hidden="true"
-                />
-                <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- raw <img>: this is a decorative editorial plate, not LCP content; next/image's fill wrapper would fight the 3:2 aspect box */}
-                  <img
-                    src={FEATURE_IMAGE}
-                    alt=""
-                    loading="lazy"
-                    className="aspect-[3/2] w-full rounded-md object-cover bg-background-alt"
-                  />
-                </div>
-              </figure>
-            </FadeInSection>
-          </div>
-        </div>
-      </section>
-      {/* hand-cut seam — background-alt → cream */}
-      <div className="seam-cut flip" aria-hidden="true" />
-    </>
-  );
-}
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -155,18 +28,20 @@ export function HomeRecentlyViewed({ items }) {
             <Link
               key={p.id}
               href={href}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
-                  <img
+                  <Image
                     src={imgSrc}
                     alt={p.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    fill
+                    sizes="160px"
+                    className="object-cover group-hover:scale-105 transition duration-300"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-primary">
-                    <Leaf size={32} weight="duotone" aria-hidden="true" />
+                    <Leaf size={32} aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -222,11 +97,12 @@ export function HomeFeaturedProducer({ featured }) {
         <FadeInSection className="md:col-span-5">
           <figure className="relative m-0 rounded-lg bg-surface-card border border-border p-2">
             {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={photo}
                 alt={featured.name}
-                loading="lazy"
+                width={500}
+                height={600}
+                sizes="(max-width: 768px) 100vw, 42vw"
                 className="aspect-[5/6] w-full rounded-md object-cover"
               />
             ) : (
@@ -314,51 +190,33 @@ export function HomeHowItWorks() {
   );
 }
 
-// MEH-525: row key order is the locked editorial order — do not re-sort.
-const COMPARISON_ROWS = ["row1", "row2", "row3"];
-
 /**
- * COMPARISON STRIP — MEH-525 (copy LOCK 2026-06-13). Sits between How It
- * Works and the For Business CTA. Two columns (סופר | מהמקור), 3 rows,
- * S4 voice: cream page surface, hairline borders only, gold accent on the
- * brand column — F1 flat, no shadows. Static, prop-free.
+ * COMPARISON TEASER — MEH-841 (supersedes MEH-525 placement). The full
+ * comparison moved to /about as an early narrative beat; here only a calm
+ * one-line teaser remains, linking to /about. S4 voice: cream surface,
+ * hairline-free, gold accent on the link only — flat, no shadows. Static.
  */
-export function HomeComparison() {
-  const t = useTranslations("home.comparison");
+export function HomeComparisonTeaser() {
+  const t = useTranslations("home.comparison_teaser");
   return (
-    <section className="max-w-7xl mx-auto px-4 section-y">
+    <section className="max-w-3xl mx-auto px-4 section-y text-center">
       <FadeInSection>
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-2">
           {t("eyebrow")}
         </p>
         <h2
-          className="font-headline-lg font-bold text-text text-center mb-10"
+          className="font-headline-lg font-bold text-text mb-5"
           style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
         >
           {t("heading")}
         </h2>
-      </FadeInSection>
-      <FadeInSection>
-        <div className="max-w-3xl mx-auto border-y border-border divide-y divide-border" role="table" aria-label={t("heading")}>
-          <div role="row" className="grid grid-cols-2">
-            <div role="columnheader" className="py-3 pe-4 text-sm font-medium text-fg-muted">
-              {t("col_super")}
-            </div>
-            <div role="columnheader" className="py-3 ps-4 text-sm font-medium text-accent border-s border-border">
-              {t("col_brand")}
-            </div>
-          </div>
-          {COMPARISON_ROWS.map((row) => (
-            <div key={row} role="row" className="grid grid-cols-2">
-              <div role="cell" className="py-5 pe-4 text-fg-muted leading-relaxed">
-                {t(`${row}_super`)}
-              </div>
-              <div role="cell" className="py-5 ps-4 text-text font-medium leading-relaxed border-s border-border">
-                {t(`${row}_brand`)}
-              </div>
-            </div>
-          ))}
-        </div>
+        <Link
+          href="/about"
+          className="inline-flex items-center gap-2 text-accent font-medium hover:underline"
+        >
+          {t("cta")}
+          <ArrowLeft size={18} aria-hidden="true" />
+        </Link>
       </FadeInSection>
     </section>
   );

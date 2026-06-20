@@ -19,7 +19,7 @@ function ProducerMiniCard({ producer }) {
   return (
     <Link
       href={producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`}
-      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white hover:shadow-md transition-shadow group"
+      className="flex-shrink-0 w-36 rounded-[12px] overflow-hidden border border-border bg-white transition group"
       aria-label={producer.name}
     >
       <div className="relative h-24 bg-green-50">
@@ -42,7 +42,7 @@ function ProducerMiniCard({ producer }) {
   );
 }
 
-export default function FridayDeliveryStrip({ city }) {
+export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
   const [producers, setProducers] = useState([]);
@@ -59,7 +59,14 @@ export default function FridayDeliveryStrip({ city }) {
       .catch(() => {});
   }, [city]);
 
-  if (producers.length === 0) return null;
+  // MEH-879: report show-state up to the homepage banner single-slot so
+  // lower-precedence banners (Holiday, Location) can yield to this strip.
+  const visible = producers.length > 0;
+  useEffect(() => {
+    onVisibilityChange?.(visible);
+  }, [visible, onVisibilityChange]);
+
+  if (!visible) return null;
 
   return (
     <section

@@ -4,7 +4,12 @@
 2. POST /auth/register/producer — same, when password is supplied
 3. GET /users/me/favorites — must not 500 on orphaned Favorite rows
 """
-from tests.conftest import auth_header, make_producer, make_user
+from tests.conftest import (
+    auth_header,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 
 # ---------- password min_length ----------
@@ -41,6 +46,72 @@ def test_register_producer_rejects_short_password(client):
         },
     )
     assert r.status_code == 422
+
+
+# ---------- MEH-870: punctuation-only floor on register/producer tagline + address ----------
+# The PUBLIC registration path now rejects punctuation-only short_description
+# (tagline) and address. Two floors by field semantics: short_description needs
+# ≥3 letters (like ProducerCreate.name); address needs only ≥1 letter-or-digit
+# so valid Israeli forms ("ת.ד. 123", "רח' הרצל 5") aren't over-rejected.
+# Optional fields: a punctuation-only value is 422; absent stays valid.
+
+
+def _producer_payload(**overrides):
+    # primary_contact_method "whatsapp" (fixture default) needs a phone or the
+    # handler 422s before the schema-level field check we are exercising.
+    payload = valid_producer_register_payload()
+    payload["phone"] = "0501234567"
+    payload.update(overrides)
+    return payload
+
+
+def test_register_producer_rejects_punctuation_only_short_description(client):
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(short_description="???"),
+    )
+    assert r.status_code == 422
+    assert any(
+        "short_description" in str(e.get("loc", "")) for e in r.json()["detail"]
+    )
+
+
+def test_register_producer_rejects_punctuation_only_address(client):
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(address="---"),
+    )
+    assert r.status_code == 422
+    assert any("address" in str(e.get("loc", "")) for e in r.json()["detail"])
+
+
+def test_register_producer_accepts_short_hebrew_tagline(client):
+    # 3+ Hebrew letters clears the floor — short legit taglines stay valid.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(short_description="אוכל ביתי"),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_register_producer_accepts_address_with_digits(client):
+    # Address floor is ≥1 letter-or-digit; "רח' הרצל 5" has both.
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(address="רח' הרצל 5"),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_register_producer_accepts_po_box_address(client):
+    # MEH-870 review catch: the ≥3-letter floor would reject the Israeli P.O.
+    # box "ת.ד. 123" (→ "תד", 2 letters). The ≥1-alphanumeric address floor
+    # accepts it (contains digits).
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(address="ת.ד. 123"),
+    )
+    assert r.status_code == 200, r.text
 
 
 # ---------- favorites: orphaned row doesn't 500 ----------

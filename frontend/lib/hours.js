@@ -56,11 +56,21 @@ export function toMinutes(hhmm) {
 // the detail section ignores it. Day labels resolve at the JSX layer via t().
 export function computeStatus(map) {
   const now = new Date();
-  // Israel timezone
-  const ilStr = now.toLocaleString("en-US", { timeZone: "Asia/Jerusalem" });
-  const il = new Date(ilStr);
-  const dayIdx = il.getDay(); // 0=Sun…6=Sat
-  const nowMin = il.getHours() * 60 + il.getMinutes();
+  // MEH-845: derive Israel-local weekday + wall-clock via Intl parts. The prior
+  // `new Date(now.toLocaleString("en-US", { timeZone }))` re-parse relied on an
+  // implementation-defined, non-ISO date string — V8 parses it, other engines /
+  // SSR contexts can return Invalid Date. formatToParts is portable.
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Jerusalem",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const part = (type) => parts.find((p) => p.type === type)?.value;
+  const dayIdx = DAY_ABBR.indexOf(part("weekday")); // "Sun"…"Sat" → 0…6
+  // hour12:false emits "24" for midnight on some engines; normalise to 0.
+  const nowMin = (Number(part("hour")) % 24) * 60 + Number(part("minute"));
 
   const todayHours = map[dayIdx];
   if (todayHours) {

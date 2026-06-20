@@ -14,6 +14,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 export default function RecipeCard({ slug, recipe }) {
@@ -25,14 +26,14 @@ export default function RecipeCard({ slug, recipe }) {
       href={`/${slug}/recipes/${recipe.id}`}
       className="block bg-white rounded-[14px] border border-border overflow-hidden hover:border-primary transition focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      <div className="aspect-[4/3] bg-green-50 flex items-center justify-center text-3xl">
+      <div className="relative aspect-[4/3] bg-green-50 flex items-center justify-center text-3xl">
         {recipe.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            className="object-cover"
           />
         ) : (
           <span aria-hidden="true">🍞</span>

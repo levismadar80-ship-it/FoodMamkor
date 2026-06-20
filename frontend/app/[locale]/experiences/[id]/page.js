@@ -68,7 +68,7 @@ export default function ExperienceDetailPage() {
     <Suspense
       fallback={
         <div className="max-w-3xl mx-auto px-4 py-16 text-center text-fg-muted">
-          טוענת את החוויה...
+          טעינת החוויה...
         </div>
       }
     >

@@ -11,7 +11,8 @@ export const OLD_TO_NEW = {
   nav_favorites: "nav.favorites",
   nav_admin: "nav.admin",
   nav_login: "nav.login",
-  nav_logout: "nav.logout",
+  // MEH-868: nav_logout alias removed — nav.logout was deleted in this PR
+  // (AccountSheet now uses the plural account.menu.logout; no live consumer).
   nav_add_business: "nav.add_business",
   nav_mobile_label: "nav.mobile_label",
   nav_profile: "nav.profile",
@@ -20,25 +21,16 @@ export const OLD_TO_NEW = {
   search_placeholder: "home.search.placeholder",
   search_sr_label: "home.search.sr_label",
   search_submit: "home.search.submit",
-  footer_discover: "nav.footer.discover",
-  footer_community: "nav.footer.community",
-  footer_businesses: "nav.footer.businesses",
-  footer_trust: "nav.footer.trust",
-  footer_home: "nav.footer.home",
-  footer_map: "nav.footer.map",
-  footer_all_businesses: "nav.footer.all_businesses",
-  footer_new_businesses: "nav.footer.new_businesses",
+  // MEH-867: footer_discover/community/businesses/trust/home/map/
+  // all_businesses/new_businesses/manage/privacy/contact/copyright/
+  // made_with_love aliases removed — their nav.footer.* targets were the
+  // dead keys deleted in this PR (grep-confirmed no live consumers).
   footer_events: "nav.footer.events",
   footer_about: "nav.footer.about",
   footer_add_business: "nav.footer.add_business",
   footer_login: "nav.footer.login",
-  footer_manage: "nav.footer.manage",
   footer_terms: "nav.footer.terms",
-  footer_privacy: "nav.footer.privacy",
   footer_accessibility: "nav.footer.accessibility",
-  footer_contact: "nav.footer.contact",
-  footer_copyright: "nav.footer.copyright",
-  footer_made_with_love: "nav.footer.made_with_love",
   cta_show_on_map: "common.cta.show_on_map",
   cta_more_info: "common.cta.more_info",
 };

@@ -19,6 +19,8 @@ const STATUS_CLS = {
 
 function NewGroupBuyForm({ producerCity, onCreated }) {
   const t = useTranslations("group_buys.dashboard.form");
+  // MEH-848: shared generic error copy (collapsed from group_buys.dashboard.form.errors.generic).
+  const tError = useTranslations("error");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -51,7 +53,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       });
       onCreated();
     } catch (err) {
-      setError(err.response?.data?.detail || t("errors.generic"));
+      setError(err.response?.data?.detail || tError("generic"));
     } finally {
       setSubmitting(false);
     }

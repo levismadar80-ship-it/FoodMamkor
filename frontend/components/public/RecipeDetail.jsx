@@ -19,6 +19,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 function splitLines(text) {
@@ -63,12 +64,13 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
 
       {/* Hero */}
       {recipe.image_url && (
-        <div className="aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <div className="relative aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
+          <Image
             src={recipe.image_url}
             alt={recipe.title}
-            className="w-full h-full object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
           />
         </div>
       )}
@@ -154,12 +156,12 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 className="bg-white rounded-[12px] border border-border p-3 flex items-center gap-3"
               >
                 {p.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={p.image_url}
                     alt=""
+                    width={56}
+                    height={56}
                     className="w-14 h-14 object-cover rounded-[8px]"
-                    loading="lazy"
                   />
                 ) : (
                   <span

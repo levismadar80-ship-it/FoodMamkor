@@ -41,6 +41,11 @@ export default async function sitemap() {
     { path: "/map", priority: 0.9, changeFrequency: "daily" },
     { path: "/events", priority: 0.8, changeFrequency: "daily" },
     { path: "/about", priority: 0.6, changeFrequency: "monthly" },
+    // MEH-875: secondary indexable landing routes (all under app/[locale]/).
+    { path: "/experiences", priority: 0.8, changeFrequency: "daily" },
+    { path: "/group-buys", priority: 0.8, changeFrequency: "daily" },
+    { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },
+    { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
     // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility

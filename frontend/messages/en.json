@@ -1,15 +1,17 @@
 {
+  "a11y": {
+    "loading": "Loading…"
+  },
   "nav": {
     "discover": "Discover",
     "explore": "Explore",
-    "add_business_short": "הוסיפו עסק",
+    "add_business_short": "Add a business",
     "map": "Map",
     "events": "Events",
     "about": "About",
     "favorites": "Favorites",
     "admin": "Admin",
     "login": "Sign In",
-    "logout": "Sign Out",
     "add_business": "Add Your Business",
     "mobile_label": "Mobile navigation",
     "profile": "Profile",
@@ -29,28 +31,15 @@
       "profile_cta": "Got it, finish"
     },
     "footer": {
-      "discover": "Discover",
-      "community": "Community",
-      "businesses": "Businesses",
-      "trust": "Transparency",
-      "home": "Home",
-      "map": "Map",
-      "all_businesses": "All Businesses",
-      "new_businesses": "New Businesses",
       "events": "Events",
       "about": "About",
       "process": "Our process",
       "faq_businesses": "FAQ for Businesses",
       "add_business": "Add Your Business",
       "login": "Sign In",
-      "manage": "Manage Business",
       "terms": "Terms of Service",
-      "privacy": "Privacy Policy",
       "privacy_short": "Privacy",
       "accessibility": "Accessibility",
-      "contact": "Contact Us",
-      "copyright": "Mehamakor. All rights reserved.",
-      "made_with_love": "Made with love in Israel",
       "cta_pitch": "Do you have a local food business?",
       "cta_subpitch": "Join thousands of business owners on Mehamakor",
       "brand_aria": "Mehamakor — Home page",
@@ -60,8 +49,6 @@
       "nav_heading": "Navigation",
       "nav_discover": "Discover businesses",
       "newsletter_heading": "Good food is meant to be shared",
-      "newsletter_tagline": "A new producer story every week, straight to your inbox",
-      "newsletter_frequency": "Once a week. No spam. Unsubscribe anytime.",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
       "newsletter_submit": "Join",
@@ -159,8 +146,7 @@
       "reset_success": "Password updated successfully — you can sign in",
       "or": "or",
       "no_account": "Don't have an account?",
-      "register_cta": "Join →",
-      "generic_error": "Something went wrong, please try again"
+      "register_cta": "Join →"
     },
     "oauth": {
       "google_error": "Google sign-in failed",
@@ -212,9 +198,6 @@
         "actions": {
           "submit": "Join",
           "submitting": "Signing up..."
-        },
-        "errors": {
-          "generic": "Something went wrong, try again"
         },
         "email_sent": {
           "title": "Check your inbox",
@@ -338,14 +321,25 @@
   },
   "error": {
     "try_again": "Error, please try again",
-    "generic": "Something went wrong, try again"
+    "generic": "Something went wrong, try again",
+    "mapper": {
+      "offline": "No internet connection. Check your network and try again.",
+      "timeout": "The server is taking longer than usual. Try again in a moment.",
+      "network": "Couldn't connect to the server. Try again in a moment.",
+      "bad_request": "The submitted data is invalid.",
+      "unauthorized": "Your session expired. Sign in again to continue.",
+      "forbidden": "You don't have permission for this action.",
+      "not_found": "Item not found.",
+      "rate_limited": "Too many attempts. Try again in a few minutes.",
+      "server": "The server is unavailable right now. Try again in a moment."
+    }
   },
   "home": {
     "hero": {
       "title": "Real Food, Straight From the Source",
       "subtitle": "Straight from the source. Businesses we've already vetted for you.",
-      "cta_primary": "גלו עסקים",
-      "how_it_works": "איך זה עובד",
+      "cta_primary": "Discover businesses",
+      "how_it_works": "How it works",
       "friday_subtitle": "Friday is here What's on the Shabbat table?",
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
@@ -364,26 +358,22 @@
       "countrywide": "across Israel",
       "fallback": "Starting now · across Israel"
     },
-    "featured": {
-      "eyebrow": "היכרות",
-      "heading": "מאחורי הקלעים",
-      "cta_meet": "להכיר את {name}",
-      "cta_write": "לכתוב ל{name}"
+    "trust": {
+      "lead": "Businesses we've already vetted for you."
     },
-    "comparison": {
-      "eyebrow": "ההבדל",
-      "heading": "מה שמשתנה בדרך",
-      "col_super": "סופר",
-      "col_brand": "מהמקור",
-      "row1_super": "מוצר על מדף",
-      "row1_brand": "אדם מאחורי המוצר",
-      "row2_super": "נסע רחוק",
-      "row2_brand": "גדל קרוב",
-      "row3_super": "עוד סל בקופה",
-      "row3_brand": "קשר ישיר עם מי שמייצרת"
+    "featured": {
+      "eyebrow": "Get to know",
+      "heading": "Behind the scenes",
+      "cta_meet": "Meet {name}",
+      "cta_write": "Message {name}"
+    },
+    "comparison_teaser": {
+      "eyebrow": "The difference",
+      "heading": "What changes along the way",
+      "cta": "See the difference"
     },
     "categories": {
-      "eyebrow": "קטגוריות",
+      "eyebrow": "Categories",
       "heading": "Browse by category",
       "subheading": "Straight from the producer — no middlemen",
       "aria": "Show category: {name}"
@@ -707,10 +697,9 @@
       "favorites": {
         "saved_login_prompt": "Saved — log in to see all your favorites",
         "login_cta": "Log in",
-        "error": "Something went wrong, please try again",
         "remove": "Remove from favorites",
         "add": "Add to favorites",
-      "aria": "שמירה"
+        "aria": "Save"
       },
       "aria": {
         "image_missing": "{name} — image missing",
@@ -775,8 +764,7 @@
       "toast_created": "Recipe sent for approval",
       "errors": {
         "upload_image_failed": "Image upload failed",
-        "rejected_default": "Content does not meet our criteria",
-        "generic": "Something went wrong, please try again"
+        "rejected_default": "Content does not meet our criteria"
       }
     },
     "dashboard": {
@@ -814,8 +802,8 @@
       "status_open": "Open",
       "status_funded": "Funded",
       "status_fulfilled": "Fulfilled",
-      "empty_title": "No group buys right now",
-      "empty_subtitle": "Check back soon"
+      "empty_title": "No active group-buys yet",
+      "empty_subtitle": "When businesses open group-buys, you'll find them here"
     },
     "card": {
       "funded_banner": "Price unlocked!",
@@ -860,7 +848,6 @@
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "Israel",
       "errors": {
-        "generic": "Something went wrong, please try again",
         "cancel_failed": "Cancellation failed"
       }
     },
@@ -898,10 +885,7 @@
         "city_label": "City",
         "required_marker": " *",
         "submitting": "Creating...",
-        "submit": "Create group buy",
-        "errors": {
-          "generic": "Something went wrong, please try again"
-        }
+        "submit": "Create group buy"
       }
     },
     "availability": {
@@ -923,7 +907,6 @@
       "arranged": "Delivery by arrangement — contact for details"
     },
     "follow": {
-      "error_generic": "Something went wrong, please try again",
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
@@ -960,7 +943,8 @@
         "label": "Filter by city",
         "placeholder": "Search city..."
       },
-      "business_count": "{count, plural, =0 {No businesses} one {1 business} other {# businesses}}",
+      "business_count": "{count, plural, =0 {No local businesses in your area} one {1 local business in your area} other {# local businesses in your area}}",
+      "subhead": "Near you · {region}",
       "sort": {
         "aria_label": "Sort businesses",
         "nearest": "Nearest",
@@ -1050,7 +1034,7 @@
       "open_in_google": "Open in"
     },
     "bottom_sheet": {
-      "title": "Businesses in this area",
+      "title": "Local businesses in this area",
       "show_map": "Show map"
     },
     "chip_scroll": {
@@ -1539,7 +1523,7 @@
         "warm_title": "Warm",
         "warm_body": "Hi {name} 🌿\nI saw you and I really love what you do. I'm from Mehamakor — a site that connects small business owners with consumers looking for real local food.\nYou're welcome to join us for free — just click the link and your details are waiting:\n{prefillUrl}",
         "professional_title": "Professional",
-        "professional_body": "Hello {name}, I'm reaching out from Mehamakor — a directory platform for local businesses looking for repeat customers.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
+        "professional_body": "Hello {name}, I'm reaching out from Mehamakor. We present local food businesses in Israel to the people looking for them. If you're after repeat customers, we'd love to feature your business.\nWe've prepared a full profile for you, all that's left is to set a password:\n{prefillUrl}\nFree registration, no obligation.",
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
       },
@@ -1644,8 +1628,7 @@
       "confirm_delete": "Delete the review by {user} on {producer}?",
       "default_user": "User",
       "default_producer": "the business",
-      "deleted_toast": "Review deleted",
-      "delete_error": "Something went wrong, please try again"
+      "deleted_toast": "Review deleted"
     },
     "settings": {
       "title": "Settings",
@@ -1898,6 +1881,7 @@
     "list": {
       "title": "Events at farms and local businesses",
       "subtitle": "What's on this month — weekend after weekend, straight from the source",
+      "subtitle_experiences": "Learn, taste, and discover — food experiences at local businesses",
       "eyebrow_events": "EVENTS · Close to home",
       "eyebrow_experiences": "EXPERIENCES",
       "h1_experiences": "Food experiences & workshops",
@@ -2090,6 +2074,16 @@
     }
   },
   "about": {
+    "comparison": {
+      "eyebrow": "The difference",
+      "heading": "What changes along the way",
+      "row1_brand": "You know exactly who's behind it",
+      "row1_super": "At the supermarket — a name on a package, if that",
+      "row2_brand": "Close to you, arrives fresh",
+      "row2_super": "At the supermarket — who knows from where or when",
+      "row3_brand": "Straight from whoever makes it",
+      "row3_super": "At the supermarket — just another item in the cart"
+    },
     "consumer": {
       "hero": {
         "heading": "You used to need to know who to ask. Not anymore",
@@ -2178,12 +2172,12 @@
         "name_label": "Full name",
         "name_placeholder": "Your full name",
         "email_label": "Email",
+        "email_placeholder": "you@example.com",
         "message_label": "How can we help?",
         "message_placeholder": "Tell us what you'd like to talk about...",
         "submit": "Send",
         "submit_loading": "Sending...",
-        "success_toast": "Thanks! We'll get back to you soon 🌿",
-        "error_toast": "Something went wrong, please try again"
+        "success_toast": "Thanks! We'll get back to you soon"
       }
     }
   },
@@ -2447,7 +2441,6 @@
     "cancel": "Cancel",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
-    "error_generic": "Something went wrong, please try again",
     "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
     "login_prompt": "<login>Sign in</login> to write a review",
@@ -2576,7 +2569,6 @@
       "saved_toast_first_time": "Saved! Find all your favorites on the Favorites page in the menu",
       "saved_toast": "Saved to favorites",
       "removed_toast": "Removed from favorites",
-      "error_generic": "Something went wrong, please try again",
       "add_aria": "Add to favorites",
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",
@@ -2640,8 +2632,8 @@
   },
   "directory": {
     "disclaimer": {
-      "brand_is_prefix": "is a",
-      "directory_only": "directory-only platform. The seller bears full responsibility for products and licensing.",
+      "brand_is_prefix": "presents",
+      "directory_only": "business information only. The seller bears full responsibility for products and licensing.",
       "prices_set_by_businesses": "Prices are set by the businesses themselves."
     }
   },
@@ -2779,7 +2771,7 @@
       },
       "who": {
         "title": "1. Who we are",
-        "body": "\"Mehamakor\" (the \"site\" or \"platform\") is a directory platform that connects local food businesses and natural-care producers with buyers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
+        "body": "\"Mehamakor\" (the \"site\") presents local food businesses and natural-care producers across Israel. This policy explains what personal information we collect, how we use it, with whom we share it, and what your rights are."
       },
       "data": {
         "title": "2. What data we collect",
@@ -2894,7 +2886,7 @@
   },
   "terms": {
     "meta_title": "Terms of Use | Mehamakor",
-    "meta_description": "Terms of use for Mehamakor — a directory platform connecting local food businesses with buyers across Israel.",
+    "meta_description": "Terms of use for Mehamakor — local food businesses from across Israel, in one place.",
     "heading": "Terms of Use",
     "date_label": "Last updated: April 2026",
     "sections": {
@@ -2908,7 +2900,7 @@
       },
       "service": {
         "title": "1. Nature of the service",
-        "body": "\"Mehamakor\" (the \"platform\" or \"site\") is a <b>directory-only</b> platform connecting local food businesses with buyers across Israel. The platform <b>does not sell</b> products, is not a party to any transaction, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
+        "body": "\"Mehamakor\" (the \"site\") presents business information only and is not a party to any transaction; it <b>does not sell</b> products, is not responsible for delivery or payment, and does not mediate transactions. Every transaction takes place directly between the seller and the buyer, at their sole responsibility."
       },
       "licensing": {
         "title": "2. Seller responsibility for licensing",

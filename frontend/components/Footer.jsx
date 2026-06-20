@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { InstagramLogo, ArrowLeft } from "@phosphor-icons/react";
+import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
@@ -22,12 +22,20 @@ import { BRAND_NAME } from "@/lib/constants";
  *      previous 4-nav-column sitemap that had drifted from DESIGN.md
  *      and doubled up with the new CTA row (add-business pitch was in
  *      two places).
- *   3. Copyright bar — © line on the right (including the made-with-love
- *      tagline), three utility links on the left (login · terms · privacy).
+ *   3. Copyright bar — © line on the right, four utility links on the left
+ *      (login · terms · privacy · accessibility).
  *
  * Scope guarantees:
  *   - POST /newsletter endpoint untouched (still the submit target).
  *   - No other pages modified.
+ *
+ * MEH-867 (footer compliance): every footer ink moved off raw inline hex
+ * onto brand tokens (bg-primary-dark + green-50/green-100), all AA-passing
+ * on the dark surface (≥6.3:1 vs the prior #6a8a6a 2.6:1 / #9ab89a 4.3:1
+ * fails); added the IS-5568 accessibility-statement link; nav-column h3
+ * dropped Hebrew uppercase/tracking; sr-only <h2> anchors the heading
+ * hierarchy; both footer arrows (CTA + newsletter submit) became Phosphor
+ * ArrowRight + rtl:rotate-180 — bidi-correct (forward in both he and en).
  *
  * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
  * consolidated the brand palette to a single green and retired the prior
@@ -72,7 +80,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-16 text-[#EAF3DE]" style={{ backgroundColor: "#2E4A2E" }}>
+    <footer className="mt-16 bg-primary-dark text-green-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* ================= CTA row ================= */}
         {/* MEH-669: panel hidden from admins (defense-in-depth alongside
@@ -95,13 +103,15 @@ export default function Footer() {
               }}
             >
               {t("nav.footer.add_business")}
-              <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              {/* MEH-867: bidi-correct — points forward in both locales
+                  (ArrowRight in LTR/en; rtl:rotate-180 flips it leftward in he). */}
+              <ArrowRight size={14} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
             </Link>
             <div className="text-center sm:text-start">
               <p className="font-headline-md text-white" style={{ fontSize: "14px" }}>
                 {t("nav.footer.cta_pitch")}
               </p>
-              <p style={{ fontSize: "11px", color: "#9ab89a" }}>
+              <p className="text-green-100" style={{ fontSize: "11px" }}>
                 {t("nav.footer.cta_subpitch")}
               </p>
             </div>
@@ -110,8 +120,11 @@ export default function Footer() {
 
         {/* ================= 3-column body ================= */}
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-8">
-          {/* Column 1 — Brand */}
+          {/* Column 1 — Brand. MEH-867: sr-only <h2> doubles as the footer
+              section anchor AND the brand-column heading, so the nav/newsletter
+              <h3>s nest cleanly (no h2→h3 skip) and every column is titled. */}
           <div>
+            <h2 className="sr-only">{BRAND_NAME}</h2>
             <Link href="/" aria-label={t("nav.footer.brand_aria")}>
               <Image
                 src="/logo-footer.png"
@@ -121,7 +134,7 @@ export default function Footer() {
                 className="mb-4 brightness-0 invert"
               />
             </Link>
-            <p className="text-sm leading-relaxed max-w-xs mb-4" style={{ color: "#EAF3DE" }}>
+            <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
             </p>
             <a
@@ -129,25 +142,18 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("nav.footer.instagram_aria")}
-              className="inline-flex items-center gap-2 hover:text-white transition"
-              style={{ color: "#c8dcc8" }}
+              className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
-              <InstagramLogo size={20} weight="duotone" aria-hidden="true" />
+              <InstagramLogo size={20} aria-hidden="true" />
               <span className="font-body-md">@meha_makor</span>
             </a>
           </div>
 
           {/* Column 2 — Navigation */}
           <nav aria-label={t("nav.footer.nav_aria")}>
-            <h3
-              className="mb-3"
-              style={{
-                fontSize: "9px",
-                color: "#9ab89a",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-              }}
-            >
+            {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
+                uppercase, and letter-spacing harms RTL legibility. */}
+            <h3 className="mb-3 text-green-100" style={{ fontSize: "11px" }}>
               {t("nav.footer.nav_heading")}
             </h3>
             <ul className="flex flex-col gap-2">
@@ -155,8 +161,8 @@ export default function Footer() {
                 <li key={link.href + link.label}>
                   <Link
                     href={link.href}
-                    className="hover:text-white transition"
-                    style={{ fontSize: "13px", color: "#c8dcc8" }}
+                    className="text-green-100 hover:text-white transition"
+                    style={{ fontSize: "13px" }}
                   >
                     {link.label}
                   </Link>
@@ -194,14 +200,21 @@ export default function Footer() {
                 aria-label={t("nav.footer.newsletter_submit")}
                 className="absolute end-0 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-white/60 hover:text-white transition disabled:opacity-40"
               >
-                {status === "loading" ? <ButtonSpinner /> : "→"}
+                {status === "loading" ? (
+                  <ButtonSpinner />
+                ) : (
+                  // MEH-867: bidi-correct submit affordance — ArrowRight points
+                  // forward in LTR/en; rtl:rotate-180 flips it leftward (forward
+                  // in RTL reading direction). Replaces a raw "→" glyph.
+                  <ArrowRight size={18} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
+                )}
               </button>
             </form>
             {message && (
               <p
                 role="status"
                 aria-live="polite"
-                className={`text-sm mt-3 ${status === "success" ? "text-[#EAF3DE]" : "text-red-200"}`}
+                className={`text-sm mt-3 ${status === "success" ? "text-green-50" : "text-red-200"}`}
               >
                 {message}
               </p>
@@ -220,7 +233,7 @@ export default function Footer() {
         >
           {/* MEH-788 copy-Δ: P5-v2 bottom-row lock — wordmark only; the leaf
               emoji dropped per the UI-surface emoji LOCK (MEH-657). */}
-          <p style={{ fontSize: "11px", color: "#6a8a6a" }}>
+          <p className="text-green-100" style={{ fontSize: "11px" }}>
             © {new Date().getFullYear()} {t("footer.copyright")}
           </p>
           <ul className="flex items-center gap-4">
@@ -228,12 +241,15 @@ export default function Footer() {
               { href: "/login", label: t("nav.footer.login") },
               { href: "/terms", label: t("nav.footer.terms") },
               { href: "/privacy", label: t("nav.footer.privacy_short") },
+              // MEH-867: IL IS 5568 — accessibility statement must be reachable
+              // from the global footer.
+              { href: "/accessibility", label: t("nav.footer.accessibility") },
             ].map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="hover:text-white transition"
-                  style={{ fontSize: "11px", color: "#6a8a6a" }}
+                  className="text-green-100 hover:text-white transition"
+                  style={{ fontSize: "11px" }}
                 >
                   {link.label}
                 </Link>

@@ -223,7 +223,6 @@ function Section({ id, icon: Icon, title, children, danger = false }) {
       <div className="flex items-center gap-3 mb-3">
         <Icon
           size={22}
-          weight="duotone"
           className={danger ? "text-red-600" : "text-primary"}
           aria-hidden="true"
         />

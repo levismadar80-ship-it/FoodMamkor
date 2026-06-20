@@ -73,6 +73,8 @@ function progressPct(commits, min, max) {
 
 export default function GroupBuyDetailClient({ id }) {
   const t = useTranslations("group_buys.detail");
+  // MEH-848: shared generic error copy (collapsed from group_buys.detail.errors.generic).
+  const tError = useTranslations("error");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -131,7 +133,7 @@ export default function GroupBuyDetailClient({ id }) {
         setTimeout(() => setShowConfetti(false), 4500);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || t("errors.generic"));
+      setError(err.response?.data?.detail || tError("generic"));
     } finally {
       setSubmitting(false);
     }

@@ -85,7 +85,7 @@ export default function ProducerHeader({
       )}
 
       <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
-        <MapPin size={14} weight="duotone" />
+        <MapPin size={14} />
         {producer.city}
         {primaryCategory && (
           <>

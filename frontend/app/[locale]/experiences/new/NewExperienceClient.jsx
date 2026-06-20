@@ -10,6 +10,7 @@ import { Leaf } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
+import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 /**
  * Create-form for a community experience (workshop / food tour /
@@ -26,16 +27,10 @@ import CitySearch from "@/components/CitySearch";
  * from /admin/experiences before it shows up in the public list.
  */
 
-// API filter values are Hebrew strings (server enum). Localize labels via t().
-const CATEGORY_KEYS = [
-  { value: "בישול", labelKey: "cooking" },
-  { value: "תזונה", labelKey: "nutrition" },
-  { value: "סיור אוכל", labelKey: "food_tour" },
-  { value: "חקלאות", labelKey: "agriculture" },
-  { value: "טעימות", labelKey: "tasting" },
-  { value: "סדנה", labelKey: "workshop" },
-  { value: "אחר", labelKey: "other" },
-];
+// MEH-869: shared category set (lib/event-categories.js). This is a create-
+// form select (no "all"); map the shared `key` onto the `value` shape the
+// <option> markup already reads.
+const CATEGORY_KEYS = EXPERIENCE_CATEGORIES.map((c) => ({ value: c.key, labelKey: c.labelKey }));
 
 const LOCATION_TYPE_KEYS = [
   { value: "home", labelKey: "location_home" },

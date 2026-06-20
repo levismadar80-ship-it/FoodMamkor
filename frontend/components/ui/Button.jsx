@@ -20,8 +20,8 @@ import { CircleNotch } from "@phosphor-icons/react";
  * Slots    : leadingIcon / trailingIcon (logical start/end — RTL-correct by
  *            flex order; pass a pre-mirrored glyph for directional arrows).
  *
- * Loading swaps the leading slot for a spinner, sets aria-busy and the feminine
- * aria-label "טוענת…", and blocks pointer events.
+ * Loading swaps the leading slot for a spinner, sets aria-busy and the gerund
+ * aria-label "בטעינה…", and blocks pointer events.
  *
  * @example
  * <Button variant="primary" size="lg" leadingIcon={<MagnifyingGlass />}>חיפוש</Button>
@@ -65,7 +65,7 @@ export default function Button({
       type={type}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      aria-label={loading ? "טוענת…" : undefined}
+      aria-label={loading ? "בטעינה…" : undefined}
       className={[
         "inline-flex items-center justify-center rounded-full font-medium",
         "transition-colors duration-fast ease-quart focus-ring",

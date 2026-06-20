@@ -5,10 +5,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => {
     const flat = {
-      default_message: "כדי לשמור עסקים אוהבים — היכנסי",
-      close_aria: "סגרי חלונית",
+      default_message: "כדי לשמור עסקים אוהבים — היכנסו",
+      close_aria: "סגרו חלונית",
       title: "רוצה לשמור? 🌿",
-      login_cta: "היכנסי",
+      login_cta: "היכנסו",
       dismiss_cta: "אולי אחר כך",
     };
     return flat[key] ?? key;
@@ -39,7 +39,7 @@ describe("LoginPromptModal", () => {
   it("renders the default message", () => {
     render(<LoginPromptModal open={true} onClose={() => {}} />);
     expect(
-      screen.getByText("כדי לשמור עסקים אוהבים — היכנסי"),
+      screen.getByText("כדי לשמור עסקים אוהבים — היכנסו"),
     ).toBeInTheDocument();
   });
 
@@ -62,14 +62,14 @@ describe("LoginPromptModal", () => {
         nextPath="/producer/42"
       />,
     );
-    const link = screen.getByText("היכנסי");
+    const link = screen.getByText("היכנסו");
     expect(link.getAttribute("href")).toBe("/login?redirect=%2Fproducer%2F42");
   });
 
   it("calls onClose when X button is clicked", () => {
     const onClose = vi.fn();
     render(<LoginPromptModal open={true} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText("סגרי חלונית"));
+    fireEvent.click(screen.getByLabelText("סגרו חלונית"));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

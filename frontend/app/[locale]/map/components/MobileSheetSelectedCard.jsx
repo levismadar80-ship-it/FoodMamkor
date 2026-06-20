@@ -60,7 +60,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={spImg} alt={sp.name || ""} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-green-50" aria-hidden="true"><Leaf size={40} weight="duotone" className="text-primary/40" /></div>
+          <div className="w-full h-full flex items-center justify-center bg-green-50" aria-hidden="true"><Leaf size={40} className="text-primary/40" /></div>
         )}
         {spImg && (
           <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4), transparent)" }} />
