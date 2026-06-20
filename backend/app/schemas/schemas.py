@@ -190,6 +190,10 @@ class ProducerRegister(BaseModel):
     @field_validator("short_description")
     @classmethod
     def _validate_short_description_letters(cls, v):
+        # Guard is load-bearing: _min_letters_validator(None) coerces None → ""
+        # and raises (HOT-003), which would reject an absent optional tagline.
+        # _validate_address_alnum below needs no guard — _min_alnum_validator
+        # handles None internally.
         if v is None:
             return v
         return _min_letters_validator(v)
