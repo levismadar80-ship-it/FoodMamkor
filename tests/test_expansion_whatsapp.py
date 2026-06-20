@@ -16,6 +16,7 @@ behavior doesn't exist to test. See plan doc → Survived.
 These are pure-service tests (httpx monkeypatched) — no network. Run under
 CI like the rest.
 """
+
 import httpx
 
 from app.config import settings
@@ -24,6 +25,12 @@ from app.services.whatsapp_templates import ProducerWelcomeV1
 
 
 class _OkResp:
+    # MEH-771 Chunk C: status_code declared so production code can read it
+    # directly. Was the `_OkResp` mock debt that forced
+    # services/whatsapp.py to use getattr(r, "status_code", None) — now
+    # dropped (services/whatsapp.py:_post_result).
+    status_code = 200
+
     def raise_for_status(self):
         return None
 
@@ -39,6 +46,7 @@ def _unconfigure(monkeypatch):
 
 
 # ---------- WA-1 / WA-5 — fail-open, no network when unconfigured ----------
+
 
 def test_send_text_fail_open_no_network_when_unconfigured(monkeypatch):
     _unconfigure(monkeypatch)
@@ -63,6 +71,7 @@ def test_send_template_fail_open_no_network_when_unconfigured(monkeypatch):
 
 # ---------- WA-2 — leading "+" stripped from the destination ----------
 
+
 def test_send_text_strips_leading_plus(monkeypatch):
     _configure(monkeypatch)
     captured = {}
@@ -78,6 +87,7 @@ def test_send_text_strips_leading_plus(monkeypatch):
 
 # ---------- WA-3 — HTTP error → False (no false-positive success) ----------
 
+
 def test_post_http_error_returns_false(monkeypatch):
     _configure(monkeypatch)
 
@@ -89,6 +99,7 @@ def test_post_http_error_returns_false(monkeypatch):
 
 
 # ---------- WA-4 — template payload shape ----------
+
 
 def test_send_template_payload_is_template_type(monkeypatch):
     _configure(monkeypatch)

@@ -7,6 +7,7 @@ from app.routers import (
     admin_kashrut,
     admin_outreach,
     admin_recipes,
+    admin_whatsapp,
     alerts,
     auth,
     category_requests,
@@ -65,6 +66,8 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(users_me.router)
     app.include_router(admin_outreach.router)
     app.include_router(admin_outreach.prefill_router)
+    # MEH-771 Chunk C: admin view of undelivered WhatsApp sends.
+    app.include_router(admin_whatsapp.router)
     app.include_router(chat.router)
     app.include_router(category_requests.router)
     app.include_router(referrals.router)
