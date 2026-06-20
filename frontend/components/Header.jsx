@@ -28,16 +28,21 @@ import LanguageToggle from "@/components/LanguageToggle";
  * transparent; only the inner pill carries fill — that yields the
  * "floating" look without making the header overlap content.
  *
- * Two surface states (reuse MEH-29 scroll machinery verbatim):
- *   - over-image  → `transparent = isHomepage && scrollY < 60`: pill is
- *     transparent, nav ink light (`text-background`), inner darkening
- *     gradient kept for legibility over the hero photo, logo inverted.
- *   - pill (glass) → scrolled OR any inner page (no hero): MEH-732 pill-only
+ * Two surface states (reuse MEH-29 scroll machinery verbatim). MEH-890 chunk 2
+ * gave the at-rest pill its own glass surface + dark ink (no scrim), so the two
+ * states now differ only in glass opacity / padding, not ink:
+ *   - at rest    → `transparent = isHomepage && scrollY < 60`: pill is SOFT
+ *     glass — translucent cream `bg-background/70` + 12px backdrop-blur (opaque
+ *     `bg-background` fallback), hairline border, resting shadow. Ink is DARK
+ *     (same as scrolled), logo NOT inverted, no scrim. Only the surface-free
+ *     trust strip above the pill keeps cream ink + its own (strengthened)
+ *     text-shadow over the hero.
+ *   - scrolled   → scrolled OR any inner page (no hero): MEH-732 pill-only
  *     glass — translucent cream (`bg-background/85`) + 12px backdrop-blur where
  *     supported, solid `bg-background` fallback via `supports-[backdrop-filter]`,
- *     1px `border-border`, green resting shadow, dark ink. Layout is MEH-732
- *     Composition B (flex space-between: lead group [logo + links] · action
- *     cluster) across both states.
+ *     1px `border-border`, green resting shadow, dark ink. Layout (MEH-890
+ *     chunk 1): compact + centered pill — lead group [logo + links] · gap-8 ·
+ *     action cluster — across both states.
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = gold underline. MEH-732 SUPERSEDES the MEH-638 "no glass"
@@ -160,7 +165,11 @@ export default function Header() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  const textShadow = transparent ? { textShadow: "0 1px 4px rgba(0,0,0,0.6)" } : undefined;
+  // MEH-890 chunk 2: over-hero text-shadow is now STRIP-ONLY. The pill gained
+  // a glass surface (dark ink, no shadow), so the scrim was removed — this
+  // shadow alone carries the surface-free trust strip's legibility over the
+  // bright hero, strengthened 0.6→0.7 / 4→6px to compensate for the lost scrim.
+  const textShadow = transparent ? { textShadow: "0 1px 6px rgba(0,0,0,0.7)" } : undefined;
 
   return (
     <header
@@ -173,19 +182,10 @@ export default function Header() {
         "sticky top-0 z-[1000]",
       ].join(" ")}
     >
-      {/* Local darkening gradient — only over the hero (transparent). Keeps
-          light nav ink legible regardless of the hero crop. pointer-events
-          off so taps pass to the pill. */}
-      {transparent && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 70%, transparent 100%)",
-          }}
-        />
-      )}
+      {/* MEH-890 chunk 2: the black hero scrim was REMOVED. The pill now
+          carries its own glass surface at rest (dark ink, no scrim), and the
+          trust strip carries its own strengthened text-shadow — so nothing
+          relies on a full-width darkening gradient over the hero anymore. */}
 
       {/* Nav-shell — stacks the trust strip above the centered pill; the
           transparent band reserves height. flex-col + items-center keeps the
@@ -233,10 +233,14 @@ export default function Header() {
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart",
             transparent
-              ? "bg-transparent border-transparent py-3 px-5"
-              // MEH-732 pill-only glass: translucent cream + 12px blur where
-              // supported, solid bg-background fallback otherwise. The
-              // transition never animates backdrop-filter (guardrail).
+              // MEH-890 chunk 2: at rest the pill now carries its OWN soft
+              // glass — translucent cream /70 (lighter than the scrolled /85)
+              // + 12px blur where supported, opaque bg-background fallback,
+              // hairline border + resting shadow → floats over the hero with no
+              // scrim. Dark ink (below), geometry (py-3 px-5) from chunk 1 kept.
+              ? "bg-background supports-[backdrop-filter]:bg-background/70 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-3 px-5"
+              // MEH-732 pill-only glass (scrolled / inner pages — unchanged):
+              // translucent cream /85 + blur, solid bg-background fallback.
               : "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-2.5 px-4",
           ].join(" ")}
         >
@@ -250,12 +254,8 @@ export default function Header() {
                 width={122}
                 height={46}
                 priority
-                style={
-                  transparent
-                    ? { filter: "brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.6))" }
-                    : undefined
-                }
-              />
+              />{/* MEH-890 chunk 2: logo no longer inverted — it sits on the
+                   at-rest glass pill now, not a bare/scrimmed hero. */}
             </Link>
 
             {/* NAV LINKS — desktop only, part of the lead group. */}
@@ -266,8 +266,6 @@ export default function Header() {
                   href={item.href}
                   label={item.label}
                   active={isActive(item.href)}
-                  transparent={transparent}
-                  textShadow={textShadow}
                 />
               ))}
             </div>
@@ -283,13 +281,12 @@ export default function Header() {
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={`hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring ${transparent ? "text-background hover:bg-white/10" : "text-fg-muted hover:bg-primary/5"}`}
-              style={textShadow}
+              className="hidden md:flex items-center justify-center w-11 h-11 rounded-full transition-colors duration-fast ease-quart focus-ring text-fg-muted hover:bg-primary/5"
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
             <span className="hidden md:inline-flex">
-              <LanguageToggle className={transparent ? "text-background hover:bg-white/10" : ""} />
+              <LanguageToggle />
             </span>
 
             {user ? (
@@ -299,28 +296,22 @@ export default function Header() {
                 open={userMenuOpen}
                 setOpen={setUserMenuOpen}
                 menuRef={userMenuRef}
-                transparent={transparent}
-                textShadow={textShadow}
               />
             ) : (
               // MEH-732: quiet text link, hidden on /login.
               !isLoginPage && (
-                <LoginAccount label={t("nav.login")} transparent={transparent} textShadow={textShadow} />
+                <LoginAccount label={t("nav.login")} />
               )
             )}
 
             {showAddBusinessCta && (
               <Link
                 href="/register/producer"
-                // MEH-732: demoted to outlined secondary (search is the one
-                // filled action). Surface-aware border/ink over hero vs pill.
-                className={[
-                  "hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full border text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring",
-                  transparent
-                    ? "border-background/60 text-background hover:bg-white/10"
-                    : "border-action-primary text-action-primary hover:bg-primary/5",
-                ].join(" ")}
-                style={textShadow}
+                // MEH-890 chunk 2: promoted to the one filled-green CTA (was the
+                // MEH-732 outlined secondary). bg-action-primary + white ink,
+                // surface-independent now that the pill carries its own glass —
+                // identical at rest and scrolled. Mirrors ui/Button.jsx:32.
+                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
               >
                 {t("nav.add_business_short")}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
@@ -337,8 +328,7 @@ export default function Header() {
             <button
               onClick={() => router.push("/search?focus=1")}
               aria-label={t("nav.search_label")}
-              className={`md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring ${transparent ? "text-background" : "text-fg-muted"}`}
-              style={textShadow}
+              className="md:hidden flex items-center justify-center w-11 h-11 rounded-full focus-ring text-fg-muted"
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
@@ -351,17 +341,12 @@ export default function Header() {
 
 /**
  * Nav link with the MEH-643 gold-underline active indicator (replaces the
- * MEH-29 primary border-b). Ink follows surface: light over hero, dark on
- * the pill. Underline is the gold accent in both states.
+ * MEH-29 primary border-b). MEH-890 chunk 2: ink is now always dark — the
+ * pill carries a glass surface in every state, so the surface-aware light
+ * branch (and its over-hero text-shadow) were dropped. Underline = gold accent.
  */
-function NavLink({ href, label, active, transparent, textShadow }) {
-  const ink = transparent
-    ? active
-      ? "text-background"
-      : "text-background/90 hover:text-background"
-    : active
-      ? "text-text"
-      : "text-text hover:text-primary";
+function NavLink({ href, label, active }) {
+  const ink = active ? "text-text" : "text-text hover:text-primary";
   return (
     <Link
       href={href}
@@ -373,7 +358,6 @@ function NavLink({ href, label, active, transparent, textShadow }) {
           ? "after:content-[''] after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-accent"
           : "",
       ].join(" ")}
-      style={textShadow}
     >
       {label}
     </Link>
@@ -384,20 +368,15 @@ function NavLink({ href, label, active, transparent, textShadow }) {
  * MEH-643/MEH-732 — quiet "כניסה לחשבון" account link (guests). MEH-732
  * dropped the border → no fill, no border (search is the one bold action);
  * hover = ink shift only. Hidden on /login (gated at the call site via
- * isLoginPage). Surface-aware ink: on-dark over the hero, primary on the pill.
+ * isLoginPage). MEH-890 chunk 2: ink is now always primary — the pill is glass
+ * in every state, so the surface-aware on-dark branch + over-hero shadow were
+ * dropped. Quiet text link (no fill, no border); hover = ink shift only.
  */
-function LoginAccount({ label, transparent, textShadow }) {
-  const variant = transparent
-    ? "text-background hover:text-background/80"
-    : "text-primary hover:text-primary-dark";
+function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
-      className={[
-        "hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring",
-        variant,
-      ].join(" ")}
-      style={textShadow}
+      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
     </Link>
@@ -410,7 +389,7 @@ function LoginAccount({ label, transparent, textShadow }) {
  * logged-in state). Dropdown: profile / settings / dashboard (producer) /
  * admin (admin) / logout.
  */
-function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShadow }) {
+function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const t = useTranslations();
   const initial = (user.name || "?").trim().charAt(0).toUpperCase();
   const hasAvatar = !!user.avatar_url;
@@ -436,7 +415,6 @@ function UserMenu({ user, logout, open, setOpen, menuRef, transparent, textShado
         aria-expanded={open}
         aria-label={t("account.menu.aria", { name: user.name })}
         className={`w-[34px] h-[34px] rounded-full overflow-hidden flex items-center justify-center focus-ring ${hasAvatar ? "" : "bg-primary"}`}
-        style={transparent ? textShadow : undefined}
       >
         {hasAvatar ? (
           // eslint-disable-next-line @next/next/no-img-element
