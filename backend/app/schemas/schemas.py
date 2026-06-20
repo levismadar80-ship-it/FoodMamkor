@@ -26,6 +26,25 @@ def _min_letters_validator(value: str | None, min_count: int = 3) -> str:
     return stripped
 
 
+_ALNUM_REGEX = re.compile(r"[א-תa-zA-Z0-9]")
+
+
+def _min_alnum_validator(value: str | None) -> str | None:
+    # MEH-870: address-specific floor. Unlike _min_letters_validator (≥3
+    # letters — right for names/taglines), an address need only contain at
+    # least one letter OR digit. This still rejects punctuation-only input
+    # ("---") but accepts legitimate short/numeric Israeli forms the letter
+    # floor would over-reject: "123", the P.O. box "ת.ד. 123" (→ "תד", 2
+    # letters), "רח' הרצל 5". Optional field: None (incl. bleach-emptied
+    # input) stays valid.
+    if value is None:
+        return value
+    stripped = value.strip()
+    if not _ALNUM_REGEX.search(stripped):
+        raise ValueError("שדה זה חייב להכיל לפחות אות או ספרה אחת")
+    return stripped
+
+
 # MEH-296: shared contact-channel guards, enforced at the API boundary.
 # `primary_contact_method` is a free-text column (MEH-17 / MEH-555 — no DB
 # enum); the 7-value set is validated on every write path. URL fields stay
@@ -156,15 +175,17 @@ class ProducerRegister(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
 
-    # MEH-870: letter-floor parity for the PUBLIC registration path. The
-    # _min_letters_validator already guards ProducerCreate.name /
-    # HomeProductCreate.title against punctuation-only values; ProducerRegister
-    # collected short_description (tagline) + address with only the bleach
-    # strip above. Stacked AFTER the sanitize validators (bleach first, then
-    # count letters), mirroring HomeProductCreate's _sanitize_title →
-    # _validate_title_letters. Both fields are optional, so an absent value
-    # (None — incl. bleach-emptied input) stays valid; only a PROVIDED value
-    # must clear the ≥3-letter floor.
+    # MEH-870: reject punctuation-only values on the PUBLIC registration path,
+    # which collected short_description (tagline) + address with only the bleach
+    # strip above. Stacked AFTER the sanitize validators (bleach first, then the
+    # floor), mirroring HomeProductCreate's _sanitize_title → _validate_title_letters.
+    # Two different floors, by field semantics:
+    #   short_description → ≥3 letters (same as ProducerCreate.name / titles).
+    #   address           → ≥1 letter-or-digit only. The ≥3-letter floor
+    #     over-rejects valid Israeli addresses ("123", P.O. box "ת.ד. 123" → "תד",
+    #     2 letters); an address need only not be punctuation-only.
+    # Both fields optional → an absent value (None, incl. bleach-emptied input)
+    # stays valid; only a PROVIDED value must clear its floor.
     # REUSES: backend/app/schemas/schemas.py:16 (_min_letters_validator)
     @field_validator("short_description")
     @classmethod
@@ -175,10 +196,8 @@ class ProducerRegister(BaseModel):
 
     @field_validator("address")
     @classmethod
-    def _validate_address_letters(cls, v):
-        if v is None:
-            return v
-        return _min_letters_validator(v)
+    def _validate_address_alnum(cls, v):
+        return _min_alnum_validator(v)
 
     @field_validator("primary_contact_method")
     @classmethod

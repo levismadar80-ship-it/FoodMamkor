@@ -48,11 +48,12 @@ def test_register_producer_rejects_short_password(client):
     assert r.status_code == 422
 
 
-# ---------- MEH-870: letter-floor on register/producer tagline + address ----------
+# ---------- MEH-870: punctuation-only floor on register/producer tagline + address ----------
 # The PUBLIC registration path now rejects punctuation-only short_description
-# (tagline) / address, reaching parity with the _min_letters_validator floor
-# on ProducerCreate.name and HomeProductCreate.title. Optional fields: a
-# provided-but-letterless value is 422; absent stays valid.
+# (tagline) and address. Two floors by field semantics: short_description needs
+# ≥3 letters (like ProducerCreate.name); address needs only ≥1 letter-or-digit
+# so valid Israeli forms ("ת.ד. 123", "רח' הרצל 5") aren't over-rejected.
+# Optional fields: a punctuation-only value is 422; absent stays valid.
 
 
 def _producer_payload(**overrides):
@@ -94,10 +95,21 @@ def test_register_producer_accepts_short_hebrew_tagline(client):
 
 
 def test_register_producer_accepts_address_with_digits(client):
-    # Letters counted after stripping punctuation/digits; "רח' הרצל 5" has 6.
+    # Address floor is ≥1 letter-or-digit; "רח' הרצל 5" has both.
     r = client.post(
         "/auth/register/producer",
         json=_producer_payload(address="רח' הרצל 5"),
+    )
+    assert r.status_code == 200, r.text
+
+
+def test_register_producer_accepts_po_box_address(client):
+    # MEH-870 review catch: the ≥3-letter floor would reject the Israeli P.O.
+    # box "ת.ד. 123" (→ "תד", 2 letters). The ≥1-alphanumeric address floor
+    # accepts it (contains digits).
+    r = client.post(
+        "/auth/register/producer",
+        json=_producer_payload(address="ת.ד. 123"),
     )
     assert r.status_code == 200, r.text
 
