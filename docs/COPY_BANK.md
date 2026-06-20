@@ -116,6 +116,16 @@
 | **Current** | 🕐 **PENDING** |
 | **Status** | 🕐 Not yet implemented |
 
+### Nav trust strip — homepage (collapsing)
+| Field | Value |
+|---|---|
+| **Current** | `שיחה אישית עם כל בית עסק` |
+| **Previous** | `כל בית עסק עובר אישור אישי` (placeholder shipped in #1262) |
+| **i18n key** | `nav.trust_strip` |
+| **Status** | ⏳ (PR for this copy lock; supersedes the #1262 placeholder) |
+| **Why** | MEH-579 over-claim-safe — "conversation" register, not "approval/verified". Differentiates from the hero subtitle + trust band, which lead with `עסקים שכבר בדקנו בשבילך`. |
+| **MEH** | MEH-884 (Chunk 2 trust strip), MEH-579 (over-claim guard) |
+
 ---
 
 ## Section 3 — Content sections
