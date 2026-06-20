@@ -28,6 +28,36 @@
 .duration-slow { transition-duration: 640ms; }
 .ease-quart { transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1); }
 
+/* ── MEH-789 (chunk 3) — `.nav-pill-glass`: frosted "warm glass" surface for
+   the floating BottomNav pill (ADR-023 / MEH-842 design-principles note;
+   extends the MEH-732 desktop pill-glass). Lives in the utility layer, not a
+   DESIGN.md token: the @google/design.md exporter drops rgba + backdrop-filter
+   (same rationale as the motion utils above). GUARDRAIL: backdrop-filter is
+   NEVER animated/transitioned — the chunk-2 hide is transform(translateY) only.
+   Cascade order matters: base (opaque fallback) → @supports (translucent +
+   blur) → @media reduced-transparency (forces opaque again, must come LAST so
+   it overrides @supports at equal specificity). ─────────────────────────── */
+.nav-pill-glass {
+  background: #FFFEFB; /* ≡ surface-floating */
+  border: 1px solid #E9E3D6;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav-pill-glass {
+    background: rgba(255, 254, 251, 0.62);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .nav-pill-glass {
+    background: #FFFEFB;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid #E9E3D6;
+  }
+}
+
 /* ── MEH-788 S14 — texture primitives (CSS utility layer; the hex-token set
    can't carry alpha gradients / masks — same rationale as the MEH-136 motion
    utils above). Photography+Texture Hybrid (S14). No new hues. ───────────── */
@@ -80,7 +110,7 @@
    <MotionConfig reducedMotion="user"> at the layout root, which handles the
    JS layer (framer-motion / FadeInSection reveals). Near-zero (not 0) keeps
    transition/animation -end events firing so JS state machines don't stall.
-   Kenburns + marquee keep their own `animation: none` rules below; this is
+   Kenburns keeps its own `animation: none` rule below; this is
    the catch-all for everything else (hover transitions, fades, etc.). */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -304,49 +334,6 @@ body.sheet-open .cookie-banner {
   .kenburns-right,
   .kenburns-left {
     animation: none;
-  }
-}
-
-/* Marquee — infinite horizontal scroll of small hype tags. The track
-   renders the list twice so translating -50% creates a seamless loop. */
-@keyframes marquee {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
-}
-.marquee-track {
-  animation: marquee 25s linear infinite;
-  display: flex;
-  align-items: center;
-  gap: 48px;
-  width: max-content;
-  will-change: transform;
-}
-.marquee-track:hover {
-  animation-play-state: paused;
-}
-/* Polish: fade marquee in/out at the edges so words don't pop abruptly.
-   Applied on the wrapper (.marquee-edge-fade), not the track, so the
-   mask doesn't scroll with the content. */
-.marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 48px,
-    #000 calc(100% - 48px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0,
-    #000 48px,
-    #000 calc(100% - 48px),
-    transparent 100%
-  );
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-    transform: none;
   }
 }
 

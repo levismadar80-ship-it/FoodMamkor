@@ -81,7 +81,7 @@ export default function PhoneVerifyCard({ onVerified }) {
   return (
     <div className="mt-3 bg-white border border-primary/20 rounded-[12px] p-4">
       <p className="font-semibold text-text mb-1 inline-flex items-center gap-1.5">
-        <ChatCircleText size={18} weight="duotone" className="text-primary" aria-hidden="true" />
+        <ChatCircleText size={18} className="text-primary" aria-hidden="true" />
         {t("title")}
       </p>
       <p className="text-xs text-fg-muted mb-3">{t("description")}</p>

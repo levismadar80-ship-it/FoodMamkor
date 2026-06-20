@@ -70,7 +70,7 @@ export default function ContactSidebar({
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "phone")}
             >
-              <Phone size={18} weight="duotone" className="text-primary shrink-0" />
+              <Phone size={18} className="text-primary shrink-0" />
               <span className="truncate">{producer.phone}</span>
             </a>
           )}
@@ -89,7 +89,7 @@ export default function ContactSidebar({
                 dir="ltr"
                 onClick={() => trackContactClick(producer.id, "instagram")}
               >
-                <InstagramLogo size={18} weight="duotone" className="text-primary shrink-0" />
+                <InstagramLogo size={18} className="text-primary shrink-0" />
                 <span className="truncate min-w-0">@{handle}</span>
               </a>
             );
@@ -110,7 +110,7 @@ export default function ContactSidebar({
               className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               onClick={() => trackContactClick(producer.id, "website")}
             >
-              <Globe size={18} weight="duotone" className="text-primary shrink-0" />
+              <Globe size={18} className="text-primary shrink-0" />
               {t("producer.card.contact.website")}
             </a>
           )}
@@ -123,7 +123,7 @@ export default function ContactSidebar({
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "email")}
             >
-              <EnvelopeSimple size={18} weight="duotone" className="text-primary shrink-0" />
+              <EnvelopeSimple size={18} className="text-primary shrink-0" />
               <span className="truncate">{producer.contact_email}</span>
             </a>
           )}
@@ -141,7 +141,7 @@ export default function ContactSidebar({
               className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               onClick={() => trackContactClick(producer.id, "facebook")}
             >
-              <FacebookLogo size={18} weight="duotone" className="text-primary shrink-0" />
+              <FacebookLogo size={18} className="text-primary shrink-0" />
               {t("producer.card.contact.facebook")}
             </a>
           )}
@@ -158,7 +158,7 @@ export default function ContactSidebar({
               className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               onClick={() => trackContactClick(producer.id, "external_order")}
             >
-              <Receipt size={18} weight="duotone" className="text-primary shrink-0" />
+              <Receipt size={18} className="text-primary shrink-0" />
               {t("producer.card.contact.external_order")}
             </a>
           )}
@@ -177,7 +177,7 @@ export default function ContactSidebar({
             rel="noopener noreferrer"
             className="w-full flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-md hover:bg-background transition text-sm font-medium mb-2"
           >
-            <WhatsappLogo size={16} weight="duotone" />
+            <WhatsappLogo size={16} />
             {t("producer.detail.contact_sidebar.join_whatsapp_group")}
           </a>
         )}

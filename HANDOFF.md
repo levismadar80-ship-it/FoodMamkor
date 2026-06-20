@@ -5,6 +5,221 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-20 — MEH-890 Chunk 1/2: compact + centered desktop top-nav pill (layout only) — ✅ MERGED (#1269, `b93d7da`)
+
+**Branch `feature/meh-890-compact-nav-pill` off `staging`. `Header.jsx` only (RED central).** Chunk 1 of 2 of the homepage rest-state nav rework. The pill no longer spreads edge-to-edge: `w-full max-w-[940px] … justify-between` → **`w-auto max-w-[92vw] flex items-center gap-8`** (hug-content + centered via the existing `flex-col items-center` shell `:193`; one ~32px air gap, no central void). Logo enlarged `106×40 → 122×46` (~+15%, ratio preserved) for hero prominence; invert filter untouched. **Layout only** — surface branches (`:233`/`:237`), ink, the hero scrim (`:179–188`), `.nav-pill-glass`, CTA fill, links, LanguageToggle, login, MEH-884 trust strip all byte-identical; at-rest legibility unchanged (scrim still present). RTL-safe (3 direction-neutral classes). `/adversarial-review-size` clean (comment-only net-positive). All required checks green; merged `b93d7da` (squash) after Sapir mobile QA. `Refs MEH-890` (NOT Closes — issue open for Chunk 2). Part of MEH-789.
+
+**Next:** Chunk 2 — the skin pass (glass-at-rest + dark ink + **drop the hero scrim** `:179–188` + CTA `הוסיפו עסק`→filled green; `כניסה` stays quiet). ⚠️ Re-grep all Phase-0 line numbers first — this chunk shifted them (`Header.jsx` now 479 lines). Same branch/PR convention; RED central → chunked + Skeptic + `/adversarial-review`. Spec not yet drafted.
+
+## 2026-06-19 — MEH-886 register E2E: assert MEH-883 error-state ARIA — ✅ MERGED (#1259)
+
+**Merged to staging (`60480b0`, squash, Closes MEH-886).** Test-only follow-up to the #1255 reviewer flag — guards the MEH-883 a11y wirings against a silent ARIA-drop. **vitest** (+3): ACCOUNT `stepError` `role=alert`; phone `aria-invalid`+`aria-describedby` only-when-invalid; STORY submit error `role=alert` (`terms_required`). **Playwright** (+1, verify-on-preview): same on the real DOM + `not.toBeVisible()` on the next frame after each gate (proves no silent advance). No production/he/en change; 21 testids unchanged. **Self-caught during CI:** a bare `getByRole("alert")` strict-mode-collided with Next's doc-root `__next-route-announcer__` on the real DOM (absent in jsdom → vitest green but Playwright red) → scoped the alert assertions under the frame testid; vitest 7/7 + Playwright green.
+
+**Key lesson (added):** `getByRole("alert")` in Playwright is ambiguous on the real Next.js DOM — the App Router injects a permanent `<div role="alert" id="__next-route-announcer__">`. Scope role-based live-region assertions under a container testid (or filter) so they don't strict-mode-collide. jsdom/vitest does **not** have this element, so a green vitest does not vouch for the Playwright run.
+
+**S7 (MEH-132) remains complete.** MEH-886 is a standalone test-coverage guard, not an S7 chunk. Open follow-ups unchanged: frame-05 → MEH-296; `/en` raw-keys → MEH-472.
+
+## 2026-06-19 — MEH-884 Chunk 2/2: homepage trust strip + scroll re-wire — 🟡 DRAFT PR
+
+**Branch `feature/meh-884-trust-strip` off `staging`. `Header.jsx` + `messages/he.json` only.** Final chunk. Re-purposed Chunk-1's retained machinery: `[hidden,setHidden]`→`[stripCollapsed,setStripCollapsed]` (dropped the bare `eslint-disable` — used again), onScroll direction branch unchanged. Added a thin centered **trust strip above the pill** (nav-shell wrapper `justify-center`→`flex-col items-center`): `he.json` `nav.trust_strip` = "כל בית עסק עובר אישור אישי", Phosphor `SealCheck` (gold) + surface-aware ink, `max-h`+`opacity` collapse (`duration-base ease-quart`, overflow-hidden → no CLS, `motion-reduce:transition-none`). Gated **homepage + desktop (`hidden md:block`) + Hebrew (`locale==="he"`)**. **`/adversarial-review` (required — central file): 2 real, both fixed** — (1) `/en` would render literal `nav.trust_strip` (he-only, no he-fallback; en → MEH-472) → locale gate; (2) cream ink illegible when re-expanding over non-hero content on scroll-up → surface-aware ink. Untouched: `setScrolled`/`transparent`/pill bg+easing. `en.json` NOT touched (MEH-840 en-guard). Build green (103/103 SSG), `eslint` 0 errors, RTL/hex clean. DRAFT, body `Part of MEH-789` — ⛔ do NOT merge/mark-ready (Sapir merges, Rule 23). Verify on preview (`/he` desktop homepage): strip shows over hero, collapses on scroll-down, re-expands on scroll-up; legible after scrolling; absent on mobile, inner pages, and `/en`.
+
+## 2026-06-19 — MEH-884 Chunk 1/2: detach hide-on-scroll from top nav — ✅ MERGED (#1257, `d9a3f7d`)
+
+**Branch `feature/meh-884-top-nav-stay-fold-trust-strip` off `staging`. `Header.jsx` only.** Chunk 1 of 2: the top floating-pill nav no longer slides out on scroll-down — it STAYS sticky at the top. Removed three `<header>` items (MEH-734 smart-sticky): `onFocusCapture`, the `transition-transform … motion-reduce:transition-none` class, and the `hidden ? "-translate-y-[120%]" : "translate-y-0"` toggle (+ the two orphaned MEH-734 comments). Kept `sticky top-0 z-[1000]` + `ref`. **Retained-but-unused this chunk (Chunk 2 re-wires to a trust strip):** `[hidden,setHidden]` state, `lastYRef`, the rAF onScroll effect + direction branch — `hidden` carries an `eslint-disable no-unused-vars` (state NOT deleted). Untouched: `setScrolled`/`transparent`/pill bg+easing → transparent→solid homepage fade byte-identical. Build green (`✓ Compiled successfully`, 103/103 SSG). **Merged #1257 (`d9a3f7d`)** after lint-fix `1959f25` (bare `eslint-disable-next-line` — repo's active rule is `sonarjs/no-unused-vars`, not core `no-unused-vars`). Chunk 2 (trust strip) re-wired the retained machinery — see entry above.
+
+## 2026-06-19 — MEH-883 S7 Chunk E2 (register error-states a11y) — ✅ MERGED (#1255) → S7 epic structurally COMPLETE
+
+**Merged to staging (`dd334a9`, squash, Refs MEH-132 / Closes MEH-883).** Final S7 slice. The 4 register validation-error states were screen-reader-silent (RPC had 0 `aria-invalid`/`aria-describedby`/`role`/`aria-live`). **Additive WAI-ARIA only — no visual/logic/copy change; red STAYS.** **Phase-0 disproved the MEH-132 "reds = state-color debt" framing:** ADR-019/DESIGN.md cover decorative state (loading/vacation/disabled/empty), not validation; `ui/Input.jsx` (MEH-602) documents *"error red is a system signal — distinct from the brand palette"* (59 files use red errors by spec). So the 4 reds are correct; decolorization would be a separate app-wide brand epic, not E2. 4 wirings (mirror `ui/Input.jsx:58/59/73`): `stepError` + submit `error` → `role="alert"`; phone input → `aria-invalid="true"` when invalid (else undefined) + `aria-describedby="register-phone-error"`; phone error `<p>` → stable `id`. Zero diff to red/green classes, 21 testids, copy; he/en untouched. Build green; Playwright `18-…` green on preview.
+
+**S7 board:** A ✅ · B ✅ · C ✅ · D ✅ · E2E (MEH-866) ✅ · **E1 ✅ · E2 ✅** → **Chunk E complete → MEH-132 register-wizard epic structurally DONE.** Remaining MEH-132 open items are out-of-scope deferrals: frame-05 contact routing (MEH-296, not pulled into 132); the `/en/register/producer` raw-key gap (EN translation wave, MEH-472). Optional follow-up flagged by the #1255 reviewer: add `aria-invalid`/`role="alert"` assertions to the register E2E (E2 spec forbade test authoring) — file only if desired.
+
+## 2026-06-19 — MEH-880 S7 Chunk E1 (ACCOUNT reassurance card + stepper aria-current) — ✅ MERGED (#1250)
+
+**Merged to staging (`098d462`, squash, Refs MEH-132 / Closes MEH-880).** First slice of the last S7 chunk. Two additive, no-logic changes to `RegisterProducerClient.jsx`: (1) copy-only reassurance card `"כל בית עסק עובר אישור אישי"` in the ACCOUNT frame, after the `h2`, **above** OAuth — single `<p>`, brand tokens (`bg-background border border-primary/20`, `text-start`), no state-color (ADR-019), `data-testid="register-account-reassurance"` (21st testid; 20 frozen MEH-866 testids unchanged); (2) `aria-current="step"` on the current stepper numeral (a11y; `undefined` when not current). Copy he.json only (MEH-472; en stale — same as Chunk-D `story_card`). Freeze byte-identical; build green; **Playwright `18-…` green on preview** (additive testid, no renames). Phase-0 re-anchor resolved 4 stale-design contradictions (stepper 01–04 not 01–06; Cormorant E1-3 no-op; "9 state-color" = 5 brand-legal green + 4 reds; testids 20 not 17).
+
+**S7 board:** Chunk A ✅ · B ✅ · C ✅ · D ✅ · E2E (MEH-866) ✅ · **E1 ✅**. **Remaining: Chunk E2** — the 4 error-state reds (`RPC` 425/475/480/792) → opacity-on-cream + fg-muted a11y (the real ADR-019 fix); the 5 `bg-green-50` are brand-legal tint, OUT. Reviewer FYI (out of MEH-880 scope): `/en/register/producer` renders raw keys for the producer-register namespace (he-only under MEH-472) — pre-existing, belongs to the EN translation wave, not E2.
+
+## 2026-06-19 — UX-audit program 11/11 COMPLETE + shipped — session checkpoint
+
+**🏁 MILESTONE: the UX/UI audit program (pages 1–11) is 11/11 COMPLETE and shipped to `staging`.**
+
+**Session merges to `staging` (squash, all green):**
+- **MEH-864** tab-aware `/events` subtitle — #1236
+- **MEH-871** `/group-buys` listing copy — #1238 (**F13 cross-link EXCLUDED** per Sapir revision; only the warm-plural empty-state shipped, `בדקי` removed)
+- **MEH-867** footer compliance (AA contrast + IS-5568 a11y link + tokens) — #1235
+- **MEH-868** chrome polish (Phosphor arrows, plural logout, a11y) — #1237
+- **MEH-873** `global-error.js` root boundary (branded + Sentry) — #1241
+- **MEH-874** content `<img>` → `next/image` (8 images, 0 eslint-disable left) — #1242
+- **MEH-875** sitemap +4 routes (`/experiences`, `/group-buys`, `/about/process`, `/about/for-businesses`); robots host verified == `SITE_URL` (no-op) — #1240
+- **MEH-876** global a11y/loading polish (`role=status`+`aria-busy`+sr-only; secondary-button focus rings) — #1243
+- **MEH-878** AccountSheet vitest suite (logout + nav + auth-state) — #1244
+
+**In-flight YELLOW (draft PRs expected next):**
+- **MEH-869** — DRY extraction → new `lib/event-categories.js`
+- **MEH-872** — Bucket-B voice sweep (app-wide)
+- **MEH-877** — bidi, re-scoped component-only
+
+**🔒 LOCKED decisions (source of truth — do NOT re-litigate):**
+- **MEH-872:** `value_props` → plural; **headings/submit stay Q3-feminine**; `סנן`/`סנני` → plural `סננו`; COPY_BANK reconcile empty-states → ADR-014 **and delete the duplicate block (L508-529)**; canary extended.
+- **MEH-869:** new file is **`lib/event-categories.js`** (`categories.js` is already taken by MEH-472); the experience array is duplicated **3×**; verify byte-identical via DOM snapshot.
+- **MEH-877:** re-scoped **component-only**; i18n-baked arrows → **deferred to the EN wave (MEH-472)**; `guides.*` separators **excluded**; outbound diagonal arrow = **keep** (external-link convention).
+
+**Deferred:**
+- **`bg-green-50` token** (MEH-876) — no semantic token exists; do NOT invent → **fold into ADR-019 / MEH-725** token-debt track.
+- **#1244 Hebrew test-fixture nit** — declined (no CI/functional impact).
+
+**Bucket-B precedent (clarification, NOT a fresh decision):** the doctrine is **ADR-014** (UI → plural); warmth is preserved *as plural*. This is applying existing doctrine, not a new call.
+
+**Linear cap event:** hit the free-tier issue limit → **archived 18 old Done** issues (76, 122, 131, 134, 135, 195, 201, 214, 434, 452, 524, 534, 542, 559, 568, 631, 634, 635). **Recommend enabling an auto-archive setting** to avoid recurrence.
+
+**Cross-session note:** **MEH-864 was touched by 2 sessions** (this one + `session_012YMKCn…`); verified equivalent + merged (no duplication).
+
+**Open / parked:** MEH-132 (S7 Chunk E) · MEH-233 (mobile) · MEH-754 (OTP) · MEH-793 (`/neighbor`) · honey-pot SQL · MEH-808 (folds into MEH-872).
+
+## 2026-06-18 — MEH-866 register-wizard test coverage + E2E-LOCATORS testid — ✅ MERGED (#1234)
+
+**Merged to staging (`145805c`, squash, Refs MEH-132 / Closes MEH-866).** Closes the register E2E coverage gap flagged 3× during S7 Chunks B/C/D. **vitest** (`__tests__/RegisterProducerClient.test.jsx`, 4 tests): ACCOUNT validation gate, 5-frame nav + back, char-count `N/160`, submit-body shape. **Playwright** (`e2e/flows/18-producer-register-wizard.spec.ts`): real ACCOUNT→CONFIRM journey — **green on the Vercel preview** (first real run of the testid path). **E2E-LOCATORS (MEH-495):** spec is `getByTestId` throughout; added `data-testid` to `RegisterProducerClient.jsx` — **testid-only / additive** (5 frame containers, 6 nav buttons, 5 inputs, 1 submit, 1 city wrapper), zero logic change, all 6 freeze anchors byte-identical (grep-proven). City (out-of-scope CitySearch) → testid on wrapper + `getByRole("combobox")`; category card (out-of-scope CategorySelector/MEH-830) → DB-name scoped under the frame testid; both E2E-LOCATORS-legal. Fixed a strict-mode CONFIRM assertion (`/בדקי/` → `register-frame-confirm`). HIGH-RISK central-form scope exception Sapir-authorized; full WAIT-gate review pre-push.
+
+**Open / next:** **Chunk E (last S7 chunk)** — chrome (reassurance "כל בית עסק עובר אישור אישי", stepper 01–06 active-states, Cormorant numerals) + per-frame error-states / 9 `bg-green-50`+red state-color debt cleanup (ADR-019). The **register E2E coverage** follow-up (the 3×-flagged open item) is now **CLOSED** by this PR.
+
+## 2026-06-18 — MEH-860 S7 Chunk D (frame 03 STORY) — ✅ MERGED (#1226)
+
+**Merged to staging (`85b4e36`, squash, Refs MEH-132).** `short_description` (tagline) wired into the STORY frame **above** the existing long-story `description` (byte-identical; MEH-532/619 toggle untouched). 4 sites: `EMPTY_FORM` + tagline `<input>` (label `במשפט אחד`, placeholder `מה שהכי חשוב שידעו עליך`, `maxLength={160}`, `set("short_description")` event-based) + live **N/160 char-count** (mirrors `dashboard/page.js:1053`) + **copy-only reassurance card** (`story_card.title/body` — "הסיפור שלך הופך לעמוד העסק") + shared submit `body` (both registration + upgrade paths). Backend (MEH-829) already accepts it (cap 160). **Card styling = brand tokens `bg-background border border-primary/20`** (NOT the `bg-green-50` banners — those are ADR-019 state-color debt Chunk E cleans; brand-token choice is forward-compatible). he.json ONLY (MEH-472 freeze; en stale). Freeze byte-identical (grep-verified); build green. Copy logged in `docs/COPY_BANK.md` Section 4.
+
+**S7 board:** Chunk A ✅ · B ✅ · C ✅ · **D ✅** — frames 01–03 content complete. **Chunk E (last)** = chrome (reassurance "כל בית עסק עובר אישור אישי", stepper 01–06 active-states, Cormorant numerals) + **per-frame error-states / 9 `bg-green-50`+red state-color debt cleanup** (ADR-019, no state-color palette).
+
+**Open (non-blocking):** register E2E coverage ticket — flagged 3× (nav-flow + city/address + tagline payload); recommend one dedicated spec rather than per-chunk re-raise.
+
+## 2026-06-18 — bottom-region stacking (MEH-850) + homepage map center (MEH-856) — ✅ BOTH MERGED
+
+**Two bug fixes, both merged to staging.** **MEH-850 (#1223, `7e965f3`):** coordinated cookie-banner / nav-pill / chat-FAB stacking via a shared `--cookie-banner-h` CSS var (CookieBanner publishes its live height; FAB self-clears it via calc; banner above pill + mobile layout stacked so text/buttons fit). Kept the `cookie-consent` event for ClarityScript analytics; BottomNav untouched. **MEH-856 (#1221, `b082b66`):** homepage mini-map `fitBounds` to the business markers (padding + maxZoom 11) instead of a static Tel-Aviv@z8 frame → default view sits on the Israel business base, not east.
+
+**Open / next:** Sapir mobile QA both on staging (360/375/390 — MEH-850 with the cookie banner SHOWN and DISMISSED; MEH-856 default map frame). Deferred follow-ups (flagged, not done): helper-effect unit tests (`FitToBusinesses`, the ResizeObserver var) — better as MEH-847 Playwright assertions; reconcile the `.claude/rules/rtl.md` z-index ledger (`cookie:9998`) with the actual global-chrome stacking (pill 1000 / cookie 1100 / chat 9999).
+
+## 2026-06-18 — MEH-852 final nav size tune — ✅ MERGED (#1215)
+
+**Merged to staging (`bc001ce`, squash, Part of MEH-789).** Closes the MEH-852 proportions item (Sapir height-tuner demo). `BottomNav.jsx` only — dimensions + label typography; the indicator/liquid-stretch, glass, and hide-on-scroll logic are unchanged. Wide pill (`w-full`, shell `px-[14px]` ~14px side gutters, tabs `flex-1`), deliberately slim **56px** height (`h-14`, `rounded-full` = 28px radius), tab `min-h-[44px]` (≥44 tap floor, ~86px wide), labels 10.5px/600. `/adversarial-review` + calibration bot both clean; build green, RTL 0, hex 0.
+
+**MEH-789 nav epic now fully landed on staging:** #1198/#1193/#1202/#1204 (MEH-842 foundation + chunks 1–3), #1208 (MEH-851 ADR-023 liquid-stretch amendment), #1210 (MEH-852 polish), #1215 (MEH-852 size tune); session docs #1206/#1213 (+ this entry's PR).
+
+**Open / next:** Sapir mobile QA of the finished nav on staging (stretch feel, 56px slim height, wide pill, labels); close the MEH-789/843/851/852 tickets if considered done (PRs were "Part of", no auto-close). MEH-789 epic stays open if PR-B (minimal-top Header) is still planned.
+
+## 2026-06-17 — MEH-849 /about Benefits re-angle (Option B) — DRAFT PR
+
+Branch `feature/meh-849-about-benefits-reangle` off staging. **value-only i18n swap, one PR → staging, DRAFT.** Resolves the Benefits↔Values near-verbatim dup on /about via Option B (Sapir 17/06, copy LOCKED): Benefits → discovery·convenience·local-economy; Values stays = criteria.
+- **Done:** swapped the 6 `about.consumer.benefits.{local,trust,community}.{title,body}` values in `he.json` (heading "למה מהמקור" + keys unchanged) → `מה שלא הכרת` / `הכל במקום אחד` / `קנייה שתומכת`. **`en.json` NOT touched** — see below. CHANGELOG + HANDOFF updated.
+- **en.json decision (CI catch):** the planned HE-mirror **failed CI** — `__tests__/en-locale-guard.test.js` (MEH-840, 2026-06-16, BASELINE now empty) fails on any Hebrew in `en.json`. HE-mirror is no longer a valid convention there, and `testing.md` forbids weakening the guard via the baseline. Resolution (Sapir): keep the original Option-A English benefit copy in `en.json`. ⚠️ **The 6 en values are now stale vs he** (pre-Option-B angle) — real EN translation deferred to the MEH-472 EN wave. Noted in PR body + CHANGELOG.
+- **Gates green:** build (/about + / SSG, 0 err), ESLint 0 errors, he+en JSON-valid, en-locale-guard green, מתווכים/מגזין 0 in changed lines. Screenshots mobile-375 + desktop captured (benefits band renders 01/02/03 with the new copy).
+- **Locked / do-NOT-touch:** "בעלי עסקים" in `community.body` = deliberate generic-plural (Sapir) — never convert to feminine in a future audit; reader-address stays feminine ("שתגלי"). `AboutClient.jsx` / Values / Comparison / tokens untouched.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about benefits band; then mark ready + merge.
+- **1 code file only** (`he.json`). No en.json, no backend, no JSX, no tokens.
+
+## 2026-06-18 — MEH-817 quarantine flaky language-toggle E2E — DRAFT PR
+
+Branch `feature/meh-817-quarantine-lang-toggle` off staging. **Tests-only, one PR → staging, DRAFT.** Stops the chronic non-required `Playwright E2E` red on `14-language-toggle.spec.ts`.
+- **Done:** `test()` → `test.fixme()` on the single block (`e2e/flows/14-language-toggle.spec.ts:8`) + a root-cause `// QUARANTINED — Ref MEH-817` comment. Body unchanged. No other file/test/config touched.
+- **Root cause (read-only Phase 0, class b):** EN→HE flips to the unprefixed default-locale path `/`, whose locale is `NEXT_LOCALE`-cookie-resolved under `as-needed` (`i18n/routing.js:3-7`). `router.replace`'s cookie-write (`LanguageToggle.jsx:63`) races the RSC fetch → middleware (`middleware.js:4`) intermittently resolves `/` as en → `useLocale()` stuck "en" 20s. Always the return-to-default assertion (`:31`), never the to-`/en` one (`:24`). `localStorage` shim ruled out (`[]`-dep, no remount). Real fix = deferred next-intl routing family (MEH-817, Triage), gated behind `Disallow: /en/` until Wave 5 (MEH-475).
+- **No masking:** no `waitForTimeout`, no loosened assertion, no component/routing/config change.
+- **Gates:** lint 0 (e2e eslint-ignored), build green, Playwright collects test 14 as known-skip (no longer reds `--fail-on-flaky-tests`).
+- **Follow-up:** promote MEH-817 out of Triage + link this flake as runtime evidence; un-quarantine when it ships.
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI. `Refs MEH-817` (NOT Closes).
+
+## 2026-06-18 — MEH-826 map mobile sheet header parity — ✅ MERGED (#1212)
+
+**Merged to staging (`c1a878f`, squash, `Refs MEH-826`).** Value-only i18n fix: `map.bottom_sheet.title` in both `messages/{he,en}.json` (2 lines) now mirrors the desktop split-view list heading "{N} בתי עסק מקומיים באזור" locked in #1207. Same `count` prop, same heading role — no component/logic change. Frontend-only (backend skipped), all required checks green; Sapir QA'd the Vercel preview then merged. Completes the MEH-826 map-card v2 parity work across **desktop (#1207) + mobile (#1212)**.
+- **Open / next:** MEH-826 ticket was `Refs` (not `Closes`) — close manually if the parity scope is considered done. Deferred sub-items from the Linear recon (separate tickets, NOT this PR): Gap 2-hours (`opening_hours` on ListOut + open/closed status component) and the verified-badge map work (MEH-766).
+- **Minor (documented, no fix):** desktop en copy says "in your area" vs mobile "in this area" — cosmetic, out of scope; noted on the PR.
+
+## 2026-06-17 — MEH-789 nav follow-ups (MEH-851 + MEH-852) — ✅ BOTH MERGED
+
+**Both merged to staging.** **MEH-851 (#1208, `f7e769c`, docs-only):** ADR-023 amendment sanctioning a subtle directional liquid-stretch on the nav indicator (+ gooey/metaball SVG rejected for web) + design-principles carve-out — brand-first, landed before the impl. **MEH-852 (#1210, `b8a27df`, `BottomNav.jsx` only):** Sapir mobile-QA polish — (1) active dot removed; (2) IG proportions (tab `min-h 56→60`, nav `max-w 343→300`); (3) directional liquid-stretch indicator (one nav-level capsule measuring the active tab's rect via `navRef`/`tabRefs`/`ResizeObserver`, animating `left`+`width` with two springs — leading edge 700 > width 320 → elongate-then-contract; RTL-safe; reduced-motion → instant). `/adversarial-review` clean. Also merged the docs PR #1206 (`5cae75c`, CHANGELOG/HANDOFF for MEH-842 + chunks 1–3).
+
+**Open / next:**
+- **Sapir mobile QA on staging** — the full nav stack together: indicator stretch intensity (tunable — say if too much/little), no dot, taller+narrower pill, reduced-motion → instant, hide-on-scroll + glass + account sheet intact.
+- **MEH-851/852/843 tickets** — PRs were "Part of MEH-789" (no `Closes`), per the locked convention; close manually if considered done. The MEH-789 epic stays open for PR-B (minimal-top Header) if still planned.
+- **Process note:** GitHub API rate-limit recurred mid-session; some merges went via Sapir's UI. A stale-`origin/staging`-ref scare (a `git fetch` skipped inside a denied compound Bash command) was resolved by a clean standalone re-fetch — verify "missing commit" negatives against a fresh fetch (CLAUDE.md known-bug-pattern).
+
+## 2026-06-17 — MEH-848 collapse duplicate error copy → error.generic + lib/errors.js→i18n (DRAFT PR)
+
+Branch `feature/meh-848-errors-dedupe` off staging. The refactor MEH-846 Phase-0 deferred. **Copy-only indirection, no behavioral change.**
+- **Done (A):** `lib/errors.js` `errorMessage(err)`→`errorMessage(err, t)` (`error`-scoped translator); 9 status sentences → `error.mapper.*` (he+en, verbatim); 2 importers + `showErrorToast` updated; `errors.test.js` rewritten to key contract. **(B):** 11 duplicate `"משהו השתבש, נסו שוב"` keys collapsed → `error.generic`; 10 consumers repointed (incl. central `ProducerCard`, auth `Login`/`Register`); 11 keys deleted both locales (orphan `group_buys.follow.error_generic` + 2 emptied `errors:{}` removed). `ProducerCard.test.jsx` + `useAdminAction.test.js` mocks updated.
+- **Spec correction (meta-pattern #1):** the 3 "broken refs" (GroupBuyDetail:134/RecipeForm:141/dashboard-group-buys:54) verified **present + correct in both locales** → plain dedup, **NOT** labeled bugfix. No `error.retry` added; `error.try_again` untouched.
+- **Gates green:** build (all SSG), vitest 625 pass, ESLint 0 errors, en-locale canary green, he/en parity intact. Adversarial-review passed (no dangling deleted-key refs).
+- **⚠️ Overlaps MEH-846 (#1199)** — both edit `lib/errors.js`+`he.json`. 2nd-to-merge resolves `lib/errors.js` toward the i18n version (846's plural-fix mooted by the move). Sequence with Sapir.
+- **Pending (Sapir):** mobile QA error toasts on the Vercel preview (login/register/card-favorite/review/group-buy) → mark ready + merge. No self-merge (Rule 23).
+
+## 2026-06-17 — MEH-789 nav refinement (MEH-843) — ✅ ALL 4 PRs MERGED
+
+**All four merged to staging in brand-first order:** #1198 MEH-842/ADR-023 brand foundation (`d484efe`) → #1193 chunk 1 sliding indicator + spring (`9f0bd21`) → #1202 chunk 2 hide-on-scroll (`008c454`) → #1204 chunk 3 frosted glass (`d009b87`, `.nav-pill-glass`). BottomNav now: a tinted capsule springs between the 3 route tabs (ADR-023's single sanctioned spring), the pill hides on scroll-down / reveals on scroll-up, and the shell is a frosted warm-glass surface with opaque + reduced-transparency fallbacks. Each chunk: HIGH-RISK central → `/adversarial-review` (0 blockers) + Sapir QA + DRAFT→merge.
+
+**Open / next:**
+- **Sapir mobile QA on staging** — verify the full nav stack together, esp. chunk-3 glass on a **CPU-throttled profile**: no blur jank during the hide-slide; `prefers-reduced-transparency`→opaque; no-`backdrop-filter` browser→opaque fallback. If blur janks → lower/drop it (chunk-3 stop-condition).
+- **MEH-843 ticket** — PRs were "Part of MEH-789" (not Closes); close MEH-843 manually if the refinement is considered done.
+- **Known minor (documented, self-healing):** if the body scrolls behind an open AccountSheet, the pill can read hidden after the sheet closes until the next scroll-up — out of spec scope, no fix shipped.
+
+**Process notes (this session):**
+- GitHub API rate-limit drained mid-session (heavy CI status polling) → the final merges (#1202/#1204) went through Sapir's UI; CC's merge calls were 429-blocked. (Same condition the MEH-847 entry below notes.)
+- **Stale `origin/staging` ref scare:** a `git fetch` rode inside a denied compound Bash command and silently didn't run, making chunk 3 (#1204) momentarily look absent from staging. A clean standalone `git fetch origin staging` (`086b78e..1b1575a`) confirmed it present. Lesson: re-fetch standalone before trusting a "missing commit" negative (CLAUDE.md known-bug-pattern — verify negatives against fresh git).
+
+## 2026-06-17 — MEH-847 S7 Chunk B wizard skeleton split — ✅ MERGED (#1203)
+
+**Merged to staging (`e4e985a`, squash, Refs MEH-132).** Keystone of the S7 3→5 re-architecture. `RegisterProducerClient.jsx` only; structural, freeze byte-identical. **B1** STEP enum (single source for ~16 literals, behavior-identical) → **B2** split step-2 into DETAILS(name+phone) / CATEGORY(CategorySelector+license) / STORY(description **relocated** + declarations gate + submit) + nav shell (free-advance) + stepper array expanded. OAuth/upgrade→DETAILS, submit→CONFIRM(5), declarations gate + confirmation split unchanged. Build green; the only red = non-required `language-toggle` Playwright flake. Sapir merged directly (CC was GitHub-API rate-limited mid-merge).
+
+**Open / next:**
+- **MEH-847 ticket likely still OPEN** — PR was `Refs MEH-132` (no `Closes MEH-847`); close the chunk ticket manually if desired.
+- **Playwright nav-flow test** (testing.md Rule 5, register critical flow) — deferred; decide this-vs-Chunk-E. Can't author+verify locally (sandbox, MEH-360).
+- **Chunk C** (frame-01 content: city + address inputs wired to the MEH-829 columns, business-name placement, 4 RPC token hits) · **Chunk D** (frame-03: tagline=short_description + char-count + "הופכות לכתבה" card) · **Chunk E** (chrome: reassurance card, stepper 01-06 active-states, numerals, per-frame error-states).
+
+## 2026-06-17 — MEH-844 auth regression sentinels (tests-only, DRAFT PR)
+
+Branch `feature/meh-844-auth-sentinel-tests` off staging. Two vitest sentinels, **mocks only, zero production change**.
+- **Done:** `__tests__/LoginMinLengthSentinel.test.jsx` (password input has no `minLength` — guards MEH-835/418) + `__tests__/RegisterOAuthRedirect.test.jsx` (real `safeInternalRedirect` via OAuth `onSuccess`: `/favorites`→`/favorites`, `https://evil.com`→`/`, `//evil.com`→`/` — guards MEH-837/810).
+- **Gates:** vitest 623 pass (+4), ESLint 0 errors (2 warn-mode `consistent-function-scoping` on the repo-standard `useTranslations` mock).
+- **Pending (Sapir):** tests-only → no mobile QA; merge on green CI.
+- Sibling of the open MEH-846 PR (#1199); independent branch off staging.
+## 2026-06-17 — MEH-846 ADR-014 Bucket-A voice sweep (DRAFT PR)
+
+Branch `feature/meh-846-bucket-a-voice-sweep` off staging. App-wide error/loading feminine → plural/gerund, **one mechanical copy-only PR**. Resolves the MEH-832 open question (sweep, not house-voice).
+- **Done:** `he.json` 96 value replacements (count-asserted script `/tmp/sweep_he.py`); 4 hardcoded components (`ChatWidget`, `ui/Button` aria + test + JSDoc, `events/page.js`, `experiences/[id]/page.js`); `lib/errors.js` (admin-only mapper — Phase-0 call-graph); `ButtonSpinner.jsx` JSDoc (anti-pattern doc); canary in `batch.md` §4 (ellipsis + `^\+` anchored).
+- **Gates green:** vitest 619 pass, build (all routes SSG), ESLint 0 errors, canary 0 hits on swept tree, en.json key-parity intact.
+- **Excluded (locked):** 2489 `נרשמת!` (success), 2404 mixed Bucket-B. **MEH-808**: its Bucket-A item already merged (#1147) → 808 reduces to Bucket B (update after merge).
+- **Phase-0 load-bearing fact:** `lib/errors.js` is NOT the central error source (2 admin importers, returns string). The ~25 retry strings are inline-duplicated; a real shared `errors.retry` key is a separate refactor (out of scope).
+- **Pending (Sapir):** copy review of the diff (DoD copy-only — no per-string mobile QA); then mark ready + merge. Stale feminine values remain in independent test mocks (FavoriteButton/CategoryRequestModal/AdminReviews/PaginationCounter) — green doubles, optional follow-up.
+
+## 2026-06-16 — MEH-841 comparison home→/about + layout A + copy refresh (DRAFT PR)
+
+Branch `feature/meh-841-comparison-to-about` off staging. **Supersedes MEH-525** (placement + copy lock reopened, Sapir-approved). One PR → staging, DRAFT.
+- **Done:** comparison removed from home (`HomeComparison`/`COMPARISON_ROWS` deleted from `HomeStaticBlocks.jsx`); `HomeComparisonTeaser` put in its place (`page.js:230`) → links `/about`. New layout-A comparison section on `/about` between Pull-quote and Benefits (`AboutClient.jsx`, gold-dot spine, 3 stops, refreshed direction-א copy). i18n `home.comparison.*` → `about.comparison.*` + `home.comparison_teaser.*` (he real; en = HE-mirror). CHANGELOG + MANUAL_TESTING updated.
+- **Gates green:** build (home + /about SSG), lint 0 err, RTL 0 physical, hex 0, מתווכים/מגזין 0.
+- **Pending (Sapir):** open Vercel preview → mobile 375 + desktop QA of /about section + home teaser; then mark ready + merge. **TODO i18n EN** for both new key blocks (filed in PR body).
+- **5 code files + 3 docs.** No backend, no tokens, no other sections touched.
+
+## 2026-06-16 — Page-6 audit batch COMPLETE (4 draft PRs)
+
+Manual batch off /login+/register audit (page 6/11). All 4 = draft PRs off staging, Sapir merges (Rule 23). MEH-132 freeze respected throughout (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred per batch.
+- **MEH-835** #1185 — login `minLength={8}` removed (MEH-418 regression). Build green, Vercel ✅, claude[bot] clean (1 Should-Consider test suggestion, declined — out of single-file scope).
+- **MEH-837** #1188 — /register OAuth honors clamped `?redirect=` (safe-redirect reuse + Suspense). Build green, Vercel ✅. claude[bot] 1 Should-Consider (vitest integration test, declined — ticket scope = no other files).
+- **MEH-838** #1189 — /register name+email `min-h-[44px]`. Stacked on 837 (base=837 branch, retargets on #1188 merge). Build green, Vercel ✅, claude[bot] fully clean.
+- **MEH-832** — register-family voice, **safe-5 subset** (4 producer imperatives + login arrow ←). Ticket-vs-ADR conflict on `נסי שוב`/loading/consent/welcome surfaced → Sapir chose "ship safe-5 + flag rest"; flagged set documented in PR + CHANGELOG, NOT changed.
+
+**Open for Sapir:** whether to (a) sweep all ~60 app-wide `נסי שוב`/loading strings as a separate broad voice ticket, or (b) leave per ADR-014 house-voice. MEH-132 Phase 2 owns the "הצטרפי" CTA voice (E2E-selector restructure).
+
+## 2026-06-16 — MEH-838: /register field height ≥44px (draft PR, stacked on 837)
+
+`feature/meh-838-register-field-height` off `feature/meh-837` (same file, sequential). name+email inputs `px-3 py-2` (~42px) → added `min-h-[44px]` (WCAG 2.5.5; login siblings are 54px). 2-line diff, no copy/logic/frozen changes. Build green. Stacked PR — base = 837 branch, retargets to staging when #1188 merges. Draft — Sapir mobile QA.
+
+## 2026-06-16 — UX-audit page 6/11 (/login+/register) batch — 4 draft PRs
+
+Manual batch off the page-6 audit (MEH-835/832/837/838). Each = one draft PR off staging; Sapir merges (Rule 23). MEH-132 freeze respected (no frozen E2E selectors / OAuth render / "הצטרפי" touched). MEH-839 (Two-Doors aesthetic) deferred — design Phase 0 vs S9.
+- **MEH-835** `feature/meh-835-login-minlength` — removed `minLength={8}` (`LoginClient.jsx:255`), regression of MEH-418 (legacy <8-char lockout). Empty-guard intact. Build green. Draft PR.
+- **MEH-832** `feature/meh-832-register-family-voice` — register-family fem-singular UI → plural (value-only he.json), excl. both "הצטרפי" CTAs. (in progress)
+- **MEH-837** `feature/meh-837-register-oauth-redirect` — /register OAuth honors clamped redirectTo (reuse safe-redirect). (in progress)
+- **MEH-838** `feature/meh-838-register-field-height` off 837 — name+email ≥44px. (in progress)
+
+## 2026-06-16 — MEH-837: /register OAuth honors clamped redirect (draft PR)
+
+`feature/meh-837-register-oauth-redirect` off staging. OAuth success on consumer `/register` now reads `?redirect=` + clamps via `safeInternalRedirect` (MEH-810 reuse), mirroring `/login`; was hardcoded `router.push("/")`. Added `<Suspense>` boundary (copy-free spinner fallback) for `useSearchParams`. Frozen MEH-132 selectors / OAuth render untouched. Build green. Auth-adjacent → Sapir reviews. Part of the page-6 audit batch (MEH-835 #1185 ✅draft · 837 · 838 off 837 · 832 surfaced for decision). Draft PR — no self-merge (Rule 23).
+
 ## 2026-06-16 — MEH-829 backend fields (PR #1179, draft) + MEH-836 migration-toil (draft)
 
 **MEH-829 (S7 Chunk A backend) — PR #1179 DRAFT, branch `feature/meh-829-s7-backend-fields` (`17ce184`):** added `Producer.address` (String(255) nullable) + `ProducerRegister.address`(max 255)/`short_description`(max 160), wired both explicitly into BOTH `register_producer` ctors (`auth.py:475` upgrade + `:573` new-reg — handler uses explicit-assign, not `model_dump`). **Migration NOT in PR** — `versions/**` deny-listed; op snippet + `down_revision=382128b23383` handed to Sapir in the PR body. CI `Backend tests` red is the **expected `alembic check` drift gate** (model column w/o migration); resolves when Sapir adds+applies the migration + bumps `EXPECTED_REV`/db-schema.md. Review autofix landed: `address` max_length=255 (`17ce184`). NOT merged — Sapir migration + green CI first.

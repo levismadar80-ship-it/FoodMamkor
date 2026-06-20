@@ -289,6 +289,28 @@
 | **Why** | נספח א' / פס"ד קירשנר — "grown on my own plot only" is the legal line between license-exempt and license-required produce. Folds into the same `declaration_accepted` submission (no new API field). |
 | **MEH** | MEH-759 Chunk C (source ADR-022) |
 
+### /register/producer — Tagline (frame 03 STORY, "במשפט אחד")
+| Field | Value |
+|---|---|
+| **Label (he)** | `במשפט אחד` |
+| **Placeholder (he)** | `מה שהכי חשוב שידעו עליך` |
+| **i18n keys** | `auth.register.producer.fields.tagline_label` / `.tagline_placeholder` |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (STORY frame — `short_description` input, `maxLength={160}` + live N/160 char-count, above the long-story `description`) |
+| **Status** | ✅ (MEH-860, PR #1226, 2026-06-18) |
+| **Why** | NN/G microcontent brevity + BoldBrush headline-above-bio convention — a one-line "dek" above the long story. he.json ONLY (MEH-472 HE-mirror freeze; en stale). |
+| **MEH** | MEH-860 (S7 Chunk D) |
+
+### /register/producer — Story reassurance card (frame 03)
+| Field | Value |
+|---|---|
+| **Title (he)** | `הסיפור שלך הופך לעמוד העסק` |
+| **Body (he)** | `מה שתכתבי כאן הופך לעמוד העסק שלך במהמקור — המקום שבו לקוחות פוגשים אותך לפני שהם פוגשים את מה שאת מוכרת. לא תיאור מוצר. סיפור.` |
+| **i18n keys** | `auth.register.producer.story_card.title` / `.body` |
+| **Location** | `frontend/app/[locale]/register/producer/RegisterProducerClient.jsx` (STORY frame — copy-only card, brand tokens `bg-background border border-primary/20`, no preview/logic) |
+| **Status** | ✅ (MEH-860, PR #1226, 2026-06-18) |
+| **Why** | Frames the magazine thesis — the story becomes the producer's page. "עמוד עריכותי" rejected as internal jargon → "עמוד העסק" (explicit). he.json ONLY (MEH-472). |
+| **MEH** | MEH-860 (S7 Chunk D) |
+
 ### Welcome email — Consumer
 | Field | Value |
 |---|---|
@@ -465,12 +487,15 @@ the grammatical subject, rewrite to put the customer (את) as the subject.
 The customer reads to learn what *she* gets, not what we do.
 
 **Applies to:** FAQ pages, /about marketing copy, /register flow, error
-messages, empty states, onboarding — anywhere a user reads about what
-Mehamakor offers her.
+messages, onboarding — anywhere a user reads about what Mehamakor offers
+her.
 
 **Does NOT apply to:** legal/privacy pages (must say "אנחנו אוספים"),
-backoffice/admin tools (technical), or first-person founder bio on /about
-(intentional "I" voice).
+backoffice/admin tools (technical), first-person founder bio on /about
+(intentional "I" voice), and **empty states** — per ADR-014 those follow
+the plural / gender-neutral UI voice (גלו / שמרו), NOT the feminine
+customer-subject ("she/את") rule. (MEH-872 reconcile — the prior
+"empty states" entry in the Applies-to list conflicted with ADR-014.)
 
 **Over-claim guard (also learned MEH-579):** Do not claim platform
 authority that doesn't yet exist. ❌ "Verified by Mehamakor trust badge"
@@ -483,28 +508,9 @@ answer is identical, but the question matches what's actually in her head.
 
 ---
 
-## Customer-centric voice rule (MEH-579, May 14 2026)
-
-Feminine grammar is necessary but not sufficient. Every line of user-facing
-UI copy must also pass the **subject test**: who is the grammatical subject?
-
-| ❌ Founder-voice | ✅ Customer-voice |
-|---|---|
-| "אנחנו לא לוקחות עמלה" (subject: we) | "את לא משלמת לנו" (subject: you) |
-| "אני בודקת תעודות" (subject: I) | "תהיי בסביבה של עסקים שעברו שיחה" (subject: you) |
-| "הרשמה לוקחת 10 דקות" (subject: process) | "תוך 10 דקות יש לך דף חי" (subject: you) |
-
-The rule: if the answer to a customer's question puts Mehamakor (we/I) as
-the grammatical subject, rewrite to put the customer (את) as the subject.
-The customer reads to learn what *she* gets, not what we do.
-
-**Applies to:** FAQ pages, /about marketing copy, /register flow, error
-messages, empty states, onboarding — anywhere a user reads about what
-Mehamakor offers her.
-
-**Does NOT apply to:** legal/privacy pages (must say "אנחנו אוספים"),
-backoffice/admin tools (technical), or first-person founder bio on /about
-(intentional "I" voice).
+<!-- MEH-872: the duplicate "Customer-centric voice rule" block (formerly here,
+     "May 14 2026" no-comma copy) was deleted — it was a verbatim partial of the
+     canonical block above. -->
 
 ## Anti-defensive framing (MEH-579, May 14 2026)
 

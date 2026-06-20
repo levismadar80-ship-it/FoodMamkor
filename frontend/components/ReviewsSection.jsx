@@ -80,6 +80,8 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
  */
 export default function ReviewsSection({ producerId, avgRating = 0, reviewCount = 0, isOwner = false }) {
   const t = useTranslations("reviews");
+  // MEH-848: shared generic error copy (collapsed from reviews.error_generic).
+  const tError = useTranslations("error");
   const locale = useLocale();
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
@@ -174,7 +176,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      setError(err.response?.data?.detail || tError("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -304,7 +306,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           />
         ) : (
           <div className="text-center py-8">
-            <Leaf size={48} weight="duotone" className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
+            <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
             <p className="text-fg-muted">{t("empty_message")}</p>
           </div>
         )
@@ -340,6 +342,10 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           </div>
 
           {pages > 1 && (
+            // MEH-877: carousel prev/next pair — RTL-correct as-is (prev→right,
+            // next→left in Hebrew reading order). Intentionally NOT bidi-flipped:
+            // documented rtl.md exception ("Carousel prev/next arrows"). Do not
+            // re-flag in future bidi sweeps.
             <div className="flex items-center justify-center gap-3 mt-6">
               <button
                 onClick={() => fetchPage(page - 1)}

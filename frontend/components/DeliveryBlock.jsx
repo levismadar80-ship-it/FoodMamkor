@@ -19,7 +19,7 @@ export default function DeliveryBlock({ nationwide, cities = [], producer }) {
   return (
     <section className="mt-8 border-t border-border pt-6">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
-        <Truck size={22} weight="duotone" className="text-primary" aria-hidden="true" />
+        <Truck size={22} className="text-primary" aria-hidden="true" />
         {t("heading")}
       </h2>
 

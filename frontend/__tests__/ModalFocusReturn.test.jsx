@@ -18,22 +18,22 @@ vi.mock("next-intl", () => ({
       "modals.location.title": "איפה את?",
       "modals.location.subtitle": "נמצא עסקים קרובים אליך",
       "modals.location.search_label": "חיפוש עיר",
-      "modals.location.search_placeholder": "הקלידי שם עיר...",
+      "modals.location.search_placeholder": "הקלידו שם עיר...",
       "modals.location.aria_label": "בחירת עיר",
       "modals.location.close_aria": "סגור",
       "modals.location.geo_button": "קרוב אליי",
       "modals.location.geo_loading": "מחפשת...",
       "modals.location.geo_failure": "לא הצלחנו לקבל את המיקום שלך",
       "modals.location.current_location_fallback": "מיקום נוכחי",
-      "modals.location.skip": "דלגי לעכשיו",
+      "modals.location.skip": "דלגו לעכשיו",
       "modals.location.popular_cities.tel_aviv": "תל אביב",
       "modals.location.popular_cities.jerusalem": "ירושלים",
       "modals.location.popular_cities.haifa": "חיפה",
       "modals.location.popular_cities.beersheba": "באר שבע",
       // modals.login_prompt.*
-      "modals.login_prompt.default_message": "כדי לשמור עסקים אוהבים — היכנסי",
+      "modals.login_prompt.default_message": "כדי לשמור עסקים אוהבים — היכנסו",
       "modals.login_prompt.title": "רוצה לשמור? 🌿",
-      "modals.login_prompt.login_cta": "היכנסי",
+      "modals.login_prompt.login_cta": "היכנסו",
       "modals.login_prompt.dismiss_cta": "אולי אחר כך",
       // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
       "report.trigger": "🚩 דווח על עסק",
@@ -96,7 +96,7 @@ describe("LocationModal focus return (MEH-158)", () => {
     expect(document.activeElement).toBe(trigger);
 
     await act(async () => { fireEvent.click(trigger); });
-    await act(async () => { fireEvent.click(screen.getByText("דלגי לעכשיו")); });
+    await act(async () => { fireEvent.click(screen.getByText("דלגו לעכשיו")); });
 
     expect(document.activeElement).toBe(trigger);
   });

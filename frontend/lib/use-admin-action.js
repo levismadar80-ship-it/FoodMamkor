@@ -16,7 +16,8 @@
  *     would still race within one tick);
  *   - `busyKeys` state drives the trigger's `disabled` via `isBusy(key)`;
  *   - on throw: `onError` string → that toast; `onError` fn → custom handler;
- *     omitted → the central `errorMessage(err)` Hebrew toast (MEH-251);
+ *     omitted → the central `errorMessage(err, t)` localized toast (MEH-251,
+ *     MEH-848: copy via useTranslations("error"));
  *   - always clears the key in `finally` (success reset).
  *
  * Per-key (not global) locking: distinct rows/actions can run concurrently,
@@ -24,11 +25,14 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { errorMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 
 export function useAdminAction() {
+  // MEH-848: errorMessage() copy now lives in messages/*.json (error.mapper.*).
+  const tError = useTranslations("error");
   const [busyKeys, setBusyKeys] = useState(() => new Set());
   const inFlight = useRef(new Set());
 
@@ -41,7 +45,7 @@ export function useAdminAction() {
     } catch (err) {
       if (typeof onError === "string") showToast.error(onError);
       else if (typeof onError === "function") onError(err);
-      else showToast.error(errorMessage(err));
+      else showToast.error(errorMessage(err, tError));
     } finally {
       inFlight.current.delete(key);
       setBusyKeys(new Set(inFlight.current));

@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslations } from "next-intl";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { useTranslations, useLocale } from "next-intl";
+import { MagnifyingGlass, ArrowUpLeft, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -52,12 +52,17 @@ import LanguageToggle from "@/components/LanguageToggle";
 export default function Header() {
   const { user, logout } = useAuth();
   const t = useTranslations();
+  // MEH-884: the trust-strip copy lives only in he.json this chunk (en → MEH-472),
+  // and request.js loads each locale's own messages with no he-fallback — so the
+  // strip is gated to Hebrew to avoid rendering the raw `nav.trust_strip` key on /en.
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  // MEH-734: smart-sticky hide-on-scroll-down / reveal-on-scroll-up.
-  const [hidden, setHidden] = useState(false);
+  // MEH-734/MEH-884: scroll direction drives the homepage trust strip —
+  // collapse on scroll-down past the threshold, expand on scroll-up / at-top.
+  const [stripCollapsed, setStripCollapsed] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
   const lastYRef = useRef(0);
@@ -82,12 +87,12 @@ export default function Header() {
   }, [pathname]);
 
   // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
-  // MEH-734: same callback also drives the smart-sticky hide flag —
-  // direction-tracked off the existing 60px threshold (no second constant,
-  // no second listener). At/above the threshold, or while focus is inside the
-  // header, the pill stays visible; past it, scrolling down hides and any
-  // scroll up reveals. (MEH-789 PR-B removed the mobile drawer, so there's no
-  // drawer-open state left to pin against.)
+  // MEH-734/MEH-884: the same callback also drives the homepage trust strip's
+  // collapse flag — direction-tracked off the existing 60px threshold (no
+  // second constant, no second listener). At/above the threshold, or while
+  // focus is inside the header, the strip stays expanded; past it, scrolling
+  // down collapses it and any scroll up re-expands. (MEH-789 PR-B removed the
+  // mobile drawer, so there's no drawer-open state left to pin against.)
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
@@ -96,16 +101,16 @@ export default function Header() {
         const past = y >= 60;
         setScrolled(past);
         const focusWithin = headerRef.current?.contains(document.activeElement);
-        if (!past || focusWithin) setHidden(false);
-        else if (y > lastYRef.current) setHidden(true);
-        else if (y < lastYRef.current) setHidden(false);
+        if (!past || focusWithin) setStripCollapsed(false);
+        else if (y > lastYRef.current) setStripCollapsed(true);
+        else if (y < lastYRef.current) setStripCollapsed(false);
         lastYRef.current = y;
         rafRef.current = null;
       });
     };
     // MEH-734: seed last-Y with the restored position so a reload / back-
     // forward at a scrolled offset isn't read as a downward delta (which
-    // would hide the bar on mount with no user gesture).
+    // would collapse the strip on mount with no user gesture).
     lastYRef.current = window.scrollY;
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -160,16 +165,12 @@ export default function Header() {
   return (
     <header
       ref={headerRef}
-      // MEH-734: a descendant gaining focus reveals the pill — a hidden nav
-      // must never hold focus on an off-screen control (focus-trap guard).
-      onFocusCapture={() => setHidden(false)}
+      // MEH-884: hide-on-scroll detached — the nav STAYS sticky at the top
+      // (no slide-out) and still fades transparent→solid on the homepage.
+      // Chunk 2 re-purposed the retained scroll-direction machinery
+      // (stripCollapsed / lastYRef) to collapse/expand the homepage trust strip.
       className={[
         "sticky top-0 z-[1000]",
-        // MEH-734: transform-only slide (no layout shift, never backdrop-
-        // filter). motion-reduce → instant toggle, no slide. -120% clears the
-        // pill plus its drop-shadow.
-        "transition-transform duration-base ease-quart motion-reduce:transition-none",
-        hidden ? "-translate-y-[120%]" : "translate-y-0",
       ].join(" ")}
     >
       {/* Local darkening gradient — only over the hero (transparent). Keeps
@@ -186,15 +187,47 @@ export default function Header() {
         />
       )}
 
-      {/* Nav-shell — centers the pill; transparent band reserves height. */}
-      <div className="relative flex justify-center px-5 sm:px-6 pt-5 sm:pt-8 pb-2">
+      {/* Nav-shell — stacks the trust strip above the centered pill; the
+          transparent band reserves height. flex-col + items-center keeps the
+          pill centering identical to the prior justify-center row. */}
+      <div className="relative flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-8 pb-2">
+        {/* MEH-884: homepage-only, desktop-only, Hebrew-only trust strip above
+            the pill. Collapses (height+opacity → 0) on scroll-down, re-expands
+            on scroll-up / at-top, driven by stripCollapsed. overflow-hidden +
+            max-height animation = no layout placeholder, no CLS. Ink is surface-
+            aware like the nav (cream + textShadow over the hero, dark on the
+            scrolled/solid surface); gold seal is the brand accent in both. */}
+        {isHomepage && locale === "he" && (
+          <div
+            aria-hidden={stripCollapsed ? "true" : undefined}
+            className={[
+              "hidden md:block w-full max-w-[940px] overflow-hidden",
+              "transition-[max-height,opacity] duration-base ease-quart motion-reduce:transition-none",
+              stripCollapsed ? "max-h-0 opacity-0" : "max-h-12 opacity-100",
+            ].join(" ")}
+          >
+            <p
+              className={[
+                "flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium",
+                transparent ? "text-background" : "text-fg-muted",
+              ].join(" ")}
+              style={textShadow}
+            >
+              <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
+              {t("nav.trust_strip")}
+            </p>
+          </div>
+        )}
         <nav
           aria-label={t("nav.main_label")}
           className={[
-            // MEH-732 Composition B: flex space-between — lead group (logo +
-            // links) at the start, action cluster at the end, one air gap
-            // between. Replaces the MEH-643 grid-cols-[auto_1fr_auto] layout.
-            "w-full max-w-[940px] flex items-center justify-between rounded-full border",
+            // MEH-890 chunk 1 (layout-only): the pill hugs its content and
+            // centers (parent flex-col items-center) instead of spreading
+            // edge-to-edge. Lead group (logo + links) and action cluster sit
+            // together with one ~32px air gap (gap-8) — no central void.
+            // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
+            // spread (itself a replacement for the MEH-643 grid layout).
+            "w-auto max-w-[92vw] flex items-center gap-8 rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
@@ -214,8 +247,8 @@ export default function Header() {
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
-                width={106}
-                height={40}
+                width={122}
+                height={46}
                 priority
                 style={
                   transparent
@@ -290,7 +323,13 @@ export default function Header() {
                 style={textShadow}
               >
                 {t("nav.add_business_short")}
-                <span className="inline-block scale-x-[-1] opacity-70" aria-hidden="true">↗</span>
+                {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
+                    correct "onward" diagonal; mirrors the prior scale-x flip)
+                    — Phosphor-only, matching the CTA-row arrow affordance.
+                    MEH-877: KEPT (not bidi-flipped) — design intent is a diagonal
+                    outbound/external-link arrow, direction-neutral by convention
+                    (not an rtl.md-listed exception). */}
+                <ArrowUpLeft size={14} weight="bold" className="opacity-70" aria-hidden="true" />
               </Link>
             )}
 

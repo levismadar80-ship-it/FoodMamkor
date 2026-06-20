@@ -8,22 +8,25 @@ import api from "@/lib/api";
  * ChatWidget — floating Q&A bot, all screen sizes.
  *
  * Launcher:
- *   Mobile: icon-only circle. bottom-32 when cookie banner visible,
- *     bottom-20 when dismissed. right-4. z-1100. (rtl-ok: comment-only)
- *   Desktop: pill with text on first visit, icon-only after user has
- *     opened once (chatWasOpened in localStorage). bottom-6 right-6. (rtl-ok: comment-only)
+ *   Mobile: icon-only circle, pinned to the end/inline edge. MEH-850: bottom =
+ *     safe-area + pill-clearance + var(--cookie-banner-h, 0) via calc() — it
+ *     self-clears the cookie banner when shown and sits just above the BottomNav
+ *     pill when dismissed. z-9999.
+ *   Desktop: pill with text on first visit, icon-only after user has opened
+ *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
+ *     inline-end. (rtl-ok: comment-only)
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
  *   Mobile: full-width from bottom. Desktop: 360px bottom-right.
  *
- * Coexistence: listens for "cookie-consent" CustomEvent from
- * CookieBanner to reposition. Reads "cookieConsent" from localStorage.
+ * Coexistence: positioning reads the `--cookie-banner-h` CSS var published by
+ * CookieBanner (MEH-850) — no JS event handshake.
  */
 
 const OPENING_MESSAGE = {
   role: "assistant",
-  content: "היי 🌿 אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצי לדעת?",
+  content: "היי אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצי לדעת?",
 };
 
 // Suggested prompts — restructured April 2026 (feature/chatbot-plain-hebrew-v2)
@@ -66,9 +69,9 @@ const SUGGESTED_PROMPTS = [
 // they're registering.
 const HARDCODED_ANSWERS = {
   "איך נרשמים כבעלת עסק?":
-    "נרשמות דרך טופס פשוט בן 3 שלבים — חינם לגמרי! 🎉\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
+    "נרשמות דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
-    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשי לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בעלת העסק 😊",
+    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשי לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בעלת העסק",
 };
 
 export default function ChatWidget() {
@@ -91,19 +94,9 @@ export default function ChatWidget() {
     return () => mq.removeEventListener("change", h);
   }, []);
 
-  // ── Cookie banner visibility (for mobile positioning) ──
-  const [bannerUp, setBannerUp] = useState(false);
-  useEffect(() => {
-    const check = () => {
-      try {
-        const v = localStorage.getItem("cookieConsent");
-        setBannerUp(v !== "all" && v !== "essential");
-      } catch (e) { setBannerUp(false); }
-    };
-    check();
-    window.addEventListener("cookie-consent", check);
-    return () => window.removeEventListener("cookie-consent", check);
-  }, []);
+  // MEH-850: cookie-banner clearance is now handled purely in CSS via the
+  // `--cookie-banner-h` var (published by CookieBanner) in the launcher's
+  // bottom calc() below — no JS visibility state / event listener needed.
 
   // ── "chatWasOpened" — shrink desktop pill to icon after first use ──
   const [wasOpened, setWasOpened] = useState(true); // default icon-only until checked
@@ -161,9 +154,9 @@ export default function ChatWidget() {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
       if (e.response?.status === 429) {
-        setError("שלחת הרבה הודעות בזמן קצר — נסי שוב בעוד דקה 🌱");
+        setError("שלחתם הרבה הודעות בזמן קצר — נסו שוב בעוד דקה");
       } else {
-        setError("משהו השתבש 🌱 נסי שוב בעוד רגע");
+        setError("משהו השתבש — נסו שוב בעוד רגע");
       }
     } finally { setSending(false); }
   };
@@ -171,11 +164,16 @@ export default function ChatWidget() {
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
 
   // ── Positioning (all inline — no Tailwind specificity fights) ──
-  const mobileBottom = bannerUp ? 128 : 80; // bottom-32 vs bottom-20
+  // MEH-850: mobile bottom = safe-area + pill-clearance(72px) + 16px gap +
+  // var(--cookie-banner-h, 0px). The var is published by CookieBanner while it's
+  // shown, so the FAB self-clears the banner at ANY height and falls back to
+  // sitting above the pill when the banner is gone — no fixed-px banner guess.
+  const MOBILE_LAUNCHER_BOTTOM =
+    "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px))";
   const launcherStyle = {
     position: "fixed", zIndex: 9999,
     right: isDesktop ? 24 : 16,
-    bottom: isDesktop ? 24 : mobileBottom,
+    bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
   const panelStyle = {
     position: "fixed", zIndex: 9999,
@@ -204,7 +202,7 @@ export default function ChatWidget() {
         aria-label={open ? "סגרי את הצ׳אט" : "שאלי אותנו"}
         aria-expanded={open}
       >
-        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} weight="duotone" />}
+        {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
         {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלי אותי</span>}
       </button>
 
@@ -220,7 +218,7 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ChatCircleDots size={20} weight="duotone" aria-hidden="true" />
+              <ChatCircleDots size={20} aria-hidden="true" />
               <span className="font-headline-md font-bold text-base">שאלי אותנו</span>
             </div>
             <button

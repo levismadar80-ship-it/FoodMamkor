@@ -1,21 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { CookingPot } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
- * Card for an experience (community workshop).
- * Shared between:
- *   - /experiences grid
- *   - /events (when the "חוויות" tab is active)
- *   - /experiences/mine (host's own submissions)
+ * Card for an experience (community workshop). Rendered by the
+ * /experiences grid (ExperiencesClient) — the sole consumer (MEH-863:
+ * the prior "/events" + "/experiences/mine" entries were stale; those
+ * surfaces no longer import this component).
  *
- * Reuses the visual language of the existing EventCard inline in
- * EventsClient.jsx so the two feel consistent when rendered side by
- * side. Deliberately does NOT show status badges — approved is the
- * only state the public grid shows, and the owner's "mine" view uses
- * a dedicated status pill in its own client file.
+ * Reuses the visual language of the EventCard inline in EventsClient.jsx
+ * so experiences and producer events feel consistent. Deliberately does
+ * NOT show status badges — the public grid only ever lists approved
+ * experiences.
  */
 
 function formatTime(t) {
@@ -42,13 +42,19 @@ export default function ExperienceCard({ experience: ex }) {
   return (
     <Link
       href={`/experiences/${ex.id}`}
-      className="bg-background border border-border rounded-[16px] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col"
+      className="bg-background border border-border rounded-[16px] overflow-hidden transition flex flex-col"
     >
       {ex.image_url ? (
         <div className="relative">
+          {/* MEH-863 F7: route the (possibly user-submitted) image through the
+              Cloudinary helper for f_auto,q_auto + width cap; non-Cloudinary
+              URLs pass through unchanged. F8: role+aria-label so the
+              CSS-background image is announced to assistive tech. */}
           <div
             className="h-44 bg-cover bg-center"
-            style={{ backgroundImage: `url(${ex.image_url})` }}
+            style={{ backgroundImage: `url(${optimizeCloudinary(ex.image_url, { width: 800 })})` }}
+            role="img"
+            aria-label={ex.title}
           />
           {spotsBadge && (
             <span
@@ -63,8 +69,10 @@ export default function ExperienceCard({ experience: ex }) {
           )}
         </div>
       ) : (
-        <div className="h-44 bg-green-50 flex items-center justify-center text-5xl">
-          🍳
+        <div className="h-44 bg-green-50 flex items-center justify-center">
+          {/* MEH-862: Phosphor placeholder replaces the no-image emoji (LOCK v2).
+              CookingPot mirrors EventsClient category icon for cooking/workshop. */}
+          <CookingPot size={48} className="text-primary/50" aria-hidden="true" />
         </div>
       )}
       <div className="p-4 flex-1 flex flex-col">
@@ -72,9 +80,11 @@ export default function ExperienceCard({ experience: ex }) {
           {formatEventDate(ex.event_date, locale)}
           {ex.event_time && ` · ${formatTime(ex.event_time)}`}
         </p>
-        <h3 className="font-headline-md text-xl font-bold text-text mb-1">
+        {/* MEH-863 F2: h2 (not h3) — card titles sit directly under the page
+            h1 with no h2 between, and this matches GroupBuyCard's level. */}
+        <h2 className="font-headline-md text-xl font-bold text-text mb-1">
           {ex.title}
-        </h3>
+        </h2>
         <p className="text-sm text-fg-muted mb-2">
           {ex.host?.name || t("host_fallback")}
           {ex.city ? ` · ${ex.city}` : ""}

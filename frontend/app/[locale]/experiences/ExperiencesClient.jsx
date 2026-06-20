@@ -9,6 +9,7 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
 import ExperienceCard from "@/components/ExperienceCard";
+import { EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-categories";
 
 // MEH-797: Sapir-mapped Cloudinary asset (staging/pick-pexels-8586455, 2953×1969)
 // replaces the Unsplash hero bg. w_1600 c_limit matches the old delivery width;
@@ -19,23 +20,16 @@ const HERO_BG = optimizeCloudinary(
   { width: 1600 }
 );
 
-// API filter values are Hebrew strings (server enum). Localize labels via t().
-const CATEGORY_KEYS = [
-  { key: "", labelKey: "all" },
-  { key: "בישול", labelKey: "cooking" },
-  { key: "תזונה", labelKey: "nutrition" },
-  { key: "סיור אוכל", labelKey: "food_tour" },
-  { key: "חקלאות", labelKey: "agriculture" },
-  { key: "טעימות", labelKey: "tasting" },
-  { key: "סדנה", labelKey: "workshop" },
-  { key: "אחר", labelKey: "other" },
-];
+// MEH-869: shared category set (lib/event-categories.js); withAll() adds "all".
+const CATEGORY_KEYS = withAll(EXPERIENCE_CATEGORIES);
 
 export default function ExperiencesClient() {
   const t = useTranslations("experiences.list");
   const tCat = useTranslations("experiences.categories");
+  const tErr = useTranslations();
   const [experiences, setExperiences] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
 
@@ -46,6 +40,7 @@ export default function ExperiencesClient() {
 
   const load = async () => {
     setLoading(true);
+    setError(false);
     try {
       const params = {};
       if (city) params.city = city;
@@ -53,6 +48,9 @@ export default function ExperiencesClient() {
       const r = await api.get("/experiences", { params });
       setExperiences(r.data);
     } catch {
+      // MEH-863 F5: surface the failure (error state + retry) instead of
+      // swallowing it into the empty state (MEH-325 silent-except pattern).
+      setError(true);
       setExperiences([]);
     } finally {
       setLoading(false);
@@ -72,13 +70,8 @@ export default function ExperiencesClient() {
             backgroundPosition: "center",
           }}
         />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(46,74,46,0.80) 0%, rgba(46,74,46,0.90) 100%)",
-          }}
-        />
+        {/* MEH-863 F-scrim: gradient via the primary-dark token (was raw rgba). */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/[0.80] to-primary-dark/[0.90]" />
         <div className="relative max-w-5xl mx-auto px-4 text-center">
           <h1 className="font-headline-display text-4xl md:text-5xl font-bold mb-3">
             {t("title")}
@@ -131,7 +124,8 @@ export default function ExperiencesClient() {
               <button
                 key={cat.key || "all"}
                 onClick={() => setCategory(cat.key)}
-                className={`px-3 py-1 rounded-full text-sm transition ${
+                aria-pressed={category === cat.key}
+                className={`min-h-[44px] inline-flex items-center justify-center px-4 py-2 rounded-full text-sm transition ${
                   category === cat.key
                     ? "bg-primary text-white"
                     : "bg-white text-text border border-border hover:bg-green-50"
@@ -144,13 +138,27 @@ export default function ExperiencesClient() {
         </div>
 
         {loading ? (
-          <p className="text-center text-fg-muted py-12">
-            {t("loading")}
-          </p>
+          // MEH-863 F6: skeleton (was loading text) to match /group-buys.
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 rounded-[16px] bg-border animate-pulse" />
+            ))}
+          </div>
+        ) : error ? (
+          // MEH-863 F5: distinct error state with retry (not the empty state).
+          <div className="text-center py-16">
+            <p className="text-fg-muted mb-4">{tErr("error.generic")}</p>
+            <button
+              onClick={load}
+              className="min-h-[44px] inline-flex items-center justify-center bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition"
+            >
+              {tErr("errors.boundary.retry")}
+            </button>
+          </div>
         ) : experiences.length === 0 ? (
           <div className="text-center py-16">
             <div className="mb-4 flex justify-center">
-              <Leaf size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+              <Leaf size={56} className="text-primary" aria-hidden="true" />
             </div>
             <p className="text-fg-muted">
               {t("empty_title")}
