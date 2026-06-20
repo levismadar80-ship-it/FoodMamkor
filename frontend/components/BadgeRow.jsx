@@ -105,21 +105,31 @@ function VerifiedTierBadge({ producer, surface, t }) {
 
   // MEH-800: the chip carries no onClick of its own in the popover branch —
   // ui/Popover injects the toggle + the card-Link tap guard (S12 §03).
+  // MEH-813: outer <button> is a transparent ≥24×24 hit-area (WCAG 2.5.8 AA).
+  // The visible pill lives in the inner <span> so bg/border/padding/text stay
+  // byte-identical to pre-MEH-813. Focus ring stays around the pill (not the
+  // larger hit-box) via group-focus-visible so ring geometry is unchanged.
+  // The iconOnly seal was already 26×26 (border + p-1 + 16px glyph); min-h/-w
+  // here are defensive parity, not a visual delta.
   const chip = (
     <button
       type="button"
       aria-label={ariaLabel}
       data-badge="verified"
-      className={
-        iconOnly
-          ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
-            // surface-card backing keeps the gold glyph legible there.
-            "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 focus-visible:ring-2 focus-visible:ring-accent/40"
-          : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-accent/40 transition"
-      }
+      className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
     >
-      <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
-      {!iconOnly && t("verified_label")}
+      <span
+        className={
+          iconOnly
+            ? // Card seal sits over the photo (shipped Assembly-v2 slot) —
+              // surface-card backing keeps the gold glyph legible there.
+              "inline-flex items-center rounded-full bg-surface-card border border-accent/40 text-accent p-1 group-focus-visible:ring-2 group-focus-visible:ring-accent/40"
+            : "inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition"
+        }
+      >
+        <SealCheck size={iconOnly ? 16 : 14} aria-hidden="true" />
+        {!iconOnly && t("verified_label")}
+      </span>
     </button>
   );
 
@@ -156,14 +166,18 @@ function DeclaredTierBadge({ t }) {
         contentTestId="badge-tooltip-declared"
         contentClassName="w-60"
         trigger={
+          // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
+          // pill in inner span keeps byte-identical bg/border/padding.
           <button
             type="button"
             aria-label={t("aria_declared")}
             data-badge="declared"
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
           >
-            <Note size={14} aria-hidden="true" />
-            {t("declared_label")}
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition">
+              <Note size={14} aria-hidden="true" />
+              {t("declared_label")}
+            </span>
           </button>
         }
       >
@@ -185,13 +199,17 @@ function Badge({ badge }) {
         contentTestId={`badge-tooltip-${badge.key}`}
         contentClassName="w-52"
         trigger={
+          // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
+          // pill in inner span keeps byte-identical bg/border/padding.
           <button
             type="button"
             aria-label={`${badge.label} — ${badge.tooltip}`}
             data-badge={badge.key}
-            className={`text-xs px-2.5 py-0.5 rounded-full font-medium focus-visible:ring-2 focus-visible:ring-primary/40 transition ${colorClass}`}
+            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
           >
-            {badge.label}
+            <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition ${colorClass}`}>
+              {badge.label}
+            </span>
           </button>
         }
       >
