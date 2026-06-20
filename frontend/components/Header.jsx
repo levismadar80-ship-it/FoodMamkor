@@ -168,7 +168,7 @@ export default function Header() {
           text-shadow halo went with it (it only existed to rescue the cream
           ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
-        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-5 sm:pt-8">
+        <div className="hidden md:flex justify-center px-5 sm:px-6">
           <p
             className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
@@ -184,15 +184,11 @@ export default function Header() {
         // its own glass surface at rest (dark ink, no scrim).
         className="sticky top-0 z-[1000]"
       >
-        {/* Nav-shell — centers the pill. When the strip rendered above already
-            provided desktop top-padding, drop the pill's md+ top padding to
-            avoid doubling (mobile + non-strip pages keep pt-5 sm:pt-8). */}
-        <div
-          className={[
-            "relative flex flex-col items-center px-5 sm:px-6 pb-2",
-            showStrip ? "pt-5 sm:pt-8 md:pt-0" : "pt-5 sm:pt-8",
-          ].join(" ")}
-        >
+        {/* Nav-shell — centers the pill flush to the top edge (no top padding).
+            When the strip is rendered above (desktop /he homepage), it sits
+            directly at the top; the strip's inner pb-2.5 holds the gap to the
+            pill. Horizontal margins + pill bottom breathing room (pb-2) kept. */}
+        <div className="relative flex flex-col items-center px-5 sm:px-6 pb-2">
         <nav
           aria-label={t("nav.main_label")}
           className={[
