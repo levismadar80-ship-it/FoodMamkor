@@ -30,7 +30,7 @@ function GroupBuyCard({ gb }) {
   const daysLeft = Math.max(0, Math.ceil((deadline - Date.now()) / 86400000));
 
   return (
-    <div className="bg-white rounded-[16px] border border-border shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+    <div className="bg-white rounded-[16px] border border-border transition overflow-hidden flex flex-col">
       {/* Status banner */}
       {funded && (
         <div className="bg-primary text-white text-xs font-medium text-center py-1">
@@ -214,7 +214,7 @@ export default function GroupBuysClient() {
             {/* MEH-862: Phosphor placeholder replaces the empty-state emoji
                 (LOCK v2), mirrors the /experiences empty-state icon treatment. */}
             <div className="mb-4 flex justify-center">
-              <ShoppingCart size={56} weight="duotone" className="text-primary" aria-hidden="true" />
+              <ShoppingCart size={56} className="text-primary" aria-hidden="true" />
             </div>
             <p className="text-lg font-medium">{t("empty_title")}</p>
             <p className="text-sm mt-1">{t("empty_subtitle")}</p>

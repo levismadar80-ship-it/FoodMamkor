@@ -36,7 +36,7 @@ export default function HomepageMiniMapSkeleton() {
         </header>
         <div className="rounded-[12px] overflow-hidden border border-border h-[320px] md:h-[420px] relative">
           <div className="w-full h-full rounded-[12px] bg-green-50 animate-pulse flex flex-col items-center justify-center gap-3">
-            <MapTrifold size={48} weight="duotone" className="text-primary/30" />
+            <MapTrifold size={48} className="text-primary/30" />
             <p className="text-fg-muted text-sm">{t("loading")}</p>
           </div>
         </div>

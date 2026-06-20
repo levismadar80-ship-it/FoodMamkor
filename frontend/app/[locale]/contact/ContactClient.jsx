@@ -84,7 +84,7 @@ export default function ContactClient() {
               </h2>
               <p className="text-fg-muted inline-flex items-center gap-1.5">
                 {t("success_message")}
-                <Leaf size={14} weight="duotone" className="text-primary" aria-hidden="true" />
+                <Leaf size={14} className="text-primary" aria-hidden="true" />
               </p>
               <button
                 type="button"

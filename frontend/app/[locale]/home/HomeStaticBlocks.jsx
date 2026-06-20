@@ -28,7 +28,7 @@ export function HomeRecentlyViewed({ items }) {
             <Link
               key={p.id}
               href={href}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden hover:shadow-md transition group"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
@@ -41,7 +41,7 @@ export function HomeRecentlyViewed({ items }) {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-primary">
-                    <Leaf size={32} weight="duotone" aria-hidden="true" />
+                    <Leaf size={32} aria-hidden="true" />
                   </div>
                 )}
               </div>

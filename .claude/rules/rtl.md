@@ -46,8 +46,14 @@ cases, always use logical properties.
 
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
-legend:800 → controls/zoom/search:1000 → chat:9999 → cookie:9998
+legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
+cookie banner:1100 → chat FAB:9999
 ```
+
+Code is the source of truth; this ledger mirrors it — update the table
+when a component's z-index changes (grep'd MEH-861: `BottomNav.jsx:152`
+`z-[1000]`, `CookieBanner.jsx:68` `z-[1100]`, `ChatWidget.jsx:174`
+`zIndex: 9999`).
 
 Bottom sheets must ALWAYS sit below map controls. See `globals.css` for
 CSS overrides and `MapClient.jsx` for the Tailwind classes that reference

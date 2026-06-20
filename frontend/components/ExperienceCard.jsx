@@ -42,7 +42,7 @@ export default function ExperienceCard({ experience: ex }) {
   return (
     <Link
       href={`/experiences/${ex.id}`}
-      className="bg-background border border-border rounded-[16px] overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col"
+      className="bg-background border border-border rounded-[16px] overflow-hidden transition flex flex-col"
     >
       {ex.image_url ? (
         <div className="relative">
@@ -72,7 +72,7 @@ export default function ExperienceCard({ experience: ex }) {
         <div className="h-44 bg-green-50 flex items-center justify-center">
           {/* MEH-862: Phosphor placeholder replaces the no-image emoji (LOCK v2).
               CookingPot mirrors EventsClient category icon for cooking/workshop. */}
-          <CookingPot size={48} weight="duotone" className="text-primary/50" aria-hidden="true" />
+          <CookingPot size={48} className="text-primary/50" aria-hidden="true" />
         </div>
       )}
       <div className="p-4 flex-1 flex flex-col">

@@ -98,10 +98,10 @@ function ProducerTags({ producer }) {
   return (
     <div className="flex gap-1 flex-wrap">
       {producer.is_verified && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
-      {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-      {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-      {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
-      {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} weight="duotone" className="text-primary" aria-hidden="true" /></span>}
+      {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.kosher && <span title={producer.kosher}>✡️</span>}
     </div>
   );
