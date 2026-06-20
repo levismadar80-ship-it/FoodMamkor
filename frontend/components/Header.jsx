@@ -22,11 +22,13 @@ import LanguageToggle from "@/components/LanguageToggle";
  * stripped: "/" on /he and /en) — next/navigation's is locale-prefixed and
  * broke isHomepage/isActive on the homepage (MEH-731).
  *
- * Positioning (unchanged from MEH-29 — preserved by decision): the
- * <header> is `sticky top-0` and reserves its own height, so <main>
- * content always flows below it (no per-page padding). The band itself is
- * transparent; only the inner pill carries fill — that yields the
- * "floating" look without making the header overlap content.
+ * Positioning (MEH-896): only the PILL section is `sticky top-0` (the
+ * <header> wrapper around it). The MEH-884 homepage trust strip is
+ * rendered as a normal-flow sibling BEFORE the <header>, so it scrolls
+ * away with the page; the pill stays at the top on every page. The
+ * <header> band itself is transparent; only the inner pill carries fill
+ * — that yields the "floating" look without making the header overlap
+ * content.
  *
  * Two surface states (reuse MEH-29 scroll machinery verbatim). MEH-890 chunk 2
  * gave the at-rest pill its own glass surface + dark ink (no scrim), so the two
@@ -65,13 +67,8 @@ export default function Header() {
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  // MEH-734/MEH-884: scroll direction drives the homepage trust strip —
-  // collapse on scroll-down past the threshold, expand on scroll-up / at-top.
-  const [stripCollapsed, setStripCollapsed] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
-  const lastYRef = useRef(0);
-  const headerRef = useRef(null);
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   useEffect(() => {
@@ -92,31 +89,17 @@ export default function Header() {
   }, [pathname]);
 
   // MEH-29: rAF-throttled scroll listener. MEH-732: threshold 80 → 60px.
-  // MEH-734/MEH-884: the same callback also drives the homepage trust strip's
-  // collapse flag — direction-tracked off the existing 60px threshold (no
-  // second constant, no second listener). At/above the threshold, or while
-  // focus is inside the header, the strip stays expanded; past it, scrolling
-  // down collapses it and any scroll up re-expands. (MEH-789 PR-B removed the
-  // mobile drawer, so there's no drawer-open state left to pin against.)
+  // MEH-896: drives the transparent→solid pill fade only — the MEH-734/884
+  // direction-tracked trust-strip collapse was removed; the strip now lives
+  // outside the sticky header and scrolls away naturally with the page.
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
       rafRef.current = window.requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const past = y >= 60;
-        setScrolled(past);
-        const focusWithin = headerRef.current?.contains(document.activeElement);
-        if (!past || focusWithin) setStripCollapsed(false);
-        else if (y > lastYRef.current) setStripCollapsed(true);
-        else if (y < lastYRef.current) setStripCollapsed(false);
-        lastYRef.current = y;
+        setScrolled(window.scrollY >= 60);
         rafRef.current = null;
       });
     };
-    // MEH-734: seed last-Y with the restored position so a reload / back-
-    // forward at a scrolled offset isn't read as a downward delta (which
-    // would collapse the strip on mount with no user gesture).
-    lastYRef.current = window.scrollY;
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
@@ -158,6 +141,10 @@ export default function Header() {
   // MEH-732: hide the guest login link on /login (locale-stripped pathname).
   const isLoginPage = pathname === "/login";
   const transparent = isHomepage && !scrolled;
+  // MEH-896: trust strip render gate (JS-level — desktop-only is enforced
+  // by the strip's own `hidden md:flex` below; pill top-padding compensates
+  // at md+ when this is true so total spacing matches the pre-split layout).
+  const showStrip = isHomepage && locale === "he";
 
   const isActive = (href) => {
     if (!pathname) return false;
@@ -172,52 +159,43 @@ export default function Header() {
   const textShadow = transparent ? { textShadow: "0 1px 6px rgba(0,0,0,0.7)" } : undefined;
 
   return (
-    <header
-      ref={headerRef}
-      // MEH-884: hide-on-scroll detached — the nav STAYS sticky at the top
-      // (no slide-out) and still fades transparent→solid on the homepage.
-      // Chunk 2 re-purposed the retained scroll-direction machinery
-      // (stripCollapsed / lastYRef) to collapse/expand the homepage trust strip.
-      className={[
-        "sticky top-0 z-[1000]",
-      ].join(" ")}
-    >
-      {/* MEH-890 chunk 2: the black hero scrim was REMOVED. The pill now
-          carries its own glass surface at rest (dark ink, no scrim), and the
-          trust strip carries its own strengthened text-shadow — so nothing
-          relies on a full-width darkening gradient over the hero anymore. */}
-
-      {/* Nav-shell — stacks the trust strip above the centered pill; the
-          transparent band reserves height. flex-col + items-center keeps the
-          pill centering identical to the prior justify-center row. */}
-      <div className="relative flex flex-col items-center px-5 sm:px-6 pt-5 sm:pt-8 pb-2">
-        {/* MEH-884: homepage-only, desktop-only, Hebrew-only trust strip above
-            the pill. Collapses (height+opacity → 0) on scroll-down, re-expands
-            on scroll-up / at-top, driven by stripCollapsed. overflow-hidden +
-            max-height animation = no layout placeholder, no CLS. Ink is surface-
-            aware like the nav (cream + textShadow over the hero, dark on the
-            scrolled/solid surface); gold seal is the brand accent in both. */}
-        {isHomepage && locale === "he" && (
-          <div
-            aria-hidden={stripCollapsed ? "true" : undefined}
+    <>
+      {/* MEH-896: trust strip lifted OUT of the sticky <header> below so it
+          scrolls away with the page naturally. Replaces the MEH-884
+          max-h/opacity collapse machinery (state + direction listener removed).
+          Desktop-only via `hidden md:flex`; ink stays surface-aware (it's only
+          visible while at/near the top of the homepage hero — the strip leaves
+          the viewport before the transparent→solid threshold matters much). */}
+      {showStrip && (
+        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-5 sm:pt-8">
+          <p
             className={[
-              "hidden md:block w-full max-w-[940px] overflow-hidden",
-              "transition-[max-height,opacity] duration-base ease-quart motion-reduce:transition-none",
-              stripCollapsed ? "max-h-0 opacity-0" : "max-h-12 opacity-100",
+              "flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium",
+              transparent ? "text-background" : "text-fg-muted",
             ].join(" ")}
+            style={textShadow}
           >
-            <p
-              className={[
-                "flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium",
-                transparent ? "text-background" : "text-fg-muted",
-              ].join(" ")}
-              style={textShadow}
-            >
-              <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
-              {t("nav.trust_strip")}
-            </p>
-          </div>
-        )}
+            <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
+            {t("nav.trust_strip")}
+          </p>
+        </div>
+      )}
+      <header
+        // MEH-896: sticky lives on the pill <header> only. The trust strip
+        // above is a normal-flow sibling so it scrolls away with the page.
+        // MEH-890 chunk 2: the black hero scrim was REMOVED. The pill carries
+        // its own glass surface at rest (dark ink, no scrim).
+        className="sticky top-0 z-[1000]"
+      >
+        {/* Nav-shell — centers the pill. When the strip rendered above already
+            provided desktop top-padding, drop the pill's md+ top padding to
+            avoid doubling (mobile + non-strip pages keep pt-5 sm:pt-8). */}
+        <div
+          className={[
+            "relative flex flex-col items-center px-5 sm:px-6 pb-2",
+            showStrip ? "pt-5 sm:pt-8 md:pt-0" : "pt-5 sm:pt-8",
+          ].join(" ")}
+        >
         <nav
           aria-label={t("nav.main_label")}
           className={[
@@ -336,6 +314,7 @@ export default function Header() {
         </nav>
       </div>
     </header>
+    </>
   );
 }
 
