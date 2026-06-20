@@ -5,6 +5,26 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-20 — Session closeout: MEH-861 / MEH-737 / MEH-870 merged + MEH-892/893 filed
+
+**3 session PRs merged to `staging` (squash, all green):** MEH-861 #1264 (`92adfb9`, docs/rtl) · MEH-737 #1268 (`5d78c16`, en.json) · MEH-870 #1267 (`6471359`, schemas).
+
+- **MEH-870 final scope** — validation lives on **`ProducerRegister` ONLY**: `short_description` ≥3 letters, `address` ≥1 alphanumeric (P.O.-box-safe — `"ת.ד. 123"` passes). `ProducerUpdate`/`ProducerAdminCreate` stay `sanitize_text`-only, so **register is now stricter than owner-update**. The ticket's original "parity" premise was **false** (Phase-0 catch) — there was no pre-existing twin validation to match.
+- **MEH-737 final** — 6 user-facing en strings de-labeled; `he.json` frozen + ICU parity intact. Item 5 keeps `<b>does not sell</b>` bold; the first pass's **duplicated "is not a party to any transaction"** clause was removed (now appears once, on-branch `1559f60`).
+- **MEH-861 final** — `rtl.md` map ladder cookie `9998 → 1100` + "code is SoT" note; the `frontend.md` duplicate ladder was scoped out (see debt below).
+
+**New backlog tickets filed:**
+- **MEH-892** — Dependabot ruleset mergeability (skipped opposite-stack required checks report "Expected" → block merge under Rulesets). **Sapir-config**, approach א/ב/ג is your call.
+- **MEH-893** — eslint 9 → 10 migration (the #1127 major bump fails Frontend lint). **CC, Phase-0-first.**
+
+**Un-ticketed debt to capture later:**
+1. `frontend.md` z-index ladder still has the stale `cookie: 9998` + global-chrome rows miscategorized under "Map z-index tokens" — an rtl↔frontend two-owner drift (MEH-861 scoped it out, single-fact PR).
+2. Uniform punctuation-only validation across the `ProducerUpdate`/`ProducerAdminCreate` twins (MEH-870 residual).
+
+**Ops:** Linear workspace hit the free-tier issue cap; archived the Done backlog to free it; auto-archive now set to 1 month.
+
+**Next session:** no open work from this session blocks anything. Live drafts elsewhere: MEH-884 Chunk 2 (#1266) and MEH-829 docs-followup (#1194) await Sapir QA/merge; MEH-890 Chunk 2 shipped same-day (#1273 — see entry below).
+
 ## 2026-06-20 — MEH-890 Chunk 2/2: rest-state skin (glass-at-rest pill + drop hero scrim) — ✅ MERGED (#1273, `85f5970`) → MEH-890 complete
 
 **Branch `feature/meh-890-nav-skin` off `staging`. `Header.jsx` only (RED central).** Final chunk. Pill at rest gets its **own soft glass surface** so it floats and stays legible **without** the dark hero scrim: `bg-background/70 + 12px blur` (opaque fallback) + hairline border + resting shadow — **lighter than scrolled `/85`**. Black hero scrim `<div>` (`:179–188`) **removed entirely**. At-rest ink flips light → **DARK** (matches scrolled) across all pill elements; **logo no longer inverted; no pill text-shadow**. CTA `הוסיפו עסק` → **filled green** (`bg-action-primary text-white`, mirrors `ui/Button.jsx:32`); `כניסה` stays a quiet text link. Surface-aware light branches + `transparent`/`textShadow` props dropped from `NavLink` / `LoginAccount` / `UserMenu` (real cleanup, net `+52/-74`).
