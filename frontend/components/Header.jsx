@@ -48,7 +48,14 @@ import { BRAND_NAME } from "@/lib/constants";
  *     stays the lighter member of the rounded-white family (Gestalt: same
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
- *     [logo + links] · gap-8 · action cluster — across both states.
+ *     [logo + links] · inter-group gap · action cluster. MEH-899: at top of
+ *     ANY page the pill is WIDER, with the extra width DISTRIBUTED (end-cap
+ *     px-11, inter-group gap-14, lead-group intra-gap gap-11) so the middle
+ *     gap isn't the only thing growing (MEH-890 void trap). All SNAP compact
+ *     (px-4 / gap-8 / gap-9) at the y=60 scroll threshold — not animated
+ *     (gap/px stay out of the transition allowlist, MEH-732 guardrail).
+ *     Width keys off `!scrolled` (DECOUPLED from `transparent`) so inner
+ *     pages get the wide rest too — consistent nav size on every page.
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
@@ -199,31 +206,43 @@ export default function Header() {
             // MEH-890 chunk 1 (layout-only): the pill hugs its content and
             // centers (parent flex-col items-center) instead of spreading
             // edge-to-edge. Lead group (logo + links) and action cluster sit
-            // together with one ~32px air gap (gap-8) — no central void.
+            // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            "w-auto max-w-[92vw] flex items-center gap-8 rounded-full border",
+            // MEH-899: the gap is now state-dependent (gap-14 at rest, gap-8
+            // scrolled) — see the branch classes below; pill stays w-auto.
+            "w-auto max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart motion-reduce:transition-none",
+            // MEH-899 (revised): the SURFACE branch (transparent vs solid
+            // glass) stays keyed off `transparent` — that's homepage-hero
+            // specific. The WIDTH (gap/px) is decoupled and keyed off
+            // `!scrolled` so the rest-wide pill is CONSISTENT across all
+            // pages at top (homepage + inner), snapping compact at y=60 on
+            // every page. Surface and width snap on the same threshold
+            // (scrollY>=60), just with different conditions: surface keys
+            // off (isHomepage && !scrolled), width keys off (!scrolled).
             transparent
-              // MEH-890 chunk 2 + MEH-896 chunk 2 + polish: at rest the pill
-              // carries clean glass — /70 -> /85 (polish: /70 read the produce
-              // photo colors through and looked muddy; /85 stops the bleed
-              // while staying glass — still translucent enough to feel
-              // floating over the hero). 12px blur (opaque /100 fallback),
-              // hairline border, resting shadow, py-0.5 (slim ~50px pill).
-              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-5"
-              // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
-              // reads lighter than the solid hero search card (Gestalt: same
-              // family, different weight). py-2.5 → py-0.5 (slim pill match).
-              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-4",
+              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
+            // MEH-899 (revised): WIDTH — wide at rest (any page at top),
+            // compact when scrolled. Distributed: end-cap px-11, inter-group
+            // gap-14, lead-group intra-gap gap-11 (see :247). Snaps to
+            // px-4 + gap-8 + lead gap-9 at y=60. Still NOT animated —
+            // gap/px stay out of the transition allowlist (MEH-732 upheld).
+            !scrolled ? "gap-14 px-11" : "gap-8 px-4",
           ].join(" ")}
         >
-          {/* LEAD GROUP — logo + nav links together (internal gap 36px).
+          {/* LEAD GROUP — logo + nav links together. MEH-899: the intra-group
+              gap (logo ↔ links) widens at rest (gap-11) and snaps compact
+              (gap-9) at y=60 — distributes the rest widening so the middle
+              inter-group gap isn't the only thing growing (MEH-890 void trap).
+              Keyed off `!scrolled` (NOT `transparent`) so the wide rest
+              applies on inner pages too — consistent nav size on every page.
               start of the row (visual right in RTL). */}
-          <div className="flex items-center gap-9">
+          <div className={["flex items-center", !scrolled ? "gap-11" : "gap-9"].join(" ")}>
             <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
@@ -291,7 +310,11 @@ export default function Header() {
                 // MEH-732 outlined secondary). bg-action-primary + white ink,
                 // surface-independent now that the pill carries its own glass —
                 // identical at rest and scrolled. Mirrors ui/Button.jsx:32.
-                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
+                // MEH-899: prominence from FILL, not size — height is the shared
+                // min-h-[44px] floor (NOT taller than siblings; no py to trim),
+                // px-4 → px-3 to match the active chip's horizontal rhythm and
+                // shave bulk so the green fill (not the box) carries the weight.
+                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
               >
                 {t("nav.add_business_short")}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
