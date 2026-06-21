@@ -168,7 +168,7 @@ export default function Header() {
           text-shadow halo went with it (it only existed to rescue the cream
           ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
-        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-5 sm:pt-8">
+        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-2">
           <p
             className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
@@ -186,11 +186,11 @@ export default function Header() {
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
-            avoid doubling (mobile + non-strip pages keep pt-5 sm:pt-8). */}
+            avoid doubling (mobile + non-strip pages keep pt-2). */}
         <div
           className={[
             "relative flex flex-col items-center px-5 sm:px-6 pb-2",
-            showStrip ? "pt-5 sm:pt-8 md:pt-0" : "pt-5 sm:pt-8",
+            showStrip ? "pt-2 md:pt-0" : "pt-2",
           ].join(" ")}
         >
         <nav
@@ -206,7 +206,7 @@ export default function Header() {
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
-            "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart",
+            "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart motion-reduce:transition-none",
             transparent
               // MEH-890 chunk 2 + MEH-896 chunk 2 + polish: at rest the pill
               // carries clean glass — /70 -> /85 (polish: /70 read the produce
