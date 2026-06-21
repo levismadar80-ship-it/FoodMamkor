@@ -112,7 +112,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
               muted name line. Wash convention mirrors the legend rows.
               REUSES: frontend/app/[locale]/map/components/MapPane.jsx:170-176
               (20px wash + 12px icon, F1 flat — no shadow). */}
-          {category?.name && CategoryIcon && (
+          {category?.name && (
             <div className="mt-0.5">
               <span
                 className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs max-w-full"
