@@ -224,7 +224,7 @@ export default function Header() {
               // at y=60 (scrolled branch) — the SAME threshold the surface
               // already crosses, so the modest width change reads as the nav
               // "settling" into compact mode. NOT animated: gap/px are NOT in
-              // the :209 transition allowlist (MEH-732 perf guardrail upheld),
+              // the transition allowlist above (MEH-732 perf guardrail upheld),
               // so the change snaps like the pre-existing px delta did.
               ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-12 py-0.5 px-7"
               // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
