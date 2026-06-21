@@ -28,9 +28,10 @@ export const ProducerSchema = z.object({
   //     a strict requirement would kill the entire feed on a single null.
   //   - categories.id is union(string|number): defensive against a future
   //     int→uuid migration on the category PK (mirrors producer.id pattern).
-  // delivery_areas (read by MapProducerCard.jsx:44-45) is intentionally NOT
-  // declared — the API returns `delivery_cities` instead; that field-name
-  // mismatch is a separate bug, not a schema strip.
+  // MEH-902: delivery_areas is now declared (was excluded in MEH-901 because
+  // the API serializer dropped it — fixed at backend ProducerListOut:744).
+  // The flat `delivery_cities` column the API also returns is unused / a
+  // separate cleanup ticket; we do NOT declare it here.
   categories: z.array(z.object({
     id: z.union([z.string(), z.number()]).optional(),
     name: z.string().nullable().optional(),
@@ -47,6 +48,16 @@ export const ProducerSchema = z.object({
   instagram: z.string().nullable().optional(),
   facebook: z.string().nullable().optional(),
   external_order_form: z.string().nullable().optional(),
+  // MEH-902: delivery relation — array of {city, delivery_day, ...} that
+  // MapProducerCard.jsx:44-46 reads to render the "delivers to your city"
+  // pill. Permissive on every field (incl. city/delivery_day) so the
+  // all-or-nothing parse never drops a producer with a partial row.
+  delivery_areas: z.array(z.object({
+    id: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    min_order: z.number().nullable().optional(),
+    delivery_day: z.string().nullable().optional(),
+  })).optional().default([]),
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.
