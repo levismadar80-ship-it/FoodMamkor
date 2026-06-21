@@ -34,6 +34,7 @@
     "zod": "^4.4.2"
   },
   "devDependencies": {
+    "eslint-plugin-react-hooks": "^7.1.1",
     "@axe-core/playwright": "^4.11.3",
     "@google/design.md": "^0.1.1",
     "@playwright/test": "^1.60.0",
