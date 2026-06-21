@@ -108,10 +108,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
           <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}
           </h3>
-          {/* MEH-798: category chip — icon-in-wash pill replaces the plain
-              muted name line. Wash convention mirrors the legend rows.
-              REUSES: frontend/app/[locale]/map/components/MapPane.jsx:170-176
-              (20px wash + 12px icon, F1 flat — no shadow). */}
+          {/* MEH-798: REUSES frontend/app/[locale]/map/components/MapPane.jsx:170-176
+              — 20px wash + 12px icon, F1 flat (no shadow). */}
           {category?.name && (
             <div className="mt-0.5">
               <span
