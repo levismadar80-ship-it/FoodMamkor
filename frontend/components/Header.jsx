@@ -310,7 +310,11 @@ export default function Header() {
                 // MEH-732 outlined secondary). bg-action-primary + white ink,
                 // surface-independent now that the pill carries its own glass —
                 // identical at rest and scrolled. Mirrors ui/Button.jsx:32.
-                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
+                // MEH-899: prominence from FILL, not size — height is the shared
+                // min-h-[44px] floor (NOT taller than siblings; no py to trim),
+                // px-4 → px-3 to match the active chip's horizontal rhythm and
+                // shave bulk so the green fill (not the box) carries the weight.
+                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
               >
                 {t("nav.add_business_short")}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
