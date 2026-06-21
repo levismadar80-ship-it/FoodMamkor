@@ -164,6 +164,22 @@ export default function Header() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
+  // MEH-900: same-route home click ("/" while already on "/") is a Next.js
+  // Link no-op — no navigation event, no scroll-restore. Combined with the
+  // MEH-896 non-sticky strip (strip is a normal-flow sibling that scrolls
+  // away with the page), clicking the logo / "גלו" while scrolled left the
+  // page in the scrolled-looking state (no strip + transparent pill on
+  // homepage). Fix: when already on "/", scroll to top AND immediately
+  // reset `scrolled` so React re-renders the top state without waiting for
+  // the next scroll-listener frame. Cross-route nav to "/" from an inner
+  // page already lands at top via Next's default Link behavior + the
+  // scroll listener's `onScroll()` seed call on mount-or-rebind.
+  const handleHomeClick = () => {
+    if (!isHomepage) return;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    setScrolled(false);
+  };
+
   return (
     <>
       {/* MEH-896: trust strip lives outside the sticky <header> (chunk 1, #1277)
@@ -243,7 +259,7 @@ export default function Header() {
               applies on inner pages too — consistent nav size on every page.
               start of the row (visual right in RTL). */}
           <div className={["flex items-center", !scrolled ? "gap-11" : "gap-9"].join(" ")}>
-            <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
+            <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
                 alt={BRAND_NAME}
@@ -266,6 +282,8 @@ export default function Header() {
                   href={item.href}
                   label={item.label}
                   active={isActive(item.href)}
+                  // MEH-900: only the home item needs the same-route scroll-reset.
+                  onClick={item.href === "/" ? handleHomeClick : undefined}
                 />
               ))}
             </div>
@@ -352,10 +370,11 @@ export default function Header() {
  * Inactive = plain text-text with primary-ink hover. min-h-[44px] keeps each
  * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
-function NavLink({ href, label, active }) {
+function NavLink({ href, label, active, onClick }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
         "inline-flex items-center min-h-[44px] px-3 rounded-full text-sm transition-colors duration-fast ease-quart focus-ring",
