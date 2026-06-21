@@ -48,10 +48,12 @@ import { BRAND_NAME } from "@/lib/constants";
  *     stays the lighter member of the rounded-white family (Gestalt: same
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
- *     [logo + links] · inter-group gap · action cluster. MEH-899: that gap
- *     + horizontal padding are WIDER at rest (gap-12 px-7) and SNAP compact
- *     (gap-8 px-4) at the y=60 scroll threshold — not animated (gap/px stay
- *     out of the transition allowlist, MEH-732 guardrail).
+ *     [logo + links] · inter-group gap · action cluster. MEH-899: at rest the
+ *     pill is WIDER, with the extra width DISTRIBUTED (end-cap px-9, inter-group
+ *     gap-14, lead-group intra-gap gap-11) so the middle gap isn't the only
+ *     thing growing (MEH-890 void trap). All SNAP compact (px-4 / gap-8 /
+ *     gap-9) at the y=60 scroll threshold — not animated (gap/px stay out of
+ *     the transition allowlist, MEH-732 guardrail).
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
@@ -205,7 +207,7 @@ export default function Header() {
             // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            // MEH-899: the gap is now state-dependent (gap-12 at rest, gap-8
+            // MEH-899: the gap is now state-dependent (gap-14 at rest, gap-8
             // scrolled) — see the branch classes below; pill stays w-auto.
             "w-auto max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
@@ -219,14 +221,17 @@ export default function Header() {
               // while staying glass — still translucent enough to feel
               // floating over the hero). 12px blur (opaque /100 fallback),
               // hairline border, resting shadow, py-0.5 (slim ~50px pill).
-              // MEH-899: WIDER at rest — gap-12 + px-7 give the pill spacious
-              // breathing room over the hero. Snaps to the compact gap-8 + px-4
-              // at y=60 (scrolled branch) — the SAME threshold the surface
-              // already crosses, so the modest width change reads as the nav
-              // "settling" into compact mode. NOT animated: gap/px are NOT in
-              // the transition allowlist above (MEH-732 perf guardrail upheld),
+              // MEH-899: WIDER at rest — gap-14 + px-9 give the pill spacious
+              // breathing room over the hero. The extra width is DISTRIBUTED
+              // (not piled into the single middle gap → MEH-890 void trap):
+              // end-cap px-9, inter-group gap-14, AND the lead-group intra-gap
+              // widens to gap-11 (see :239). Snaps to the compact gap-8 + px-4
+              // (+ lead gap-9) at y=60 (scrolled branch) — the SAME threshold
+              // the surface already crosses, so it reads as the nav "settling"
+              // into compact mode. NOT animated: gap/px are NOT in the
+              // transition allowlist above (MEH-732 perf guardrail upheld),
               // so the change snaps like the pre-existing px delta did.
-              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-12 py-0.5 px-7"
+              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-14 py-0.5 px-9"
               // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
               // reads lighter than the solid hero search card (Gestalt: same
               // family, different weight). py-2.5 → py-0.5 (slim pill match).
@@ -234,9 +239,12 @@ export default function Header() {
               : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-8 py-0.5 px-4",
           ].join(" ")}
         >
-          {/* LEAD GROUP — logo + nav links together (internal gap 36px).
+          {/* LEAD GROUP — logo + nav links together. MEH-899: the intra-group
+              gap (logo ↔ links) widens at rest (gap-11) and snaps compact
+              (gap-9) at y=60 — distributes the rest widening so the middle
+              inter-group gap isn't the only thing growing (MEH-890 void trap).
               start of the row (visual right in RTL). */}
-          <div className="flex items-center gap-9">
+          <div className={`flex items-center ${transparent ? "gap-11" : "gap-9"}`}>
             <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
