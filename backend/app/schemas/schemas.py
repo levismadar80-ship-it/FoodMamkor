@@ -742,6 +742,17 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-902: serialize the rich delivery relation so MapProducerCard's
+    # "delivers to your city" pill can render — it needs per-row `city` +
+    # `delivery_day`, which the flat `delivery_cities` above doesn't carry.
+    # Relation is already selectinload'd on the LIST query
+    # (`backend/app/services/producer_listing.py:100,132`), so this is a
+    # serialization-only change — no extra query, no N+1. DETAIL already
+    # exposes the same field via `ProducerDetailOut:829`; this lifts it up
+    # so LIST and DETAIL agree on shape. The flat `delivery_cities` column
+    # is currently unused (live producers have it empty while the relation
+    # has rows) — separate cleanup ticket, not addressed here.
+    delivery_areas: list[DeliveryAreaOut] = []
     # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.

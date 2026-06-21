@@ -127,4 +127,20 @@ describe("re-exported producer schemas", () => {
     expect(parsed.data?.avg_rating).toBe(4.7);
     expect(parsed.data?.primary_contact_method).toBe("whatsapp");
   });
+
+  // MEH-902 regression: the rich delivery relation reaches MapProducerCard.
+  // Mirrors the MEH-901 strip pattern — Zod would silently drop the array
+  // before the "delivers to your city" pill could read `city` / `delivery_day`.
+  it("ProducerSchema preserves delivery_areas (MEH-902 strip regression)", () => {
+    const parsed = ProducerSchema.safeParse({
+      id: 1,
+      name: "תסס",
+      delivery_areas: [
+        { id: "65fd60b1-f305-4aeb-b747-ad8a58b80d80", city: "ירושלים", min_order: 80, delivery_day: "ראשון" },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.delivery_areas?.[0]?.city).toBe("ירושלים");
+    expect(parsed.data?.delivery_areas?.[0]?.delivery_day).toBe("ראשון");
+  });
 });
