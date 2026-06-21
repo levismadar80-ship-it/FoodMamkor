@@ -168,7 +168,7 @@ export default function Header() {
           text-shadow halo went with it (it only existed to rescue the cream
           ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
-        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-2">
+        <div className="hidden md:flex justify-center px-5 sm:px-6 pt-4">
           <p
             className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
@@ -186,11 +186,11 @@ export default function Header() {
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
-            avoid doubling (mobile + non-strip pages keep pt-2). */}
+            avoid doubling (mobile + non-strip pages keep pt-4). */}
         <div
           className={[
             "relative flex flex-col items-center px-5 sm:px-6 pb-2",
-            showStrip ? "pt-2 md:pt-0" : "pt-2",
+            showStrip ? "pt-4 md:pt-0" : "pt-4",
           ].join(" ")}
         >
         <nav
@@ -291,7 +291,7 @@ export default function Header() {
                 // MEH-732 outlined secondary). bg-action-primary + white ink,
                 // surface-independent now that the pill carries its own glass —
                 // identical at rest and scrolled. Mirrors ui/Button.jsx:32.
-                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
+                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-4 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
               >
                 {t("nav.add_business_short")}
                 {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
