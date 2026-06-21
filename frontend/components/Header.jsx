@@ -9,7 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
 import { MagnifyingGlass, ArrowUpLeft, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
-import LanguageToggle from "@/components/LanguageToggle";
+// MEH-896 polish: LanguageToggle removed from the nav until the EN i18n wave
+// (MEH-472). The component file is unchanged; only its nav entry is gone.
 
 /**
  * Header — MEH-643 (S3 chunk 4) floating-pill navbar. Global chrome,
@@ -156,28 +157,20 @@ export default function Header() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  // MEH-890 chunk 2: over-hero text-shadow is now STRIP-ONLY. The pill gained
-  // a glass surface (dark ink, no shadow), so the scrim was removed — this
-  // shadow alone carries the surface-free trust strip's legibility over the
-  // bright hero, strengthened 0.6→0.7 / 4→6px to compensate for the lost scrim.
-  const textShadow = transparent ? { textShadow: "0 1px 6px rgba(0,0,0,0.7)" } : undefined;
-
   return (
     <>
-      {/* MEH-896: trust strip lifted OUT of the sticky <header> below so it
-          scrolls away with the page naturally. Replaces the MEH-884
-          max-h/opacity collapse machinery (state + direction listener removed).
-          Desktop-only via `hidden md:flex`; ink stays surface-aware (it's only
-          visible while at/near the top of the homepage hero — the strip leaves
-          the viewport before the transparent→solid threshold matters much). */}
+      {/* MEH-896: trust strip lives outside the sticky <header> (chunk 1, #1277)
+          so it scrolls away with the page naturally. Polish: ink is always
+          text-fg-muted on the body's cream — the prior surface-aware cream ink
+          was a holdover from when the strip sat over the hero photo, and
+          rendered cream-on-cream once the strip moved onto the body bg
+          (1.00:1 AA fail). #5C584F on #F5F0E8 = 7.66:1 AA pass; the black
+          text-shadow halo went with it (it only existed to rescue the cream
+          ink). Desktop-only via `hidden md:flex`; copy + gold SealCheck kept. */}
       {showStrip && (
         <div className="hidden md:flex justify-center px-5 sm:px-6 pt-5 sm:pt-8">
           <p
-            className={[
-              "flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium",
-              transparent ? "text-background" : "text-fg-muted",
-            ].join(" ")}
-            style={textShadow}
+            className="flex items-center justify-center gap-1.5 pb-2.5 text-xs font-medium text-fg-muted"
           >
             <SealCheck size={15} weight="fill" className="text-accent" aria-hidden="true" />
             {t("nav.trust_strip")}
@@ -215,11 +208,13 @@ export default function Header() {
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart",
             transparent
-              // MEH-890 chunk 2 + MEH-896 chunk 2: at rest the pill carries
-              // soft glass — translucent cream /70 + 12px blur (opaque fallback),
-              // hairline border, resting shadow. py-3 → py-0.5 (slim ~50px pill;
-              // tap floors enforced per-child below, not by pill chrome).
-              ? "bg-background supports-[backdrop-filter]:bg-background/70 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-5"
+              // MEH-890 chunk 2 + MEH-896 chunk 2 + polish: at rest the pill
+              // carries clean glass — /70 -> /85 (polish: /70 read the produce
+              // photo colors through and looked muddy; /85 stops the bleed
+              // while staying glass — still translucent enough to feel
+              // floating over the hero). 12px blur (opaque /100 fallback),
+              // hairline border, resting shadow, py-0.5 (slim ~50px pill).
+              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5 px-5"
               // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
               // reads lighter than the solid hero search card (Gestalt: same
               // family, different weight). py-2.5 → py-0.5 (slim pill match).
@@ -271,9 +266,8 @@ export default function Header() {
             >
               <MagnifyingGlass size={22} weight="regular" aria-hidden="true" />
             </button>
-            <span className="hidden md:inline-flex">
-              <LanguageToggle />
-            </span>
+            {/* MEH-896 polish: LanguageToggle removed from the nav until the
+                EN i18n wave (MEH-472). Import dropped at :12. */}
 
             {user ? (
               <UserMenu
@@ -328,10 +322,12 @@ export default function Header() {
 
 /**
  * Nav link — MEH-896 chunk 2 soft active-chip (replaces the MEH-643 gold
- * underline). Active = brand-primary tint pill (bg-primary/10) + primary
- * ink + semibold — two cues (shape + color), AA. Inactive = plain text-text
- * with primary-ink hover. min-h-[44px] keeps each link a ≥44px tap target
- * independent of the slim pill chrome (~50px) around it.
+ * underline). Polish: tint NEUTRALIZED — bg-text/[0.07] (warm grey) instead of
+ * the original bg-primary/10 so the active chip no longer reads as a sibling
+ * to the green CTA. Text stays text-primary + font-semibold (two cues —
+ * shape + color, AA preserved on both /85 at-rest and /60 scrolled glass).
+ * Inactive = plain text-text with primary-ink hover. min-h-[44px] keeps each
+ * link a ≥44px tap target independent of the slim pill chrome (~50px) around it.
  */
 function NavLink({ href, label, active }) {
   return (
@@ -341,7 +337,10 @@ function NavLink({ href, label, active }) {
       className={[
         "inline-flex items-center min-h-[44px] px-3 rounded-full text-sm transition-colors duration-fast ease-quart focus-ring",
         active
-          ? "bg-primary/10 text-primary font-semibold"
+          // MEH-896 polish: neutral warm tint (text-token at 7%) instead of
+          // green so the active chip no longer echoes the green CTA. Text
+          // stays primary + semibold (two cues — shape + color, AA preserved).
+          ? "bg-text/[0.07] text-primary font-semibold"
           : "text-text font-medium hover:text-primary",
       ].join(" ")}
     >
