@@ -593,7 +593,7 @@ A prior read-only audit produced 19 FIX candidates; this session applied **17** 
 
 **Pending / next:**
 - **#1067 `g_auto` crop** — render-unverified in sandbox; Smadar QA-ing deployed staging. If the hero still reads sliced, swap in a **landscape-composed replacement asset** (g_auto can't salvage a 4:3 downward shot) — pre-agreed escape hatch.
-- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band + /about IMG-01 founder-portrait Cloudinary ids — slots render graceful tonal `background-alt` plates until provided (drop a lazy `<img>` via `optimizeCloudinary` then).
+- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band Cloudinary id — slot renders a graceful tonal `background-alt` plate until provided (drop a lazy `<img>` via `optimizeCloudinary` then). (/about IMG-01 founder portrait now wired — real Sapir photo.)
 - **S14 copy-Δ** reconciliation (S14 rendered P5-v2 lock strings; shipped code differs) — separate task; copy untouched throughout this arc.
 
 ## 2026-06-12 — Friday-strip i18n namespace fix + בתי עסק title (PR #1064 MERGED)
