@@ -19,6 +19,7 @@ import {
 } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -32,6 +33,34 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // gesture); experiences render through the SAME EntryRow (gold accent),
 // so ExperienceCard.jsx is no longer imported here (still owns
 // /experiences + /mine). Calendar view keeps CalendarView as-is.
+
+// MEH-788: events hero — license-clean Unsplash market-produce flat-lay (4:3
+// 3000×2250, Unsplash License). Smart-cropped to a wide 16:9 band via g_auto
+// (Cloudinary saliency) then CSS cover fills the height-capped band — same
+// discipline as the home hero (a downward-angle source under plain center-cover
+// would slice the produce). w_1920 downscales the 3000px original (never
+// upscales). f_auto,q_auto via the helper — no hardcoded transform string.
+// REUSES: app/[locale]/home/HomeHero.jsx:18 (optimizeCloudinary ar + width)
+const HERO_MAX_WIDTH = 1920;
+const HERO_IMAGE = optimizeCloudinary(
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214591/staging/pick-unsplash-1507048331197.jpg",
+  { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
+);
+
+// MEH-788: green hero scrim — the green-900 (#143228 ≡ rgb(20 50 40)) analogue
+// of HomeHero's warm `--scrim-ink` (globals.css). Inline (not a globals.css
+// utility) to keep the wire inside EventsClient.jsx per the MEH-788 scope, and
+// green (not warm ink) to carry the page's existing primary-dark hero identity.
+// Bottom-anchored band: H1 sits in the lower third (α ≥ .72), subtitle lower
+// still (α ≥ .88), so white text holds ≥ 4.5:1 over ANY g_auto crop. Worst case
+// = a blown-white highlight under the H1 top line at α ≈ .72 → ≈ 5.7:1 ≥ 4.5.
+const HERO_SCRIM =
+  "linear-gradient(to top," +
+  "rgb(20 50 40 / 0.92) 0%," +
+  "rgb(20 50 40 / 0.88) 50%," +
+  "rgb(20 50 40 / 0.72) 72%," +
+  "rgb(20 50 40 / 0.30) 88%," +
+  "rgb(20 50 40 / 0) 100%)";
 
 // MEH-869: category sets moved to the shared lib/event-categories.js
 // (were duplicated across 5 call-sites). withAll() prepends the "all" chip.
@@ -181,19 +210,43 @@ export default function EventsPage() {
         <Breadcrumb items={[{ href: "/", label: t("breadcrumb_home") }, { label: t("breadcrumb_events") }]} />
       </div>
 
-      {/* Header — type-led per tab. Mobile: on cream. Desktop (md+): flat
-          primary-dark editorial hero, NO radial wash (BRAND §3 lock). */}
-      <section className="md:bg-primary-dark">
-        <div className="max-w-5xl mx-auto px-4 pt-3 pb-1 md:px-14 md:pt-9 md:pb-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent md:text-green-100">
-            {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
-          </p>
-          <h1 className="font-headline-display font-bold text-3xl md:text-6xl leading-tight text-text md:text-background mt-1.5 md:mt-3">
-            {isExp ? t("h1_experiences") : t("title")}
-          </h1>
-          <p className="text-base md:text-xl text-fg-muted md:text-background/85 mt-2 leading-snug">
-            {isExp ? t("subtitle_experiences") : t("subtitle")}
-          </p>
+      {/* Header — type-led per tab, now a full-bleed Ken Burns produce hero
+          (MEH-788). Image on all viewports; the green HERO_SCRIM band holds the
+          H1 + subtitle ≥ AA over any g_auto crop. Reuses the home-hero motion
+          (kenburns-right, globals.css) — honours prefers-reduced-motion via the
+          global off-switch (animation:none) + <MotionConfig reducedMotion>. */}
+      <section className="relative isolate w-full overflow-hidden h-[clamp(240px,34svh,300px)] md:h-[clamp(300px,40svh,380px)]">
+        {/* Ken Burns layer — decorative produce photo. inset -5% gives the
+            ≤1.08 zoom drift room. REUSES: app/[locale]/home/HomeHero.jsx:67 */}
+        <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div
+            className="kenburns-right absolute"
+            style={{
+              inset: "-5%",
+              backgroundImage: `url(${HERO_IMAGE})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
+        </div>
+
+        {/* green scrim band (HERO_SCRIM) — H1 + subtitle stay ≥ AA over the photo */}
+        <div className="absolute inset-0" aria-hidden="true" style={{ backgroundImage: HERO_SCRIM }} />
+
+        {/* Text — bottom-anchored on the scrim; start-aligned (RTL right). */}
+        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-100">
+              {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
+            </p>
+            <h1 className="font-headline-display font-bold text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
+              {isExp ? t("h1_experiences") : t("title")}
+            </h1>
+            <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">
+              {isExp ? t("subtitle_experiences") : t("subtitle")}
+            </p>
+          </div>
         </div>
       </section>
 

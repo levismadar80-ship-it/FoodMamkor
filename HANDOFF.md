@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-21 — MEH-788: /events hero wired (full-bleed Ken Burns + green scrim) — DRAFT PR
+
+**Branch `feature/meh-788-events-hero` off fresh `origin/staging`. `EventsClient.jsx` only (visual-only).** Last empty hero slot in the S14 sweep. The flat type-led header (`md:bg-primary-dark`) is now a **full-bleed Cloudinary image hero on all viewports**.
+
+- **Keeper chosen:** `staging/pick-unsplash-1507048331197` (4:3 3000×2250 landscape, Unsplash License, warm/earthy + green accents). Spare `staging/pick-pexels-9986235` is **portrait** (2048×3089) → unsuitable for a wide hero, left untouched. Could not visually inspect pixels — Cloudinary egress is blocked from the CC sandbox (`Host not in allowlist: res.cloudinary.com`); decision rests on dimensions + color metadata + the well-known produce-flat-lay provenance. **Mobile QA (Sapir) should eyeball the actual crop.**
+- **Delivery:** `optimizeCloudinary({ aspectRatio:"16:9", width:1920 })` — no hardcoded transform; helper already supported `width` (no `cloudinary.js` change needed).
+- **Motion:** reused `kenburns-right` (globals.css), not invented; prefers-reduced-motion killed globally (`animation:none`). **Scrim:** `HERO_SCRIM` inline green gradient (green-900 `#143228`) — green analogue of `.scrim-ink`; inline because globals.css is out of scope. AA: white H1 ≈ 5.7:1 worst-case ≥ 4.5.
+- **NOT touched:** `cloudinary.js`, `he.json`/`en.json` (decorative aria-hidden bg → no alt key). The optional Cloudinary `events/hero-*` promote was **skipped** (infra mutation, not trivial enough to justify within scope).
+
+**Verify:** build green (105/105 SSG), eslint 0 errors, 0 physical RTL props in the diff. PR opened as **draft**, `Refs MEH-788` (NOT Closes — epic stays open for the portrait/experiences wire). Sapir merges after mobile QA on 375/360/390 (hero legibility, scrim AA, Ken Burns, RTL).
+
 ## 2026-06-20 — Session closeout: MEH-861 / MEH-737 / MEH-870 merged + MEH-892/893 filed
 
 **3 session PRs merged to `staging` (squash, all green):** MEH-861 #1264 (`92adfb9`, docs/rtl) · MEH-737 #1268 (`5d78c16`, en.json) · MEH-870 #1267 (`6471359`, schemas).
