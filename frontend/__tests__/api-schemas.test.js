@@ -102,4 +102,19 @@ describe("re-exported producer schemas", () => {
     ]);
     expect(result.success).toBe(true);
   });
+
+  // MEH-901 regression: z.object strips undeclared keys, so any field the
+  // /map consumers read but the schema didn't declare was silently dropped
+  // (categories, slug, starting_price_label, …) — root cause of the MEH-798
+  // chip never rendering. This guard fails the moment a future refactor
+  // re-strips `categories` before MapProducerCard can read `category?.name`.
+  it("ProducerSchema preserves categories (MEH-901 strip regression)", () => {
+    const parsed = ProducerSchema.safeParse({
+      id: 1,
+      name: "תסס",
+      categories: [{ id: 8, name: "מותססים וכבושים", emoji: "🥒" }],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.categories?.[0]?.name).toBe("מותססים וכבושים");
+  });
 });
