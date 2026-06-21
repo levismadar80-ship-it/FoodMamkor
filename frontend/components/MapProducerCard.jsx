@@ -23,7 +23,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const isVerified = p.is_verified;
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
-  const { color: categoryColor } = styleForProducer(p);
+  // MEH-798: also pull the Phosphor `icon` for the category chip below.
+  const { color: categoryColor, icon: CategoryIcon } = styleForProducer(p);
 
   // MEH-826: open/closed-now status from the shared lib/hours parser.
   const th = useTranslations("opening_hours");
@@ -107,11 +108,19 @@ export default function MapProducerCard({ producer, active, onClick }) {
           <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "17px" }}>
             {p.name}
           </h3>
-          {/* Category name in muted, price in Cormorant italic gold — separate lines */}
+          {/* MEH-798 */}
+          {/* REUSES: frontend/app/[locale]/map/components/MapPane.jsx:170-176
+              — 20px wash + 12px icon, F1 flat (no shadow). */}
           {category?.name && (
-            <p className="text-fg-muted line-clamp-1 mt-0.5" style={{ fontSize: "12px" }}>
-              {category.name}
-            </p>
+            <div className="mt-0.5">
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs max-w-full"
+                style={{ backgroundColor: `${categoryColor}1A`, color: categoryColor }}
+              >
+                <CategoryIcon size={12} weight="fill" aria-hidden="true" />
+                <span className="line-clamp-1">{category.name}</span>
+              </span>
+            </div>
           )}
           {priceLabel && (
             <p className="font-english italic line-clamp-1 mt-0.5 text-accent numeric" style={{ fontSize: "13px" }}>
