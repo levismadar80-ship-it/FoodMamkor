@@ -17,6 +17,36 @@ export const ProducerSchema = z.object({
   // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
   // z.object strip would drop it before MapProducerCard's open/closed line.
   opening_hours: z.string().nullable().optional(),
+  // MEH-901: 12 fields below were silently stripped by z.object's default
+  // unknown-key behavior — same mechanism as the opening_hours precedent —
+  // breaking the MEH-798 category chip + the contact-method router on /map.
+  // All permissive (.optional() / .nullable() where the API observably
+  // returns null) so the all-or-nothing array parse at useProducersFeed.js:41
+  // can never newly drop a producer.
+  //   - categories.name is .nullable().optional() (NOT strict z.string()):
+  //     consumers (chip, useMapFilters) already guard `category?.name`, and
+  //     a strict requirement would kill the entire feed on a single null.
+  //   - categories.id is union(string|number): defensive against a future
+  //     int→uuid migration on the category PK (mirrors producer.id pattern).
+  // delivery_areas (read by MapProducerCard.jsx:44-45) is intentionally NOT
+  // declared — the API returns `delivery_cities` instead; that field-name
+  // mismatch is a separate bug, not a schema strip.
+  categories: z.array(z.object({
+    id: z.union([z.string(), z.number()]).optional(),
+    name: z.string().nullable().optional(),
+    emoji: z.string().optional(),
+  })).optional().default([]),
+  slug: z.string().nullable().optional(),
+  starting_price_label: z.string().nullable().optional(),
+  price_range: z.string().nullable().optional(),
+  avg_rating: z.number().nullable().optional(),
+  reviews_count: z.number().int().nullable().optional(),
+  primary_contact_method: z.string().nullable().optional(),
+  website: z.string().nullable().optional(),
+  contact_email: z.string().nullable().optional(),
+  instagram: z.string().nullable().optional(),
+  facebook: z.string().nullable().optional(),
+  external_order_form: z.string().nullable().optional(),
 });
 
 // MEH-779: response shape of GET /producers — an array of producers.
