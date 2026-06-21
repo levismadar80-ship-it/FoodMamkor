@@ -48,12 +48,14 @@ import { BRAND_NAME } from "@/lib/constants";
  *     stays the lighter member of the rounded-white family (Gestalt: same
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
- *     [logo + links] · inter-group gap · action cluster. MEH-899: at rest the
- *     pill is WIDER, with the extra width DISTRIBUTED (end-cap px-11, inter-group
- *     gap-14, lead-group intra-gap gap-11) so the middle gap isn't the only
- *     thing growing (MEH-890 void trap). All SNAP compact (px-4 / gap-8 /
- *     gap-9) at the y=60 scroll threshold — not animated (gap/px stay out of
- *     the transition allowlist, MEH-732 guardrail).
+ *     [logo + links] · inter-group gap · action cluster. MEH-899: at top of
+ *     ANY page the pill is WIDER, with the extra width DISTRIBUTED (end-cap
+ *     px-11, inter-group gap-14, lead-group intra-gap gap-11) so the middle
+ *     gap isn't the only thing growing (MEH-890 void trap). All SNAP compact
+ *     (px-4 / gap-8 / gap-9) at the y=60 scroll threshold — not animated
+ *     (gap/px stay out of the transition allowlist, MEH-732 guardrail).
+ *     Width keys off `!scrolled` (DECOUPLED from `transparent`) so inner
+ *     pages get the wide rest too — consistent nav size on every page.
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
@@ -214,37 +216,33 @@ export default function Header() {
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart motion-reduce:transition-none",
+            // MEH-899 (revised): the SURFACE branch (transparent vs solid
+            // glass) stays keyed off `transparent` — that's homepage-hero
+            // specific. The WIDTH (gap/px) is decoupled and keyed off
+            // `!scrolled` so the rest-wide pill is CONSISTENT across all
+            // pages at top (homepage + inner), snapping compact at y=60 on
+            // every page. Surface and width snap on the same threshold
+            // (scrollY>=60), just with different conditions: surface keys
+            // off (isHomepage && !scrolled), width keys off (!scrolled).
             transparent
-              // MEH-890 chunk 2 + MEH-896 chunk 2 + polish: at rest the pill
-              // carries clean glass — /70 -> /85 (polish: /70 read the produce
-              // photo colors through and looked muddy; /85 stops the bleed
-              // while staying glass — still translucent enough to feel
-              // floating over the hero). 12px blur (opaque /100 fallback),
-              // hairline border, resting shadow, py-0.5 (slim ~50px pill).
-              // MEH-899: WIDER at rest — gap-14 + px-11 give the pill spacious
-              // breathing room over the hero. The extra width is DISTRIBUTED
-              // (not piled into the single middle gap → MEH-890 void trap):
-              // end-cap px-11, inter-group gap-14, AND the lead-group intra-gap
-              // widens to gap-11 (see :239). Snaps to the compact gap-8 + px-4
-              // (+ lead gap-9) at y=60 (scrolled branch) — the SAME threshold
-              // the surface already crosses, so it reads as the nav "settling"
-              // into compact mode. NOT animated: gap/px are NOT in the
-              // transition allowlist above (MEH-732 perf guardrail upheld),
-              // so the change snaps like the pre-existing px delta did.
-              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-14 py-0.5 px-11"
-              // MEH-896 chunk 2: scrolled glass LIGHTENED /85 → /60 so the nav
-              // reads lighter than the solid hero search card (Gestalt: same
-              // family, different weight). py-2.5 → py-0.5 (slim pill match).
-              // MEH-899: compact gap-8 (was the shared base gap pre-MEH-899).
-              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] gap-8 py-0.5 px-4",
+              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
+            // MEH-899 (revised): WIDTH — wide at rest (any page at top),
+            // compact when scrolled. Distributed: end-cap px-11, inter-group
+            // gap-14, lead-group intra-gap gap-11 (see :247). Snaps to
+            // px-4 + gap-8 + lead gap-9 at y=60. Still NOT animated —
+            // gap/px stay out of the transition allowlist (MEH-732 upheld).
+            !scrolled ? "gap-14 px-11" : "gap-8 px-4",
           ].join(" ")}
         >
           {/* LEAD GROUP — logo + nav links together. MEH-899: the intra-group
               gap (logo ↔ links) widens at rest (gap-11) and snaps compact
               (gap-9) at y=60 — distributes the rest widening so the middle
               inter-group gap isn't the only thing growing (MEH-890 void trap).
+              Keyed off `!scrolled` (NOT `transparent`) so the wide rest
+              applies on inner pages too — consistent nav size on every page.
               start of the row (visual right in RTL). */}
-          <div className={["flex items-center", transparent ? "gap-11" : "gap-9"].join(" ")}>
+          <div className={["flex items-center", !scrolled ? "gap-11" : "gap-9"].join(" ")}>
             <Link href="/" className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"
