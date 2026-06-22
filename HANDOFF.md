@@ -5,6 +5,24 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-21 — Claude Design ADOPTED + /design-sync Phase 0 complete (91 comps) — DRAFT PR #1290
+
+**Session = Claude Design (claude.ai/design) rollout. Tooling/import only — no application code touched.**
+
+- **Governance landed:** `DESIGN-SYSTEM-BRIEF.md` shipped via **PR #1272** — the governance companion for the Claude Design import (brand/RTL fidelity rules the design agent reads).
+- **Decision: Claude Design ADOPTED.** Pilot **MEH-894 = GO** (recorded, Done): the import + brief preserves RTL + brand fidelity end-to-end.
+- **/design-sync Phase 0 COMPLETE:** 91 `frontend/` components synced → Claude Design project **"Mehamakor DS — Components"** (https://claude.ai/design/p/0a0dc08b-7b6d-4374-a90d-1e429bcc0f38). RTL renders correctly; `package-validate` clean. The reproducible **sync inputs are in PR #1290** (`.design-sync/*`, `frontend/.ds-provider.jsx`, `frontend/.ds-sync-css/*`); re-sync notes in **`.design-sync/NOTES.md`**.
+- **Pilot #2 filed — MEH-897:** `ProfileCompletenessCard` state-progressive checklist (yellow shows only >70%, per ADR-019) = the next Claude Design pilot (**design-gated**).
+
+**PR #1290 CI (head `9c3b7d1`):** `mergeable_state: blocked`. **No frontend check is red from `.ds-provider.jsx` / `.ds-sync-css`** — Frontend build/lint/vitest are **skipped** (paths-filter gated; the `.ds*` files sit at `frontend/` root, outside the watched app paths). The red marks (Paths filter, Env drift, Adversarial review calibration) all completed in **~2s with 404/no logs** = the **Rule 21 budget-exhaustion signature**, NOT real failures. Do not read as a true pass or fail — Sapir to check Settings → Billing before relying on the signal.
+
+**Open threads (next session):**
+- **Merge PR #1290** after CI review (**Sapir** — Rule 23).
+- **Run MEH-897** as Claude Design pilot #2.
+- **Worktree cleanup:** remove the `meh-design-sync` worktree after #1290 merges; **reset the `meh-789-worktree` local `staging` to `origin/staging`** after the nav work — it carries **3 local commits not on origin** ("never commit to `staging` directly" violation).
+- **Rollout order:** 897 → 525 → (602 atoms stabilize) → 879 / 788 / 884 → port queue (**MEH-534**, gated by **MEH-742**).
+- **Institutionalize the grep gates** (left/right/ml/mr, Lucide, hex state-colors, emoji) as a CI check in `pr-checks.yml`.
+
 ## 2026-06-21 — MEH-788: /events hero wired (full-bleed Ken Burns + green scrim) — DRAFT PR
 
 **Branch `feature/meh-788-events-hero` off fresh `origin/staging`. `EventsClient.jsx` only (visual-only).** Last empty hero slot in the S14 sweep. The flat type-led header (`md:bg-primary-dark`) is now a **full-bleed Cloudinary image hero on all viewports**.

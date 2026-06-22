@@ -31,6 +31,16 @@ htmlcov/
 .claude/settings.json.backup-pre-autonomy
 .claude/settings.local.json
 
+# design-sync (claude.ai/design) — staged scripts, build output, machine state
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+frontend/.ds-barrel.mjs
+frontend/.ds-sync-css/ds.css
+frontend/.ds-dist/
+
 # IDE
 .idea/
 

@@ -1,0 +1,22 @@
+/* design-sync DS stylesheet input. The 3 brand families loaded via <link> in
+   app/[locale]/layout.js are added here as @import; globals.css carries Heebo +
+   @tailwind + the custom utility layer the components depend on. */
+@import url('https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap');
+@import "../app/globals.css";
+
+/* Skeleton shimmer — in the app this is injected via SkeletonProducerGrid's
+   <style jsx global> (components/Skeleton.jsx), so SkeletonCard/SkeletonLine
+   used alone render invisible. Promote it to the shipped stylesheet so every
+   skeleton renders the shimmer in real designs too. */
+.skeleton-box {
+  background: linear-gradient(90deg, #e8e0d0 25%, #f5f0e8 50%, #e8e0d0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-box { animation: none; background: #e8e0d0; }
+}
