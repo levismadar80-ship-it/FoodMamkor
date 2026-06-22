@@ -241,12 +241,17 @@ export default function ProducerSections({
       )}
 
       {/* MEH-213: DeliveryBlock — shown when offers_delivery=true.
-          Replaces the old delivery_areas table for the new location model. */}
+          Replaces the old delivery_areas table for the new location model.
+          MEH-904: cities derived from the delivery_areas relation (the only
+          path the public POST /producers writer populates — the flat
+          delivery_cities column is empty for registration-created producers). */}
       {producer.offers_delivery && (
         <div ref={(el) => { sectionRefs.current.delivery = el; }}>
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
-            cities={producer.delivery_cities || []}
+            cities={[...new Set(
+              (producer.delivery_areas || []).map((da) => da.city).filter(Boolean),
+            )]}
             producer={producer}
           />
         </div>
