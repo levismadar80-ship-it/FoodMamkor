@@ -34,16 +34,16 @@ import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES, withAll } from "@/lib/event-ca
 // so ExperienceCard.jsx is no longer imported here (still owns
 // /experiences + /mine). Calendar view keeps CalendarView as-is.
 
-// MEH-788: events hero — license-clean Unsplash market-produce flat-lay (4:3
-// 3000×2250, Unsplash License). Smart-cropped to a wide 16:9 band via g_auto
+// MEH-788: events hero — license-clean Pexels market-produce photo (3:4
+// 2400×3200, Pexels Free). Smart-cropped to a wide 16:9 band via g_auto
 // (Cloudinary saliency) then CSS cover fills the height-capped band — same
 // discipline as the home hero (a downward-angle source under plain center-cover
-// would slice the produce). w_1920 downscales the 3000px original (never
+// would slice the produce). w_1920 downscales the 2400px original (never
 // upscales). f_auto,q_auto via the helper — no hardcoded transform string.
 // REUSES: app/[locale]/home/HomeHero.jsx:18 (optimizeCloudinary ar + width)
 const HERO_MAX_WIDTH = 1920;
 const HERO_IMAGE = optimizeCloudinary(
-  "https://res.cloudinary.com/dfzpscjks/image/upload/v1781214591/staging/pick-unsplash-1507048331197.jpg",
+  "https://res.cloudinary.com/dfzpscjks/image/upload/v1782159035/events/hero-market.jpg",
   { aspectRatio: "16:9", width: HERO_MAX_WIDTH }
 );
 

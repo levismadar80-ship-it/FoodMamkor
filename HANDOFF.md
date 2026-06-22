@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-22 — /events hero swap → Sapir-approved market photo (DRAFT PR, MEH-788)
+
+- **Done:** `EventsClient.jsx` hero asset swapped `staging/pick-unsplash-1507048331197` (too busy) → **`events/hero-market`** (Pexels Free, 3:4 2400×3200, Sapir-approved real photo). One-line id swap; descriptor comment (`:37-43`) facts corrected in the same change. **g_auto kept** — Phase-0 color analysis ruled out the trees-crop failure mode (~1% green, warm market palette, focus 1.0, no faces). All hero treatment (Ken Burns, green scrim, ar_16:9, RTL) byte-identical.
+- **Branch:** `feature/meh-788-events-hero-market` off `origin/staging`. DRAFT PR, `Refs MEH-788`.
+- **Pending (Sapir):** mobile QA on Vercel preview — 375/360/390 crop, scrim AA, RTL. **Crop NOT verifiable from CC sandbox** (`res.cloudinary.com` proxy-blocked). If g_auto crops the 16:9 band awkwardly, fallback = explicit gravity (needs `optimizeCloudinary` gravity param — out of this PR's one-line scope).
+- **Supersedes:** the #1288 keeper choice. Spare `pick-pexels-9986235` (2:3 portrait) remains unused.
+
 ## 2026-06-21 — Claude Design ADOPTED + /design-sync Phase 0 complete (91 comps) — DRAFT PR #1290
 
 **Session = Claude Design (claude.ai/design) rollout. Tooling/import only — no application code touched.**
