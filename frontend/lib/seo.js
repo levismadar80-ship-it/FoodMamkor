@@ -195,8 +195,15 @@ export function buildJsonLd(producer, locale = "he") {
     };
   } else if (producer.delivery_nationwide) {
     business.areaServed = "Israel";
-  } else if (producer.delivery_cities?.length > 0) {
-    business.areaServed = producer.delivery_cities;
+  } else {
+    // MEH-904: derive areaServed from the delivery_areas relation (the only
+    // path the public POST /producers writer populates — the flat
+    // delivery_cities column is empty for any registration-created producer).
+    // REUSES: frontend/components/MapProducerCard.jsx (MEH-902 reads pattern).
+    const deliveryCities = [...new Set(
+      (producer.delivery_areas || []).map((da) => da.city).filter(Boolean),
+    )];
+    if (deliveryCities.length > 0) business.areaServed = deliveryCities;
   }
 
   if (!isDeliveryOnly && producer.lat && producer.lng) {

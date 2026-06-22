@@ -33,7 +33,13 @@ export function producerCompleteness(p) {
   }
 
   // MEH-213: delivery-only — require either nationwide flag or at least one city.
-  if (isDeliveryOnly && !p.delivery_nationwide && (!p.delivery_cities || p.delivery_cities.length === 0)) {
+  // MEH-904: cities are derived from the delivery_areas relation (the only
+  // path the public POST /producers writer populates — the flat
+  // delivery_cities column is empty for any registration-created producer).
+  const deliveryCities = [...new Set(
+    (p.delivery_areas || []).map((da) => da.city).filter(Boolean),
+  )];
+  if (isDeliveryOnly && !p.delivery_nationwide && deliveryCities.length === 0) {
     missing.push(COMPLETENESS_FIELDS.delivery);
   }
 
