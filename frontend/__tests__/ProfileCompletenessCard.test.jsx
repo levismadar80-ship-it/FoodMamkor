@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 // MEH-288: mock next-intl per the established precedent (AvailabilityBadge).
 // The card resolves copy from dashboard.producer.completeness.*; the mock
@@ -18,6 +18,9 @@ vi.mock("next-intl", () => ({
       cta: "השלימי פרופיל",
       cta_aria: "השלימי את הפרופיל שלך",
       ring_aria: "השלמת פרופיל: {percent}%",
+      checklist_aria: "התקדמות השלמת הפרופיל",
+      checklist_done: "הושלם",
+      checklist_todo: "עדיין חסר",
       "fields.city": "עיר",
       "fields.coords": "מיקום על המפה",
       "fields.delivery": "אזורי משלוח",
@@ -104,5 +107,55 @@ describe("ProfileCompletenessCard", () => {
     expect(
       screen.getByText("רק פרט אחד עד שהפרופיל מלא"),
     ).toBeInTheDocument();
+  });
+
+  // MEH-897: yellow >70 swaps the single next-step line for a 5-row checklist.
+  it("yellow high (>70%) → 5-row checklist (4 done + 1 remaining) + next-step box", () => {
+    // Only image missing → 80%. Physical-location producer → coords row applies.
+    render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+
+    const list = screen.getByRole("list", {
+      name: "התקדמות השלמת הפרופיל",
+    });
+    expect(list).toBeInTheDocument();
+    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
+
+    // 4 completed + 1 remaining, exposed to AT via per-row sr-only state.
+    expect(within(list).getAllByText("הושלם")).toHaveLength(4);
+    expect(within(list).getAllByText("עדיין חסר")).toHaveLength(1);
+
+    // The remaining row is the missing field (image → "תמונה ראשית"), and the
+    // top-remaining field is also echoed in the emphasized next-step box, so the
+    // label appears twice (checklist row + box) while the prefix appears once.
+    expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
+    expect(screen.getAllByText("תמונה ראשית").length).toBeGreaterThanOrEqual(2);
+    // CTA still present below the box.
+    expect(
+      screen.getByRole("link", { name: "השלימי את הפרופיל שלך" }),
+    ).toBeInTheDocument();
+  });
+
+  it("yellow high checklist honors coords XOR delivery (delivery-only producer)", () => {
+    // Delivery-only, only image missing → 80%, yellow-high. Heuristic flags
+    // `delivery` not `coords`, so the checklist must show the delivery row.
+    render(
+      <ProfileCompletenessCard
+        producer={{
+          city: "תל אביב",
+          has_physical_location: false,
+          offers_delivery: true,
+          delivery_areas: [{ city: "חיפה" }],
+          phone: "0500000000",
+          categories: ["dairy"],
+          images: [],
+        }}
+      />,
+    );
+    const list = screen.getByRole("list", {
+      name: "התקדמות השלמת הפרופיל",
+    });
+    expect(within(list).getByText("אזורי משלוח")).toBeInTheDocument();
+    expect(within(list).queryByText("מיקום על המפה")).not.toBeInTheDocument();
+    expect(within(list).getAllByRole("listitem")).toHaveLength(5);
   });
 });

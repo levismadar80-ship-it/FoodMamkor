@@ -152,6 +152,24 @@ export default function ProfileCompletenessCard({ producer }) {
   const nextKey = FIELD_KEY[missing[0]];
   const nextStepLabel = nextKey ? t(`fields.${nextKey}`) : missing[0];
 
+  // MEH-897: yellow >70 ("almost there") swaps the single next-step line for a
+  // 5-row checklist (completed + remaining). Build the applicable-field list
+  // here, mirroring the coords XOR delivery split the heuristic itself makes
+  // per producer shape (lib/producer-completeness.js:25 isDeliveryOnly) — never
+  // both apply, so the list is always exactly 5. Each row reuses the existing
+  // fields.* key; membership in `missing` (raw HE labels) marks remaining.
+  const isYellowHigh = priority !== "red" && percent > 70;
+  const isDeliveryOnly =
+    producer.has_physical_location === false && producer.offers_delivery;
+  const checklistSlugs = [
+    "city",
+    isDeliveryOnly ? "delivery" : "coords",
+    "contact",
+    "category",
+    "image",
+  ];
+  const missingLabels = new Set(missing);
+
   return (
     <div className="bg-background border border-border rounded-[16px] p-6 md:p-8 mb-8">
       <div className="flex items-start gap-4">
@@ -168,10 +186,46 @@ export default function ProfileCompletenessCard({ producer }) {
             {headline}
           </h2>
           <p className="text-sm md:text-base text-fg-muted mt-1">{sub}</p>
-          <p className="text-sm text-text mt-3">
-            <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
-            {nextStepLabel}
-          </p>
+          {isYellowHigh ? (
+            <>
+              {/* 5-row checklist: completed → text-primary ✓ + label;
+                  remaining → text-fg-muted label, no marker (per locked design). */}
+              <ul className="mt-4 space-y-2" aria-label={t("checklist_aria")}>
+                {checklistSlugs.map((slug) => {
+                  const done = !missingLabels.has(COMPLETENESS_FIELDS[slug]);
+                  return (
+                    <li key={slug} className="flex items-center gap-2 text-sm">
+                      <span
+                        className="inline-flex w-4 justify-center text-primary font-bold"
+                        aria-hidden="true"
+                      >
+                        {done ? "✓" : ""}
+                      </span>
+                      <span className={done ? "text-text" : "text-fg-muted"}>
+                        {t(`fields.${slug}`)}
+                      </span>
+                      <span className="sr-only">
+                        {done ? t("checklist_done") : t("checklist_todo")}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {/* Top remaining field emphasized as the primary next-step. Box =
+                  faint primary tint via opacity (REUSES: KashrutBadgeStrip.jsx:53). */}
+              <div className="mt-4 bg-primary/5 border border-primary/20 rounded-[12px] p-4">
+                <p className="text-sm text-text">
+                  <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
+                  {nextStepLabel}
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-text mt-3">
+              <span className="font-semibold">{t("next_step_prefix")}</span>{" "}
+              {nextStepLabel}
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-5">
