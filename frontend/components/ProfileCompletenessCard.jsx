@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
@@ -106,6 +106,7 @@ function ProgressRing({ percent, priority, label }) {
 
 export default function ProfileCompletenessCard({ producer }) {
   const t = useTranslations("dashboard.producer.completeness");
+  const locale = useLocale();
   if (!producer) return null;
 
   const { missing, priority } = producerCompleteness(producer);
@@ -158,7 +159,12 @@ export default function ProfileCompletenessCard({ producer }) {
   // per producer shape (lib/producer-completeness.js:25 isDeliveryOnly) — never
   // both apply, so the list is always exactly 5. Each row reuses the existing
   // fields.* key; membership in `missing` (raw HE labels) marks remaining.
-  const isYellowHigh = priority !== "red" && percent > 70;
+  // he-only until MEH-472 sweeps the English strings: the checklist's a11y
+  // keys (checklist_*) live in he.json only, so an /en visit would surface raw
+  // key paths in aria-label/sr-only. Gate to Hebrew → /en falls back to the
+  // localized inline next-step line (keys present in both). REUSES the MEH-884
+  // trust-strip he-only locale gate.
+  const isYellowHigh = priority !== "red" && percent > 70 && locale === "he";
   const isDeliveryOnly =
     producer.has_physical_location === false && producer.offers_delivery;
   const checklistSlugs = [

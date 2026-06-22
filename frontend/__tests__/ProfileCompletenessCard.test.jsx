@@ -4,7 +4,10 @@ import { render, screen, within } from "@testing-library/react";
 // MEH-288: mock next-intl per the established precedent (AvailabilityBadge).
 // The card resolves copy from dashboard.producer.completeness.*; the mock
 // returns the Hebrew strings + supports {percent}/{count} ICU interpolation.
+// MEH-897: locale is mutable (vi.hoisted) so a test can exercise the /en gate.
+const { mockLocale } = vi.hoisted(() => ({ mockLocale: { current: "he" } }));
 vi.mock("next-intl", () => ({
+  useLocale: () => mockLocale.current,
   useTranslations: () => (key, vars = {}) => {
     const flat = {
       red_headline: "הפרופיל שלך חסר פרטים קריטיים",
@@ -133,6 +136,22 @@ describe("ProfileCompletenessCard", () => {
     expect(
       screen.getByRole("link", { name: "השלימי את הפרופיל שלך" }),
     ).toBeInTheDocument();
+  });
+
+  // MEH-897: he-only gate — /en falls back to the inline next-step (the
+  // checklist a11y keys live in he.json only until MEH-472). Mirrors MEH-884.
+  it("yellow high on /en → no checklist, falls back to inline next-step", () => {
+    mockLocale.current = "en";
+    try {
+      render(<ProfileCompletenessCard producer={{ ...base, images: [] }} />);
+      // Headline still renders (key present in both locales)…
+      expect(screen.getByText("כמעט שם — 80% מוכן")).toBeInTheDocument();
+      // …but the checklist <ul> is gated out, and the inline next-step remains.
+      expect(screen.queryByRole("list")).not.toBeInTheDocument();
+      expect(screen.getByText("השלב הבא:")).toBeInTheDocument();
+    } finally {
+      mockLocale.current = "he";
+    }
   });
 
   it("yellow high checklist honors coords XOR delivery (delivery-only producer)", () => {
