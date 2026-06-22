@@ -3409,6 +3409,9 @@
         "cta": "השלימי פרופיל",
         "cta_aria": "השלימי את הפרופיל שלך",
         "ring_aria": "השלמת פרופיל: {percent}%",
+        "checklist_aria": "התקדמות השלמת הפרופיל",
+        "checklist_done": "הושלם",
+        "checklist_todo": "עדיין חסר",
         "fields": {
           "city": "עיר",
           "coords": "מיקום על המפה",
