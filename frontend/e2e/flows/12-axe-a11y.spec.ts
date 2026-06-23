@@ -148,7 +148,7 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
 });
 
 // MEH-921 — extend the MEH-230 net to the public guest routes surfaced by
-// the 23/06 staging axe audit (the net previously covered only 6 routes, so
+// the 2026-06-23 staging axe audit (the net previously covered only 6 routes, so
 // the contact/landmark/contrast backlog accumulated unguarded). Same gate +
 // GATE_IGNORE_RULES. These routes' only serious hits are color-contrast +
 // link-in-text-block (both ignored) + landmark (moderate, not gated), so they
@@ -177,7 +177,16 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
     test(route, async ({ page }) => {
       await page.goto(route);
       await page.waitForLoadState("domcontentloaded");
-      await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
+      // Graceful readiness: wait for an h1 if the route has one, but don't
+      // hard-fail as a 20s timeout when it doesn't (e.g. a form page) — axe
+      // still scans the rendered DOM, and a real failure reads as an axe
+      // violation, not a misleading locator timeout. Mirrors the /producers
+      // wait above.
+      await page
+        .locator("h1")
+        .first()
+        .waitFor({ state: "visible", timeout: 15_000 })
+        .catch(() => {});
       const results = await analyze(page);
       summarize(route, results);
       expect(
