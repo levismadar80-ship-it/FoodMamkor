@@ -16,6 +16,16 @@
   - **MEH-919 #1/#3** — BottomNav inactive label (`fg-muted` token on sage bg) + dairy category `#4a90d9` palette color — brand/palette values needed.
   - **MEH-916** remaining — `/events` aria-required-children → MEH-858 (non-tab `<Link>` child of `role=tablist`, `EventsClient.jsx:255/276`); home aria-command-name = Leaflet homepage-preview markers (map sub-MEH; gate already excludes `.leaflet-marker-icon`).
 
+## 2026-06-23 — 4 IA reorders merged to staging + staging-verified (MEH-920/912/922/923)
+
+- **Outcome:** 4 IA section-order reorders merged to `staging` and staging-verified. Commits: MEH-920 #1318 `c917a0e` · MEH-912 #1319 `d667631` · MEH-922 #1320 `dd9bfcb` · MEH-923 #1321 `1604a1b`. Source: IA section-order audit (staging `7e9025b`). Post-merge browser verification (390×844) **PASS** — DOM order held on all four + 4/4 producer-detail mobile-tab scrolls held. (One sub-check, producer-detail `ReportButton` order, was code-verified not browser-verified — `ReportButton` renders only for logged-in users (`if (!user) return null`); the agent browsed as guest.)
+- **Linear:** MEH-920 / MEH-912 / MEH-922 / MEH-923 intentionally **OPEN** — the PRs used `Refs`, not `Closes`. Close after this docs PR merges (Sapir closes manually, Rule 23).
+- **Copy drifts surfaced during verification (NOT fixed — candidates for a separate voice/copy pass):**
+  - Producer-detail Similar heading reads **"עסקים דומים"** — brand rule is "בית עסק"; possible drift.
+  - /producers recently-viewed strip reads **"ביקרת לאחרונה"** vs home's **"צפית לאחרונה"** — per-surface copy diff (already flagged on MEH-922).
+  - for-businesses register CTA reads **"הוסיפי את העסק שלך"** (fem-singular) vs ADR-014 (UI CTAs = neutral plural). Existing string **reused** by MEH-923, not introduced by it.
+- **Docs PR:** `chore/ia-reorder-session-log` — this CHANGELOG + HANDOFF backfill (Refs MEH-920 MEH-912 MEH-922 MEH-923, NOT Closes).
+
 ## 2026-06-23 — MEH-924 /producers duplicate #producers-search-input — MERGED (PR #1325)
 
 - **Outcome:** MERGED to `staging` (squash `4ef0813`), Linear MEH-924 `Done`. Subscription closed.
