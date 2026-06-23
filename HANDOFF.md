@@ -12,6 +12,12 @@
 - **Verification:** ruff clean, py_compile OK, AST structural checks pass. **`import seed_data` + pytest could NOT run locally** — backend deps uninstallable (pip network-blocked in CC sandbox). **CI Backend tests job verifies pytest baseline on the PR.**
 - **⚠️ STOP (built into the ticket):** CC has no Railway/DB access → **Sapir runs the seed on staging + verifies `/producers/golan-cheese` renders the recipe (mobile).** PR body uses `Refs MEH-906` (NOT Closes) — **ticket stays open** for the staging seed.
 
+## 2026-06-23 — Email overflow `break-all` ×4 — DRAFT PR (MEH-905)
+
+- **Branch:** `feature/meh-905-email-break-all` (off `origin/staging`). Visual-only quick fix completing MEH-653. Draft PR opened; preview URL → Sapir for 320px mobile QA (/forgot-password most critical).
+- **Done:** added `break-all` to the 4 remaining contact-email render points that clipped the 24-char address on narrow mobile — `forgot-password/ForgotPasswordClient.jsx:46` (also gained `dir="ltr"`, had neither, to match canonical `ContactClient.jsx:65`), `accessibility/page.js:94`, and the shared `MailLink` helper in `terms/page.js:57` + `privacy/page.js:61`. 4 files, additions only; no value change (MEH-653 owns it), no deps/env. `npm run build` green.
+- **PR body:** `Closes MEH-905`. Part of a 3-ticket sequential batch (MEH-905 → 906 → 910).
+
 ## 2026-06-23 — Imageless "Tinted Masthead" editorial hero — MERGED (MEH-815, PR #1302)
 
 - **Done + MERGED to staging** (squash `ceeda4f`, Sapir merged explicitly). Replaced the imageless-state emoji+initials placeholder on `/producer/[id]` with a text-led **Tinted Masthead**: producer name (Frank Ruhl Libre 900) as the page's **sole `<h1>`** on a 6% green tint over cream (`bg-primary/[0.06]` over `bg-background`, ADR-019 opacity-on-cream — no hex, no new token), recessive gold **מ·ה** monogram top-end (opposite the FavoriteButton). **Imaged state byte-identical.**
