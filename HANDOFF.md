@@ -13,6 +13,11 @@
 - **D (language dedup) — Option A (Sapir-approved):** row had TWO Globes (leading `AccountSheet.jsx:166` + one inside shared `LanguageToggle:75`) + redundant "שפה" label. Dropped the leading Globe + "שפה" label → `LanguageToggle` is the single control. `LanguageToggle` NOT touched (shared w/ desktop Header, out of scope). Removed now-dangling `Globe` import. `nav.language` key left in place.
 - **Build:** `npm run build` green. 0 RTL physical props. `AccountSheet.jsx` + `he.json` only.
 - **Pending (Sapir):** preview QA — mobile sheet (one language control, logout = "התנתקות"), desktop UserMenu (logout = "התנתקות").
+## 2026-06-23 — Email overflow `break-all` ×4 — DRAFT PR (MEH-905)
+
+- **Branch:** `feature/meh-905-email-break-all` (off `origin/staging`). Visual-only quick fix completing MEH-653. Draft PR opened; preview URL → Sapir for 320px mobile QA (/forgot-password most critical).
+- **Done:** added `break-all` to the 4 remaining contact-email render points that clipped the 24-char address on narrow mobile — `forgot-password/ForgotPasswordClient.jsx:46` (also gained `dir="ltr"`, had neither, to match canonical `ContactClient.jsx:65`), `accessibility/page.js:94`, and the shared `MailLink` helper in `terms/page.js:57` + `privacy/page.js:61`. 4 files, additions only; no value change (MEH-653 owns it), no deps/env. `npm run build` green.
+- **PR body:** `Closes MEH-905`. Part of a 3-ticket sequential batch (MEH-905 → 906 → 910).
 
 ## 2026-06-23 — Imageless "Tinted Masthead" editorial hero — MERGED (MEH-815, PR #1302)
 
