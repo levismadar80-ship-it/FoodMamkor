@@ -413,13 +413,13 @@ function RegisterPageBody() {
 
         <p className="text-center text-sm text-fg-muted mt-6">
           {t("auth.register.consumer.have_account")}{" "}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="text-primary underline">
             {t("auth.register.consumer.login_link")}
           </Link>
         </p>
         <p className="text-center text-sm text-fg-muted mt-2">
           {t("auth.register.consumer.cta_producer")}{" "}
-          <Link href="/register/producer" className="text-primary hover:underline">
+          <Link href="/register/producer" className="text-primary underline">
             {t("auth.register.consumer.cta_producer_link")}
           </Link>
         </p>

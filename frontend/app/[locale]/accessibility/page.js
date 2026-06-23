@@ -57,7 +57,7 @@ const SECTIONS = [
             href="https://www.w3.org/WAI/WCAG21/quickref/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-primary underline"
             dir="ltr"
           >
             {chunks}
@@ -114,7 +114,7 @@ const SECTIONS = [
             href="https://www.gov.il/he/departments/accessibility"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-primary underline"
           >
             {chunks}
           </a>

@@ -160,7 +160,7 @@ export default function ContactClient() {
               <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {
                   link: (chunks) => (
-                    <a href="/privacy" className="text-primary hover:underline">
+                    <a href="/privacy" className="text-primary underline">
                       {chunks}
                     </a>
                   ),
