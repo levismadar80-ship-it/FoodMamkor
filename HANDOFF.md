@@ -5,7 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-23 — RecipeCard → Assembly v2 (align to ProducerCard) — DRAFT PR (MEH-911)
+## 2026-06-23 — /register container + CTA parity with /login (Two-Doors) — DRAFT PR (MEH-839)
+
+- **Branch:** `feature/meh-839-register-container-parity` off `origin/staging`. DRAFT PR, **Refs MEH-839** (NOT Closes — #3 auth-order stays frozen/deferred). Scope: `RegisterClient.jsx` only.
+- **Freeze-sensitive** (MEH-132 OAuth-position freeze). **Phase 0 cleared it:** OAuth block (`RegisterClient.jsx:378-403`) sits inside the white card *after* `</form>` (form-first) — position is fixed by DOM sequence, not wrapper styling, so de-boxing (restyle wrapper className only, no reorder) does NOT move it. Reported all 4 file:line divergences + flagged 2 questions (center-vs-start, success-screen in/out); Sapir said GO.
+- **Decisions taken on GO:** (#3) head → `text-start` mirroring login `:160`; (#5) `emailSent` success screen (`:201`) **left boxed** — separate state, no login parity-reference, out of "de-box the form" scope.
+- **Done (4 surgical edits):** wrapper `:249` `bg-white rounded-xl ... border text-center` → `w-full max-w-[416px] mx-auto` (cream-open, mirrors `LoginClient.jsx:157`); head `:252` +`text-start`; CTA `:359` ghost → **filled green** `bg-primary text-white font-bold` (mirrors login `:303`, height kept at register's 44px rhythm per MEH-838); OAuth "או" notch `:391` `bg-white` → `bg-background`.
+- **Frozen/untouched:** OAuth render order (form-first), all form fields + 44px styling (MEH-838), split-image pane (MEH-788). Diff = 14 ins / 5 del, only the 4 changes + History/comments.
+- **Build:** `npm run build` green. `RegisterOAuthRedirect.test.jsx` 3/3 (no styling asserts). 0 RTL physical props.
+- **Pending (Sapir):** preview QA — mobile + desktop, /register de-boxed + filled CTA, side-by-side /login same container/CTA language, OAuth block unmoved. **#3 auth-order remains open/frozen** (don't close MEH-839 on this PR).
+
+## 2026-06-23 — RecipeCard → Assembly v2 (align to ProducerCard) — MERGED (MEH-911, PR #1314)
 
 - **Branch:** `feature/meh-911-recipecard-assembly-v2` off `origin/staging`. DRAFT PR, Closes MEH-911. Scope: `RecipeCard.jsx` + `__tests__/RecipeCard.test.jsx` only.
 - **Context:** RecipeCard built MEH-591 *before* the MEH-643 Assembly-v2 redesign → last off-brand card. MEH-906 seeded the first recipe on staging → it rendered next to v2 ProducerCards and looked wrong. This is **token application** (mirror ProducerCard), not new design. YELLOW (not central — RecipeCard not in central-components.json).
