@@ -52,6 +52,10 @@ test.describe("Producers search", () => {
   test("/producers?focus=1 autofocuses the search input on load", async ({ page }) => {
     await page.goto("/producers?focus=1");
     const input = page.locator("#producers-search-input");
+    // MEH-924: React 18 concurrent hydration transiently double-mounts the search
+    // form for one frame on mobile (PR #1316 strict-mode flake). Gate on count
+    // settling to 1 before the strict asserts — still fails on a permanent dup.
+    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     await expect(input).toBeFocused({ timeout: 10_000 });
   });
