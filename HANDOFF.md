@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — Imageless "Tinted Masthead" editorial hero — MERGED (MEH-815, PR #1302)
+
+- **Done + MERGED to staging** (squash `ceeda4f`, Sapir merged explicitly). Replaced the imageless-state emoji+initials placeholder on `/producer/[id]` with a text-led **Tinted Masthead**: producer name (Frank Ruhl Libre 900) as the page's **sole `<h1>`** on a 6% green tint over cream (`bg-primary/[0.06]` over `bg-background`, ADR-019 opacity-on-cream — no hex, no new token), recessive gold **מ·ה** monogram top-end (opposite the FavoriteButton). **Imaged state byte-identical.**
+- **Name-dedup:** `ProducerHeader` gained a `hasImages` prop and omits its own name h1 when imageless; masthead h1 is **unconditional** so the one-h1 invariant holds by construction. Files: `ImageGallery.jsx`, `ProducerDetail.jsx`, `ProducerHeader.jsx`, `ImageGalleryEmpty.test.jsx` (7/7), + CHANGELOG/MANUAL_TESTING.
+- **Sapir Phase-0 refinement:** dropped the original eyebrow/hairline/story spec items → **name-only masthead** (category/city/desc/badges stay owned by ProducerHeader).
+- **CI:** 6 required green (build, frontend lint/RTL, API contract, env-drift, vitest) + adversarial calibration green; backend skipped (frontend-only). 2 rounds of claude[bot] review addressed (unconditional-h1 contract + tint-layer testid); a 3rd bot round (Minor, contradictory empty-h1 vs zero-h1 on a backend-impossible edge) intentionally **not chased**.
+- **Follow-ups (non-blocking):** `getProducerInitials` in `producer-format.js` is now a **dead export** (only consumer dropped it) — safe to delete in a follow-up. **375px live screenshot deferred** (chromium download blocked in CC sandbox); token-accurate HTML mock sent to Sapir. PR used `Refs MEH-815` (not Closes) — **Linear MEH-815 not auto-closed**; Sapir to close manually if QA passed.
+- **Trap hit + recovered:** `git checkout staging && git pull` aborted on divergent local `staging` (MEH-542); recovered via `git checkout -B staging origin/staging`. origin/staging was always correct at `ceeda4f`.
+
 ## 2026-06-22 — /events hero swap → Sapir-approved market photo (DRAFT PR, MEH-788)
 
 - **Done:** `EventsClient.jsx` hero asset swapped `staging/pick-unsplash-1507048331197` (too busy) → **`events/hero-market`** (Pexels Free, 3:4 2400×3200, Sapir-approved real photo). One-line id swap; descriptor comment (`:37-43`) facts corrected in the same change. **g_auto kept** — Phase-0 color analysis ruled out the trees-crop failure mode (~1% green, warm market palette, focus 1.0, no faces). All hero treatment (Ken Burns, green scrim, ar_16:9, RTL) byte-identical.
