@@ -345,17 +345,30 @@ function RegisterProducerPageBody() {
           </div>
         )}
 
+        {/* MEH-register-a11y (F5): each numeral now carries a text caption so the
+            step is meaningful to screen readers and sighted users alike (a bare
+            "01".."04" conveys nothing). aria-current + the color state move to the
+            wrapper so the active step is announced together with its caption.
+            Stepper is gated on !isUpgrade — upgrade users start at DETAILS and
+            never see it, so there is no separate 3-step variant to render. */}
         {step < STEP.CONFIRM && !isUpgrade && (
           <div className="flex justify-center gap-4 mb-8">
-            {[STEP.ACCOUNT, STEP.DETAILS, STEP.CATEGORY, STEP.STORY].map((s) => (
-              <span
+            {[
+              { s: STEP.ACCOUNT, caption: t("auth.register.producer.step_captions.account") },
+              { s: STEP.DETAILS, caption: t("auth.register.producer.step_captions.details") },
+              { s: STEP.CATEGORY, caption: t("auth.register.producer.step_captions.category") },
+              { s: STEP.STORY, caption: t("auth.register.producer.step_captions.story") },
+            ].map(({ s, caption }) => (
+              <div
                 key={s}
-                dir="ltr"
                 aria-current={s === step ? "step" : undefined}
-                className={`font-english italic text-2xl leading-none ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
+                className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
               >
-                {String(s).padStart(2, "0")}
-              </span>
+                <span dir="ltr" className="font-english italic text-2xl leading-none">
+                  {String(s).padStart(2, "0")}
+                </span>
+                <span className="text-xs font-medium leading-none">{caption}</span>
+              </div>
             ))}
           </div>
         )}
@@ -396,34 +409,59 @@ function RegisterProducerPageBody() {
 
             <h3 className="text-sm font-medium text-fg-muted pt-2">{t("auth.register.producer.steps.account.email_section")}</h3>
 
-            <input
-              data-testid="register-account-name"
-              placeholder={t("auth.register.producer.fields.name")}
-              value={form.name}
-              onChange={set("name")}
-              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
-              dir="rtl"
-            />
-            <input
-              type="email"
-              data-testid="register-account-email"
-              placeholder={t("auth.register.producer.fields.email")}
-              value={form.email}
-              onChange={set("email")}
-              className="w-full border rounded-md px-3 py-2"
-              dir="ltr"
-            />
+            {/* MEH-register-a11y (F4): the account/details inputs were
+                placeholder-only — no persistent label. Each now gets a visible
+                <label htmlFor> (the *_label key carries the "*"); the *.fields.<x>
+                key is repurposed as an example placeholder. required attr added.
+                (F3): min-h-[44px] enforces the WCAG 2.5.5 touch-target floor,
+                matching CitySearch.jsx:118. */}
+            <div>
+              <label htmlFor="producer-account-name" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.name_label")}
+              </label>
+              <input
+                id="producer-account-name"
+                data-testid="register-account-name"
+                placeholder={t("auth.register.producer.fields.name")}
+                value={form.name}
+                onChange={set("name")}
+                required
+                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
+                dir="rtl"
+              />
+            </div>
+            <div>
+              <label htmlFor="producer-account-email" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.email_label")}
+              </label>
+              <input
+                id="producer-account-email"
+                type="email"
+                data-testid="register-account-email"
+                placeholder={t("auth.register.producer.fields.email")}
+                value={form.email}
+                onChange={set("email")}
+                required
+                className="w-full border rounded-md px-3 py-2 min-h-[44px]"
+                dir="ltr"
+              />
+            </div>
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
                 (rendered on 409 from submit) is preserved by Chunk D. */}
             <div>
+              <label htmlFor="producer-account-password" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.password_label")}
+              </label>
               <input
+                id="producer-account-password"
                 type="password"
                 data-testid="register-account-password"
                 placeholder={t("auth.register.producer.fields.password")}
                 value={form.password}
                 onChange={set("password")}
-                className="w-full border rounded-md px-3 py-2"
+                required
+                className="w-full border rounded-md px-3 py-2 min-h-[44px]"
                 dir="ltr"
                 minLength={12}
               />
@@ -463,24 +501,36 @@ function RegisterProducerPageBody() {
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
 
-            <input
-              data-testid="register-details-name"
-              placeholder={t("auth.register.producer.fields.producer_name")}
-              value={form.producer_name}
-              onChange={set("producer_name")}
-              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
-              dir="rtl"
-            />
+            <div>
+              <label htmlFor="producer-business-name" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.producer_name_label")}
+              </label>
+              <input
+                id="producer-business-name"
+                data-testid="register-details-name"
+                placeholder={t("auth.register.producer.fields.producer_name")}
+                value={form.producer_name}
+                onChange={set("producer_name")}
+                required
+                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
+                dir="rtl"
+              />
+            </div>
 
             <div>
+              <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.phone_label")}
+              </label>
               <input
+                id="producer-phone"
                 data-testid="register-details-phone"
                 placeholder={t("auth.register.producer.fields.phone")}
                 value={form.phone}
                 onChange={set("phone")}
+                required
                 aria-invalid={form.phone && !validateIsraeliPhone(form.phone) ? "true" : undefined}
                 aria-describedby={form.phone && !validateIsraeliPhone(form.phone) ? "register-phone-error" : undefined}
-                className={`w-full border rounded-md px-3 py-2 ${
+                className={`w-full border rounded-md px-3 py-2 min-h-[44px] ${
                   form.phone && !validateIsraeliPhone(form.phone) ? "border-red-400" : ""
                 }`}
                 dir="ltr"
@@ -509,14 +559,22 @@ function RegisterProducerPageBody() {
             />
             </div>
 
-            <input
-              data-testid="register-details-address"
-              placeholder={t("auth.register.producer.fields.address")}
-              value={form.address}
-              onChange={set("address")}
-              className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
-              dir="rtl"
-            />
+            {/* address is optional (no "*", not gated at submit) — label carries
+                no asterisk and the input gets no required attr. */}
+            <div>
+              <label htmlFor="producer-address" className="block text-sm font-medium text-text mb-1 text-start">
+                {t("auth.register.producer.fields.address_label")}
+              </label>
+              <input
+                id="producer-address"
+                data-testid="register-details-address"
+                placeholder={t("auth.register.producer.fields.address")}
+                value={form.address}
+                onChange={set("address")}
+                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
+                dir="rtl"
+              />
+            </div>
 
             <div className="flex gap-3">
               {!isUpgrade && (
@@ -570,7 +628,7 @@ function RegisterProducerPageBody() {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 text-right"
+                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -612,7 +670,7 @@ function RegisterProducerPageBody() {
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-                  className="w-full border rounded-md ps-3 pe-3 py-2 text-right"
+                  className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-right"
                   dir="ltr"
                 />
                 {licenseWarning && (
@@ -663,7 +721,7 @@ function RegisterProducerPageBody() {
                 onChange={set("short_description")}
                 maxLength={160}
                 placeholder={t("auth.register.producer.fields.tagline_placeholder")}
-                className="w-full border rounded-md ps-3 pe-3 py-2 text-start"
+                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
                 dir="rtl"
               />
               <p className="text-xs text-fg-muted mt-1">{form.short_description.length}/160</p>

@@ -232,14 +232,27 @@
             "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
           }
         },
+        "step_captions": {
+          "account": "Account",
+          "details": "Business",
+          "category": "Category",
+          "story": "Story"
+        },
         "fields": {
-          "name": "Full name *",
-          "email": "Email *",
-          "password": "Password *",
-          "producer_name": "Business name *",
+          "name": "e.g. Ruth Levi",
+          "name_label": "Full name *",
+          "email": "name@example.com",
+          "email_label": "Email *",
+          "password": "At least 8 characters",
+          "password_label": "Password *",
+          "producer_name": "e.g. Ruth's Bakery",
+          "producer_name_label": "Business name *",
+          "address": "e.g. 5 Olive St., Haifa",
+          "address_label": "Address",
           "description_label": "Tell us about your business",
           "description_hint": "A 100-300 word story — how did you start? What makes you special? What's closest to your heart?",
-          "phone": "WhatsApp phone * (0501234567)",
+          "phone": "0501234567",
+          "phone_label": "WhatsApp phone *",
           "phone_hint": "We'll send you a WhatsApp message to verify and complete the profile",
           "license_required_label": "Producer license number (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
