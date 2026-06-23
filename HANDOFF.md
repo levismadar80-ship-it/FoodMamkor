@@ -5,7 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-06-23 — /register container + CTA parity with /login (Two-Doors) — DRAFT PR (MEH-839)
+## 2026-06-23 — MEH-839 follow-up: de-box the emailSent success screen — DRAFT PR
+
+- **Branch:** `feature/meh-839-success-screen-debox` off `origin/staging` (fresh, post-#1323 merge to prod). DRAFT PR, **Refs MEH-839** (NOT Closes — #3 auth-order frozen). Scope: `RegisterClient.jsx` `emailSent` branch wrapper only.
+- **Context:** #1323 de-boxed the main register form but left the post-signup inbox-check screen (`:203`, `if (emailSent)`) as a `bg-white rounded-xl border` card → a white card popped after successful signup, contradicting the parity. This was approved-in-scope item #5, deferred from #1323.
+- **Phase 0:** confirmed `:203` = `bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center` (same chrome the main wrapper had pre-#1323).
+- **Fix:** `:203` → `w-full max-w-[416px] mx-auto text-center` (cream-open, identical chrome swap to the shipped main wrapper `:254`). **Kept `text-center`** (Skeptic-Mode call): centered confirmation, login has no equivalent screen — parity fix is the white-card chrome, not alignment. Icon `mx-auto`, back-home link, copy all untouched.
+- **Build:** `npm run build` green. 0 RTL physical props. Diff = 1 wrapper line + comment.
+- **Pending (Sapir):** preview QA — trigger emailSent (complete a signup), confirm no white card; back-home link still works.
+
+## 2026-06-23 — /register container + CTA parity with /login (Two-Doors) — MERGED (MEH-839 #1+#2, PR #1323)
 
 - **Branch:** `feature/meh-839-register-container-parity` off `origin/staging`. DRAFT PR, **Refs MEH-839** (NOT Closes — #3 auth-order stays frozen/deferred). Scope: `RegisterClient.jsx` only.
 - **Freeze-sensitive** (MEH-132 OAuth-position freeze). **Phase 0 cleared it:** OAuth block (`RegisterClient.jsx:378-403`) sits inside the white card *after* `</form>` (form-first) — position is fixed by DOM sequence, not wrapper styling, so de-boxing (restyle wrapper className only, no reorder) does NOT move it. Reported all 4 file:line divergences + flagged 2 questions (center-vs-start, success-screen in/out); Sapir said GO.
