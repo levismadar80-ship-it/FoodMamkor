@@ -189,7 +189,7 @@ export default async function TermsPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "terms" });
   return (
-    <main className="min-h-screen">
+    <section className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}
@@ -213,6 +213,6 @@ export default async function TermsPage({ params }) {
           ))}
         </div>
       </div>
-    </main>
+    </section>
   );
 }

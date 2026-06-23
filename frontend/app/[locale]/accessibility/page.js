@@ -131,7 +131,7 @@ export default async function AccessibilityPage({ params }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale, namespace: "accessibility" });
   return (
-    <main className="min-h-screen">
+    <section className="min-h-screen">
       <div className="max-w-3xl mx-auto px-4 py-16">
         <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}
@@ -155,6 +155,6 @@ export default async function AccessibilityPage({ params }) {
           ))}
         </div>
       </div>
-    </main>
+    </section>
   );
 }
