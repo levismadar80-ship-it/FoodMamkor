@@ -115,6 +115,16 @@ export default async function FaqForBusinessesPage({ params }) {
           <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
             {t("heading")}
           </h1>
+          {/* MEH-923: surface the existing footer register CTA here in the header,
+              above the FAQ, so the primary action isn't gated behind 8 accordion
+              items. Same string t("cta") + markup as the footer CTA below — no
+              new he.json key (MEH-840 freeze). Footer CTA stays as-is. */}
+          <a
+            href="/register/producer"
+            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-lg px-[22px] py-3"
+          >
+            {t("cta")}
+          </a>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
