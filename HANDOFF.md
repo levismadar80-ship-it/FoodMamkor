@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — AccountSheet language dedup + logout gerund (DRAFT PR, MEH-908)
+
+- **2nd of 3 sequential gated tickets** (MEH-909 #1306 → **MEH-908** → MEH-907). Branch `feature/meh-908-accountsheet-lang-logout` off `origin/staging`. DRAFT PR, Closes MEH-908.
+- **Phase 0 finding (key):** logout already shares ONE i18n key across both surfaces — `AccountSheet.jsx:189` + Header `UserMenu` (`Header.jsx:478`), both `t("account.menu.logout")` (root namespace). The ticket's "desktop=התנתקי / mobile=התנתקו" split was **stale** (pre-MEH-868 unified them). So E = single key edit.
+- **E (logout):** `he.json:323` `"התנתקו"` → **`"התנתקות"`** (gerund, ADR-014). Fixes desktop + mobile in one place. `en.json` untouched ("Sign Out", MEH-840 gate). Stale "plural voice" comment + file-header docstring updated.
+- **D (language dedup) — Option A (Sapir-approved):** row had TWO Globes (leading `AccountSheet.jsx:166` + one inside shared `LanguageToggle:75`) + redundant "שפה" label. Dropped the leading Globe + "שפה" label → `LanguageToggle` is the single control. `LanguageToggle` NOT touched (shared w/ desktop Header, out of scope). Removed now-dangling `Globe` import. `nav.language` key left in place.
+- **Build:** `npm run build` green. 0 RTL physical props. `AccountSheet.jsx` + `he.json` only.
+- **Pending (Sapir):** preview QA — mobile sheet (one language control, logout = "התנתקות"), desktop UserMenu (logout = "התנתקות").
 ## 2026-06-23 — Remove add-business CTA pill from Header — DRAFT PR (MEH-907)
 
 - **3rd of 3 sequential gated tickets** (MEH-909 #1306 → MEH-908 #1310 → **MEH-907**). Branch `feature/meh-907-remove-header-addbusiness` off `origin/staging`. DRAFT PR, Closes MEH-907.
