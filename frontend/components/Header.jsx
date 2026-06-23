@@ -7,7 +7,7 @@ import { usePathname } from "@/i18n/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations, useLocale } from "next-intl";
-import { MagnifyingGlass, ArrowUpLeft, SealCheck } from "@phosphor-icons/react";
+import { MagnifyingGlass, SealCheck } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 // MEH-896 polish: LanguageToggle removed from the nav until the EN i18n wave
 // (MEH-472). The component file is unchanged; only its nav entry is gone.
@@ -134,11 +134,9 @@ export default function Header() {
     return () => document.removeEventListener("keydown", onKey);
   }, [router]);
 
-  const isProducer = user?.role === "producer";
-  // MEH-669: hide "add business" CTA from producers + admins (server guard
-  // at auth.py:432 is the authority; this is defense-in-depth UX).
-  const isAdmin = user?.role === "admin";
-  const showAddBusinessCta = !isProducer && !isAdmin;
+  // MEH-907: the add-business CTA (and its MEH-669 producer/admin role-gate)
+  // was removed from the Header — see the action-cluster comment below. The
+  // server guard at auth.py:432 remains the authority for /register/producer.
 
   // MEH-643: navbar uses nav.explore (not nav.discover). MEH-732: both keys
   // de-masculinized to "גלו" (ADR-014 plural-voice for nav chrome) — nav.explore
@@ -321,29 +319,11 @@ export default function Header() {
               )
             )}
 
-            {showAddBusinessCta && (
-              <Link
-                href="/register/producer"
-                // MEH-890 chunk 2: promoted to the one filled-green CTA (was the
-                // MEH-732 outlined secondary). bg-action-primary + white ink,
-                // surface-independent now that the pill carries its own glass —
-                // identical at rest and scrolled. Mirrors ui/Button.jsx:32.
-                // MEH-899: prominence from FILL, not size — height is the shared
-                // min-h-[44px] floor (NOT taller than siblings; no py to trim),
-                // px-4 → px-3 to match the active chip's horizontal rhythm and
-                // shave bulk so the green fill (not the box) carries the weight.
-                className="hidden md:inline-flex items-center gap-2 min-h-[44px] px-3 rounded-full text-sm font-medium whitespace-nowrap transition-colors duration-fast ease-quart focus-ring bg-action-primary text-white hover:bg-action-primary-hover"
-              >
-                {t("nav.add_business_short")}
-                {/* MEH-868: raw "↗" dingbat → Phosphor ArrowUpLeft (the RTL-
-                    correct "onward" diagonal; mirrors the prior scale-x flip)
-                    — Phosphor-only, matching the CTA-row arrow affordance.
-                    MEH-877: KEPT (not bidi-flipped) — design intent is a diagonal
-                    outbound/external-link arrow, direction-neutral by convention
-                    (not an rtl.md-listed exception). */}
-                <ArrowUpLeft size={14} weight="bold" className="opacity-70" aria-hidden="true" />
-              </Link>
-            )}
+            {/* MEH-907: add-business CTA pill removed from the Header. The
+                supply-side CTA still lives on the Homepage CTA section, the
+                Footer panel, and the AccountSheet mobile entry — removing the
+                global header pill frees the prime real-estate for the
+                consumer's primary action ("magazine, not marketplace"). */}
 
             {/* Mobile: search (44px circle) — nav lives in BottomNav (MEH-789 PR-A) */}
             <button
