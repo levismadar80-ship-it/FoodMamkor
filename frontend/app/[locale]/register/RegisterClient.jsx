@@ -200,7 +200,11 @@ function RegisterPageBody() {
     // already registered — same UI for both, OWASP-compliant.
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-16">
-        <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
+        {/* MEH-839: de-boxed to match the main form (RegisterClient.jsx:254) —
+            cream-open, no floating white card. text-center kept: this is a
+            centered confirmation (login has no equivalent screen); the parity
+            fix is the white-card chrome, not the alignment. */}
+        <div className="w-full max-w-[416px] mx-auto text-center">
           <div
             className="w-16 h-16 rounded-full bg-background mx-auto mb-4 flex items-center justify-center"
             aria-hidden="true"
