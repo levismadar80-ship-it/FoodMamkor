@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — Remove decorative leaf badge from /register (DRAFT PR, MEH-909)
+
+- **Done:** removed the tinted-circle `<Leaf>` badge above the "הצטרפי לקהילה" headline (`RegisterClient.jsx:252-257`) + dropped the now-dangling `Leaf` import (line 8, `EnvelopeSimple` kept). `/login` has no matching badge → restores register↔login parity (advances MEH-839).
+- **Phase 0 (read-only, before edit):** confirmed badge purely decorative — both wrapper div + glyph `aria-hidden="true"`, no handler/state/conditional. NOT tied to the OAuth block (MEH-132 freeze), form, split-image (MEH-788), or MEH-49 referral badge — all untouched.
+- **Branch:** `feature/meh-909-register-remove-leaf` off `origin/staging`. DRAFT PR, Closes MEH-909. `RegisterClient.jsx` + CHANGELOG/HANDOFF only.
+- **Build:** `npm run build` green (had to `npm ci` first — sandbox started without node_modules). No copy change, no he/en touch, 0 RTL physical props.
+- **Pending (Sapir):** mobile + desktop preview QA — /register has no leaf badge, headline intact, /login unchanged. First of 3 sequential gated tickets (MEH-909 → MEH-908 → MEH-907).
+
 ## 2026-06-23 — Imageless "Tinted Masthead" editorial hero — MERGED (MEH-815, PR #1302)
 
 - **Done + MERGED to staging** (squash `ceeda4f`, Sapir merged explicitly). Replaced the imageless-state emoji+initials placeholder on `/producer/[id]` with a text-led **Tinted Masthead**: producer name (Frank Ruhl Libre 900) as the page's **sole `<h1>`** on a 6% green tint over cream (`bg-primary/[0.06]` over `bg-background`, ADR-019 opacity-on-cream — no hex, no new token), recessive gold **מ·ה** monogram top-end (opposite the FavoriteButton). **Imaged state byte-identical.**
