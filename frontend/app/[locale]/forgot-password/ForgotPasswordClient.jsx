@@ -43,7 +43,11 @@ export default function ForgotPasswordClient() {
             <p className="font-medium mb-1">{t("auth.passwordRecovery.forgot.success_main")}</p>
             <p className="text-fg-muted text-xs mt-2">
               {t("auth.passwordRecovery.forgot.success_contact_prefix")}{" "}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="text-primary hover:underline break-all"
+                dir="ltr"
+              >
                 {CONTACT_EMAIL}
               </a>
             </p>

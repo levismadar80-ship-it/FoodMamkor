@@ -91,7 +91,7 @@ const SECTIONS = [
         📧{" "}
         <a
           href={`mailto:${CONTACT_EMAIL}`}
-          className="text-primary hover:underline"
+          className="text-primary hover:underline break-all"
           dir="ltr"
         >
           {CONTACT_EMAIL}
