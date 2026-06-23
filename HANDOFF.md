@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — Staging axe audit batch: 6 PRs MERGED + MEH-921 ratchet (MEH-915/916/921/917/919)
+
+- **Context:** read-only staging axe audit (23/06) found **148** node-hits (8 crit / 70 serious / 70 moderate) across 22 guest routes → 6-ticket fix+gate batch, **all 6 merged to staging this session**.
+- **Merged:** #1317 MEH-915 (7 nested `<main>`→`<section>`, landmark cluster→0) · #1322 MEH-916 (/contact form labels, `label` crit→0) · #1324 MEH-921 (extended the EXISTING MEH-230 gate `12-axe-a11y.spec.ts` 6→18 routes — premise-corrected, NOT a new spec) · #1327 MEH-916 (7 prose links `hover:underline`→`underline`, link-in-text-block→0) · #1329 MEH-917 (gold `accent` token `#8B6914`→**`#896714`** via DESIGN.md SoT + `design:export`; drift gate green) · #1330 MEH-919 (Leaflet attribution + register step-counter contrast).
+- **Post-merge axe verify (read-only):** **148→39 (−74%)** — crit 8→2, serious 70→25, moderate 70→12. Zero confirmed: landmark cluster, /contact label, link-in-text-block, gold-token color-contrast. Gold ratios `#896714` = **4.61 / 4.59** on `#F5F0E8` / `#F3F0E8` (both ≥4.5; old 4.48/4.47 FAIL).
+- **MEH-921 ratchet (this PR, `feature/meh-921-ratchet`):** removed `link-in-text-block` from `GATE_IGNORE_RULES` (now 0 on all gated routes) + graduated `/contact` into the gated set. **Kept `color-contrast`** — the deferred pairs (#1 BottomNav, #3 map-card, #5 producers placeholder) still trip it on gated routes; un-ignoring would red-gate. Gate-logic sim vs staging = **GREEN** (real `playwright test` blocked by sandbox browser-version mismatch 1194 vs 1223).
+- **Open fast-follows (need Sapir):**
+  - **MEH-918** soft-404 — `notFound()` in `[locale]` returns 200 (Next 16 + next-intl v4). Fix = `experimental.globalNotFound` in `next.config.js` (deny-listed → Sapir flips, CC verifies) OR root-layout restructure. STOPPED.
+  - **MEH-919 #1/#3** — BottomNav inactive label (`fg-muted` token on sage bg) + dairy category `#4a90d9` palette color — brand/palette values needed.
+  - **MEH-916** remaining — `/events` aria-required-children → MEH-858 (non-tab `<Link>` child of `role=tablist`, `EventsClient.jsx:255/276`); home aria-command-name = Leaflet homepage-preview markers (map sub-MEH; gate already excludes `.leaflet-marker-icon`).
+
 ## 2026-06-23 — MEH-924 /producers duplicate #producers-search-input — MERGED (PR #1325)
 
 - **Outcome:** MERGED to `staging` (squash `4ef0813`), Linear MEH-924 `Done`. Subscription closed.
