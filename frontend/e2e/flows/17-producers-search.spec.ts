@@ -52,12 +52,9 @@ test.describe("Producers search", () => {
   test("/producers?focus=1 autofocuses the search input on load", async ({ page }) => {
     await page.goto("/producers?focus=1");
     const input = page.locator("#producers-search-input");
-    // MEH-924: the ProducersClient subtree can double-mount for a sub-frame
-    // during mobile hydration, briefly leaving two identical
-    // #producers-search-input nodes in the DOM (caught PR #1316 as a strict-mode
-    // flake that passed on retry). Steady state is one node. Gate on the count
-    // settling to 1 before the strict visible/focused asserts: this waits out the
-    // transient yet still fails loudly if a *permanent* duplicate ever ships.
+    // MEH-924: React 18 concurrent hydration transiently double-mounts the search
+    // form for one frame on mobile (PR #1316 strict-mode flake). Gate on count
+    // settling to 1 before the strict asserts — still fails on a permanent dup.
     await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     await expect(input).toBeFocused({ timeout: 10_000 });
