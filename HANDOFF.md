@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — Seed golan-cheese demo recipe — DRAFT PR (MEH-906)
+
+- **Branch:** `feature/meh-906-seed-recipe` (off `origin/staging`). Data-seed only, single file `backend/seed_data.py`. Draft PR opened.
+- **Done:** added ONE approved+published `ProducerRecipe` for `golan-cheese` so its producer page renders a populated recipes section (first guided render-test of the recipes block). `moderation_status="approved"` + `published=True` set EXPLICITLY (defaults pending/False would render nothing — filter at `producer_recipes.py:339-340`). Idempotent guard by `(producer_id, title)`. Extracted `_seed_golan_recipe(db)` helper to stay under ruff complexity caps. No schema/Alembic/env change.
+- **Verification:** ruff clean, py_compile OK, AST structural checks pass. **`import seed_data` + pytest could NOT run locally** — backend deps uninstallable (pip network-blocked in CC sandbox). **CI Backend tests job verifies pytest baseline on the PR.**
+- **⚠️ STOP (built into the ticket):** CC has no Railway/DB access → **Sapir runs the seed on staging + verifies `/producers/golan-cheese` renders the recipe (mobile).** PR body uses `Refs MEH-906` (NOT Closes) — **ticket stays open** for the staging seed.
+
 ## 2026-06-23 — Email overflow `break-all` ×4 — DRAFT PR (MEH-905)
 
 - **Branch:** `feature/meh-905-email-break-all` (off `origin/staging`). Visual-only quick fix completing MEH-653. Draft PR opened; preview URL → Sapir for 320px mobile QA (/forgot-password most critical).
