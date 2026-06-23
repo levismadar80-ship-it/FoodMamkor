@@ -161,7 +161,8 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="mt-2 text-sm text-primary hover:underline block"
+              // MEH-register-polish (F7): py-3 lifts the tap target to ≥44px (text-sm 20px + 2×12px) without changing the visible text size.
+              className="mt-2 py-3 text-sm text-primary hover:underline block"
             >
               {expanded ? t("show_less") : t("show_more", { count: restCats.length })}
             </button>

@@ -535,6 +535,7 @@ function RegisterProducerPageBody() {
 
         {step === STEP.CATEGORY && (
           <div className="space-y-4" data-testid="register-frame-category">
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.category.title")}</h2>
             <CategorySelector
               categories={categories}
               selectedIds={form.category_ids}
@@ -595,9 +596,9 @@ function RegisterProducerPageBody() {
                     setLicenseOptionalExpanded(false);
                   }}
                   aria-label={t("auth.register.producer.actions.close")}
-                  className="absolute top-0 end-0 text-fg-muted hover:text-text text-lg leading-none p-1"
+                  className="absolute top-0 end-0 text-fg-muted hover:text-text leading-none p-1"
                 >
-                  ✕
+                  <X size={18} />
                 </button>
                 <label
                   htmlFor="producer-license-optional"
@@ -625,7 +626,8 @@ function RegisterProducerPageBody() {
               <button
                 type="button"
                 onClick={() => setLicenseOptionalExpanded(true)}
-                className="text-xs text-primary underline hover:text-primary-dark text-start"
+                // MEH-register-polish (F7): py-3.5 lifts the tap target to ≥44px (text-xs 16px + 2×14px) without changing the visible text size.
+                className="text-xs text-primary underline hover:text-primary-dark text-start py-3.5"
               >
                 {t("auth.register.producer.actions.add_license")}
               </button>
@@ -646,6 +648,7 @@ function RegisterProducerPageBody() {
 
         {step === STEP.STORY && (
           <div className="space-y-4" data-testid="register-frame-story">
+            <h2 className="font-headline-md text-lg font-black">{t("auth.register.producer.steps.story.title")}</h2>
             {/* MEH-860: frame-03 tagline (short_description) — the one-line
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
@@ -757,7 +760,7 @@ function RegisterProducerPageBody() {
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
                 required
               />
               <span className="leading-relaxed text-fg-muted">
@@ -772,7 +775,7 @@ function RegisterProducerPageBody() {
                 type="checkbox"
                 checked={declarationConfirmed}
                 onChange={(e) => setDeclarationConfirmed(e.target.checked)}
-                className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
                 required
               />
               <span className="leading-relaxed text-fg-muted">
@@ -786,7 +789,7 @@ function RegisterProducerPageBody() {
                   type="checkbox"
                   checked={farmerConfirmed}
                   onChange={(e) => setFarmerConfirmed(e.target.checked)}
-                  className="w-4 h-4 accent-primary mt-0.5 flex-shrink-0"
+                  className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
                   required
                 />
                 <span className="leading-relaxed text-fg-muted">
