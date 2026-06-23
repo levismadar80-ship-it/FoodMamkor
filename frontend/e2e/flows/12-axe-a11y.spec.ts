@@ -182,6 +182,12 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
       // still scans the rendered DOM, and a real failure reads as an axe
       // violation, not a misleading locator timeout. Mirrors the /producers
       // wait above.
+      // Conscious trade-off (vs the hard expect() on the 6 original routes):
+      // if one of these routes is removed it falls through to [slug] →
+      // notFound(), which today soft-404s to an axe-clean page (200) and would
+      // pass silently. A status guard can't catch it until MEH-918 makes
+      // unmatched routes return a real 404 — tighten this wait to a hard
+      // assert once that lands.
       await page
         .locator("h1")
         .first()
