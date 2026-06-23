@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — MEH-924 /producers duplicate #producers-search-input — MERGED (PR #1325)
+
+- **Outcome:** MERGED to `staging` (squash `4ef0813`), Linear MEH-924 `Done`. Subscription closed.
+- **Root cause (premise corrected):** the ticket assumed a permanent mobile+desktop variant duplicate. Phase-0 grep + PR #1316 E2E log analysis disproved it — `ProducersClient.jsx` renders the search form (label+input) **once** (`:285-311`, mounted once at `producers/page.jsx:105`); no responsive twin/parallel route/layout search. The #1316 red was a **transient** strict-mode flake (`resolved to 2 elements`, **[mobile] only**, `?focus=1` test, **passed on retry**) — a one-frame React-18 concurrent-hydration double-mount, not a structural dup. Element #1's doubled accessible name (`חיפוש בתי עסק` ×2) confirmed two copies of the *same* form.
+- **Fix (test-only):** added `await expect(input).toHaveCount(1, { timeout: 15_000 })` before the strict visible/focused asserts in `frontend/e2e/flows/17-producers-search.spec.ts` (`?focus=1`). Waits out the transient, still fails on a permanent dup. No source change.
+- **Verified:** build green; `Playwright E2E (Vercel preview)` green — `?focus=1` passed **without retry**; all 6 required checks green. Linear description updated with a ✅ Resolution banner (original spec preserved verbatim).
+- **Next:** none for MEH-924. Related (untouched): MEH-819 (IA of `/producers?q=`).
+
 ## 2026-06-23 — /register container + CTA parity with /login (Two-Doors) — DRAFT PR (MEH-839)
 
 - **Branch:** `feature/meh-839-register-container-parity` off `origin/staging`. DRAFT PR, **Refs MEH-839** (NOT Closes — #3 auth-order stays frozen/deferred). Scope: `RegisterClient.jsx` only.
