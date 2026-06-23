@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — Remove add-business CTA pill from Header — DRAFT PR (MEH-907)
+
+- **3rd of 3 sequential gated tickets** (MEH-909 #1306 → MEH-908 #1310 → **MEH-907**). Branch `feature/meh-907-remove-header-addbusiness` off `origin/staging`. DRAFT PR, Closes MEH-907.
+- **Done:** removed the Header desktop pill (`Header.jsx:324-346`) + its orphaned `showAddBusinessCta`/`isProducer`/`isAdmin` consts (137-141) + `ArrowUpLeft` import. `UserMenu` keeps its own role consts; `Link`/`t` stay. Homepage CTA + Footer panel untouched.
+- **Central component (rule 20):** Phase-0 mapped render sites; `/adversarial-review` → 0 blocking. `Header.test.jsx` is `describe.skip` (MEH-729) → no vitest breakage.
+- **STOP-and-ask resolved:** CTA also lives in `AccountSheet.jsx:150-153` (mobile "יש לך בית עסק?"). **Sapir chose Header-pill-only** → AccountSheet untouched.
+- **Follow-up:** `nav.add_business_short` (he.json:8/en.json:8) now an orphaned i18n key — left in place (Header-only scope); cleanup deferred (mirrors MEH-908's `nav.language`).
+- **Build:** `npm run build` green. 0 RTL physical props; no he/en change.
+- **Pending (Sapir):** preview QA — desktop header has no add-business pill; Homepage CTA + Footer still present; mobile drawer no orphan entry.
+
 ## 2026-06-23 — /map "איפה את?" overlay chip-wrap balance — DRAFT PR (MEH-910)
 
 - **Branch:** `feature/meh-910-map-overlay-fix` (off `origin/staging`). Visual-only. Draft PR opened.
