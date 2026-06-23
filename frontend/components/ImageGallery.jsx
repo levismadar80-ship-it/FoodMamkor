@@ -71,7 +71,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
               its own name h1 when imageless, so the masthead must always supply
               the page's single h1 (guarantees exactly-one-h1 even for the
               backend-impossible empty-name case). */}
-          <h1 className="font-headline-lg text-4xl md:text-5xl font-black text-text leading-tight">
+          <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
             {producerName}
           </h1>
         </div>
