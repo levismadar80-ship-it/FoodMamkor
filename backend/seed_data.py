@@ -55,7 +55,7 @@ PRODUCERS = [
         "lng": 35.3035,
         "phone": "050-1234567",
         "instagram": "@galil_farm",
-        "category_ids": [1],  # בשר ודגים
+        "category_ids": [1],  # בשר (MEH-927: was "בשר ודגים")
         "products": [
             {"name": "סטייק אנטריקוט", "price_range": '120-180₪/ק"ג'},
             {"name": "בשר טחון", "price_range": '70-90₪/ק"ג'},

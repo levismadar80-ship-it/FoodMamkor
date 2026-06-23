@@ -18,7 +18,10 @@ export const LICENSE_REQUIRED_CATEGORIES = [
   "לחמים ואפייה",
   "מותססים וכבושים",
   "מוצרים מוכנים",
-  "בשר ודגים",
+  // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; both animal-source food →
+  // both license-required (mirror of backend/app/constants.py).
+  "בשר",
+  "דגים",
   "חלב וגבינות",
   "שוקולד וממתקים בוטיק",
   "יין, בירה ומשקאות",
