@@ -185,13 +185,13 @@ test.describe("axe a11y net — extended public routes (MEH-921)", () => {
       // Conscious trade-off (vs the hard expect() on the 6 original routes):
       // if one of these routes is removed it falls through to [slug] →
       // notFound(), which today soft-404s to an axe-clean page (200) and would
-      // pass silently. A status guard can't catch it until MEH-918 makes
-      // unmatched routes return a real 404 — tighten this wait to a hard
-      // assert once that lands.
+      // pass silently. A status guard can't catch it yet — see MEH-918:
+      // unmatched routes still return 200, so a removed route renders an
+      // axe-clean page. Tighten this wait to a hard assert once MEH-918 lands.
       await page
         .locator("h1")
         .first()
-        .waitFor({ state: "visible", timeout: 15_000 })
+        .waitFor({ state: "visible", timeout: 20_000 })
         .catch(() => {});
       const results = await analyze(page);
       summarize(route, results);
