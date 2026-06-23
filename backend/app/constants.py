@@ -27,7 +27,11 @@ LICENSE_REQUIRED_CATEGORIES: tuple[str, ...] = (
     "לחמים ואפייה",
     "מותססים וכבושים",
     "מוצרים מוכנים",
-    "בשר ודגים",
+    # MEH-927: "בשר ודגים" split into two rows. Both are animal-source food
+    # (משרד הבריאות hard-licensing) → both license-required, same regime as
+    # the original combined row. Regulatory claim approved under MEH-927.
+    "בשר",
+    "דגים",
     "חלב וגבינות",
     # MEH-529 additions — confirmed in seed_data.py at MEH-530 Phase 0:
     "שוקולד וממתקים בוטיק",
