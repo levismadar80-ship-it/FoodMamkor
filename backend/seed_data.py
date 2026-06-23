@@ -3,7 +3,14 @@
 from app.auth import hash_password
 from app.config import settings
 from app.database import SessionLocal
-from app.models import Category, DeliveryArea, Producer, ProducerCategory, Product
+from app.models import (
+    Category,
+    DeliveryArea,
+    Producer,
+    ProducerCategory,
+    ProducerRecipe,
+    Product,
+)
 from app.models.models import User
 
 CATEGORIES = [
@@ -151,6 +158,83 @@ PRODUCERS = [
     },
 ]
 
+# MEH-906: one approved+published recipe for an existing approved producer
+# (golan-cheese) so its producer page renders a populated recipes section.
+# moderation_status/published are set EXPLICITLY in seed() below — the model
+# defaults are pending/False, which would NOT pass the public render filter
+# (producer_recipes.py:339-340: published.is_(True) AND
+# moderation_status == "approved").
+GOLAN_RECIPE = {
+    "producer_slug": "golan-cheese",
+    "title": "טוסט גבינת עיזים, דבש ואגוזים",
+    "description": (
+        "פתיחה מושלמת לבוקר איטי — גבינת עיזים מהר הגולן על מחמצת חמה, "
+        "עם דבש ואגוזים."
+    ),
+    "ingredients": "\n".join(
+        [
+            "2 פרוסות לחם מחמצת",
+            "גבינת עיזים מיושנת — כ-100 גרם",
+            "2 כפות דבש",
+            "חופן אגוזי מלך קצוצים",
+            "עלי תימין טריים",
+        ]
+    ),
+    "instructions": "\n".join(
+        [
+            "1. קולים את פרוסות המחמצת עד הזהבה.",
+            "2. מורחים נדיבות גבינת עיזים.",
+            "3. מפזרים אגוזי מלך קצוצים.",
+            "4. מזלפים דבש ומסיימים בעלי תימין.",
+        ]
+    ),
+    "prep_time_min": 5,
+    "cook_time_min": 5,
+    "servings": 2,
+}
+
+
+def _seed_golan_recipe(db):
+    """MEH-906: insert the golan-cheese demo recipe, approved+published.
+
+    Idempotent guard by (producer_id, title) so re-running seed() does not
+    duplicate. moderation_status/published are set EXPLICITLY (model defaults
+    are pending/False, which would fail the public render filter at
+    producer_recipes.py:339-340).
+    """
+    golan = (
+        db.query(Producer)
+        .filter(Producer.slug == GOLAN_RECIPE["producer_slug"])
+        .first()
+    )
+    if not golan:
+        return
+    existing_recipe = (
+        db.query(ProducerRecipe)
+        .filter(
+            ProducerRecipe.producer_id == golan.id,
+            ProducerRecipe.title == GOLAN_RECIPE["title"],
+        )
+        .first()
+    )
+    if existing_recipe:
+        return
+    db.add(
+        ProducerRecipe(
+            producer_id=golan.id,
+            title=GOLAN_RECIPE["title"],
+            description=GOLAN_RECIPE["description"],
+            ingredients=GOLAN_RECIPE["ingredients"],
+            instructions=GOLAN_RECIPE["instructions"],
+            prep_time_min=GOLAN_RECIPE["prep_time_min"],
+            cook_time_min=GOLAN_RECIPE["cook_time_min"],
+            servings=GOLAN_RECIPE["servings"],
+            moderation_status="approved",
+            published=True,
+        )
+    )
+    db.commit()
+
 
 def seed():
     db = SessionLocal()
@@ -211,6 +295,10 @@ def seed():
                 )
 
         db.commit()
+
+        # MEH-906: seed one approved+published recipe for golan-cheese so its
+        # producer page renders a populated recipes section.
+        _seed_golan_recipe(db)
 
         # Seed admin user from env vars.
         # Both ADMIN_EMAIL and ADMIN_PASSWORD must be set; otherwise we
