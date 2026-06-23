@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, Globe, User, ArrowUpLeft } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -22,8 +22,11 @@ import LanguageToggle from "@/components/LanguageToggle";
  *           removed in the Header minimal-top PR, MEH-789 PR-B).
  * History:  MEH-789 (creation, 2026-06-10; bottom nav system port, PR-A);
  *           MEH-868 (chrome polish: "↗" dingbat → Phosphor ArrowUpLeft;
- *           plural logout via account.menu.logout; static non-interactive
- *           language row; safe-area-derived sheet offset).
+ *           static non-interactive language row; safe-area-derived sheet
+ *           offset);
+ *           MEH-908 (logout copy → gerund "התנתקות" via shared
+ *           account.menu.logout; deduped language row — dropped redundant
+ *           leading Globe + "שפה" label, LanguageToggle is the single control).
  */
 export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const t = useTranslations();
@@ -160,11 +163,12 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               </Link>
             </li>
           )}
-          {/* Language — not a button (embeds the LanguageToggle control 1:1). */}
+          {/* Language — not a button (embeds the LanguageToggle control 1:1).
+              MEH-908: dropped the redundant leading Globe + "שפה" label; the
+              LanguageToggle already renders its own Globe (single control),
+              and "עב / EN" reads as the language affordance on its own. */}
           <li className={liCls}>
             <div className={staticRowCls + " text-background/65 text-[13.5px]"}>
-              <Globe size={19} weight="regular" className={iconCls} aria-hidden="true" />
-              {t("nav.language")}
               <span className="ms-auto inline-flex items-center gap-1.5">
                 <span className="font-english text-[13px] text-background/70" dir="ltr" aria-hidden="true">
                   עב / EN
@@ -184,8 +188,10 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
                 className={rowCls + " text-background/65 text-[13.5px]"}
               >
                 <SignOut size={19} weight="regular" className={iconCls} aria-hidden="true" />
-                {/* MEH-868: plural voice (ADR-014) — reuse the existing plural
-                    account.menu.logout instead of the singular nav.logout. */}
+                {/* MEH-908: gerund "התנתקות" (ADR-014) via the shared
+                    account.menu.logout key — neutral, aligns with the
+                    noun-based sheet items, and fixes desktop UserMenu in one
+                    place (both surfaces read the same key). */}
                 {t("account.menu.logout")}
               </button>
             </li>
