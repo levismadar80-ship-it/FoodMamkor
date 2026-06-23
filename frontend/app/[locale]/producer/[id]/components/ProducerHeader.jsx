@@ -27,15 +27,21 @@ export default function ProducerHeader({
   isVacation,
   vacationReturnLabel,
   primaryCategory,
+  hasImages = true,
 }) {
   const t = useTranslations();
   return (
     <>
       {/* Header: name + trust badges */}
       <div className="flex items-center flex-wrap gap-2 mb-2">
-        <h1 className="font-headline-lg text-4xl font-bold text-text">
-          {producer.name}
-        </h1>
+        {/* MEH-815: when the profile has no images the name is carried by the
+            Tinted Masthead hero (the page <h1>), so this h1 is omitted to keep
+            the producer name appearing exactly once. Badges/meta stay. */}
+        {hasImages && (
+          <h1 className="font-headline-lg text-4xl font-bold text-text">
+            {producer.name}
+          </h1>
+        )}
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
         <BadgeRow producer={producer} />
         {/* MEH-51: trust tier badge */}

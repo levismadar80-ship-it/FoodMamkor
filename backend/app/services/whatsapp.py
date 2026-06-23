@@ -223,10 +223,11 @@ def _post_result(payload: dict[str, Any], *, kind: str, to: str) -> WhatsAppSend
     try:
         r = httpx.post(url, json=payload, headers=headers, timeout=_TIMEOUT_SECONDS)
         r.raise_for_status()
-        # getattr: a real httpx.Response always has status_code, but a caller's
-        # test double may not — never turn a successful send into an
-        # AttributeError. None flows cleanly through _classify (→ accepted).
-        result = _classify(getattr(r, "status_code", None), _safe_json(r))
+        # MEH-771 Chunk C: dropped the `getattr(r, "status_code", None)` debt.
+        # The fallback existed only to accommodate the _OkResp test mock; the
+        # mock now declares `status_code = 200`. A real httpx.Response always
+        # has status_code, so direct read is the right contract.
+        result = _classify(r.status_code, _safe_json(r))
     except httpx.HTTPStatusError as e:
         # Non-2xx with a response body — parse the Graph error object.
         body = _safe_json(e.response)

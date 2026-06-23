@@ -41,7 +41,7 @@ export default function ContactClient() {
   )}`;
 
   return (
-    <main className="min-h-screen">
+    <section className="min-h-screen">
       <div className="max-w-2xl mx-auto px-4 py-16">
         <div className="bg-white rounded-[16px] p-8 border border-border shadow-[0_2px_12px_rgba(46,104,83,0.04)]">
           <h1 className="font-headline-display text-5xl font-bold text-text mb-2 text-center">
@@ -97,10 +97,11 @@ export default function ContactClient() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-text">
+                <label htmlFor="contact-name" className="block text-sm font-medium mb-1 text-text">
                   {t("field_name_label")}
                 </label>
                 <input
+                  id="contact-name"
                   type="text"
                   value={form.name}
                   onChange={set("name")}
@@ -109,10 +110,11 @@ export default function ContactClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-text">
+                <label htmlFor="contact-email" className="block text-sm font-medium mb-1 text-text">
                   {t("field_email_label")}
                 </label>
                 <input
+                  id="contact-email"
                   type="email"
                   value={form.email}
                   onChange={set("email")}
@@ -122,10 +124,11 @@ export default function ContactClient() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-text">
+                <label htmlFor="contact-message" className="block text-sm font-medium mb-1 text-text">
                   {t("field_message_label")}
                 </label>
                 <textarea
+                  id="contact-message"
                   value={form.message}
                   onChange={set("message")}
                   required
@@ -167,6 +170,6 @@ export default function ContactClient() {
           )}
         </div>
       </div>
-    </main>
+    </section>
   );
 }

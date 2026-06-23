@@ -23,6 +23,7 @@ import {
   Megaphone,
   Seal,
   Tag,
+  ChatCircleSlash,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -48,6 +49,8 @@ const NAV_HREFS = [
   { href: "/admin/kashrut", key: "kashrut", Icon: Seal },
   { href: "/admin/reports", key: "reports", Icon: Warning },
   { href: "/admin/category-requests", key: "category_requests", Icon: Tag },
+  // MEH-771 Chunk C — admin view of undelivered outbound WhatsApp.
+  { href: "/admin/whatsapp-failures", key: "whatsapp_failures", Icon: ChatCircleSlash },
   { href: "/admin/analytics", key: "analytics", Icon: ChartLineUp },
   { href: "/admin/settings", key: "settings", Icon: GearSix },
   { href: "/admin/help", key: "help", Icon: Lifebuoy },

@@ -52,7 +52,10 @@ export default function CityPickerModal({ open, onClose, onSelectCity }) {
         </button>
         <h3 id="city-picker-title" className="font-headline-md text-lg font-bold text-text mb-1">{t("map.city_picker.heading")}</h3>
         <p className="text-fg-muted text-sm mb-4">{t("map.city_picker.subheading")}</p>
-        <div className="flex flex-wrap gap-2 mb-4">
+        {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was
+            flex-wrap → 3 + 1 orphan at 390px); sm:flex restores the
+            desktop single-row layout unchanged. */}
+        <div className="grid grid-cols-2 gap-2 mb-4 sm:flex sm:flex-wrap">
           {POPULAR_CITIES.map(({ key, canonical }) => (
             <button key={key} type="button" onClick={() => onSelectCity(canonical)} className="px-4 py-2 rounded-full text-sm font-medium border border-border bg-white text-text hover:border-primary hover:text-primary transition">{t(`modals.location.popular_cities.${key}`)}</button>
           ))}

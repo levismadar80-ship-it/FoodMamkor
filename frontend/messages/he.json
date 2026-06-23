@@ -11,7 +11,7 @@
     "about": "אודות",
     "favorites": "מועדפים",
     "admin": "אדמין",
-    "login": "כניסה לחשבון",
+    "login": "כניסה",
     "add_business": "הוסיפו את העסק שלך",
     "mobile_label": "ניווט מובייל",
     "profile": "פרופיל",
@@ -19,7 +19,7 @@
     "language": "שפה",
     "main_label": "ניווט ראשי",
     "search_label": "חיפוש",
-    "trust_strip": "כל בית עסק עובר אישור אישי",
+    "trust_strip": "שיחה אישית עם כל בית עסק",
     "menu_close": "סגור תפריט",
     "menu_open": "פתח תפריט",
     "lang_switch_to_en": "Switch to English",
@@ -231,20 +231,38 @@
           "business": {
             "title": "2. פרטי העסק",
             "subtitle": "כמה שדות בלבד — תשלימו את שאר הפרטים מהדשבורד אחרי האישור."
+          },
+          "category": {
+            "title": "3. קטגוריה"
+          },
+          "story": {
+            "title": "4. הסיפור שלך"
           }
         },
+        "step_captions": {
+          "account": "חשבון",
+          "details": "עסק",
+          "category": "קטגוריה",
+          "story": "סיפור"
+        },
         "fields": {
-          "name": "שם מלא *",
-          "email": "אימייל *",
-          "password": "סיסמה *",
-          "producer_name": "שם העסק *",
+          "name": "לדוגמה: רותי לוי",
+          "name_label": "שם מלא *",
+          "email": "name@example.com",
+          "email_label": "אימייל *",
+          "password": "לפחות 12 תווים",
+          "password_label": "סיסמה *",
+          "producer_name": "לדוגמה: המאפייה של רותי",
+          "producer_name_label": "שם העסק *",
           "city": "יישוב",
-          "address": "כתובת",
+          "address": "לדוגמה: רחוב הזית 5, חיפה",
+          "address_label": "כתובת",
           "tagline_label": "במשפט אחד",
           "tagline_placeholder": "מה שהכי חשוב שידעו עליך",
           "description_label": "ספרו על העסק שלך",
           "description_hint": "סיפור של 100-300 מילים — איך התחלת? מה מיוחד אצלך? מה הקרוב ביותר ללב שלך?",
-          "phone": "טלפון WhatsApp * (0501234567)",
+          "phone": "0501234567",
+          "phone_label": "טלפון WhatsApp *",
           "phone_hint": "נשלח לך הודעת WhatsApp לאישור ולהשלמת הפרופיל",
           "license_required_label": "מספר רישיון יצרן (חובה)",
           "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
@@ -255,10 +273,11 @@
           "body": "מה שתכתבי כאן הופך לעמוד העסק שלך במהמקור — המקום שבו לקוחות פוגשים אותך לפני שהם פוגשים את מה שאת מוכרת. לא תיאור מוצר. סיפור."
         },
         "account_reassurance": "כל בית עסק עובר אישור אישי",
+        "photo_disclosure": "כדי שהדף יעלה לאוויר צריך לפחות תמונה אחת — אפשר להעלות מהדשבורד אחרי האישור.",
         "validation": {
           "all_required": "יש למלא את כל שדות החובה",
           "email_invalid": "אימייל לא תקין",
-          "password_complexity": "הסיסמה חייבת להכיל לפחות 8 תווים, אות גדולה ומספר",
+          "password_complexity": "הסיסמה צריכה להכיל לפחות 12 תווים",
           "producer_name_required": "יש למלא שם עסק",
           "phone_required": "יש למלא מספר טלפון תקין",
           "phone_invalid": "מספר טלפון לא תקין",
@@ -303,7 +322,7 @@
           "next_step2": "שיחת היכרות",
           "next_step3": "הדף עולה לאוויר",
           "dashboard_cta": "לדשבורד שלי →",
-          "share_msg": "היי 🌿 הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל אמיתי. מוזמנת להצטרף: https://mehamakor.online/register/producer",
+          "share_msg": "היי הצטרפתי עכשיו למהמקור — אתר ישראלי שמחבר בתי עסק מקומיים עם קונות שמחפשות אוכל אמיתי. מוזמנת להצטרף: https://mehamakor.online/register/producer",
           "share_cta": "הזמיני שכנה",
           "inbox_title": "בדקו את תיבת האימייל שלך",
           "inbox_body": "אם האימייל פנוי, נשלחה אלייך הודעת אימות. אנא בדקו את תיבת הדואר.",
@@ -320,7 +339,7 @@
       "dashboard": "לוח הבקרה שלי",
       "admin": "ממשק אדמין",
       "aria": "תפריט — {name}",
-      "logout": "התנתקו"
+      "logout": "התנתקות"
     },
     "sheet": {
       "connected": "מחוברת",
@@ -1077,6 +1096,7 @@
         "kashrut": "כשרות",
         "reports": "דיווחים",
         "category_requests": "בקשות קטגוריה",
+        "whatsapp_failures": "הודעות שלא נמסרו",
         "analytics": "אנליטיקס",
         "settings": "הגדרות",
         "help": "עזרה"
@@ -1739,6 +1759,25 @@
         "reject": "דחי",
         "merge": "מיזגי",
         "reset": "אפסי"
+      }
+    },
+    "whatsapp_failures": {
+      "title": "הודעות וואטסאפ שלא נמסרו",
+      "subtitle": "7 הימים האחרונים — לקוחות שלא קיבלו את ההודעה",
+      "empty": "אין הודעות שלא נמסרו ב-7 הימים האחרונים — מצוין",
+      "load_error": "שגיאה בטעינת ההודעות",
+      "columns": {
+        "phone": "מספר נמען",
+        "kind": "סוג הודעה",
+        "status": "סטטוס",
+        "error_code": "קוד שגיאה",
+        "error_message": "פירוט שגיאה",
+        "sent_at": "נשלחה",
+        "updated_at": "עודכנה"
+      },
+      "status": {
+        "failed": "נכשלה",
+        "window_expired": "חלון 24 שעות נסגר"
       }
     },
     "group_buys": {
@@ -3389,6 +3428,9 @@
         "cta": "השלימי פרופיל",
         "cta_aria": "השלימי את הפרופיל שלך",
         "ring_aria": "השלמת פרופיל: {percent}%",
+        "checklist_aria": "התקדמות השלמת הפרופיל",
+        "checklist_done": "הושלם",
+        "checklist_todo": "עדיין חסר",
         "fields": {
           "city": "עיר",
           "coords": "מיקום על המפה",

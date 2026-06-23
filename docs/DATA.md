@@ -560,6 +560,14 @@ GET    /webhook/whatsapp     public — Meta subscription challenge, verify_toke
 POST   /webhook/whatsapp     public — Meta inbound events, HMAC-SHA256 signature gate
 ```
 
+### Admin — undelivered WhatsApp (`app/routers/admin_whatsapp.py`) — MEH-771 Chunk C
+
+```
+GET    /admin/whatsapp/failed     admin — undelivered outbound (status IN failed,
+                                  window_expired) from the last 7 days, ordered
+                                  created_at desc; list-only, no resend/retry
+```
+
 ### Admin — experiences (`app/routers/admin_experiences.py`)
 
 ```

@@ -1,11 +1,18 @@
 """MEH-509 PR2c — WhatsApp webhook receiver (GET challenge + POST + HMAC).
 
 Security boundary tests: the X-Hub-Signature-256 HMAC is the only thing
-standing between the open internet and writes to `inbound_messages`.
-Every POST path must verify (a) signature is required, (b) signature is
-constant-time-compared, (c) an empty `whatsapp_app_secret` is treated as
-"no security configured → reject", (d) replays are absorbed by the
-UNIQUE(meta_message_id) constraint, not by a pre-check SELECT.
+standing between the open internet and writes to `inbound_messages` /
+`outbound_messages`. Every POST path must verify (a) signature is
+required, (b) signature is constant-time-compared, (c) an empty
+`whatsapp_app_secret` is treated as "no security configured → reject",
+(d) replays are absorbed by the UNIQUE(meta_message_id) constraint
+(inbound) or the precedence-guarded UPDATE (outbound), not by a
+pre-check SELECT.
+
+MEH-771 Chunk B adds outbound-status reconciliation tests: a signed
+`statuses[]` payload flips the matching `outbound_messages` row from
+'accepted' → 'delivered' / 'failed' (terminal states never overwritten;
+unknown wamid logged + ignored; signature still required).
 
 Mocking pattern: monkeypatch the runtime `settings` object inline
 (matches PR1/PR2a/PR2b convention in tests/test_whatsapp_notify.py:57-63
@@ -21,6 +28,7 @@ import json
 import pytest
 
 from app.models import InboundMessage
+from app.models.models import OutboundMessage
 
 
 FAKE_APP_SECRET = "meh509-pr2c-test-secret-not-for-prod"
@@ -84,6 +92,75 @@ def _build_text_payload(
             }
         ],
     }
+
+
+def _build_status_payload(
+    *,
+    message_id: str = "wamid.HBgLNzIxXXXX_status01",
+    status: str = "delivered",
+    recipient_id: str = "972501112222",
+    timestamp: str = "1716381000",
+    errors: list | None = None,
+) -> dict:
+    """MEH-771 Chunk B factory — Meta `value.statuses[]` shape.
+
+    Mirrors `_build_text_payload`. Caller passes ``errors=[{...}]`` to
+    simulate a `failed` receipt; default is None (omitted) for the
+    `delivered`/`read`/`sent` happy paths.
+    """
+    status_obj: dict = {
+        "id": message_id,
+        "status": status,
+        "timestamp": timestamp,
+        "recipient_id": recipient_id,
+    }
+    if errors is not None:
+        status_obj["errors"] = errors
+    return {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "WBA_ACCOUNT_ID",
+                "changes": [
+                    {
+                        "value": {
+                            "messaging_product": "whatsapp",
+                            "metadata": {
+                                "display_phone_number": "972552553744",
+                                "phone_number_id": "PHONE_NUMBER_ID",
+                            },
+                            "statuses": [status_obj],
+                        },
+                        "field": "messages",
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _seed_outbound(
+    db,
+    *,
+    wamid: str,
+    status: str = "accepted",
+    to_phone: str = "972501112222",
+    kind: str = "test.template",
+) -> OutboundMessage:
+    """MEH-771 Chunk B helper — seed one `outbound_messages` row.
+
+    Mirrors the shape `app/services/whatsapp.py:_persist_outbound` writes
+    at send time (`status='accepted'`, `meta_message_id=wamid`).
+    """
+    row = OutboundMessage(
+        to_phone=to_phone,
+        kind=kind,
+        meta_message_id=wamid,
+        status=status,
+    )
+    db.add(row)
+    db.commit()
+    return row
 
 
 # ---- GET challenge ---------------------------------------------------------
@@ -227,7 +304,9 @@ def test_post_malformed_signature_prefix_returns_403(client, db, webhook_setting
     body_bytes = json.dumps(payload).encode("utf-8")
     sha1_sig = (
         "sha1="
-        + hmac.new(FAKE_APP_SECRET.encode("utf-8"), body_bytes, hashlib.sha1).hexdigest()
+        + hmac.new(
+            FAKE_APP_SECRET.encode("utf-8"), body_bytes, hashlib.sha1
+        ).hexdigest()
     )
     resp = client.post(
         "/webhook/whatsapp",
@@ -249,10 +328,7 @@ def test_post_empty_secret_fails_closed(client, db, monkeypatch):
     body_bytes = json.dumps(payload).encode("utf-8")
     # Sign with an empty key — this is the value the handler WOULD compute
     # if it didn't fail-closed. We want 403 anyway.
-    sig = (
-        "sha256="
-        + hmac.new(b"", body_bytes, hashlib.sha256).hexdigest()
-    )
+    sig = "sha256=" + hmac.new(b"", body_bytes, hashlib.sha256).hexdigest()
     resp = client.post(
         "/webhook/whatsapp",
         content=body_bytes,
@@ -357,7 +433,9 @@ def test_post_malformed_entry_shape_returns_200_logs_warning(
         for r in caplog.records
         if r.levelno == logging.WARNING and "entry not a list" in r.getMessage()
     ]
-    assert relevant, f"expected entry-not-a-list warning, got: {[r.getMessage() for r in caplog.records]}"
+    assert relevant, (
+        f"expected entry-not-a-list warning, got: {[r.getMessage() for r in caplog.records]}"
+    )
     # The log line carries the type name but not the raw value (PII guard).
     msg = relevant[0].getMessage()
     assert "str" in msg
@@ -450,39 +528,276 @@ def test_post_within_content_length_cap_still_processes(client, db, webhook_sett
     )
 
 
-def test_post_status_event_returns_200_no_persist(client, db, webhook_settings):
-    """Delivery/read receipts arrive on `value.statuses[]` (not `messages`).
-    We log + 200 + persist nothing in v1."""
-    payload = {
-        "object": "whatsapp_business_account",
-        "entry": [
-            {
-                "id": "WBA_ACCOUNT_ID",
-                "changes": [
-                    {
-                        "value": {
-                            "messaging_product": "whatsapp",
-                            "metadata": {
-                                "display_phone_number": "972552553744",
-                                "phone_number_id": "PHONE_NUMBER_ID",
-                            },
-                            "statuses": [
-                                {
-                                    "id": "wamid.status_only",
-                                    "status": "delivered",
-                                    "timestamp": "1716381000",
-                                    "recipient_id": "972501112222",
-                                }
-                            ],
-                        },
-                        "field": "messages",
-                    }
-                ],
-            }
-        ],
-    }
+# ---- MEH-771 Chunk B — outbound status reconciliation ---------------------
+
+
+def test_post_status_event_does_not_write_inbound(client, db, webhook_settings):
+    """Delivery receipts arrive on `value.statuses[]` (not `messages`). They
+    MUST NOT bleed into the inbound pipeline — `inbound_messages` stays
+    untouched even when the wamid has no matching outbound row.
+
+    Old (pre-Chunk-B) name: ``test_post_status_event_returns_200_no_persist``
+    (asserted only that statuses → 200 + no inbound write). Chunk B keeps
+    the inbound-zero invariant and adds the reconcile-behavior tests
+    below; this test guards the "no cross-pipe pollution" contract.
+    """
+    payload = _build_status_payload(
+        message_id="wamid.meh771_no_inbound",
+        status="delivered",
+    )
     body_bytes = json.dumps(payload).encode("utf-8")
     headers = {"X-Hub-Signature-256": _sign(body_bytes)}
     resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
     assert resp.status_code == 200
+    # No inbound row created.
     assert db.query(InboundMessage).count() == 0
+    # No outbound row created either — reconcile UPDATES existing rows,
+    # never INSERTs (that's Chunk A's job).
+    assert db.query(OutboundMessage).count() == 0
+
+
+def test_status_delivered_reconciles_accepted_row(client, db, webhook_settings):
+    """Signed `delivered` status for a known wamid → row.status flips from
+    'accepted' to 'delivered' and updated_at is populated."""
+    wamid = "wamid.meh771_deliver_01"
+    seed = _seed_outbound(db, wamid=wamid, status="accepted")
+    assert seed.updated_at is None
+
+    payload = _build_status_payload(message_id=wamid, status="delivered")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row.status == "delivered"
+    assert row.updated_at is not None
+    assert row.error_code is None
+    assert row.error_message is None
+
+
+def test_status_read_treated_as_delivered(client, db, webhook_settings):
+    """`read` folds into 'delivered' in Chunk B (no separate 'read' enum).
+    Behavior identical to `delivered` for now; Chunk C may split them."""
+    wamid = "wamid.meh771_read_01"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    payload = _build_status_payload(message_id=wamid, status="read")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row.status == "delivered"
+    assert row.updated_at is not None
+
+
+def test_status_sent_is_noop(client, db, webhook_settings):
+    """Meta's `sent` ≈ our 'accepted' from Chunk A's send-time write —
+    no UPDATE issued, no updated_at touched. Counter still increments
+    via the existing `statuses` total, but `reconciled` does NOT."""
+    wamid = "wamid.meh771_sent_01"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    payload = _build_status_payload(message_id=wamid, status="sent")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row.status == "accepted"
+    assert row.updated_at is None
+
+
+def test_status_failed_captures_error_code_and_message(client, db, webhook_settings):
+    """`failed` receipt with `errors=[{code, message}]` → row flips to
+    'failed' AND error_code (int) + error_message (str) are persisted."""
+    wamid = "wamid.meh771_fail_01"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    payload = _build_status_payload(
+        message_id=wamid,
+        status="failed",
+        errors=[
+            {
+                "code": 131026,
+                "title": "Message undeliverable",
+                "message": "Receiver incapable",
+            }
+        ],
+    )
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row.status == "failed"
+    assert row.error_code == 131026
+    assert row.error_message == "Receiver incapable"
+    assert row.updated_at is not None
+
+
+def test_status_failed_without_errors_array_does_not_crash(
+    client, db, webhook_settings
+):
+    """`failed` with missing/empty `errors[]` is still a valid receipt:
+    status flips to 'failed', error_code/error_message stay NULL,
+    and crucially the handler does NOT IndexError on errors[0]."""
+    wamid = "wamid.meh771_fail_no_errs"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    # errors omitted entirely (Meta sometimes ships just status + id).
+    payload = _build_status_payload(
+        message_id=wamid,
+        status="failed",
+        errors=None,
+    )
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row.status == "failed"
+    assert row.error_code is None
+    assert row.error_message is None
+    assert row.updated_at is not None
+
+
+def test_status_unknown_wamid_logs_no_crash(client, db, webhook_settings, caplog):
+    """Status receipt for a wamid not in `outbound_messages` (e.g., a
+    pre-Chunk-A send the DB never persisted) → 200, zero mutations, and
+    a log line carrying the recipient last-4 ONLY (no full phone)."""
+    import logging
+
+    payload = _build_status_payload(
+        message_id="wamid.meh771_ghost_01",
+        status="delivered",
+        recipient_id="972501119999",
+    )
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+
+    with caplog.at_level(logging.INFO, logger="app.routers.whatsapp_webhook"):
+        resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    assert db.query(OutboundMessage).count() == 0
+
+    # Log line carries last-4 of recipient, NOT the full phone, NOT the body.
+    msgs = [r.getMessage() for r in caplog.records]
+    unknown_logs = [m for m in msgs if "unknown wamid_prefix=" in m]
+    assert unknown_logs, f"expected unknown-wamid log, got: {msgs}"
+    line = unknown_logs[0]
+    assert "9999" in line  # last 4 digits present
+    assert "972501119999" not in line  # full phone NEVER logged
+
+
+def test_status_idempotent_replay(client, db, webhook_settings):
+    """Replaying the same `delivered` status leaves the row in the same
+    state — second POST matches 0 rows (status='accepted' guard) and
+    silently no-ops. Both POSTs return 200."""
+    wamid = "wamid.meh771_replay_01"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    payload = _build_status_payload(message_id=wamid, status="delivered")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+
+    r1 = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert r1.status_code == 200
+    db.expire_all()
+    row_after_first = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    assert row_after_first.status == "delivered"
+    first_updated_at = row_after_first.updated_at
+    assert first_updated_at is not None
+
+    # Replay the identical signed payload.
+    r2 = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+    assert r2.status_code == 200
+    db.expire_all()
+    row_after_second = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    # Status unchanged; updated_at NOT bumped on the replay (UPDATE matched
+    # 0 rows because status no longer == 'accepted').
+    assert row_after_second.status == "delivered"
+    assert row_after_second.updated_at == first_updated_at
+    # Single row, no duplicate insert.
+    assert (
+        db.query(OutboundMessage)
+        .filter(OutboundMessage.meta_message_id == wamid)
+        .count()
+        == 1
+    )
+
+
+def test_status_no_downgrade_from_delivered(client, db, webhook_settings):
+    """Precedence: a row already at 'delivered' must NOT be overwritten by
+    a late `failed` receipt. Terminal states stay terminal."""
+    wamid = "wamid.meh771_no_downgrade_01"
+    _seed_outbound(db, wamid=wamid, status="delivered")
+
+    payload = _build_status_payload(
+        message_id=wamid,
+        status="failed",
+        errors=[{"code": 131026, "message": "late failure"}],
+    )
+    body_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"X-Hub-Signature-256": _sign(body_bytes)}
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 200
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    # 'delivered' preserved; error fields stay NULL (no overwrite occurred).
+    assert row.status == "delivered"
+    assert row.error_code is None
+    assert row.error_message is None
+
+
+def test_status_signature_still_required(client, db, webhook_settings):
+    """The HMAC gate applies to status payloads identically to inbound
+    payloads — an unsigned (or wrong-signature) status receipt → 403,
+    zero outbound mutations. The signature gate is the only thing
+    standing between the internet and writes to outbound_messages."""
+    wamid = "wamid.meh771_unsigned_01"
+    _seed_outbound(db, wamid=wamid, status="accepted")
+
+    payload = _build_status_payload(message_id=wamid, status="delivered")
+    body_bytes = json.dumps(payload).encode("utf-8")
+    # Wrong-secret signature.
+    headers = {"X-Hub-Signature-256": _sign(body_bytes, secret="attacker-guess")}
+
+    resp = client.post("/webhook/whatsapp", content=body_bytes, headers=headers)
+
+    assert resp.status_code == 403
+    db.expire_all()
+    row = (
+        db.query(OutboundMessage).filter(OutboundMessage.meta_message_id == wamid).one()
+    )
+    # Row untouched — still 'accepted', updated_at still NULL.
+    assert row.status == "accepted"
+    assert row.updated_at is None

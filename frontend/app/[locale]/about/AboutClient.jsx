@@ -115,9 +115,7 @@ export default function AboutPage() {
             {/* portrait standfirst — sticky on desktop. MEH-788 S14: IMG-01
                 framed PLATE — warm-white mat + hairline + an offset
                 background-alt panel behind it (depth by overlap, zero shadows).
-                The current image is kept until the matte IMG-01 founder
-                portrait lands (swap the src then); the plate treatment is the
-                visual port. */}
+                The plate frames the founder portrait below. */}
             <figure className="m-0 md:sticky md:top-10 max-w-[280px] md:max-w-[360px]">
               <div className="relative">
                 {/* offset panel behind the mat */}
@@ -127,9 +125,8 @@ export default function AboutPage() {
                 />
                 {/* mat + hairline + the 3:4 image */}
                 <div className="relative rounded-lg bg-surface-card border border-border p-2">
-                  {/* IMG-01: empty/failed state is a tonal background-alt
-                      plate (no leaf box). The matte founder portrait drops in
-                      when its Cloudinary ID lands; current image kept meanwhile. */}
+                  {/* IMG-01: founder portrait. Empty/failed state falls back
+                      to a tonal background-alt plate (no leaf box). */}
                   <div
                     className="relative w-full aspect-[3/4] rounded-md overflow-hidden bg-background-alt"
                     aria-label={t("story.image_aria")}

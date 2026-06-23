@@ -742,6 +742,17 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-902: serialize the rich delivery relation so MapProducerCard's
+    # "delivers to your city" pill can render — it needs per-row `city` +
+    # `delivery_day`, which the flat `delivery_cities` above doesn't carry.
+    # Relation is already selectinload'd on the LIST query
+    # (`backend/app/services/producer_listing.py:100,132`), so this is a
+    # serialization-only change — no extra query, no N+1. DETAIL already
+    # exposes the same field via `ProducerDetailOut:829`; this lifts it up
+    # so LIST and DETAIL agree on shape. The flat `delivery_cities` column
+    # is currently unused (live producers have it empty while the relation
+    # has rows) — separate cleanup ticket, not addressed here.
+    delivery_areas: list[DeliveryAreaOut] = []
     # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.
@@ -1993,3 +2004,23 @@ class VacationModeState(BaseModel):
 class RiskScoreResponse(BaseModel):
     score: int | None = None
     reasoning: str | None = None
+
+
+# --- Admin: undelivered WhatsApp messages (admin_whatsapp.py) ---
+# MEH-771 Chunk C: shape of GET /admin/whatsapp/failed. One row per
+# outbound message that did NOT reach the recipient (status='failed' or
+# 'window_expired') in the last 7 days. error_code / error_message /
+# updated_at are nullable — populated by the webhook reconcile path
+# (Chunk B) when Meta returns an error object, or left NULL when the
+# status was set at send time (e.g. immediate window_expired).
+class OutboundMessageAdminOut(BaseModel):
+    id: UUID
+    to_phone: str
+    kind: str
+    status: str
+    error_code: int | None = None
+    error_message: str | None = None
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}

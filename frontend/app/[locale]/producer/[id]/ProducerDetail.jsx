@@ -20,7 +20,6 @@ import { useTabScroll } from "./hooks/useTabScroll";
 import {
   buildShareUrl,
   buildShowOnMapHandler,
-  getProducerInitials,
   getVacationReturnLabel,
 } from "./lib/producer-format";
 
@@ -73,7 +72,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
     producer.availability_state === "on_vacation" ||
     (!producer.availability_state && producer.availability_status === "vacation");
   const vacationReturnLabel = getVacationReturnLabel(producer, t, locale);
-  const producerInitials = getProducerInitials(producer);
+  // MEH-815: imageless profiles render the Tinted Masthead hero (name as h1);
+  // ProducerHeader omits its own name h1 in that case to keep the name singular.
+  const hasImages = (producer.images?.length ?? 0) > 0;
   const primaryCategory = producer.categories?.[0];
   const handleShowOnMap = buildShowOnMapHandler(producer, router);
 
@@ -104,7 +105,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
       <ImageGallery
         images={producer.images || []}
         producerId={producer.id}
-        producerInitials={producerInitials}
+        producerName={producer.name}
       />
 
       {/* Mobile tab bar */}
@@ -146,6 +147,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             isVacation={isVacation}
             vacationReturnLabel={vacationReturnLabel}
             primaryCategory={primaryCategory}
+            hasImages={hasImages}
           />
           <ActionRow
             producer={producer}

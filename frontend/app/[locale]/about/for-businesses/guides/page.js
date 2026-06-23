@@ -53,7 +53,7 @@ export default async function GuidesIndexPage({ params }) {
   const t = await getTranslations({ locale, namespace: "guides" });
   const ti = await getTranslations({ locale, namespace: "guides.index" });
   return (
-    <main className="min-h-screen bg-background text-text">
+    <section className="min-h-screen bg-background text-text">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 sm:mb-14">
           <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
@@ -106,6 +106,6 @@ export default async function GuidesIndexPage({ params }) {
           </p>
         </footer>
       </div>
-    </main>
+    </section>
   );
 }
