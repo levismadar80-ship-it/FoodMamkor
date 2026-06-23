@@ -230,6 +230,12 @@
           "business": {
             "title": "2. Business details",
             "subtitle": "Just a few fields — you can complete the rest from the dashboard after approval."
+          },
+          "category": {
+            "title": "3. Category"
+          },
+          "story": {
+            "title": "4. Your story"
           }
         },
         "fields": {
