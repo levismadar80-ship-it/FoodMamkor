@@ -362,7 +362,7 @@ function RegisterProducerPageBody() {
               <div
                 key={s}
                 aria-current={s === step ? "step" : undefined}
-                className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
+                className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted"}`}
               >
                 <span dir="ltr" className="font-english italic text-2xl leading-none">
                   {String(s).padStart(2, "0")}
