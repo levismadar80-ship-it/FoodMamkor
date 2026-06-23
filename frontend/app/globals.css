@@ -209,17 +209,17 @@ body.sheet-open .cookie-banner {
    map container gets squished (or on pages where it lands high in the
    viewport), the header logo can cover it. Bump z-index to 1001 (just
    above the header's 1000) so the attribution is never hidden. */
+/* MEH-919: drop the opacity:0.6 dimming + set an explicit AA color. The
+   dimmed default Leaflet link (~#5fa7c4 on the ~#ededed attribution bg) was
+   2.29:1, below WCAG AA. fg-muted #5c584f reaches ~6.5:1, kept quiet at
+   10px. Hardcoded hex by design — MEH-686 removed :root token CSS vars. */
 .leaflet-control-attribution {
   font-size: 10px;
   z-index: 1001 !important;
-}
-/* MEH-919: drop the opacity:0.6 dimming + set an explicit AA color. The
-   dimmed default Leaflet link (~#5fa7c4 on the ~#ededed attribution bg) was
-   2.29:1, below WCAG AA. fg-muted #5c584f reaches ~6.5:1 while staying
-   visually quiet at 10px. */
-.leaflet-control-attribution,
-.leaflet-control-attribution a {
   color: #5c584f;
+}
+.leaflet-control-attribution a {
+  color: inherit;
 }
 
 /* Fade-in on scroll — set initial state, hook toggles it */
