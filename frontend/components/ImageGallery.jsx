@@ -6,7 +6,7 @@ import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
 
-export default function ImageGallery({ images = [], producerId = null, producerInitials = "" }) {
+export default function ImageGallery({ images = [], producerId = null, producerName = "" }) {
   const t = useTranslations("gallery");
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -41,24 +41,35 @@ export default function ImageGallery({ images = [], producerId = null, producerI
     touchEndX.current = null;
   }, [images.length]);
 
-  // MEH-76 chunk 3 — S6 state b: no photo renders a dignified typographic
-  // monogram (display-serif initials on the cream surface), never the old
-  // emoji-avatar. Initials come from getProducerInitials ("ג · ה" / one
-  // deliberate letter, MEH-638).
+  // MEH-815: imageless state renders the "Tinted Masthead" editorial hero
+  // (Sapir-approved, Claude Design) instead of the old emoji+initials box.
+  // Text-led, shorter than the imaged carousel. The producer name is the
+  // page's sole <h1> here (ProducerHeader omits its own h1 when imageless,
+  // so the name appears exactly once). Surface = green #2e6853 tint over
+  // cream at 6% (ADR-019 opacity-on-cream — token + opacity, no hex token).
+  // Recessive מ·ה brand monogram sits at the corner, gold, never dominant.
   if (!images.length) {
     return (
       <div
-        className="relative w-full h-[120px] md:h-[180px] rounded-md bg-background border border-border flex flex-col items-center justify-center gap-2 text-fg-muted"
+        className="relative w-full rounded-md bg-background border border-border overflow-hidden"
         data-testid="gallery-empty-state"
       >
-        {producerInitials && (
+        {/* 6% green tint over the cream surface beneath (ADR-019) */}
+        <div className="relative bg-primary/[0.06] px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]">
+          {/* Recessive brand monogram — corner mark (end side, opposite the
+              favorite control), gold, ~24px. Decorative, never dominant. */}
           <span
-            className="font-headline-lg text-4xl md:text-5xl font-black text-primary-dark/60"
+            className="absolute top-3 end-3 font-headline-lg text-2xl text-accent/40 leading-none select-none pointer-events-none"
             aria-hidden="true"
           >
-            {producerInitials}
+            מ·ה
           </span>
-        )}
+          {producerName && (
+            <h1 className="font-headline-lg text-4xl md:text-5xl font-black text-text leading-tight">
+              {producerName}
+            </h1>
+          )}
+        </div>
         {producerId && (
           <div className="absolute top-3 start-3 z-10">
             <FavoriteButton producerId={producerId} variant="gallery" />
