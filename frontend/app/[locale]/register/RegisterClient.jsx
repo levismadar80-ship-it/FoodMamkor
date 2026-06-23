@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { EnvelopeSimple, Leaf } from "@phosphor-icons/react";
+import { EnvelopeSimple } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -248,13 +248,8 @@ function RegisterPageBody() {
       <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
       <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
         {/* Brand mark + heading */}
+        {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
         <div className="mb-6">
-          <div
-            className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <Leaf size={32} className="text-primary" aria-hidden="true" />
-          </div>
           {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
               parity with LoginClient's welcome headline (MEH-131 precedent). */}
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
