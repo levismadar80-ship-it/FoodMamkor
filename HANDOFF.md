@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — /map "איפה את?" overlay chip-wrap balance — DRAFT PR (MEH-910)
+
+- **Branch:** `feature/meh-910-map-overlay-fix` (off `origin/staging`). Visual-only. Draft PR opened.
+- **Phase-0 finding (surfaced to Sapir):** the "stray niqqud" half is **already resolved** — `he.json:2196` `modals.location.title` is a clean `איפה את?` (codepoints dumped, zero combining marks; no niqqud anywhere in he.json; no hardcoded variant). The screenshot's "אֱיפה" doesn't exist in current `origin/staging`. So **no he.json change** — niqqud is a no-op.
+- **Done (chip-wrap, the real bug):** `LocationModal.jsx:117` `flex flex-wrap gap-2` → `grid grid-cols-2 gap-2 sm:flex sm:flex-wrap` (balanced 2×2 on mobile, desktop single-row unchanged via `sm:`). **Sapir (Phase-0 Q) chose to also fix the sibling** `CityPickerModal.jsx:55` ("לאן לשלוח?" overlay) with the same class — identical latent orphan. Direction-neutral classes, 0 physical RTL props. Build green, eslint 0 errors.
+- **PR body:** `Closes MEH-910`. Sapir verifies 390px (no orphan) + desktop (unchanged) on the preview. Final of the 3-ticket batch (905/906/910).
+
 ## 2026-06-23 — Seed golan-cheese demo recipe — DRAFT PR (MEH-906)
 
 - **Branch:** `feature/meh-906-seed-recipe` (off `origin/staging`). Data-seed only, single file `backend/seed_data.py`. Draft PR opened.
