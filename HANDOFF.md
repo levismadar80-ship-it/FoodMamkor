@@ -5,11 +5,151 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — /register container + CTA parity with /login (Two-Doors) — DRAFT PR (MEH-839)
+
+- **Branch:** `feature/meh-839-register-container-parity` off `origin/staging`. DRAFT PR, **Refs MEH-839** (NOT Closes — #3 auth-order stays frozen/deferred). Scope: `RegisterClient.jsx` only.
+- **Freeze-sensitive** (MEH-132 OAuth-position freeze). **Phase 0 cleared it:** OAuth block (`RegisterClient.jsx:378-403`) sits inside the white card *after* `</form>` (form-first) — position is fixed by DOM sequence, not wrapper styling, so de-boxing (restyle wrapper className only, no reorder) does NOT move it. Reported all 4 file:line divergences + flagged 2 questions (center-vs-start, success-screen in/out); Sapir said GO.
+- **Decisions taken on GO:** (#3) head → `text-start` mirroring login `:160`; (#5) `emailSent` success screen (`:201`) **left boxed** — separate state, no login parity-reference, out of "de-box the form" scope.
+- **Done (4 surgical edits):** wrapper `:249` `bg-white rounded-xl ... border text-center` → `w-full max-w-[416px] mx-auto` (cream-open, mirrors `LoginClient.jsx:157`); head `:252` +`text-start`; CTA `:359` ghost → **filled green** `bg-primary text-white font-bold` (mirrors login `:303`, height kept at register's 44px rhythm per MEH-838); OAuth "או" notch `:391` `bg-white` → `bg-background`.
+- **Frozen/untouched:** OAuth render order (form-first), all form fields + 44px styling (MEH-838), split-image pane (MEH-788). Diff = 14 ins / 5 del, only the 4 changes + History/comments.
+- **Build:** `npm run build` green. `RegisterOAuthRedirect.test.jsx` 3/3 (no styling asserts). 0 RTL physical props.
+- **Pending (Sapir):** preview QA — mobile + desktop, /register de-boxed + filled CTA, side-by-side /login same container/CTA language, OAuth block unmoved. **#3 auth-order remains open/frozen** (don't close MEH-839 on this PR).
+
+## 2026-06-23 — RecipeCard → Assembly v2 (align to ProducerCard) — MERGED (MEH-911, PR #1314)
+
+- **Branch:** `feature/meh-911-recipecard-assembly-v2` off `origin/staging`. DRAFT PR, Closes MEH-911. Scope: `RecipeCard.jsx` + `__tests__/RecipeCard.test.jsx` only.
+- **Context:** RecipeCard built MEH-591 *before* the MEH-643 Assembly-v2 redesign → last off-brand card. MEH-906 seeded the first recipe on staging → it rendered next to v2 ProducerCards and looked wrong. This is **token application** (mirror ProducerCard), not new design. YELLOW (not central — RecipeCard not in central-components.json).
+- **Phase 0 (file:line evidence):** mapped current anatomy (`bg-white rounded-[14px]` `:27`, 🍞 `:39`, sans title `:43`, plain-text meta `:47-50`) vs ProducerCard Assembly-v2 tokens (`:233-234,183,240,246,250-259,284-288,292`). **Divergence surfaced:** the prompt said "remove ⏱/🍽 emoji" but the real file's meta was already plain text (no ⏱/🍽); only 🍞 existed → "add Phosphor Clock+Users" rather than "replace emoji".
+- **Done:** flat `bg-surface-card border rounded-none hover:border-primary` + `group-hover:scale-[1.02]` image; `optimizeCloudinary(aspectRatio:"4:3")`; `aspect-square lg:aspect-[4/3]`; 🍞 → Leaf + "מהמקור" no-image; `font-headline-md` Frank Ruhl title; new "מתכון" gold eyebrow (`text-accent`); Phosphor Clock + Users meta. Whole card stays one `<Link>` — routing preserved.
+- **Test:** updated 🍞 assertion → Leaf placeholder (`recipe-image-missing` testid) + "מהמקור"; split combined-meta assertion into two icon spans. `npx vitest run RecipeCard.test.jsx` → **4/4 pass**.
+- **Build:** `npm run build` green (ran `npm install` first — sandbox started without node_modules). 0 RTL physical props (logical only).
+- **Pending (Sapir):** preview QA — mobile + desktop, /producers/golan-cheese#recipes; RecipeCard matches ProducerCard visual language; zero emoji; Frank Ruhl title; Leaf no-image; side-by-side with a ProducerCard.
+
+## 2026-06-23 — Remove decorative leaf badge from /register (DRAFT PR, MEH-909)
+
+- **Done:** removed the tinted-circle `<Leaf>` badge above the "הצטרפי לקהילה" headline (`RegisterClient.jsx:252-257`) + dropped the now-dangling `Leaf` import (line 8, `EnvelopeSimple` kept). `/login` has no matching badge → restores register↔login parity (advances MEH-839).
+- **Phase 0 (read-only, before edit):** confirmed badge purely decorative — both wrapper div + glyph `aria-hidden="true"`, no handler/state/conditional. NOT tied to the OAuth block (MEH-132 freeze), form, split-image (MEH-788), or MEH-49 referral badge — all untouched.
+- **Branch:** `feature/meh-909-register-remove-leaf` off `origin/staging`. DRAFT PR, Closes MEH-909. `RegisterClient.jsx` + CHANGELOG/HANDOFF only.
+- **Build:** `npm run build` green (had to `npm ci` first — sandbox started without node_modules). No copy change, no he/en touch, 0 RTL physical props.
+- **Pending (Sapir):** mobile + desktop preview QA — /register has no leaf badge, headline intact, /login unchanged. First of 3 sequential gated tickets (MEH-909 → MEH-908 → MEH-907).
+## 2026-06-23 — AccountSheet language dedup + logout gerund (DRAFT PR, MEH-908)
+
+- **2nd of 3 sequential gated tickets** (MEH-909 #1306 → **MEH-908** → MEH-907). Branch `feature/meh-908-accountsheet-lang-logout` off `origin/staging`. DRAFT PR, Closes MEH-908.
+- **Phase 0 finding (key):** logout already shares ONE i18n key across both surfaces — `AccountSheet.jsx:189` + Header `UserMenu` (`Header.jsx:478`), both `t("account.menu.logout")` (root namespace). The ticket's "desktop=התנתקי / mobile=התנתקו" split was **stale** (pre-MEH-868 unified them). So E = single key edit.
+- **E (logout):** `he.json:323` `"התנתקו"` → **`"התנתקות"`** (gerund, ADR-014). Fixes desktop + mobile in one place. `en.json` untouched ("Sign Out", MEH-840 gate). Stale "plural voice" comment + file-header docstring updated.
+- **D (language dedup) — Option A (Sapir-approved):** row had TWO Globes (leading `AccountSheet.jsx:166` + one inside shared `LanguageToggle:75`) + redundant "שפה" label. Dropped the leading Globe + "שפה" label → `LanguageToggle` is the single control. `LanguageToggle` NOT touched (shared w/ desktop Header, out of scope). Removed now-dangling `Globe` import. `nav.language` key left in place.
+- **Build:** `npm run build` green. 0 RTL physical props. `AccountSheet.jsx` + `he.json` only.
+- **Pending (Sapir):** preview QA — mobile sheet (one language control, logout = "התנתקות"), desktop UserMenu (logout = "התנתקות").
+## 2026-06-23 — Remove add-business CTA pill from Header — DRAFT PR (MEH-907)
+
+- **3rd of 3 sequential gated tickets** (MEH-909 #1306 → MEH-908 #1310 → **MEH-907**). Branch `feature/meh-907-remove-header-addbusiness` off `origin/staging`. DRAFT PR, Closes MEH-907.
+- **Done:** removed the Header desktop pill (`Header.jsx:324-346`) + its orphaned `showAddBusinessCta`/`isProducer`/`isAdmin` consts (137-141) + `ArrowUpLeft` import. `UserMenu` keeps its own role consts; `Link`/`t` stay. Homepage CTA + Footer panel untouched.
+- **Central component (rule 20):** Phase-0 mapped render sites; `/adversarial-review` → 0 blocking. `Header.test.jsx` is `describe.skip` (MEH-729) → no vitest breakage.
+- **STOP-and-ask resolved:** CTA also lives in `AccountSheet.jsx:150-153` (mobile "יש לך בית עסק?"). **Sapir chose Header-pill-only** → AccountSheet untouched.
+- **Follow-up:** `nav.add_business_short` (he.json:8/en.json:8) now an orphaned i18n key — left in place (Header-only scope); cleanup deferred (mirrors MEH-908's `nav.language`).
+- **Build:** `npm run build` green. 0 RTL physical props; no he/en change.
+- **Pending (Sapir):** preview QA — desktop header has no add-business pill; Homepage CTA + Footer still present; mobile drawer no orphan entry.
+
+## 2026-06-23 — /map "איפה את?" overlay chip-wrap balance — DRAFT PR (MEH-910)
+
+- **Branch:** `feature/meh-910-map-overlay-fix` (off `origin/staging`). Visual-only. Draft PR opened.
+- **Phase-0 finding (surfaced to Sapir):** the "stray niqqud" half is **already resolved** — `he.json:2196` `modals.location.title` is a clean `איפה את?` (codepoints dumped, zero combining marks; no niqqud anywhere in he.json; no hardcoded variant). The screenshot's "אֱיפה" doesn't exist in current `origin/staging`. So **no he.json change** — niqqud is a no-op.
+- **Done (chip-wrap, the real bug):** `LocationModal.jsx:117` `flex flex-wrap gap-2` → `grid grid-cols-2 gap-2 sm:flex sm:flex-wrap` (balanced 2×2 on mobile, desktop single-row unchanged via `sm:`). **Sapir (Phase-0 Q) chose to also fix the sibling** `CityPickerModal.jsx:55` ("לאן לשלוח?" overlay) with the same class — identical latent orphan. Direction-neutral classes, 0 physical RTL props. Build green, eslint 0 errors.
+- **PR body:** `Closes MEH-910`. Sapir verifies 390px (no orphan) + desktop (unchanged) on the preview. Final of the 3-ticket batch (905/906/910).
+
+## 2026-06-23 — Seed golan-cheese demo recipe — DRAFT PR (MEH-906)
+
+- **Branch:** `feature/meh-906-seed-recipe` (off `origin/staging`). Data-seed only, single file `backend/seed_data.py`. Draft PR opened.
+- **Done:** added ONE approved+published `ProducerRecipe` for `golan-cheese` so its producer page renders a populated recipes section (first guided render-test of the recipes block). `moderation_status="approved"` + `published=True` set EXPLICITLY (defaults pending/False would render nothing — filter at `producer_recipes.py:339-340`). Idempotent guard by `(producer_id, title)`. Extracted `_seed_golan_recipe(db)` helper to stay under ruff complexity caps. No schema/Alembic/env change.
+- **Verification:** ruff clean, py_compile OK, AST structural checks pass. **`import seed_data` + pytest could NOT run locally** — backend deps uninstallable (pip network-blocked in CC sandbox). **CI Backend tests job verifies pytest baseline on the PR.**
+- **⚠️ STOP (built into the ticket):** CC has no Railway/DB access → **Sapir runs the seed on staging + verifies `/producers/golan-cheese` renders the recipe (mobile).** PR body uses `Refs MEH-906` (NOT Closes) — **ticket stays open** for the staging seed.
+
+## 2026-06-23 — Email overflow `break-all` ×4 — DRAFT PR (MEH-905)
+
+- **Branch:** `feature/meh-905-email-break-all` (off `origin/staging`). Visual-only quick fix completing MEH-653. Draft PR opened; preview URL → Sapir for 320px mobile QA (/forgot-password most critical).
+- **Done:** added `break-all` to the 4 remaining contact-email render points that clipped the 24-char address on narrow mobile — `forgot-password/ForgotPasswordClient.jsx:46` (also gained `dir="ltr"`, had neither, to match canonical `ContactClient.jsx:65`), `accessibility/page.js:94`, and the shared `MailLink` helper in `terms/page.js:57` + `privacy/page.js:61`. 4 files, additions only; no value change (MEH-653 owns it), no deps/env. `npm run build` green.
+- **PR body:** `Closes MEH-905`. Part of a 3-ticket sequential batch (MEH-905 → 906 → 910).
+
+## 2026-06-23 — Imageless "Tinted Masthead" editorial hero — MERGED (MEH-815, PR #1302)
+
+- **Done + MERGED to staging** (squash `ceeda4f`, Sapir merged explicitly). Replaced the imageless-state emoji+initials placeholder on `/producer/[id]` with a text-led **Tinted Masthead**: producer name (Frank Ruhl Libre 900) as the page's **sole `<h1>`** on a 6% green tint over cream (`bg-primary/[0.06]` over `bg-background`, ADR-019 opacity-on-cream — no hex, no new token), recessive gold **מ·ה** monogram top-end (opposite the FavoriteButton). **Imaged state byte-identical.**
+- **Name-dedup:** `ProducerHeader` gained a `hasImages` prop and omits its own name h1 when imageless; masthead h1 is **unconditional** so the one-h1 invariant holds by construction. Files: `ImageGallery.jsx`, `ProducerDetail.jsx`, `ProducerHeader.jsx`, `ImageGalleryEmpty.test.jsx` (7/7), + CHANGELOG/MANUAL_TESTING.
+- **Sapir Phase-0 refinement:** dropped the original eyebrow/hairline/story spec items → **name-only masthead** (category/city/desc/badges stay owned by ProducerHeader).
+- **CI:** 6 required green (build, frontend lint/RTL, API contract, env-drift, vitest) + adversarial calibration green; backend skipped (frontend-only). 2 rounds of claude[bot] review addressed (unconditional-h1 contract + tint-layer testid); a 3rd bot round (Minor, contradictory empty-h1 vs zero-h1 on a backend-impossible edge) intentionally **not chased**.
+- **Follow-ups (non-blocking):** `getProducerInitials` in `producer-format.js` is now a **dead export** (only consumer dropped it) — safe to delete in a follow-up. **375px live screenshot deferred** (chromium download blocked in CC sandbox); token-accurate HTML mock sent to Sapir. PR used `Refs MEH-815` (not Closes) — **Linear MEH-815 not auto-closed**; Sapir to close manually if QA passed.
+- **Trap hit + recovered:** `git checkout staging && git pull` aborted on divergent local `staging` (MEH-542); recovered via `git checkout -B staging origin/staging`. origin/staging was always correct at `ceeda4f`.
+
+## 2026-06-22 — /events hero swap → Sapir-approved market photo (DRAFT PR, MEH-788)
+
+- **Done:** `EventsClient.jsx` hero asset swapped `staging/pick-unsplash-1507048331197` (too busy) → **`events/hero-market`** (Pexels Free, 3:4 2400×3200, Sapir-approved real photo). One-line id swap; descriptor comment (`:37-43`) facts corrected in the same change. **g_auto kept** — Phase-0 color analysis ruled out the trees-crop failure mode (~1% green, warm market palette, focus 1.0, no faces). All hero treatment (Ken Burns, green scrim, ar_16:9, RTL) byte-identical.
+- **Branch:** `feature/meh-788-events-hero-market` off `origin/staging`. DRAFT PR, `Refs MEH-788`.
+- **Pending (Sapir):** mobile QA on Vercel preview — 375/360/390 crop, scrim AA, RTL. **Crop NOT verifiable from CC sandbox** (`res.cloudinary.com` proxy-blocked). If g_auto crops the 16:9 band awkwardly, fallback = explicit gravity (needs `optimizeCloudinary` gravity param — out of this PR's one-line scope).
+- **Supersedes:** the #1288 keeper choice. Spare `pick-pexels-9986235` (2:3 portrait) remains unused.
+
+## 2026-06-21 — Claude Design ADOPTED + /design-sync Phase 0 complete (91 comps) — DRAFT PR #1290
+
+**Session = Claude Design (claude.ai/design) rollout. Tooling/import only — no application code touched.**
+
+- **Governance landed:** `DESIGN-SYSTEM-BRIEF.md` shipped via **PR #1272** — the governance companion for the Claude Design import (brand/RTL fidelity rules the design agent reads).
+- **Decision: Claude Design ADOPTED.** Pilot **MEH-894 = GO** (recorded, Done): the import + brief preserves RTL + brand fidelity end-to-end.
+- **/design-sync Phase 0 COMPLETE:** 91 `frontend/` components synced → Claude Design project **"Mehamakor DS — Components"** (https://claude.ai/design/p/0a0dc08b-7b6d-4374-a90d-1e429bcc0f38). RTL renders correctly; `package-validate` clean. The reproducible **sync inputs are in PR #1290** (`.design-sync/*`, `frontend/.ds-provider.jsx`, `frontend/.ds-sync-css/*`); re-sync notes in **`.design-sync/NOTES.md`**.
+- **Pilot #2 filed — MEH-897:** `ProfileCompletenessCard` state-progressive checklist (yellow shows only >70%, per ADR-019) = the next Claude Design pilot (**design-gated**).
+
+**PR #1290 CI (head `9c3b7d1`):** `mergeable_state: blocked`. **No frontend check is red from `.ds-provider.jsx` / `.ds-sync-css`** — Frontend build/lint/vitest are **skipped** (paths-filter gated; the `.ds*` files sit at `frontend/` root, outside the watched app paths). The red marks (Paths filter, Env drift, Adversarial review calibration) all completed in **~2s with 404/no logs** = the **Rule 21 budget-exhaustion signature**, NOT real failures. Do not read as a true pass or fail — Sapir to check Settings → Billing before relying on the signal.
+
+**Open threads (next session):**
+- **Merge PR #1290** after CI review (**Sapir** — Rule 23).
+- **Run MEH-897** as Claude Design pilot #2.
+- **Worktree cleanup:** remove the `meh-design-sync` worktree after #1290 merges; **reset the `meh-789-worktree` local `staging` to `origin/staging`** after the nav work — it carries **3 local commits not on origin** ("never commit to `staging` directly" violation).
+- **Rollout order:** 897 → 525 → (602 atoms stabilize) → 879 / 788 / 884 → port queue (**MEH-534**, gated by **MEH-742**).
+- **Institutionalize the grep gates** (left/right/ml/mr, Lucide, hex state-colors, emoji) as a CI check in `pr-checks.yml`.
+
+## 2026-06-21 — MEH-788: /events hero wired (full-bleed Ken Burns + green scrim) — DRAFT PR
+
+**Branch `feature/meh-788-events-hero` off fresh `origin/staging`. `EventsClient.jsx` only (visual-only).** Last empty hero slot in the S14 sweep. The flat type-led header (`md:bg-primary-dark`) is now a **full-bleed Cloudinary image hero on all viewports**.
+
+- **Keeper chosen:** `staging/pick-unsplash-1507048331197` (4:3 3000×2250 landscape, Unsplash License, warm/earthy + green accents). Spare `staging/pick-pexels-9986235` is **portrait** (2048×3089) → unsuitable for a wide hero, left untouched. Could not visually inspect pixels — Cloudinary egress is blocked from the CC sandbox (`Host not in allowlist: res.cloudinary.com`); decision rests on dimensions + color metadata + the well-known produce-flat-lay provenance. **Mobile QA (Sapir) should eyeball the actual crop.**
+- **Delivery:** `optimizeCloudinary({ aspectRatio:"16:9", width:1920 })` — no hardcoded transform; helper already supported `width` (no `cloudinary.js` change needed).
+- **Motion:** reused `kenburns-right` (globals.css), not invented; prefers-reduced-motion killed globally (`animation:none`). **Scrim:** `HERO_SCRIM` inline green gradient (green-900 `#143228`) — green analogue of `.scrim-ink`; inline because globals.css is out of scope. AA: white H1 ≈ 5.7:1 worst-case ≥ 4.5.
+- **NOT touched:** `cloudinary.js`, `he.json`/`en.json` (decorative aria-hidden bg → no alt key). The optional Cloudinary `events/hero-*` promote was **skipped** (infra mutation, not trivial enough to justify within scope).
+
+**Verify:** build green (105/105 SSG), eslint 0 errors, 0 physical RTL props in the diff. PR opened as **draft**, `Refs MEH-788` (NOT Closes — epic stays open for the portrait/experiences wire). Sapir merges after mobile QA on 375/360/390 (hero legibility, scrim AA, Ken Burns, RTL).
+
+## 2026-06-20 — Session closeout: MEH-861 / MEH-737 / MEH-870 merged + MEH-892/893 filed
+
+**3 session PRs merged to `staging` (squash, all green):** MEH-861 #1264 (`92adfb9`, docs/rtl) · MEH-737 #1268 (`5d78c16`, en.json) · MEH-870 #1267 (`6471359`, schemas).
+
+- **MEH-870 final scope** — validation lives on **`ProducerRegister` ONLY**: `short_description` ≥3 letters, `address` ≥1 alphanumeric (P.O.-box-safe — `"ת.ד. 123"` passes). `ProducerUpdate`/`ProducerAdminCreate` stay `sanitize_text`-only, so **register is now stricter than owner-update**. The ticket's original "parity" premise was **false** (Phase-0 catch) — there was no pre-existing twin validation to match.
+- **MEH-737 final** — 6 user-facing en strings de-labeled; `he.json` frozen + ICU parity intact. Item 5 keeps `<b>does not sell</b>` bold; the first pass's **duplicated "is not a party to any transaction"** clause was removed (now appears once, on-branch `1559f60`).
+- **MEH-861 final** — `rtl.md` map ladder cookie `9998 → 1100` + "code is SoT" note; the `frontend.md` duplicate ladder was scoped out (see debt below).
+
+**New backlog tickets filed:**
+- **MEH-892** — Dependabot ruleset mergeability (skipped opposite-stack required checks report "Expected" → block merge under Rulesets). **Sapir-config**, approach א/ב/ג is your call.
+- **MEH-893** — eslint 9 → 10 migration (the #1127 major bump fails Frontend lint). **CC, Phase-0-first.**
+
+**Un-ticketed debt to capture later:**
+1. `frontend.md` z-index ladder still has the stale `cookie: 9998` + global-chrome rows miscategorized under "Map z-index tokens" — an rtl↔frontend two-owner drift (MEH-861 scoped it out, single-fact PR).
+2. Uniform punctuation-only validation across the `ProducerUpdate`/`ProducerAdminCreate` twins (MEH-870 residual).
+
+**Ops:** Linear workspace hit the free-tier issue cap; archived the Done backlog to free it; auto-archive now set to 1 month.
+
+**Next session:** no open work from this session blocks anything. Live drafts elsewhere: MEH-884 Chunk 2 (#1266) and MEH-829 docs-followup (#1194) await Sapir QA/merge; MEH-890 Chunk 2 shipped same-day (#1273 — see entry below).
+
+## 2026-06-20 — MEH-890 Chunk 2/2: rest-state skin (glass-at-rest pill + drop hero scrim) — ✅ MERGED (#1273, `85f5970`) → MEH-890 complete
+
+**Branch `feature/meh-890-nav-skin` off `staging`. `Header.jsx` only (RED central).** Final chunk. Pill at rest gets its **own soft glass surface** so it floats and stays legible **without** the dark hero scrim: `bg-background/70 + 12px blur` (opaque fallback) + hairline border + resting shadow — **lighter than scrolled `/85`**. Black hero scrim `<div>` (`:179–188`) **removed entirely**. At-rest ink flips light → **DARK** (matches scrolled) across all pill elements; **logo no longer inverted; no pill text-shadow**. CTA `הוסיפו עסק` → **filled green** (`bg-action-primary text-white`, mirrors `ui/Button.jsx:32`); `כניסה` stays a quiet text link. Surface-aware light branches + `transparent`/`textShadow` props dropped from `NavLink` / `LoginAccount` / `UserMenu` (real cleanup, net `+52/-74`).
+
+**Trust strip (MEH-884) kept CREAM.** Re-grep flagged that removing the scrim stranded the surface-free strip's light ink — design call: cream stays (light-ink+shadow is the robust over-photo pattern; dark ink over a multi-tone photo is fragile). Strengthened its `textShadow` `0.6/4px → 0.7/6px` to carry legibility solo. Strip JSX/copy/`SealCheck` byte-identical; the shared `textShadow` const is now strip-only.
+
+Scrolled state + inner pages unchanged; mobile `md:hidden` layout preserved (mobile pill inherits the at-rest glass — surface is shared). RTL: 0 physical props. File-header docstring updated to describe the new two-state model. `/adversarial-review` clean; all 19 checks green; Sapir mobile QA passed; merged `85f5970` (squash). `Refs MEH-890` (NOT Closes — orchestrator manages closure).
+
+**MEH-890 is structurally COMPLETE** (Chunk 1 #1269 geometry + Chunk 2 #1273 skin). **Open follow-up flagged in spec:** "Issue B" (search-on-scroll fast-follow) — not opened yet; ticket-it-when-needed. Parent epic **MEH-789** remains In Progress (bottom nav done; this finishes the top).
+
 ## 2026-06-20 — MEH-890 Chunk 1/2: compact + centered desktop top-nav pill (layout only) — ✅ MERGED (#1269, `b93d7da`)
 
 **Branch `feature/meh-890-compact-nav-pill` off `staging`. `Header.jsx` only (RED central).** Chunk 1 of 2 of the homepage rest-state nav rework. The pill no longer spreads edge-to-edge: `w-full max-w-[940px] … justify-between` → **`w-auto max-w-[92vw] flex items-center gap-8`** (hug-content + centered via the existing `flex-col items-center` shell `:193`; one ~32px air gap, no central void). Logo enlarged `106×40 → 122×46` (~+15%, ratio preserved) for hero prominence; invert filter untouched. **Layout only** — surface branches (`:233`/`:237`), ink, the hero scrim (`:179–188`), `.nav-pill-glass`, CTA fill, links, LanguageToggle, login, MEH-884 trust strip all byte-identical; at-rest legibility unchanged (scrim still present). RTL-safe (3 direction-neutral classes). `/adversarial-review-size` clean (comment-only net-positive). All required checks green; merged `b93d7da` (squash) after Sapir mobile QA. `Refs MEH-890` (NOT Closes — issue open for Chunk 2). Part of MEH-789.
 
-**Next:** Chunk 2 — the skin pass (glass-at-rest + dark ink + **drop the hero scrim** `:179–188` + CTA `הוסיפו עסק`→filled green; `כניסה` stays quiet). ⚠️ Re-grep all Phase-0 line numbers first — this chunk shifted them (`Header.jsx` now 479 lines). Same branch/PR convention; RED central → chunked + Skeptic + `/adversarial-review`. Spec not yet drafted.
+**Next:** Chunk 2 was shipped same-day — see entry above (#1273, `85f5970`).
 
 ## 2026-06-19 — MEH-886 register E2E: assert MEH-883 error-state ARIA — ✅ MERGED (#1259)
 
@@ -552,7 +692,7 @@ A prior read-only audit produced 19 FIX candidates; this session applied **17** 
 
 **Pending / next:**
 - **#1067 `g_auto` crop** — render-unverified in sandbox; Smadar QA-ing deployed staging. If the hero still reads sliced, swap in a **landscape-composed replacement asset** (g_auto can't salvage a 4:3 downward shot) — pre-agreed escape hatch.
-- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band + /about IMG-01 founder-portrait Cloudinary ids — slots render graceful tonal `background-alt` plates until provided (drop a lazy `<img>` via `optimizeCloudinary` then).
+- **Real assets pending (epic MEH-788 open):** IMG-03 feature-band Cloudinary id — slot renders a graceful tonal `background-alt` plate until provided (drop a lazy `<img>` via `optimizeCloudinary` then). (/about IMG-01 founder portrait now wired — real Sapir photo.)
 - **S14 copy-Δ** reconciliation (S14 rendered P5-v2 lock strings; shipped code differs) — separate task; copy untouched throughout this arc.
 
 ## 2026-06-12 — Friday-strip i18n namespace fix + בתי עסק title (PR #1064 MERGED)

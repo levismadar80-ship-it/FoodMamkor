@@ -1,19 +1,27 @@
 """
 Module:   whatsapp_webhook
 Purpose:  Meta WhatsApp Cloud API webhook receiver — GET verification
-          challenge + POST inbound-message persistence with HMAC-SHA256
-          signature verification.
-Touches:  PostgreSQL inbound_messages (writes only); never reads back.
+          challenge + POST inbound-message persistence + outbound-status
+          reconciliation, all gated by HMAC-SHA256 signature verification.
+Touches:  PostgreSQL inbound_messages (writes only; never reads back) and
+          outbound_messages (UPDATE only, keyed on the unique wamid; the
+          INSERT-side is app/services/whatsapp.py).
 Does NOT: send outbound WhatsApp messages (app/services/whatsapp.py is
           MEH-508), dispatch auto-replies (auto_reply_watchdog is PR2b),
-          handle status/delivered/read receipts (logged + 200, no
-          persistence in v1), invoke the watchdog directly (PR2b's
-          APScheduler tick consumes the rows we write).
-Related:  app/models/models.py:InboundMessage (PR2b), app/config.py
-          (whatsapp_app_secret + whatsapp_verify_token), Meta docs
+          retry failed sends or surface them to admin (MEH-771 Chunk C),
+          invoke the watchdog directly (PR2b's APScheduler tick consumes
+          the rows we write).
+Related:  app/models/models.py:InboundMessage (PR2b),
+          app/models/models.py:OutboundMessage (MEH-771 Chunk A),
+          app/services/whatsapp.py:OUTCOME_* (status convention),
+          app/config.py (whatsapp_app_secret + whatsapp_verify_token),
+          Meta docs
           https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks
 History:  MEH-509 PR2c (creation; flip Railway env to WATCHDOG_ENABLED=true
           after this PR deploys + smoke).
+          MEH-771 Chunk B (delivery-status reconciliation —
+          statuses[] → outbound_messages flips accepted → delivered/failed,
+          terminal-state-guarded UPDATE → idempotent replay).
 """
 
 from __future__ import annotations
@@ -32,6 +40,10 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import InboundMessage
+
+# MEH-771 Chunk B — REUSES: app/services/whatsapp.py:185 — same direct path
+# (OutboundMessage is intentionally not in app.models.__init__.__all__).
+from app.models.models import OutboundMessage
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +65,19 @@ _SIGNATURE_PREFIX = "sha256="
 # implicit defense disappears silently — this constant makes the bound
 # explicit at the application layer. See docs/SECURITY.md §17a invariant #7.
 _MAX_BODY_BYTES = 1_048_576
+
+# MEH-771 Chunk B — Meta `value.statuses[]` reconciliation.
+# Maps Meta's status enum to our internal convention
+# ('accepted' | 'delivered' | 'failed' | 'window_expired'). The UPDATE in
+# `_reconcile_status` is guarded on `status = 'accepted'`, so terminal
+# states are NEVER overwritten — late out-of-order events become
+# idempotent no-ops at the SQL level. `sent` is silently dropped: Meta's
+# `sent` ≈ our 'accepted' from Chunk A's send-time write, so there is
+# nothing to update. `read` folds into 'delivered' (no separate 'read'
+# enum value in Chunk B; read-receipt analytics is Chunk C).
+_STATUS_TO_DELIVERED = frozenset({"delivered", "read"})
+_STATUS_FAILED = "failed"
+_STATUS_SENT = "sent"
 
 
 def _enforce_content_length(request: Request) -> None:
@@ -215,11 +240,14 @@ async def webhook_receive(
     counters = _process_entries(db, entries)
     if any(counters.values()):
         logger.info(
-            "[WEBHOOK] tick persisted=%d duplicates=%d failed=%d statuses=%d",
+            "[WEBHOOK] tick persisted=%d duplicates=%d failed=%d "
+            "statuses=%d reconciled=%d unknown=%d",
             counters["persisted"],
             counters["duplicates"],
             counters["failed"],
             counters["statuses"],
+            counters["reconciled"],
+            counters["unknown"],
         )
     return Response(status_code=200)
 
@@ -240,7 +268,16 @@ def _process_entries(db: Session, entries) -> dict[str, int]:
     AttributeError bubble to a 500 (which would put Meta into retry
     storm). The log lines NEVER include the value — PII guard.
     """
-    counters = {"persisted": 0, "duplicates": 0, "failed": 0, "statuses": 0}
+    # MEH-771 Chunk B added `reconciled` (statuses[] → outbound_messages
+    # UPDATE matched) and `unknown` (wamid with no matching outbound row).
+    counters = {
+        "persisted": 0,
+        "duplicates": 0,
+        "failed": 0,
+        "statuses": 0,
+        "reconciled": 0,
+        "unknown": 0,
+    }
     if not isinstance(entries, list):
         logger.warning(
             "[WEBHOOK] payload.entry not a list: type=%s", type(entries).__name__
@@ -270,7 +307,15 @@ def _process_one_entry(db: Session, entry, counters: dict[str, int]) -> None:
 
 
 def _process_one_change(db: Session, change, counters: dict[str, int]) -> None:
-    """Single-change walker — same extraction rationale as `_process_one_entry`."""
+    """Single-change walker — same extraction rationale as `_process_one_entry`.
+
+    MEH-771 Chunk B: a single Meta change can carry `messages[]` (inbound)
+    OR `statuses[]` (delivery receipts) — defensively, we walk both. The
+    inbound `_process_messages` path stays byte-identical; statuses[]
+    reconciles against `outbound_messages` via `_process_statuses`. Meta
+    typically separates the two into different changes, but handling
+    them independently here is order-agnostic and costs nothing.
+    """
     if not isinstance(change, dict):
         logger.warning("[WEBHOOK] change not a dict: type=%s", type(change).__name__)
         return
@@ -289,12 +334,19 @@ def _process_one_change(db: Session, change, counters: dict[str, int]) -> None:
             type(messages).__name__,
         )
         messages = None
-    if not messages:
-        statuses = value.get("statuses")
-        if isinstance(statuses, list):
-            counters["statuses"] += len(statuses)
-        return
-    _process_messages(db, messages, counters)
+    if messages:
+        _process_messages(db, messages, counters)
+
+    statuses = value.get("statuses")
+    if statuses is not None and not isinstance(statuses, list):
+        logger.warning(
+            "[WEBHOOK] value.statuses not a list: type=%s",
+            type(statuses).__name__,
+        )
+        statuses = None
+    if statuses:
+        counters["statuses"] += len(statuses)
+        _process_statuses(db, statuses, counters)
 
 
 def _process_messages(db: Session, messages: list, counters: dict[str, int]) -> None:
@@ -391,3 +443,163 @@ def _persist_message(db: Session, message: dict) -> str:
         msg_type,
     )
     return "persisted"
+
+
+# ---- MEH-771 Chunk B — outbound status reconciliation ---------------------
+
+
+def _process_statuses(db: Session, statuses: list, counters: dict[str, int]) -> None:
+    """Per-status reconciler loop — mirrors `_process_messages`.
+
+    Walks `value.statuses[]` and reconciles each Meta delivery receipt
+    against `outbound_messages` (UPDATE keyed on the unique wamid).
+    Defensive isinstance + per-status try/except inside
+    `_reconcile_status` — never raises, never 5xx Meta, no inbound-path
+    interaction.
+    """
+    for status_obj in statuses:
+        if not isinstance(status_obj, dict):
+            logger.warning(
+                "[WEBHOOK] status not a dict: type=%s", type(status_obj).__name__
+            )
+            continue
+        _reconcile_status(db, status_obj, counters)
+
+
+def _reconcile_status(db: Session, status_obj: dict, counters: dict[str, int]) -> None:
+    """Reconcile one Meta status receipt against `outbound_messages`.
+
+    Mapping (see `_build_status_update`):
+      sent      → no-op (Meta's `sent` ≈ our 'accepted' from send-time)
+      delivered → UPDATE status='delivered', updated_at=now()
+      read      → same as delivered (no separate 'read' enum in Chunk B)
+      failed    → UPDATE status='failed', error_code/error_message from
+                  errors[0] when present (guarded, never IndexError),
+                  updated_at=now()
+      other     → debug-log + skip
+
+    Precedence: the UPDATE is guarded on `status = 'accepted'`, so
+    terminal states ('delivered', 'failed', 'window_expired') are NEVER
+    overwritten. Replays of the same receipt match 0 rows once the row is
+    already past 'accepted', leaving it in the same state — idempotent at
+    the SQL level.
+
+    Unknown wamid (no matching row) → log + counters['unknown'] += 1 and
+    continue. PII guard: log wamid prefix + recipient_id last-4 only,
+    never the full phone, never the body.
+    """
+    wamid = status_obj.get("id")
+    if not isinstance(wamid, str) or not wamid:
+        logger.warning("[WEBHOOK] status missing/invalid id — skipping")
+        return
+
+    update_payload = _build_status_update(status_obj)
+    if update_payload is None:
+        return
+
+    try:
+        rowcount = (
+            db.query(OutboundMessage)
+            .filter(
+                OutboundMessage.meta_message_id == wamid,
+                OutboundMessage.status == "accepted",
+            )
+            .update(update_payload, synchronize_session=False)
+        )
+        db.commit()
+    except Exception as exc:  # noqa: BLE001 — webhook must never 5xx Meta
+        db.rollback()
+        logger.warning(
+            "[WEBHOOK] status reconcile failed wamid_prefix=%s: %s",
+            wamid[:24],
+            exc,
+        )
+        return
+
+    if rowcount:
+        counters["reconciled"] += 1
+        return
+
+    _log_zero_rowcount(db, wamid, status_obj, counters)
+
+
+def _build_status_update(status_obj: dict) -> dict | None:
+    """Map a Meta status receipt to the column changes for the UPDATE.
+
+    Returns `None` when no update should be applied (`sent`, unknown
+    status name, or anything else outside the documented enum). The
+    `read → 'delivered'` fold lives here, as does the defensive
+    `errors[0]` guard for the failed case (missing/empty errors[] →
+    error_code/error_message stay NULL, but status still flips to
+    'failed' per spec).
+    """
+    raw_status = status_obj.get("status")
+    if raw_status == _STATUS_SENT:
+        return None
+    if raw_status in _STATUS_TO_DELIVERED:
+        return {
+            "status": "delivered",
+            "updated_at": datetime.utcnow(),
+        }
+    if raw_status == _STATUS_FAILED:
+        err = _extract_first_error(status_obj.get("errors"))
+        return {
+            "status": "failed",
+            "updated_at": datetime.utcnow(),
+            "error_code": err["code"],
+            "error_message": err["message"],
+        }
+    logger.debug(
+        "[WEBHOOK] unknown status name — skipping (status=%s)",
+        raw_status if isinstance(raw_status, str) else type(raw_status).__name__,
+    )
+    return None
+
+
+def _log_zero_rowcount(
+    db: Session, wamid: str, status_obj: dict, counters: dict[str, int]
+) -> None:
+    """Cold-path branch for `_reconcile_status` when the UPDATE matched 0
+    rows. Either the wamid is unknown (no matching outbound row at all)
+    or the row already passed 'accepted' (idempotent replay / terminal).
+
+    One existence probe distinguishes the two: unknown → log + unknown
+    counter; existing → silent no-op (the common replay path stays quiet
+    so it can't drown out real anomalies in production logs).
+    """
+    exists = (
+        db.query(OutboundMessage.id)
+        .filter(OutboundMessage.meta_message_id == wamid)
+        .first()
+    )
+    if exists is not None:
+        return
+    counters["unknown"] += 1
+    recipient = status_obj.get("recipient_id")
+    suffix = recipient[-4:] if isinstance(recipient, str) and recipient else "????"
+    # REUSES: app/routers/whatsapp_webhook.py:425 — PII pattern (last-4 only).
+    logger.info(
+        "[WEBHOOK] status receipt for unknown wamid_prefix=%s to=...%s",
+        wamid[:24],
+        suffix,
+    )
+
+
+def _extract_first_error(errors) -> dict:
+    """Pull `{code, message}` from Meta's `errors[]`, defensively.
+
+    Returns `{"code": int|None, "message": str|None}` and never raises:
+      - missing / empty / non-list errors → both None
+      - errors[0] not a dict → both None
+      - errors[0].code not an int → code None (message still captured)
+    """
+    if not isinstance(errors, list) or not errors:
+        return {"code": None, "message": None}
+    first = errors[0]
+    if not isinstance(first, dict):
+        return {"code": None, "message": None}
+    raw_code = first.get("code")
+    code = raw_code if isinstance(raw_code, int) else None
+    raw_message = first.get("message")
+    message = raw_message if isinstance(raw_message, str) else None
+    return {"code": code, "message": message}

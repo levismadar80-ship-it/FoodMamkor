@@ -102,4 +102,45 @@ describe("re-exported producer schemas", () => {
     ]);
     expect(result.success).toBe(true);
   });
+
+  // MEH-901 regression: z.object strips undeclared keys, so any field the
+  // /map consumers read but the schema didn't declare was silently dropped
+  // (categories, slug, starting_price_label, …) — root cause of the MEH-798
+  // chip never rendering. This guard fails the moment a future refactor
+  // re-strips any of the 4 spot-checked fields before consumers read them.
+  // Spot-check covers categories + 3 representative sibling fields (a string,
+  // a number, a contact-method routing field); the bug class is uniform
+  // across all 12 MEH-901 fields, so 4 assertions vs 12 trades coverage for
+  // signal density.
+  it("ProducerSchema preserves MEH-901 fields (strip regression)", () => {
+    const parsed = ProducerSchema.safeParse({
+      id: 1,
+      name: "תסס",
+      categories: [{ id: 8, name: "מותססים וכבושים", emoji: "🥒" }],
+      slug: "tases-ferments",
+      avg_rating: 4.7,
+      primary_contact_method: "whatsapp",
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.categories?.[0]?.name).toBe("מותססים וכבושים");
+    expect(parsed.data?.slug).toBe("tases-ferments");
+    expect(parsed.data?.avg_rating).toBe(4.7);
+    expect(parsed.data?.primary_contact_method).toBe("whatsapp");
+  });
+
+  // MEH-902 regression: the rich delivery relation reaches MapProducerCard.
+  // Mirrors the MEH-901 strip pattern — Zod would silently drop the array
+  // before the "delivers to your city" pill could read `city` / `delivery_day`.
+  it("ProducerSchema preserves delivery_areas (MEH-902 strip regression)", () => {
+    const parsed = ProducerSchema.safeParse({
+      id: 1,
+      name: "תסס",
+      delivery_areas: [
+        { id: "65fd60b1-f305-4aeb-b747-ad8a58b80d80", city: "ירושלים", min_order: 80, delivery_day: "ראשון" },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.delivery_areas?.[0]?.city).toBe("ירושלים");
+    expect(parsed.data?.delivery_areas?.[0]?.delivery_day).toBe("ראשון");
+  });
 });

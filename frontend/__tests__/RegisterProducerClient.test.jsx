@@ -191,3 +191,17 @@ describe("RegisterProducerClient — error-state a11y (MEH-883/886)", () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 });
+
+// MEH-914: the photo-to-publish disclosure is copy on a critical flow (register).
+// Assert it renders on the STORY step so the line can't be silently dropped;
+// testid mirrors E2E-LOCATORS for future Playwright reuse (data-testid contract).
+describe("RegisterProducerClient — photo-to-publish disclosure (MEH-914)", () => {
+  it("renders the photo disclosure on the STORY step", async () => {
+    render(<RegisterProducerClient />);
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    const note = screen.getByTestId("photo-disclosure-story");
+    expect(note).toBeInTheDocument();
+    expect(note).toHaveTextContent(`${K}.photo_disclosure`);
+  });
+});

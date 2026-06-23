@@ -3,6 +3,7 @@ import globals from "globals";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
 import security from "eslint-plugin-security";
+import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
   {
@@ -55,6 +56,7 @@ export default [
     },
   },
   {
+    plugins: { "react-hooks": reactHooks },
     rules: {
       "no-undef": "error",
       "react-hooks/set-state-in-effect": "warn",

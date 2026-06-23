@@ -172,8 +172,6 @@ export default function HomePage() {
         selectedCategory={filters.category}
       />
 
-      <HomeRecentlyViewed items={recentlyViewed} />
-
       <HomeProducersGrid
         producers={producers}
         producersLoading={producersLoading}
@@ -233,6 +231,12 @@ export default function HomePage() {
           UPCOMING EVENTS PREVIEW (Task 6)
           ========================= */}
       <UpcomingEventsPreview />
+
+      {/* MEH-912: recently-viewed demoted from between the category grid and the
+          producer grid to a "resume browsing" band just above the closing CTA,
+          so a re-engagement module no longer interrupts the categories→producers
+          browse path. Self-hides when empty (condition unchanged). */}
+      <HomeRecentlyViewed items={recentlyViewed} />
 
       <HomeCTA />
     </div>

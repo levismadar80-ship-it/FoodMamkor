@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { EnvelopeSimple, Leaf } from "@phosphor-icons/react";
+import { EnvelopeSimple } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
@@ -36,6 +36,8 @@ import { optimizeCloudinary } from "@/lib/cloudinary";
  *           parity + value-prop strip removal, mirrors MEH-131); MEH-837
  *           (OAuth success honors clamped ?redirect= — Suspense boundary
  *           added for useSearchParams, mirrors LoginClient).
+ *           MEH-839 (de-box container + filled-green CTA → /login parity;
+ *           OAuth render order FROZEN form-first, MEH-132 #3 untouched).
  */
 
 export default function RegisterClient() {
@@ -244,17 +246,15 @@ function RegisterPageBody() {
         </div>
       </div>
 
-      {/* Form pane — START (right) on desktop; existing card unchanged inside */}
+      {/* Form pane — START (right) on desktop */}
       <div className="order-2 lg:order-1 flex items-center justify-center px-4 py-12 md:py-16">
-      <div className="bg-white rounded-xl p-8 sm:p-10 w-full max-w-md border border-border text-center">
+      {/* MEH-839: de-boxed to match /login (LoginClient.jsx:157) — open form on
+          cream, no floating white card. Children order UNCHANGED: form-first,
+          OAuth below (MEH-132 #3 auth-order freeze respected). */}
+      <div className="w-full max-w-[416px] mx-auto">
         {/* Brand mark + heading */}
-        <div className="mb-6">
-          <div
-            className="w-16 h-16 rounded-full bg-green-50 mx-auto mb-4 flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <Leaf size={32} className="text-primary" aria-hidden="true" />
-          </div>
+        {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
+        <div className="mb-6 text-start">
           {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
               parity with LoginClient's welcome headline (MEH-131 precedent). */}
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
@@ -361,10 +361,13 @@ function RegisterPageBody() {
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
           {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+          {/* MEH-839: filled-green primary, mirrors /login's CTA fill
+              (LoginClient.jsx:303) — was a ghost/outline. Height stays in
+              register's 44px field rhythm (MEH-838), not login's 54px. */}
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium disabled:opacity-50"
+            className="w-full min-h-[44px] flex items-center justify-center bg-primary text-white py-3 rounded-md font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
@@ -387,7 +390,8 @@ function RegisterPageBody() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
+                {/* MEH-839: cream notch to match the de-boxed surface (was bg-white; mirrors LoginClient.jsx:193). */}
+                <span className="px-3 bg-background text-fg-muted">{t("auth.register.consumer.oauth_divider")}</span>
               </div>
             </div>
             <div className="space-y-2.5">

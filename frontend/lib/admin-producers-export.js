@@ -16,13 +16,20 @@ const HEADERS = [
 ];
 
 function buildRow(p) {
+  // MEH-904: derive the cities cell from the delivery_areas relation —
+  // the flat delivery_cities column is empty for registration-created
+  // producers (only admin form writes it). Dedupe in case the same city
+  // shows up on multiple rows (different delivery_day).
+  const deliveryCities = [...new Set(
+    (p.delivery_areas || []).map((da) => da.city).filter(Boolean),
+  )];
   return [
     p.name, p.city || "", p.phone || "", p.instagram || "", p.website || "", p.status, p.slug || "",
     // MEH-213 — location mode columns
     p.has_physical_location !== false ? "כן" : "לא",
     p.offers_delivery ? "כן" : "לא",
     p.delivery_nationwide ? "כן" : "לא",
-    (p.delivery_cities || []).join(", "),
+    deliveryCities.join(", "),
   ];
 }
 
