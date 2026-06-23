@@ -16,7 +16,7 @@ colors:
   text: "#1C1A17"
   muted: "#6B6860"
   fg-muted: "#5c584f"
-  accent: "#8B6914"
+  accent: "#896714"
   honey: "#C8821E"
   gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
@@ -181,7 +181,8 @@ instead, and *Do's and Don'ts* for why.
   of ADR-019). Used for state de-emphasis (disabled, loading, vacation) instead
   of introducing new state colors. Slightly deeper than `muted` for stronger
   recede without a color shift.
-- **Accent (`#8B6914`):** Warm gold. Used **sparingly** — prices, "premium"
+- **Accent (`#896714`):** Warm gold (darkened from `#8B6914` for WCAG AA
+  small-text on cream — MEH-917). Used **sparingly** — prices, "premium"
   highlights, pull-quotes. A second voice, never a second brand color.
 - **Gold-on-dark (`#E7C88A`):** The gold voice for **dark green surfaces only**
   (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
