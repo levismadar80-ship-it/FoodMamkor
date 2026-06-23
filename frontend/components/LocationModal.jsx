@@ -114,7 +114,10 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           className="mb-4"
         />
 
-        <div className="flex flex-wrap gap-2 mb-5">
+        {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was
+            flex-wrap → 3 + 1 orphan at 390px); sm:flex restores the
+            desktop single-row layout unchanged. */}
+        <div className="grid grid-cols-2 gap-2 mb-5 sm:flex sm:flex-wrap">
           {POPULAR_CITIES.map(({ key, canonical }) => (
             <button
               key={key}
