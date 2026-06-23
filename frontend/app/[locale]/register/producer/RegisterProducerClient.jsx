@@ -676,8 +676,7 @@ function RegisterProducerPageBody() {
               <p className="text-fg-muted text-start leading-relaxed">{t("auth.register.producer.story_card.body")}</p>
             </div>
 
-            {/* MEH-register-critical (F1): photo-to-publish disclosure — copy only,
-                no upload step here. The MEH-799 gate stays at admin.py:442. */}
+            {/* MEH-914: photo-to-publish disclosure (copy only). Gate: admin.py:442. */}
             <p className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>
 
             {/* MEH-532: description is moved to the prominent slot directly
@@ -894,8 +893,7 @@ function RegisterProducerPageBody() {
                 <li>{t("auth.register.producer.success.next_step2")}</li>
                 <li>{t("auth.register.producer.success.next_step3")}</li>
               </ul>
-              {/* MEH-register-critical (F1): photo-to-publish disclosure on the
-                  success screen — same copy as the story step, dashboard-upload path. */}
+              {/* MEH-914: photo-to-publish disclosure — mirrors the story step. */}
               <p className="text-sm text-fg-muted text-start leading-relaxed mt-3">{t("auth.register.producer.photo_disclosure")}</p>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
