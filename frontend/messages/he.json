@@ -244,7 +244,7 @@
           "name_label": "שם מלא *",
           "email": "name@example.com",
           "email_label": "אימייל *",
-          "password": "לפחות 8 תווים",
+          "password": "לפחות 12 תווים",
           "password_label": "סיסמה *",
           "producer_name": "לדוגמה: המאפייה של רותי",
           "producer_name_label": "שם העסק *",

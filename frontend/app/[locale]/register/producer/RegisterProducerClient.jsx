@@ -735,7 +735,7 @@ function RegisterProducerPageBody() {
             </div>
 
             {/* MEH-914: photo-to-publish disclosure (copy only). Gate: admin.py:442. */}
-            <p className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>
+            <p data-testid="photo-disclosure-story" className="text-xs text-fg-muted text-start leading-relaxed">{t("auth.register.producer.photo_disclosure")}</p>
 
             {/* MEH-532: description is moved to the prominent slot directly
                 below the business name. Submit is never blocked on it —
@@ -952,7 +952,7 @@ function RegisterProducerPageBody() {
                 <li>{t("auth.register.producer.success.next_step3")}</li>
               </ul>
               {/* MEH-914: photo-to-publish disclosure — mirrors the story step. */}
-              <p className="text-sm text-fg-muted text-start leading-relaxed mt-3">{t("auth.register.producer.photo_disclosure")}</p>
+              <p data-testid="photo-disclosure-success" className="text-sm text-fg-muted text-start leading-relaxed mt-3">{t("auth.register.producer.photo_disclosure")}</p>
             </div>
             {/* MEH-132: S7 06A founder sign-off */}
             <p className="font-headline-md text-text text-center mb-2">{t("auth.register.producer.success.signature")}</p>
