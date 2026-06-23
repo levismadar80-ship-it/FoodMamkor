@@ -278,9 +278,6 @@ export default function ProducersClient({
         )}
       </h1>
 
-      {/* Recently viewed strip */}
-      <RecentlyViewedStrip />
-
       {/* MEH-820: free-text search — drives the existing ?q= filter */}
       <form
         role="search"
@@ -374,6 +371,11 @@ export default function ProducersClient({
           </button>
         </div>
       )}
+
+      {/* Recently viewed strip — MEH-922: moved below the search box + filter
+          chips (was above them, between the H1 and the search) so the browse
+          tools lead the page; self-hides when there's no view history. */}
+      <RecentlyViewedStrip />
 
       {/* Counter */}
       {counterText && (
