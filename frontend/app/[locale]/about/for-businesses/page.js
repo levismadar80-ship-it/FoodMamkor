@@ -102,7 +102,7 @@ export default async function FaqForBusinessesPage({ params }) {
   const t = await getTranslations({ locale, namespace: "about_business" });
   const jsonLd = buildFaqJsonLd(t);
   return (
-    <main className="min-h-screen bg-background text-text">
+    <section className="min-h-screen bg-background text-text">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -181,6 +181,6 @@ export default async function FaqForBusinessesPage({ params }) {
           </a>
         </footer>
       </div>
-    </main>
+    </section>
   );
 }
