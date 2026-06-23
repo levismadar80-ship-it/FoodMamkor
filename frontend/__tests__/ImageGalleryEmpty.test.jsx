@@ -61,7 +61,7 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     const wrapper = screen.getByTestId("gallery-empty-state");
     // Outer surface is the cream token; the tint is opacity-on-cream (ADR-019).
     expect(wrapper.className).toMatch(/bg-background/);
-    expect(wrapper.innerHTML).toMatch(/bg-primary\/\[0\.06\]/);
+    expect(screen.getByTestId("gallery-tint-layer").className).toMatch(/bg-primary\/\[0\.06\]/);
     // Regression guard: no inline raw hex / gradient.
     expect(wrapper.style.background || "").toBe("");
   });

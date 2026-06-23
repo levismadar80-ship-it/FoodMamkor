@@ -55,7 +55,10 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         data-testid="gallery-empty-state"
       >
         {/* 6% green tint over the cream surface beneath (ADR-019) */}
-        <div className="relative bg-primary/[0.06] px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]">
+        <div
+          className="relative bg-primary/[0.06] px-6 pb-6 pt-16 md:pt-20 flex items-end min-h-[120px] md:min-h-[150px]"
+          data-testid="gallery-tint-layer"
+        >
           {/* Recessive brand monogram — corner mark (end side, opposite the
               favorite control), gold, ~24px. Decorative, never dominant. */}
           <span
@@ -64,11 +67,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           >
             מ·ה
           </span>
-          {producerName && (
-            <h1 className="font-headline-lg text-4xl md:text-5xl font-black text-text leading-tight">
-              {producerName}
-            </h1>
-          )}
+          {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
+              its own name h1 when imageless, so the masthead must always supply
+              the page's single h1 (guarantees exactly-one-h1 even for the
+              backend-impossible empty-name case). */}
+          <h1 className="font-headline-lg text-4xl md:text-5xl font-black text-text leading-tight">
+            {producerName}
+          </h1>
         </div>
         {producerId && (
           <div className="absolute top-3 start-3 z-10">
