@@ -128,7 +128,7 @@ export default function GuideArticle({
   backHref = "/about/for-businesses/guides",
 }) {
   return (
-    <main className="min-h-screen bg-background text-text">
+    <section className="min-h-screen bg-background text-text">
       <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-8 sm:mb-10">
           <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
@@ -161,6 +161,6 @@ export default function GuideArticle({
           </Link>
         </footer>
       </article>
-    </main>
+    </section>
   );
 }
