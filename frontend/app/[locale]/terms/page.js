@@ -165,7 +165,7 @@ function renderBody(id, t) {
     case "privacy":
       return t.rich("sections.privacy.body", {
         privacylink: (chunks) => (
-          <a href="/privacy" className="text-primary hover:underline">
+          <a href="/privacy" className="text-primary underline">
             {chunks}
           </a>
         ),
