@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — RecipeCard → Assembly v2 (align to ProducerCard) — DRAFT PR (MEH-911)
+
+- **Branch:** `feature/meh-911-recipecard-assembly-v2` off `origin/staging`. DRAFT PR, Closes MEH-911. Scope: `RecipeCard.jsx` + `__tests__/RecipeCard.test.jsx` only.
+- **Context:** RecipeCard built MEH-591 *before* the MEH-643 Assembly-v2 redesign → last off-brand card. MEH-906 seeded the first recipe on staging → it rendered next to v2 ProducerCards and looked wrong. This is **token application** (mirror ProducerCard), not new design. YELLOW (not central — RecipeCard not in central-components.json).
+- **Phase 0 (file:line evidence):** mapped current anatomy (`bg-white rounded-[14px]` `:27`, 🍞 `:39`, sans title `:43`, plain-text meta `:47-50`) vs ProducerCard Assembly-v2 tokens (`:233-234,183,240,246,250-259,284-288,292`). **Divergence surfaced:** the prompt said "remove ⏱/🍽 emoji" but the real file's meta was already plain text (no ⏱/🍽); only 🍞 existed → "add Phosphor Clock+Users" rather than "replace emoji".
+- **Done:** flat `bg-surface-card border rounded-none hover:border-primary` + `group-hover:scale-[1.02]` image; `optimizeCloudinary(aspectRatio:"4:3")`; `aspect-square lg:aspect-[4/3]`; 🍞 → Leaf + "מהמקור" no-image; `font-headline-md` Frank Ruhl title; new "מתכון" gold eyebrow (`text-accent`); Phosphor Clock + Users meta. Whole card stays one `<Link>` — routing preserved.
+- **Test:** updated 🍞 assertion → Leaf placeholder (`recipe-image-missing` testid) + "מהמקור"; split combined-meta assertion into two icon spans. `npx vitest run RecipeCard.test.jsx` → **4/4 pass**.
+- **Build:** `npm run build` green (ran `npm install` first — sandbox started without node_modules). 0 RTL physical props (logical only).
+- **Pending (Sapir):** preview QA — mobile + desktop, /producers/golan-cheese#recipes; RecipeCard matches ProducerCard visual language; zero emoji; Frank Ruhl title; Leaf no-image; side-by-side with a ProducerCard.
+
 ## 2026-06-23 — Remove decorative leaf badge from /register (DRAFT PR, MEH-909)
 
 - **Done:** removed the tinted-circle `<Leaf>` badge above the "הצטרפי לקהילה" headline (`RegisterClient.jsx:252-257`) + dropped the now-dangling `Leaf` import (line 8, `EnvelopeSimple` kept). `/login` has no matching badge → restores register↔login parity (advances MEH-839).
