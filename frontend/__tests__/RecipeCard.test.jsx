@@ -33,8 +33,10 @@ describe("RecipeCard", () => {
 
   it("shows total minutes + servings when both are present", () => {
     render(<RecipeCard slug="my-shop" recipe={BASE} />);
-    // 30 + 35 = 65 → "65 דקות · 8 מנות"
-    expect(screen.getByText(/65 דקות · 8 מנות/)).toBeInTheDocument();
+    // MEH-911: meta strip is now two icon-prefixed spans (Phosphor Clock +
+    // Users), not one " · "-joined line. 30 + 35 = 65.
+    expect(screen.getByText(/65 דקות/)).toBeInTheDocument();
+    expect(screen.getByText(/8 מנות/)).toBeInTheDocument();
   });
 
   it("omits the time line entirely when no prep/cook time is set", () => {
@@ -47,11 +49,14 @@ describe("RecipeCard", () => {
     expect(screen.queryByText(/דקות/)).toBeNull();
   });
 
-  it("uses the placeholder emoji when image_url is missing", () => {
+  it("shows the Leaf + brand-name placeholder when image_url is missing", () => {
     render(
       <RecipeCard slug="my-shop" recipe={{ ...BASE, image_url: null }} />
     );
-    // No <img> rendered; emoji span is aria-hidden so we look for it by text.
-    expect(screen.getByText("🍞")).toBeInTheDocument();
+    // MEH-911: no <img>; Assembly v2 no-image state = Phosphor Leaf glyph +
+    // "מהמקור" brand name (replaces the 🍞 emoji, Emoji LOCK MEH-657).
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByTestId("recipe-image-missing")).toBeInTheDocument();
+    expect(screen.getByText("מהמקור")).toBeInTheDocument();
   });
 });
