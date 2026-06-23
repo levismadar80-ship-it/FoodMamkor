@@ -211,8 +211,15 @@ body.sheet-open .cookie-banner {
    above the header's 1000) so the attribution is never hidden. */
 .leaflet-control-attribution {
   font-size: 10px;
-  opacity: 0.6;
   z-index: 1001 !important;
+}
+/* MEH-919: drop the opacity:0.6 dimming + set an explicit AA color. The
+   dimmed default Leaflet link (~#5fa7c4 on the ~#ededed attribution bg) was
+   2.29:1, below WCAG AA. fg-muted #5c584f reaches ~6.5:1 while staying
+   visually quiet at 10px. */
+.leaflet-control-attribution,
+.leaflet-control-attribution a {
+  color: #5c584f;
 }
 
 /* Fade-in on scroll — set initial state, hook toggles it */
