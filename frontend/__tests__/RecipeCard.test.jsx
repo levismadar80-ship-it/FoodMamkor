@@ -39,14 +39,28 @@ describe("RecipeCard", () => {
     expect(screen.getByText(/8 מנות/)).toBeInTheDocument();
   });
 
-  it("omits the time line entirely when no prep/cook time is set", () => {
+  it("omits the minutes span but keeps servings when no prep/cook time is set", () => {
     render(
       <RecipeCard
         slug="my-shop"
         recipe={{ ...BASE, prep_time_min: 0, cook_time_min: 0 }}
       />
     );
+    // MEH-911: time + servings render independently — no time hides only the
+    // Clock/minutes span; the Users/servings span stays when servings is set.
     expect(screen.queryByText(/דקות/)).toBeNull();
+    expect(screen.getByText(/8 מנות/)).toBeInTheDocument();
+  });
+
+  it("omits the whole meta strip when neither time nor servings is set", () => {
+    render(
+      <RecipeCard
+        slug="my-shop"
+        recipe={{ ...BASE, prep_time_min: 0, cook_time_min: 0, servings: null }}
+      />
+    );
+    expect(screen.queryByText(/דקות/)).toBeNull();
+    expect(screen.queryByText(/מנות/)).toBeNull();
   });
 
   it("shows the Leaf + brand-name placeholder when image_url is missing", () => {
