@@ -146,3 +146,59 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
     expect(gateViolations(results), "critical/serious axe violations on /register").toEqual([]);
   });
 });
+
+// MEH-921 — extend the MEH-230 net to the public guest routes surfaced by
+// the 2026-06-23 staging axe audit (the net previously covered only 6 routes, so
+// the contact/landmark/contrast backlog accumulated unguarded). Same gate +
+// GATE_IGNORE_RULES. These routes' only serious hits are color-contrast +
+// link-in-text-block (both ignored) + landmark (moderate, not gated), so they
+// pass the gate today. Routes still red-gated by an open fix are listed below
+// and added once their fix lands (the ratchet):
+//   /contact — `label` critical (MEH-916 / PR #1322)
+//   /events  — `aria-required-children` critical (MEH-858 tablist follow-up)
+//   /search  — `document-title` serious (not in GATE_IGNORE_RULES)
+const EXTENDED_PUBLIC_ROUTES = [
+  "/about",
+  "/about/process",
+  "/about/for-businesses",
+  "/about/for-businesses/guides",
+  "/about/for-businesses/guides/business-story",
+  "/accessibility",
+  "/terms",
+  "/privacy",
+  "/group-buys",
+  "/experiences",
+  "/forgot-password",
+  "/register/producer",
+];
+
+test.describe("axe a11y net — extended public routes (MEH-921)", () => {
+  for (const route of EXTENDED_PUBLIC_ROUTES) {
+    test(route, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("domcontentloaded");
+      // Graceful readiness: wait for an h1 if the route has one, but don't
+      // hard-fail as a 20s timeout when it doesn't (e.g. a form page) — axe
+      // still scans the rendered DOM, and a real failure reads as an axe
+      // violation, not a misleading locator timeout. Mirrors the /producers
+      // wait above.
+      // Conscious trade-off (vs the hard expect() on the 6 original routes):
+      // if one of these routes is removed it falls through to [slug] →
+      // notFound(), which today soft-404s to an axe-clean page (200) and would
+      // pass silently. A status guard can't catch it yet — see MEH-918:
+      // unmatched routes still return 200, so a removed route renders an
+      // axe-clean page. Tighten this wait to a hard assert once MEH-918 lands.
+      await page
+        .locator("h1")
+        .first()
+        .waitFor({ state: "visible", timeout: 20_000 })
+        .catch(() => {});
+      const results = await analyze(page);
+      summarize(route, results);
+      expect(
+        gateViolations(results),
+        `critical/serious axe violations on ${route}`,
+      ).toEqual([]);
+    });
+  }
+});
