@@ -91,25 +91,6 @@ export default function ProducerSections({
         <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
       )}
 
-      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
-      {similarProducers.length >= 3 && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
-          {producer.categories?.[0]?.name && (
-            <p className="text-sm text-fg-muted mb-4">
-              {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
-            </p>
-          )}
-          <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
-            {similarProducers.map((p) => (
-              <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
-                <ProducerCard producer={p} referrer="similar" />
-              </div>
-            ))}
-          </div>
-        </FadeInSection>
-      )}
-
       {/* Events section */}
       {events.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.events = el; }}>
@@ -289,16 +270,6 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* Directory-only disclaimer — required by Israeli consumer
-          protection law. The seller bears legal responsibility for
-          products and licensing; the platform is just a directory. */}
-      <DirectoryDisclaimer className="mt-8" />
-
-      {/* Report */}
-      <div className="mt-6 pt-6 border-t border-border">
-        <ReportButton producerId={producer.id} />
-      </div>
-
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G) */}
       <div
@@ -316,6 +287,35 @@ export default function ProducerSections({
           />
         )}
       </div>
+
+      {/* Directory-only disclaimer — required by Israeli consumer
+          protection law. The seller bears legal responsibility for
+          products and licensing; the platform is just a directory. */}
+      <DirectoryDisclaimer className="mt-8" />
+
+      {/* Report */}
+      <div className="mt-6 pt-6 border-t border-border">
+        <ReportButton producerId={producer.id} />
+      </div>
+
+      {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
+      {similarProducers.length >= 3 && (
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-1">{t("producer.detail.sections.similar.heading")}</h2>
+          {producer.categories?.[0]?.name && (
+            <p className="text-sm text-fg-muted mb-4">
+              {t("producer.detail.sections.similar.in_area", { category: producer.categories[0].name })}
+            </p>
+          )}
+          <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+            {similarProducers.map((p) => (
+              <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
+                <ProducerCard producer={p} referrer="similar" />
+              </div>
+            ))}
+          </div>
+        </FadeInSection>
+      )}
     </>
   );
 }
