@@ -245,10 +245,11 @@
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
           "license_optional_label": "Producer license number"
         },
+        "photo_disclosure": "To publish your page you'll need at least one photo — you can upload it from your dashboard after approval.",
         "validation": {
           "all_required": "Please fill all required fields",
           "email_invalid": "Invalid email",
-          "password_complexity": "Password must be at least 8 characters, with one uppercase letter and one number",
+          "password_complexity": "Password must be at least 12 characters",
           "producer_name_required": "Please enter a business name",
           "phone_required": "Please enter a valid phone number",
           "phone_invalid": "Invalid phone number",
