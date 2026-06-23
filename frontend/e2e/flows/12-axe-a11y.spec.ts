@@ -146,3 +146,44 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
     expect(gateViolations(results), "critical/serious axe violations on /register").toEqual([]);
   });
 });
+
+// MEH-921 — extend the MEH-230 net to the public guest routes surfaced by
+// the 23/06 staging axe audit (the net previously covered only 6 routes, so
+// the contact/landmark/contrast backlog accumulated unguarded). Same gate +
+// GATE_IGNORE_RULES. These routes' only serious hits are color-contrast +
+// link-in-text-block (both ignored) + landmark (moderate, not gated), so they
+// pass the gate today. Routes still red-gated by an open fix are listed below
+// and added once their fix lands (the ratchet):
+//   /contact — `label` critical (MEH-916 / PR #1322)
+//   /events  — `aria-required-children` critical (MEH-858 tablist follow-up)
+//   /search  — `document-title` serious (not in GATE_IGNORE_RULES)
+const EXTENDED_PUBLIC_ROUTES = [
+  "/about",
+  "/about/process",
+  "/about/for-businesses",
+  "/about/for-businesses/guides",
+  "/about/for-businesses/guides/business-story",
+  "/accessibility",
+  "/terms",
+  "/privacy",
+  "/group-buys",
+  "/experiences",
+  "/forgot-password",
+  "/register/producer",
+];
+
+test.describe("axe a11y net — extended public routes (MEH-921)", () => {
+  for (const route of EXTENDED_PUBLIC_ROUTES) {
+    test(route, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("domcontentloaded");
+      await expect(page.locator("h1").first()).toBeVisible({ timeout: 20_000 });
+      const results = await analyze(page);
+      summarize(route, results);
+      expect(
+        gateViolations(results),
+        `critical/serious axe violations on ${route}`,
+      ).toEqual([]);
+    });
+  }
+});
