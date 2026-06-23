@@ -58,7 +58,7 @@ function MailLink({ email }) {
   return (
     <a
       href={`mailto:${email}`}
-      className="text-primary hover:underline"
+      className="text-primary hover:underline break-all"
       dir="ltr"
     >
       {email}

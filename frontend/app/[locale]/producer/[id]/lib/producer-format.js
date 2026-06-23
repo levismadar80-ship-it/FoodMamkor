@@ -29,15 +29,6 @@ export function getVacationReturnLabel(producer, t, locale) {
   }
 }
 
-// MEH-76 chunk 3 (MEH-638): two-word names render "ג · ה" (separator, not a
-// fused substring); single-word names render ONE deliberate initial — the old
-// slice(0,2) produced broken pairs like "גב" out of "גבינות".
-export function getProducerInitials(producer) {
-  const words = (producer.name || "").trim().split(/\s+/).filter(Boolean);
-  if (words.length >= 2) return `${words[0][0]} · ${words[1][0]}`;
-  return words[0]?.[0] ?? "מ";
-}
-
 export function buildShowOnMapHandler(producer, router) {
   return () => {
     try {
