@@ -259,6 +259,12 @@ function RegisterPageBody() {
         {/* Brand mark + heading */}
         {/* MEH-909: decorative Leaf badge removed for register↔login parity (MEH-839). */}
         <div className="mb-6 text-start">
+          {/* MEH-929: gold eyebrow rule — exact parity with LoginClient's
+              eyebrow (LoginClient.jsx:161-164). */}
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em] mb-3">
+            <span className="h-px w-7 bg-accent" aria-hidden="true" />
+            {t("auth.register.consumer.eyebrow")}
+          </span>
           {/* MEH-788: headline-lg token (32px/900) — utility-page scale, exact
               parity with LoginClient's welcome headline (MEH-131 precedent). */}
           <h1 className="font-headline-lg font-black text-headline-lg leading-tight text-text mb-1">{t("auth.register.consumer.heading")}</h1>
