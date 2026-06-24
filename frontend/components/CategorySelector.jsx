@@ -10,14 +10,14 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
  *
  * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
  * a 2-col card grid, bespoke hand-drawn glyphs (CategoryIcons.jsx) for the 6
- * popular categories + a Phosphor Leaf fallback for the other 14, and a live
+ * popular categories + a Phosphor Leaf fallback for the other 12, and a live
  * name+desc filter that DIMS (not hides) non-matching cards. The data contract
  * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
  * still feed form.category_ids — so the mount (RegisterProducerClient.jsx:546)
  * and the MEH-530 license logic that reads form.category_ids need zero changes.
  *
  * Does NOT: own the license field (RegisterProducerClient.jsx — MEH-530), the
- * taxonomy (backend/seed_data.py — 20 DB categories), or routing.
+ * taxonomy (backend/seed_data.py — 18 DB categories), or routing.
  * Related: components/CategoryIcons.jsx (glyph paths); lib/home-categories.js
  * (the homepage marketing-group variant — intentionally a separate concept).
  * History: MEH-203 (S7 card re-skin; emoji-pill grid → card grid + dim-filter).
@@ -26,12 +26,15 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 // Popular-6 rest-state config. `name` matches the real DB category name
 // (backend/seed_data.py) so the glyph attaches to the right row; `desc` comes
 // from forms.category_selector.popular_descs keyed by glyph slug (i18n, Hebrew
-// in both locales for now — DB category names are Hebrew-only). The other 14
+// in both locales for now — DB category names are Hebrew-only). The other 12
 // categories surface via search with a Leaf fallback, name-only.
+// MEH-927: "בשר ודגים" split into "בשר" (kept here on the meat glyph) + "דגים".
+// "דגים" is intentionally NOT in POPULAR — it uses the Leaf fallback like the
+// other rest-categories until MEH-683 gives it a dedicated fish glyph.
 const POPULAR = [
   { name: "חלב וגבינות", glyph: "dairy" },
   { name: "לחמים ואפייה", glyph: "bread" },
-  { name: "בשר ודגים", glyph: "meat" },
+  { name: "בשר", glyph: "meat" },
   { name: "שמנים", glyph: "oil" },
   { name: "ירקות", glyph: "veg" },
   { name: "סבונים טבעיים", glyph: "care" },
@@ -61,7 +64,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
   const matched = q ? ordered.filter(isMatch) : [];
   const noResults = q.length > 0 && matched.length === 0;
 
-  // EMPTY → popular-6 (expandable to all 20). QUERY → all 20 with matches
+  // EMPTY → popular-6 (expandable to all 18). QUERY → all 18 with matches
   // first; non-matches stay rendered but dimmed (never removed).
   const shown = q
     ? [...matched, ...ordered.filter((c) => !isMatch(c))]
