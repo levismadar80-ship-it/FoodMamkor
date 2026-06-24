@@ -29,7 +29,7 @@ import {
 export const CATEGORY_STYLES = {
   "בשר, עוף ודגים":      { color: "#c04040", icon: Cow,         iconName: "Cow" },
   "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
-  "חלב וגבינות":         { color: "#4a90d9", icon: Cheese,      iconName: "Cheese" },
+  "חלב וגבינות":         { color: "#4a90d9", textColor: "#3b72ad", icon: Cheese,      iconName: "Cheese" },
   "לחמים ואפייה":        { color: "#8B6914", icon: Bread,       iconName: "Bread" },
   // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
   // dedicated identity — brand honey #C8821E + Hexagon (honeycomb) — distinct
