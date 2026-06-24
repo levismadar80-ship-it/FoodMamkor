@@ -94,11 +94,12 @@ describe("MapProducerCard — price RTL split (MEH-934)", () => {
   });
 
   it("keeps a shekel-first label (₪35) whole in the <bdi> with no prefix span", () => {
-    render(<MapProducerCard producer={{ ...producer, price_range: "₪35" }} />);
+    const { container } = render(<MapProducerCard producer={{ ...producer, price_range: "₪35" }} />);
     expect(screen.queryByText("מ-")).not.toBeInTheDocument();
+    expect(container.querySelector("span.font-body-md")).toBeNull();
     const number = screen.getByText("₪35");
     expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic");
+    expect(number).toHaveClass("font-english", "italic", "numeric");
   });
 
   it("renders a pure-numeric range (35-50) entirely in the <bdi>", () => {
