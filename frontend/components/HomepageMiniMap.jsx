@@ -243,6 +243,10 @@ export default function HomepageMiniMap() {
                   // they don't flip in RTL contexts (Leaflet API).
                   position={[producer.lat, producer.lng]}
                   icon={createPreviewMarker(producer)}
+                  // MEH-916: accessible name for the role=button marker (axe
+                  // aria-command-name) — Leaflet sets this as `title` on the
+                  // .leaflet-marker-icon element; React escapes the value.
+                  title={producer.name}
                   eventHandlers={{
                     // Marker click → open tooltip only; do NOT navigate to
                     // /map (canvas-click handler handles the background).
