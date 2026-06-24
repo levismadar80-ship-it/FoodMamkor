@@ -24,7 +24,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
   // MEH-798: also pull the Phosphor `icon` for the category chip below.
-  const { color: categoryColor, icon: CategoryIcon } = styleForProducer(p);
+  const { color: categoryColor, textColor: categoryTextColor, icon: CategoryIcon } = styleForProducer(p);
 
   // MEH-826: open/closed-now status from the shared lib/hours parser.
   const th = useTranslations("opening_hours");
@@ -115,7 +115,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
             <div className="mt-0.5">
               <span
                 className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs max-w-full"
-                style={{ backgroundColor: `${categoryColor}1A`, color: categoryColor }}
+                style={{ backgroundColor: `${categoryColor}1A`, color: categoryTextColor || categoryColor }}
               >
                 <CategoryIcon size={12} weight="fill" aria-hidden="true" />
                 <span className="line-clamp-1">{category.name}</span>
