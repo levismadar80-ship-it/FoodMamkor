@@ -252,7 +252,13 @@ export default function EventsPage() {
 
       {/* Tabs — producer events vs community experiences + per-tab add */}
       <div className="max-w-5xl mx-auto px-4 pt-4">
-        <div role="tablist" className="flex items-end gap-4 border-b border-border">
+        {/* MEH-916: the add-event Link is NOT a tab — a tablist may only own
+            role="tab" children (axe aria-required-children). The flex row +
+            border-b move to this outer div; the inner div is the tablist,
+            wrapping only the two tabs. The Link stays a sibling in the same
+            flex row (ms-auto), so the layout is unchanged. */}
+        <div className="flex items-end gap-4 border-b border-border">
+          <div role="tablist" className="flex items-end gap-4">
           <button
             role="tab"
             aria-selected={!isExp}
@@ -273,6 +279,7 @@ export default function EventsPage() {
           >
             {t("tab_experiences")}
           </button>
+          </div>
           <Link
             href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
