@@ -3794,7 +3794,8 @@
       "groupB_desc": "Here the law exempts from licensing. Most businesses will be <b>\"Declared\"</b> — a full path in its own right. Whoever wishes can add an exemption approval or registration and also receive a \"Verified\" badge.",
       "caveat": "Our process is personal, and the criteria update with the law and with new categories. If something isn't clear — talk to us, and we'll explain.",
       "catA": {
-        "meat_fish": "Meat & fish",
+        "meat": "Meat",
+        "fish": "Fish",
         "dairy": "Milk & cheese",
         "bread": "Breads & baking",
         "prepared": "Prepared foods",
@@ -3810,7 +3811,6 @@
         "spices": { "label": "Spices & culinary herbs", "doc": "Verified: an official exemption approval." },
         "soaps": { "label": "Natural soaps", "doc": "Verified: registration in the cosmetics registry (Ministry of Health)." },
         "creams": { "label": "Skin creams & oils", "doc": "Verified: registration in the cosmetics registry." },
-        "herbal": { "label": "Herbal preparations", "doc": "Verified: registration in the cosmetics registry." },
         "candles": { "label": "Candles & aroma", "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine." }
       }
     },

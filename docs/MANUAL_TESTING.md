@@ -410,7 +410,7 @@ Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen sect
 
 ## Producer license number (MEH-530)
 
-Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)**. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר / דגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)** (MEH-927: "בשר ודגים" split into "בשר" + "דגים", both license-required). Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
 
 - [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
 - [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
@@ -418,7 +418,7 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
 - [ ] Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
 - [ ] Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
-- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר ודגים" → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
+- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
 - [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.

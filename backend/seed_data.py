@@ -14,7 +14,8 @@ from app.models import (
 from app.models.models import User
 
 CATEGORIES = [
-    ("בשר ודגים", "🥩"),
+    # MEH-927: split from the combined "בשר ודגים"; "דגים" appended at end.
+    ("בשר", "🥩"),
     ("חלב וגבינות", "🥛"),
     ("ביצים", "🥚"),
     ("לחמים ואפייה", "🍞"),
@@ -26,9 +27,9 @@ CATEGORIES = [
     ("צמחי מרפא ותוספים", "🌿"),
     ("סבונים טבעיים", "🧴"),
     ("קרמים ושמנים", "🌸"),
-    ("תכשירי צמחים", "🌿"),
+    # MEH-927: "תכשירי צמחים" + "תוספי תזונה" merged into "צמחי מרפא ותוספים"
+    # (kept above) — overlapping wellness rows removed.
     ("נרות וארומה", "🕯️"),
-    ("תוספי תזונה", "💊"),
     ("יין, בירה ומשקאות", "🍷"),
     ("תבלינים וצמחי תיבול", "🌶️"),
     ("שוקולד וממתקים בוטיק", "🍫"),
@@ -36,6 +37,10 @@ CATEGORIES = [
     # (צו הפיקוח, תשל"ז-1977). Appended at end so existing seed-id slots
     # (1-18) stay stable; downstream sample-producer category_ids unchanged.
     ("דבש", "🍯"),
+    # MEH-927: "דגים" split off from "בשר ודגים" (now standalone "בשר").
+    # Appended at end so mid-list seed-ids stay stable; sample producers
+    # reference only ids <=12, so none re-map. Animal-source → license-required.
+    ("דגים", "🐟"),
 ]
 
 PRODUCERS = [
@@ -50,7 +55,7 @@ PRODUCERS = [
         "lng": 35.3035,
         "phone": "050-1234567",
         "instagram": "@galil_farm",
-        "category_ids": [1],  # בשר ודגים
+        "category_ids": [1],  # בשר (MEH-927: was "בשר ודגים")
         "products": [
             {"name": "סטייק אנטריקוט", "price_range": '120-180₪/ק"ג'},
             {"name": "בשר טחון", "price_range": '70-90₪/ק"ג'},
