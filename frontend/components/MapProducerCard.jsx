@@ -20,6 +20,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
   const priceLabel = p.starting_price_label || p.price_range;
+  // MEH-934: split the leading Hebrew/currency prefix (e.g. "מ-") from the
+  // numeric run so the prefix renders in the Hebrew body font while the number
+  // stays Cormorant italic, bidi-isolated — fixes "מ-35₪" reversing in RTL.
+  const priceMatch = priceLabel ? priceLabel.match(/^(\D*)(.*)$/) : null;
+  const pricePrefix = priceMatch?.[1] ?? "";
+  const priceNumber = priceMatch?.[2] ?? "";
   const isVerified = p.is_verified;
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
@@ -123,8 +129,9 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </div>
           )}
           {priceLabel && (
-            <p className="font-english italic line-clamp-1 mt-0.5 text-accent numeric" style={{ fontSize: "13px" }}>
-              {priceLabel}
+            <p className="line-clamp-1 mt-0.5 text-accent" style={{ fontSize: "13px" }}>
+              {pricePrefix && <span className="font-body-md">{pricePrefix}</span>}
+              {priceNumber && <bdi className="font-english italic numeric">{priceNumber}</bdi>}
             </p>
           )}
         </div>
