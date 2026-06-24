@@ -2,6 +2,8 @@
  * Category-aware WhatsApp question defaults (MEH-210 Phase 1).
  * Keys are the Hebrew category names as stored in the DB (seed_data.py CATEGORIES list).
  * Phase 2 (MEH-210): custom_questions on the producer overrides these defaults.
+ * MEH-927: "בשר ודגים" split → "בשר" keeps this block; "דגים" has no entry and
+ * intentionally falls through to DEFAULT_QUESTIONS (generic order questions fit).
  */
 
 export const CATEGORY_QUESTIONS = {

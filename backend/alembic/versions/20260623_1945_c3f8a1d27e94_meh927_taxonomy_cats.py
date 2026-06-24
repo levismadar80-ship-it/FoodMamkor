@@ -64,6 +64,22 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     bind = op.get_bind()
+    # Mirror the upgrade guard: refuse to drop בשר/דגים if any producer was
+    # assigned to them after the upgrade (else ondelete=CASCADE silently drops
+    # those producer_categories rows on rollback).
+    linked = bind.execute(
+        sa.text(
+            "SELECT count(*) FROM producer_categories pc "
+            "JOIN categories c ON c.id = pc.category_id "
+            "WHERE c.name IN (:n1, :n2)"
+        ),
+        {"n1": "בשר", "n2": "דגים"},
+    ).scalar()
+    if linked:
+        raise RuntimeError(
+            f"MEH-927 downgrade aborted: {linked} producer_categories row(s) "
+            "reference 'בשר'/'דגים'. Re-map those producers before rolling back."
+        )
     bind.execute(
         sa.text("DELETE FROM categories WHERE name IN (:n1, :n2)"),
         {"n1": "בשר", "n2": "דגים"},
