@@ -26,7 +26,7 @@ import api from "@/lib/api";
 
 const OPENING_MESSAGE = {
   role: "assistant",
-  content: "היי אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצי לדעת?",
+  content: "היי אני כאן לעזור! אפשר לשאול אותי איך נרשמים או איך מוצאים בתי עסק. מה תרצו לדעת?",
 };
 
 // Suggested prompts — restructured April 2026 (feature/chatbot-plain-hebrew-v2)
@@ -41,7 +41,7 @@ const OPENING_MESSAGE = {
 // Dropped: "איך מדווחים על בעיה?" (later-stage concern, not a first-visit Q);
 // plus the removed home-cook ("neighbor") feature prompts (MEH-133).
 const SUGGESTED_PROMPTS = [
-  "איך נרשמים כבעלת עסק?",
+  "איך נרשמים כבית עסק?",
   "איך מוצאים עסקים קרובים אליי?",
   "מה זה מהמקור?",
   "האם האתר בחינם?",
@@ -68,10 +68,10 @@ const SUGGESTED_PROMPTS = [
 // "פרופיל" — we say "העסק שלך" because that's what the user thinks
 // they're registering.
 const HARDCODED_ANSWERS = {
-  "איך נרשמים כבעלת עסק?":
-    "נרשמות דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
+  "איך נרשמים כבית עסק?":
+    "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
-    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצי על 'קרוב אלי' ותראי את כל בתי העסק סביבך, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשי לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בעלת העסק",
+    "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בית העסק",
 };
 
 export default function ChatWidget() {
@@ -199,11 +199,11 @@ export default function ChatWidget() {
           "flex items-center justify-center bg-primary text-white rounded-full shadow-[0_4px_24px_rgba(46,104,83,0.25)] hover:bg-primary-dark transition focus-visible:ring-2 focus-visible:ring-primary/40",
           showPillText ? "gap-2 px-4 py-3" : "w-12 h-12",
         ].join(" ")}
-        aria-label={open ? "סגרי את הצ׳אט" : "שאלי אותנו"}
+        aria-label={open ? "סגרו את הצ׳אט" : "שאלו אותנו"}
         aria-expanded={open}
       >
         {open ? <X size={22} weight="bold" /> : <ChatCircleDots size={22} />}
-        {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלי אותי</span>}
+        {showPillText && !open && <span className="font-body-md text-sm">שאלה? שאלו אותי</span>}
       </button>
 
       {/* ── Chat panel ── */}
@@ -219,13 +219,13 @@ export default function ChatWidget() {
           <div className="bg-primary text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ChatCircleDots size={20} aria-hidden="true" />
-              <span className="font-headline-md font-bold text-base">שאלי אותנו</span>
+              <span className="font-headline-md font-bold text-base">שאלו אותנו</span>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="p-2 rounded-full hover:bg-white/10 transition focus-visible:ring-2 focus-visible:ring-white/40"
-              aria-label="סגרי את חלון העוזרת"
+              aria-label="סגרו את חלון העוזרת"
             >
               <X size={18} weight="bold" />
             </button>
@@ -275,11 +275,11 @@ export default function ChatWidget() {
 
           {/* Composer */}
           <form onSubmit={handleSubmit} className="border-t border-border bg-white px-3 py-2 flex items-center gap-2">
-            <label htmlFor="chat-input" className="sr-only">הקלידי שאלה</label>
+            <label htmlFor="chat-input" className="sr-only">הקלידו שאלה</label>
             <input
               ref={inputRef} id="chat-input" type="text"
               value={input} onChange={(e) => setInput(e.target.value)}
-              placeholder="הקלידי שאלה..." maxLength={500} disabled={sending}
+              placeholder="הקלידו שאלה..." maxLength={500} disabled={sending}
               className="flex-1 min-w-0 bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded text-sm text-text placeholder:text-fg-muted disabled:opacity-60"
               style={{ caretColor: "#2e6853" }}
               autoComplete="off"
@@ -287,7 +287,7 @@ export default function ChatWidget() {
             <button
               type="submit" disabled={sending || !input.trim()}
               className="bg-primary text-white p-2 rounded-full hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary/40"
-              aria-label="שלחי שאלה"
+              aria-label="שלחו שאלה"
             >
               <PaperPlaneTilt size={16} weight="fill" style={{ transform: "scaleX(-1)" }} />
             </button>
