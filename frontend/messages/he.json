@@ -3298,6 +3298,7 @@
         "aria": "ניווט בלוח הניהול",
         "overview": "סקירה",
         "edit": "עריכה",
+        "insights": "תובנות",
         "tools": "כלים"
       },
       "load_error": {
@@ -3391,6 +3392,15 @@
       },
       "analytics": {
         "stats_window_label": "7 ימים / 30 ימים / סה״כ",
+        "kpi": {
+          "whatsapp_leads": "פניות בוואטסאפ",
+          "contact_clicks": "צרי קשר",
+          "rating": "דירוג",
+          "views": "צפיות",
+          "window_7d": "7 הימים האחרונים",
+          "rating_sub": "{count} ביקורות",
+          "conversion_line": "{rate}% מהצופות פנו אלייך"
+        },
         "hero": {
           "views_week_label": "צפיות השבוע",
           "views_week_sub": "7 הימים האחרונים",
