@@ -7,7 +7,8 @@
  * Guards the loadError/loading split in
  * frontend/app/[locale]/producer/dashboard/page.js: a failed fetch sets a
  * dedicated `loadError` flag whose render branch precedes the `!data`
- * loading branch, so an error never falls through to "טעינת נתונים...".
+ * loading branch, so an error never falls through to the `loading_data`
+ * loading text.
  *
  * Component test (not E2E): the dashboard is auth-gated, so an E2E would
  * have to stub the happy-path /auth/me — in tension with the e2e/ no-mocks
