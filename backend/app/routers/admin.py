@@ -466,9 +466,8 @@ def approve_producer(
     # No-op today (no NULL-license license-required producers exist yet).
     if not allow_without_license:
         category_ids = [c.id for c in producer.categories]
-        if categories_require_license(db, category_ids) and not (
-            producer.producer_license_number or ""
-        ).strip():
+        license_missing = not (producer.producer_license_number or "").strip()
+        if categories_require_license(db, category_ids) and license_missing:
             raise HTTPException(
                 status_code=422,
                 detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
