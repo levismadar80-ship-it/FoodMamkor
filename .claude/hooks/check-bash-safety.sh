@@ -2,7 +2,7 @@
 # Bash safety guard (PreToolUse: Bash)
 # Blocks dangerous DB DDL and destructive filesystem commands.
 # Exit 2 = block. Exit 0 = allow.
-# Last updated: 2026-05-06 (MEH-461 tighten rm -rf regex; MEH-408 production-safety deny-list extension)
+# Last updated: 2026-06-25 (MEH-784 deny-protected-path write guard; MEH-461 tighten rm -rf regex; MEH-408 production-safety deny-list extension)
 
 # Require jq — fail-open if missing
 if ! command -v jq >/dev/null 2>&1; then
@@ -19,6 +19,9 @@ fi
 # Git commands: commit messages, log formats, and branch names can contain any text
 # (SQL keywords, paths, rm flags). Skip all pattern checks — git cannot execute
 # embedded text as shell. The patterns below are for direct shell execution only.
+# NOTE: this also intentionally exempts `git checkout -- <path>` (the guardrail-restore
+# command) and `git add/diff/show` on protected paths from the MEH-784 block below —
+# git is the sanctioned path and is already gated by the permission deny-list.
 if echo "$COMMAND" | grep -iqE '^[[:space:]]*git[[:space:]]'; then
   exit 0
 fi
@@ -72,5 +75,24 @@ check_pattern 'rm[[:space:]]+-rf[[:space:]]+\.[[:space:]]*$' "rm -rf . (cwd)" "$
 check_pattern 'railway[[:space:]]+(down|service[[:space:]]+delete)' "railway destructive command" "$FS_GUIDANCE"
 check_pattern 'vercel[[:space:]]+(--prod|rm)'                       "vercel destructive/prod command" "$FS_GUIDANCE"
 check_pattern '\$DATABASE_URL_PRODUCTION'                           "command references production DB URL" "$FS_GUIDANCE"
+
+# MEH-784 — deny-protected-path write guard.
+# Edit/Write of these paths is already blocked at the permission layer (and, for
+# settings.json + lint configs, by protect-lint-config.sh). This closes the symmetric
+# Bash-write bypass: a `cp`/`mv`/`tee`/`dd`/`install`/`ln`/`sed -i`/redirection that
+# mutates a guardrail/infra file from a shell command. READS stay allowed — only a
+# write/mutation indicator next to a protected path trips the block. git is exempted
+# above (sanctioned path; gated by the deny-list), so guardrail-restore still works.
+# Heuristic-level + fail-toward-block: a false "run it yourself" handoff is cheap, a
+# missed bypass is the whole 2026-06-07 hooks-strip incident this hardens against.
+PROTECTED_PATHS='(\.github/workflows/|alembic/versions/|pyproject\.toml|uv\.lock|\.claude/settings\.json|\.claude/hooks/)'
+if echo "$COMMAND" | grep -qE "$PROTECTED_PATHS"; then
+  if echo "$COMMAND" | grep -qE '(>>?|(^|[[:space:]])(cp|mv|tee|dd|install|ln|truncate)[[:space:]]|sed[[:space:]]+-i)'; then
+    echo "Blocked: Bash write/mutation targeting a guardrail-protected path" >&2
+    echo "Protected: .github/workflows, alembic/versions, pyproject.toml, uv.lock, .claude/settings.json, .claude/hooks (parity with the Edit/Write deny-list)." >&2
+    echo "Run the write yourself in your own terminal, or author it via the Edit tool so it routes through review — do not write a guardrail/infra file from a Bash command." >&2
+    exit 2
+  fi
+fi
 
 exit 0
