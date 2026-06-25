@@ -95,3 +95,35 @@ describe("MapProducerCard — glyph-LOCK (MEH-938)", () => {
     expect(document.body.textContent).not.toContain("→");
   });
 });
+
+describe("MapProducerCard — price RTL split (MEH-934)", () => {
+  it("splits a Hebrew-prefixed price: prefix in body font, number in Cormorant <bdi>", () => {
+    render(<MapProducerCard producer={{ ...producer, price_range: "מ-35₪" }} />);
+    const prefix = screen.getByText("מ-");
+    expect(prefix.tagName).toBe("SPAN");
+    expect(prefix).toHaveClass("font-body-md");
+    const number = screen.getByText("35₪");
+    expect(number.tagName).toBe("BDI");
+    expect(number).toHaveClass("font-english", "italic", "numeric");
+  });
+
+  it("keeps a shekel-first label (₪35) whole in the <bdi> with no prefix span", () => {
+    const { container } = render(<MapProducerCard producer={{ ...producer, price_range: "₪35" }} />);
+    expect(screen.queryByText("מ-")).not.toBeInTheDocument();
+    expect(container.querySelector("span.font-body-md")).toBeNull();
+    const number = screen.getByText("₪35");
+    expect(number.tagName).toBe("BDI");
+    expect(number).toHaveClass("font-english", "italic", "numeric");
+  });
+
+  it("renders a pure-numeric range (35-50) entirely in the <bdi>", () => {
+    render(<MapProducerCard producer={{ ...producer, price_range: "35-50" }} />);
+    const number = screen.getByText("35-50");
+    expect(number.tagName).toBe("BDI");
+  });
+
+  it("renders no price element when the producer has no price", () => {
+    const { container } = render(<MapProducerCard producer={producer} />);
+    expect(container.querySelector("bdi")).toBeNull();
+  });
+});
