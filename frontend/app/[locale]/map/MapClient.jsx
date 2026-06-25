@@ -285,8 +285,12 @@ export default function MapPage() {
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
       <div className="lg:hidden" style={{ height: "calc(100dvh - 64px)", position: "relative" }}>
-        {/* Sticky filter bar at top */}
-        <div className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
+        {/* Sticky filter bar — MEH-933: offset below the global sticky header
+            band (~64px; mirrors the `calc(100dvh - 64px)` container height above)
+            so the city-search pill clears the logo/search header instead of
+            colliding with it. top-16 = 64px; the map pt below is bumped by the
+            same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
+        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex-1">
               <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
@@ -298,8 +302,8 @@ export default function MapPage() {
           {filterChipsBar}
         </div>
 
-        {/* Map fills the rest */}
-        <div className="w-full h-full pt-[110px]">
+        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset). */}
+        <div className="w-full h-full pt-[174px]">
           {mapPane}
         </div>
 
