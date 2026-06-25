@@ -24,7 +24,7 @@ notify_producer_approved to assert fire-count (exactly once on the legit
 path, zero on a blocked toggle).
 """
 import app.routers.admin as admin_module
-from conftest import auth_header, make_producer, make_user
+from conftest import auth_header, make_category, make_producer, make_user
 
 
 def _admin(db):
@@ -152,6 +152,94 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
         admin_module, "notify_producer_approved", lambda *a, **k: None
     )
     producer = make_producer(db, status="pending", images=[TEST_IMAGE])
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "approved"
+
+
+# --- MEH-971 chunk 4: license-pending approval guard ------------------------
+# A license-required category ("דבש" — constants.py LICENSE_REQUIRED_CATEGORIES)
+# with a NULL/empty license number cannot be approved unless an explicit
+# override is passed. Reuses categories_require_license (no list duplication).
+# No-op today (the register-time 422 still blocks such producers from being
+# created); this is the safety net for the upcoming license-pending path.
+
+LICENSE_REQUIRED_CATEGORY = "דבש"  # mirror of backend/app/constants.py
+
+
+def _set_license(db, producer, value):
+    producer.producer_license_number = value
+    db.commit()
+    db.refresh(producer)
+
+
+def test_approve_license_required_no_license_is_blocked(client, db, monkeypatch):
+    """(a) license-required category + NULL license + no override → 422, no flip."""
+    calls = []
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: calls.append(a)
+    )
+    cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], category=cat
+    )  # producer_license_number defaults to NULL
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 422, resp.text
+    db.refresh(producer)
+    assert producer.status == "pending", "blocked approve must not change status"
+    assert calls == [], "blocked approve must not fire producer_approved_v1"
+
+
+def test_approve_license_required_with_override_succeeds(client, db, monkeypatch):
+    """(b) same as (a) but ?allow_without_license=true → approved."""
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], category=cat
+    )
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve?allow_without_license=true",
+        headers=auth_header(_admin(db)),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "approved"
+
+
+def test_approve_license_required_with_license_succeeds(client, db, monkeypatch):
+    """(c) license-required category + license present → approved (no override)."""
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    cat = make_category(db, name=LICENSE_REQUIRED_CATEGORY, emoji="🍯")
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], category=cat
+    )
+    _set_license(db, producer, "1234567")
+    resp = client.post(
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "approved"
+
+
+def test_approve_non_license_category_no_license_succeeds(client, db, monkeypatch):
+    """(d) non-license category + NULL license → approved (guard does not fire)."""
+    monkeypatch.setattr(
+        admin_module, "notify_producer_approved", lambda *a, **k: None
+    )
+    cat = make_category(db, name="ירקות", emoji="🥬")  # not license-required
+    producer = make_producer(
+        db, status="pending", images=[TEST_IMAGE], category=cat
+    )
     resp = client.post(
         f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
     )

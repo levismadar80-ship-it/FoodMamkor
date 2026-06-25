@@ -31,7 +31,10 @@ from app.schemas.schemas import (
     RemoveListingBody,
     StoryCardUploadRequest,
 )
-from app.services.license_validation import ensure_license_for_categories
+from app.services.license_validation import (
+    categories_require_license,
+    ensure_license_for_categories,
+)
 from app.slug_utils import RESERVED_SLUGS
 
 logger = logging.getLogger(__name__)
@@ -436,6 +439,10 @@ def pending_producers(
 @router.post("/producers/{producer_id}/approve")
 def approve_producer(
     producer_id: UUID,
+    # MEH-971 chunk 4: explicit admin override for the license-pending guard
+    # below. Defaults False so the guard is on by default; an admin who has
+    # verified a license out-of-band passes ?allow_without_license=true.
+    allow_without_license: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -450,6 +457,22 @@ def approve_producer(
             status_code=422,
             detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
         )
+    # MEH-971 chunk 4: license-pending approval guard. Mirrors the register-time
+    # ensure_license_for_categories (auth.py) at the approve gate — re-asserting
+    # licensed-only mechanically for the upcoming "register without a license"
+    # (pending) path. Reuses categories_require_license (no category list dup).
+    # 422 to match the photo gate above (same "can't approve without a required
+    # prerequisite" shape), not the MEH-769 409 (illegal status transition).
+    # No-op today (no NULL-license license-required producers exist yet).
+    if not allow_without_license:
+        category_ids = [c.id for c in producer.categories]
+        if categories_require_license(db, category_ids) and not (
+            producer.producer_license_number or ""
+        ).strip():
+            raise HTTPException(
+                status_code=422,
+                detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+            )
     producer.status = "approved"
     db.commit()
 

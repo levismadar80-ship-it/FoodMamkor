@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-971 chunk 4: license-pending approval guard — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-approval-guard` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Backend-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after this chunk** (do not start chunks 1/2/3).
+- **What:** `approve_producer` (`admin.py:436`) refuses `status="approved"` when `categories_require_license(db, [c.id for c in producer.categories])` is true AND `producer_license_number` is empty/NULL, unless `?allow_without_license=true` (new bool query param, admin override). 422 (matches photo gate `admin.py:457`; not MEH-769's 409). Reuses the existing license helper (`license_validation.py:38`) — no list dup. No-op today; safety net before the register-without-license path opens.
+- **No schema change:** license col already nullable (`models.py:103`), status stays String. Phase-0-confirmed.
+- **Tests:** 4 cases added to `tests/test_admin_approval_transitions.py` — `test_approve_license_required_no_license_is_blocked` / `_with_override_succeeds` / `_with_license_succeeds` / `test_approve_non_license_category_no_license_succeeds`. **pytest deferred to CI** (no local Postgres; `pip` blocked in sandbox) — both files `py_compile` clean.
+- **Security:** admin-only (`require_admin`); change only tightens. Web-search: no CVE for the boolean-override pattern.
+- **Merge:** Sapir (admin/approval path = HIGH-RISK-adjacent; Rule 23).
+
 ## Session 2026-06-25 — MEH-964 Phase 1 (dashboard redesign)
 Shipped to staging: MEH-961 (#1368), MEH-963 (#1373), MEH-964 1A (#1382) + 1B (#1384, SHA d2cc1396) = Overview KPI strip + תובנות tab, no duplication.
 Pending (specs locked in MEH-964): 1C = anonymous aggregate pulse (§5 RESOLUTION — 3 rows whatsapp/reviews/views, hero, "פתחי וואטסאפ" CTA, zero-state). 1D = empty-states + share-gate + availability-disable + view-public.
