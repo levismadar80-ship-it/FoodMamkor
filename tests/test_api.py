@@ -2092,8 +2092,10 @@ class TestProducersCities:
 
     def test_cities_omits_blank_city(self, client, db):
         make_producer(db, name="ריקה", city="   ", status="approved")
-        # only a blank-city approved producer exists → omitted → empty list
-        assert client.get("/producers/cities").json() == []
+        body = client.get("/producers/cities").json()
+        # whitespace-only city is omitted; assert the invariant (no blank rows)
+        # rather than == [] so the test is robust to any seeded approved rows.
+        assert all(row["city"].strip() != "" for row in body)
 
 
 class TestCategoryRequests:

@@ -289,6 +289,14 @@ class CategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProducerCityOut(BaseModel):
+    """MEH-970 — one row of GET /producers/cities: live approved-producer
+    count for a single city, consumed by the /map region control."""
+
+    city: str
+    count: int
+
+
 # --- Delivery Area ---
 class DeliveryAreaCreate(BaseModel):
     city: str

@@ -22,6 +22,7 @@ from app.routers.producer_follows import router as producer_follows_router
 from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
+    ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -131,7 +132,7 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
     return {"count": count}
 
 
-@router.get("/producers/cities")
+@router.get("/producers/cities", response_model=list[ProducerCityOut])
 @limiter.limit("60/minute")
 def producers_cities(request: Request, db: Session = Depends(get_db)):
     """MEH-970 — per-city approved-producer counts for the /map region control.
