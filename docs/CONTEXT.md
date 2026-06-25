@@ -94,6 +94,15 @@ Before any action on Drive, Slack, Linear, Gmail, Sentry, Vercel, Notion, Canva,
 - **L3 — Mid-task failure:** STOP. No silent retries, no workarounds. Surface options to Sapir: (a) reconnect, (b) skip, (c) different approach.
 - **L4 — Long sessions (>30 messages):** re-verify connector access before the next action burst. Auth tokens drift; never assume.
 
+## 8.5 · Claude Design ↔ Claude Code (/design-sync)
+
+The `/design-sync` MCP imports the design system from the codebase into Claude Design as a **snapshot — not a live watcher**. Re-run `/design-sync` after any brand/token change in code, or the Canva DS goes stale (like rebuilding a snapshot test after a schema change).
+
+- **Truth direction:** the Canva DS is a *derivative* of code. `docs/BRAND.md` + `docs/DESIGN.md` + code tokens stay SoT (per §3). The Canva DS never overrides them; on conflict, code wins. Do NOT treat a Canva edit as a brand decision — that path is ADR-014/BRAND.md, not the canvas.
+- **Use the MCP for components + tokens only**, never "implement the designs in this project" (the handoff button opens a fresh CC session and batch-builds whole projects — bypasses the YELLOW chunk plan + WAIT gates). Scope always comes from the Linear issue, chunk-by-chunk. The DS is reference, not orchestrator.
+- **`/design-sync` permission prompts = RED-tier (§6).** If the sync requests access beyond the tokens/components being synced, STOP and surface — Sapir approves. Never approve a broad scope reflexively.
+- **Executor never verifies its own sync.** The session that ran `/design-sync` does not validate its own output; the orchestrator (or a separate surface) diffs source tokens vs synced result (per §9).
+
 ## 9 · Skeptic Mode applied to orchestrator claims
 
 When Claude Code finds disagreement with file:line evidence against an orchestrator (Claude.ai chat) claim, the orchestrator is **wrong by default**. Claude.ai memory and inferred facts CAN be wrong (proven 3x on 2026-05-23 alone). Pattern: CC Phase 0 disagreement → STOP, orchestrator verifies against UI before "go".
