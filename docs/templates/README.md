@@ -17,6 +17,7 @@ These templates are referenced from every Linear issue, every CC prompt, and eve
 | 06 | `06-linear-issue.md` | Full Linear issue (8 sections + XML structure) | Meta — reference all |
 | 07 | `07-linear-quick.md` | Quick task (<1h, single file, 1-20 LOC) | Sonnet 4.6 always |
 | 08 | `08-linear-issue-examples.md` | 10 backlog examples with model recommendations | Meta — reference all |
+| 10 | `10-testimonial-intake.md` | Testimonial intake -> on-brand draft (verbatim quote + ADR-014 guardrails) | Opus 4.7 always |
 
 ## Template 09 — deferred
 
