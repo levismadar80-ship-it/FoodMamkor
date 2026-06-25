@@ -342,9 +342,15 @@ def admin_delete_producer(
     # is_producer is also cleared: the producer is permanently gone, so the
     # "durable flag" no longer reflects reality, and leaving it True would
     # lock the owner out of re-registering (409 at auth.py — MEH-669 family).
+    # role is reset to "consumer" for the same consistency reason:
+    # require_producer (auth.py:268-273) gates on role ALONE, so a leftover
+    # role="producer" with producer_id=NULL is an orphan that passes the dep
+    # then 404s on every /producers/me* handler (producer_me.py:75-76).
+    # Resetting role keeps the (role, producer_id) pair consistent — mirrors
+    # the atomic set in the register flow (auth.py:511-514).
     # Admin-created producers have no linked user → update is a no-op.
     db.query(User).filter(User.producer_id == producer.id).update(
-        {"producer_id": None, "is_producer": False},
+        {"producer_id": None, "is_producer": False, "role": "consumer"},
         synchronize_session=False,
     )
     db.flush()
