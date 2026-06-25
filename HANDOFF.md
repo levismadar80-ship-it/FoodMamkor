@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-970 /map onboarding redesign — chunk 0+1 MERGED (#1388)
+
+- **Merged to staging** (squash `4b28e11`), `Refs MEH-970` (NOT Closes — chunks 2-4 remain). Branch `feature/meh-970-map-onboarding`. YELLOW chunked.
+- **Shipped:** Chunk 1 — removed the 800ms `LocationModal` auto-open gate (`MapClient.jsx`, old `:152-159`) → `/map` renders immediately on the MEH-932 band default; modal kept as geo-denied fallback only; dropped `locationModalFiredRef`/`useRef`; fixed stale default-view comment. Chunk 0 — `GET /producers/cities` (approved-only GROUP BY city, blanks omitted, live counts, `response_model=list[ProducerCityOut]`) + `TestProducersCities` (green in CI). No MapComponent/centering change (MEH-948 untouched).
+- **Phase-0 findings (carry forward):** NO `region` field anywhere (Producer has `city`/`lat`/`lng`/`delivery_areas` only); no city→region map in FE; `data/cities.js` is a flat list. Region chips require a taxonomy decision.
+- **⛔ BLOCKED on Smadar before chunk 2 (region control):** (1) **Q1 region taxonomy — A** (static FE city→region map, Smadar supplies buckets) **vs C** (top-cities chips, no taxonomy). Q2 already = **i** (the new endpoint). (2) **Live city list** from staging = only **5 producers / 5 cities** (זכרון יעקב·ירושלים·כרמיאל·קצרין·תל אביב, each count 1) → chips would read "1"; may want to seed more data first.
+- **⚠️ Open verify (MEH-948 watch):** gateless `/map` was NOT visually QA'd — CC sandbox can't reach the `*.vercel.app` preview (egress block); merged on explicit MERGE. **Confirm on staging `/map` post-deploy: renders first, no gray-out / no mis-center.**
+- **Remaining chunks:** 2 = region control (`קרוב אליי` pill + region/city chips, z-index clears BottomNav 1000 + cookie 1100 per ledger), 3 = empty-near-me ("אין עדיין עסקים באזורך — הנה הקרובים" + zoom-out) + empty-region guard, 4 = ungendered voice (coordinate MEH-969) + **DATA.md + `.ai/diagrams/api-routes.md` rows for `/producers/cities`** (rule 11/12 doc debt for chunk 0) + MANUAL_TESTING.
+
 ## Session 2026-06-25 — MEH-964 Phase 1 (dashboard redesign)
 Shipped to staging: MEH-961 (#1368), MEH-963 (#1373), MEH-964 1A (#1382) + 1B (#1384, SHA d2cc1396) = Overview KPI strip + תובנות tab, no duplication.
 Pending (specs locked in MEH-964): 1C = anonymous aggregate pulse (§5 RESOLUTION — 3 rows whatsapp/reviews/views, hero, "פתחי וואטסאפ" CTA, zero-state). 1D = empty-states + share-gate + availability-disable + view-public.
