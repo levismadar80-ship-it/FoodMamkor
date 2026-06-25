@@ -324,11 +324,18 @@ export default function MapPage() {
 
         {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset).
             MEH-945: while the cookie banner shows, reserve its footprint at the
-            bottom (its own offset = safe-area + 80px, mirroring CookieBanner.jsx:68,
-            plus its live --cookie-banner-h) so it no longer overlays the canvas. */}
+            bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
+            plus its live --cookie-banner-h, plus a 16px clearance for the known
+            ~10px section overflow (the sticky header occupies ~74px but this
+            section subtracts only 64px per MEH-933, spilling ~10px past the
+            viewport bottom) — so the banner no longer overlays the canvas.
+            The map's own `min-h-[500px]` (MapComponent.jsx) would otherwise spill
+            back under the banner on short phones, so relax it to 0 ONLY while we're
+            reserving — the shell always has a definite height + invalidateSize, so
+            the MEH-30 0px guard isn't needed here. Full height restored on dismiss. */}
         <div
-          className="w-full h-full pt-[174px]"
-          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 80px + var(--cookie-banner-h, 0px))" } : undefined}
+          className={`w-full h-full pt-[174px] ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" } : undefined}
         >
           {mapPane}
         </div>
