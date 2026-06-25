@@ -3348,6 +3348,15 @@
         "error_rate_limited": "יותר מדי ניסיונות. נסו שוב עוד מעט."
       },
       "holiday_catalog_cta": "עדכנו את הקטלוג →",
+      "nav": {
+        "aria_label": "ניווט לוח הבקרה",
+        "tabs": {
+          "overview": "סקירה",
+          "edit": "עריכה",
+          "insights": "תובנות",
+          "tools": "כלים"
+        }
+      },
       "availability": {
         "tooltip_line_default": "פתוח להזמנות = ברירת מחדל.",
         "tooltip_line_today": "זמינה היום = מלאי טרי עכשיו.",
@@ -3359,9 +3368,9 @@
         "group_aria": "מצב זמינות",
         "options": {
           "accepting_orders": "פתוח להזמנות",
-          "available_today": "זמינה היום 🟢",
-          "full_this_week": "עמוסה השבוע 🟠",
-          "on_vacation": "בהפסקה ⏸"
+          "available_today": "זמינה היום",
+          "full_this_week": "עמוסה השבוע",
+          "on_vacation": "בהפסקה"
         },
         "vacation_return_label": "חזרה ב:",
         "remove_vacation_date_aria": "הסירו תאריך חזרה"
@@ -3386,6 +3395,10 @@
         "recipes": {
           "title": "מתכונים",
           "sub": "פרסום וניהול מתכונים שמקדמים את המוצרים שלך"
+        },
+        "followers": {
+          "title": "העוקבות שלי",
+          "sub": "מי עוקבת אחרי העסק ושיתוף הפרופיל"
         }
       },
       "analytics": {
