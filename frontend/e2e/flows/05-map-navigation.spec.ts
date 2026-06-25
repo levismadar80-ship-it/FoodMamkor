@@ -32,9 +32,14 @@ test.describe("Map", () => {
     );
 
     if (center) {
-      // Israel: lat roughly 29 (Eilat) – 33.4 (Metula), lon 34–36
-      expect(center[0], "Map lat should be within Israel").toBeGreaterThan(29);
-      expect(center[0], "Map lat should be within Israel").toBeLessThan(34);
+      // MEH-932: default center is the Israel producer band [32.4, 34.95] zoom 8
+      // (was Jerusalem [31.7683, 35.2137]). Pin lat to the producer band so a
+      // regression back to the southern Jerusalem center (lat ~31.77) fails here,
+      // and assert lon stays within Israel (34–36).
+      expect(center[0], "Map lat should be on the producer band (~32.4)").toBeGreaterThan(32);
+      expect(center[0], "Map lat should be on the producer band (~32.4)").toBeLessThan(33);
+      expect(center[1], "Map lon should be within Israel (34–36)").toBeGreaterThan(34);
+      expect(center[1], "Map lon should be within Israel (34–36)").toBeLessThan(36);
     } else {
       // __MAP_CENTER__ not yet set — fall back to confirming map rendered.
       // :visible avoids ambiguous multi-element match (two containers in DOM).
