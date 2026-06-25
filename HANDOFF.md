@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## Session 2026-06-25 — MEH-964 Phase 1 (dashboard redesign)
+Shipped to staging: MEH-961 (#1368), MEH-963 (#1373), MEH-964 1A (#1382) + 1B (#1384, SHA d2cc1396) = Overview KPI strip + תובנות tab, no duplication.
+Pending (specs locked in MEH-964): 1C = anonymous aggregate pulse (§5 RESOLUTION — 3 rows whatsapp/reviews/views, hero, "פתחי וואטסאפ" CTA, zero-state). 1D = empty-states + share-gate + availability-disable + view-public.
+Backlog: MEH-966 (backend per-event activity feed, post-Phase-1). CONTEXT §8.5 (design-sync rule).
+Collision lesson: two parallel CC sessions ping-ponged 1A on staging (#1375→#1376→#1382). "Supersede" ≠ closed; a parallel session merged instead of closing. Rule: one session owns a chunk; close the parallel before continuing. Also: orchestrator must decide ONCE and hold — re-litigating the same call added churn.
+
 ## 2026-06-25 — MEH-968 footer RTL (IG handle bidi + newsletter arrow) — DRAFT PR
 
 - **Branch:** `feature/meh-968-footer-rtl` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN. `Closes MEH-968`.
