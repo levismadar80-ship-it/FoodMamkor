@@ -1033,7 +1033,7 @@
       "marker_plural": "עסק"
     },
     "producer_card": {
-      "verified": "✓ מאומת",
+      "verified": "מאומת",
       "distance_prefix": "ל",
       "wa_message": "היי! מצאתי אותך במהמקור — {name}",
       "full_profile": "פרופיל מלא"
