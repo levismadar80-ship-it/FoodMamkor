@@ -78,8 +78,10 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
 
       {/* Peek header */}
       <div className="px-4 pb-2 shrink-0 flex items-center justify-between">
-        <p className="text-sm font-medium text-text">
-          <span className="numeric">{count}</span> {t("title")}
+        {/* MEH-935: ICU plural — count=1 singular, count=2 Hebrew dual, ≥3 plural.
+            Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור"). */}
+        <p className="text-sm font-medium text-text numeric">
+          {t("count", { count })}
         </p>
         {snap === HALF && (
           <button
