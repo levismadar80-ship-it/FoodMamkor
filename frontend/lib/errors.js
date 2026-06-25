@@ -25,6 +25,47 @@
 
 import { showToast } from "./toast";
 
+// MEH-957: Pydantic v2 prefixes every custom-validator message raised via
+// `raise ValueError(...)` with this literal in the `msg` field. Stripped so
+// the Hebrew sentence renders clean instead of "Value error, <hebrew>".
+const PYDANTIC_VALUE_ERROR_PREFIX = "Value error, ";
+
+/**
+ * MEH-957 — normalise a FastAPI `detail` payload to a single display string.
+ *
+ * FastAPI returns three `detail` shapes:
+ *   - 400/409/403 (HTTPException) → `detail` is a string.
+ *   - 422 (RequestValidationError) → `detail` is an ARRAY of error objects
+ *     (`{type, loc, msg, input}`), each `msg` Pydantic-prefixed with
+ *     "Value error, " for custom-validator failures.
+ *
+ * Rendering the raw array as a React child crashes the tree ("Objects are
+ * not valid as a React child" — the MEH-957 register white-screen). This
+ * helper collapses the array into a `" · "`-joined sentence and strips the
+ * Pydantic prefix. Returns `null` for any shape it can't turn into text so
+ * callers fall back to their own generic copy.
+ *
+ * @param {unknown} detail  `err.response.data.detail`
+ * @returns {string | null}
+ */
+export function detailToMessage(detail) {
+  if (typeof detail === "string") {
+    return detail || null;
+  }
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => (typeof item?.msg === "string" ? item.msg : ""))
+      .map((msg) =>
+        msg.startsWith(PYDANTIC_VALUE_ERROR_PREFIX)
+          ? msg.slice(PYDANTIC_VALUE_ERROR_PREFIX.length)
+          : msg,
+      )
+      .filter(Boolean);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  }
+  return null;
+}
+
 /**
  * Given an axios-shaped error (or any Error), return the best localized
  * sentence to show the user. Falls back to the shared generic message —
