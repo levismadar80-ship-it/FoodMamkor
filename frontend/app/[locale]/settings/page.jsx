@@ -730,21 +730,10 @@ function DangerZoneCard() {
 function BusinessTab() {
   const { user } = useAuth();
   const t = useTranslations("settings.business");
-  const [stats, setStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(true);
   const [supportOpen, setSupportOpen] = useState(false);
 
   const status = user.producer_status || "pending";
   const rejectionReason = user.producer_rejection_reason;
-
-  useEffect(() => {
-    api.get("/producers/me/dashboard")
-      .then((r) => setStats(r.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoadingStats(false));
-  }, []);
-
-  const dimmed = status === "suspended";
 
   return (
     <div className="space-y-6">
@@ -788,33 +777,18 @@ function BusinessTab() {
         </div>
       )}
 
-      {/* Stats grid */}
-      <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-text mb-4">{t("stats_heading")}</h2>
-        {loadingStats ? (
-          <p className="text-sm text-fg-muted">{t("stats_loading")}</p>
-        ) : stats ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatCard label={t("stat_views")} value={stats.views ?? 0} />
-            <StatCard label={t("stat_favorites")} value={stats.favorites ?? 0} />
-            <StatCard label={t("stat_reviews")} value={stats.reviews ?? 0} />
-            <StatCard label={t("stat_avg_rating")} value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
-            <StatCard label={t("stat_products")} value={stats.products ?? 0} />
-            <StatCard label={t("stat_orders")} value={stats.orders ?? 0} />
-          </div>
-        ) : (
-          <p className="text-sm text-fg-muted">{t("stats_unavailable")}</p>
-        )}
-      </section>
-
-      {/* Link to producer profile edit */}
-      {status === "approved" && (
-        <div className="text-center">
-          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            {t("edit_profile_link")}
-          </Link>
-        </div>
-      )}
+      {/* MEH-963: the canonical analytics + profile-management surface is
+          /producer/dashboard. The old statistics grid here read fields the
+          /producers/me/dashboard endpoint never returns (views / reviews /
+          products / orders / avg_rating), so it rendered a permanent 0/- wall
+          for every owner — new or established. Removed in favor of an
+          always-visible pointer to the real dashboard (un-gated from
+          status === "approved" — owners need it while pending too). */}
+      <div className="text-center">
+        <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
+          {t("edit_profile_link")}
+        </Link>
+      </div>
 
       {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
     </div>
@@ -1342,15 +1316,6 @@ function ProductsSection() {
           </div>
         </form>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }) {
-  return (
-    <div className="rounded-[12px] bg-green-50 px-4 py-3 text-center">
-      <p className="text-2xl font-bold text-text">{value}</p>
-      <p className="text-xs text-fg-muted mt-0.5">{label}</p>
     </div>
   );
 }
