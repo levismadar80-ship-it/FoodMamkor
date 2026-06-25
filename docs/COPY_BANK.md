@@ -473,17 +473,17 @@
 
 ## Anti-patterns (do not use)
 
-- ❌ `יצרן` / `יצרנית` — always "בית עסק" / "בעלת עסק"
+- ❌ `יצרן` / `יצרנית` — use "בית עסק" (ישות) / "בעלי עסקים" (גנרי) / "בעלת/בעל עסק" (ספציפיים), per ADR-024
 - ❌ "marketplace" / "פלטפורמה" — we are a directory, not a marketplace  
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
-- ❌ Mixed gender (זכר) — brand voice is consistently נקבה (feminine)
+- ❌ מגדר לפי surface (ADR-024): functional=רבים ניטרלי · narrative/warmth=נקבה. אסור: slash · פנייה זכרית לקוראת ("המשתמש שלך")
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
 
 ---
 
 ## Customer-centric voice rule (MEH-579, May 14, 2026)
 
-Feminine grammar is necessary but not sufficient. Every line of user-facing
+On narrative/warmth surfaces, feminine grammar is necessary but not sufficient. Every line of user-facing
 UI copy must also pass the **subject test**: who is the grammatical subject?
 
 | ❌ Founder-voice | ✅ Customer-voice |
