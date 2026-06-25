@@ -28,6 +28,25 @@ Use logical properties:
 When adding ANY positional class, ask: **is this directional?** If yes,
 use the logical equivalent.
 
+### Which physical side does each resolve to? (RTL)
+
+The whole site is `dir="rtl"` (set at the layout root), so logical
+properties flip relative to a default LTR page:
+
+- `start-*` → **right** · `end-*` → **left**
+- `ms-*` → margin-right · `me-*` → margin-left
+- `ps-*` → padding-right · `pe-*` → padding-left
+
+So **"primary action on the RIGHT in RTL" = `start-*`, NOT `end-*`.** The
+common slip is reading `end-` as "the end = the right side" — in RTL the
+*end* is the **left**. When unsure, picture the text flow: it **starts on
+the right** and **ends on the left**.
+
+_Source: 2026-06-25 /map UX batch — an orchestrator instruction specified
+`end-` for a right-aligned control; CC caught that `end-` resolves to the
+left in RTL and corrected it to `start-`. (meta-patterns.md §1 — verify
+orchestrator claims.)_
+
 ### Intentional physical-property exceptions (keep as-is, add `// rtl-ok` comment)
 
 - Eye-toggle buttons inside `dir="ltr"` password inputs (`right-3`)
