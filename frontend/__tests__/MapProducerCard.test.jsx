@@ -83,3 +83,15 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 });
+
+describe("MapProducerCard — glyph-LOCK (MEH-938)", () => {
+  it("renders verified + full-profile labels with no raw ✓/→ dingbat (Phosphor only)", () => {
+    // identity t() mock → keys; the verified span (SealCheck + label) renders only when is_verified
+    render(<MapProducerCard producer={{ ...producer, is_verified: true }} />);
+    expect(screen.getByText("verified")).toBeInTheDocument();
+    expect(screen.getByText("full_profile")).toBeInTheDocument();
+    // ✓ and → are now Phosphor icons (mocked <span>), never text dingbats — guards re-introduction
+    expect(document.body.textContent).not.toContain("✓");
+    expect(document.body.textContent).not.toContain("→");
+  });
+});
