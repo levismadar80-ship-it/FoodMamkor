@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-950 align testimonial docs to ADR-024 — DRAFT PR
+
+- **Branch:** `feature/meh-950-align-testimonials-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. Gate cleared — ADR-024 (MEH-944) merged to staging via #1349; `docs/decisions/ADR-024-voice-surface-function.md` confirmed present in Phase 0.
+- **Done:** aligned the 2 testimonial-surface docs to ADR-024's surface-function voice taxonomy. (1) `docs/templates/10-testimonial-intake.md` — 4 governing `ADR-014 HYBRID` refs → `ADR-024 (refines ADR-014)`; Voice-table attribution row + `<voice>` attribution line now carry the full owner-noun taxonomy (`בית העסק` entity · `בעלת עסק` woman · `בעל עסק` man · never `יצרן`/`יצרנית`). (2) `docs/COPY_BANK.md §8` — Voice heading → ADR-024; Attribution-noun row rewritten to same taxonomy.
+- **Scope held:** only the 2 files; ADR-024 + other COPY_BANK sections untouched.
+- **Verified (grep):** no ADR-014 *governing* ref left in either file (only `refines ADR-014` lineage notes remain); `בעל עסק` male case present in both files. Docs-only → no build / no mobile QA.
+- **Pending:** open draft PR (`Refs MEH-950`, NOT Closes — Sapir merges).
+
 ## 2026-06-25 — MEH-940 chatbot gender-neutral voice — DRAFT PR (merge-gated after doc PR)
 
 - **Branch:** `feature/meh-940-chatbot-gender-neutral` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-940`. Files: `chat.py` + `ChatWidget.jsx` + CHANGELOG/HANDOFF.

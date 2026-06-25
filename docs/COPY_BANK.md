@@ -705,14 +705,14 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 3. **Speaker approval** on final wording + name/business/city before publish. No approval → not published (`DRAFT`).
 4. **Licensed-business framing only** — never imply home-cooking.
 
-### Voice — ADR-014 HYBRID
+### Voice — ADR-024 HYBRID (refines ADR-014)
 
 | Part | Rule |
 | -- | -- |
 | The quote | Exempt — verbatim, no voice rules applied |
 | Editorial framing | Feminine allowed (reader-address) · brand-we plural |
 | UI chrome (button/link) | gerund/plural, never feminine |
-| Attribution noun | `בעלת עסק` / `בית עסק` — never `יצרנית` |
+| Attribution noun (ADR-024) | `בית העסק` (entity) · `בעלת עסק` (woman) · `בעל עסק` (man) — never `יצרן`/`יצרנית` |
 
 **Forbidden in any testimonial surface:** `יצרן`/`יצרנית` · `אוכל ביתי`/`שכנות מבשלות`/`מהמטבח של השכן` · `marketplace` · `מגזין`. **Zero emoji** in testimonial copy (Emoji LOCK v2).
 
