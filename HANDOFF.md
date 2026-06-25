@@ -13,6 +13,32 @@
 - **Hard constraints honored:** (1) **byte-match triad** — `SUGGESTED_PROMPTS[0]` ≡ `HARDCODED_ANSWERS` key (both `איך נרשמים כבית עסק?`), changed via `replace_all`; verified 2 occurrences, 0 old. (2) **real button label** — verified `report.trigger` = `🚩 דווח על עסק` (`he.json:2620`, rendered `ReportButton.jsx:38`); KB now names `דווח על עסק`, not the phantom `דווחי`. (3) **docstrings** — both "feminine voice" notes (chat.py L11-12, L59-60) updated.
 - **Verify:** `npm run build` GREEN; ESLint 0 errors (39 pre-existing warnings, untouched code); `python -m py_compile chat.py` OK; grep confirms no residual user-facing feminine in KB/HARDCODED/fallbacks; no backend test references the changed strings → `pytest` to CI.
 - **MERGE GATE:** do NOT merge — **merges AFTER the ADR/COPY_BANK doc PR** (brand-book-precedes-code). Sapir is sole merge authority (Rule 23).
+## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
+
+- **Branch:** `feature/meh-721-footer-cta-move` off `origin/staging` (`e67a88a`). **Pushed.** Draft PR opened by Sapir from the browser (GitHub MCP was disconnected this session); body `Refs MEH-721` (NOT Closes).
+- **Done:** removed the global-footer "add your business" pitch panel (`Footer.jsx`); replaced with a quiet footer nav-link → `/register/producer` reusing `nav.footer.add_business` (no new i18n key). Producer discoverability preserved via this link + `/about/for-businesses` CTAs (MEH-923 — MEH-721 *completes* that, not reverses). Resolves homepage ×2 duplicate CTA (footer pitch under `HomeCTA`, identical copy/href) + removes B2B pitch copy from the global-footer SEO-scrape surface.
+- **Dead-code cleanup:** dropped unused `useAuth` import + MEH-669 `isAdmin` admin-hide guard (panel was its only consumer); `ArrowRight` import kept (newsletter submit). Separate `docs(footer)` commit updated the file-header docstring. `cta_pitch`/`cta_subpitch` left in `he.json`/`en.json` (unreferenced, harmless).
+- **Verified:** `npm run build` green (exit 0); ESLint 0 errors (5 pre-existing warnings). Scope = `Footer.jsx` only; HomeCTA + `/about` untouched.
+- **Pending:** Sapir mobile-check (Vercel preview — CC sandbox can't reach `*.vercel.app`) → merge → close MEH-721 manually (Rule 23, `Refs` not `Closes`).
+## 2026-06-24 — axe batch fast-follows: 2 PRs MERGED (MEH-919 #1/#3 + MEH-916 remaining)
+
+- **Outcome:** the two unblocked fast-follows from the 23/06 axe batch are now **merged to staging on verified-green CI** (real Playwright E2E axe ran 3m+ on each — not budget-exhaustion phantoms; backend jobs skipped as frontend-only).
+- **Merged:**
+  - **#1337 MEH-919 #1/#3** (`a998b4dc`) — pre-computed AA hexes. **#1** BottomNav inactive label `text-fg-muted`→`text-[#4b4841]` (3.53→**4.55** on `#b0baad`). **#3** dairy category chip text darkened via a new `textColor: "#3b72ad"` on the `חלב וגבינות` entry in `lib/map-categories.js` (3.01→**4.51**); the shared `#4a90d9` **pin/dot color is untouched** (Phase-0 confirmed it's a shared token → recolored text usage only, `MapProducerCard.jsx`).
+  - **#1338 MEH-916 remaining** (`b812ccc3`) — **`/events` aria-required-children**: wrapped the two `role="tab"` buttons in an inner `<div role="tablist">` so the `<Link>` is a sibling, not a tablist child (`EventsClient.jsx`). **home aria-command-name**: added `title={producer.name}` to the react-leaflet `<Marker>` (`HomepageMiniMap.jsx`) → accessible name on the `role=button` marker.
+- **Still open (need Sapir):**
+  - **MEH-918** soft-404 — unchanged: `notFound()` in `[locale]` returns 200; fix = `experimental.globalNotFound` in the deny-listed `next.config.js` (Sapir flips, CC verifies) OR root-layout restructure. STOPPED.
+  - **MEH-919 #2/#4/#5** + optional `/events` tablist `aria-label` — deferred pairs; `color-contrast` stays in the axe gate's `GATE_IGNORE_RULES` until they land so the gate won't regress.
+- **Whole 23/06 axe-audit batch is now landed except the one Sapir-gated config flip (MEH-918).**
+
+## 2026-06-25 — MEH-938 MapProducerCard glyph-LOCK (DRAFT PR, branch `feature/meh-938-mapcard-i18n-glyph`)
+
+- **Phase-0 corrected the premise:** the issue claimed hardcoded English `Verified`/`Full profile`; on `origin/staging` both were **already Hebrew** in `he.json` (`map.producer_card.verified`/`full_profile`). Sapir's June screenshot = stale staging deploy. Rescoped the Linear issue to **glyph-LOCK only** (the live deploy still shows English until the already-merged he.json translation redeploys).
+- **3 changes (MapProducerCard.jsx + he.json):** `he.json:1036` `"✓ מאומת"`→`"מאומת"`; `:172` verified span leads with `<SealCheck size={13} aria-hidden>` (canonical verified glyph, inherits muted strip color — no color shift); `:202` raw `→` → `<ArrowRight size={13} weight="bold" rtl:rotate-180>` (MEH-867/877 bidi CTA), Link → `inline-flex`.
+- **Scope held:** `en.json` untouched (en-guard MEH-472); price/marker/pluralization untouched (MEH-934/935/936); comment-only `→` at `:70` left. `npm run build` green.
+- **Out of scope → Sapir files sibling:** `map.sheet.badge` (`he.json:1010-1012`, MobileSheetSelectedCard) still has `✓`/`🌿`/`✡️` embedded.
+- **Next:** open draft PR off staging, post /map-desktop preview for QA, **never merge** (awaiting Sapir).
+- **Also still open:** docs PR **#1340** (MEH-916/919 session-log) — mergeable once its CI is confirmed green (was blocked earlier only by a transient GitHub-MCP disconnect, now resolved).
 
 ## 2026-06-23 — Staging axe audit batch: 6 PRs MERGED + MEH-921 ratchet (MEH-915/916/921/917/919)
 

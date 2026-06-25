@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
@@ -20,6 +20,14 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
   const priceLabel = p.starting_price_label || p.price_range;
+  // MEH-934: split the leading Hebrew word prefix (e.g. "מ-") from the numeric
+  // run so the prefix renders in the Hebrew body font while the number stays
+  // Cormorant italic, bidi-isolated — fixes "מ-35₪" reversing in RTL. The ₪ is
+  // excluded from the prefix class so a shekel-first label ("₪35") keeps the
+  // currency with the number in Cormorant rather than splitting it off.
+  const priceMatch = priceLabel ? priceLabel.match(/^([^\d₪]*)(.*)$/) : null;
+  const pricePrefix = priceMatch?.[1] ?? "";
+  const priceNumber = priceMatch?.[2] ?? "";
   const isVerified = p.is_verified;
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
@@ -123,8 +131,9 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </div>
           )}
           {priceLabel && (
-            <p className="font-english italic line-clamp-1 mt-0.5 text-accent numeric" style={{ fontSize: "13px" }}>
-              {priceLabel}
+            <p className="line-clamp-1 mt-0.5 text-accent" style={{ fontSize: "13px" }}>
+              {pricePrefix && <span className="font-body-md">{pricePrefix}</span>}
+              {priceNumber && <bdi className="font-english italic numeric">{priceNumber}</bdi>}
             </p>
           )}
         </div>
@@ -169,7 +178,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
         {/* Trust strip — verified + rating (Star icon; number LTR-isolated) */}
         {(isVerified || rating > 0) && (
           <p className="text-[12px] text-fg-muted mt-1 inline-flex items-center gap-1 flex-wrap">
-            {isVerified && <span>{t("verified")}</span>}
+            {/* MEH-938: ✓ dingbat → Phosphor SealCheck (glyph-LOCK); no weight/color → inherits the muted strip color */}
+            {isVerified && <span className="inline-flex items-center gap-0.5"><SealCheck size={13} aria-hidden="true" />{t("verified")}</span>}
             {isVerified && rating > 0 && <span aria-hidden="true">·</span>}
             {rating > 0 && (
               <span className="inline-flex items-center gap-0.5">
@@ -196,10 +206,12 @@ export default function MapProducerCard({ producer, active, onClick }) {
           )}
           <Link
             href={baseHref}
-            className="text-primary text-[13px] font-medium hover:underline"
+            className="inline-flex items-center gap-0.5 text-primary text-[13px] font-medium hover:underline"
             onClick={(e) => e.stopPropagation()}
           >
-{t("full_profile")} →
+            {/* MEH-938: → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-867/877 pattern) */}
+            {t("full_profile")}
+            <ArrowRight size={13} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
           </Link>
         </div>
       </div>
