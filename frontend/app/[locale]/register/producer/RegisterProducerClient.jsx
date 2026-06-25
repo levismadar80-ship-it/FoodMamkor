@@ -557,6 +557,10 @@ function RegisterProducerPageBody() {
               value={form.city}
               onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
             />
+            {/* MEH-951: visual-only required marker — no submit-gating change. */}
+            <p className="text-xs text-fg-muted mt-1 text-start">
+              {t("auth.register.producer.fields.city_required_marker")}
+            </p>
             </div>
 
             {/* address is optional (no "*", not gated at submit) — label carries
@@ -574,6 +578,10 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
                 dir="rtl"
               />
+              {/* MEH-951: map-privacy reassurance under the address field. */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_map_privacy_hint")}
+              </p>
             </div>
 
             <div className="flex gap-3">
@@ -621,6 +629,10 @@ function RegisterProducerPageBody() {
                 </label>
                 <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_required_hint")}
+                </p>
+                {/* MEH-951: "what is this" extension after the required hint. */}
+                <p className="text-xs text-fg-muted mb-2 text-start">
+                  {t("auth.register.producer.fields.license_what_is_it")}
                 </p>
                 <input
                   id="producer-license-required"
