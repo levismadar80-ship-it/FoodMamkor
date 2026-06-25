@@ -41,9 +41,7 @@ import { BRAND_NAME } from "@/lib/constants";
  */
 export default function Footer() {
   const t = useTranslations();
-  // MEH-721: producer-CTA pitch block moved out of global footer; see
-  // /about/for-businesses + footer nav-link. The MEH-669 admin-hide guard
-  // went with it (admins simply don't see a quiet nav-link as a call to act).
+  // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
