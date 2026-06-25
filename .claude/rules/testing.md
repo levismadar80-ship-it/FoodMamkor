@@ -88,3 +88,33 @@ registering (workflow startup), **not** a failure — distinct from the *permane
 docs-only skip case above (now fixed by the MEH-736 twins). Let them settle, then
 retry the merge once. (Observed on PR #908 — first merge attempt blocked on
 `expected`, second succeeded with no override.)
+
+---
+
+## Driving Playwright against staging from the CC sandbox (TLS workaround)
+
+When you launch Playwright/Chromium against the **live** staging URL
+(`https://staging.mehamakor.online`) or a `*.vercel.app` preview **from
+the CC sandbox**, force the max TLS version to 1.2:
+
+```js
+chromium.launch({ args: ["--ssl-version-max=tls1.2"] })
+```
+
+Without it the sandbox's Chromium offers a TLS-1.3 ClientHello that the
+Vercel edge drops, surfacing as `ERR_CONNECTION_CLOSED` — which looks like
+the site is down but is really the handshake failing. Capping at TLS 1.2
+lets the handshake complete.
+
+**Sandbox-only.** Real browsers and the GitHub-hosted CI runners don't
+need it — the `e2e.yml` suite is unaffected. This is for one-off **live
+verification from a CC session** (e.g. confirming a screenshot bug is
+*stale* vs a real regression before filing/fixing — 2026-06-25 MEH-938 /
+MEH-942), not for the automated E2E pipeline. Pairs with the
+`*.up.railway.app` egress block in [CLAUDE.md](../../CLAUDE.md) "Known Bug
+Patterns": backend/API smoke from the sandbox is blocked outright; this
+covers the *frontend* live-check path that Chromium can reach but only
+over TLS 1.2.
+
+_Source: 2026-06-25 /map UX batch (handoff note) — surfaced while
+verifying MEH-942's GPS-button screenshot against live staging._
