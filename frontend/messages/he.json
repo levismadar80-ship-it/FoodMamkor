@@ -3294,6 +3294,12 @@
     "producer": {
       "loading_data": "טעינת נתונים...",
       "loading_analytics": "טעינת סטטיסטיקות...",
+      "nav": {
+        "aria": "ניווט בלוח הניהול",
+        "overview": "סקירה",
+        "edit": "עריכה",
+        "tools": "כלים"
+      },
       "load_error": {
         "title": "לא הצלחנו לטעון את לוח הבקרה",
         "body": "ייתכן שעדיין לא הוקם לך עסק, או שאירעה תקלה זמנית. אם הבעיה נמשכת, אנחנו כאן בשבילך.",
@@ -3354,9 +3360,9 @@
         "group_aria": "מצב זמינות",
         "options": {
           "accepting_orders": "פתוח להזמנות",
-          "available_today": "זמינה היום 🟢",
-          "full_this_week": "עמוסה השבוע 🟠",
-          "on_vacation": "בהפסקה ⏸"
+          "available_today": "זמינה היום",
+          "full_this_week": "עמוסה השבוע",
+          "on_vacation": "בהפסקה"
         },
         "vacation_return_label": "חזרה ב:",
         "remove_vacation_date_aria": "הסירו תאריך חזרה"

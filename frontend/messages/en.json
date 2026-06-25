@@ -3280,6 +3280,12 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "nav": {
+        "aria": "Dashboard navigation",
+        "overview": "Overview",
+        "edit": "Edit",
+        "tools": "Tools"
+      },
       "load_error": {
         "title": "We couldn't load your dashboard",
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
@@ -3340,9 +3346,9 @@
         "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today 🟢",
-          "full_this_week": "Busy this week 🟠",
-          "on_vacation": "On a break ⏸"
+          "available_today": "Available today",
+          "full_this_week": "Busy this week",
+          "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
         "remove_vacation_date_aria": "Remove return date"
