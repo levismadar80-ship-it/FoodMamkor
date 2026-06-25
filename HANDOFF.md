@@ -13,6 +13,14 @@
 - **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
 - **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
 - **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
+## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
+
+- **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.
+- **Done:** (1) NEW `docs/templates/10-testimonial-intake.md` = PAYLOAD A verbatim (v2.1 testimonial-intake workflow: 4 hard guardrails, ADR-014 HYBRID voice table, prompt structure, WhatsApp example, anti-patterns, DoD; inner ```xml fences kept intact). (2) `docs/COPY_BANK.md` += **Section 8 — Testimonials (intake guardrail)** = PAYLOAD B verbatim (`[next]`→8, no existing section renumbered; appended after the "Brand phrasings" block, the file tail). (3) `docs/templates/README.md` index += row 10 (Template 09 — deferred note untouched). (4) CHANGELOG + this HANDOFF entry.
+- **Judgment call:** PAYLOAD A's inline Linear `<issue id=… href=…>MEH-657</issue>` mention committed as visible text `MEH-657` (Linear mention syntax, same artifact class as the `<<<PAYLOAD>>>` anchors — not authored doc content). Flagged in PR body + CHANGELOG.
+- **Scope held:** `docs/CONTEXT.md §12` (Sapir-manual, frozen) untouched; `frontend/`/`backend/` untouched; payload wording un-reworded.
+- **Verified:** grep of the new template — `יצרן`/`אוכל ביתי`/`marketplace` appear only inside the forbidden-list context (as intended). Docs-only → no npm build / no mobile QA (DoD exception).
+- **Pending:** open draft PR (`Refs MEH-931`, NOT Closes — Sapir holds the close gate) → Sapir reviews + merges.
 
 ## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
 
