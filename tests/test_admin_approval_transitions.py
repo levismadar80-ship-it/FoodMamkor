@@ -162,7 +162,7 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
 
 
 # --- MEH-971 chunk 4: license-pending approval guard ------------------------
-# A license-required category ("דבש" — constants.py LICENSE_REQUIRED_CATEGORIES)
+# A producer in a license-required category (constants.LICENSE_REQUIRED_CATEGORIES)
 # with a NULL/empty license number cannot be approved unless an explicit
 # override is passed. Reuses categories_require_license (no list duplication).
 # No-op today (the register-time 422 still blocks such producers from being
