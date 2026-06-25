@@ -2064,6 +2064,38 @@ class TestProducersCount:
         assert after == before  # pending not counted
 
 
+class TestProducersCities:
+    """MEH-970 — GET /producers/cities returns live per-city approved-producer
+    counts for the /map region control (GROUP BY city, approved-only, blanks
+    omitted, ordered by count desc)."""
+
+    def test_cities_endpoint_returns_list(self, client, db):
+        resp = client.get("/producers/cities")
+        assert resp.status_code == 200
+        assert isinstance(resp.json(), list)
+
+    def test_cities_groups_and_orders_by_count_desc(self, client, db):
+        make_producer(db, name="א", city="חיפה", status="approved")
+        make_producer(db, name="ב", city="חיפה", status="approved")
+        make_producer(db, name="ג", city="עכו", status="approved")
+        body = client.get("/producers/cities").json()
+        by_city = {row["city"]: row["count"] for row in body}
+        assert by_city["חיפה"] == 2
+        assert by_city["עכו"] == 1
+        order = [row["city"] for row in body]
+        assert order.index("חיפה") < order.index("עכו")  # count desc
+
+    def test_cities_excludes_pending(self, client, db):
+        make_producer(db, name="ממתינה", city="צפת", status="pending")
+        body = client.get("/producers/cities").json()
+        assert all(row["city"] != "צפת" for row in body)
+
+    def test_cities_omits_blank_city(self, client, db):
+        make_producer(db, name="ריקה", city="   ", status="approved")
+        # only a blank-city approved producer exists → omitted → empty list
+        assert client.get("/producers/cities").json() == []
+
+
 class TestCategoryRequests:
     """MEH-141 — category request flow: submit + admin review."""
 
