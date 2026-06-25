@@ -98,7 +98,10 @@ vi.mock("@/lib/api", () => ({
         });
       }
       if (url === "/producers/me/analytics") {
-        // Truthy → AnalyticsSection renders (the stale widget's old home).
+        // A non-null analytics object → AnalyticsSection renders (the stale
+        // widget's old home). The dashboard gates the section on the analytics
+        // object itself (page.js: `{analytics ? ... }`), not on any field —
+        // profile_strength: 0 mirrors the production 0% the stale widget showed.
         return Promise.resolve({ data: { profile_strength: 0 } });
       }
       if (url === "/producers/me") {
