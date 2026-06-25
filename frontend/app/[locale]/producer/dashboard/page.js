@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+// MEH-956: locale-aware Link for the load-error CTA — preserves the active
+// locale on /contact (bare next/link drops it for `en` under as-needed).
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { PencilSimple, Warning } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -74,6 +77,10 @@ export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState(null);
+  // MEH-956: track a failed dashboard fetch separately from the not-yet-loaded
+  // `null` so a 404 (or any non-2xx) renders a graceful state instead of the
+  // loading text forever.
+  const [loadError, setLoadError] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
   const [vacationUntil, setVacationUntil] = useState("");
@@ -99,7 +106,7 @@ export default function ProducerDashboardPage() {
     api.get("/producers/me/dashboard").then((r) => {
       setData(r.data);
       setVacationUntil(r.data?.producer?.vacation_until || "");
-    }).catch(() => setData(null));
+    }).catch(() => setLoadError(true));
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
     api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
@@ -134,6 +141,30 @@ export default function ProducerDashboardPage() {
   };
 
   if (authLoading || !user || user.role !== "producer") return null;
+  // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
+  // Mirrors the status-banner card pattern below (:158-186). Must precede the
+  // `!data` loading branch so an error never falls through to loading text.
+  if (loadError) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div className="bg-white border border-border rounded-[16px] p-6 text-center" role="alert">
+          <p className="font-headline-md text-xl font-bold text-text mb-2">
+            {t("load_error.title")}
+          </p>
+          <p className="text-fg-muted mb-4">
+            {t("load_error.body")}
+          </p>
+          <LocaleLink
+            href="/contact"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+          >
+            {t("load_error.cta")}
+          </LocaleLink>
+        </div>
+      </div>
+    );
+  }
+  // Loading text only while the request is genuinely in flight.
   if (!data) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
