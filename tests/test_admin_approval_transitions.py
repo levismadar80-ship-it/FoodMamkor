@@ -24,6 +24,7 @@ notify_producer_approved to assert fire-count (exactly once on the legit
 path, zero on a blocked toggle).
 """
 import app.routers.admin as admin_module
+from app.constants import LICENSE_REQUIRED_CATEGORIES
 from conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -167,7 +168,9 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
 # No-op today (the register-time 422 still blocks such producers from being
 # created); this is the safety net for the upcoming license-pending path.
 
-LICENSE_REQUIRED_CATEGORY = "דבש"  # mirror of backend/app/constants.py
+# Reference the real constant (not a literal) so the test can't drift if the
+# license-required list changes — any element is a valid license-required name.
+LICENSE_REQUIRED_CATEGORY = LICENSE_REQUIRED_CATEGORIES[0]
 
 
 def _set_license(db, producer, value):
