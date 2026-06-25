@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-960 register/producer hero hidden on CONFIRM — DRAFT PR
+
+- **Branch:** `claude/awesome-mccarthy-1yrhg2` (harness-assigned, base `origin/staging`, 0 divergence — base correct). Same `claude/*` operational-lock note as MEH-947 below: developed on the harness branch, not a `feature/meh-960-*` branch — informational.
+- **Issue created:** MEH-960 (Bug, P3) — spun out of today's `/register/producer` Phase-0 discovery (sibling to MEH-958 copy batch).
+- **Phase 0 (READ-ONLY):** the hero (`heading` "תנו לעסק שלך בית" + `subtitle`) at `RegisterProducerClient.jsx:339-340` rendered with **no `step < STEP.CONFIRM` guard** — unlike the upgrade banner (`:343`), draft banner (`:353`), and stepper (`:369`). Persisted onto the CONFIRM step (step 5) and doubled with the success heading "קיבלנו את הפרטים שלך" (`:986`/`:1037`). No shared layout shell — the page client owns the hero (so it's a missing-guard state bug, not a layout-inheritance issue).
+- **Done:** wrapped `:339-340` in `{step < STEP.CONFIRM && (<>…</>)}`, mirroring the 3 existing guards. Logic-guard only; **zero copy/key/state change**. `npm run build` green.
+- **PR #1365** opened (draft, base `staging`). After `claude[bot]` auto-review (no must-fixes), Sapir approved adding the missing Rule-5 E2E coverage: hero `<h1>` now carries `data-testid="register-hero-heading"`; `e2e/flows/18-producer-register-wizard.spec.ts` asserts it visible on ACCOUNT + `not.toBeVisible()` on CONFIRM. Branch-name `claude/*` finding acknowledged-not-acted (harness-assigned, Sapir merges manually); Hebrew-in-comment minor fixed.
+- **Pending:** Sapir mobile-QA at 375px on staging (hero hidden on CONFIRM, success heading retained, steps 1-4 unchanged) → Sapir merges (Rule 23 — visible UI change).
+
 ## 2026-06-25 — CONTEXT.md ADR-024 sync (apex SoT) — DRAFT PR (no ticket)
 
 - **Branch:** `feature/docs-context-sync-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. No Linear ticket (Sapir: "no ticket — proceed") → PR body omits a Refs line; no new ADR (propagates existing ADR-024).
