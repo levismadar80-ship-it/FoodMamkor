@@ -267,7 +267,10 @@
           "phone_hint": "נשלח לך הודעת WhatsApp לאישור ולהשלמת הפרופיל",
           "license_required_label": "מספר רישיון יצרן (חובה)",
           "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
-          "license_optional_label": "מספר רישיון יצרן"
+          "license_what_is_it": "רישיון יצרן מונפק על ידי משרד הבריאות לעסקי מזון.",
+          "license_optional_label": "מספר רישיון יצרן",
+          "address_map_privacy_hint": "הכתובת המלאה לא מתפרסמת. היא מופיעה במפה רק אם תבחרי להציג אותה.",
+          "city_required_marker": "יישוב — חובה. רק שם היישוב מוצג, לא הכתובת."
         },
         "story_card": {
           "title": "הסיפור שלך הופך לעמוד העסק",
