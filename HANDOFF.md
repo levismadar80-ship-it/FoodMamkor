@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — CONTEXT.md ADR-024 sync (apex SoT) — DRAFT PR (no ticket)
+
+- **Branch:** `feature/docs-context-sync-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. No Linear ticket (Sapir: "no ticket — proceed") → PR body omits a Refs line; no new ADR (propagates existing ADR-024).
+- **Phase 0:** confirmed `docs/templates/README.md` index lists row 10 + `docs/decisions/ADR-024-voice-surface-function.md` present on staging.
+- **Done (`docs/CONTEXT.md` only):** (1) §12 — replaced the `Current set: 00…08` enumeration with a pointer to the canonical index in `docs/templates/README.md` (single-source; resolves the dual-list drift smell now that Template 10 exists). Kept ADR-020 sentence + PK-snapshot sentence + MEH-690 note + the 8-section/XML paragraph. (2) Voice bullet (~L56) — `(see ADR-014)` → `(see ADR-014, refined by ADR-024 — surface-function + owner-noun gender)`; removed stale `4-quadrant CTA matrix` wording (ADR-024 reframed audience→surface).
+- **Scope held:** only `docs/CONTEXT.md` (+ CHANGELOG/HANDOFF).
+- **Pending:** open draft PR off staging → Sapir merges.
+
 ## 2026-06-25 — MEH-950 align testimonial docs to ADR-024 — DRAFT PR
 
 - **Branch:** `feature/meh-950-align-testimonials-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. Gate cleared — ADR-024 (MEH-944) merged to staging via #1349; `docs/decisions/ADR-024-voice-surface-function.md` confirmed present in Phase 0.
