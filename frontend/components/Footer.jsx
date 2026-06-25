@@ -7,7 +7,6 @@ import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -44,12 +43,9 @@ import { BRAND_NAME } from "@/lib/constants";
  */
 export default function Footer() {
   const t = useTranslations();
-  // MEH-669: hide the "add your business" CTA panel from admins.
-  // Server-side guard at backend/app/routers/auth.py:432 enforces the
-  // policy; this is defense-in-depth UX so admins don't see an action
-  // they're not allowed to take.
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  // MEH-721: producer-CTA pitch block moved out of global footer; see
+  // /about/for-businesses + footer nav-link. The MEH-669 admin-hide guard
+  // went with it (admins simply don't see a quiet nav-link as a call to act).
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
@@ -77,47 +73,16 @@ export default function Footer() {
     { href: "/about", label: t("nav.footer.about") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-721: quiet replacement for the removed global-footer pitch CTA.
+    { href: "/register/producer", label: t("nav.footer.add_business") },
   ];
 
   return (
     <footer className="mt-16 bg-primary-dark text-green-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* ================= CTA row ================= */}
-        {/* MEH-669: panel hidden from admins (defense-in-depth alongside
-            backend 403 at auth.py:432). Whole panel is wrapped — hiding
-            only the Link would leave an orphan "יש לך עסק?" pitch box. */}
-        {!isAdmin && (
-          <div
-            className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4 bg-primary/15 border border-primary/30"
-            style={{
-              padding: "12px 24px",
-            }}
-          >
-            <Link
-              href="/register/producer"
-              className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60 bg-primary"
-              style={{
-                color: "white",
-                borderRadius: "8px",
-                padding: "10px 20px",
-              }}
-            >
-              {t("nav.footer.add_business")}
-              {/* MEH-867: bidi-correct — points forward in both locales
-                  (ArrowRight in LTR/en; rtl:rotate-180 flips it leftward in he). */}
-              <ArrowRight size={14} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-            </Link>
-            <div className="text-center sm:text-start">
-              <p className="font-headline-md text-white" style={{ fontSize: "14px" }}>
-                {t("nav.footer.cta_pitch")}
-              </p>
-              <p className="text-green-100" style={{ fontSize: "11px" }}>
-                {t("nav.footer.cta_subpitch")}
-              </p>
-            </div>
-          </div>
-        )}
-
+        {/* MEH-721: the "add your business" pitch panel was removed from the
+            global footer. The producer CTA stays reachable via the quiet
+            footer nav-link below and the /about/for-businesses CTAs (MEH-923). */}
         {/* ================= 3-column body ================= */}
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-8">
           {/* Column 1 — Brand. MEH-867: sr-only <h2> doubles as the footer
