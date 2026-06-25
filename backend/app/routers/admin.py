@@ -457,21 +457,24 @@ def approve_producer(
             status_code=422,
             detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
         )
-    # MEH-971 chunk 4: license-pending approval guard. Mirrors the register-time
-    # ensure_license_for_categories (auth.py) at the approve gate — re-asserting
-    # licensed-only mechanically for the upcoming "register without a license"
-    # (pending) path. Reuses categories_require_license (no category list dup).
-    # 422 to match the photo gate above (same "can't approve without a required
-    # prerequisite" shape), not the MEH-769 409 (illegal status transition).
-    # No-op today (no NULL-license license-required producers exist yet).
-    if not allow_without_license:
-        category_ids = [c.id for c in producer.categories]
-        license_missing = not (producer.producer_license_number or "").strip()
-        if categories_require_license(db, category_ids) and license_missing:
-            raise HTTPException(
-                status_code=422,
-                detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
-            )
+    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
+    # of register-time ensure_license_for_categories. 422 matches the photo gate
+    # above (not MEH-769's 409, which is for status transitions).
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    needs_license = categories_require_license(db, category_ids) and license_missing
+    if needs_license and not allow_without_license:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+        )
+    if needs_license and allow_without_license:
+        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+        logger.warning(
+            "approve_producer: license-pending override for producer %s by admin %s",
+            producer_id,
+            user.id,
+        )
     producer.status = "approved"
     db.commit()
 

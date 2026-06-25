@@ -170,6 +170,7 @@ def test_approve_with_image_succeeds(client, db, monkeypatch):
 
 # Reference the real constant (not a literal) so the test can't drift if the
 # license-required list changes — any element is a valid license-required name.
+assert LICENSE_REQUIRED_CATEGORIES, "LICENSE_REQUIRED_CATEGORIES must not be empty"
 LICENSE_REQUIRED_CATEGORY = LICENSE_REQUIRED_CATEGORIES[0]
 
 
