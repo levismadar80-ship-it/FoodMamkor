@@ -14,10 +14,12 @@ test.describe("Producers search", () => {
 
   test("typing a term + Enter sets ?q= and shows the 🔍 chip", async ({ page }) => {
     await page.goto("/producers");
-    const input = page.locator("#producers-search-input");
-    // MEH-924: React 18 concurrent hydration transiently double-mounts the search
-    // form for one frame on mobile (PR #1316 strict-mode flake). Gate on count
-    // settling to 1 before the strict asserts — still fails on a permanent dup.
+    const input = page.locator("#producers-search-input:visible").first();
+    // MEH-967: #producers-search-input renders in both the desktop + mobile
+    // responsive containers (ProducersClient — one hidden per viewport), so the
+    // bare id matched 2 elements and flaked (MEH-924, dup accepted by design).
+    // Scope to the visible variant + .first() — repo idiom for "two responsive
+    // variants, one hidden" (cf. 05-map-navigation, 14-language-toggle).
     await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
 
@@ -36,9 +38,9 @@ test.describe("Producers search", () => {
 
   test("clearing the term + submit drops ?q= and the 🔍 chip", async ({ page }) => {
     await page.goto(`/producers?q=${encodeURIComponent(TERM)}`);
-    const input = page.locator("#producers-search-input");
-    // MEH-924: same transient hydration double-mount guard as the sibling tests —
-    // settle to a single element before the strict asserts (PR #1316 flake).
+    const input = page.locator("#producers-search-input:visible").first();
+    // MEH-967: scope to the visible #producers-search-input variant + .first()
+    // (desktop/mobile dup, one hidden per viewport — MEH-924). Same as sibling tests.
     await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     // Input seeds from ?q= on load (ProducersClient: searchInput ← searchQ).
@@ -58,10 +60,12 @@ test.describe("Producers search", () => {
 
   test("/producers?focus=1 autofocuses the search input on load", async ({ page }) => {
     await page.goto("/producers?focus=1");
-    const input = page.locator("#producers-search-input");
-    // MEH-924: React 18 concurrent hydration transiently double-mounts the search
-    // form for one frame on mobile (PR #1316 strict-mode flake). Gate on count
-    // settling to 1 before the strict asserts — still fails on a permanent dup.
+    const input = page.locator("#producers-search-input:visible").first();
+    // MEH-967: #producers-search-input renders in both the desktop + mobile
+    // responsive containers (ProducersClient — one hidden per viewport), so the
+    // bare id matched 2 elements and flaked (MEH-924, dup accepted by design).
+    // Scope to the visible variant + .first() — repo idiom for "two responsive
+    // variants, one hidden" (cf. 05-map-navigation, 14-language-toggle).
     await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     await expect(input).toBeFocused({ timeout: 10_000 });
