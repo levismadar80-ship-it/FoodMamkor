@@ -75,3 +75,53 @@ class TestDeleteProducerResetsOwnerRole:
         db.refresh(bystander)
         assert bystander.role == "consumer"
         assert bystander.producer_id is None
+
+
+class TestUpdateUserRoleRejectsProducer:
+    """Chunk 2b — PUT /admin/users/{id}/role must refuse role="producer".
+    Producers are created only by the atomic register flow; a manual bump
+    here would create an orphan. consumer<->admin transitions stay open."""
+
+    def test_promote_to_producer_rejected_4xx(self, client, db):
+        admin = make_user(db, email=ADMIN_EMAIL, role="admin")
+        consumer = make_user(db, email="c@example.com", role="consumer")
+
+        resp = client.put(
+            f"/admin/users/{consumer.id}/role",
+            json={"role": "producer"},  # schema-valid value → 422 is the guard
+            headers=auth_header(admin),
+        )
+        # 422 originates from the handler guard, not schema validation:
+        # "producer" passes UserRoleUpdate's pattern (schemas.py:1771).
+        assert resp.status_code == 422, resp.json()
+
+        # Target role unchanged — no orphan created.
+        db.refresh(consumer)
+        assert consumer.role == "consumer"
+        assert consumer.producer_id is None
+
+    def test_promote_consumer_to_admin_still_works(self, client, db):
+        admin = make_user(db, email=ADMIN_EMAIL, role="admin")
+        consumer = make_user(db, email="c@example.com", role="consumer")
+
+        resp = client.put(
+            f"/admin/users/{consumer.id}/role",
+            json={"role": "admin"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200, resp.json()
+        db.refresh(consumer)
+        assert consumer.role == "admin"
+
+    def test_demote_admin_to_consumer_still_works(self, client, db):
+        admin = make_user(db, email=ADMIN_EMAIL, role="admin")
+        other_admin = make_user(db, email="a2@example.com", role="admin")
+
+        resp = client.put(
+            f"/admin/users/{other_admin.id}/role",
+            json={"role": "consumer"},
+            headers=auth_header(admin),
+        )
+        assert resp.status_code == 200, resp.json()
+        db.refresh(other_admin)
+        assert other_admin.role == "consumer"
