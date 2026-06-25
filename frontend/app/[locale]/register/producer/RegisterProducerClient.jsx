@@ -336,8 +336,15 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-md p-8">
-        <h1 className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-        <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+        {/* MEH-960: hero pitch is wizard chrome — hide on CONFIRM so it doesn't
+            double up with the success heading "קיבלנו את הפרטים שלך" (RPC success
+            blocks). Mirrors the step < STEP.CONFIRM guard on the banners + stepper. */}
+        {step < STEP.CONFIRM && (
+          <>
+            <h1 className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+            <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+          </>
+        )}
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < STEP.CONFIRM && (
