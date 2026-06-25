@@ -14,14 +14,12 @@ import { BRAND_NAME } from "@/lib/constants";
  * canonical docs/DESIGN.md §Footer spec.
  *
  * Structure (top → bottom):
- *   1. CTA row — teal-tinted panel inside the primary-dark footer,
- *      "יש לך עסק?" pitch on the right, "הוסיפי את העסק שלך" CTA on the
- *      left (primary #2e6853 brand green; MEH-703 retired the prior secondary).
- *   2. 3-column body — Brand / Navigation / Newsletter. Dropped the
- *      previous 4-nav-column sitemap that had drifted from DESIGN.md
- *      and doubled up with the new CTA row (add-business pitch was in
- *      two places).
- *   3. Copyright bar — © line on the right, four utility links on the left
+ *   1. 3-column body — Brand / Navigation / Newsletter. The Navigation
+ *      column carries the quiet producer nav-link → /register/producer
+ *      (MEH-721). The dedicated "add business" pitch panel that used to
+ *      sit above this body was removed in MEH-721 — the producer CTA now
+ *      lives on /about/for-businesses (MEH-923) + this nav-link.
+ *   2. Copyright bar — © line on the right, four utility links on the left
  *      (login · terms · privacy · accessibility).
  *
  * Scope guarantees:
@@ -33,13 +31,13 @@ import { BRAND_NAME } from "@/lib/constants";
  * on the dark surface (≥6.3:1 vs the prior #6a8a6a 2.6:1 / #9ab89a 4.3:1
  * fails); added the IS-5568 accessibility-statement link; nav-column h3
  * dropped Hebrew uppercase/tracking; sr-only <h2> anchors the heading
- * hierarchy; both footer arrows (CTA + newsletter submit) became Phosphor
- * ArrowRight + rtl:rotate-180 — bidi-correct (forward in both he and en).
+ * hierarchy; the newsletter-submit arrow is Phosphor ArrowRight +
+ * rtl:rotate-180 — bidi-correct (forward in both he and en). (The CTA
+ * arrow was removed with the pitch panel in MEH-721.)
  *
- * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
- * consolidated the brand palette to a single green and retired the prior
- * sage `secondary` accent (whose white-on-sage was ~2.2:1, failing WCAG AA);
- * white-on-#2e6853 passes AA — the drop-in this header already anticipated.
+ * History:
+ *   - MEH-721: producer-CTA pitch panel moved out of global footer →
+ *     /about/for-businesses + footer nav-link.
  */
 export default function Footer() {
   const t = useTranslations();
