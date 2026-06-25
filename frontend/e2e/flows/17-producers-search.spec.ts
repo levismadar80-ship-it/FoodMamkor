@@ -20,7 +20,6 @@ test.describe("Producers search", () => {
     // bare id matched 2 elements and flaked (MEH-924, dup accepted by design).
     // Scope to the visible variant + .first() — repo idiom for "two responsive
     // variants, one hidden" (cf. 05-map-navigation, 14-language-toggle).
-    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
 
     await input.fill(TERM);
@@ -41,7 +40,6 @@ test.describe("Producers search", () => {
     const input = page.locator("#producers-search-input:visible").first();
     // MEH-967: scope to the visible #producers-search-input variant + .first()
     // (desktop/mobile dup, one hidden per viewport — MEH-924). Same as sibling tests.
-    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     // Input seeds from ?q= on load (ProducersClient: searchInput ← searchQ).
     await expect(input).toHaveValue(TERM);
@@ -66,7 +64,6 @@ test.describe("Producers search", () => {
     // bare id matched 2 elements and flaked (MEH-924, dup accepted by design).
     // Scope to the visible variant + .first() — repo idiom for "two responsive
     // variants, one hidden" (cf. 05-map-navigation, 14-language-toggle).
-    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     await expect(input).toBeFocused({ timeout: 10_000 });
   });
