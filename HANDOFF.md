@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-940 chatbot gender-neutral voice — DRAFT PR (merge-gated after doc PR)
+
+- **Branch:** `feature/meh-940-chatbot-gender-neutral` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-940`. Files: `chat.py` + `ChatWidget.jsx` + CHANGELOG/HANDOFF.
+- **Scope (Sapir-approved full A+B1+B2):** neutralized all user-facing chatbot copy to default-plural. chat.py `SYSTEM_PROMPT` voice directive + KB sections + 2 fallbacks; ChatWidget `HARDCODED_ANSWERS` + `OPENING_MESSAGE` + `SUGGESTED_PROMPTS[0]` + aria/placeholder chrome.
+- **Judgment call (flagged):** bot **persona stays feminine** (`את העוזרת` + model-facing imperatives `אמרי/השתמשי/הבהירי` — never reach users). Only the user-directed voice rule + user-facing examples/fallbacks were neutralized; that is what actually steers output gender. Neutralizing the model-facing instructions would add awkward grammar for zero user-visible effect — left as a trivial optional follow-up.
+- **Hard constraints honored:** (1) **byte-match triad** — `SUGGESTED_PROMPTS[0]` ≡ `HARDCODED_ANSWERS` key (both `איך נרשמים כבית עסק?`), changed via `replace_all`; verified 2 occurrences, 0 old. (2) **real button label** — verified `report.trigger` = `🚩 דווח על עסק` (`he.json:2620`, rendered `ReportButton.jsx:38`); KB now names `דווח על עסק`, not the phantom `דווחי`. (3) **docstrings** — both "feminine voice" notes (chat.py L11-12, L59-60) updated.
+- **Verify:** `npm run build` GREEN; ESLint 0 errors (39 pre-existing warnings, untouched code); `python -m py_compile chat.py` OK; grep confirms no residual user-facing feminine in KB/HARDCODED/fallbacks; no backend test references the changed strings → `pytest` to CI.
+- **MERGE GATE:** do NOT merge — **merges AFTER the ADR/COPY_BANK doc PR** (brand-book-precedes-code). Sapir is sole merge authority (Rule 23).
+
 ## 2026-06-23 — Staging axe audit batch: 6 PRs MERGED + MEH-921 ratchet (MEH-915/916/921/917/919)
 
 - **Context:** read-only staging axe audit (23/06) found **148** node-hits (8 crit / 70 serious / 70 moderate) across 22 guest routes → 6-ticket fix+gate batch, **all 6 merged to staging this session**.
