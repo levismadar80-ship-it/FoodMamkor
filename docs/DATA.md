@@ -509,7 +509,7 @@ PUT    /admin/producers/{id}                   admin
 POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
-POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
+POST   /admin/producers/{id}/approve           admin — emails + WhatsApp; ?allow_without_license=true overrides the MEH-971 license-pending guard (refuses approval when a license-required category has no producer_license_number)
 POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
 POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
 POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)
