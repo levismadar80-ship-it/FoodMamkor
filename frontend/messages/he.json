@@ -784,7 +784,7 @@
     "dashboard": {
       "back": "← לוח הבקרה",
       "heading": "המתכונים שלי",
-      "btn_close_form": "סגרו",
+      "btn_close_form": "סגרי",
       "btn_open_form": "+ פרסום מתכון חדש",
       "loading": "בטעינה...",
       "empty_title": "עדיין לא פרסמת מתכונים",
@@ -858,7 +858,7 @@
       "cancel_cta": "בטלו את ההצטרפות",
       "cancel_confirm": "לבטל את ההצטרפות?",
       "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
-      "share_wa": "שתפו עם חברות",
+      "share_wa": "שתפי עם חברות",
       "share_text": "הצטרפי לקבוצת רכש — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "ישראל",
       "errors": {
@@ -874,7 +874,7 @@
       },
       "back": "← לוח הבקרה",
       "heading": "קבוצות הרכש שלי",
-      "btn_close_form": "סגרו",
+      "btn_close_form": "סגרי",
       "btn_open_form": "+ קבוצת רכש חדשה",
       "loading": "בטעינה...",
       "empty_title": "קבוצות רכש = מחיר סיטונאי ללקוחות שלך",
@@ -943,7 +943,7 @@
       "title": "מפת בתי עסק",
       "errors": {
         "no_gps": "הדפדפן שלך לא תומך ב-GPS",
-        "permission_denied": "לא ניתן גישה למיקום. אפשרו בהגדרות הדפדפן.",
+        "permission_denied": "לא ניתן גישה למיקום. אפשרי בהגדרות הדפדפן.",
         "position_unavailable": "המיקום שלך לא זמין. נסו מאוחר יותר.",
         "timeout": "לקח יותר מדי זמן. נסו שוב.",
         "gps_unknown": "לא הצלחנו לקבל את המיקום שלך"
@@ -992,7 +992,7 @@
       "empty": {
         "heading": "לא נמצאו עסקים",
         "body": "נסו להזיז את המפה או לשנות מסננים.",
-        "reset_filters": "אפסו סינון"
+        "reset_filters": "אפסי סינון"
       }
     },
     "pane": {
@@ -2201,7 +2201,7 @@
         "explore": "גלו עסקים קרובים"
       },
       "contact": {
-        "heading": "דברו איתנו",
+        "heading": "דברי איתנו",
         "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן",
         "name_label": "שם מלא",
         "name_placeholder": "השם המלא שלך",
@@ -2481,7 +2481,7 @@
     "loading": "טעינת ביקורות...",
     "owner_empty_title": "ביקורות ראשונות מגיעות אחרי כמה לקוחות",
     "owner_empty_description": "ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין.",
-    "owner_empty_cta": "שתפו את הפרופיל בוואטסאפ",
+    "owner_empty_cta": "שתפי את הפרופיל בוואטסאפ",
     "empty_message": "עדיין אין ביקורות — היי הראשונה!",
     "pagination": {
       "prev_aria": "עמוד קודם",
@@ -2689,7 +2689,7 @@
       "download": "הורד",
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרו ל-Cloudinary",
-      "copy_caption": "העתיקו caption",
+      "copy_caption": "העתיקי caption",
       "copied": "✅ הועתק!"
     }
   },
@@ -3364,7 +3364,7 @@
           "on_vacation": "בהפסקה ⏸"
         },
         "vacation_return_label": "חזרה ב:",
-        "remove_vacation_date_aria": "הסירי תאריך חזרה"
+        "remove_vacation_date_aria": "הסירו תאריך חזרה"
       },
       "quick_links": {
         "settings": {
@@ -3626,7 +3626,7 @@
       "field_email_label": "אימייל",
       "email_oauth_hint": "האימייל מחובר לחשבון {provider} — לשינוי עדכנו שם",
       "email_oauth_provider_fallback": "חיצוני",
-      "email_change_hint": "לשינוי אימייל, פני לתמיכה",
+      "email_change_hint": "לשינוי אימייל, פנו לתמיכה",
       "field_phone_label": "טלפון",
       "field_phone_hint": "נוסיף בקרוב notifications"
     },
