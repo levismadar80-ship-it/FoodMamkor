@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-944 voice taxonomy → ADR-024 + BRAND/COPY_BANK reconcile — DRAFT PR (the GATE)
+
+- **Branch:** `feature/meh-944-voice-codification` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-944`. Docs-only.
+- **This PR merges FIRST** — it's the brand-book-precedes-code gate for **MEH-930** (#TBD) + **MEH-940** (#1347). Both must wait for this to land.
+- **Shipped:** new `docs/decisions/ADR-024-voice-surface-function.md` (verbatim from the pre-approved issue, refines ADR-014); BRAND.md ×4 edits (§3/§4/§4-generic/§7) + COPY_BANK.md ×3 edits (anti-patterns ×2 + MEH-579 opening). ADR codifies: surface-function split (functional→plural, narrative/warmth→feminine), owner-noun taxonomy (`בית העסק`/`בעלי עסקים`/`בעלת עסק`/`בעל עסק`), and that "pure masculine forbidden" = reader-address not owner-noun.
+- **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
+- **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
+- **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
+
 ## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
 
 - **Branch:** `feature/meh-721-footer-cta-move` off `origin/staging` (`e67a88a`). **Pushed.** Draft PR opened by Sapir from the browser (GitHub MCP was disconnected this session); body `Refs MEH-721` (NOT Closes).
