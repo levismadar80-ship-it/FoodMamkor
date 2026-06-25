@@ -473,17 +473,17 @@
 
 ## Anti-patterns (do not use)
 
-- ❌ `יצרן` / `יצרנית` — always "בית עסק" / "בעלת עסק"
+- ❌ `יצרן` / `יצרנית` — use "בית עסק" (ישות) / "בעלי עסקים" (גנרי) / "בעלת/בעל עסק" (ספציפיים), per ADR-024
 - ❌ "marketplace" / "פלטפורמה" — we are a directory, not a marketplace  
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
-- ❌ Mixed gender (זכר) — brand voice is consistently נקבה (feminine)
+- ❌ מגדר לפי surface (ADR-024): functional=רבים ניטרלי · narrative/warmth=נקבה. אסור: slash · פנייה זכרית לקוראת ("המשתמש שלך")
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
 
 ---
 
 ## Customer-centric voice rule (MEH-579, May 14, 2026)
 
-Feminine grammar is necessary but not sufficient. Every line of user-facing
+On narrative/warmth surfaces, feminine grammar is necessary but not sufficient. Every line of user-facing
 UI copy must also pass the **subject test**: who is the grammatical subject?
 
 | ❌ Founder-voice | ✅ Customer-voice |
@@ -691,3 +691,31 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 | **Status** | ✅ canonical |
 | **Appears in** | `frontend/messages/he.json:534` (SEO/meta description) · `frontend/messages/he.json:2012` (/about page paragraph p5) |
 | **Why** | Recurs as the closing beat across surfaces — pairs the "מקום אחד" (one place) promise with the time-saved payoff. Keep verbatim; do not paraphrase to "בלי לבזבז זמן" or similar. |
+
+---
+
+## Section 8 — Testimonials (intake guardrail)
+
+> **Source:** Template 10 (`docs/templates/10-testimonial-intake.md`). Process rule for converting a real message into an on-site testimonial — not copy strings, a guardrail every testimonial must pass.
+
+### Hard rules (every testimonial, no exceptions)
+
+1. **Only what actually happened** — zero invented or rounded numbers/stats.
+2. **Quote stays verbatim** — trim for length only (mark cuts `[…]`); never reword, never fix grammar.
+3. **Speaker approval** on final wording + name/business/city before publish. No approval → not published (`DRAFT`).
+4. **Licensed-business framing only** — never imply home-cooking.
+
+### Voice — ADR-014 HYBRID
+
+| Part | Rule |
+| -- | -- |
+| The quote | Exempt — verbatim, no voice rules applied |
+| Editorial framing | Feminine allowed (reader-address) · brand-we plural |
+| UI chrome (button/link) | gerund/plural, never feminine |
+| Attribution noun | `בעלת עסק` / `בית עסק` — never `יצרנית` |
+
+**Forbidden in any testimonial surface:** `יצרן`/`יצרנית` · `אוכל ביתי`/`שכנות מבשלות`/`מהמטבח של השכן` · `marketplace` · `מגזין`. **Zero emoji** in testimonial copy (Emoji LOCK v2).
+
+### Status
+
+🕐 Guardrail only — no testimonial copy locked yet. Each published testimonial gets its own row here (quote · attribution · i18n key · speaker-approval date) when it goes live.
