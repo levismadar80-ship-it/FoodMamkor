@@ -784,7 +784,7 @@
     "dashboard": {
       "back": "← לוח הבקרה",
       "heading": "המתכונים שלי",
-      "btn_close_form": "סגרי",
+      "btn_close_form": "סגרו",
       "btn_open_form": "+ פרסום מתכון חדש",
       "loading": "בטעינה...",
       "empty_title": "עדיין לא פרסמת מתכונים",
@@ -858,7 +858,7 @@
       "cancel_cta": "בטלו את ההצטרפות",
       "cancel_confirm": "לבטל את ההצטרפות?",
       "deadline_passed": "המועד האחרון חלף — לא ניתן להצטרף",
-      "share_wa": "שתפי עם חברות",
+      "share_wa": "שתפו עם חברות",
       "share_text": "הצטרפי לקבוצת רכש — {title} ב{city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
       "share_default_region": "ישראל",
       "errors": {
@@ -874,7 +874,7 @@
       },
       "back": "← לוח הבקרה",
       "heading": "קבוצות הרכש שלי",
-      "btn_close_form": "סגרי",
+      "btn_close_form": "סגרו",
       "btn_open_form": "+ קבוצת רכש חדשה",
       "loading": "בטעינה...",
       "empty_title": "קבוצות רכש = מחיר סיטונאי ללקוחות שלך",
@@ -992,7 +992,7 @@
       "empty": {
         "heading": "לא נמצאו עסקים",
         "body": "נסו להזיז את המפה או לשנות מסננים.",
-        "reset_filters": "אפסי סינון"
+        "reset_filters": "אפסו סינון"
       }
     },
     "pane": {
@@ -2201,7 +2201,7 @@
         "explore": "גלו עסקים קרובים"
       },
       "contact": {
-        "heading": "דברי איתנו",
+        "heading": "דברו איתנו",
         "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן",
         "name_label": "שם מלא",
         "name_placeholder": "השם המלא שלך",
@@ -2481,7 +2481,7 @@
     "loading": "טעינת ביקורות...",
     "owner_empty_title": "ביקורות ראשונות מגיעות אחרי כמה לקוחות",
     "owner_empty_description": "ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין.",
-    "owner_empty_cta": "שתפי את הפרופיל בוואטסאפ",
+    "owner_empty_cta": "שתפו את הפרופיל בוואטסאפ",
     "empty_message": "עדיין אין ביקורות — היי הראשונה!",
     "pagination": {
       "prev_aria": "עמוד קודם",
@@ -2654,7 +2654,7 @@
     },
     "share_button": {
       "default_message": "גיליתי את {name} במהמקור — {url}",
-      "share_aria": "שתפי את העסק בוואטסאפ",
+      "share_aria": "שתפו את העסק בוואטסאפ",
       "share_to_friend": "שלחו לחברה"
     },
     "question_chips": {
@@ -2689,7 +2689,7 @@
       "download": "הורד",
       "uploading": "בהעלאה...",
       "save_cloudinary": "שמרו ל-Cloudinary",
-      "copy_caption": "העתיקי caption",
+      "copy_caption": "העתיקו caption",
       "copied": "✅ הועתק!"
     }
   },
@@ -3309,8 +3309,8 @@
       "vanity_link": {
         "label": "🔗 הלינק שלי",
         "copied": "✅ הועתק!",
-        "copy_cta": "העתיקי לינק",
-        "share_cta": "שתפי בוואטסאפ",
+        "copy_cta": "העתיקו לינק",
+        "share_cta": "שתפו בוואטסאפ",
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
       },
       "greeting": "שלום {name}",
@@ -3319,7 +3319,7 @@
         "pending": {
           "title": "הפרופיל שלך בסקירה",
           "body": "הצוות שלנו בודק את הפרטים — לרוב לוקח עד 3 ימי עסקים. פרופילים מלאים מאושרים מהר יותר.",
-          "cta": "השלימי פרופיל →"
+          "cta": "השלימו פרופיל →"
         },
         "rejected": {
           "title": "⚠️ הבקשה לא אושרה",
@@ -3328,7 +3328,7 @@
         },
         "pending_whatsapp": {
           "title": "ברוכים הבאים! כמעט שם.",
-          "body": "כדי להעביר את העסק לאישור הצוות, אמתי את מספר הטלפון של העסק דרך וואטסאפ."
+          "body": "כדי להעביר את העסק לאישור הצוות, אמתו את מספר הטלפון של העסק דרך וואטסאפ."
         }
       },
       "phone_verify": {
@@ -3339,7 +3339,7 @@
         "resend_in": "אפשר לשלוח קוד נוסף בעוד {seconds} שניות",
         "code_label": "קוד אימות",
         "code_placeholder": "קוד בן 6 ספרות",
-        "confirm_cta": "אמתי",
+        "confirm_cta": "אמתו",
         "confirming": "באימות...",
         "success": "הטלפון אומת! העסק הועבר לסקירת הצוות.",
         "error_invalid": "קוד שגוי או שפג תוקפו. נסו שוב.",
@@ -3347,7 +3347,7 @@
         "error_generic": "משהו השתבש. נסו שוב.",
         "error_rate_limited": "יותר מדי ניסיונות. נסו שוב עוד מעט."
       },
-      "holiday_catalog_cta": "עדכני את הקטלוג →",
+      "holiday_catalog_cta": "עדכנו את הקטלוג →",
       "availability": {
         "tooltip_line_default": "פתוח להזמנות = ברירת מחדל.",
         "tooltip_line_today": "זמינה היום = מלאי טרי עכשיו.",
@@ -3369,7 +3369,7 @@
       "quick_links": {
         "settings": {
           "title": "עריכת פרופיל",
-          "sub": "עדכני פרטי עסק, משלוחים ותמונות"
+          "sub": "עדכנו פרטי עסק, משלוחים ותמונות"
         },
         "add_event": {
           "title": "הוסיפו אירוע",
@@ -3381,7 +3381,7 @@
         },
         "group_buys": {
           "title": "קבוצות הרכש שלי",
-          "sub": "נהלי קבוצות רכש ופתחי חדשות"
+          "sub": "נהלו קבוצות רכש ופתחו חדשות"
         },
         "recipes": {
           "title": "מתכונים",
@@ -3435,8 +3435,8 @@
         "yellow_high_sub": "רק {count, plural, one {פרט אחד} two {שני פרטים} other {# פרטים}} עד שהפרופיל מלא",
         "green_headline": "הפרופיל מלא",
         "next_step_prefix": "השלב הבא:",
-        "cta": "השלימי פרופיל",
-        "cta_aria": "השלימי את הפרופיל שלך",
+        "cta": "השלימו פרופיל",
+        "cta_aria": "השלימו את הפרופיל שלך",
         "ring_aria": "השלמת פרופיל: {percent}%",
         "checklist_aria": "התקדמות השלמת הפרופיל",
         "checklist_done": "הושלם",
@@ -3495,17 +3495,17 @@
         "tooltip": "השאלות שיופיעו ללקוחה לפני שתשלח לך הודעת וואטסאפ — חוסך לך הסברים חוזרים. עד 5 שאלות.",
         "subtitle": "אם תשאירי ריק, נציג שאלות ברירת מחדל לפי הקטגוריה שלך",
         "placeholder": "דוגמה: אילו סוגי גבינות יש השבוע?",
-        "save_cta": "שמרי שאלות",
+        "save_cta": "שמרו שאלות",
         "saving": "בשמירה...",
         "saved": "✓ נשמר"
       },
       "bio": {
         "heading": "ביו AI",
-        "intro": "הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.",
+        "intro": "הכניסו שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.",
         "source_placeholder": "@handle / קישור אינסטגרם / תיאור חופשי",
         "generate_cta": "צרו ביו",
         "generating": "ביצירה...",
-        "save_cta": "שמרי ביו",
+        "save_cta": "שמרו ביו",
         "saving": "בשמירה...",
         "saved": "✓ נשמר",
         "error_empty_bio": "לא הצלחנו לייצר ביו — נסו שוב עם טקסט אחר",
@@ -3532,12 +3532,12 @@
       "heading": "העוקבות שלי",
       "loading": "בטעינה...",
       "empty_title": "עוד אין עוקבות — וזה בסדר",
-      "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפי את הקישור לפרופיל שלך בוואטסאפ.",
-      "share_cta": "העתיקי קישור לשיתוף",
+      "empty_description": "עוקבות זה לקוחות שמעדיפות להישאר מעודכנות על מה שחדש אצלך. הן יופיעו כאן ברגע שיתחילו לעקוב. בינתיים — שתפו את הקישור לפרופיל שלך בוואטסאפ.",
+      "share_cta": "העתיקו קישור לשיתוף",
       "share_cta_copied": "הועתק! ✓",
       "share_toast": "הקישור הועתק!",
       "followers_label": "עוקבות",
-      "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפי את הפרופיל שלך כדי להגיע ליותר לקוחות."
+      "share_hint": "רשימה מפורטת של העוקבות בקרוב — שתפו את הפרופיל שלך כדי להגיע ליותר לקוחות."
     },
     "alert_prefs": {
       "loading": "בטעינה...",
@@ -3605,7 +3605,7 @@
       "tab_security": "אבטחה",
       "tab_business": "העסק שלי",
       "saving": "בשמירה...",
-      "save_cta": "שמרי",
+      "save_cta": "שמרו",
       "optional_suffix": "(אופציונלי)"
     },
     "profile": {
@@ -3624,7 +3624,7 @@
       "field_city_placeholder": "לדוגמה: תל אביב",
       "field_city_hint": "כדי שנציג לך עסקים באזורך",
       "field_email_label": "אימייל",
-      "email_oauth_hint": "האימייל מחובר לחשבון {provider} — לשינוי עדכני שם",
+      "email_oauth_hint": "האימייל מחובר לחשבון {provider} — לשינוי עדכנו שם",
       "email_oauth_provider_fallback": "חיצוני",
       "email_change_hint": "לשינוי אימייל, פני לתמיכה",
       "field_phone_label": "טלפון",
@@ -3636,8 +3636,8 @@
       "status_rejected_title": "הבקשה לא אושרה",
       "rejected_tip_details": "ודאי שכל פרטי העסק מלאים ומדויקים",
       "rejected_tip_photos": "הוסיפו תמונות ברורות של המוצרים",
-      "rejected_tip_address": "בדקי שכתובת העסק נכונה",
-      "support_cta": "דברי איתנו →",
+      "rejected_tip_address": "בדקו שכתובת העסק נכונה",
+      "support_cta": "דברו איתנו →",
       "status_suspended": "החשבון מושעה זמנית.",
       "support_cta_short": "צרו קשר",
       "stats_heading": "סטטיסטיקות",
@@ -3649,7 +3649,7 @@
       "stat_products": "מוצרים",
       "stat_orders": "הזמנות",
       "stats_unavailable": "הנתונים אינם זמינים כרגע.",
-      "edit_profile_link": "ערכי פרופיל עסק →"
+      "edit_profile_link": "ערכו פרופיל עסק →"
     },
     "products": {
       "section_heading": "מוצרים",
@@ -3659,7 +3659,7 @@
         "upload_size": "הקובץ גדול מדי — מקסימום 5MB",
         "upload_failed_fallback": "שגיאה בהעלאת תמונה — נסו שוב",
         "name_required": "שם המוצר הוא שדה חובה",
-        "price_required": "הכניסי מחיר",
+        "price_required": "הכניסו מחיר",
         "price_min_too_low": "המחיר חייב להיות לפחות 1 ₪",
         "price_too_high": "המחיר לא יכול לעבור 10,000 ₪",
         "price_max_below_min": "מחיר עד חייב להיות גבוה ממחיר מ-",
@@ -3688,17 +3688,17 @@
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",
-        "image_upload_cta": "העלי תמונה",
+        "image_upload_cta": "העלו תמונה",
         "image_uploading": "בהעלאה..."
       },
-      "save_edit_cta": "שמרי שינויים",
+      "save_edit_cta": "שמרו שינויים",
       "save_edit_saving": "בשמירה...",
-      "cancel_edit_cta": "בטלי",
+      "cancel_edit_cta": "בטלו",
       "add_submit_cta": "הוסיפו מוצר",
       "add_submitting": "בהוספה...",
       "card": {
-        "edit_aria_template": "ערכי {name}",
-        "delete_aria_template": "מחקי {name}"
+        "edit_aria_template": "ערכו {name}",
+        "delete_aria_template": "מחקו {name}"
       }
     },
     "security": {
@@ -3714,14 +3714,14 @@
         "forgot_link": "שכחת סיסמה נוכחית?",
         "current_label": "סיסמה נוכחית *",
         "eye_hide_current": "הסתירי סיסמה נוכחית",
-        "eye_show_current": "הציגי סיסמה נוכחית",
+        "eye_show_current": "הציגו סיסמה נוכחית",
         "confirm_label": "אימות סיסמה חדשה *",
         "eye_hide_confirm": "הסתירי אימות סיסמה",
-        "eye_show_confirm": "הציגי אימות סיסמה",
+        "eye_show_confirm": "הציגו אימות סיסמה",
         "mismatch_error": "הסיסמאות לא זהות",
         "save_toast": "הסיסמה עודכנה בהצלחה",
         "error_fallback": "שגיאה בעדכון הסיסמה",
-        "submit_cta": "עדכני סיסמה",
+        "submit_cta": "עדכנו סיסמה",
         "submit_saving": "בשמירה..."
       },
       "logout_all": {
@@ -3734,13 +3734,13 @@
       "danger_zone": {
         "heading": "מחיקת חשבון",
         "body": "פעולה זו בלתי הפיכה. כל הנתונים, הביקורות והמועדפים יימחקו לצמיתות.",
-        "delete_cta": "מחקי חשבון",
+        "delete_cta": "מחקו חשבון",
         "confirm_email_label": "הקלידי את האימייל שלך לאישור",
         "submit_cta": "אישור מחיקה",
         "submit_deleting": "במחיקה...",
         "grace_heading": "בקשת המחיקה התקבלה",
         "grace_body": "החשבון ינותק תוך 30 יום. עד אז תוכלי לבטל את הבקשה על ידי כניסה מחדש.",
-        "back_to_login": "חזרי לדף הכניסה"
+        "back_to_login": "חזרו לדף הכניסה"
       }
     },
     "support_modal": {
@@ -3750,7 +3750,7 @@
       "whatsapp_label": "וואטסאפ",
       "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
       "email_label": "אימייל",
-      "close_cta": "סגרי"
+      "close_cta": "סגרו"
     }
   },
   "process": {
