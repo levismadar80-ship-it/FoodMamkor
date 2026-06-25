@@ -2212,8 +2212,8 @@
   },
   "modals": {
     "location": {
-      "title": "איפה את?",
-      "subtitle": "נמצא עסקים קרובים אליך",
+      "title": "מאיפה נתחיל?",
+      "subtitle": "נמצא עסקים קרובים",
       "search_label": "חיפוש עיר",
       "search_placeholder": "הקלידו שם עיר...",
       "aria_label": "בחירת עיר",
