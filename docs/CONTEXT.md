@@ -53,7 +53,7 @@ Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backen
 
 - **Colors:** primary `#2e6853` · background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`. Full token table in `docs/DESIGN.md`.
 - **Fonts:** Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body. Full font stack (Latin accents, Hebrew fallback, weights, loading) in `docs/DESIGN.md`.
-- **Voice:** Hebrew RTL, hybrid policy — gerund/plural for UI, feminine allowed for brand narrative, 4-quadrant CTA matrix (see ADR-014)
+- **Voice:** Hebrew RTL, hybrid policy — gerund/plural for UI, feminine allowed for brand narrative (see ADR-014, refined by ADR-024 — surface-function + owner-noun gender)
 - **Hero direction:** Direction A canonical · Direction B campaign-only with 3 preconditions (see ADR-018)
 - **Component state tokens:** opacity-on-cream + `--fg-muted` only; no new state-color tokens (see ADR-019)
 - **Icons:** three-tier — Phosphor for functional UI, hand-drawn SVG for category glyphs, custom illustration for editorial (see ADR-013). **Lucide FORBIDDEN.**
@@ -118,7 +118,7 @@ Every schema change goes through an Alembic revision. Risky changes (DROP COLUMN
 
 Canonical location: `docs/templates/` (per ADR-020). Project Knowledge holds a manual snapshot (non-canonical, refresh on canonical change).
 
-Current set: `00-model-selection-guide` · `01-claude-design` · `02-claude-code-feature` · `03-claude-code-bug` · `04-claude-code-refactor` · `05-claude-research` · `06-linear-issue` · `07-linear-quick` · `08-linear-issue-examples`. Template 09 (Council Mode) status under reconciliation in MEH-690.
+The canonical, enumerated index (all templates + recommended models) lives in [`docs/templates/README.md`](./templates/README.md) — the single source for the set; not duplicated here to avoid drift. Template 09 (Council Mode) status under reconciliation in MEH-690.
 
 Every Linear issue uses 8 sections + XML positive framing in the prompt: `<role>` · `<intent>` · `<acceptance_criteria>` · `<file_locations>` · `<scope>` · `<constraints>` · `<examples>` · `<confidence_calibration>` · `<over_engineering_guard>` · `<verification_step>`. If task type is unclear → ask, don't guess.
 
