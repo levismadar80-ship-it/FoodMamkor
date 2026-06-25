@@ -45,6 +45,8 @@ pytestmark = pytest.mark.skipif(
 
 from hypothesis import HealthCheck, settings  # noqa: E402
 
+import app.routers.auth as auth_router  # noqa: E402
+from app.config import settings as app_settings  # noqa: E402
 from app.main import app  # noqa: E402
 from tests.conftest import auth_header, make_user  # noqa: E402
 
@@ -79,15 +81,32 @@ def admin_headers(db):
     return auth_header(user)
 
 
+@pytest.fixture
+def oauth_configured(monkeypatch):
+    """MEH-786 / FUZZ-002/003/004: the fuzz env leaves Google + Apple OAuth
+    unconfigured, so every fuzzed POST /auth/google, /auth/apple and
+    /auth/register/producer/oauth hit the MEH-253 "provider not configured"
+    503 branch BEFORE any token validation — reported by schemathesis as a
+    ServerError (5xx). Configure dummy client_ids + stub the verifiers to None
+    so the fuzzer exercises the real client-error path (401 invalid token),
+    matching configured prod/staging behaviour. No live Google/Apple network
+    call is made. The deliberate unconfigured-server 503 (MEH-253) stays
+    intact and is asserted in tests/test_oauth_unconfigured.py."""
+    monkeypatch.setattr(app_settings, "google_client_id", "fuzz-google-client-id")
+    monkeypatch.setattr(app_settings, "apple_client_id", "fuzz-apple-client-id")
+    monkeypatch.setattr(auth_router, "_verify_google_token", lambda _id_token: None)
+    monkeypatch.setattr(auth_router, "_verify_apple_token", lambda _id_token: None)
+
+
 @pytest.mark.fuzz
 @unauth_schema.parametrize()
 @_fuzz_settings
-def test_fuzz_unauthenticated(case, db):
+def test_fuzz_unauthenticated(case, db, oauth_configured):
     case.call_and_validate()
 
 
 @pytest.mark.fuzz
 @schema.parametrize()
 @_fuzz_settings
-def test_fuzz_authenticated(case, db, admin_headers):
+def test_fuzz_authenticated(case, db, admin_headers, oauth_configured):
     case.call_and_validate(headers=admin_headers)
