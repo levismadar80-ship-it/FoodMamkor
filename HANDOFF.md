@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
+
+- **Branch:** `feature/meh-721-footer-cta-move` off `origin/staging` (`e67a88a`). **Pushed.** Draft PR opened by Sapir from the browser (GitHub MCP was disconnected this session); body `Refs MEH-721` (NOT Closes).
+- **Done:** removed the global-footer "add your business" pitch panel (`Footer.jsx`); replaced with a quiet footer nav-link → `/register/producer` reusing `nav.footer.add_business` (no new i18n key). Producer discoverability preserved via this link + `/about/for-businesses` CTAs (MEH-923 — MEH-721 *completes* that, not reverses). Resolves homepage ×2 duplicate CTA (footer pitch under `HomeCTA`, identical copy/href) + removes B2B pitch copy from the global-footer SEO-scrape surface.
+- **Dead-code cleanup:** dropped unused `useAuth` import + MEH-669 `isAdmin` admin-hide guard (panel was its only consumer); `ArrowRight` import kept (newsletter submit). Separate `docs(footer)` commit updated the file-header docstring. `cta_pitch`/`cta_subpitch` left in `he.json`/`en.json` (unreferenced, harmless).
+- **Verified:** `npm run build` green (exit 0); ESLint 0 errors (5 pre-existing warnings). Scope = `Footer.jsx` only; HomeCTA + `/about` untouched.
+- **Pending:** Sapir mobile-check (Vercel preview — CC sandbox can't reach `*.vercel.app`) → merge → close MEH-721 manually (Rule 23, `Refs` not `Closes`).
 ## 2026-06-24 — axe batch fast-follows: 2 PRs MERGED (MEH-919 #1/#3 + MEH-916 remaining)
 
 - **Outcome:** the two unblocked fast-follows from the 23/06 axe batch are now **merged to staging on verified-green CI** (real Playwright E2E axe ran 3m+ on each — not budget-exhaustion phantoms; backend jobs skipped as frontend-only).
