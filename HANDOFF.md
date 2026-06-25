@@ -5,6 +5,19 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — Register UX review: MEH-947 / MEH-951 / MEH-952 — ALL MERGED
+
+- **3 merges to `staging` today:**
+  - **MEH-947** (PR #1358, squash `51115a3f`) — `Header.jsx` surface made three-way; **inner pages (`!isHomepage`) get a solid opaque cream pill** so page content no longer bleeds through the translucent sticky header as it scrolls under (fixes the register-wizard heading clip + detached `0/160` counter). Homepage glass unchanged. Root cause was **global chrome, not register-local** — counter/link markup was already correctly attached. Side-effect: `/map`, producer detail, settings, about, search headers now opaque cream — **mobile QA at 375px still pending Sapir** (merged ahead of QA on explicit "MERGE").
+  - **MEH-951** (PR #1357, `03deb94a`) — 3 `he.json` copy helpers under `auth.register.producer.fields` (`address_map_privacy_hint`, `city_required_marker`, `license_what_is_it`). Copy-only, `en.json` untouched.
+  - **MEH-952** (PR #1356, `01bbf4ce`) — producer-license required-error now surfaces inline at the field on the CATEGORY frame (approach א), verbatim backend-string mirror, phantom-error fix, E2E-locator coverage.
+- **Decisions from the register UX review (MEH-949 discovery audit):**
+  - **S7 port (MEH-132) confirmed DONE.** 3 of 5 suspected gaps were non-issues: license helper exists, stepper exists, and `מספר עוסק` was **deliberately removed** per MEH-132 D2 (not a regression).
+  - **#5 success-screen parity — CLOSED as non-issue (no ticket).** The non-upgrade inbox-check screen is the **OWASP-required identical-bytes** pattern (MEH-328); the designed "קיבלנו + 3 steps" screen cannot move to the non-upgrade path without breaking signup enumeration protection.
+  - **Food-vs-nonfood copy framing — DEFERRED to Sapir**, gated on the two-tier (מאומת / מוצהר) model.
+- **E2E flake note (do NOT open a new ticket):** `17-producers-search.spec.ts` `#producers-search-input` strict-mode failure is the known **React-18 concurrent-hydration double-mount** — already tracked by **MEH-924** (In Progress) + guarded by **MEH-946** (Done). Duplicate of MEH-924.
+- **Branch note:** MEH-947 was developed/pushed on the harness-assigned `claude/inspiring-cori-n04qkm` (base `staging`, 0 divergence — base correct), not a `feature/meh-947-*` branch — flagged for the `claude/*` operational lock; informational now that it's merged.
+
 ## 2026-06-25 — MEH-950 align testimonial docs to ADR-024 — DRAFT PR
 
 - **Branch:** `feature/meh-950-align-testimonials-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. Gate cleared — ADR-024 (MEH-944) merged to staging via #1349; `docs/decisions/ADR-024-voice-surface-function.md` confirmed present in Phase 0.
