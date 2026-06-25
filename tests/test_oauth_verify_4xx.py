@@ -14,7 +14,9 @@ same invalid token is correctly rejected with 401 — never 5xx.
 These tests lock in the configured-server contract (rejected token -> 401).
 The deliberate unconfigured-server 503 (MEH-253) stays asserted, untouched, in
 tests/test_oauth_unconfigured.py. The verifiers are stubbed to None here so the
-assertion is deterministic and network-free (no live Google/Apple call).
+assertion is deterministic and network-free (no live Google/Apple call). Each
+test asserts `!= 503` first so a re-appearance of the unconfigured-503
+regression surfaces with a clear message instead of the generic 401 mismatch.
 """
 import app.routers.auth as auth_router
 from app.config import settings
@@ -25,28 +27,42 @@ def _reject_token(_id_token):
     return None
 
 
+def _assert_4xx_not_503(r):
+    assert r.status_code != 503, f"503 — MEH-253 unconfigured path hit: {r.text}"
+    assert r.status_code == 401, r.text
+
+
 def test_fuzz002_google_verify_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "google_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_google_token", _reject_token)
     r = client.post("/auth/google", json={"id_token": "not-a-real-jwt"})
-    assert r.status_code == 401, r.text
-    assert r.status_code != 503
+    _assert_4xx_not_503(r)
 
 
 def test_fuzz003_apple_verify_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "apple_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_apple_token", _reject_token)
     r = client.post("/auth/apple", json={"id_token": "not-a-real-jwt"})
-    assert r.status_code == 401, r.text
-    assert r.status_code != 503
+    _assert_4xx_not_503(r)
 
 
-def test_fuzz004_producer_oauth_verify_returns_401_not_503(client, monkeypatch):
+def test_fuzz004_producer_oauth_google_returns_401_not_503(client, monkeypatch):
     monkeypatch.setattr(settings, "google_client_id", "dummy-client-id")
     monkeypatch.setattr(auth_router, "_verify_google_token", _reject_token)
     r = client.post(
         "/auth/register/producer/oauth",
         json={"provider": "google", "id_token": "not-a-real-jwt"},
     )
-    assert r.status_code == 401, r.text
-    assert r.status_code != 503
+    _assert_4xx_not_503(r)
+
+
+def test_fuzz004_producer_oauth_apple_returns_401_not_503(client, monkeypatch):
+    # The endpoint has a separate apple branch (auth.py:820) with its own
+    # apple_client_id 503 guard — pin it too, not just the google branch.
+    monkeypatch.setattr(settings, "apple_client_id", "dummy-client-id")
+    monkeypatch.setattr(auth_router, "_verify_apple_token", _reject_token)
+    r = client.post(
+        "/auth/register/producer/oauth",
+        json={"provider": "apple", "id_token": "not-a-real-jwt"},
+    )
+    _assert_4xx_not_503(r)
