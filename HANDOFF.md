@@ -5,6 +5,24 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-943 MobileSheetSelectedCard glyph-LOCK — DRAFT PR
+
+- **Branch:** `feature/meh-943-sheet-badge-glyph` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN.
+- **Phase-0 corrected the premise (file:line):** the ticket assumed all 3 `map.sheet.badge.*` render in the card and need Phosphor icons. Reality — only `verified` renders (`MobileSheetSelectedCard.jsx:80`, sole consumer); `.organic`/`.kosher` are **orphaned i18n keys** (0 consumers; MEH-826 removed their render — "design has no dietary badge here"). Icon conventions: verified→SealCheck (`BadgeRow.jsx:130`), organic→Leaf (admin-only; public BadgeRow text-only), **kosher→NO icon convention** (`badges.js:88` text-only).
+- **⚠️ Orchestrator STOP trigger met** ("stop if kosher has no convention") — AskUserQuestion failed twice in this env; proceeded on Smadar's "continue" with the minimal fix that *honors* the STOP in substance: **renders zero kosher icon, invents nothing.**
+- **Done:** stripped `✓`/`🌿`/`✡️` from `he.json:1014-1016` → `"מאומת"`/`"אורגני"`/`"כשר"`; added canonical `<SealCheck size={11} aria-hidden>` inline before the verified label (only render site). organic/kosher = no icon (orphaned + no convention), flagged for a dead-key sweep. `en.json` frozen.
+- **Verify:** `npm run build` green; `grep map.sheet.badge → 0` glyphs; JSON valid; glyph-LOCK siblings (marker-glyph + MapProducerCard) 12/12 pass. No backend → `pytest` to CI.
+- **Pending:** Sapir mobile QA at /map bottom sheet (verified business → SealCheck + "מאומת"), then Sapir merges (Rule 23). `Refs MEH-943` (NOT Closes). Follow-up candidate: dead-key sweep for the 2 orphaned `map.sheet.badge.organic/kosher` keys.
+
+## 2026-06-25 — MEH-963 /settings "העסק שלי" dead zero-wall stats — MERGED (#1373)
+
+- **Outcome:** PR #1373 **merged to staging** (squash `237fa14`), `Closes MEH-963`. Branch `feature/meh-963-fix-settings-business-zero-stats` off `origin/staging`.
+- **Root cause (Phase-0):** `BusinessTab` (`settings/page.jsx`) fetched `GET /producers/me/dashboard` and rendered 6 `StatCard`s from `stats.views/favorites/reviews/avg_rating/products/orders` — but that endpoint (`producer_me.py:406-456`) returns only `{producer, favorites_count, whatsapp_clicks_week}`. So all 6 cards were `0`/`—` for **every** owner — a permanent zero-wall, not a new-owner empty state. Same stale-duplicate class as MEH-961, second owner-facing surface.
+- **Fix (option b, Smadar-approved):** removed `stats`/`loadingStats` state + the dead fetch + the "סטטיסטיקות" `<section>` + the unused `StatCard` helper; **un-gated** the `/producer/dashboard` link from `status === "approved"` → always-visible (owners need it while pending). Real analytics already live on `/producer/dashboard` via `/producers/me/analytics`. Frontend-only, +12/−47.
+- **Verified:** `npm run build` ✅ · `vitest` 677 pass / 0 fail ✅ (`SettingsPage.test.jsx` was already `describe.skip` — stale, untouched) · `lint` 0 err ✅. `pytest` deferred to CI (no backend code touched). `claude[bot]` review clean after one English-only-comment nit fixed. All 6 required checks green/skipped-appropriately → merged on explicit MERGE.
+- **Out of scope (flagged, left as-is):** never-rendered `ProductsSection` (dead-code sweep separate); now-unreferenced `settings.business` stat i18n keys (`stats_heading`/`stat_*`/`stats_unavailable`) left in he/en.json (harmless, MEH-721 precedent). grep confirmed no 4th owner-facing zero-wall (`group-buys` reads only `producer.id`/`.city`; `AdminProducersTable` is admin).
+- **Follow-up candidate:** the dead-code sweep ticket should also drop `ProductsSection` + the orphaned stat i18n keys.
+
 ## 2026-06-25 — register/producer share_cta + farmer typo (he.json copy) — DRAFT PR (Linear pending)
 
 - **Branch:** `feature/register-sharecta-farmer-typo` off current `origin/staging` (post-MEH-958/960). Fresh feature branch this time (not the orphaned harness branch `claude/awesome-mccarthy-1yrhg2`, whose PR #1365 already merged — reusing it would need a force-push to re-base off the squashed staging tip; a clean branch avoids that).
