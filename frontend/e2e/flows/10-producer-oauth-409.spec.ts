@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
  * <Toaster /> is mounted globally in app/layout.js.
  */
 
-const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.";
+const DETAIL_MSG = "יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.";
 
 test.describe("Producer OAuth 409 surfaces toast", () => {
   test("409 response shows error toast with backend detail then redirects to /login", async ({
