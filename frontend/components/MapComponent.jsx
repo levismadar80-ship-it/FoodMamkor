@@ -279,15 +279,20 @@ export default function MapComponent({
     if (!containerRef.current || mapInstanceRef.current) return;
 
     mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(
-      // Default view — Jerusalem at zoom 8 so the whole country fits
-      // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
-      // Ashdod) which on narrow viewports panned the camera enough to
-      // show the Sinai / Saudi border instead of Israel proper.
-      [31.7683, 35.2137],
+      // Default view — MEH-932: fixed center on the Israel producer band
+      // [32.4, 34.95] zoom 8, not Jerusalem [31.7683, 35.2137]. The Jerusalem
+      // center pulled half the Mediterranean + Arabic-labelled neighbours into
+      // frame on mobile; this recenters north-west onto the coastal/central
+      // producer cluster. FIXED center/zoom only — the auto-fitBounds was
+      // deliberately removed (see the producers effect below), so this setView
+      // is the single source of the initial camera. Zoom 8 keeps the whole
+      // producer band (incl. north/Golan) in-frame; tighter zoom 9 is an option
+      // pending mobile preview QA (MEH-932 PR notes).
+      [32.4, 34.95],
       8,
     );
     // Expose initial center for E2E tests (05-map-navigation.spec.ts)
-    if (typeof window !== "undefined") window.__MAP_CENTER__ = [31.7683, 35.2137];
+    if (typeof window !== "undefined") window.__MAP_CENTER__ = [32.4, 34.95];
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
@@ -444,9 +449,10 @@ export default function MapComponent({
     });
 
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
-    // [31.7683, 35.2137] zoom 8 (full-country view). The fitBounds was
-    // centering on wherever the producers clustered (often northern Israel
-    // when test data was sparse), making the map look off-center on load.
+    // (MEH-932: now [32.4, 34.95] zoom 8, the fixed producer-band view). The
+    // fitBounds was centering on wherever the producers clustered (often
+    // northern Israel when test data was sparse), making the map look
+    // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds]);
 
