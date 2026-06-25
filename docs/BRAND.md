@@ -47,7 +47,7 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 - Manual approval for every business
 - Two-tier licensing (ADR-022) — מאומת / מוצהר. Badge free forever. Unlicensed food production stays out; no home cooks (unchanged)
 - No `"שכנות מבשלות מהבית"` / `"אוכל ביתי"` / `"מהמטבח של השכן"` in marketing
-- No `"יצרן"` / `"יצרנית"` in UI — always `"בית עסק"` / `"בעלת עסק"`
+- No `"יצרן"` / `"יצרנית"` in UI — מונחים per ADR-024: `"בית עסק"` (ישות) · `"בעלי עסקים"` (גנרי) · `"בעלת/בעל עסק"` (ספציפיים)
 - No `"marketplace"` / `"פלטפורמת מסחר"` copy anywhere
 - No `"מגזין"` word in UI (only in `/about` narrative)
 
@@ -72,17 +72,18 @@ The **tagline** appears in: footer brand line, meta description, OpenGraph card,
 - ❌ UI / ICU / brand-guidance / editorial surfaces → 0 emojis
 - ✅ WhatsApp outbound + share strings + email body → emojis allowed (warmth + Meta template cost)
 
-## 4 · Voice (full rules in ADR-014)
+## 4 · Voice (full rules in ADR-014, refined by ADR-024)
 
 Hybrid Hebrew policy — surface determines grammatical form:
 
 - **UI strings** (buttons, loading, errors, hero H1 + subtitle): gerund (`"טעינה"`) or plural (`"גלו"`, `"הוסיפו"`)
 - **Brand voice** (`/about` narrative, founder letter, below-the-fold editorial): feminine (`"גלי"`, `"צרי"`) allowed
 - **Forbidden across all surfaces:** slash form (`"טוענ/ת"`), pure masculine (`"המשתמש שלך"`), `"יצרן"`/`"יצרנית"`
+- **Surface-function taxonomy (ADR-024):** the split is by surface-function, not audience — functional UI → plural, brand narrative + warmth → feminine. הבהרה: "pure masculine" forbidden = פנייה זכרית לקוראת (`"המשתמש שלך"`), NOT the owner noun (`"בעלי עסקים"` is permitted — סתמי/unmarked)
 
 ### Two voice rules from PR #682 precedent
 
-**Audience targeting — no partial category lists.** When a CTA names the audience, do not enumerate a subset (`"בעלת עסק, חקלאית או מגדלת"` excludes ~75% of producers). Use generic framings (`"בעלת עסק"` / `"בית עסק"` / `"עסק שמייצר אוכל אמיתי"`) and outcome verbs (`"מה שהיא מציעה"`).
+**Audience targeting — no partial category lists.** When a CTA names the audience, do not enumerate a subset (`"בעלת עסק, חקלאית או מגדלת"` excludes ~75% of producers). Use generic framings (`"בעלי עסקים"` / `"בית עסק"` / `"עסק שמייצר אוכל אמיתי"`) and outcome verbs (`"מה שהיא מציעה"`).
 
 **`"מגזין"` — internal use only.** The word describes the editorial thesis internally but must not appear in UI copy. Surface the magazine-tier voice through *what* the copy says (curation signal, producer-page format, founder accountability, story-led framing), not by *labeling* the product as a magazine.
 
@@ -120,7 +121,7 @@ Phrasings that survived to production once and must be caught in review:
 
 - `"home cooks"` (English boilerplate) — caught in `06-press-quotes-bank.md` duplicate, deleted in Phase ζ.
 - `"שכנות מבשלות"` / `"מהמטבח של השכן"` / `"אוכל ביתי"` — illegal-in-Israel framing, brand LOCK violation.
-- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלת עסק"`.
+- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
 - Stock illustrations (iStock, Freepik) — kill the "curated" signal.

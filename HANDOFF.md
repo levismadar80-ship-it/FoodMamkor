@@ -13,6 +13,14 @@
 - **Hard constraints honored:** (1) **byte-match triad** — `SUGGESTED_PROMPTS[0]` ≡ `HARDCODED_ANSWERS` key (both `איך נרשמים כבית עסק?`), changed via `replace_all`; verified 2 occurrences, 0 old. (2) **real button label** — verified `report.trigger` = `🚩 דווח על עסק` (`he.json:2620`, rendered `ReportButton.jsx:38`); KB now names `דווח על עסק`, not the phantom `דווחי`. (3) **docstrings** — both "feminine voice" notes (chat.py L11-12, L59-60) updated.
 - **Verify:** `npm run build` GREEN; ESLint 0 errors (39 pre-existing warnings, untouched code); `python -m py_compile chat.py` OK; grep confirms no residual user-facing feminine in KB/HARDCODED/fallbacks; no backend test references the changed strings → `pytest` to CI.
 - **MERGE GATE:** do NOT merge — **merges AFTER the ADR/COPY_BANK doc PR** (brand-book-precedes-code). Sapir is sole merge authority (Rule 23).
+## 2026-06-25 — MEH-944 voice taxonomy → ADR-024 + BRAND/COPY_BANK reconcile — DRAFT PR (the GATE)
+
+- **Branch:** `feature/meh-944-voice-codification` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-944`. Docs-only.
+- **This PR merges FIRST** — it's the brand-book-precedes-code gate for **MEH-930** (#TBD) + **MEH-940** (#1347). Both must wait for this to land.
+- **Shipped:** new `docs/decisions/ADR-024-voice-surface-function.md` (verbatim from the pre-approved issue, refines ADR-014); BRAND.md ×4 edits (§3/§4/§4-generic/§7) + COPY_BANK.md ×3 edits (anti-patterns ×2 + MEH-579 opening). ADR codifies: surface-function split (functional→plural, narrative/warmth→feminine), owner-noun taxonomy (`בית העסק`/`בעלי עסקים`/`בעלת עסק`/`בעל עסק`), and that "pure masculine forbidden" = reader-address not owner-noun.
+- **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
+- **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
+- **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
 ## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
 
 - **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.
