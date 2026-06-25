@@ -15,6 +15,52 @@
 - **FINDING — "docs-only twin jobs" absent:** `.claude/rules/testing.md` describes no-op docs-only **twin jobs** (identical `name:`, exact-complement `if:`, exit 0) that are supposed to live in `pr-checks.yml` + `deploy.yml` so a docs-only PR satisfies the required checks without an admin override. **Neither file actually contains them** — every job in both workflows was read end-to-end and no twin job exists. So docs-only PRs currently carry a pre-existing required-check gap, and this draft-skip change layers on top of it (a draft docs-only PR shows skipped→"Expected" until marked ready). **Out of scope for this PR — flagged for a separate ticket.** Do NOT label this with MEH-716/MEH-736: those IDs map to unrelated Linear issues; verify the claim against `testing.md`, then assign a fresh number before filing.
 - **Branch:** `feature/meh-926-required-checks-draft-skip` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-926`. Only CHANGELOG + HANDOFF committed (the workflow diffs live in the PR body).
 - **Pending (Sapir):** `git apply` both diffs → push → mark the PR ready-for-review → confirm the re-trigger fires all 6 required checks green. Then close MEH-926.
+## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
+
+- **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.
+- **Done:** (1) NEW `docs/templates/10-testimonial-intake.md` = PAYLOAD A verbatim (v2.1 testimonial-intake workflow: 4 hard guardrails, ADR-014 HYBRID voice table, prompt structure, WhatsApp example, anti-patterns, DoD; inner ```xml fences kept intact). (2) `docs/COPY_BANK.md` += **Section 8 — Testimonials (intake guardrail)** = PAYLOAD B verbatim (`[next]`→8, no existing section renumbered; appended after the "Brand phrasings" block, the file tail). (3) `docs/templates/README.md` index += row 10 (Template 09 — deferred note untouched). (4) CHANGELOG + this HANDOFF entry.
+- **Judgment call:** PAYLOAD A's inline Linear `<issue id=… href=…>MEH-657</issue>` mention committed as visible text `MEH-657` (Linear mention syntax, same artifact class as the `<<<PAYLOAD>>>` anchors — not authored doc content). Flagged in PR body + CHANGELOG.
+- **Scope held:** `docs/CONTEXT.md §12` (Sapir-manual, frozen) untouched; `frontend/`/`backend/` untouched; payload wording un-reworded.
+- **Verified:** grep of the new template — `יצרן`/`אוכל ביתי`/`marketplace` appear only inside the forbidden-list context (as intended). Docs-only → no npm build / no mobile QA (DoD exception).
+- **Pending:** open draft PR (`Refs MEH-931`, NOT Closes — Sapir holds the close gate) → Sapir reviews + merges.
+
+## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
+
+- **Branch:** `feature/meh-721-footer-cta-move` off `origin/staging` (`e67a88a`). **Pushed.** Draft PR opened by Sapir from the browser (GitHub MCP was disconnected this session); body `Refs MEH-721` (NOT Closes).
+- **Done:** removed the global-footer "add your business" pitch panel (`Footer.jsx`); replaced with a quiet footer nav-link → `/register/producer` reusing `nav.footer.add_business` (no new i18n key). Producer discoverability preserved via this link + `/about/for-businesses` CTAs (MEH-923 — MEH-721 *completes* that, not reverses). Resolves homepage ×2 duplicate CTA (footer pitch under `HomeCTA`, identical copy/href) + removes B2B pitch copy from the global-footer SEO-scrape surface.
+- **Dead-code cleanup:** dropped unused `useAuth` import + MEH-669 `isAdmin` admin-hide guard (panel was its only consumer); `ArrowRight` import kept (newsletter submit). Separate `docs(footer)` commit updated the file-header docstring. `cta_pitch`/`cta_subpitch` left in `he.json`/`en.json` (unreferenced, harmless).
+- **Verified:** `npm run build` green (exit 0); ESLint 0 errors (5 pre-existing warnings). Scope = `Footer.jsx` only; HomeCTA + `/about` untouched.
+- **Pending:** Sapir mobile-check (Vercel preview — CC sandbox can't reach `*.vercel.app`) → merge → close MEH-721 manually (Rule 23, `Refs` not `Closes`).
+## 2026-06-24 — axe batch fast-follows: 2 PRs MERGED (MEH-919 #1/#3 + MEH-916 remaining)
+
+- **Outcome:** the two unblocked fast-follows from the 23/06 axe batch are now **merged to staging on verified-green CI** (real Playwright E2E axe ran 3m+ on each — not budget-exhaustion phantoms; backend jobs skipped as frontend-only).
+- **Merged:**
+  - **#1337 MEH-919 #1/#3** (`a998b4dc`) — pre-computed AA hexes. **#1** BottomNav inactive label `text-fg-muted`→`text-[#4b4841]` (3.53→**4.55** on `#b0baad`). **#3** dairy category chip text darkened via a new `textColor: "#3b72ad"` on the `חלב וגבינות` entry in `lib/map-categories.js` (3.01→**4.51**); the shared `#4a90d9` **pin/dot color is untouched** (Phase-0 confirmed it's a shared token → recolored text usage only, `MapProducerCard.jsx`).
+  - **#1338 MEH-916 remaining** (`b812ccc3`) — **`/events` aria-required-children**: wrapped the two `role="tab"` buttons in an inner `<div role="tablist">` so the `<Link>` is a sibling, not a tablist child (`EventsClient.jsx`). **home aria-command-name**: added `title={producer.name}` to the react-leaflet `<Marker>` (`HomepageMiniMap.jsx`) → accessible name on the `role=button` marker.
+- **Still open (need Sapir):**
+  - **MEH-918** soft-404 — unchanged: `notFound()` in `[locale]` returns 200; fix = `experimental.globalNotFound` in the deny-listed `next.config.js` (Sapir flips, CC verifies) OR root-layout restructure. STOPPED.
+  - **MEH-919 #2/#4/#5** + optional `/events` tablist `aria-label` — deferred pairs; `color-contrast` stays in the axe gate's `GATE_IGNORE_RULES` until they land so the gate won't regress.
+- **Whole 23/06 axe-audit batch is now landed except the one Sapir-gated config flip (MEH-918).**
+
+## 2026-06-25 — MEH-938 MapProducerCard glyph-LOCK (DRAFT PR, branch `feature/meh-938-mapcard-i18n-glyph`)
+
+- **Phase-0 corrected the premise:** the issue claimed hardcoded English `Verified`/`Full profile`; on `origin/staging` both were **already Hebrew** in `he.json` (`map.producer_card.verified`/`full_profile`). Sapir's June screenshot = stale staging deploy. Rescoped the Linear issue to **glyph-LOCK only** (the live deploy still shows English until the already-merged he.json translation redeploys).
+- **3 changes (MapProducerCard.jsx + he.json):** `he.json:1036` `"✓ מאומת"`→`"מאומת"`; `:172` verified span leads with `<SealCheck size={13} aria-hidden>` (canonical verified glyph, inherits muted strip color — no color shift); `:202` raw `→` → `<ArrowRight size={13} weight="bold" rtl:rotate-180>` (MEH-867/877 bidi CTA), Link → `inline-flex`.
+- **Scope held:** `en.json` untouched (en-guard MEH-472); price/marker/pluralization untouched (MEH-934/935/936); comment-only `→` at `:70` left. `npm run build` green.
+- **Out of scope → Sapir files sibling:** `map.sheet.badge` (`he.json:1010-1012`, MobileSheetSelectedCard) still has `✓`/`🌿`/`✡️` embedded.
+- **Next:** open draft PR off staging, post /map-desktop preview for QA, **never merge** (awaiting Sapir).
+- **Also still open:** docs PR **#1340** (MEH-916/919 session-log) — mergeable once its CI is confirmed green (was blocked earlier only by a transient GitHub-MCP disconnect, now resolved).
+
+## 2026-06-23 — Staging axe audit batch: 6 PRs MERGED + MEH-921 ratchet (MEH-915/916/921/917/919)
+
+- **Context:** read-only staging axe audit (23/06) found **148** node-hits (8 crit / 70 serious / 70 moderate) across 22 guest routes → 6-ticket fix+gate batch, **all 6 merged to staging this session**.
+- **Merged:** #1317 MEH-915 (7 nested `<main>`→`<section>`, landmark cluster→0) · #1322 MEH-916 (/contact form labels, `label` crit→0) · #1324 MEH-921 (extended the EXISTING MEH-230 gate `12-axe-a11y.spec.ts` 6→18 routes — premise-corrected, NOT a new spec) · #1327 MEH-916 (7 prose links `hover:underline`→`underline`, link-in-text-block→0) · #1329 MEH-917 (gold `accent` token `#8B6914`→**`#896714`** via DESIGN.md SoT + `design:export`; drift gate green) · #1330 MEH-919 (Leaflet attribution + register step-counter contrast).
+- **Post-merge axe verify (read-only):** **148→39 (−74%)** — crit 8→2, serious 70→25, moderate 70→12. Zero confirmed: landmark cluster, /contact label, link-in-text-block, gold-token color-contrast. Gold ratios `#896714` = **4.61 / 4.59** on `#F5F0E8` / `#F3F0E8` (both ≥4.5; old 4.48/4.47 FAIL).
+- **MEH-921 ratchet (this PR, `feature/meh-921-ratchet`):** removed `link-in-text-block` from `GATE_IGNORE_RULES` (now 0 on all gated routes) + graduated `/contact` into the gated set. **Kept `color-contrast`** — the deferred pairs (#1 BottomNav, #3 map-card, #5 producers placeholder) still trip it on gated routes; un-ignoring would red-gate. Gate-logic sim vs staging = **GREEN** (real `playwright test` blocked by sandbox browser-version mismatch 1194 vs 1223).
+- **Open fast-follows (need Sapir):**
+  - **MEH-918** soft-404 — `notFound()` in `[locale]` returns 200 (Next 16 + next-intl v4). Fix = `experimental.globalNotFound` in `next.config.js` (deny-listed → Sapir flips, CC verifies) OR root-layout restructure. STOPPED.
+  - **MEH-919 #1/#3** — BottomNav inactive label (`fg-muted` token on sage bg) + dairy category `#4a90d9` palette color — brand/palette values needed.
+  - **MEH-916** remaining — `/events` aria-required-children → MEH-858 (non-tab `<Link>` child of `role=tablist`, `EventsClient.jsx:255/276`); home aria-command-name = Leaflet homepage-preview markers (map sub-MEH; gate already excludes `.leaflet-marker-icon`).
 
 ## 2026-06-23 — 4 IA reorders merged to staging + staging-verified (MEH-920/912/922/923)
 

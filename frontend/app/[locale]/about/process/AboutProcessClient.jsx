@@ -48,7 +48,9 @@ const STEPS = [
 ];
 const EVERYONE = [{ Icon: User }, { Icon: BookOpen }, { Icon: ChatCircleText }];
 const CATS_A = [
-  "meat_fish",
+  // MEH-927: "meat_fish" split into "meat" + "fish" (both license-required).
+  "meat",
+  "fish",
   "dairy",
   "bread",
   "prepared",
@@ -66,7 +68,8 @@ const CATS_B = [
   { key: "spices" },
   { key: "soaps" },
   { key: "creams" },
-  { key: "herbal" },
+  // MEH-927: "herbal" (תכשירי צמחים) category merged into צמחי מרפא ותוספים;
+  // its license-matrix row removed in lockstep.
   { key: "candles", declaredOnly: true },
 ];
 

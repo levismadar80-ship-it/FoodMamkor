@@ -36,7 +36,7 @@ vi.mock("@/components/CategoryIcons", () => {
 const CATEGORIES = [
   { id: 1, name: "חלב וגבינות" },
   { id: 2, name: "לחמים ואפייה" },
-  { id: 3, name: "בשר ודגים" },
+  { id: 3, name: "בשר" },
   { id: 4, name: "שמנים" },
   { id: 5, name: "ירקות" },
   { id: 6, name: "סבונים טבעיים" },

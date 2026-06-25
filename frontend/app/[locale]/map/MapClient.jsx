@@ -46,6 +46,26 @@ export default function MapPage() {
   // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
   const [sortBy, setSortBy] = useState("default");
 
+  // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
+  // bottom strip of the full-bleed map and clips a marker there. Reserve that
+  // strip on the map container only while the banner is showing, so the map
+  // shrinks above it (Leaflet's ResizeObserver → invalidateSize recenters and
+  // lifts the clipped marker into view). Presence is read off the
+  // `--cookie-banner-h` CSS var that CookieBanner publishes on <html> (MEH-850);
+  // gating on presence keeps the map full-height once consent is given.
+  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () =>
+      setCookieBannerVisible(
+        parseFloat(getComputedStyle(root).getPropertyValue("--cookie-banner-h")) > 0
+      );
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(root, { attributes: true, attributeFilter: ["style"] });
+    return () => mo.disconnect();
+  }, []);
+
   const feed = useProducersFeed();
   const filters = useMapFilters({
     allProducers: feed.allProducers,
@@ -285,8 +305,12 @@ export default function MapPage() {
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
       <div className="lg:hidden" style={{ height: "calc(100dvh - 64px)", position: "relative" }}>
-        {/* Sticky filter bar at top */}
-        <div className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
+        {/* Sticky filter bar — MEH-933: offset below the global sticky header
+            band (~64px; mirrors the `calc(100dvh - 64px)` container height above)
+            so the city-search pill clears the logo/search header instead of
+            colliding with it. top-16 = 64px; the map pt below is bumped by the
+            same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
+        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
           <div className="flex items-center gap-2 mb-2">
             <div className="flex-1">
               <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
@@ -298,8 +322,21 @@ export default function MapPage() {
           {filterChipsBar}
         </div>
 
-        {/* Map fills the rest */}
-        <div className="w-full h-full pt-[110px]">
+        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset).
+            MEH-945: while the cookie banner shows, reserve its footprint at the
+            bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
+            plus its live --cookie-banner-h, plus a 16px clearance for the known
+            ~10px section overflow (the sticky header occupies ~74px but this
+            section subtracts only 64px per MEH-933, spilling ~10px past the
+            viewport bottom) — so the banner no longer overlays the canvas.
+            The map's own `min-h-[500px]` (MapComponent.jsx) would otherwise spill
+            back under the banner on short phones, so relax it to 0 ONLY while we're
+            reserving — the shell always has a definite height + invalidateSize, so
+            the MEH-30 0px guard isn't needed here. Full height restored on dismiss. */}
+        <div
+          className={`w-full h-full pt-[174px] ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" } : undefined}
+        >
           {mapPane}
         </div>
 

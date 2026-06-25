@@ -15,6 +15,10 @@ test.describe("Producers search", () => {
   test("typing a term + Enter sets ?q= and shows the 🔍 chip", async ({ page }) => {
     await page.goto("/producers");
     const input = page.locator("#producers-search-input");
+    // MEH-924: React 18 concurrent hydration transiently double-mounts the search
+    // form for one frame on mobile (PR #1316 strict-mode flake). Gate on count
+    // settling to 1 before the strict asserts — still fails on a permanent dup.
+    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
 
     await input.fill(TERM);
@@ -33,6 +37,9 @@ test.describe("Producers search", () => {
   test("clearing the term + submit drops ?q= and the 🔍 chip", async ({ page }) => {
     await page.goto(`/producers?q=${encodeURIComponent(TERM)}`);
     const input = page.locator("#producers-search-input");
+    // MEH-924: same transient hydration double-mount guard as the sibling tests —
+    // settle to a single element before the strict asserts (PR #1316 flake).
+    await expect(input).toHaveCount(1, { timeout: 15_000 });
     await expect(input).toBeVisible({ timeout: 15_000 });
     // Input seeds from ?q= on load (ProducersClient: searchInput ← searchQ).
     await expect(input).toHaveValue(TERM);
