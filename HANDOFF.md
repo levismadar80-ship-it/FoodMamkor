@@ -16,6 +16,15 @@
   - **MEH-919 #2/#4/#5** + optional `/events` tablist `aria-label` — deferred pairs; `color-contrast` stays in the axe gate's `GATE_IGNORE_RULES` until they land so the gate won't regress.
 - **Whole 23/06 axe-audit batch is now landed except the one Sapir-gated config flip (MEH-918).**
 
+## 2026-06-25 — MEH-938 MapProducerCard glyph-LOCK (DRAFT PR, branch `feature/meh-938-mapcard-i18n-glyph`)
+
+- **Phase-0 corrected the premise:** the issue claimed hardcoded English `Verified`/`Full profile`; on `origin/staging` both were **already Hebrew** in `he.json` (`map.producer_card.verified`/`full_profile`). Sapir's June screenshot = stale staging deploy. Rescoped the Linear issue to **glyph-LOCK only** (the live deploy still shows English until the already-merged he.json translation redeploys).
+- **3 changes (MapProducerCard.jsx + he.json):** `he.json:1036` `"✓ מאומת"`→`"מאומת"`; `:172` verified span leads with `<SealCheck size={13} aria-hidden>` (canonical verified glyph, inherits muted strip color — no color shift); `:202` raw `→` → `<ArrowRight size={13} weight="bold" rtl:rotate-180>` (MEH-867/877 bidi CTA), Link → `inline-flex`.
+- **Scope held:** `en.json` untouched (en-guard MEH-472); price/marker/pluralization untouched (MEH-934/935/936); comment-only `→` at `:70` left. `npm run build` green.
+- **Out of scope → Sapir files sibling:** `map.sheet.badge` (`he.json:1010-1012`, MobileSheetSelectedCard) still has `✓`/`🌿`/`✡️` embedded.
+- **Next:** open draft PR off staging, post /map-desktop preview for QA, **never merge** (awaiting Sapir).
+- **Also still open:** docs PR **#1340** (MEH-916/919 session-log) — mergeable once its CI is confirmed green (was blocked earlier only by a transient GitHub-MCP disconnect, now resolved).
+
 ## 2026-06-23 — Staging axe audit batch: 6 PRs MERGED + MEH-921 ratchet (MEH-915/916/921/917/919)
 
 - **Context:** read-only staging axe audit (23/06) found **148** node-hits (8 crit / 70 serious / 70 moderate) across 22 guest routes → 6-ticket fix+gate batch, **all 6 merged to staging this session**.
