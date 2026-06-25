@@ -9,9 +9,11 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useTranslations } from "next-intl";
+import { renderToStaticMarkup } from "react-dom/server";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
+import { styleForProducer } from "@/lib/map-categories";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -38,20 +40,46 @@ import { CoordSchema } from "@/lib/schemas";
 // dynamically loaded with ssr:false).
 
 /**
- * Circle map pin — S5 FINAL (MEH-763 Chunk 2).
+ * Circle map pin — S5 FINAL (MEH-763 Chunk 2); no-photo fallback reworked by MEH-936.
  *
- * Anatomy (uniform 36px circle — identity lives in the photo, NOT a category
- * colour; category colour/icon now appear only in the legend + card dots, so the
- * "≤4 category colours, deuteranopia-safe" rule holds by construction — F2):
+ * Anatomy (uniform 36px circle):
  *   - Round photo: producer's first image, square Cloudinary crop, lazy.
- *   - No-photo fallback: MEH-638 monogram — first name letter, white on primary.
+ *   - No-photo fallback (MEH-936): the producer's category Phosphor glyph
+ *     (white, weight="fill") on the category colour — same mapping as the legend
+ *     (MapPane.jsx) + the card dots. Empty/null category → DEFAULT (Leaf on
+ *     primary). Replaces the MEH-638 name-monogram.
  *   - Border: 2px primary; selected (active) → 3px primary-dark.
  *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
  *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
  *   - Visited: opacity 0.4 (dimmed).
  *
+ * MEH-936 intentionally OVERRIDES the MEH-763 F2 lock ("category colour/icon
+ * only in legend + card dots; markers carry no category colour, so the
+ * '≤4 category colours, deuteranopia-safe' rule holds by construction"). The
+ * no-photo fallback now carries BOTH the category colour AND its distinct glyph
+ * shape — redundant encoding (colour + shape, never colour alone) is the
+ * WCAG-recommended way to convey category to colour-blind users, so this
+ * strengthens deuteranopia-safety rather than weakening it. Photo markers are
+ * unchanged and still carry no category colour.
+ *
  * Was a category-colour circle + white Phosphor icon sized 28/32/36 by state.
  */
+// MEH-936: category glyph SVG strings, memoized by iconName (≤8 distinct — 7
+// categories + the Leaf default). renderToStaticMarkup is relatively expensive,
+// so each Phosphor glyph is stringified once and reused across every marker and
+// re-render, rather than per-pin (up to ~100 producers per feed).
+// REUSES: components/HomepageMiniMap.jsx:64-67 (same renderToStaticMarkup → divIcon path).
+const glyphSvgCache = new Map();
+function categoryGlyphSvg(IconComponent, iconName) {
+  let svg = glyphSvgCache.get(iconName);
+  if (svg === undefined) {
+    svg = renderToStaticMarkup(
+      <IconComponent size={18} weight="fill" color="#ffffff" />,
+    );
+    glyphSvgCache.set(iconName, svg);
+  }
+  return svg;
+}
 // Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
 // string, so Tailwind tokens can't apply. Values map to design tokens:
 // #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #8B6914 = accent.
@@ -67,15 +95,18 @@ function createCategoryMarker(
   const isPremium = producer.plan === "premium";
   const isVerified = producer.is_verified;
 
-  // Round photo (square crop) or MEH-638 monogram fallback. No onerror→monogram
-  // swap: strict CSP blocks inline handlers, so we branch on image presence.
+  // Round photo (square crop), else MEH-936 category-glyph fallback. No
+  // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
+  // image presence. The glyph + colour come from styleForProducer (the legend's
+  // single source of truth); empty/null category degrades to DEFAULT (Leaf on
+  // primary). Glyph SVG is memoized via categoryGlyphSvg (≤8 distinct).
   const imgUrl = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: "1:1" })
     : null;
-  const monogram = (producer.name || "").trim().charAt(0).toUpperCase();
+  const { color: categoryColor, icon: GlyphIcon, iconName } = styleForProducer(producer);
   const inner = imgUrl
     ? `<img src="${imgUrl}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2e6853;color:#fff;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;line-height:1;">${monogram}</div>`;
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon, iconName)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.
   // pointer-events:none prevents intercepting marker clicks.
