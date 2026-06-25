@@ -142,12 +142,16 @@ export default function ProducerDashboardPage() {
 
   if (authLoading || !user || user.role !== "producer") return null;
   // MEH-956: graceful state on a failed dashboard fetch (404 / non-2xx).
-  // Mirrors the status-banner card pattern below (:158-186). Must precede the
+  // Mirrors the status-banner cards in the main return. Must precede the
   // `!data` loading branch so an error never falls through to loading text.
   if (loadError) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16">
-        <div className="bg-white border border-border rounded-[16px] p-6 text-center" role="alert">
+        <div
+          data-testid="dashboard-load-error"
+          className="bg-white border border-border rounded-[16px] p-6 text-center"
+          role="alert"
+        >
           <p className="font-headline-md text-xl font-bold text-text mb-2">
             {t("load_error.title")}
           </p>
@@ -156,6 +160,7 @@ export default function ProducerDashboardPage() {
           </p>
           <LocaleLink
             href="/contact"
+            data-testid="dashboard-load-error-cta"
             className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
           >
             {t("load_error.cta")}
