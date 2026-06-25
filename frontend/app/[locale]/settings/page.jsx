@@ -778,9 +778,9 @@ function BusinessTab() {
       )}
 
       {/* MEH-963: the canonical analytics + profile-management surface is
-          /producer/dashboard. The old "סטטיסטיקות" grid here read fields the
+          /producer/dashboard. The old statistics grid here read fields the
           /producers/me/dashboard endpoint never returns (views / reviews /
-          products / orders / avg_rating), so it rendered a permanent 0/— wall
+          products / orders / avg_rating), so it rendered a permanent 0/- wall
           for every owner — new or established. Removed in favor of an
           always-visible pointer to the real dashboard (un-gated from
           status === "approved" — owners need it while pending too). */}
