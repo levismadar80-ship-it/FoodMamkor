@@ -9,11 +9,11 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useTranslations } from "next-intl";
-import { renderToStaticMarkup } from "react-dom/server";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/map-categories";
+import { categoryGlyphSvg } from "@/lib/marker-glyph";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -64,22 +64,6 @@ import { styleForProducer } from "@/lib/map-categories";
  *
  * Was a category-colour circle + white Phosphor icon sized 28/32/36 by state.
  */
-// MEH-936: category glyph SVG strings, memoized by iconName (≤8 distinct — 7
-// categories + the Leaf default). renderToStaticMarkup is relatively expensive,
-// so each Phosphor glyph is stringified once and reused across every marker and
-// re-render, rather than per-pin (up to ~100 producers per feed).
-// REUSES: components/HomepageMiniMap.jsx:64-67 (same renderToStaticMarkup → divIcon path).
-const glyphSvgCache = new Map();
-function categoryGlyphSvg(IconComponent, iconName) {
-  let svg = glyphSvgCache.get(iconName);
-  if (svg === undefined) {
-    svg = renderToStaticMarkup(
-      <IconComponent size={18} weight="fill" color="#ffffff" />,
-    );
-    glyphSvgCache.set(iconName, svg);
-  }
-  return svg;
-}
 // Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
 // string, so Tailwind tokens can't apply. Values map to design tokens:
 // #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #8B6914 = accent.
@@ -99,14 +83,14 @@ function createCategoryMarker(
   // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
   // image presence. The glyph + colour come from styleForProducer (the legend's
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
-  // primary). Glyph SVG is memoized via categoryGlyphSvg (≤8 distinct).
+  // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
   const imgUrl = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: "1:1" })
     : null;
-  const { color: categoryColor, icon: GlyphIcon, iconName } = styleForProducer(producer);
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const inner = imgUrl
     ? `<img src="${imgUrl}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon, iconName)}</div>`;
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.
   // pointer-events:none prevents intercepting marker clicks.
