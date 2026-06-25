@@ -366,11 +366,10 @@ export default function ProducerDashboardPage() {
           the fields the heuristic reads). */}
       {profile && <ProfileCompletenessCard producer={profile} />}
 
-      {/* MEH-964 1A: top-line 4-KPI hero (relocated from AnalyticsSection,
-          which split — deep analytics moved to insights/). Rebuilt to the
-          locked RTL design in 1B. */}
+      {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+          Deep analytics live in insights/ (FLAG-1: KPIs render only here). */}
       {analytics ? (
-        <OverviewStatsHero analytics={analytics} profile={profile} />
+        <OverviewStatsHero analytics={analytics} />
       ) : (
         <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
       )}
@@ -379,66 +378,63 @@ export default function ProducerDashboardPage() {
 }
 
 // ============================================================
-// MEH-964 1A: top-line 4-KPI hero + "בעלת עסק השבוע" eligibility badge.
-// Relocated verbatim from the former AnalyticsSection (MEH-57). The DEEP
-// analytics (windowed cards + charts) live in insights/page.js. Rebuilt to
-// the locked RTL design in chunk 1B.
+// MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+// RTL order (right→left): פניות בוואטסאפ → צרי קשר → דירוג → צפיות.
+// 2×2 grid, identical mobile + desktop. Uniform "7 הימים האחרונים"
+// window label, NO per-KPI deltas/arrows — Phase-0 found the analytics
+// payload has no per-metric prior-period counts (only views had a
+// categorical trend), so the AC's "labeled deltas" is superseded by data
+// reality and deferred to a backend follow-up (MEH-964). The DEEP
+// analytics (windowed cards + charts) live in insights/page.js; the
+// top-line KPIs render ONLY here (FLAG-1 — never duplicated in insights/).
 // ============================================================
 
-function OverviewStatsHero({ analytics, profile }) {
+function OverviewStatsHero({ analytics }) {
   const t = useTranslations("dashboard.producer.analytics");
   const {
     profile_views,
     whatsapp_clicks,
+    contact_clicks,
+    average_rating,
+    total_reviews,
     rank_in_city,
     conversion_rate,
     profile_strength,
-    weekly_trend,
   } = analytics;
-
-  const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
-  const trendColor = weekly_trend === "up" ? "text-green-700" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
-  const cityName = profile?.city ? ` ${profile.city}` : "";
-  const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 
   const eligibleForWeekly = profile_strength >= 80 && rank_in_city === 1;
 
+  // DOM order == locked RTL order; the dir="rtl" page lays the 2-col grid
+  // out right→left, so KPIS[0] is top-right and reading flows as locked.
+  const kpis = [
+    { key: "whatsapp_leads", value: whatsapp_clicks?.last_7d ?? 0, sub: t("kpi.window_7d") },
+    { key: "contact_clicks", value: contact_clicks?.last_7d ?? 0, sub: t("kpi.window_7d") },
+    { key: "rating", value: average_rating ? average_rating.toFixed(1) : "—", sub: t("kpi.rating_sub", { count: total_reviews ?? 0 }) },
+    { key: "views", value: profile_views?.last_7d ?? 0, sub: t("kpi.window_7d") },
+  ];
+
   return (
-    <div className="space-y-8 mb-10">
-      {/* MEH-57: Hero 4-stat bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">{t("hero.views_week_label")}</p>
-          <p className={`font-headline-lg text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
-            {profile_views?.last_7d ?? 0}
-            <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
-          </p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.views_week_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">{t("hero.whatsapp_clicks_label")}</p>
-          <p className="font-headline-lg text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.whatsapp_clicks_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">
-            {t("hero.conversion_label")}
-            <InfoTooltip content={t("hero.conversion_tooltip")} />
-          </p>
-          <p className="font-headline-lg text-3xl font-bold text-primary">{conversion_rate}%</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.conversion_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">
-            {t("hero.rank_label")}
-            <InfoTooltip content={t("hero.rank_tooltip")} />
-          </p>
-          <p className="font-headline-md text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.rank_sub")}</p>
-        </div>
+    <div className="space-y-4 mb-10">
+      {/* MEH-964 1B: 2×2 KPI strip — identical mobile + desktop, uniform
+          window label, no deltas/arrows (data-reality; see header). */}
+      <div className="grid grid-cols-2 gap-3">
+        {kpis.map((kpi) => (
+          <div key={kpi.key} className="bg-white border border-border rounded-[16px] p-4 text-center">
+            <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
+            <p className="font-headline-lg text-3xl font-bold text-primary">{kpi.value}</p>
+            <p className="text-xs text-fg-muted mt-1">{kpi.sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* MEH-57: "בעלת עסק השבוע" eligibility badge */}
+      {/* MEH-964 1B: quiet conversion line — whatsapp ÷ views (30d), the
+          existing conversion_rate (producer_me.py:634), whatsapp-only. */}
+      <p className="text-sm text-fg-muted text-center">
+        {t("kpi.conversion_line", { rate: conversion_rate })}
+      </p>
+
+      {/* MEH-57: "בעלת עסק השבוע" eligibility badge — kept (not in the 1B
+          drop list; drop list was rank + conversion% cards only). */}
       {eligibleForWeekly && (
         <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🌟</span>
