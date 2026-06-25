@@ -726,7 +726,7 @@ def google_auth(
             if not user.google_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True
             db.commit()
@@ -851,7 +851,7 @@ def register_producer_oauth(
             if not getattr(user, sub_field):
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
         else:
             # MEH-375 (YF-4): re-host the Google avatar only on the
@@ -892,7 +892,7 @@ def register_producer_oauth(
     if user.producer_id or getattr(user, "is_producer", False):
         raise HTTPException(
             status_code=409,
-            detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
+            detail="יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
         )
 
     # MEH-138 + MEH-375: backfill the Google avatar only when the
@@ -1050,7 +1050,7 @@ def apple_auth(
             if not user.apple_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True
             db.commit()
