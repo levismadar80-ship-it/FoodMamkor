@@ -74,8 +74,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
     // MEH-952: "חלב וגבינות" is a license-required category — the number is now
     // gated inline on CATEGORY (blocking error), so fill it before advancing.
-    // id-based locator (stable), consistent with #register-phone-error below.
-    await page.locator("#producer-license-required").fill("1234567");
+    await page.getByTestId("register-category-license").fill("1234567");
     await page.getByTestId("register-category-next").click();
 
     // ── STORY (frame 03) — tagline (short_description) + declarations ──
@@ -132,7 +131,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
     await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
-    await page.locator("#producer-license-required").fill("1234567"); // MEH-952: license gate on CATEGORY
+    await page.getByTestId("register-category-license").fill("1234567"); // MEH-952: license gate on CATEGORY
     await page.getByTestId("register-category-next").click();
 
     // ── STORY: submit WITHOUT the declarations → submit error as role="alert" ──

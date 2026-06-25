@@ -634,6 +634,7 @@ function RegisterProducerPageBody() {
                 </p>
                 <input
                   id="producer-license-required"
+                  data-testid="register-category-license"
                   value={form.producer_license_number}
                   // MEH-952: clear the blocking required-error as soon as the
                   // user starts entering a number (avoids a stale red message).
