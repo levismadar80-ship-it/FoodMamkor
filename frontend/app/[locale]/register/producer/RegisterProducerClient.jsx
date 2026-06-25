@@ -239,6 +239,11 @@ function RegisterProducerPageBody() {
         ? prev.category_ids.filter((c) => c !== id)
         : [...prev.category_ids, id],
     }));
+    // MEH-952: any category change invalidates a prior "license required" block —
+    // clear it so re-selecting a license-required category can't resurface the
+    // error before the user clicks "next" again (the error <p> lives inside the
+    // licenseRequired branch, which remounts on re-select with stale state).
+    setLicenseRequiredError(false);
   };
 
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted

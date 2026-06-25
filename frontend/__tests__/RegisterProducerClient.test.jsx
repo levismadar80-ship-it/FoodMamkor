@@ -257,4 +257,17 @@ describe("RegisterProducerClient — license-required error placement (MEH-952)"
       await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`),
     ).toBeInTheDocument(); // STORY reached
   });
+
+  it("does not resurface the error when the category is deselected and re-selected", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    render(<RegisterProducerClient />);
+    await reachCategoryAndPick();
+    fireEvent.click(screen.getByTestId("register-category-next")); // blocked → error shown
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+    // deselect (licenseRequired → false, branch unmounts) then re-select (remounts):
+    // toggleCategory clears the flag, so no phantom error before the next click.
+    fireEvent.click(screen.getByTestId("pick-category")); // deselect id 1
+    fireEvent.click(screen.getByTestId("pick-category")); // re-select id 1
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
