@@ -163,7 +163,8 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     await page.getByLabel(/^סיסמה חדשה$/).first().fill(SHORT_PASSWORD);
     // Confirm input on /reset-password has placeholder "אישור סיסמה"
     // (no <label>); use getByPlaceholder, not getByLabel.
-    await page.getByPlaceholder("אישור סיסמה").fill(SHORT_PASSWORD);
+    // transient double-mount, tolerate — MEH-891/MEH-946
+    await page.getByPlaceholder("אישור סיסמה").first().fill(SHORT_PASSWORD);
     await page.getByRole("button", { name: /עדכנו סיסמה/ }).click();
     // Scope to role="alert" — the form-level error div on /reset-password.
     // getByText would also match the always-visible page subtitle ("הזינו

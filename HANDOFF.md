@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-946 mobile double-mount flake guard (test-only) — DRAFT PR
+
+- **Branch:** `feature/meh-946-mobile-double-mount-guard` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-946`. Test-only (one spec line).
+- **What:** `11-password-policy.spec.ts:166` confirm-password fill flaked on [mobile] (`getByPlaceholder("אישור סיסמה") resolved to 2 elements`) — transient React-18 double-mount, MEH-924 family (surfaced on #1334/#1349 E2E, passed on retry). Added `.first()` to that fill.
+- **Phase-0:** line 166 was the ONLY unguarded locator; siblings `:163`/`:182` (new-password) already had `.first()` (MEH-891). Chose `.first()` over MEH-924's `toHaveCount(1)` to match this file's existing convention + because `.first()` is idiomatic for a `.fill()` action.
+- **Verify:** tsc clean on e2e config (no error in this file); e2e specs eslint-ignored. Real Playwright run is the CI job on the Vercel preview.
+- **Merge:** Sapir (Rule 23). Independent of the MEH-944/940/930 gate chain.
+
 ## 2026-06-25 — MEH-721 footer producer-CTA moved out of global footer — DRAFT PR
 
 - **Branch:** `feature/meh-721-footer-cta-move` off `origin/staging` (`e67a88a`). **Pushed.** Draft PR opened by Sapir from the browser (GitHub MCP was disconnected this session); body `Refs MEH-721` (NOT Closes).
