@@ -26,12 +26,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Auth — signed-in producer so the page clears its role guard and fetches.
-vi.mock("@/lib/auth-context", () => ({
-  useAuth: () => ({
-    user: { id: 1, name: "דנה", role: "producer" },
-    loading: false,
-  }),
-}));
+// `user` is a stable reference (created once in the factory closure) to
+// mirror the real context: the dashboard effect deps on `[user, authLoading]`,
+// and a new object each render would re-fire the effect every render.
+vi.mock("@/lib/auth-context", () => {
+  const user = { id: 1, name: "דנה", role: "producer" };
+  return {
+    useAuth: () => ({ user, loading: false }),
+  };
+});
 
 // next-intl identity mock — assert on testid + href, not Hebrew copy
 // (matches AdminNullGuards / SettingsPage pattern; copy is translation-

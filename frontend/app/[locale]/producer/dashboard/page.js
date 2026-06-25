@@ -103,6 +103,11 @@ export default function ProducerDashboardPage() {
       router.push("/login");
       return;
     }
+    // MEH-956: clear a prior error before re-fetching so a re-run (e.g. the
+    // `user` ref changing after a silent re-auth) starts clean — otherwise a
+    // stale loadError would keep the error card up even after a successful
+    // re-fetch populates `data` (the loadError branch precedes `!data`).
+    setLoadError(false);
     api.get("/producers/me/dashboard").then((r) => {
       setData(r.data);
       setVacationUntil(r.data?.producer?.vacation_until || "");
