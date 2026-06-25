@@ -1,14 +1,23 @@
 "use client";
 
 /**
- * Module:   edit (producer dashboard — עריכה spoke)
- * Purpose:  Owner-editable profile surfaces — AI bio writer, custom WhatsApp
- *           questions, and the contact-channels editor.
- * Touches:  GET/PUT /producers/me, POST /producers/me/bio/generate.
- * Does NOT: consolidate the /settings forms — that is Phase 2 (MEH-964). This
- *           page relocates the existing dashboard cards verbatim.
- * Related:  page.js (Overview), insights/page.js (analytics).
- * History:  MEH-964 (Phase 1, chunk 1A — relocated verbatim from page.js).
+ * Module:   producer/dashboard/edit/page
+ * Purpose:  עריכה tab of the producer dashboard hub (MEH-964 Phase 1, chunk
+ *           1A). Hosts the owner-facing edit forms relocated VERBATIM off the
+ *           Overview: AI bio, custom WhatsApp questions, contact channels.
+ * Touches:  GET /producers/me (read); PUT /producers/me + POST
+ *           /producers/me/bio/generate (writes, inside the cards).
+ * Does NOT: consolidate with /settings — that is Phase 2. The card bodies
+ *           below are byte-identical to their prior definitions in
+ *           producer/dashboard/page.js (relocate-don't-rewrite); only the
+ *           host page wrapper + fetch are new.
+ * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ *           app/[locale]/producer/dashboard/page.js (סקירה — prior home of
+ *           these cards, MEH-56 / MEH-210 / MEH-296).
+ * History:  MEH-964 (relocation, chunk 1A).
+ *
+ * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
+ * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
 import { useEffect, useState } from "react";
@@ -20,7 +29,7 @@ import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 
-export default function ProducerEditPage() {
+export default function ProducerDashboardEditPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
@@ -33,37 +42,34 @@ export default function ProducerEditPage() {
       return;
     }
     api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
+  }, [user, authLoading, router]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
+  if (!profile) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
+        {t("loading_data")}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
-        {t("nav.tabs.edit")}
-      </h1>
+    <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
+      {/* MEH-56: AI bio writer panel */}
+      <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
 
-      {!profile ? (
-        <p className="text-sm text-fg-muted">{t("loading_data")}</p>
-      ) : (
-        <div className="space-y-6">
-          {/* MEH-56: AI bio writer panel */}
-          <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
+      {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
+      <CustomQuestionsCard
+        profile={profile}
+        onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+      />
 
-          {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
-          <CustomQuestionsCard
-            profile={profile}
-            onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
-          />
-
-          {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-          <ContactChannelsCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          />
-        </div>
-      )}
+      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
+      <ContactChannelsCard
+        profile={profile}
+        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+      />
     </div>
   );
 }

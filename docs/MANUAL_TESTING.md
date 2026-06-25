@@ -26,6 +26,19 @@
 
 ---
 
+## MEH-964 chunk 1A — producer dashboard nested-route shell
+
+לוח הניהול הפך ל-hub-and-spoke עם `layout.js` משותף (tab nav + שער הזדהות אחד) ו-Overview רזה. נכנסות כבעלת עסק (role=producer).
+
+- [ ] **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
+- [ ] **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
+- [ ] **סקירה** (`/producer/dashboard`) — ברכה + באנרי סטטוס + כרטיס השלמת פרופיל + מתג זמינות + AnalyticsSection נשארים; אין כפול ואין רגרסיה
+- [ ] **עריכה** (`/producer/dashboard/edit`) — 3 טפסי העריכה (ביו AI / שאלות מותאמות / ערוצי קשר) עובדים זהה לקודם (שמירה ב-PUT /producers/me)
+- [ ] **כלים** (`/producer/dashboard/tools`) — גריד הקישורים המהירים; "הוסיפי אירוע" → `/producer/dashboard/events/new`; "צפי בעסק" → `/producer/{id}`
+- [ ] **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
+- [ ] **נייד (375px)** — שורת הטאבים נקראת ללא horizontal scroll; כל טאב נפתח תקין
+- [ ] **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
+
 ## MEH-288 — ProfileCompletenessCard on producer dashboard
 
 כרטיס "השלמת פרופיל" בראש `/producer/dashboard`, מעל קלפי ה-analytics. נכנסות כבעלת עסק (role=producer).
