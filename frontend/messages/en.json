@@ -3280,6 +3280,12 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "nav": {
+        "aria": "Dashboard navigation",
+        "overview": "Overview",
+        "edit": "Edit",
+        "tools": "Tools"
+      },
       "load_error": {
         "title": "We couldn't load your dashboard",
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
@@ -3329,15 +3335,6 @@
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog ←",
-      "nav": {
-        "aria_label": "Dashboard navigation",
-        "tabs": {
-          "overview": "Overview",
-          "edit": "Edit",
-          "insights": "Insights",
-          "tools": "Tools"
-        }
-      },
       "availability": {
         "tooltip_line_default": "Open to orders = default.",
         "tooltip_line_today": "Available today = fresh inventory now.",
@@ -3376,10 +3373,6 @@
         "recipes": {
           "title": "Recipes",
           "sub": "Publish and manage recipes that promote your products"
-        },
-        "followers": {
-          "title": "My followers",
-          "sub": "See who follows your business and share your profile"
         }
       },
       "analytics": {

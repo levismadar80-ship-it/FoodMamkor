@@ -1,14 +1,23 @@
 "use client";
 
 /**
- * Module:   tools (producer dashboard — כלים spoke)
- * Purpose:  Quick-links hub — settings, add event, view public business,
- *           group buys, recipes, and followers.
- * Touches:  GET /producers/me/dashboard (producer.id for the view-public link).
- * Does NOT: own followers as a top-level tab — it is a link here (MEH-964).
- * Related:  page.js (Overview), followers/page.js, group-buys/page.js,
- *           recipes/page.js, events/new/page.js.
- * History:  MEH-964 (Phase 1, chunk 1A — relocated verbatim from page.js).
+ * Module:   producer/dashboard/tools/page
+ * Purpose:  כלים tab of the producer dashboard hub (MEH-964 Phase 1, chunk
+ *           1A). Launcher for the producer tool routes relocated VERBATIM off
+ *           the Overview quick-links grid: settings, add event, view business,
+ *           group buys, recipes.
+ * Touches:  GET /producers/me/dashboard (read — for producer.id used by the
+ *           "view my business" link).
+ * Does NOT: build any tool internals — each link points at its existing,
+ *           already-shipped route. The grid markup below is byte-identical to
+ *           its prior definition in producer/dashboard/page.js.
+ * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ *           events/new/page.js, group-buys/page.js, recipes/page.js,
+ *           settings/page.jsx (link targets).
+ * History:  MEH-964 (relocation, chunk 1A).
+ *
+ * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
+ * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
 import { useEffect, useState } from "react";
@@ -18,7 +27,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
-export default function ProducerToolsPage() {
+export default function ProducerDashboardToolsPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
@@ -31,19 +40,22 @@ export default function ProducerToolsPage() {
       return;
     }
     api.get("/producers/me/dashboard").then((r) => setData(r.data)).catch(() => setData(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
+  }, [user, authLoading, router]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
-  const producer = data?.producer;
+  if (!data) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
+        {t("loading_data")}
+      </div>
+    );
+  }
+
+  const { producer } = data;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-6">
-        {t("nav.tabs.tools")}
-      </h1>
-
       {/* Quick links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
@@ -60,15 +72,13 @@ export default function ProducerToolsPage() {
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.add_event.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.add_event.sub")}</p>
         </Link>
-        {producer && (
-          <Link
-            href={`/producer/${producer.id}`}
-            className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
-          >
-            <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.view_business.title")}</p>
-            <p className="text-sm text-fg-muted">{t("quick_links.view_business.sub")}</p>
-          </Link>
-        )}
+        <Link
+          href={`/producer/${producer.id}`}
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.view_business.title")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.view_business.sub")}</p>
+        </Link>
         <Link
           href="/producer/dashboard/group-buys"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
@@ -83,14 +93,6 @@ export default function ProducerToolsPage() {
         >
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
-        </Link>
-        {/* MEH-964 1A: followers reachable here (a link, not a top-level tab). */}
-        <Link
-          href="/producer/dashboard/followers"
-          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
-        >
-          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.followers.title")}</p>
-          <p className="text-sm text-fg-muted">{t("quick_links.followers.sub")}</p>
         </Link>
       </div>
     </div>
