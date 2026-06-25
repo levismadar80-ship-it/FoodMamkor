@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — register/producer share_cta + farmer typo (he.json copy) — DRAFT PR (Linear pending)
+
+- **Branch:** `feature/register-sharecta-farmer-typo` off current `origin/staging` (post-MEH-958/960). Fresh feature branch this time (not the orphaned harness branch `claude/awesome-mccarthy-1yrhg2`, whose PR #1365 already merged — reusing it would need a force-push to re-base off the squashed staging tip; a clean branch avoids that).
+- **⚠️ Linear blocker:** could NOT create the MEH ticket — workspace is at the **free-tier issue cap** (`save_issue` → "exceeded the free issue limit"). Sapir to create the issue + link the PR; spec was the "share_cta LOCK + החקלאית typo" task.
+- **2 he.json swaps (LOCKED verbatim, copy-only):** `success.share_cta` (he.json:331) `הזמיני שכנה` → `הזמינו בעלי עסקים` (drops `שכנה` LOCK word + feminine → ADR-024 generic-plural, coherent with #1366 share_msg); `validation.farmer_required` (he.json:292) typo `החקלאיות` → `החקלאית`. Keys unchanged; en.json frozen.
+- **Gate cleared:** MEH-930 (In Progress voice sweep) had not touched share_cta:331 at dispatch — this PR LOCKs it; coordinate so MEH-930 doesn't re-touch.
+- **Verify:** `npm run build` green, JSON parses, grep-verified. Pending: Sapir 375px QA (success-screen label + farmer error on ירקות/פירות) → Sapir merges.
+
 ## 2026-06-25 — MEH-960 register/producer hero hidden on CONFIRM — DRAFT PR
 
 - **Branch:** `claude/awesome-mccarthy-1yrhg2` (harness-assigned, base `origin/staging`, 0 divergence — base correct). Same `claude/*` operational-lock note as MEH-947 below: developed on the harness branch, not a `feature/meh-960-*` branch — informational.
