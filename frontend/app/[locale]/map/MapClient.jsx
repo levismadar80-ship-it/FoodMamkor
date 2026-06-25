@@ -46,6 +46,26 @@ export default function MapPage() {
   // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
   const [sortBy, setSortBy] = useState("default");
 
+  // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
+  // bottom strip of the full-bleed map and clips a marker there. Reserve that
+  // strip on the map container only while the banner is showing, so the map
+  // shrinks above it (Leaflet's ResizeObserver → invalidateSize recenters and
+  // lifts the clipped marker into view). Presence is read off the
+  // `--cookie-banner-h` CSS var that CookieBanner publishes on <html> (MEH-850);
+  // gating on presence keeps the map full-height once consent is given.
+  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () =>
+      setCookieBannerVisible(
+        parseFloat(getComputedStyle(root).getPropertyValue("--cookie-banner-h")) > 0
+      );
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(root, { attributes: true, attributeFilter: ["style"] });
+    return () => mo.disconnect();
+  }, []);
+
   const feed = useProducersFeed();
   const filters = useMapFilters({
     allProducers: feed.allProducers,
@@ -302,8 +322,14 @@ export default function MapPage() {
           {filterChipsBar}
         </div>
 
-        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset). */}
-        <div className="w-full h-full pt-[174px]">
+        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset).
+            MEH-945: while the cookie banner shows, reserve its footprint at the
+            bottom (its own offset = safe-area + 80px, mirroring CookieBanner.jsx:68,
+            plus its live --cookie-banner-h) so it no longer overlays the canvas. */}
+        <div
+          className="w-full h-full pt-[174px]"
+          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 80px + var(--cookie-banner-h, 0px))" } : undefined}
+        >
           {mapPane}
         </div>
 
