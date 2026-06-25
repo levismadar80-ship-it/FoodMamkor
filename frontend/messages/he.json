@@ -165,15 +165,15 @@
     "register": {
       "consumer": {
         "eyebrow": "הצטרפות למהמקור",
-        "heading": "הצטרפי לקהילה",
-        "subtitle": "ברוכה הבאה למהמקור",
+        "heading": "הצטרפו לקהילה",
+        "subtitle": "ברוכים הבאים למהמקור",
         "referral_badge": "הגעת דרך חברה 10% הנחה בהזמנה הראשונה",
         "email_hint": "לאחר ההרשמה תישלח הודעת אימות לאימייל שלך",
         "oauth_divider": "או",
         "have_account": "יש לך כבר חשבון?",
         "login_link": "כניסה לחשבון",
         "cta_producer": "רוצה להוסיף את העסק שלך?",
-        "cta_producer_link": "הצטרפי כבית עסק",
+        "cta_producer_link": "הצטרפו כבית עסק",
         "value_props": {
           "discover": "גלו בתי עסק",
           "favorites": "שמרו מועדפים",
@@ -198,7 +198,7 @@
           "privacy_link": "למדיניות הפרטיות"
         },
         "actions": {
-          "submit": "הצטרפי",
+          "submit": "הצטרפו",
           "submitting": "בהרשמה..."
         },
         "email_sent": {
@@ -304,7 +304,7 @@
         "actions": {
           "next": "הבא →",
           "back": "שלב קודם",
-          "submit": "הצטרפי →",
+          "submit": "הצטרפו →",
           "submitting": "בשליחה...",
           "write_later": "אני אכתוב אחר כך",
           "edit_description": "ערכו תיאור",
@@ -2209,7 +2209,7 @@
         "email_placeholder": "you@example.com",
         "message_label": "איך נוכל לעזור?",
         "message_placeholder": "ספרי לנו על מה את רוצה לדבר...",
-        "submit": "שלחי",
+        "submit": "שלחו",
         "submit_loading": "בשליחה...",
         "success_toast": "תודה! נחזור אליך בקרוב"
       }
@@ -2655,7 +2655,7 @@
     "share_button": {
       "default_message": "גיליתי את {name} במהמקור — {url}",
       "share_aria": "שתפי את העסק בוואטסאפ",
-      "share_to_friend": "שלחי לחברה"
+      "share_to_friend": "שלחו לחברה"
     },
     "question_chips": {
       "my_area": "האזור שלי",
@@ -2680,7 +2680,7 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "גלי עוד בתי עסק ב mehamakor.online",
+      "footer_url": "גלו עוד בתי עסק ב mehamakor.online",
       "upload_error": "שגיאה בהעלאה לקלאודינרי",
       "default_country": "ישראל",
       "caption_prefix": "🌿 עסק חדש במהמקור!",
@@ -2786,8 +2786,8 @@
       }
     },
     "footer_intro_prefix": "עדיין יש שאלה? כתבי לי ב-Instagram",
-    "footer_intro_suffix": "או הצטרפי עכשיו:",
-    "cta": "הוסיפי את העסק שלך"
+    "footer_intro_suffix": "או הצטרפו עכשיו:",
+    "cta": "הוסיפו את העסק שלך"
   },
   "privacy": {
     "meta_title": "מדיניות פרטיות | מהמקור",
@@ -3314,7 +3314,7 @@
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
       },
       "greeting": "שלום {name}",
-      "welcome_subtitle": "ברוכה הבאה לניהול העסק של {business}",
+      "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
       "status": {
         "pending": {
           "title": "הפרופיל שלך בסקירה",
@@ -3323,18 +3323,18 @@
         },
         "rejected": {
           "title": "⚠️ הבקשה לא אושרה",
-          "body": "צרי קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
-          "cta": "צרי קשר →"
+          "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
+          "cta": "צרו קשר →"
         },
         "pending_whatsapp": {
-          "title": "ברוכה הבאה! כמעט שם.",
+          "title": "ברוכים הבאים! כמעט שם.",
           "body": "כדי להעביר את העסק לאישור הצוות, אמתי את מספר הטלפון של העסק דרך וואטסאפ."
         }
       },
       "phone_verify": {
         "title": "אימות טלפון העסק",
         "description": "נשלח קוד בן 6 ספרות לוואטסאפ של מספר העסק. האימות מעביר את העסק לסקירת הצוות.",
-        "send_cta": "שלחי קוד אימות",
+        "send_cta": "שלחו קוד אימות",
         "sending": "בשליחה...",
         "resend_in": "אפשר לשלוח קוד נוסף בעוד {seconds} שניות",
         "code_label": "קוד אימות",
@@ -3343,7 +3343,7 @@
         "confirming": "באימות...",
         "success": "הטלפון אומת! העסק הועבר לסקירת הצוות.",
         "error_invalid": "קוד שגוי או שפג תוקפו. נסו שוב.",
-        "error_no_phone": "לא נמצא מספר טלפון בפרופיל. הוסיפי מספר טלפון ואז אמתי.",
+        "error_no_phone": "לא נמצא מספר טלפון בפרופיל. הוסיפו מספר טלפון ואז אמתו.",
         "error_generic": "משהו השתבש. נסו שוב.",
         "error_rate_limited": "יותר מדי ניסיונות. נסו שוב עוד מעט."
       },
@@ -3355,7 +3355,7 @@
         "tooltip_line_vacation": "בהפסקה = מוסתרת עד תאריך שתבחרי.",
         "heading": "מצב זמינות",
         "info_label": "מה ההבדל בין המצבים?",
-        "intro": "בחרי את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.",
+        "intro": "בחרו את הסטטוס שיוצג ללקוחות בכרטיסייה ובעמוד העסק.",
         "group_aria": "מצב זמינות",
         "options": {
           "accepting_orders": "פתוח להזמנות",
@@ -3467,7 +3467,7 @@
       },
       "contact_channels": {
         "heading": "ערוצי קשר",
-        "subtitle": "בחרי אילו ערוצים להציג, ומה יהיה הערוץ הראשי — הוא מופיע ככפתור הגדול בעמוד העסק שלך.",
+        "subtitle": "בחרו אילו ערוצים להציג, ומה יהיה הערוץ הראשי — הוא מופיע ככפתור הגדול בעמוד העסק שלך.",
         "field_phone": "טלפון",
         "phone_field_helper": "המספר הזה משמש גם לוואטסאפ וגם לשיחות",
         "field_instagram": "אינסטגרם (שם משתמש)",
@@ -3503,7 +3503,7 @@
         "heading": "ביו AI",
         "intro": "הכניסי שם משתמש באינסטגרם, קישור, או תיאור חופשי — ניצור ביו בעברית עד 150 תווים.",
         "source_placeholder": "@handle / קישור אינסטגרם / תיאור חופשי",
-        "generate_cta": "צרי ביו",
+        "generate_cta": "צרו ביו",
         "generating": "ביצירה...",
         "save_cta": "שמרי ביו",
         "saving": "בשמירה...",
@@ -3546,7 +3546,7 @@
       "row_new_event": "אירועים חדשים",
       "row_new_product": "מוצרים חדשים",
       "row_delivery_area": "אזורי משלוח חדשים",
-      "row_whatsapp_opt_in": "שלחי ב-WhatsApp",
+      "row_whatsapp_opt_in": "שלחו ב-WhatsApp",
       "push_denied_toast": "הרשאת התראות נדחתה",
       "push_blocked": "התראות דחיפה חסומות בדפדפן",
       "push_enable": "הפעילו התראות דחיפה (PWA)",
@@ -3610,9 +3610,9 @@
     },
     "profile": {
       "tabpanel_aria": "פרופיל",
-      "avatar_title": "לחצי לשינוי התמונה",
+      "avatar_title": "לחצו לשינוי התמונה",
       "avatar_aria": "שינוי תמונת פרופיל",
-      "avatar_hint": "לחצי על התמונה לשינוי",
+      "avatar_hint": "לחצו על התמונה לשינוי",
       "saved_msg": "הפרטים נשמרו",
       "save_error_fallback": "לא הצלחנו לשמור. נסו שוב.",
       "upload_type_error": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
@@ -3635,11 +3635,11 @@
       "status_pending": "הבקשה שלך נמצאת בבדיקה — נחזור אלייך בהקדם.",
       "status_rejected_title": "הבקשה לא אושרה",
       "rejected_tip_details": "ודאי שכל פרטי העסק מלאים ומדויקים",
-      "rejected_tip_photos": "הוסיפי תמונות ברורות של המוצרים",
+      "rejected_tip_photos": "הוסיפו תמונות ברורות של המוצרים",
       "rejected_tip_address": "בדקי שכתובת העסק נכונה",
       "support_cta": "דברי איתנו →",
       "status_suspended": "החשבון מושעה זמנית.",
-      "support_cta_short": "צרי קשר",
+      "support_cta_short": "צרו קשר",
       "stats_heading": "סטטיסטיקות",
       "stats_loading": "בטעינה...",
       "stat_views": "צפיות",
@@ -3653,7 +3653,7 @@
     },
     "products": {
       "section_heading": "מוצרים",
-      "add_cta": "הוסיפי מוצר",
+      "add_cta": "הוסיפו מוצר",
       "errors": {
         "upload_type": "רק קבצי תמונה מותרים: JPG, PNG, WEBP, GIF",
         "upload_size": "הקובץ גדול מדי — מקסימום 5MB",
@@ -3668,11 +3668,11 @@
       },
       "empty": {
         "title": "מוצר ראשון = בית עסק חי",
-        "description": "בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפי 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות.",
-        "cta": "+ הוסיפי מוצר ראשון"
+        "description": "בלי מוצרים, הפרופיל שלך נראה ריק ולקוחות לא יודעות מה יש לך. הוסיפו 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות.",
+        "cta": "+ הוסיפו מוצר ראשון"
       },
       "edit_heading": "עריכת מוצר",
-      "edit_legacy_price_note": "המחיר הקיים: {range} (לא בפורמט החדש — הזיני מחיר מספרי לעדכון)",
+      "edit_legacy_price_note": "המחיר הקיים: {range} (לא בפורמט החדש — הזינו מחיר מספרי לעדכון)",
       "add_heading": "מוצר חדש",
       "cancel_aria": "ביטול",
       "form": {
@@ -3694,7 +3694,7 @@
       "save_edit_cta": "שמרי שינויים",
       "save_edit_saving": "בשמירה...",
       "cancel_edit_cta": "בטלי",
-      "add_submit_cta": "הוסיפי מוצר",
+      "add_submit_cta": "הוסיפו מוצר",
       "add_submitting": "בהוספה...",
       "card": {
         "edit_aria_template": "ערכי {name}",
@@ -3744,9 +3744,9 @@
       }
     },
     "support_modal": {
-      "section_aria": "צרי קשר עם התמיכה",
-      "heading": "צרי קשר",
-      "body": "נשמח לעזור. בחרי את הדרך הנוחה לך:",
+      "section_aria": "צרו קשר עם התמיכה",
+      "heading": "צרו קשר",
+      "body": "נשמח לעזור. בחרו את הדרך הנוחה לך:",
       "whatsapp_label": "וואטסאפ",
       "whatsapp_hours": "זמינות ב׳–ה׳ 9:00–17:00",
       "email_label": "אימייל",
