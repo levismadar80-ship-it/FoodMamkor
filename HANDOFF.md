@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-968 footer RTL (IG handle bidi + newsletter arrow) — DRAFT PR
+
+- **Branch:** `feature/meh-968-footer-rtl` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN. `Closes MEH-968`.
+- **Phase-0 corrected defect 2's premise (file:line):** ticket blamed physical `left-/right-`; footer has **0 physical positional classes** — button `:163` already `end-0`, input `:156` already `pe-11` (MEH-867 reworked this). Surfaced to Smadar → approved option B (real cause = dir mismatch).
+- **Fix (Smadar-approved B, arrow stays LEFT):** (1) `Footer.jsx:109` `<span>@meha_makor</span>` → `<bdi>` so the Latin `@` stays leading in RTL (was `meha_makor@`). (2) `Footer.jsx:156` input `pe-11`→`ps-11`: input is `dir="ltr"` (emails) so `pe-*` reserved padding on the RIGHT while the button sits LEFT (`end-0` in the RTL form) → placeholder slipped under the arrow; `ps-11` moves the reserved 44px to the same side as the (unmoved) left button. Button NOT moved.
+- **Verify:** `npm run build` green; footer logical-only (0 physical RTL classes); `en.json` untouched. **Bidi + overlap need real-device mobile QA** on the Vercel preview (CC sandbox can't reach `*.vercel.app`) — deferred to Sapir: confirm `@meha_makor` reads `@`-first and the placeholder ("האימייל שלך, בבקשה") no longer slips under the arrow.
+- **Merge:** Sapir (Rule 23 — visible UI change).
+
 ## 2026-06-25 — MEH-943 MobileSheetSelectedCard glyph-LOCK — DRAFT PR
 
 - **Branch:** `feature/meh-943-sheet-badge-glyph` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN.

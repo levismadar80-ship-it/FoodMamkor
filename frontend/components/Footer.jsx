@@ -106,7 +106,8 @@ export default function Footer() {
               className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
               <InstagramLogo size={20} aria-hidden="true" />
-              <span className="font-body-md">@meha_makor</span>
+              {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
+              <bdi className="font-body-md">@meha_makor</bdi>
             </a>
           </div>
 
@@ -152,7 +153,8 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
+                /* MEH-968: input is dir="ltr" (emails) so pe-* resolved opposite the submit button, which sits at the RTL form's end-0 — placeholder slipped under the arrow. ps-11 reserves the 44px on the same side as the button to clear it. */
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 ps-11 min-h-[44px]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
               />
               <button
