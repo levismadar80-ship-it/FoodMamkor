@@ -57,18 +57,20 @@ function VanityLinkCard({ slug }) {
 }
 
 /**
- * Producer dashboard — feature/producer-analytics.
- *
- * Fetches in parallel from two endpoints so the UI can render the hero
- * (availability toggle + quick links) immediately even if analytics is
- * slow:
- *   - GET /producers/me/dashboard  — producer meta + legacy fields
- *   - GET /producers/me/analytics  — rich metrics + 30d chart + top cities
- *
- * The charts are inline SVG (no chart library) following the admin
- * dashboard precedent. Two charts:
- *   1. Line: profile views over the last 30 days
- *   2. Horizontal bar: top 5 cities viewing the profile
+ * Module:   producer/dashboard/page (Overview / סקירה index)
+ * Purpose:  The slim Overview index of the dashboard hub (MEH-964). Shows the
+ *           at-a-glance surfaces: greeting, status banners, holiday hint,
+ *           vanity link, availability toggle, completeness card, and the
+ *           top-line 4-KPI strip + quiet conversion line (OverviewStatsHero).
+ * Touches:  GET /producers/me/dashboard, /producers/me/analytics,
+ *           /producers/me; POST /producers/me/availability-state.
+ * Does NOT: render the deep analytics (windowed cards + charts) — those live
+ *           in the insights tab (dashboard/insights/page.js); nor the edit
+ *           forms (dashboard/edit) or quick links (dashboard/tools).
+ * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
+ *           insights/page.js (deep analytics); backend producer_me.py:489.
+ * History:  MEH-57 (analytics); MEH-288 (completeness); MEH-291 (availability);
+ *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split).
  */
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
@@ -376,88 +378,85 @@ export default function ProducerDashboardPage() {
           the fields the heuristic reads). */}
       {profile && <ProfileCompletenessCard producer={profile} />}
 
-      {/* Analytics stat cards */}
+      {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+          Deep analytics (windowed cards + charts) live in the insights tab
+          (dashboard/insights); these KPIs render only here (FLAG-1 — never
+          duplicated in insights/). */}
       {analytics ? (
-        <AnalyticsSection analytics={analytics} profile={profile} />
+        <OverviewStatsHero analytics={analytics} />
       ) : (
         <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
       )}
 
-      {/* MEH-964 chunk 1A: quick-links grid relocated to the כלים tab
+      {/* MEH-964 1A: quick-links grid relocated to the tools tab
           (dashboard/tools); the bio / custom-questions / contact-channels
-          edit forms relocated to the עריכה tab (dashboard/edit). The Overview
-          keeps the read-only AnalyticsSection above until 1B swaps it for the
-          lean KPI strip + moves the deep charts to the תובנות tab. */}
+          edit forms relocated to the edit tab (dashboard/edit). 1B swapped the
+          Overview analytics for the lean KPI strip and moved the deep charts
+          to the insights tab. */}
     </div>
   );
 }
 
 // ============================================================
-// Analytics section: stat cards + charts
+// MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
+// RTL order (right->left): WhatsApp leads -> contact clicks -> rating ->
+// views. 2x2 grid, identical mobile + desktop. Uniform "last 7 days" window
+// label, NO per-KPI deltas/arrows — the analytics payload has no per-metric
+// prior-period counts (only views had a categorical trend), so the AC's
+// "labeled deltas" is superseded by data reality and deferred to a backend
+// follow-up. The DEEP analytics (windowed cards + charts) live in the
+// insights tab (dashboard/insights); the top-line KPIs render ONLY here
+// (FLAG-1 — never duplicated in insights/). The eligibility badge is kept
+// here (status/recognition signal, belongs on the at-a-glance Overview).
 // ============================================================
 
-function AnalyticsSection({ analytics, profile }) {
+function OverviewStatsHero({ analytics }) {
   const t = useTranslations("dashboard.producer.analytics");
   const {
     profile_views,
-    search_appearances,
     whatsapp_clicks,
     contact_clicks,
-    follower_count,
-    new_followers_this_week,
     average_rating,
     total_reviews,
-    views_by_day,
-    top_cities,
     rank_in_city,
     conversion_rate,
     profile_strength,
-    weekly_trend,
   } = analytics;
-
-  const trendIcon = weekly_trend === "up" ? "↑" : weekly_trend === "down" ? "↓" : "→";
-  const trendColor = weekly_trend === "up" ? "text-green-700" : weekly_trend === "down" ? "text-red-500" : "text-fg-muted";
-  const cityName = profile?.city ? ` ${profile.city}` : "";
-  const rankDisplay = rank_in_city != null ? `#${rank_in_city}${cityName}` : "—";
 
   const eligibleForWeekly = profile_strength >= 80 && rank_in_city === 1;
 
+  // DOM order == locked RTL order; the dir="rtl" page lays the 2-col grid out
+  // right->left, so kpis[0] renders top-right and reading flows as locked.
+  const kpis = [
+    { key: "whatsapp_leads", value: whatsapp_clicks?.last_7d ?? 0, sub: t("kpi.window_7d") },
+    { key: "contact_clicks", value: contact_clicks?.last_7d ?? 0, sub: t("kpi.window_7d") },
+    { key: "rating", value: average_rating ? average_rating.toFixed(1) : "—", sub: t("kpi.rating_sub", { count: total_reviews ?? 0 }) },
+    { key: "views", value: profile_views?.last_7d ?? 0, sub: t("kpi.window_7d") },
+  ];
+
   return (
-    <div className="space-y-8 mb-10">
-      {/* MEH-57: Hero 4-stat bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">{t("hero.views_week_label")}</p>
-          <p className={`font-headline-lg text-3xl font-bold text-primary inline-flex items-baseline gap-1`}>
-            {profile_views?.last_7d ?? 0}
-            <span className={`text-lg font-semibold ${trendColor}`}>{trendIcon}</span>
-          </p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.views_week_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">{t("hero.whatsapp_clicks_label")}</p>
-          <p className="font-headline-lg text-3xl font-bold text-primary">{whatsapp_clicks?.last_7d ?? 0}</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.whatsapp_clicks_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">
-            {t("hero.conversion_label")}
-            <InfoTooltip content={t("hero.conversion_tooltip")} />
-          </p>
-          <p className="font-headline-lg text-3xl font-bold text-primary">{conversion_rate}%</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.conversion_sub")}</p>
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-4 text-center">
-          <p className="text-xs text-fg-muted mb-1">
-            {t("hero.rank_label")}
-            <InfoTooltip content={t("hero.rank_tooltip")} />
-          </p>
-          <p className="font-headline-md text-2xl font-bold text-primary leading-tight">{rankDisplay}</p>
-          <p className="text-xs text-fg-muted mt-1">{t("hero.rank_sub")}</p>
-        </div>
+    <div className="space-y-4 mb-10">
+      {/* 2x2 KPI strip — identical mobile + desktop, uniform window label,
+          no deltas/arrows (data reality; see header). */}
+      <div className="grid grid-cols-2 gap-3">
+        {kpis.map((kpi) => (
+          <div key={kpi.key} className="bg-white border border-border rounded-[16px] p-4 text-center">
+            <p className="text-xs text-fg-muted mb-1">{t(`kpi.${kpi.key}`)}</p>
+            <p className="font-headline-lg text-3xl font-bold text-primary">{kpi.value}</p>
+            <p className="text-xs text-fg-muted mt-1">{kpi.sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* MEH-57: "בעלת עסק השבוע" eligibility badge */}
+      {/* Quiet conversion line — whatsapp / views (30d), the existing
+          conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
+          tinted, not a card. */}
+      <p className="text-sm text-fg-muted text-center">
+        {t("kpi.conversion_line", { rate: conversion_rate })}
+      </p>
+
+      {/* "Business of the week" eligibility badge — kept on the Overview
+          (status/recognition signal, not deep analytics; MEH-57). */}
       {eligibleForWeekly && (
         <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">🌟</span>
@@ -470,206 +469,6 @@ function AnalyticsSection({ analytics, profile }) {
           </div>
         </div>
       )}
-
-      {/* Row 1: windowed metric cards (profile / search / whatsapp / contact) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <WindowedMetricCard
-          label={t("windowed.profile_views")}
-          icon="👁️"
-          windows={profile_views}
-          tooltip={t("windowed.profile_views_tooltip")}
-        />
-        <WindowedMetricCard
-          label={t("windowed.search_appearances")}
-          icon="🔎"
-          windows={search_appearances}
-          tooltip={t("windowed.search_appearances_tooltip")}
-        />
-        <WindowedMetricCard
-          label={t("windowed.whatsapp_clicks")}
-          icon="💬"
-          windows={whatsapp_clicks}
-        />
-        <WindowedMetricCard
-          label={t("windowed.contact_clicks")}
-          icon="📞"
-          windows={contact_clicks}
-        />
-      </div>
-
-      {/* Row 2: static cards (followers, reviews, home products) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <SimpleCard
-          label={t("simple_cards.followers_label")}
-          icon="🌿"
-          value={follower_count}
-          sub={t("simple_cards.followers_sub_template", { count: new_followers_this_week })}
-        />
-        <SimpleCard
-          label={t("simple_cards.rating_label")}
-          icon="⭐"
-          value={average_rating ? average_rating.toFixed(1) : "—"}
-          sub={t("simple_cards.rating_sub_template", { count: total_reviews })}
-        />
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border border-border rounded-[16px] p-5">
-          <h2 className="font-headline-md text-lg font-bold mb-3">
-            {t("views_chart_title")}
-            <InfoTooltip content={t("views_chart_tooltip")} />
-          </h2>
-          <ViewsLineChart data={views_by_day} />
-        </div>
-        <div className="bg-white border border-border rounded-[16px] p-5">
-          <h2 className="font-headline-md text-lg font-bold mb-3">{t("top_cities_title")}</h2>
-          <TopCitiesBarChart data={top_cities} />
-        </div>
-      </div>
     </div>
-  );
-}
-
-function WindowedMetricCard({ label, icon, windows, tooltip }) {
-  const t = useTranslations("dashboard.producer.analytics");
-  return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-2xl" aria-hidden="true">{icon}</span>
-        <span className="text-xs text-fg-muted">{t("stats_window_label")}</span>
-      </div>
-      <p className="text-sm text-fg-muted mb-2">
-        {label}
-        {tooltip && <InfoTooltip content={tooltip} />}
-      </p>
-      <div className="flex items-baseline gap-3">
-        <span className="font-headline-lg text-4xl font-bold text-primary">
-          {windows?.last_7d ?? 0}
-        </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-2xl font-semibold text-text">
-          {windows?.last_30d ?? 0}
-        </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-xl text-fg-muted">
-          {windows?.total ?? 0}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function SimpleCard({ label, icon, value, sub }) {
-  return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-2xl" aria-hidden="true">{icon}</span>
-      </div>
-      <p className="text-sm text-fg-muted mb-2">{label}</p>
-      <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
-      <p className="text-xs text-fg-muted mt-1">{sub}</p>
-    </div>
-  );
-}
-
-/**
- * Inline SVG line chart — 30 days of views.
- * Follows the same pattern as admin/page.js's monthly_producers chart
- * (no chart library, per the codebase precedent).
- */
-function ViewsLineChart({ data }) {
-  const t = useTranslations("dashboard.producer.analytics");
-  if (!data || data.length === 0) {
-    return <p className="text-sm text-fg-muted">{t("views_chart_empty")}</p>;
-  }
-  const W = 320;
-  const H = 120;
-  const pad = 8;
-  const maxV = Math.max(1, ...data.map((d) => d.count));
-  const stepX = data.length > 1 ? (W - pad * 2) / (data.length - 1) : 0;
-  const points = data
-    .map((d, i) => {
-      const x = pad + i * stepX;
-      const y = H - pad - (d.count / maxV) * (H - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  // Show labels for start / mid / end only to avoid x-axis clutter.
-  const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
-
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H + 20}`}
-      className="w-full h-40"
-      role="img"
-      aria-label={t("views_chart_aria")}
-    >
-      <polyline
-        fill="none"
-        stroke="#2e6853"
-        strokeWidth="2"
-        points={points}
-      />
-      {data.map((d, i) => {
-        const x = pad + i * stepX;
-        const y = H - pad - (d.count / maxV) * (H - pad * 2);
-        return (
-          <g key={d.date}>
-            <circle cx={x} cy={y} r={d.count > 0 ? 2.5 : 1.5} fill="#2e6853" />
-            {labelIndexes.includes(i) && (
-              <text
-                x={x}
-                y={H + 14}
-                fontSize="10"
-                textAnchor="middle"
-                fill="#6b6b6b"
-              >
-                {d.date.slice(5)}
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-/**
- * Inline SVG horizontal bar chart — top 5 cities.
- * Falls back to a text note when there are no city-tagged views yet
- * (which is the case until logged-in users with a `city` set visit).
- */
-function TopCitiesBarChart({ data }) {
-  const t = useTranslations("dashboard.producer.analytics");
-  if (!data || data.length === 0) {
-    return (
-      <p className="text-sm text-fg-muted">
-        {t("top_cities_empty")}
-      </p>
-    );
-  }
-  const maxV = Math.max(1, ...data.map((d) => d.count));
-  return (
-    <ul className="space-y-2">
-      {data.map((row) => {
-        const pct = (row.count / maxV) * 100;
-        return (
-          <li key={row.city} className="text-sm">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-text">{row.city}</span>
-              <span className="text-fg-muted">{row.count}</span>
-            </div>
-            <div className="h-2 bg-green-50 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
   );
 }
