@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Crosshair, MapPinLine, Rows } from "@phosphor-icons/react";
 
@@ -42,7 +42,6 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  const locationModalFiredRef = useRef(false);
   // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
   const [sortBy, setSortBy] = useState("default");
 
@@ -143,20 +142,10 @@ export default function MapPage() {
     );
   }, [gpsLoading, sync.mapApiRef]);
 
-  // Was MapClient.jsx:162-169 — location-modal trigger effect.
-  // Depends on userCity so the effect re-runs when use-user-city
-  // hydrates from localStorage (initialises null, then sets the
-  // real value in its own useEffect). Without the dependency the
-  // 800ms timer fires even when a city IS already saved — stale
-  // closure on null.
-  useEffect(() => {
-    if (locationModalFiredRef.current || userCityCtx.city) return;
-    const timer = setTimeout(() => {
-      locationModalFiredRef.current = true;
-      setLocationModalOpen(true);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [userCityCtx.city]);
+  // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
+  // here — /map now renders immediately on the MEH-932 producer-band default
+  // with no blocking location gate. LocationModal remains reachable only as
+  // the geolocation permission-denied fallback (handleGpsClick, err.code 1).
 
   // Was MapClient.jsx:196-215 — focusProducer deep-link effect.
   useEffect(() => {
