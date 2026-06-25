@@ -101,6 +101,18 @@ def update_user_role(
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
+    # MEH-955: never assign role="producer" here. require_producer
+    # (auth.py:268-273) gates on role alone, so a manual producer bump
+    # without a linked Producer creates an orphan (role=producer,
+    # producer_id=NULL) that 404s every /producers/me* handler
+    # (producer_me.py:75-76). Producers come only from the atomic register
+    # flow (auth.py:511-514 / :619-628), which creates+links the Producer
+    # in the same commit.
+    if data.role == "producer":
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן להפוך משתמשת ל'בעלת עסק' ידנית — הרשמת עסק מתבצעת דרך טופס ההרשמה בלבד.",
+        )
     if target.email == SUPER_ADMIN_EMAIL:
         raise HTTPException(
             status_code=403, detail="לא ניתן לשנות הרשאות של האדמין הראשי"
