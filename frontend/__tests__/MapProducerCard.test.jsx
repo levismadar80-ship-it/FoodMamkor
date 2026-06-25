@@ -39,6 +39,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Phone: (p) => <span {...p} />,
   Globe: (p) => <span {...p} />,
   EnvelopeSimple: (p) => <span {...p} />,
+  SealCheck: (p) => <span {...p} />,
+  ArrowRight: (p) => <span {...p} />,
 }));
 
 const producer = {
