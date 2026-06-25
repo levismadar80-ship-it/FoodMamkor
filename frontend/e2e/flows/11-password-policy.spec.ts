@@ -58,7 +58,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
 
     // Submit gate is disabled until length OK; force-submit should
     // surface the form-level error or simply not progress.
-    const submit = page.getByRole("button", { name: /הצטרפי/ });
+    const submit = page.getByRole("button", { name: /הצטרפו/ });
     if (await submit.isEnabled()) {
       await submit.click();
       await expect(
@@ -93,7 +93,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const tos = page.getByRole("checkbox");
     await tos.scrollIntoViewIfNeeded();
     await tos.check();
-    const submit = page.getByRole("button", { name: /הצטרפי/ });
+    const submit = page.getByRole("button", { name: /הצטרפו/ });
     if (await submit.isEnabled()) {
       await submit.click();
       await expect(
@@ -121,7 +121,7 @@ test.describe.serial("Password policy wire-up (MEH-306 sub-B)", () => {
     const tos = page.getByRole("checkbox");
     await tos.scrollIntoViewIfNeeded();
     await tos.check();
-    const submit = page.getByRole("button", { name: /הצטרפי/ });
+    const submit = page.getByRole("button", { name: /הצטרפו/ });
     await expect(submit).toBeEnabled();
 
     await submit.click();
