@@ -102,7 +102,8 @@ export default function MapPage() {
     filters.setCityFilter(city);
     feed.loadProducers({ delivery_city: city });
     // NOTE: deliberately no flyTo here. The initial view must stay anchored at
-    // [31.7683, 35.2137] zoom 8 (country-wide) — LocationModal only filters
+    // the MEH-932 producer-band default ([32.4, 34.95] zoom 8, set in
+    // MapComponent.jsx:297-305) — LocationModal only filters
     // the producer list by delivery_city, it doesn't pan the map. Users who
     // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
     // button or pan manually.
