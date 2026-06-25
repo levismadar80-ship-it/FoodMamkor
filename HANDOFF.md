@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-963 /settings "העסק שלי" dead zero-wall stats — MERGED (#1373)
+
+- **Outcome:** PR #1373 **merged to staging** (squash `237fa14`), `Closes MEH-963`. Branch `feature/meh-963-fix-settings-business-zero-stats` off `origin/staging`.
+- **Root cause (Phase-0):** `BusinessTab` (`settings/page.jsx`) fetched `GET /producers/me/dashboard` and rendered 6 `StatCard`s from `stats.views/favorites/reviews/avg_rating/products/orders` — but that endpoint (`producer_me.py:406-456`) returns only `{producer, favorites_count, whatsapp_clicks_week}`. So all 6 cards were `0`/`—` for **every** owner — a permanent zero-wall, not a new-owner empty state. Same stale-duplicate class as MEH-961, second owner-facing surface.
+- **Fix (option b, Smadar-approved):** removed `stats`/`loadingStats` state + the dead fetch + the "סטטיסטיקות" `<section>` + the unused `StatCard` helper; **un-gated** the `/producer/dashboard` link from `status === "approved"` → always-visible (owners need it while pending). Real analytics already live on `/producer/dashboard` via `/producers/me/analytics`. Frontend-only, +12/−47.
+- **Verified:** `npm run build` ✅ · `vitest` 677 pass / 0 fail ✅ (`SettingsPage.test.jsx` was already `describe.skip` — stale, untouched) · `lint` 0 err ✅. `pytest` deferred to CI (no backend code touched). `claude[bot]` review clean after one English-only-comment nit fixed. All 6 required checks green/skipped-appropriately → merged on explicit MERGE.
+- **Out of scope (flagged, left as-is):** never-rendered `ProductsSection` (dead-code sweep separate); now-unreferenced `settings.business` stat i18n keys (`stats_heading`/`stat_*`/`stats_unavailable`) left in he/en.json (harmless, MEH-721 precedent). grep confirmed no 4th owner-facing zero-wall (`group-buys` reads only `producer.id`/`.city`; `AdminProducersTable` is admin).
+- **Follow-up candidate:** the dead-code sweep ticket should also drop `ProductsSection` + the orphaned stat i18n keys.
+
 ## 2026-06-25 — register/producer share_cta + farmer typo (he.json copy) — DRAFT PR (Linear pending)
 
 - **Branch:** `feature/register-sharecta-farmer-typo` off current `origin/staging` (post-MEH-958/960). Fresh feature branch this time (not the orphaned harness branch `claude/awesome-mccarthy-1yrhg2`, whose PR #1365 already merged — reusing it would need a force-push to re-base off the squashed staging tip; a clean branch avoids that).
