@@ -57,8 +57,11 @@ const nextBtn = () => screen.getByText(`${K}.actions.next`);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // GET /categories — one non-agricultural category.
-  api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+  // GET /categories — one license-neutral, non-agricultural category (no farmer
+  // declaration, and not in LICENSE_REQUIRED_CATEGORIES) so the shared walk
+  // reaches STORY without tripping the MEH-952 license gate. The license-required
+  // path is exercised in its own describe block below with an overriding mock.
+  api.get.mockResolvedValue({ data: [{ id: 1, name: "ביצים" }] });
   // Non-upgrade ack: no access_token in the response → CONFIRM (non-upgrade).
   api.post.mockResolvedValue({ data: {} });
   try { localStorage.clear(); } catch { /* jsdom */ }
@@ -203,5 +206,55 @@ describe("RegisterProducerClient — photo-to-publish disclosure (MEH-914)", () 
     const note = screen.getByTestId("photo-disclosure-story");
     expect(note).toBeInTheDocument();
     expect(note).toHaveTextContent(`${K}.photo_disclosure`);
+  });
+});
+
+// MEH-952: the producer-license required-error must surface next to the field on
+// CATEGORY (not only as the generic backend-422 line two frames later on STORY).
+// These tests use an OVERRIDING /categories mock with a license-required name
+// ("חלב וגבינות" ∈ LICENSE_REQUIRED_CATEGORIES) — the shared beforeEach seeds a
+// license-neutral one. The backend stays the unchanged backstop (not under test).
+describe("RegisterProducerClient — license-required error placement (MEH-952)", () => {
+  // Walk ACCOUNT → DETAILS → CATEGORY and select the (license-required) category.
+  async function reachCategoryAndPick() {
+    await fillAccountToDetails();
+    fireEvent.change(ph("producer_name"), { target: { value: "העסק שלי" } });
+    fireEvent.change(ph("phone"), { target: { value: "0501234567" } });
+    fireEvent.change(screen.getByTestId("city"), { target: { value: "תל אביב" } });
+    fireEvent.change(ph("address"), { target: { value: "הרצל 1" } });
+    fireEvent.click(nextBtn()); // → CATEGORY
+    fireEvent.click(await screen.findByTestId("pick-category")); // license-required id 1
+  }
+
+  it("blocks the advance and shows the error at the field when license is blank", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    render(<RegisterProducerClient />);
+    await reachCategoryAndPick();
+    // license left blank → next is blocked
+    fireEvent.click(screen.getByTestId("register-category-next"));
+    // still on CATEGORY (did NOT advance to STORY)
+    expect(screen.getByTestId("register-frame-category")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText(`${K}.fields.tagline_placeholder`),
+    ).not.toBeInTheDocument();
+    // blocking error surfaced inline (role=alert, the verbatim backend-mirror key)
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+  });
+
+  it("clears the error and advances once a license number is entered", async () => {
+    api.get.mockResolvedValue({ data: [{ id: 1, name: "חלב וגבינות" }] });
+    render(<RegisterProducerClient />);
+    await reachCategoryAndPick();
+    fireEvent.click(screen.getByTestId("register-category-next")); // blocked
+    expect(screen.getByRole("alert")).toHaveTextContent(`${K}.validation.license_required`);
+    // typing a number clears the blocking error (onChange), then advance succeeds
+    fireEvent.change(screen.getByLabelText(`${K}.fields.license_required_label`), {
+      target: { value: "1234567" },
+    });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("register-category-next"));
+    expect(
+      await screen.findByPlaceholderText(`${K}.fields.tagline_placeholder`),
+    ).toBeInTheDocument(); // STORY reached
   });
 });
