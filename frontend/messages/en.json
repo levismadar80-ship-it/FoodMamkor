@@ -3285,6 +3285,11 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "load_error": {
+        "title": "We couldn't load your dashboard",
+        "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
+        "cta": "Contact us"
+      },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
