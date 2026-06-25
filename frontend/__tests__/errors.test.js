@@ -5,7 +5,7 @@
  * message key the mapper selects for a given error shape.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { errorMessage, showErrorToast } from "../lib/errors";
+import { errorMessage, showErrorToast, detailToMessage } from "../lib/errors";
 import { showToast } from "../lib/toast";
 
 // MEH-685: methods-only toast object.
@@ -69,6 +69,57 @@ describe("errorMessage", () => {
     expect(errorMessage({}, t)).toBeTruthy();
     expect(errorMessage(null, t)).toBeTruthy();
     expect(errorMessage(new Error("boom"), t)).toBeTruthy();
+  });
+});
+
+describe("detailToMessage (MEH-957) — FastAPI detail → display string", () => {
+  it("returns a string detail as-is (400/409 HTTPException shape)", () => {
+    expect(detailToMessage("הסיסמה קצרה מדי")).toBe("הסיסמה קצרה מדי");
+  });
+
+  it("returns null for an empty string", () => {
+    expect(detailToMessage("")).toBeNull();
+  });
+
+  it("extracts msg from a single-item 422 array", () => {
+    const detail = [
+      { type: "value_error", loc: ["body", "address"], msg: "כתובת לא תקינה" },
+    ];
+    expect(detailToMessage(detail)).toBe("כתובת לא תקינה");
+  });
+
+  it("strips the Pydantic 'Value error, ' prefix", () => {
+    const detail = [
+      { type: "value_error", msg: "Value error, שדה זה חייב להכיל לפחות 3 תווים" },
+    ];
+    expect(detailToMessage(detail)).toBe("שדה זה חייב להכיל לפחות 3 תווים");
+  });
+
+  it("joins multiple 422 items with ' · '", () => {
+    const detail = [
+      { msg: "Value error, שגיאה אחת" },
+      { msg: "שגיאה שתיים" },
+    ];
+    expect(detailToMessage(detail)).toBe("שגיאה אחת · שגיאה שתיים");
+  });
+
+  it("drops items without a string msg, keeps the rest", () => {
+    const detail = [{ loc: ["body"] }, { msg: "תקין" }, { msg: 42 }];
+    expect(detailToMessage(detail)).toBe("תקין");
+  });
+
+  it("returns null for an empty array", () => {
+    expect(detailToMessage([])).toBeNull();
+  });
+
+  it("returns null for an array with no usable msgs", () => {
+    expect(detailToMessage([{ loc: ["body"] }, { msg: null }])).toBeNull();
+  });
+
+  it("returns null for object / undefined / null shapes", () => {
+    expect(detailToMessage({ msg: "x" })).toBeNull();
+    expect(detailToMessage(undefined)).toBeNull();
+    expect(detailToMessage(null)).toBeNull();
   });
 });
 

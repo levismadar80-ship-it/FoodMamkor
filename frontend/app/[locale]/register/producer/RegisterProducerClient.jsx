@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import CategorySelector from "@/components/CategorySelector";
@@ -315,7 +316,11 @@ function RegisterProducerPageBody() {
       if (status === 409 && isUpgrade) {
         setError(t("auth.register.producer.errors.already_has_producer"));
       } else {
-        setError(detail || t("auth.register.producer.errors.generic"));
+        // MEH-957: a 422 returns `detail` as an ARRAY of Pydantic error
+        // objects; setting that into `error` rendered an array of objects as
+        // a React child and white-screened the form. detailToMessage()
+        // collapses string/array shapes to one sentence (null otherwise).
+        setError(detailToMessage(detail) || t("auth.register.producer.errors.generic"));
       }
     } finally {
       setLoading(false);
