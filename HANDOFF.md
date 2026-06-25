@@ -13,6 +13,13 @@
 - **Hard constraints honored:** (1) **byte-match triad** — `SUGGESTED_PROMPTS[0]` ≡ `HARDCODED_ANSWERS` key (both `איך נרשמים כבית עסק?`), changed via `replace_all`; verified 2 occurrences, 0 old. (2) **real button label** — verified `report.trigger` = `🚩 דווח על עסק` (`he.json:2620`, rendered `ReportButton.jsx:38`); KB now names `דווח על עסק`, not the phantom `דווחי`. (3) **docstrings** — both "feminine voice" notes (chat.py L11-12, L59-60) updated.
 - **Verify:** `npm run build` GREEN; ESLint 0 errors (39 pre-existing warnings, untouched code); `python -m py_compile chat.py` OK; grep confirms no residual user-facing feminine in KB/HARDCODED/fallbacks; no backend test references the changed strings → `pytest` to CI.
 - **MERGE GATE:** do NOT merge — **merges AFTER the ADR/COPY_BANK doc PR** (brand-book-precedes-code). Sapir is sole merge authority (Rule 23).
+## 2026-06-25 — MEH-946 mobile double-mount flake guard (test-only) — DRAFT PR
+
+- **Branch:** `feature/meh-946-mobile-double-mount-guard` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-946`. Test-only (one spec line).
+- **What:** `11-password-policy.spec.ts:166` confirm-password fill flaked on [mobile] (`getByPlaceholder("אישור סיסמה") resolved to 2 elements`) — transient React-18 double-mount, MEH-924 family (surfaced on #1334/#1349 E2E, passed on retry). Added `.first()` to that fill.
+- **Phase-0:** line 166 was the ONLY unguarded locator; siblings `:163`/`:182` (new-password) already had `.first()` (MEH-891). Chose `.first()` over MEH-924's `toHaveCount(1)` to match this file's existing convention + because `.first()` is idiomatic for a `.fill()` action.
+- **Verify:** tsc clean on e2e config (no error in this file); e2e specs eslint-ignored. Real Playwright run is the CI job on the Vercel preview.
+- **Merge:** Sapir (Rule 23). Independent of the MEH-944/940/930 gate chain.
 ## 2026-06-25 — MEH-944 voice taxonomy → ADR-024 + BRAND/COPY_BANK reconcile — DRAFT PR (the GATE)
 
 - **Branch:** `feature/meh-944-voice-codification` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-944`. Docs-only.
