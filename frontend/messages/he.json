@@ -1011,9 +1011,9 @@
     },
     "sheet": {
       "badge": {
-        "verified": "✓ מאומת",
-        "organic": "🌿 אורגני",
-        "kosher": "✡️ כשר"
+        "verified": "מאומת",
+        "organic": "אורגני",
+        "kosher": "כשר"
       }
     },
     "page": {

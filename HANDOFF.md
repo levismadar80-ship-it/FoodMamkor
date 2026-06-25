@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-943 MobileSheetSelectedCard glyph-LOCK — DRAFT PR
+
+- **Branch:** `feature/meh-943-sheet-badge-glyph` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN.
+- **Phase-0 corrected the premise (file:line):** the ticket assumed all 3 `map.sheet.badge.*` render in the card and need Phosphor icons. Reality — only `verified` renders (`MobileSheetSelectedCard.jsx:80`, sole consumer); `.organic`/`.kosher` are **orphaned i18n keys** (0 consumers; MEH-826 removed their render — "design has no dietary badge here"). Icon conventions: verified→SealCheck (`BadgeRow.jsx:130`), organic→Leaf (admin-only; public BadgeRow text-only), **kosher→NO icon convention** (`badges.js:88` text-only).
+- **⚠️ Orchestrator STOP trigger met** ("stop if kosher has no convention") — AskUserQuestion failed twice in this env; proceeded on Smadar's "continue" with the minimal fix that *honors* the STOP in substance: **renders zero kosher icon, invents nothing.**
+- **Done:** stripped `✓`/`🌿`/`✡️` from `he.json:1014-1016` → `"מאומת"`/`"אורגני"`/`"כשר"`; added canonical `<SealCheck size={11} aria-hidden>` inline before the verified label (only render site). organic/kosher = no icon (orphaned + no convention), flagged for a dead-key sweep. `en.json` frozen.
+- **Verify:** `npm run build` green; `grep map.sheet.badge → 0` glyphs; JSON valid; glyph-LOCK siblings (marker-glyph + MapProducerCard) 12/12 pass. No backend → `pytest` to CI.
+- **Pending:** Sapir mobile QA at /map bottom sheet (verified business → SealCheck + "מאומת"), then Sapir merges (Rule 23). `Refs MEH-943` (NOT Closes). Follow-up candidate: dead-key sweep for the 2 orphaned `map.sheet.badge.organic/kosher` keys.
+
 ## 2026-06-25 — MEH-963 /settings "העסק שלי" dead zero-wall stats — MERGED (#1373)
 
 - **Outcome:** PR #1373 **merged to staging** (squash `237fa14`), `Closes MEH-963`. Branch `feature/meh-963-fix-settings-business-zero-stats` off `origin/staging`.

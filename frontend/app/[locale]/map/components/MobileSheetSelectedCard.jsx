@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -77,7 +77,8 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
             organic_certified/kosher; design has no dietary badge here). */}
         {sp.is_verified && (
           <div className="flex flex-wrap gap-1 mt-1.5">
-            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>
+            {/* MEH-943: glyph-LOCK — raw ✓ stripped from he.json value; canonical SealCheck (BadgeRow.jsx:130) rendered inline instead. */}
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full"><SealCheck size={11} aria-hidden="true" />{t("map.sheet.badge.verified")}</span>
           </div>
         )}
         {/* MEH-824 sticky + min-h-[44px] preserved. MEH-826: CTA is now dynamic
