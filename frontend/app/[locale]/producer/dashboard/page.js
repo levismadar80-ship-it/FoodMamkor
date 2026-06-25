@@ -515,11 +515,6 @@ function AnalyticsSection({ analytics, profile }) {
         </div>
       )}
 
-      {/* MEH-57: Profile strength meter */}
-      {profile && (
-        <ProfileStrengthCard profile={profile} analytics={analytics} />
-      )}
-
       {/* Row 1: windowed metric cards (profile / search / whatsapp / contact) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <WindowedMetricCard
@@ -720,71 +715,6 @@ function TopCitiesBarChart({ data }) {
         );
       })}
     </ul>
-  );
-}
-
-// ============================================================
-// MEH-57: Profile strength checklist (5-item).
-// MEH-133: home-product item removed with /neighbor. Backend still allocates
-// its 25% weight to profile_strength → temporary drift (visible % can exceed
-// what the checklist accounts for); backend cleanup tracked in follow-up.
-// ============================================================
-
-// Items have stable keys for translation lookup.
-const STRENGTH_ITEMS = [
-  { key: "image",    weight: 15, check: (p, a) => (p?.images?.length ?? 0) > 0 },
-  { key: "desc",     weight: 20, check: (p, a) => (p?.description?.trim?.()?.length ?? 0) >= 50 },
-  { key: "delivery", weight: 10, check: (p, a) => (p?.delivery_areas?.length ?? 0) > 0 },
-  { key: "review",   weight: 15, check: (p, a) => (a?.total_reviews ?? 0) > 0 },
-  { key: "phone",    weight: 15, check: (p, a) => !!p?.phone_verified },
-];
-
-function ProfileStrengthCard({ profile, analytics }) {
-  const t = useTranslations("dashboard.producer.strength");
-  const pct = analytics?.profile_strength ?? 0;
-
-  const strengthLabel = (p) => {
-    if (p <= 40) return t("label_weak");
-    if (p <= 70) return t("label_ok");
-    if (p <= 90) return t("label_strong");
-    return t("label_perfect");
-  };
-
-  return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <div className="flex items-center justify-between mb-1">
-        <h2 className="font-headline-md text-base font-bold">
-          {t("heading")}
-          <InfoTooltip content={t("tooltip")} position="bottom" />
-        </h2>
-        <span className="text-primary font-bold text-lg">{pct}%</span>
-      </div>
-      <p className="text-xs text-fg-muted mb-3">{strengthLabel(pct)}</p>
-      <div className="h-2 bg-green-50 rounded-full overflow-hidden mb-4">
-        <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <ul className="space-y-2">
-        {STRENGTH_ITEMS.map((item) => {
-          const done = item.check(profile, analytics);
-          // MEH-543 deferred: home-product item carries its own literal HE label.
-          const label = item.label || t(`items.${item.key}`);
-          return (
-            <li key={item.key} className="flex items-center justify-between text-sm">
-              <span className={`flex items-center gap-2 ${done ? "text-text" : "text-fg-muted"}`}>
-                <span aria-hidden="true">{done ? "✓" : "○"}</span>
-                {label}
-              </span>
-              {!done && (
-                <span className="text-xs text-primary font-medium">+{item.weight}%</span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }
 
