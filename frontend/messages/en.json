@@ -3329,6 +3329,15 @@
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
       "holiday_catalog_cta": "Update the catalog ←",
+      "nav": {
+        "aria_label": "Dashboard navigation",
+        "tabs": {
+          "overview": "Overview",
+          "edit": "Edit",
+          "insights": "Insights",
+          "tools": "Tools"
+        }
+      },
       "availability": {
         "tooltip_line_default": "Open to orders = default.",
         "tooltip_line_today": "Available today = fresh inventory now.",
@@ -3340,9 +3349,9 @@
         "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today 🟢",
-          "full_this_week": "Busy this week 🟠",
-          "on_vacation": "On a break ⏸"
+          "available_today": "Available today",
+          "full_this_week": "Busy this week",
+          "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
         "remove_vacation_date_aria": "Remove return date"
@@ -3367,6 +3376,10 @@
         "recipes": {
           "title": "Recipes",
           "sub": "Publish and manage recipes that promote your products"
+        },
+        "followers": {
+          "title": "My followers",
+          "sub": "See who follows your business and share your profile"
         }
       },
       "analytics": {
