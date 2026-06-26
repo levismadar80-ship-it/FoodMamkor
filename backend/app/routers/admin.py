@@ -31,7 +31,10 @@ from app.schemas.schemas import (
     RemoveListingBody,
     StoryCardUploadRequest,
 )
-from app.services.license_validation import ensure_license_for_categories
+from app.services.license_validation import (
+    categories_require_license,
+    ensure_license_for_categories,
+)
 from app.slug_utils import RESERVED_SLUGS
 
 logger = logging.getLogger(__name__)
@@ -436,6 +439,10 @@ def pending_producers(
 @router.post("/producers/{producer_id}/approve")
 def approve_producer(
     producer_id: UUID,
+    # MEH-971 chunk 4: explicit admin override for the license-pending guard
+    # below. Defaults False so the guard is on by default; an admin who has
+    # verified a license out-of-band passes ?allow_without_license=true.
+    allow_without_license: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -449,6 +456,24 @@ def approve_producer(
         raise HTTPException(
             status_code=422,
             detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
+        )
+    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
+    # of register-time ensure_license_for_categories. 422 matches the photo gate
+    # above (not MEH-769's 409, which is for status transitions).
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    needs_license = categories_require_license(db, category_ids) and license_missing
+    if needs_license and not allow_without_license:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+        )
+    if needs_license and allow_without_license:
+        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+        logger.warning(
+            "approve_producer: license-pending override for producer %s by admin %s",
+            producer_id,
+            user.id,
         )
     producer.status = "approved"
     db.commit()
