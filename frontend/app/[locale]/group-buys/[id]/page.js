@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import GroupBuyDetailClient from "./GroupBuyDetailClient";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was no metadata at all.
@@ -8,7 +9,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // back to seo.group_buy.title_fallback if API unreachable.
 async function getGroupBuy(id) {
   try {
-    const res = await fetch(`${API_URL}/group-buys/${id}`, {
+    const res = await serverFetch(`${API_URL}/group-buys/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

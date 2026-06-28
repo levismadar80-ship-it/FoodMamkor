@@ -18,11 +18,12 @@ import { getTranslations } from "next-intl/server";
 import RecipeDetail from "@/components/public/RecipeDetail";
 import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 
 async function getJson(path) {
   try {
-    const res = await fetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
+    const res = await serverFetch(`${API_URL}${path}`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     return res.json();
   } catch {

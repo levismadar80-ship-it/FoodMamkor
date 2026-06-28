@@ -1,11 +1,12 @@
 import ProducerDetail from "./ProducerDetail";
 import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 async function getProducer(id) {
   try {
-    const res = await fetch(`${API_URL}/producers/${id}`, { next: { revalidate: 60 } });
+    const res = await serverFetch(`${API_URL}/producers/${id}`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     return res.json();
   } catch {

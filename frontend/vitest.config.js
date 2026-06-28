@@ -44,6 +44,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "."),
+      // MEH-977: the `server-only` package throws when imported outside an RSC;
+      // stub it so tests importing server-guarded modules (lib/server-fetch.js,
+      // app/sitemap.js) load cleanly under jsdom/node.
+      "server-only": path.resolve(__dirname, "__tests__/stubs/server-only.js"),
     },
   },
 });
