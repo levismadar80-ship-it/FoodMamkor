@@ -155,15 +155,7 @@ export default function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                /* MEH-976: dir="ltr" (MEH-968) pinned the Hebrew placeholder to
-                   the start of an LTR run — the same physical side as the submit
-                   arrow (end-0 → the inline-end of the RTL form) — so ps-11
-                   padding still let it crowd the arrow. unicode-bidi:plaintext
-                   resolves direction per content: the Hebrew placeholder renders
-                   RTL (it sits at the opposite side from the arrow → clear gap)
-                   while a typed Latin email still renders LTR. The element's base
-                   direction stays RTL (inherited), so pe-11 reserves the 44px on
-                   the arrow side for the LTR email value too. */
+                /* MEH-976: unicode-bidi:plaintext → Hebrew placeholder resolves RTL (opposite the end-0 arrow → clear gap), typed Latin email resolves LTR; pe-11 reserves the 44px on the arrow side for the LTR value. Replaces MEH-968 dir="ltr"+ps-11. */
                 className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.35)", unicodeBidi: "plaintext" }}
               />
