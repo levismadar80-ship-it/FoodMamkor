@@ -5,6 +5,27 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-23 — MEH-926 required-checks draft-skip (A2 — workflow diffs in PR body, DRAFT)
+
+- **Goal:** skip the required PR checks on **draft** PRs (save CI), run them only when ready-for-review. Two workflow files, both delivered as **paste-ready diffs in the PR body** (A2 — `.github/workflows/**` is CC-deny; CC must not edit them or use the GitHub API; Sapir applies + pushes).
+- **`pr-checks.yml`** (`pull_request`-only): `build`/`pytest`/`lint-backend`/`frontend-vitest` → existing paths-filter `if` wrapped in parens + `&& github.event.pull_request.draft == false`; `env-drift` (no prior `if`) → fresh `if: ${{ github.event.pull_request.draft == false }}`. Added `ready_for_review` to `types`.
+- **`deploy.yml`** (`push` + `pull_request`): `lint` + `api-contract-static` → OR wrapped + `&& (github.event_name != 'pull_request' || github.event.pull_request.draft == false)`. The `event_name` half is **critical** — these two jobs also run on push to main/staging where `github.event.pull_request` is null; a bare draft check would skip them on push. `production`/`staging`/`api-contract-probe-staging` untouched (push-only). Added `ready_for_review` to the `pull_request` `types` only (`push`/`workflow_dispatch` unchanged).
+- **Why `ready_for_review` is load-bearing:** with checks skipped on draft, the draft→ready transition is the only event that fires a real run; without that trigger type the required checks would never run post-draft and merge stays BLOCKED.
+- **Rulesets-correct reasoning:** does NOT depend on "skipped = satisfied". Under the repo's Rulesets a skipped *required* check reports as "Expected" and **blocks** merge — but a draft isn't mergeable anyway, so the only moment that matters is once it's ready (and then the jobs run for real).
+- **FINDING — "docs-only twin jobs" absent:** `.claude/rules/testing.md` describes no-op docs-only **twin jobs** (identical `name:`, exact-complement `if:`, exit 0) that are supposed to live in `pr-checks.yml` + `deploy.yml` so a docs-only PR satisfies the required checks without an admin override. **Neither file actually contains them** — every job in both workflows was read end-to-end and no twin job exists. So docs-only PRs currently carry a pre-existing required-check gap, and this draft-skip change layers on top of it (a draft docs-only PR shows skipped→"Expected" until marked ready). **Out of scope for this PR — flagged for a separate ticket.** Do NOT label this with MEH-716/MEH-736: those IDs map to unrelated Linear issues; verify the claim against `testing.md`, then assign a fresh number before filing.
+- **Branch:** `feature/meh-926-required-checks-draft-skip` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-926`. Only CHANGELOG + HANDOFF committed (the workflow diffs live in the PR body).
+- **Pending (Sapir):** `git apply` both diffs → push → mark the PR ready-for-review → confirm the re-trigger fires all 6 required checks green. Then close MEH-926.
+
+## 2026-06-25 — MEH-971 chunk 2: backend accept license-pending — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-backend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 2** (do not start chunk 1 or 3). Sapir approved the Phase-0 plan + gave the security framing.
+- **Phase-0 (file:line):** exactly ONE `ensure_license_for_categories` call in auth.py (`:451`), above the `if upgrade_path:` split (`:453`) → covers both paths. No second call. `ProducerRegister` at `schemas.py:115`; pattern mirrored = `declaration_accepted: bool = False` (`:155`).
+- **Done:** (1) `schemas.py` — `license_pending: bool = False` on `ProducerRegister` (transient input, never a column). (2) `auth.py:451` — wrapped the single gate `if not data.license_pending:`. (3) 5 tests in `tests/test_producer_license.py` (`TestRegisterProducerLicensePending`, cases a–e incl. upgrade path).
+- **No schema/Alembic** — `producer_license_number` already nullable (`models.py:103`), `status` stays String; NULL persists via schema default.
+- **Security framing (Sapir):** `license_pending` is a data-quality gate, NOT a security control. Licensed-only still enforced downstream: chunk-4 approval guard (`admin.py allow_without_license`) + publication gate (`status=="approved"`, `producer_listing.py`). Malicious `license_pending=true` only parks the actor in the unpublishable pending queue. Default False = behavior byte-identical for existing callers.
+- **Verify:** ruff check/format + py_compile clean; **pytest → CI** (no local Postgres; sandbox `pip` blocked). Web-search: no CVE for the boolean-skip pattern. DATA.md updated (`:363`).
+- **Merge:** Sapir (auth path = HIGH-RISK; Rule 23). Chunks remaining after this: chunk 1 (frontend opt-in) + chunk 3 (admin "license pending" surface).
+
 ## 2026-06-25 — MEH-971 chunk 4: license-pending approval guard — DRAFT PR
 
 - **Branch:** `feature/meh-971-license-pending-approval-guard` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Backend-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after this chunk** (do not start chunks 1/2/3).
@@ -115,6 +136,7 @@ Collision lesson: two parallel CC sessions ping-ponged 1A on staging (#1375→#1
 - **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
 - **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
 - **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
+
 ## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
 
 - **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.
