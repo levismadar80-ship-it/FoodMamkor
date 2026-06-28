@@ -360,7 +360,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 ```
 POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)
-POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope)
+POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope). MEH-971 chunk 2: optional body field license_pending:bool=False — when true, skips the register-time license 422 so a license-required producer can submit with NULL license into the pending queue (transient input, not persisted; downstream approval guard + status gate still enforce licensed-only)
 POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange

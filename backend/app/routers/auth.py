@@ -448,7 +448,18 @@ async def register_producer(
     # MEH-530: 422s with Hebrew copy if any selected category requires a
     # license and the body didn't supply one. Same input-validation
     # classification as the contact-method checks above.
-    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-971 chunk 2: license_pending opt-in skips this data-quality 422 so the
+    # producer lands in the pending queue with NULL license. SINGLE shared gate
+    # (above the upgrade/non-upgrade split) → covers both paths. NOT a security
+    # relaxation — licensed-only is enforced downstream: chunk-4 approval guard
+    # (admin.py) blocks approving a license-required producer with NULL license,
+    # and publication requires status=="approved" (producer_listing.py). A
+    # malicious license_pending=true only parks the actor in the unpublishable
+    # pending queue.
+    if not data.license_pending:
+        ensure_license_for_categories(
+            db, data.category_ids, data.producer_license_number
+        )
 
     if upgrade_path:
         # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
