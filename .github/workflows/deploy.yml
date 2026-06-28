@@ -46,10 +46,22 @@ name: Deploy
 #
 # Setup is documented in docs/DEPLOYMENT.md → "GitHub Actions auto-deploy".
 
+# Draft-skip (MEH-926): the two PR-required jobs (lint, api-contract-static)
+# skip on draft PRs to save CI. The `ready_for_review` trigger type below is
+# load-bearing — on draft→ready it fires a real run so the (now non-draft)
+# jobs execute and go green. Without it the required checks would never run
+# after the draft phase and would stay pending = merge BLOCKED. This does NOT
+# rely on "a skipped check satisfies the requirement": under Rulesets a
+# skipped required check reports as "Expected" and BLOCKS merge — but a draft
+# PR isn't mergeable anyway, so the gate only matters once the PR is ready.
+# NOTE: lint + api-contract-static also run on push to main/staging, where
+# github.event.pull_request is null; the `github.event_name != 'pull_request'`
+# half of each job's guard keeps them running on push.
 on:
   push:
     branches: [main, staging]
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [main, staging]
   workflow_dispatch:
 
@@ -105,7 +117,7 @@ jobs:
   lint:
     name: Frontend lint (RTL + Next.js rules)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # MEH-485: per-job concurrency. CI checks dedupe per source branch
@@ -142,7 +154,7 @@ jobs:
   api-contract-static:
     name: API contract audit (static)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # MEH-485: per-job concurrency, same shape as lint.

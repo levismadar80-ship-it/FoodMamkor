@@ -8,8 +8,17 @@ name: PR Checks
 # Adversarial review now lives in .github/workflows/claude-review.yml
 # (MEH-487 — anthropics/claude-code-action@v1, calibration mode).
 
+# Draft-skip (MEH-926): required checks skip on draft PRs to save CI. The
+# `ready_for_review` trigger type below is load-bearing — on draft→ready it
+# fires a real run so the (now non-draft) jobs execute and go green. Without
+# it the required checks would never run after the draft phase and would stay
+# pending = merge BLOCKED. This does NOT rely on "a skipped check satisfies
+# the requirement": under Rulesets a skipped required check reports as
+# "Expected" and BLOCKS merge — but a draft PR isn't mergeable anyway, so the
+# gate only matters once the PR is marked ready for review.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches: [staging, main]
 
 # MEH-485: dorny/paths-filter@v3 needs pull-requests:read on pull_request
@@ -61,7 +70,7 @@ jobs:
   build:
     name: Frontend build (Next.js)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -107,7 +116,7 @@ jobs:
   pytest:
     name: Backend tests (pytest)
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -255,7 +264,7 @@ jobs:
   lint-backend:
     name: Backend lint (ruff)
     needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -298,6 +307,7 @@ jobs:
   # ─────────────────────────────────────────────
   env-drift:
     name: Env drift (.env.example)
+    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
 
@@ -423,7 +433,7 @@ jobs:
   frontend-vitest:
     name: Frontend unit tests (vitest)
     needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' }}
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
