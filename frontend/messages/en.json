@@ -1054,7 +1054,7 @@
       "open_in_google": "Open in"
     },
     "bottom_sheet": {
-      "title": "Local businesses in this area",
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
       "show_map": "Show map"
     },
     "chip_scroll": {
