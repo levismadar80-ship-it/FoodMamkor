@@ -382,6 +382,10 @@ GET    /producers                                 public — filters: lat+lng+ra
                                                sort: newest (default) | rating
 GET    /producers/{producer_id}                   public
 GET    /producers/by-slug/{slug}                  public
+GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
+                                               GROUP BY city over approved producers; NULL/blank city omitted;
+                                               ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
+                                               response_model=list[ProducerCityOut] → [{ "city": str, "count": int }]
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
