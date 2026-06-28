@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-25 — MEH-971 chunk 2: backend accept license-pending — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-backend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 2** (do not start chunk 1 or 3). Sapir approved the Phase-0 plan + gave the security framing.
+- **Phase-0 (file:line):** exactly ONE `ensure_license_for_categories` call in auth.py (`:451`), above the `if upgrade_path:` split (`:453`) → covers both paths. No second call. `ProducerRegister` at `schemas.py:115`; pattern mirrored = `declaration_accepted: bool = False` (`:155`).
+- **Done:** (1) `schemas.py` — `license_pending: bool = False` on `ProducerRegister` (transient input, never a column). (2) `auth.py:451` — wrapped the single gate `if not data.license_pending:`. (3) 5 tests in `tests/test_producer_license.py` (`TestRegisterProducerLicensePending`, cases a–e incl. upgrade path).
+- **No schema/Alembic** — `producer_license_number` already nullable (`models.py:103`), `status` stays String; NULL persists via schema default.
+- **Security framing (Sapir):** `license_pending` is a data-quality gate, NOT a security control. Licensed-only still enforced downstream: chunk-4 approval guard (`admin.py allow_without_license`) + publication gate (`status=="approved"`, `producer_listing.py`). Malicious `license_pending=true` only parks the actor in the unpublishable pending queue. Default False = behavior byte-identical for existing callers.
+- **Verify:** ruff check/format + py_compile clean; **pytest → CI** (no local Postgres; sandbox `pip` blocked). Web-search: no CVE for the boolean-skip pattern. DATA.md updated (`:363`).
+- **Merge:** Sapir (auth path = HIGH-RISK; Rule 23). Chunks remaining after this: chunk 1 (frontend opt-in) + chunk 3 (admin "license pending" surface).
+
 ## 2026-06-25 — MEH-971 chunk 4: license-pending approval guard — DRAFT PR
 
 - **Branch:** `feature/meh-971-license-pending-approval-guard` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Backend-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after this chunk** (do not start chunks 1/2/3).
