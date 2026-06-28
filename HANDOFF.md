@@ -13,6 +13,16 @@
 - **No schema/Alembic / no new column** — derived at serialization only.
 - **Verify:** `npm run build` green; he.json valid; `ruff check`/`ruff format`/`py_compile` clean; **pytest → CI** (no local Postgres).
 - **Merge:** Sapir (Rule 23). **MEH-971 status:** chunk 4 ✅ merged (#1387), chunk 2 ✅ merged (#1393), chunk 3 = this PR. **Remaining: chunk 1 (frontend register opt-in UI) only.**
+## 2026-06-23 — MEH-926 required-checks draft-skip (A2 — workflow diffs in PR body, DRAFT)
+
+- **Goal:** skip the required PR checks on **draft** PRs (save CI), run them only when ready-for-review. Two workflow files, both delivered as **paste-ready diffs in the PR body** (A2 — `.github/workflows/**` is CC-deny; CC must not edit them or use the GitHub API; Sapir applies + pushes).
+- **`pr-checks.yml`** (`pull_request`-only): `build`/`pytest`/`lint-backend`/`frontend-vitest` → existing paths-filter `if` wrapped in parens + `&& github.event.pull_request.draft == false`; `env-drift` (no prior `if`) → fresh `if: ${{ github.event.pull_request.draft == false }}`. Added `ready_for_review` to `types`.
+- **`deploy.yml`** (`push` + `pull_request`): `lint` + `api-contract-static` → OR wrapped + `&& (github.event_name != 'pull_request' || github.event.pull_request.draft == false)`. The `event_name` half is **critical** — these two jobs also run on push to main/staging where `github.event.pull_request` is null; a bare draft check would skip them on push. `production`/`staging`/`api-contract-probe-staging` untouched (push-only). Added `ready_for_review` to the `pull_request` `types` only (`push`/`workflow_dispatch` unchanged).
+- **Why `ready_for_review` is load-bearing:** with checks skipped on draft, the draft→ready transition is the only event that fires a real run; without that trigger type the required checks would never run post-draft and merge stays BLOCKED.
+- **Rulesets-correct reasoning:** does NOT depend on "skipped = satisfied". Under the repo's Rulesets a skipped *required* check reports as "Expected" and **blocks** merge — but a draft isn't mergeable anyway, so the only moment that matters is once it's ready (and then the jobs run for real).
+- **FINDING — "docs-only twin jobs" absent:** `.claude/rules/testing.md` describes no-op docs-only **twin jobs** (identical `name:`, exact-complement `if:`, exit 0) that are supposed to live in `pr-checks.yml` + `deploy.yml` so a docs-only PR satisfies the required checks without an admin override. **Neither file actually contains them** — every job in both workflows was read end-to-end and no twin job exists. So docs-only PRs currently carry a pre-existing required-check gap, and this draft-skip change layers on top of it (a draft docs-only PR shows skipped→"Expected" until marked ready). **Out of scope for this PR — flagged for a separate ticket.** Do NOT label this with MEH-716/MEH-736: those IDs map to unrelated Linear issues; verify the claim against `testing.md`, then assign a fresh number before filing.
+- **Branch:** `feature/meh-926-required-checks-draft-skip` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-926`. Only CHANGELOG + HANDOFF committed (the workflow diffs live in the PR body).
+- **Pending (Sapir):** `git apply` both diffs → push → mark the PR ready-for-review → confirm the re-trigger fires all 6 required checks green. Then close MEH-926.
 
 ## 2026-06-25 — MEH-971 chunk 2: backend accept license-pending — DRAFT PR
 
@@ -134,6 +144,7 @@ Collision lesson: two parallel CC sessions ping-ponged 1A on staging (#1375→#1
 - **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
 - **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
 - **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
+
 ## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
 
 - **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.
