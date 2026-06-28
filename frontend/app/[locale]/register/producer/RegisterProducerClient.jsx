@@ -251,6 +251,11 @@ function RegisterProducerPageBody() {
     // error before the user clicks "next" again (the error <p> lives inside the
     // licenseRequired branch, which remounts on re-select with stale state).
     setLicenseRequiredError(false);
+    // MEH-971 chunk 1: a category change also drops a prior license-pending
+    // opt-in so the checkbox can't reappear pre-checked after toggling away
+    // from and back to a license-required category (payload is already guarded
+    // by licenseRequired, but the stale checked state would mislead).
+    setLicensePending(false);
   };
 
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
