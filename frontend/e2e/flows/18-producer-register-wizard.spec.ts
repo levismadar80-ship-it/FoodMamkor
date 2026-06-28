@@ -70,9 +70,9 @@ test.describe("Producer register wizard (5-frame)", () => {
 
     // ── CATEGORY (frame 02) — pick a license-required card ──
     // MEH-984: chip selected by stable data-testid (category-chip-<id>); the
-    // beforeEach mock pins id 1 = "חלב וגבינות" (a license-required category).
+    // beforeEach mock pins id 1 to a license-required category (Milk & Cheese).
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = חלב וגבינות)
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
     // MEH-952: "חלב וגבינות" is a license-required category — the number is now
     // gated inline on CATEGORY (blocking error), so fill it before advancing.
     await page.getByTestId("register-category-license").fill("1234567");
@@ -134,7 +134,7 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
-    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = חלב וגבינות)
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
     await page.getByTestId("register-category-license").fill("1234567"); // MEH-952: license gate on CATEGORY
     await page.getByTestId("register-category-next").click();
 
@@ -169,7 +169,7 @@ test.describe("Producer register wizard (5-frame)", () => {
 
     // CATEGORY: pick a license-required category, leave the license empty.
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = חלב וגבינות)
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
 
     // (a) unchecked + empty license → advance BLOCKED (stays on CATEGORY).
     await page.getByTestId("register-category-next").click();
