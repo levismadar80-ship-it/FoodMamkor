@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Crosshair, MapPinLine, Rows } from "@phosphor-icons/react";
+import { MapPinLine, Rows } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
+import { haversineKm } from "@/lib/distance";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 
@@ -16,10 +17,21 @@ import FilterChipsBar from "./components/FilterChipsBar";
 import MapCardList from "./components/MapCardList";
 import MapPane from "./components/MapPane";
 import MobileSheetSelectedCard from "./components/MobileSheetSelectedCard";
+import NearMePill from "./components/NearMePill";
 import { useFirstVisitHints } from "./state/useFirstVisitHints";
 import { useMapFilters } from "./state/useMapFilters";
 import { useMapSync } from "./state/useMapSync";
 import { useProducersFeed } from "./state/useProducersFeed";
+
+// MEH-970 chunk 2-lite — "קרוב אליי" near-me pill tuning.
+// Distance filter runs CLIENT-SIDE over the already-loaded producer set:
+// no backend radius param, no extra fetch (staging is sparse — a handful of
+// producers, trivial to scan). Empty-near-me fallback view = the MEH-932
+// producer-band default ([32.4, 34.95] zoom 8, MapComponent.jsx:297-306) so
+// a "no businesses near you" result still shows ALL producers, never a blank.
+const NEAR_ME_RADIUS_KM = 25;
+const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
+const NEAR_ME_DEFAULT_ZOOM = 8;
 
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
@@ -142,6 +154,33 @@ export default function MapPage() {
       { timeout: 8000, enableHighAccuracy: true }
     );
   }, [gpsLoading, sync.mapApiRef]);
+
+  // MEH-970 chunk 2-lite: single near-me invoker shared by the labeled
+  // "קרוב אליי" pill (mobile) and the existing filter-bar crosshair. Reuses
+  // the EXISTING goToMyLocation imperative path (MapComponent) — no second
+  // geolocation handler. onSuccess runs the empty-near-me guard: if NO
+  // producer is within NEAR_ME_RADIUS_KM of the user, fall back to the
+  // MEH-932 default view so the map shows ALL producers instead of a blank
+  // near-me result. It NEVER clears the producer set (allProducers untouched).
+  const handleGoToMyLocation = useCallback(() => {
+    sync.mapApiRef.current?.goToMyLocation(
+      () => setLocationModalOpen(true),
+      ({ lat, lng }) => {
+        const hasNearby = feed.allProducers.some(
+          (p) =>
+            Number.isFinite(p.lat) &&
+            Number.isFinite(p.lng) &&
+            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        );
+        if (!hasNearby) {
+          showToast.info(t("map.near_me_pill.empty"));
+          sync.mapApiRef.current
+            ?.getMap()
+            ?.flyTo(NEAR_ME_DEFAULT_CENTER, NEAR_ME_DEFAULT_ZOOM, { duration: 1.2 });
+        }
+      }
+    );
+  }, [sync.mapApiRef, feed.allProducers, t]);
 
   // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
   // here — /map now renders immediately on the MEH-932 producer-band default
@@ -301,13 +340,13 @@ export default function MapPage() {
             colliding with it. top-16 = 64px; the map pt below is bumped by the
             same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
         <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1">
-              <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
-            </div>
-            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation(() => setLocationModalOpen(true))} className="cursor-pointer shrink-0 min-w-[44px] min-h-[44px] rounded-md border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
-              <Crosshair size={18} className="text-primary" />
-            </button>
+          {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
+              removed here — the labeled "קרוב אליי" NearMePill (floating on the
+              map below) is now the SINGLE mobile near-me control. City search
+              reflows to full width. goToMyLocation wiring + empty-near-me
+              fallback live on the pill via handleGoToMyLocation. */}
+          <div className="mb-2">
+            <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
           {filterChipsBar}
         </div>
@@ -329,6 +368,11 @@ export default function MapPage() {
         >
           {mapPane}
         </div>
+
+        {/* MEH-970 chunk 2-lite: quiet persistent "קרוב אליי" pill — floats
+            above the PEEK bottom sheet, routes to the shared handleGoToMyLocation
+            (same goToMyLocation path as the filter-bar crosshair). */}
+        <NearMePill onClick={handleGoToMyLocation} />
 
         {/* Bottom sheet */}
         <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length}>
