@@ -237,7 +237,11 @@ export default function MapComponent({
       // search) and calls this imperative method on success. Geolocation
       // + the "my location" marker stay here because they operate on
       // the internal `mapInstanceRef` and `myLocationMarkerRef`.
-      goToMyLocation: (onPermissionDenied) => {
+      // MEH-970: optional onSuccess({lat,lng}) lets the caller (MapClient)
+      // run the empty-near-me guard against the loaded producer set after the
+      // map has flown to the user. Backwards-compatible — existing one-arg
+      // callers are unaffected. Geolocation + marker logic stay here.
+      goToMyLocation: (onPermissionDenied, onSuccess) => {
         if (!mapInstanceRef.current || !navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -261,6 +265,7 @@ export default function MapComponent({
                 interactive: true,
               }).addTo(mapInstanceRef.current);
             }
+            onSuccess?.({ lat: latitude, lng: longitude });
           },
           // PERMISSION_DENIED (err.code === 1) → hand off to MapClient so it can
           // open the city-search fallback (LocationModal) instead of a dead-end
