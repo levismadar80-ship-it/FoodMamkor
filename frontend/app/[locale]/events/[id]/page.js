@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import EventDetailClient from "./EventDetailClient";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
@@ -12,7 +13,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // emit valid hreflang/canonical.
 async function getEvent(id) {
   try {
-    const res = await fetch(`${API_URL}/events/${id}`, {
+    const res = await serverFetch(`${API_URL}/events/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
