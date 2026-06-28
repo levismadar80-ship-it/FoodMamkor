@@ -14,8 +14,10 @@ from the router. Format validation is intentionally absent on the
 backend (manual-approval flow per MEH-530 product decision) — test 8
 locks that decision in as a regression guard.
 """
+
 from __future__ import annotations
 
+from app.models.models import Producer
 from tests.conftest import auth_header, make_category, make_user
 
 
@@ -28,7 +30,9 @@ OILS = "שמנים"
 LICENSE_REQUIRED_HE = "מספר רישיון יצרן חובה לקטגוריה זו"
 
 
-def _register_payload(category_ids, *, license_number, email="x@example.com"):
+def _register_payload(
+    category_ids, *, license_number, email="x@example.com", license_pending=False
+):
     """Schema-valid /auth/register/producer body with overridable license."""
     payload = {
         "email": email,
@@ -42,6 +46,8 @@ def _register_payload(category_ids, *, license_number, email="x@example.com"):
     }
     if license_number is not None:
         payload["producer_license_number"] = license_number
+    if license_pending:
+        payload["license_pending"] = True  # MEH-971 chunk 2
     return payload
 
 
@@ -247,3 +253,109 @@ class TestRegisterProducerHoneyLicense:
             ),
         )
         assert resp.status_code == 200, resp.text
+
+
+class TestRegisterProducerLicensePending:
+    """MEH-971 chunk 2 — license_pending opt-in skips the register-time 422.
+
+    The licensed-only rule is NOT weakened: license_pending only lands the
+    producer in the pending queue (status="pending_whatsapp") with a NULL
+    license. The chunk-4 approval guard (admin.py) still blocks approval
+    without a license, and publication requires status=="approved"
+    (producer_listing.py) — so a license_pending producer can never publish.
+    """
+
+    def _created_producer(self, db):
+        return (
+            db.query(Producer)
+            .filter(Producer.name == "עסק לדוגמה")
+            .order_by(Producer.created_at.desc())
+            .first()
+        )
+
+    def test_a_license_required_no_license_pending_true_200(self, client, db):
+        """(a) license-required + no license + pending=True → 200, NULL license."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [bakery.id],
+                license_number=None,
+                license_pending=True,
+                email="pending_a@example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text
+        producer = self._created_producer(db)
+        assert producer is not None
+        assert producer.producer_license_number is None
+        assert producer.status == "pending_whatsapp"
+
+    def test_b_license_required_no_license_default_still_422(self, client, db):
+        """(b) pending omitted (default False) → existing 422 unchanged."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [bakery.id],
+                license_number=None,
+                email="pending_b@example.com",
+            ),
+        )
+        assert resp.status_code == 422, resp.text
+        assert resp.json()["detail"] == LICENSE_REQUIRED_HE
+
+    def test_c_license_required_with_license_pending_true_200(self, client, db):
+        """(c) license supplied + pending=True → accepted normally (no conflict)."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [bakery.id],
+                license_number="1234567",
+                license_pending=True,
+                email="pending_c@example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text
+        producer = self._created_producer(db)
+        assert producer is not None
+        assert producer.producer_license_number == "1234567"
+
+    def test_d_non_license_category_pending_true_200(self, client, db):
+        """(d) non-license category + no license + pending=True → 200."""
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        resp = client.post(
+            "/auth/register/producer",
+            json=_register_payload(
+                [veggies.id],
+                license_number=None,
+                license_pending=True,
+                email="pending_d@example.com",
+            ),
+        )
+        assert resp.status_code == 200, resp.text
+
+    def test_e_upgrade_path_license_required_pending_true_200(self, client, db):
+        """(e) upgrade path: authenticated user + license-required + no license
+        + pending=True → 200 with token; producer created NULL license. Proves
+        the single shared gate covers the upgrade branch too."""
+        user = make_user(db, email="upgrade_pending@example.com")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        payload = _register_payload(
+            [bakery.id],
+            license_number=None,
+            license_pending=True,
+            email="upgrade_pending@example.com",
+        )
+        resp = client.post(
+            "/auth/register/producer",
+            json=payload,
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        assert "access_token" in resp.json(), "upgrade path returns a token"
+        producer = self._created_producer(db)
+        assert producer is not None
+        assert producer.producer_license_number is None
+        assert producer.status == "pending_whatsapp"
