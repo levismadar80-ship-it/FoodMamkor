@@ -91,6 +91,12 @@ function RegisterProducerPageBody() {
   // requirement at the field instead of letting the backend 422 land on STORY.
   // The backend check in license_validation.py stays the unchanged backstop.
   const [licenseRequiredError, setLicenseRequiredError] = useState(false);
+  // MEH-971 chunk 1: license-pending opt-in. When checked (license-required
+  // category only), the CATEGORY advance gate stops blocking on an empty
+  // license and the submit sends license_pending:true — backend chunk 2 parks
+  // the producer in the unpublishable pending queue; chunk 3 flags it for the
+  // admin; chunk 4 still blocks approval without a verified license.
+  const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
@@ -273,6 +279,9 @@ function RegisterProducerPageBody() {
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
         producer_license_number: form.producer_license_number,
+        // MEH-971 chunk 1: only true when a license-required category is
+        // selected AND the opt-in box is checked (backend default False).
+        license_pending: licenseRequired && licensePending,
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -680,9 +689,31 @@ function RegisterProducerPageBody() {
                 {/* MEH-952: blocking required-error — validation-red (distinct
                     from the gray, non-blocking format warning above). role=alert
                     announces it; mirrors the inline phone-error placement. */}
-                {licenseRequiredError && (
+                {!licensePending && licenseRequiredError && (
                   <p role="alert" className="text-xs text-red-500 mt-1 text-start">
                     {t("auth.register.producer.validation.license_required")}
+                  </p>
+                )}
+                {/* MEH-971 chunk 1: opt-in to submit without a license number.
+                    Checking it relaxes the advance gate + sends license_pending. */}
+                <label className="flex items-start gap-2 text-sm cursor-pointer mt-3">
+                  <input
+                    type="checkbox"
+                    data-testid="register-license-pending-optin"
+                    checked={licensePending}
+                    onChange={(e) => {
+                      setLicensePending(e.target.checked);
+                      if (e.target.checked) setLicenseRequiredError(false);
+                    }}
+                    className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
+                  />
+                  <span className="leading-relaxed text-fg-muted">
+                    {t("auth.register.producer.fields.license_pending_optin_label")}
+                  </span>
+                </label>
+                {licensePending && (
+                  <p className="text-xs text-fg-muted mt-1 text-start">
+                    {t("auth.register.producer.fields.license_pending_optin_hint")}
                   </p>
                 )}
               </div>
@@ -746,7 +777,12 @@ function RegisterProducerPageBody() {
                 onClick={() => {
                   // MEH-952: block advance when a license-required category is
                   // selected but the number is blank; show the error at the field.
-                  if (licenseRequired && !form.producer_license_number.trim()) {
+                  // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
+                  if (
+                    licenseRequired &&
+                    !licensePending &&
+                    !form.producer_license_number.trim()
+                  ) {
                     setLicenseRequiredError(true);
                     return;
                   }
