@@ -270,6 +270,8 @@
           "license_required_label": "מספר רישיון יצרן (חובה)",
           "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
           "license_what_is_it": "רישיון יצרן מונפק על ידי משרד הבריאות לעסקי מזון.",
+          "license_pending_optin_label": "עדיין אין לי מספר רישיון",
+          "license_pending_optin_hint": "אפשר להשלים את ההרשמה עכשיו. העסק יאושר ויעלה לאתר רק אחרי קבלת מספר הרישיון.",
           "license_optional_label": "מספר רישיון יצרן"
         },
         "story_card": {

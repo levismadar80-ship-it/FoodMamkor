@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-28 — MEH-971 chunk 1: frontend license-pending opt-in — DRAFT PR (LAST chunk)
+
+- **Branch:** `feature/meh-971-license-pending-frontend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only. `Refs MEH-971` (NOT Closes — epic closes after Sapir mobile QA). **STOP after this — MEH-971 complete pending QA.**
+- **Done (`RegisterProducerClient.jsx`):** `licensePending` state; opt-in checkbox "עדיין אין לי מספר רישיון" inside the `licenseRequired` CATEGORY block only; gate (`:749`) relaxed `licenseRequired && !licensePending && !trim()`; payload (`:275`) `license_pending: licenseRequired && licensePending` (matches `schemas.py:165`); helper line on check; red error suppressed when checked. Unchecked = unchanged.
+- **Copy:** 2 he.json keys (`license_pending_optin_label`/`_hint`, Sapir-locked). **en.json NOT touched** — parity guard (`i18n-icu-parity.yml`) is ICU-plural-only, not key-presence; sibling `license_what_is_it` is already he-only here, so he-only is consistent (pre-empts a chunk-3-style review flag).
+- **CHANGELOG:** chunk-1 entry + fixed the stale chunk-3 "en.json untouched" clause (chunk 3 did add en keys in `802daef`).
+- **Verify:** `npm run build` green; he.json valid; 0 physical RTL classes; no `יצרן`/feminine imperative in new copy. Frontend-only → pytest/E2E to CI. Mobile QA (375px: opt-in checked → advance w/o license; unchecked → still blocked) deferred to Sapir.
+- **MEH-971 DONE (all 4 chunks):** ✅ chunk 4 #1387 · ✅ chunk 2 #1393 · ✅ chunk 3 #1396 (`ce636cb`) · chunk 1 = this PR. Loop: register license-pending → admin sees flag → approval blocked without override.
+
 ## 2026-06-28 — MEH-971 chunk 3: admin license-pending visibility — DRAFT PR
 
 - **Branch:** `feature/meh-971-license-pending-admin` off `origin/staging` (0 divergence). DRAFT PR → `staging`. LOW-RISK admin-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 3** (do not start chunk 1).

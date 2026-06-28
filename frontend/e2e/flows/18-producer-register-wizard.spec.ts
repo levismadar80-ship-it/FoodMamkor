@@ -146,4 +146,40 @@ test.describe("Producer register wizard (5-frame)", () => {
     await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
     await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible(); // did NOT silently advance to CONFIRM
   });
+
+  // MEH-971 chunk 1: the license-pending opt-in relaxes the CATEGORY advance
+  // gate. Two cases in one flow — unchecked + empty license → blocked;
+  // checked → advances to STORY with no license number entered.
+  test("license-pending opt-in bypasses the CATEGORY license gate", async ({ page }) => {
+    await page.goto("/register/producer");
+
+    // ACCOUNT → DETAILS
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await page.getByTestId("register-account-name").fill("טסט בדיקה");
+    await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
+    await page.getByTestId("register-account-password").fill("Abcdefgh1234");
+    await page.getByTestId("register-account-next").click();
+
+    // DETAILS → CATEGORY
+    await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    await page.getByTestId("register-details-name").fill("העסק שלי");
+    await page.getByTestId("register-details-phone").fill("0501234567");
+    await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-address").fill("הרצל 1");
+    await page.getByTestId("register-details-next").click();
+
+    // CATEGORY: pick a license-required category, leave the license empty.
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
+
+    // (a) unchecked + empty license → advance BLOCKED (stays on CATEGORY).
+    await page.getByTestId("register-category-next").click();
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await expect(page.getByTestId("register-frame-story")).not.toBeVisible();
+
+    // (b) check the opt-in → advance SUCCEEDS to STORY (no license entered).
+    await page.getByTestId("register-license-pending-optin").check();
+    await page.getByTestId("register-category-next").click();
+    await expect(page.getByTestId("register-frame-story")).toBeVisible();
+  });
 });
