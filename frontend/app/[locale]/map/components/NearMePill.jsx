@@ -13,7 +13,9 @@ import { Crosshair } from "@phosphor-icons/react";
  *
  * Does NOT: call navigator.geolocation, filter producers, or pan the map —
  * see MapClient.jsx (handleGoToMyLocation). Desktop has its own GPS circle in
- * MapPane.jsx; this pill is mounted only inside the mobile (lg:hidden) shell.
+ * MapPane.jsx; this pill is mounted inside the mobile (lg:hidden) shell AND
+ * carries its own lg:hidden as a belt-and-suspenders gate so it can never
+ * render on desktop alongside that circle even if re-mounted elsewhere.
  *
  * Z-index 1000 = controls tier (above bottom-sheet:600), below cookie:1100.
  * Positioned at bottom-[16vh] to clear the PEEK=14vh collapsed bottom sheet.
@@ -26,7 +28,7 @@ export default function NearMePill({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label={t("map.near_me_pill.aria")}
-      className="absolute bottom-[16vh] start-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="lg:hidden absolute bottom-[16vh] start-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <Crosshair size={16} weight="bold" className="text-primary" aria-hidden="true" />
       {t("map.near_me_pill.label")}
