@@ -45,6 +45,7 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
+    Home --> GProducerCities[GET /producers/cities<br/>🌐 MEH-970: per-city approved counts<br/>GROUP BY city, NULL/blank omitted]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
