@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-28 — MEH-971 chunk 3: admin license-pending visibility — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-admin` off `origin/staging` (0 divergence). DRAFT PR → `staging`. LOW-RISK admin-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 3** (do not start chunk 1).
+- **Phase-0 (file:line):** chose **schema-side** derivation — `ProducerAdminOut` (`schemas.py:877`) inherits `categories` (`ProducerListOut:745`), and the codebase already computes a license-membership check schema-side in `_compute_verification_tier` (`:818-839`). So no `admin.py`/router change, no DB round-trip.
+- **Done:** (1) `schemas.py:ProducerAdminOut` — derived `license_pending: bool` via `@model_validator(mode="after") _compute_license_pending` (≥1 license-required cat AND empty/NULL license; status-independent; reuses loaded categories + `LICENSE_REQUIRED_CATEGORIES`). (2) `AdminProducersTable.jsx` `ProducerTags` — amber "רישיון ממתין" text badge + title/aria, logical RTL props. (3) `he.json` admin `producers.table.tags` += `license_pending` + `license_pending_title` (en.json untouched). (4) 5 tests in `tests/test_producer_license.py` (`TestAdminLicensePendingFlag`).
+- **No schema/Alembic / no new column** — derived at serialization only.
+- **Verify:** `npm run build` green; he.json valid; `ruff check`/`ruff format`/`py_compile` clean; **pytest → CI** (no local Postgres).
+- **Merge:** Sapir (Rule 23). **MEH-971 status:** chunk 4 ✅ merged (#1387), chunk 2 ✅ merged (#1393), chunk 3 = this PR. **Remaining: chunk 1 (frontend register opt-in UI) only.**
+
 ## 2026-06-25 — MEH-971 chunk 2: backend accept license-pending — DRAFT PR
 
 - **Branch:** `feature/meh-971-license-pending-backend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 2** (do not start chunk 1 or 3). Sapir approved the Phase-0 plan + gave the security framing.
