@@ -903,6 +903,8 @@ class ProducerAdminOut(ProducerDetailOut):
 
     @model_validator(mode="after")
     def _compute_license_pending(self):
+        # Inline import mirrors the sibling _compute_verification_tier validator
+        # (above) — keeps the constants dependency out of the module-top imports.
         from app.constants import LICENSE_REQUIRED_CATEGORIES
 
         needs_license = any(

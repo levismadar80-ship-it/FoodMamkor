@@ -378,7 +378,7 @@ class TestAdminLicensePendingFlag:
     def _fetch_admin_row(self, client, admin, producer_id):
         resp = client.get("/admin/producers", headers=auth_header(admin))
         assert resp.status_code == 200, resp.text
-        rows = {r["id"]: r for r in resp.json()}
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
         return rows.get(str(producer_id))
 
     def test_required_category_empty_license_true(self, client, db):
@@ -426,7 +426,7 @@ class TestAdminLicensePendingFlag:
         producer = make_producer(db, status="pending", category=bakery)
         resp = client.get("/admin/producers?status=pending", headers=auth_header(admin))
         assert resp.status_code == 200, resp.text
-        rows = {r["id"]: r for r in resp.json()}
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
         row = rows.get(str(producer.id))
         assert row is not None
         assert "license_pending" in row
