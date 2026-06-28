@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-28 — MEH-970 chunk 2-lite: near-me pill + empty-near-me guard (✅ MERGED #1394)
+
+- **Shipped (`7f9a1cc`, squash → staging):** quiet persistent "קרוב אליי" pill on the gateless `/map` (mobile) + the empty-near-me fallback. Files: new `frontend/app/[locale]/map/components/NearMePill.jsx`; `MapClient.jsx` (shared `handleGoToMyLocation` invoker + empty-guard + crosshair removed); `MapComponent.jsx` (`goToMyLocation` gains optional `onSuccess({lat,lng})`); `he.json` (`map.near_me_pill.*`).
+- **Sapir decision (Option 1 — REPLACE):** the mobile filter-bar crosshair was removed; the labeled pill is the SINGLE mobile near-me control; city search reflows full-width. Verified `PILL_COUNT=1 CROSSHAIR_COUNT=0` + QA screenshot (a).
+- **Guards honored:** (1) empty-near-me detection is **client-side `haversineKm` ≤25km over the loaded set** — no backend radius param, no extra fetch, no schema change (the `/producers` endpoint *does* accept lat/lng/radius_km but was deliberately not used). (2) the empty path NEVER calls `setAllProducers` — it only toasts + flies to the MEH-932 default (`[32.4,34.95]` z8) so the map shows all producers, never blank.
+- **claude[bot] review:** #1 (`lg:hidden` self-gate) applied; #2 (Hebrew in comments) declined — pre-existing precedent at `MapClient.jsx:120`; #Minor (test) deferred.
+- **Known minor (QA observations, not blockers):** pill floats bottom-right (RTL `start-4`) near the chat FAB — flagged, can move to `end-4` if preferred. Empty-near-me double-fly (user→default) may briefly show the "search this area" button (matches existing `handleGpsClick` behavior). Orphaned `map.client.aria.my_location` i18n key left in place (MEH-721 precedent).
+- **Docs:** this session's docs PR (`feature/docs-meh-970-chunk2`) also backfills the deferred chunk-0 `GET /producers/cities` rows in `docs/DATA.md` + `.ai/diagrams/api-routes.md`.
+- **Still open:** **PR #1390** (chunk 0+1 session log, draft, `mergeable_state: dirty`) needs a rebase or close — separate pre-existing docs PR, not touched this session. **MEH-948** gateless-`/map` first-render visual QA on live staging still pending. **MEH-970 remaining:** chunk 4 (ungendered voice coordination w/ MEH-969) + region chips (data-gated — staging too sparse). Local `staging` branch was divergent (MEH-542) — work was based off `origin/staging` directly.
+
 ## 2026-06-23 — MEH-926 required-checks draft-skip (A2 — workflow diffs in PR body, DRAFT)
 
 - **Goal:** skip the required PR checks on **draft** PRs (save CI), run them only when ready-for-review. Two workflow files, both delivered as **paste-ready diffs in the PR body** (A2 — `.github/workflows/**` is CC-deny; CC must not edit them or use the GitHub API; Sapir applies + pushes).
