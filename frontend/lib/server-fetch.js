@@ -48,7 +48,9 @@ function sleep(ms) {
  * unchanged; the win is bounding the hang and absorbing transient blips.
  *
  * @param {string|URL} url
- * @param {RequestInit} [init]                fetch options (e.g. next.revalidate)
+ * @param {RequestInit} [init]                fetch options (e.g. next.revalidate);
+ *                                            a caller `signal` is composed with
+ *                                            the internal timeout via AbortSignal.any
  * @param {object} [opts]
  * @param {number} [opts.timeoutMs=8000]      per-attempt timeout
  * @param {number} [opts.retries=2]           retries AFTER the first attempt
@@ -65,7 +67,13 @@ export async function serverFetch(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetch(url, { ...init, signal: controller.signal });
+      // MEH-977 (review): compose the timeout signal with any caller-provided
+      // signal so serverFetch stays a true drop-in for fetch (a caller can
+      // still cancel). AbortSignal.any is available on Node 18.17+ / 20+.
+      const signal = init.signal
+        ? AbortSignal.any([controller.signal, init.signal])
+        : controller.signal;
+      return await fetch(url, { ...init, signal });
     } catch (err) {
       lastErr = err;
       // Only transient socket errors are worth retrying, and only if we have

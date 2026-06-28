@@ -73,6 +73,20 @@ describe("serverFetch (MEH-977)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("does NOT retry a timeout AbortError (no .code → not transient)", async () => {
+    // Our own timeout aborts the fetch → AbortError, which carries no `.code`,
+    // so isTransient() is false and it propagates without a retry. Pins the
+    // behaviour against accidentally adding "AbortError" to TRANSIENT_CODES.
+    const abortErr = new DOMException("The operation was aborted.", "AbortError");
+    const fetchMock = vi.fn().mockRejectedValue(abortErr);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      serverFetch("http://api/x", {}, { retries: 2, backoffMs: 1 }),
+    ).rejects.toThrow(/aborted/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("does NOT retry a non-ok HTTP response (returns it as-is)", async () => {
     const notFound = { ok: false, status: 404 };
     const fetchMock = vi.fn().mockResolvedValue(notFound);
