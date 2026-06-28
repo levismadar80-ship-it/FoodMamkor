@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Crosshair, MapPinLine, Rows } from "@phosphor-icons/react";
+import { MapPinLine, Rows } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
@@ -340,13 +340,13 @@ export default function MapPage() {
             colliding with it. top-16 = 64px; the map pt below is bumped by the
             same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
         <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1">
-              <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
-            </div>
-            <button type="button" onClick={handleGoToMyLocation} className="cursor-pointer shrink-0 min-w-[44px] min-h-[44px] rounded-md border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
-              <Crosshair size={18} className="text-primary" />
-            </button>
+          {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
+              removed here — the labeled "קרוב אליי" NearMePill (floating on the
+              map below) is now the SINGLE mobile near-me control. City search
+              reflows to full width. goToMyLocation wiring + empty-near-me
+              fallback live on the pill via handleGoToMyLocation. */}
+          <div className="mb-2">
+            <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
           {filterChipsBar}
         </div>
