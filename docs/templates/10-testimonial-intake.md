@@ -22,7 +22,7 @@
 
 **Testimonial intake = Opus 4.7. Always.**
 
-למה: כל טיוטה היא הכרעת voice (ADR-014 HYBRID) + שמירה על verbatim + שיפוט אמת/over-claim. Sonnet נוטה ל"להחליק" ניסוח ולשכתב את הדובר/ת — בדיוק מה שאסור כאן. Effort: medium · Adaptive Thinking: ON.
+למה: כל טיוטה היא הכרעת voice (ADR-024 HYBRID, refines ADR-014) + שמירה על verbatim + שיפוט אמת/over-claim. Sonnet נוטה ל"להחליק" ניסוח ולשכתב את הדובר/ת — בדיוק מה שאסור כאן. Effort: medium · Adaptive Thinking: ON.
 
 ---
 
@@ -35,14 +35,14 @@
 
 ---
 
-## 🗣️ Voice — ADR-014 HYBRID (לפי משטח)
+## 🗣️ Voice — ADR-024 HYBRID (refines ADR-014) (לפי משטח)
 
 | חלק בעדות | מי כותב | כלל קול |
 | -- | -- | -- |
 | **הציטוט עצמו** | הדובר/ת | **VERBATIM — פטור מכל כלל קול.** לא נוגעים. |
 | **framing עריכתי** (משפט פתיחה/הקשר) | מהמקור | narrative editorial → **feminine מותר** (פנייה לקוראת: "תגלי"). brand-we ברבים ("בחרנו"). |
 | **UI chrome** (כפתור/לינק סביב הסקשן) | מהמקור | **gerund/רבים** ("קראו עוד") — לא feminine. |
-| **attribution** (שם · עסק · עיר) | מהמקור | עובדתי, ניטרלי. "בעלת עסק" / "בית עסק" — לא "יצרנית". |
+| **attribution** (שם · עסק · עיר) | מהמקור | עובדתי, ניטרלי (ADR-024): "בית העסק" (ישות) · "בעלת עסק" (אישה) · "בעל עסק" (גבר) — לא "יצרן"/"יצרנית". |
 
 **אסור בכל משטח באתר:** "יצרן"/"יצרנית" · "אוכל ביתי"/"שכנות מבשלות"/"מהמטבח של השכן" · "marketplace" · "מגזין" (פנימי בלבד). **אפס emoji בעדות עצמה** — editorial surface, Emoji LOCK v2. (אם בהודעה המקורית היה emoji דקורטיבי בסוף — הוא מילה? לא. מורידים אותו; המילים נשארות verbatim.)
 
@@ -74,9 +74,9 @@ Take the raw message below and produce a testimonial draft: a verbatim quote + a
 
 <voice>
 - Quote: exempt from all voice rules (verbatim).
-- Editorial framing (intro/context line): ADR-014 -> feminine allowed when addressing the reader; brand-we plural.
+- Editorial framing (intro/context line): ADR-024 (refines ADR-014) -> feminine allowed when addressing the reader; brand-we plural.
 - Any UI chrome (button/link): gerund/plural, never feminine.
-- Attribution: "בעלת עסק" / "בית עסק" — never "יצרנית".
+- Attribution (ADR-024): "בית העסק" (entity) · "בעלת עסק" (woman) · "בעל עסק" (man) — never "יצרן"/"יצרנית".
 - Forbidden anywhere on site: "יצרן"/"יצרנית", "אוכל ביתי"/"שכנות מבשלות"/"מהמטבח של השכן", "marketplace", "מגזין".
 - Zero emoji in the testimonial copy (Emoji LOCK v2). Strip decorative emoji from the source; keep the words.
 </voice>
@@ -160,7 +160,7 @@ Consent: not yet
 
 ## 📚 מקורות
 
-* ADR-014 — Voice rules (Hebrew Hybrid). BRAND.md §4 summary.
+* ADR-024 — Voice: surface-function taxonomy + owner-noun gender (refines ADR-014). BRAND.md §4 summary.
 * BRAND.md §3 (Strategic LOCKs) + §7 (forbidden phrasings) · Emoji LOCK v2 (MEH-657).
 * COPY_BANK §2 (trust signals) — יעד התיעוד לעדויות שעולות לאתר.
 * DNA: "magazine, not marketplace" · licensed businesses only · manual approval.

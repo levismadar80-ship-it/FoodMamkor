@@ -15,6 +15,128 @@
 - **FINDING — "docs-only twin jobs" absent:** `.claude/rules/testing.md` describes no-op docs-only **twin jobs** (identical `name:`, exact-complement `if:`, exit 0) that are supposed to live in `pr-checks.yml` + `deploy.yml` so a docs-only PR satisfies the required checks without an admin override. **Neither file actually contains them** — every job in both workflows was read end-to-end and no twin job exists. So docs-only PRs currently carry a pre-existing required-check gap, and this draft-skip change layers on top of it (a draft docs-only PR shows skipped→"Expected" until marked ready). **Out of scope for this PR — flagged for a separate ticket.** Do NOT label this with MEH-716/MEH-736: those IDs map to unrelated Linear issues; verify the claim against `testing.md`, then assign a fresh number before filing.
 - **Branch:** `feature/meh-926-required-checks-draft-skip` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-926`. Only CHANGELOG + HANDOFF committed (the workflow diffs live in the PR body).
 - **Pending (Sapir):** `git apply` both diffs → push → mark the PR ready-for-review → confirm the re-trigger fires all 6 required checks green. Then close MEH-926.
+
+## 2026-06-25 — MEH-971 chunk 2: backend accept license-pending — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-backend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after chunk 2** (do not start chunk 1 or 3). Sapir approved the Phase-0 plan + gave the security framing.
+- **Phase-0 (file:line):** exactly ONE `ensure_license_for_categories` call in auth.py (`:451`), above the `if upgrade_path:` split (`:453`) → covers both paths. No second call. `ProducerRegister` at `schemas.py:115`; pattern mirrored = `declaration_accepted: bool = False` (`:155`).
+- **Done:** (1) `schemas.py` — `license_pending: bool = False` on `ProducerRegister` (transient input, never a column). (2) `auth.py:451` — wrapped the single gate `if not data.license_pending:`. (3) 5 tests in `tests/test_producer_license.py` (`TestRegisterProducerLicensePending`, cases a–e incl. upgrade path).
+- **No schema/Alembic** — `producer_license_number` already nullable (`models.py:103`), `status` stays String; NULL persists via schema default.
+- **Security framing (Sapir):** `license_pending` is a data-quality gate, NOT a security control. Licensed-only still enforced downstream: chunk-4 approval guard (`admin.py allow_without_license`) + publication gate (`status=="approved"`, `producer_listing.py`). Malicious `license_pending=true` only parks the actor in the unpublishable pending queue. Default False = behavior byte-identical for existing callers.
+- **Verify:** ruff check/format + py_compile clean; **pytest → CI** (no local Postgres; sandbox `pip` blocked). Web-search: no CVE for the boolean-skip pattern. DATA.md updated (`:363`).
+- **Merge:** Sapir (auth path = HIGH-RISK; Rule 23). Chunks remaining after this: chunk 1 (frontend opt-in) + chunk 3 (admin "license pending" surface).
+
+## 2026-06-25 — MEH-971 chunk 4: license-pending approval guard — DRAFT PR
+
+- **Branch:** `feature/meh-971-license-pending-approval-guard` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Backend-only. `Refs MEH-971` (multi-chunk — NOT Closes). **STOP after this chunk** (do not start chunks 1/2/3).
+- **What:** `approve_producer` (`admin.py:436`) refuses `status="approved"` when `categories_require_license(db, [c.id for c in producer.categories])` is true AND `producer_license_number` is empty/NULL, unless `?allow_without_license=true` (new bool query param, admin override). 422 (matches photo gate `admin.py:457`; not MEH-769's 409). Reuses the existing license helper (`license_validation.py:38`) — no list dup. No-op today; safety net before the register-without-license path opens.
+- **No schema change:** license col already nullable (`models.py:103`), status stays String. Phase-0-confirmed.
+- **Tests:** 4 cases added to `tests/test_admin_approval_transitions.py` — `test_approve_license_required_no_license_is_blocked` / `_with_override_succeeds` / `_with_license_succeeds` / `test_approve_non_license_category_no_license_succeeds`. **pytest deferred to CI** (no local Postgres; `pip` blocked in sandbox) — both files `py_compile` clean.
+- **Security:** admin-only (`require_admin`); change only tightens. Web-search: no CVE for the boolean-override pattern.
+- **Merge:** Sapir (admin/approval path = HIGH-RISK-adjacent; Rule 23).
+
+## Session 2026-06-25 — MEH-964 Phase 1 (dashboard redesign)
+Shipped to staging: MEH-961 (#1368), MEH-963 (#1373), MEH-964 1A (#1382) + 1B (#1384, SHA d2cc1396) = Overview KPI strip + תובנות tab, no duplication.
+Pending (specs locked in MEH-964): 1C = anonymous aggregate pulse (§5 RESOLUTION — 3 rows whatsapp/reviews/views, hero, "פתחי וואטסאפ" CTA, zero-state). 1D = empty-states + share-gate + availability-disable + view-public.
+Backlog: MEH-966 (backend per-event activity feed, post-Phase-1). CONTEXT §8.5 (design-sync rule).
+Collision lesson: two parallel CC sessions ping-ponged 1A on staging (#1375→#1376→#1382). "Supersede" ≠ closed; a parallel session merged instead of closing. Rule: one session owns a chunk; close the parallel before continuing. Also: orchestrator must decide ONCE and hold — re-litigating the same call added churn.
+
+## 2026-06-25 — MEH-968 footer RTL (IG handle bidi + newsletter arrow) — DRAFT PR
+
+- **Branch:** `feature/meh-968-footer-rtl` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN. `Closes MEH-968`.
+- **Phase-0 corrected defect 2's premise (file:line):** ticket blamed physical `left-/right-`; footer has **0 physical positional classes** — button `:163` already `end-0`, input `:156` already `pe-11` (MEH-867 reworked this). Surfaced to Smadar → approved option B (real cause = dir mismatch).
+- **Fix (Smadar-approved B, arrow stays LEFT):** (1) `Footer.jsx:109` `<span>@meha_makor</span>` → `<bdi>` so the Latin `@` stays leading in RTL (was `meha_makor@`). (2) `Footer.jsx:156` input `pe-11`→`ps-11`: input is `dir="ltr"` (emails) so `pe-*` reserved padding on the RIGHT while the button sits LEFT (`end-0` in the RTL form) → placeholder slipped under the arrow; `ps-11` moves the reserved 44px to the same side as the (unmoved) left button. Button NOT moved.
+- **Verify:** `npm run build` green; footer logical-only (0 physical RTL classes); `en.json` untouched. **Bidi + overlap need real-device mobile QA** on the Vercel preview (CC sandbox can't reach `*.vercel.app`) — deferred to Sapir: confirm `@meha_makor` reads `@`-first and the placeholder ("האימייל שלך, בבקשה") no longer slips under the arrow.
+- **Merge:** Sapir (Rule 23 — visible UI change).
+
+## 2026-06-25 — MEH-943 MobileSheetSelectedCard glyph-LOCK — DRAFT PR
+
+- **Branch:** `feature/meh-943-sheet-badge-glyph` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only / GREEN.
+- **Phase-0 corrected the premise (file:line):** the ticket assumed all 3 `map.sheet.badge.*` render in the card and need Phosphor icons. Reality — only `verified` renders (`MobileSheetSelectedCard.jsx:80`, sole consumer); `.organic`/`.kosher` are **orphaned i18n keys** (0 consumers; MEH-826 removed their render — "design has no dietary badge here"). Icon conventions: verified→SealCheck (`BadgeRow.jsx:130`), organic→Leaf (admin-only; public BadgeRow text-only), **kosher→NO icon convention** (`badges.js:88` text-only).
+- **⚠️ Orchestrator STOP trigger met** ("stop if kosher has no convention") — AskUserQuestion failed twice in this env; proceeded on Smadar's "continue" with the minimal fix that *honors* the STOP in substance: **renders zero kosher icon, invents nothing.**
+- **Done:** stripped `✓`/`🌿`/`✡️` from `he.json:1014-1016` → `"מאומת"`/`"אורגני"`/`"כשר"`; added canonical `<SealCheck size={11} aria-hidden>` inline before the verified label (only render site). organic/kosher = no icon (orphaned + no convention), flagged for a dead-key sweep. `en.json` frozen.
+- **Verify:** `npm run build` green; `grep map.sheet.badge → 0` glyphs; JSON valid; glyph-LOCK siblings (marker-glyph + MapProducerCard) 12/12 pass. No backend → `pytest` to CI.
+- **Pending:** Sapir mobile QA at /map bottom sheet (verified business → SealCheck + "מאומת"), then Sapir merges (Rule 23). `Refs MEH-943` (NOT Closes). Follow-up candidate: dead-key sweep for the 2 orphaned `map.sheet.badge.organic/kosher` keys.
+
+## 2026-06-25 — MEH-963 /settings "העסק שלי" dead zero-wall stats — MERGED (#1373)
+
+- **Outcome:** PR #1373 **merged to staging** (squash `237fa14`), `Closes MEH-963`. Branch `feature/meh-963-fix-settings-business-zero-stats` off `origin/staging`.
+- **Root cause (Phase-0):** `BusinessTab` (`settings/page.jsx`) fetched `GET /producers/me/dashboard` and rendered 6 `StatCard`s from `stats.views/favorites/reviews/avg_rating/products/orders` — but that endpoint (`producer_me.py:406-456`) returns only `{producer, favorites_count, whatsapp_clicks_week}`. So all 6 cards were `0`/`—` for **every** owner — a permanent zero-wall, not a new-owner empty state. Same stale-duplicate class as MEH-961, second owner-facing surface.
+- **Fix (option b, Smadar-approved):** removed `stats`/`loadingStats` state + the dead fetch + the "סטטיסטיקות" `<section>` + the unused `StatCard` helper; **un-gated** the `/producer/dashboard` link from `status === "approved"` → always-visible (owners need it while pending). Real analytics already live on `/producer/dashboard` via `/producers/me/analytics`. Frontend-only, +12/−47.
+- **Verified:** `npm run build` ✅ · `vitest` 677 pass / 0 fail ✅ (`SettingsPage.test.jsx` was already `describe.skip` — stale, untouched) · `lint` 0 err ✅. `pytest` deferred to CI (no backend code touched). `claude[bot]` review clean after one English-only-comment nit fixed. All 6 required checks green/skipped-appropriately → merged on explicit MERGE.
+- **Out of scope (flagged, left as-is):** never-rendered `ProductsSection` (dead-code sweep separate); now-unreferenced `settings.business` stat i18n keys (`stats_heading`/`stat_*`/`stats_unavailable`) left in he/en.json (harmless, MEH-721 precedent). grep confirmed no 4th owner-facing zero-wall (`group-buys` reads only `producer.id`/`.city`; `AdminProducersTable` is admin).
+- **Follow-up candidate:** the dead-code sweep ticket should also drop `ProductsSection` + the orphaned stat i18n keys.
+
+## 2026-06-25 — register/producer share_cta + farmer typo (he.json copy) — DRAFT PR (Linear pending)
+
+- **Branch:** `feature/register-sharecta-farmer-typo` off current `origin/staging` (post-MEH-958/960). Fresh feature branch this time (not the orphaned harness branch `claude/awesome-mccarthy-1yrhg2`, whose PR #1365 already merged — reusing it would need a force-push to re-base off the squashed staging tip; a clean branch avoids that).
+- **⚠️ Linear blocker:** could NOT create the MEH ticket — workspace is at the **free-tier issue cap** (`save_issue` → "exceeded the free issue limit"). Sapir to create the issue + link the PR; spec was the "share_cta LOCK + החקלאית typo" task.
+- **2 he.json swaps (LOCKED verbatim, copy-only):** `success.share_cta` (he.json:331) `הזמיני שכנה` → `הזמינו בעלי עסקים` (drops `שכנה` LOCK word + feminine → ADR-024 generic-plural, coherent with #1366 share_msg); `validation.farmer_required` (he.json:292) typo `החקלאיות` → `החקלאית`. Keys unchanged; en.json frozen.
+- **Gate cleared:** MEH-930 (In Progress voice sweep) had not touched share_cta:331 at dispatch — this PR LOCKs it; coordinate so MEH-930 doesn't re-touch.
+- **Verify:** `npm run build` green, JSON parses, grep-verified. Pending: Sapir 375px QA (success-screen label + farmer error on ירקות/פירות) → Sapir merges.
+
+## 2026-06-25 — MEH-960 register/producer hero hidden on CONFIRM — DRAFT PR
+
+- **Branch:** `claude/awesome-mccarthy-1yrhg2` (harness-assigned, base `origin/staging`, 0 divergence — base correct). Same `claude/*` operational-lock note as MEH-947 below: developed on the harness branch, not a `feature/meh-960-*` branch — informational.
+- **Issue created:** MEH-960 (Bug, P3) — spun out of today's `/register/producer` Phase-0 discovery (sibling to MEH-958 copy batch).
+- **Phase 0 (READ-ONLY):** the hero (`heading` "תנו לעסק שלך בית" + `subtitle`) at `RegisterProducerClient.jsx:339-340` rendered with **no `step < STEP.CONFIRM` guard** — unlike the upgrade banner (`:343`), draft banner (`:353`), and stepper (`:369`). Persisted onto the CONFIRM step (step 5) and doubled with the success heading "קיבלנו את הפרטים שלך" (`:986`/`:1037`). No shared layout shell — the page client owns the hero (so it's a missing-guard state bug, not a layout-inheritance issue).
+- **Done:** wrapped `:339-340` in `{step < STEP.CONFIRM && (<>…</>)}`, mirroring the 3 existing guards. Logic-guard only; **zero copy/key/state change**. `npm run build` green.
+- **PR #1365** opened (draft, base `staging`). After `claude[bot]` auto-review (no must-fixes), Sapir approved adding the missing Rule-5 E2E coverage: hero `<h1>` now carries `data-testid="register-hero-heading"`; `e2e/flows/18-producer-register-wizard.spec.ts` asserts it visible on ACCOUNT + `not.toBeVisible()` on CONFIRM. Branch-name `claude/*` finding acknowledged-not-acted (harness-assigned, Sapir merges manually); Hebrew-in-comment minor fixed.
+- **Pending:** Sapir mobile-QA at 375px on staging (hero hidden on CONFIRM, success heading retained, steps 1-4 unchanged) → Sapir merges (Rule 23 — visible UI change).
+
+## 2026-06-25 — CONTEXT.md ADR-024 sync (apex SoT) — DRAFT PR (no ticket)
+
+- **Branch:** `feature/docs-context-sync-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. No Linear ticket (Sapir: "no ticket — proceed") → PR body omits a Refs line; no new ADR (propagates existing ADR-024).
+- **Phase 0:** confirmed `docs/templates/README.md` index lists row 10 + `docs/decisions/ADR-024-voice-surface-function.md` present on staging.
+- **Done (`docs/CONTEXT.md` only):** (1) §12 — replaced the `Current set: 00…08` enumeration with a pointer to the canonical index in `docs/templates/README.md` (single-source; resolves the dual-list drift smell now that Template 10 exists). Kept ADR-020 sentence + PK-snapshot sentence + MEH-690 note + the 8-section/XML paragraph. (2) Voice bullet (~L56) — `(see ADR-014)` → `(see ADR-014, refined by ADR-024 — surface-function + owner-noun gender)`; removed stale `4-quadrant CTA matrix` wording (ADR-024 reframed audience→surface).
+- **Scope held:** only `docs/CONTEXT.md` (+ CHANGELOG/HANDOFF).
+- **Pending:** open draft PR off staging → Sapir merges.
+
+## 2026-06-25 — Register UX review: MEH-947 / MEH-951 / MEH-952 — ALL MERGED
+
+- **3 merges to `staging` today:**
+  - **MEH-947** (PR #1358, squash `51115a3f`) — `Header.jsx` surface made three-way; **inner pages (`!isHomepage`) get a solid opaque cream pill** so page content no longer bleeds through the translucent sticky header as it scrolls under (fixes the register-wizard heading clip + detached `0/160` counter). Homepage glass unchanged. Root cause was **global chrome, not register-local** — counter/link markup was already correctly attached. Side-effect: `/map`, producer detail, settings, about, search headers now opaque cream — **mobile QA at 375px still pending Sapir** (merged ahead of QA on explicit "MERGE").
+  - **MEH-951** (PR #1357, `03deb94a`) — 3 `he.json` copy helpers under `auth.register.producer.fields` (`address_map_privacy_hint`, `city_required_marker`, `license_what_is_it`). Copy-only, `en.json` untouched.
+  - **MEH-952** (PR #1356, `01bbf4ce`) — producer-license required-error now surfaces inline at the field on the CATEGORY frame (approach א), verbatim backend-string mirror, phantom-error fix, E2E-locator coverage.
+- **Decisions from the register UX review (MEH-949 discovery audit):**
+  - **S7 port (MEH-132) confirmed DONE.** 3 of 5 suspected gaps were non-issues: license helper exists, stepper exists, and `מספר עוסק` was **deliberately removed** per MEH-132 D2 (not a regression).
+  - **#5 success-screen parity — CLOSED as non-issue (no ticket).** The non-upgrade inbox-check screen is the **OWASP-required identical-bytes** pattern (MEH-328); the designed "קיבלנו + 3 steps" screen cannot move to the non-upgrade path without breaking signup enumeration protection.
+  - **Food-vs-nonfood copy framing — DEFERRED to Sapir**, gated on the two-tier (מאומת / מוצהר) model.
+- **E2E flake note (do NOT open a new ticket):** `17-producers-search.spec.ts` `#producers-search-input` strict-mode failure is the known **React-18 concurrent-hydration double-mount** — already tracked by **MEH-924** (In Progress) + guarded by **MEH-946** (Done). Duplicate of MEH-924.
+- **Branch note:** MEH-947 was developed/pushed on the harness-assigned `claude/inspiring-cori-n04qkm` (base `staging`, 0 divergence — base correct), not a `feature/meh-947-*` branch — flagged for the `claude/*` operational lock; informational now that it's merged.
+
+## 2026-06-25 — MEH-950 align testimonial docs to ADR-024 — DRAFT PR
+
+- **Branch:** `feature/meh-950-align-testimonials-adr024` off `origin/staging` (0 divergence). Docs-only / GREEN. Gate cleared — ADR-024 (MEH-944) merged to staging via #1349; `docs/decisions/ADR-024-voice-surface-function.md` confirmed present in Phase 0.
+- **Done:** aligned the 2 testimonial-surface docs to ADR-024's surface-function voice taxonomy. (1) `docs/templates/10-testimonial-intake.md` — 4 governing `ADR-014 HYBRID` refs → `ADR-024 (refines ADR-014)`; Voice-table attribution row + `<voice>` attribution line now carry the full owner-noun taxonomy (`בית העסק` entity · `בעלת עסק` woman · `בעל עסק` man · never `יצרן`/`יצרנית`). (2) `docs/COPY_BANK.md §8` — Voice heading → ADR-024; Attribution-noun row rewritten to same taxonomy.
+- **Scope held:** only the 2 files; ADR-024 + other COPY_BANK sections untouched.
+- **Verified (grep):** no ADR-014 *governing* ref left in either file (only `refines ADR-014` lineage notes remain); `בעל עסק` male case present in both files. Docs-only → no build / no mobile QA.
+- **Pending:** open draft PR (`Refs MEH-950`, NOT Closes — Sapir merges).
+
+## 2026-06-25 — MEH-940 chatbot gender-neutral voice — DRAFT PR (merge-gated after doc PR)
+
+- **Branch:** `feature/meh-940-chatbot-gender-neutral` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-940`. Files: `chat.py` + `ChatWidget.jsx` + CHANGELOG/HANDOFF.
+- **Scope (Sapir-approved full A+B1+B2):** neutralized all user-facing chatbot copy to default-plural. chat.py `SYSTEM_PROMPT` voice directive + KB sections + 2 fallbacks; ChatWidget `HARDCODED_ANSWERS` + `OPENING_MESSAGE` + `SUGGESTED_PROMPTS[0]` + aria/placeholder chrome.
+- **Judgment call (flagged):** bot **persona stays feminine** (`את העוזרת` + model-facing imperatives `אמרי/השתמשי/הבהירי` — never reach users). Only the user-directed voice rule + user-facing examples/fallbacks were neutralized; that is what actually steers output gender. Neutralizing the model-facing instructions would add awkward grammar for zero user-visible effect — left as a trivial optional follow-up.
+- **Hard constraints honored:** (1) **byte-match triad** — `SUGGESTED_PROMPTS[0]` ≡ `HARDCODED_ANSWERS` key (both `איך נרשמים כבית עסק?`), changed via `replace_all`; verified 2 occurrences, 0 old. (2) **real button label** — verified `report.trigger` = `🚩 דווח על עסק` (`he.json:2620`, rendered `ReportButton.jsx:38`); KB now names `דווח על עסק`, not the phantom `דווחי`. (3) **docstrings** — both "feminine voice" notes (chat.py L11-12, L59-60) updated.
+- **Verify:** `npm run build` GREEN; ESLint 0 errors (39 pre-existing warnings, untouched code); `python -m py_compile chat.py` OK; grep confirms no residual user-facing feminine in KB/HARDCODED/fallbacks; no backend test references the changed strings → `pytest` to CI.
+- **MERGE GATE:** do NOT merge — **merges AFTER the ADR/COPY_BANK doc PR** (brand-book-precedes-code). Sapir is sole merge authority (Rule 23).
+## 2026-06-25 — MEH-946 mobile double-mount flake guard (test-only) — DRAFT PR
+
+- **Branch:** `feature/meh-946-mobile-double-mount-guard` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-946`. Test-only (one spec line).
+- **What:** `11-password-policy.spec.ts:166` confirm-password fill flaked on [mobile] (`getByPlaceholder("אישור סיסמה") resolved to 2 elements`) — transient React-18 double-mount, MEH-924 family (surfaced on #1334/#1349 E2E, passed on retry). Added `.first()` to that fill.
+- **Phase-0:** line 166 was the ONLY unguarded locator; siblings `:163`/`:182` (new-password) already had `.first()` (MEH-891). Chose `.first()` over MEH-924's `toHaveCount(1)` to match this file's existing convention + because `.first()` is idiomatic for a `.fill()` action.
+- **Verify:** tsc clean on e2e config (no error in this file); e2e specs eslint-ignored. Real Playwright run is the CI job on the Vercel preview.
+- **Merge:** Sapir (Rule 23). Independent of the MEH-944/940/930 gate chain.
+## 2026-06-25 — MEH-944 voice taxonomy → ADR-024 + BRAND/COPY_BANK reconcile — DRAFT PR (the GATE)
+
+- **Branch:** `feature/meh-944-voice-codification` off `origin/staging`. DRAFT PR → `staging`, `Closes MEH-944`. Docs-only.
+- **This PR merges FIRST** — it's the brand-book-precedes-code gate for **MEH-930** (#TBD) + **MEH-940** (#1347). Both must wait for this to land.
+- **Shipped:** new `docs/decisions/ADR-024-voice-surface-function.md` (verbatim from the pre-approved issue, refines ADR-014); BRAND.md ×4 edits (§3/§4/§4-generic/§7) + COPY_BANK.md ×3 edits (anti-patterns ×2 + MEH-579 opening). ADR codifies: surface-function split (functional→plural, narrative/warmth→feminine), owner-noun taxonomy (`בית העסק`/`בעלי עסקים`/`בעלת עסק`/`בעל עסק`), and that "pure masculine forbidden" = reader-address not owner-noun.
+- **Verify:** ADR-024 number consistent across all 3 files (grep); no `0NNN` leftover; no generic-`בעלת עסק` straggler (4 remaining = negative example + narrative + 2 historical records, all legit). Docs-only → no build/test.
+- **Deliberate scope hold (flagged):** `docs/decisions/README.md` ADR index now lacks ADR-024 — NOT updated (issue scope = ADR + BRAND + COPY_BANK only). Add it in a follow-up.
+- **Merge authority = Sapir (Rule 23).** CC does not merge; reports green and stops.
+
 ## 2026-06-25 — MEH-931 Template 10 (Testimonial Intake) + COPY_BANK guardrail — DRAFT PR
 
 - **Branch:** `feature/meh-931-template-10-testimonials` off `origin/staging` (0 divergence). Docs-only / GREEN; content pre-authored + orchestrator-locked (Sapir 24/06 "מאשרת") → mechanical verbatim commit, zero CC voice judgment.

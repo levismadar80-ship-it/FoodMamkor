@@ -451,3 +451,92 @@ jobs:
         run: npm ci
       - name: Run vitest unit suite
         run: npx vitest run
+
+  ci-gate:
+    name: CI gate (required)
+    if: always()
+    needs:
+      - changes
+      - build
+      - pytest
+      - lint-backend
+      - env-drift
+      - backend-mypy
+      - frontend-knip
+      - frontend-tsc-strict
+      - frontend-vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Aggregate required-check results
+        env:
+          FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
+          BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
+          R_CHANGES: ${{ needs.changes.result }}
+          R_BUILD: ${{ needs.build.result }}
+          R_PYTEST: ${{ needs.pytest.result }}
+          R_LINT_BACKEND: ${{ needs.lint-backend.result }}
+          R_ENV_DRIFT: ${{ needs.env-drift.result }}
+          R_BACKEND_MYPY: ${{ needs.backend-mypy.result }}
+          R_FRONTEND_KNIP: ${{ needs.frontend-knip.result }}
+          R_FRONTEND_TSC: ${{ needs.frontend-tsc-strict.result }}
+          R_FRONTEND_VITEST: ${{ needs.frontend-vitest.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+
+          ok() {
+            case "$1" in
+              success|skipped) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          check() {
+            if ok "$2"; then
+              echo "  OK  $1: $2"
+            else
+              echo "  FAIL $1: $2"
+              fail=1
+            fi
+          }
+
+          echo "Stack touched -> frontend=$FRONTEND_TOUCHED backend=$BACKEND_TOUCHED"
+
+          if ! ok "$R_CHANGES"; then
+            echo "::error::Paths-filter job did not succeed (result=$R_CHANGES) — cannot determine stack."
+            exit 1
+          fi
+
+          echo "env-drift (always required):"
+          check "Env drift (.env.example)" "$R_ENV_DRIFT"
+
+          if [ "$BACKEND_TOUCHED" = "true" ]; then
+            echo "Backend stack touched — enforcing backend checks:"
+            check "Backend tests (pytest)" "$R_PYTEST"
+            check "Backend lint (ruff)" "$R_LINT_BACKEND"
+            check "Backend mypy (strict, warn-only)" "$R_BACKEND_MYPY"
+          else
+            echo "Backend stack not touched — backend checks not enforced."
+          fi
+
+          if [ "$FRONTEND_TOUCHED" = "true" ]; then
+            echo "Frontend stack touched — enforcing frontend checks:"
+            check "Frontend build (Next.js)" "$R_BUILD"
+            check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
+            check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
+            check "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
+          else
+            echo "Frontend stack not touched — frontend checks not enforced."
+          fi
+
+          if [ "$BACKEND_TOUCHED" != "true" ] && [ "$FRONTEND_TOUCHED" != "true" ]; then
+            echo "Neither stack touched (workflows-only / docs-only) — only env-drift enforced."
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::CI gate failed — one or more required checks for a touched stack did not pass."
+            exit 1
+          fi
+
+          echo "CI gate passed."

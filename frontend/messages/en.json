@@ -1067,21 +1067,16 @@
       "loading": "Loading...",
       "loading_f": "Loading...",
       "saving": "Saving...",
-      "saving_f": "Saving...",
       "sending": "Sending...",
       "save": "Save",
       "saved": "✓ Saved",
       "saved_check": "Saved ✓",
       "cancel": "Cancel",
       "delete": "Delete",
-      "delete_f": "Delete",
       "edit": "Edit",
       "view": "View",
-      "view_f": "View",
       "approve": "Approve",
-      "approve_f": "Approve",
       "reject": "Reject",
-      "reject_f": "Reject",
       "search": "Search",
       "submit": "Confirm",
       "back": "← Back to admin panel",
@@ -3285,6 +3280,18 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "nav": {
+        "aria": "Dashboard navigation",
+        "overview": "Overview",
+        "edit": "Edit",
+        "insights": "Insights",
+        "tools": "Tools"
+      },
+      "load_error": {
+        "title": "We couldn't load your dashboard",
+        "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
+        "cta": "Contact us"
+      },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
@@ -3340,9 +3347,9 @@
         "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today 🟢",
-          "full_this_week": "Busy this week 🟠",
-          "on_vacation": "On a break ⏸"
+          "available_today": "Available today",
+          "full_this_week": "Busy this week",
+          "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
         "remove_vacation_date_aria": "Remove return date"
@@ -3371,6 +3378,15 @@
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
+        "kpi": {
+          "whatsapp_leads": "WhatsApp leads",
+          "contact_clicks": "Contact clicks",
+          "rating": "Rating",
+          "views": "Views",
+          "window_7d": "Last 7 days",
+          "rating_sub": "{count} reviews",
+          "conversion_line": "{rate}% of viewers reached out"
+        },
         "hero": {
           "views_week_label": "Views this week",
           "views_week_sub": "Last 7 days",

@@ -153,6 +153,16 @@ class ProducerRegister(BaseModel):
     # created with declared_at/declaration_version stamped. The frontend
     # checkbox (agreedToTerms) feeds this value; declaration COPY is Chunk C.
     declaration_accepted: bool = False
+    # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
+    # column) — when True the register-time ensure_license_for_categories 422 is
+    # skipped, so a producer in a license-required category can submit with no
+    # license number and land in the pending queue (status="pending_whatsapp").
+    # NOT a security control: the licensed-only rule is still enforced
+    # downstream — chunk-4 approval guard (admin.py) refuses to approve a
+    # license-required producer with NULL license, and publication requires
+    # status=="approved" (producer_listing.py). Default False = unchanged for
+    # every existing caller.
+    license_pending: bool = False
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -287,6 +297,14 @@ class CategoryOut(BaseModel):
     emoji: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ProducerCityOut(BaseModel):
+    """MEH-970 — one row of GET /producers/cities: live approved-producer
+    count for a single city, consumed by the /map region control."""
+
+    city: str
+    count: int
 
 
 # --- Delivery Area ---

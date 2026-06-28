@@ -31,7 +31,10 @@ from app.schemas.schemas import (
     RemoveListingBody,
     StoryCardUploadRequest,
 )
-from app.services.license_validation import ensure_license_for_categories
+from app.services.license_validation import (
+    categories_require_license,
+    ensure_license_for_categories,
+)
 from app.slug_utils import RESERVED_SLUGS
 
 logger = logging.getLogger(__name__)
@@ -342,9 +345,15 @@ def admin_delete_producer(
     # is_producer is also cleared: the producer is permanently gone, so the
     # "durable flag" no longer reflects reality, and leaving it True would
     # lock the owner out of re-registering (409 at auth.py — MEH-669 family).
+    # role is reset to "consumer" for the same consistency reason:
+    # require_producer (auth.py:268-273) gates on role ALONE, so a leftover
+    # role="producer" with producer_id=NULL is an orphan that passes the dep
+    # then 404s on every /producers/me* handler (producer_me.py:75-76).
+    # Resetting role keeps the (role, producer_id) pair consistent — mirrors
+    # the atomic set in the register flow (auth.py:511-514).
     # Admin-created producers have no linked user → update is a no-op.
     db.query(User).filter(User.producer_id == producer.id).update(
-        {"producer_id": None, "is_producer": False},
+        {"producer_id": None, "is_producer": False, "role": "consumer"},
         synchronize_session=False,
     )
     db.flush()
@@ -430,6 +439,10 @@ def pending_producers(
 @router.post("/producers/{producer_id}/approve")
 def approve_producer(
     producer_id: UUID,
+    # MEH-971 chunk 4: explicit admin override for the license-pending guard
+    # below. Defaults False so the guard is on by default; an admin who has
+    # verified a license out-of-band passes ?allow_without_license=true.
+    allow_without_license: bool = Query(default=False),
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -443,6 +456,24 @@ def approve_producer(
         raise HTTPException(
             status_code=422,
             detail="לא ניתן לאשר בית עסק ללא תמונה. בקשי מבעלת העסק להעלות תמונה אחת לפחות.",
+        )
+    # MEH-971 chunk 4: license-pending approval guard — the approve-gate mirror
+    # of register-time ensure_license_for_categories. 422 matches the photo gate
+    # above (not MEH-769's 409, which is for status transitions).
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    needs_license = categories_require_license(db, category_ids) and license_missing
+    if needs_license and not allow_without_license:
+        raise HTTPException(
+            status_code=422,
+            detail="לא ניתן לאשר בית עסק בקטגוריה הדורשת רישיון יצרן ללא מספר רישיון. אמתי את הרישיון, או אשרי עם דריסה מפורשת.",
+        )
+    if needs_license and allow_without_license:
+        # Audit trail: an admin bypassed the license guard — visible in Railway logs.
+        logger.warning(
+            "approve_producer: license-pending override for producer %s by admin %s",
+            producer_id,
+            user.id,
         )
     producer.status = "approved"
     db.commit()
