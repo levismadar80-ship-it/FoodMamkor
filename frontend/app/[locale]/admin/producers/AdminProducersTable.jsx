@@ -103,6 +103,18 @@ function ProducerTags({ producer }) {
       {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.kosher && <span title={producer.kosher}>✡️</span>}
+      {/* MEH-971 chunk 3: license-pending flag — license-required category with
+          no license number. Unmissable text badge so the admin verifies before
+          approving (the chunk-4 guard blocks approval without an override). */}
+      {producer.license_pending && (
+        <span
+          title={t("producers.table.tags.license_pending_title")}
+          aria-label={t("producers.table.tags.license_pending_title")}
+          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          {t("producers.table.tags.license_pending")}
+        </span>
+      )}
     </div>
   );
 }

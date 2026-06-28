@@ -891,6 +891,28 @@ class ProducerAdminOut(ProducerDetailOut):
     # no binding declaration was made (admin-created / imported producers).
     declared_at: datetime | None = None
     declaration_version: str | None = None
+    # MEH-971 chunk 3: admin-only "license pending — verify before approving"
+    # flag. COMPUTED below (never a stored column) — True iff the producer is in
+    # >=1 license-required category AND has no license number. Status-independent
+    # so an override-approved producer (chunk-4 allow_without_license) still
+    # shows it. Mirrors _compute_verification_tier's name-membership predicate
+    # over the already-loaded categories (constants.LICENSE_REQUIRED_CATEGORIES)
+    # — no DB round-trip, no N+1. Admin-only: lives on ProducerAdminOut, never
+    # the public ProducerListOut/DetailOut.
+    license_pending: bool = False
+
+    @model_validator(mode="after")
+    def _compute_license_pending(self):
+        # Inline import mirrors the sibling _compute_verification_tier validator
+        # (above) — keeps the constants dependency out of the module-top imports.
+        from app.constants import LICENSE_REQUIRED_CATEGORIES
+
+        needs_license = any(
+            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
+        )
+        license_missing = not (self.producer_license_number or "").strip()
+        self.license_pending = needs_license and license_missing
+        return self
 
 
 # MEH-767 (HOT-001): owner-facing self-serve response shape for

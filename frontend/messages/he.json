@@ -1225,7 +1225,9 @@
           "organic_certified": "אורגני מוסמך",
           "grass_fed": "גראס פד",
           "delivery": "משלוחים",
-          "pickup_points": "נקודות איסוף"
+          "pickup_points": "נקודות איסוף",
+          "license_pending": "רישיון ממתין",
+          "license_pending_title": "בקטגוריה הדורשת רישיון, ללא מספר רישיון — יש לאמת לפני אישור."
         },
         "actions": {
           "approve_short": "✓ אשר",

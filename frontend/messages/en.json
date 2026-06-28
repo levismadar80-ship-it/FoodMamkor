@@ -1225,7 +1225,9 @@
           "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "delivery": "Delivery",
-          "pickup_points": "Pickup points"
+          "pickup_points": "Pickup points",
+          "license_pending": "License pending",
+          "license_pending_title": "In a license-required category with no license number — verify before approving."
         },
         "actions": {
           "approve_short": "✓ Approve",

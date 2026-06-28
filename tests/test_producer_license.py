@@ -18,7 +18,7 @@ locks that decision in as a regression guard.
 from __future__ import annotations
 
 from app.models.models import Producer
-from tests.conftest import auth_header, make_category, make_user
+from tests.conftest import auth_header, make_category, make_producer, make_user
 
 
 BAKERY = "לחמים ואפייה"
@@ -359,3 +359,75 @@ class TestRegisterProducerLicensePending:
         assert producer is not None
         assert producer.producer_license_number is None
         assert producer.status == "pending_whatsapp"
+
+
+class TestAdminLicensePendingFlag:
+    """MEH-971 chunk 3 — ProducerAdminOut.license_pending derived flag.
+
+    True iff the producer is in >=1 license-required category AND has no
+    license number. Computed schema-side from the loaded categories +
+    constants.LICENSE_REQUIRED_CATEGORIES (no new column, no DB round-trip).
+    Status-independent. Admin-only (not on the public ProducerListOut).
+    """
+
+    def _set_license(self, db, producer, value):
+        producer.producer_license_number = value
+        db.commit()
+        db.refresh(producer)
+
+    def _fetch_admin_row(self, client, admin, producer_id):
+        resp = client.get("/admin/producers", headers=auth_header(admin))
+        assert resp.status_code == 200, resp.text
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
+        return rows.get(str(producer_id))
+
+    def test_required_category_empty_license_true(self, client, db):
+        """(1) license-required + empty license → license_pending True."""
+        admin = make_user(db, email="lpadmin1@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is True
+
+    def test_required_category_with_license_false(self, client, db):
+        """(2) license-required + license present → False."""
+        admin = make_user(db, email="lpadmin2@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        self._set_license(db, producer, "1234567")
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_non_license_category_empty_false(self, client, db):
+        """(3) non-license category + empty license → False."""
+        admin = make_user(db, email="lpadmin3@example.com", role="admin")
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        producer = make_producer(db, status="pending", category=veggies)
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_non_license_category_with_license_false(self, client, db):
+        """(4) non-license category + license present → False."""
+        admin = make_user(db, email="lpadmin4@example.com", role="admin")
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        producer = make_producer(db, status="pending", category=veggies)
+        self._set_license(db, producer, "1234567")
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_pending_queue_endpoint_exposes_field(self, client, db):
+        """GET /admin/producers?status=pending returns license_pending."""
+        admin = make_user(db, email="lpadmin5@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        resp = client.get("/admin/producers?status=pending", headers=auth_header(admin))
+        assert resp.status_code == 200, resp.text
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
+        row = rows.get(str(producer.id))
+        assert row is not None
+        assert "license_pending" in row
+        assert row["license_pending"] is True
