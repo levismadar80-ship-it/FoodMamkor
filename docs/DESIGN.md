@@ -304,6 +304,13 @@ front matter for the normative token bindings.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
   `label-md`. The save/like ("heart") affordance is **green or gold, never a red
   fill** (BRAND.md §3; the brand has no red token — see Do's and Don'ts).
+- **Map near-me pill (`NearMePill`, MEH-970):** quiet floating pill on mobile
+  `/map` — `Crosshair` glyph (`primary`) + "קרוב אליי" label, `surface` on a
+  pill (rounded-full) with hairline `border` + `shadow-md`. It is the **single**
+  mobile near-me control (the old icon-only crosshair was removed). Sits at the
+  `z-[1000]` map-controls tier, below the cookie banner (`z-[1100]`) and chat FAB
+  (`z-[9999]`); positioned `bottom-[16vh]` to clear the `PEEK=14vh` bottom sheet.
+  RTL logical props only (`start-4`).
 
 ## Do's and Don'ts
 
