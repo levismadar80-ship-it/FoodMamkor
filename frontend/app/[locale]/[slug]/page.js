@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // Reserved root paths that must NOT be treated as a slug.
@@ -18,7 +19,7 @@ const RESERVED = new Set([
 async function getProducerBySlug(slug) {
   if (!slug || RESERVED.has(slug.toLowerCase())) return null;
   try {
-    const res = await fetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
+    const res = await serverFetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

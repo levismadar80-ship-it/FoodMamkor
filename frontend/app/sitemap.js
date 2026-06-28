@@ -5,6 +5,7 @@
 // alternates.languages on every entry so Google reads <xhtml:link> hreflang
 // inline; complements <head> hreflang from MEH-476 PR 2.
 import { SITE_URL, API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { routing } from "@/i18n/routing";
 
 // localePrefix is "as-needed": defaultLocale (he) has no prefix; others get /<locale>.
@@ -63,7 +64,7 @@ export default async function sitemap() {
   // paginated index. 24 per page mirrors the SSR route.
   let producerIndexPages = [];
   try {
-    const res = await fetch(`${API_URL}/producers`);
+    const res = await serverFetch(`${API_URL}/producers`);
     if (res.ok) {
       const producers = await res.json();
       producerPages = producers.flatMap((p) => {
@@ -95,7 +96,7 @@ export default async function sitemap() {
   // Event detail pages — only future events
   let eventPages = [];
   try {
-    const res = await fetch(`${API_URL}/events`);
+    const res = await serverFetch(`${API_URL}/events`);
     if (res.ok) {
       const events = await res.json();
       eventPages = events.flatMap((e) =>
