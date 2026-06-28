@@ -139,6 +139,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
         working-directory: backend
+      - name: Lock consistency (uv.lock ↔ pyproject.toml)
+        run: uv lock --check
+        working-directory: backend
 
       - name: Show installed packages
         run: uv pip list
@@ -271,6 +274,9 @@ jobs:
 
       - name: Install dependencies (ruff comes from dev group)
         run: uv sync --frozen
+        working-directory: backend
+      - name: Lock consistency (uv.lock ↔ pyproject.toml)
+        run: uv lock --check
         working-directory: backend
 
       # `--extend-exclude alembic/versions` is set on the CLI rather than in
