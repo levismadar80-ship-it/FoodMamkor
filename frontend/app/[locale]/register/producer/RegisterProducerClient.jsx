@@ -91,11 +91,10 @@ function RegisterProducerPageBody() {
   // requirement at the field instead of letting the backend 422 land on STORY.
   // The backend check in license_validation.py stays the unchanged backstop.
   const [licenseRequiredError, setLicenseRequiredError] = useState(false);
-  // MEH-971 chunk 1: license-pending opt-in. When checked (license-required
-  // category only), the CATEGORY advance gate stops blocking on an empty
-  // license and the submit sends license_pending:true — backend chunk 2 parks
-  // the producer in the unpublishable pending queue; chunk 3 flags it for the
-  // admin; chunk 4 still blocks approval without a verified license.
+  // MEH-971: license-pending opt-in. When checked (license-required category
+  // only), the CATEGORY advance gate stops blocking on an empty license and the
+  // submit sends license_pending:true so the producer can register without a
+  // license number and enter the pending queue.
   const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
