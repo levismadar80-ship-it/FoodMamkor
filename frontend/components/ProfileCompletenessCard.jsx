@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { Check } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
@@ -122,7 +123,7 @@ export default function ProfileCompletenessCard({ producer }) {
         className="bg-background border border-border rounded-[16px] px-6 py-4 mb-8 flex items-center gap-3"
         role="status"
       >
-        <span className="text-primary text-lg font-bold" aria-hidden="true">✓</span>
+        <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
         <p className="font-headline-md text-base font-bold text-primary">
           {t("green_headline")}
         </p>
@@ -202,10 +203,10 @@ export default function ProfileCompletenessCard({ producer }) {
                   return (
                     <li key={slug} className="flex items-center gap-2 text-sm">
                       <span
-                        className="inline-flex w-4 justify-center text-primary font-bold"
+                        className="inline-flex w-4 justify-center text-primary"
                         aria-hidden="true"
                       >
-                        {done ? "✓" : ""}
+                        {done ? <Check size={14} weight="bold" /> : null}
                       </span>
                       <span className={done ? "text-text" : "text-fg-muted"}>
                         {t(`fields.${slug}`)}

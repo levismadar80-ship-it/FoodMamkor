@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin, Leaf } from "@phosphor-icons/react";
+import { MapPin, Leaf, CurrencyCircleDollar, Lightbulb } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
@@ -316,8 +316,8 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                 </p>
               )}
               {ex.price_per_person != null && (
-                <p className="text-fg-muted">
-                  💰{" "}
+                <p className="text-fg-muted inline-flex items-center gap-1">
+                  <CurrencyCircleDollar size={14} className="text-primary" aria-hidden="true" />
                   {Number(ex.price_per_person) === 0
                     ? t("experiences.free")
                     : t("experiences.price_per_person", { price: ex.price_per_person })}
@@ -337,8 +337,9 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                     {ex.moderation_reason}
                   </p>
                   {ex.moderation_suggestion && (
-                    <p className="text-xs text-fg-muted mt-1">
-                      💡 {ex.moderation_suggestion}
+                    <p className="text-xs text-fg-muted mt-1 inline-flex items-center gap-1">
+                      <Lightbulb size={14} weight="fill" className="text-amber-500" aria-hidden="true" />
+                      {ex.moderation_suggestion}
                     </p>
                   )}
                 </div>
