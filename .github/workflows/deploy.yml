@@ -373,3 +373,37 @@ jobs:
 
       - name: Probe staging
         run: python scripts/check_api_contract.py --probe https://staging.mehamakor.online
+  # ──────────────────────────────────────────────────────────────────
+  # DEPLOY GATE (MEH-892 completion) — deploy-side required-check aggregator.
+  # ──────────────────────────────────────────────────────────────────
+  deploy-gate:
+    name: Deploy gate (required)
+    if: always()
+    needs: [changes, lint, api-contract-static]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Aggregate deploy-side required checks
+        env:
+          R_CHANGES: ${{ needs.changes.result }}
+          R_LINT: ${{ needs.lint.result }}
+          R_API_CONTRACT: ${{ needs.api-contract-static.result }}
+        run: |
+          set -euo pipefail
+          fail=0
+          ok() { case "$1" in success|skipped) return 0 ;; *) return 1 ;; esac; }
+          check() { if ok "$2"; then echo "  OK  $1: $2"; else echo "  FAIL $1: $2"; fail=1; fi; }
+
+          if ! ok "$R_CHANGES"; then
+            echo "::error::Paths-filter job did not succeed (result=$R_CHANGES)."
+            exit 1
+          fi
+
+          check "Frontend lint (RTL + Next.js rules)" "$R_LINT"
+          check "API contract audit (static)" "$R_API_CONTRACT"
+
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::Deploy gate failed — a deploy-side required check failed."
+            exit 1
+          fi
+          echo "Deploy gate passed."
