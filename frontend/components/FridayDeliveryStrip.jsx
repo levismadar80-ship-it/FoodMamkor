@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { ShoppingCart } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import api from "@/lib/api";
 
@@ -30,8 +31,8 @@ function ProducerMiniCard({ producer }) {
             {(producer.name || "?")[0]}
           </div>
         )}
-        <span className="absolute top-1.5 end-1.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
-          🛒 {t("today")}
+        <span className="absolute top-1.5 end-1.5 inline-flex items-center gap-0.5 bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+          <ShoppingCart size={11} weight="fill" aria-hidden="true" />{t("today")}
         </span>
       </div>
       <div className="px-2 py-1.5">
@@ -76,7 +77,7 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
     >
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">🛒</span>
+          <ShoppingCart size={20} weight="fill" className="text-primary" aria-hidden="true" />
           <h2 className="font-headline-md font-semibold text-primary text-base">
             {t("title_alt")}
           </h2>

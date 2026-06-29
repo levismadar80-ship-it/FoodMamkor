@@ -19,6 +19,8 @@ import {
   X,
   Camera,
   Carrot,
+  Warning,
+  CheckCircle,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -346,7 +348,12 @@ function ProfileTab() {
           </p>
         </div>
 
-        {message && <p className="text-sm text-primary" role="status">✓ {message}</p>}
+        {message && (
+          <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
+            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            {message}
+          </p>
+        )}
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
         <button
@@ -535,7 +542,12 @@ function PasswordChangeCard({ isOAuth }) {
           )}
         </div>
 
-        {message && <p className="text-sm text-primary" role="status">✓ {message}</p>}
+        {message && (
+          <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
+            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            {message}
+          </p>
+        )}
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
         <button
@@ -766,7 +778,7 @@ function BusinessTab() {
       )}
       {status === "suspended" && (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
-          <span>⚠️</span>
+          <Warning size={18} weight="fill" aria-hidden="true" />
           <span className="font-medium">{t("status_suspended")}</span>
           <button
             type="button"

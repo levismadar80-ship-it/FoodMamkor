@@ -24,6 +24,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -87,24 +88,24 @@ function DeepAnalyticsSection({ analytics }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <WindowedMetricCard
           label={t("windowed.profile_views")}
-          icon="👁️"
+          icon={Eye}
           windows={profile_views}
           tooltip={t("windowed.profile_views_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.search_appearances")}
-          icon="🔎"
+          icon={MagnifyingGlass}
           windows={search_appearances}
           tooltip={t("windowed.search_appearances_tooltip")}
         />
         <WindowedMetricCard
           label={t("windowed.whatsapp_clicks")}
-          icon="💬"
+          icon={ChatCircle}
           windows={whatsapp_clicks}
         />
         <WindowedMetricCard
           label={t("windowed.contact_clicks")}
-          icon="📞"
+          icon={Phone}
           windows={contact_clicks}
         />
       </div>
@@ -113,13 +114,13 @@ function DeepAnalyticsSection({ analytics }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <SimpleCard
           label={t("simple_cards.followers_label")}
-          icon="🌿"
+          icon={Leaf}
           value={follower_count}
           sub={t("simple_cards.followers_sub_template", { count: new_followers_this_week })}
         />
         <SimpleCard
           label={t("simple_cards.rating_label")}
-          icon="⭐"
+          icon={Star}
           value={average_rating ? average_rating.toFixed(1) : "—"}
           sub={t("simple_cards.rating_sub_template", { count: total_reviews })}
         />
@@ -143,12 +144,12 @@ function DeepAnalyticsSection({ analytics }) {
   );
 }
 
-function WindowedMetricCard({ label, icon, windows, tooltip }) {
+function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
   const t = useTranslations("dashboard.producer.analytics");
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-2xl" aria-hidden="true">{icon}</span>
+        <Icon size={24} className="text-primary" aria-hidden="true" />
         <span className="text-xs text-fg-muted">{t("stats_window_label")}</span>
       </div>
       <p className="text-sm text-fg-muted mb-2">
@@ -172,11 +173,11 @@ function WindowedMetricCard({ label, icon, windows, tooltip }) {
   );
 }
 
-function SimpleCard({ label, icon, value, sub }) {
+function SimpleCard({ label, icon: Icon, value, sub }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-2xl" aria-hidden="true">{icon}</span>
+        <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>
       <p className="text-sm text-fg-muted mb-2">{label}</p>
       <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>

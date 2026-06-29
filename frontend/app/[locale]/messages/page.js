@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, MapPin } from "@phosphor-icons/react/ssr";
+import { Heart, MapPin, ChatCircle } from "@phosphor-icons/react/ssr";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -27,7 +27,7 @@ export default async function MessagesPage({ params }) {
   const t = await getTranslations({ locale, namespace: "sweep_tail.messages" });
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-      <div className="text-6xl mb-4" aria-hidden="true">💬</div>
+      <ChatCircle size={64} className="mx-auto mb-4 text-primary" aria-hidden="true" />
       <h1 className="font-headline-md text-2xl font-bold text-text mb-3">
         {t("heading")}
       </h1>

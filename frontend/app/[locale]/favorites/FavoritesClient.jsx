@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Heart } from "@phosphor-icons/react";
+import { Bell, Heart, Leaf, ArrowDown } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -79,8 +79,8 @@ export default function FavoritesClient() {
         <SkeletonProducerGrid count={6} />
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl">
-            🌿
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">
+            <Leaf size={40} weight="fill" className="text-primary" aria-hidden="true" />
           </div>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
             {t("empty_title")}
@@ -90,7 +90,7 @@ export default function FavoritesClient() {
           </p>
           {isFirstVisit && (
             <div className="inline-flex items-center gap-2 bg-green-50 border border-primary/20 rounded-[12px] px-4 py-3 mb-6 text-sm text-primary">
-              <span className="text-xl" aria-hidden="true">👇</span>
+              <ArrowDown size={20} weight="bold" className="text-primary" aria-hidden="true" />
               <span>{t("first_visit_tip")}</span>
             </div>
           )}

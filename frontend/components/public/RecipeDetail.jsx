@@ -20,6 +20,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 function splitLines(text) {
@@ -166,9 +167,9 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 ) : (
                   <span
                     aria-hidden="true"
-                    className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center text-xl"
+                    className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center"
                   >
-                    🌿
+                    <Leaf size={24} weight="fill" className="text-primary" />
                   </span>
                 )}
                 <div className="min-w-0">

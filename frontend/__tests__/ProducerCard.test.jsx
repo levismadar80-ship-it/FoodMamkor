@@ -116,6 +116,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Phone: (props) => <span data-testid="icon-phone" {...props} />,
   Globe: (props) => <span data-testid="icon-globe" {...props} />,
   EnvelopeSimple: (props) => <span data-testid="icon-email" {...props} />,
+  // MEH-990: rating ★ glyph → Phosphor Star (Emoji LOCK).
+  Star: (props) => <span data-testid="icon-star" {...props} />,
   // MEH-76 chunk 4 — S12 tier badge glyphs rendered by BadgeRow.
   SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
   Note: (props) => <span data-testid="icon-note" {...props} />,
@@ -238,7 +240,9 @@ describe("ProducerCard — Phase B anatomy", () => {
     render(<ProducerCard producer={fullProducer} />);
     const rating = screen.getByTestId("card-rating");
     expect(rating).toHaveAttribute("dir", "ltr");
-    expect(rating.textContent).toBe("★ 4.5 · 12");
+    // MEH-990: leading ★ glyph is now a Phosphor Star icon (no text node).
+    expect(rating.querySelector('[data-testid="icon-star"]')).toBeInTheDocument();
+    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 · 12");
   });
 
   it("hides rating entirely when reviews_count < 3", () => {

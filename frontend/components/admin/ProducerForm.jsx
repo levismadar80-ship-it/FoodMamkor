@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Seal } from "@phosphor-icons/react";
+import { Cow, Leaf, Seal, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -656,9 +656,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  aria-label={t("common.delete")}
                 >
-                  ✕
+                  <X size={14} weight="bold" aria-hidden="true" />
                 </button>
               </div>
             ))}

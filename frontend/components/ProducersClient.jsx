@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin, Plant, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
@@ -52,7 +52,9 @@ export default function ProducersClient({
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const cityChipDef = { key: "city", label: t("filters.city_chip"), icon: "📍" };
+  // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
+  // MEH-657) — dropped the 📍 icon string that ChipScrollRow rendered raw.
+  const cityChipDef = { key: "city", label: t("filters.city_chip") };
 
   const [chips, setChips] = useState(() => initChipsFromParams(searchParams));
   const [cityFilter, setCityFilter] = useState(() => searchParams.get("city") || null);
@@ -345,12 +347,13 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              📍 {cityFilter}
+              <MapPin size={13} weight="fill" aria-hidden="true" />{cityFilter}
             </button>
           )}
           {searchQ && (
             <button
               type="button"
+              data-testid="active-search-chip"
               onClick={() => {
                 setSearchQ("");
                 syncUrl(chips, cityFilter, "");
@@ -359,7 +362,7 @@ export default function ProducersClient({
               className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
             >
               <span aria-hidden="true" className="text-[10px] font-bold">×</span>
-              🔍 {searchQ}
+              <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
           <button
@@ -489,7 +492,9 @@ function FilterEmptyState({ onClear, searchQ }) {
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
-        <span className="text-2xl">{searchQ ? "🔍" : "🌱"}</span>
+        {searchQ
+          ? <MagnifyingGlass size={28} weight="bold" className="text-primary" aria-hidden="true" />
+          : <Plant size={28} weight="fill" className="text-primary" aria-hidden="true" />}
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {searchQ
@@ -536,7 +541,7 @@ function CatalogEmptyState() {
         className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4"
         aria-hidden="true"
       >
-        <span className="text-2xl">🌿</span>
+        <Leaf size={28} weight="fill" className="text-primary" aria-hidden="true" />
       </div>
       <h2 className="font-headline-md text-xl font-bold text-text mb-2">
         {t("title")}

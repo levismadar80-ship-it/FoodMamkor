@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X } from "@phosphor-icons/react";
+import { X, DeviceMobile } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
 const VISIT_KEY = "pwa_visits";
@@ -96,7 +96,7 @@ export default function InstallPrompt() {
       aria-label={t("aria_label")}
       className="fixed bottom-24 md:bottom-6 start-4 end-4 md:start-auto md:end-6 md:w-80 bg-white rounded-[16px] shadow-xl border border-border p-4 z-[9997] flex items-start gap-3"
     >
-      <span className="text-2xl shrink-0" aria-hidden="true">📲</span>
+      <DeviceMobile size={28} weight="fill" className="shrink-0 text-primary" aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-text text-sm leading-snug">{t("title")}</p>
         {ios ? (

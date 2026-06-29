@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Camera } from "@phosphor-icons/react";
+import { Camera, DownloadSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { BRAND_NAME } from "@/lib/constants";
@@ -247,7 +247,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
           disabled={!rendered}
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition disabled:opacity-40"
         >
-          ⬇️ {t("download")}
+          <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" /> {t("download")}
         </button>
         <button
           onClick={uploadToCloudinary}

@@ -16,7 +16,14 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("next-intl", () => ({ useTranslations: (s) => (k) => (s ? `${s}.${k}` : k) }));
 vi.mock("next/link", () => ({ default: ({ children, href }) => <a href={href}>{children}</a> }));
-vi.mock("@phosphor-icons/react", () => ({ MagnifyingGlass: (p) => <span {...p} /> }));
+// MEH-990: ProducersClient now renders MapPin/Plant/Leaf icons too (Emoji LOCK
+// swap of 📍🌱🌿) — mock all four so the partial mock doesn't throw on render.
+vi.mock("@phosphor-icons/react", () => ({
+  MagnifyingGlass: (p) => <span {...p} />,
+  MapPin: (p) => <span {...p} />,
+  Plant: (p) => <span {...p} />,
+  Leaf: (p) => <span {...p} />,
+}));
 
 // Child components — render nothing meaningful; we only test the search wiring.
 vi.mock("@/components/Breadcrumb", () => ({ default: () => null }));

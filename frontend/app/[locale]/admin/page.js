@@ -210,7 +210,7 @@ export default function AdminDashboard() {
           {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
-                <span>🆕</span>
+                <Sparkle size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
                 <span>{t("dashboard.activity.added_producer")}</span>
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}

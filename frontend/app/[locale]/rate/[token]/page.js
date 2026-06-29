@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { SmileyMeh, HandsPraying } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StarSelector from "@/components/StarSelector";
 import api from "@/lib/api";
@@ -50,7 +51,7 @@ export default function RatingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white rounded-[12px] p-8 text-center max-w-sm">
-          <p className="text-xl">😕</p>
+          <SmileyMeh size={32} className="text-fg-muted mx-auto" aria-hidden="true" />
           <p className="text-muted mt-2">{error}</p>
         </div>
       </div>
@@ -61,7 +62,7 @@ export default function RatingPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="bg-white rounded-[12px] p-8 text-center max-w-sm">
-          <p className="text-5xl mb-4">🙏</p>
+          <HandsPraying size={48} weight="fill" className="text-primary mx-auto mb-4" aria-hidden="true" />
           <h1 className="text-2xl font-bold mb-2">{t("thanks_title")}</h1>
           <p className="text-muted">{t("thanks_message")}</p>
         </div>
