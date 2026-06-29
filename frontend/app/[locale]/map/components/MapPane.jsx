@@ -142,8 +142,11 @@ export default function MapPane({
       </button>
 
       {/* Collapsible category legend — desktop only (mobile reads identity off the photo markers). */}
+      {/* MEH-979: lg:block (not md:block) — the mobile shell is lg:hidden (MapClient.jsx:336),
+          so md:block leaked the legend into the 768–1023px band where it overlapped the
+          NearMePill. lg matches the desktop GPS button (lg:flex) + desktop shell (lg:grid). */}
       {/* rtl-ok: map overlay, physical left = map-canvas start */}
-      <div ref={legendRef} className="hidden md:block absolute bottom-4 left-4 z-[800]">
+      <div ref={legendRef} className="hidden lg:block absolute bottom-4 left-4 z-[800]">
         {legendOpen && (
           <div className="mb-2 bg-surface-floating border border-border rounded-lg p-2 min-w-[180px]" role="group" aria-label={t("map.pane.aria.categories")}>
             <div className="space-y-0.5">
