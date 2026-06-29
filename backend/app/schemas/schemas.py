@@ -467,7 +467,8 @@ class ProducerAdminCreate(BaseModel):
     # (manual-approval flow), still bounded by the 20-char DB column.
     producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
-    is_verified: bool = True
+    # MEH-766 ch3: is_verified removed from admin create — verification is via
+    # grant-verified (verified_at) only; column stays at default False (drops ch6).
     # MEH-18
     is_recommended: bool = False
     images: list[str] = []
@@ -575,7 +576,8 @@ class ProducerUpdate(BaseModel):
     # routers/producer_me.py + routers/admin.py.
     producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
-    is_verified: bool | None = None
+    # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
+    # setattr-loop can no longer write it (verification = grant-verified only).
     # MEH-18
     is_recommended: bool | None = None
     is_available_today: bool | None = None
