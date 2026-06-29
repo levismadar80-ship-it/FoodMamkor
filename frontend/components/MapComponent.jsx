@@ -77,7 +77,7 @@ function createCategoryMarker(
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.4 : 1;
   const isPremium = producer.plan === "premium";
-  const isVerified = producer.is_verified;
+  const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
   // Round photo (square crop), else MEH-936 category-glyph fallback. No
   // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
