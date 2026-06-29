@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import ProducerCard from "@/components/ProducerCard";
@@ -196,10 +196,10 @@ function SearchPageBody() {
           {totalHits === 0 && (
             <div className="text-center py-16">
               <div
-                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6 text-5xl"
+                className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6"
                 aria-hidden="true"
               >
-                🌿
+                <Leaf size={40} weight="fill" className="text-primary" />
               </div>
               <h2 className="font-headline-md text-2xl font-bold text-text mb-2">
                 {t("empty_title")}

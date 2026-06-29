@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Leaf, MapPin } from "@phosphor-icons/react";
+import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
@@ -140,7 +140,7 @@ export default function ExperienceDetailClient() {
 
         <div className="flex flex-wrap gap-4 text-text/85 mb-6">
           <p className="flex items-center gap-2">
-            <span aria-hidden>📅</span>
+            <Calendar size={16} className="text-primary" aria-hidden="true" />
             {formatDate(ex.event_date, locale)}
             {ex.event_time && ` · ${formatTime(ex.event_time)}`}
           </p>
@@ -152,12 +152,12 @@ export default function ExperienceDetailClient() {
             </p>
           )}
           <p className="flex items-center gap-2 text-accent font-semibold">
-            <span aria-hidden>💰</span>
+            <CurrencyCircleDollar size={16} aria-hidden="true" />
             {formatPrice(ex.price_per_person)}
           </p>
           {ex.max_participants != null && (
             <p className="flex items-center gap-2">
-              <span aria-hidden>👥</span>
+              <Users size={16} className="text-primary" aria-hidden="true" />
               {ex.spots_left === 0
                 ? t("sold_out")
                 : t("spots_count", {

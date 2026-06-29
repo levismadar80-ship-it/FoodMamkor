@@ -141,7 +141,7 @@ function PreviewEmpty() {
     <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} className="text-primary/40" />
       <p className="text-text text-sm">
-        {t("pre_launch_hint")} 🌿
+        {t("pre_launch_hint")}
       </p>
     </div>
   );

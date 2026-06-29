@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart } from "@phosphor-icons/react";
+import { Heart, Lock } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
@@ -169,15 +169,16 @@ export default function AdminUsersPage() {
 
                         {/* Tooltip for protected super-admin row */}
                         {isSuperAdmin(u) && (
-                          <span className="text-xs text-muted" title={t("users.actions.protected_title")}>
-                            🔒
+                          <span className="text-muted inline-flex" title={t("users.actions.protected_title")}>
+                            <Lock size={14} weight="fill" aria-hidden="true" />
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
-                      <button onClick={() => toggleExpand(u)} className="hover:text-primary hover:underline">
-                        {u.favorites_count} ❤️
+                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary hover:underline">
+                        {u.favorites_count}
+                        <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Sparkle, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -362,10 +363,10 @@ export default function ProducerDashboardPage() {
               <button
                 type="button"
                 onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
-                className="text-xs text-fg-muted hover:text-red-600 transition"
+                className="text-fg-muted hover:text-red-600 transition inline-flex"
                 aria-label={t("availability.remove_vacation_date_aria")}
               >
-                ✕
+                <X size={14} weight="bold" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -459,7 +460,7 @@ function OverviewStatsHero({ analytics }) {
           (status/recognition signal, not deep analytics; MEH-57). */}
       {eligibleForWeekly && (
         <div className="bg-primary/10 border border-primary/25 rounded-[16px] p-4 flex items-center gap-3">
-          <span className="text-2xl" aria-hidden="true">🌟</span>
+          <Sparkle size={24} weight="fill" className="text-primary" aria-hidden="true" />
           <div>
             <p className="font-semibold text-primary text-sm">
               {t("eligible_weekly_title")}

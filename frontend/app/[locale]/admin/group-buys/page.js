@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 
@@ -102,7 +103,7 @@ export default function AdminGroupBuysPage() {
         <div className="text-center py-16 text-fg-muted">{t("common.loading_f")}</div>
       ) : items.length === 0 ? (
         <div className="text-center py-16 text-fg-muted">
-          <p className="text-4xl mb-3">🛒</p>
+          <ShoppingCart size={36} className="text-fg-muted mx-auto mb-3" aria-hidden="true" />
           <p>{t("group_buys.empty")}</p>
         </div>
       ) : (
