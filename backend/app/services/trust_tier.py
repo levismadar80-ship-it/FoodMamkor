@@ -19,7 +19,7 @@ def compute_trust_tier(producer) -> int:
 
     Tier 1 — profile exists (always)
     Tier 2 — phone_verified = true
-    Tier 3 — is_verified = true (admin-manual)
+    Tier 3 — verified_at set (document-verified, MEH-766)
     Tier 4 — reviews_count >= 10 AND avg_rating >= 4.5
     Tier 5 — ambassador = true (admin-manual, top producer in city)
     """
@@ -29,7 +29,9 @@ def compute_trust_tier(producer) -> int:
         getattr(producer, "avg_rating", 0) or 0
     ) >= 4.5:
         return 4
-    if getattr(producer, "is_verified", False):
+    # MEH-766: Tier 3 sourced from verified_at (document-verified) — decoupled
+    # from the legacy admin-manual is_verified boolean (writers retire ch3).
+    if getattr(producer, "verified_at", None) is not None:
         return 3
     if getattr(producer, "phone_verified", False):
         return 2
