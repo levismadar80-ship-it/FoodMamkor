@@ -123,21 +123,21 @@ describe("getPrimaryContactHref", () => {
 describe("getPrimaryContactLabel", () => {
   it("returns the Hebrew label for each method", () => {
     expect(getPrimaryContactLabel({ primary_contact_method: "whatsapp" })).toBe(
-      "שלחי הודעה",
+      "שליחת הודעה",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "phone" })).toBe(
-      "התקשרי",
+      "התקשרו",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "website" })).toBe(
       "להזמנה באתר",
     );
     expect(getPrimaryContactLabel({ primary_contact_method: "email" })).toBe(
-      "שלחי מייל",
+      "שליחת מייל",
     );
   });
 
   it("falls back for unknown method", () => {
-    expect(getPrimaryContactLabel({})).toBe("שלחי הודעה"); // default → whatsapp
+    expect(getPrimaryContactLabel({})).toBe("שליחת הודעה"); // default → whatsapp
   });
 });
 
