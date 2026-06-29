@@ -46,7 +46,9 @@ logger = structlog.get_logger(__name__)
 # remaining filter pairs (kosher, category, delivery_city, has_delivery,
 # city, dietary) need bespoke logic and stay inline below.
 _SIMPLE_FILTERS: list[tuple[str, str]] = [
-    ("verified", "is_verified"),
+    # MEH-766: `verified` moved to a bespoke verified_at block below (was
+    # ("verified", "is_verified")) — the ?verified filter now matches
+    # document-verified producers, not the legacy admin-manual boolean.
     ("organic", "organic_certified"),
     ("is_available_today", "is_available_today"),
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
@@ -142,7 +144,7 @@ def _build_base_queries(
     return q, count_q
 
 
-def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + 5 structurally distinct query branches (kosher / category / delivery / city). Refactor would fragment coherent listing logic.
+def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
     # boolean column needs only an extra row, not a new branch.
@@ -188,6 +190,18 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901  # 14 boole
             count_q = count_q.filter(
                 (Producer.kosher.is_(None)) | (Producer.kosher == "")
             )
+
+    # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
+    # NOT the legacy is_verified boolean. # REUSES: kosher block above —
+    # presence/absence pattern, filter BOTH q and count_q.
+    verified = filters.get("verified")
+    if verified is not None:
+        if verified:
+            q = q.filter(Producer.verified_at.isnot(None))
+            count_q = count_q.filter(Producer.verified_at.isnot(None))
+        else:
+            q = q.filter(Producer.verified_at.is_(None))
+            count_q = count_q.filter(Producer.verified_at.is_(None))
 
     category = filters.get("category")
     if category is not None:
