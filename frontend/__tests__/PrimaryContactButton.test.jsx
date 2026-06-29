@@ -37,7 +37,7 @@ describe("PrimaryContactButton", () => {
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("data-method", "whatsapp");
     expect(btn.getAttribute("href")).toContain("wa.me/");
-    expect(screen.getByText("שלחי הודעה")).toBeInTheDocument();
+    expect(screen.getByText("שליחת הודעה")).toBeInTheDocument();
     expect(screen.getByTestId("icon-whatsapp")).toBeInTheDocument();
   });
 
@@ -47,7 +47,7 @@ describe("PrimaryContactButton", () => {
     );
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("href", "tel:0501234567");
-    expect(screen.getByText("התקשרי")).toBeInTheDocument();
+    expect(screen.getByText("התקשרו")).toBeInTheDocument();
   });
 
   it("website variant — opens in a new tab with rel=noopener", () => {
@@ -70,7 +70,7 @@ describe("PrimaryContactButton", () => {
     );
     const btn = screen.getByTestId("primary-contact-button");
     expect(btn).toHaveAttribute("href", "mailto:hello@havat-hashikma.co.il");
-    expect(screen.getByText("שלחי מייל")).toBeInTheDocument();
+    expect(screen.getByText("שליחת מייל")).toBeInTheDocument();
   });
 
   it("returns null when the required field is missing", () => {
