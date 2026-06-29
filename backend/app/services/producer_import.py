@@ -242,7 +242,7 @@ def import_rows(db: Session, rows: list[list[Any]], dry_run: bool = False) -> di
             pickup_points=parsed.data["pickup_points"],
             kosher=parsed.data["kosher"],
             admin_notes=parsed.data["admin_notes"],
-            is_verified=True,
+            # MEH-766 ch3: import no longer sets is_verified (column default False).
             status="approved",  # imported = pre-approved
         )
         db.add(producer)
