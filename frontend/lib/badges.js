@@ -11,7 +11,7 @@
  *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
- *   kosher       (manual)  — producer.kosher (any non-empty string)
+ *   kosher       (verified) — producer.kashrut_verified_at present (admin-verified cert, MEH-986; free-text producer.kosher drives NO badge)
  *   delivery     (auto)    — producer.has_delivery OR delivery_count > 0
  *   products     (auto)    — producer.products_count >= 3
  *
@@ -158,7 +158,13 @@ function earnsBadge(producer, key) {
     case "lactose_free":
       return !!producer.has_lactose_free_products;
     case "kosher":
-      return typeof producer.kosher === "string" && producer.kosher.trim().length > 0;
+      // MEH-986 ch2 (P0 legal — חוק איסור הונאה בכשרות): the public kosher badge
+      // must render ONLY for admin-verified kashrut, never from the free-text
+      // producer.kosher field. kashrut_verified_at is stamped by the admin
+      // approve flow (admin_kashrut.py:75, alongside kashrut_badges) — the same
+      // "verified signal" shape the verified badge uses at :136. Free-text
+      // producer.kosher now drives NO public badge.
+      return !!producer.kashrut_verified_at;
     case "delivery":
       return (
         !!producer.has_delivery ||

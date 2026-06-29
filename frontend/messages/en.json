@@ -2297,7 +2297,7 @@
       },
       "artisan_dairy": {
         "label": "Farm dairy",
-        "tooltip": "Milk and dairy directly from the farm, kosher"
+        "tooltip": "Milk and dairy directly from the farm"
       }
     },
     "expiry": {
@@ -2365,7 +2365,7 @@
       "popular_descs": {
         "dairy": "Cheeses, yogurt, butter",
         "bread": "Baked goods, challah, cakes",
-        "meat": "Fresh, kosher, from the farm",
+        "meat": "Fresh, local, quality",
         "oil": "Olive oil, select oils",
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"
