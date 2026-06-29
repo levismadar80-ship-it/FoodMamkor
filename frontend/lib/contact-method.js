@@ -80,20 +80,20 @@ export function getPrimaryContactHref(producer) {
 export function getPrimaryContactLabel(producer) {
   switch (getPrimaryMethod(producer)) {
     case "whatsapp":
-      return "שלחי הודעה";
+      return "שליחת הודעה";
     case "phone":
-      return "התקשרי";
+      return "התקשרו";
     case "website":
       // MEH-76 chunk 2 — S6 CTA variant C (D4 decision, 6.6): relabel only.
       // website-primary reads as an ordering affordance, not a brochure link.
       return "להזמנה באתר";
     case "email":
-      return "שלחי מייל";
+      return "שליחת מייל";
     // MEH-296: locked copy for the 3 new primary channels.
     case "instagram":
-      return "שלחי הודעה באינסטגרם";
+      return "שליחת הודעה באינסטגרם";
     case "facebook":
-      return "שלחי הודעה בפייסבוק";
+      return "שליחת הודעה בפייסבוק";
     case "external_order":
       return "להזמנה";
     default:
