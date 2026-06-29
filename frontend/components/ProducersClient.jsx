@@ -353,6 +353,7 @@ export default function ProducersClient({
           {searchQ && (
             <button
               type="button"
+              data-testid="active-search-chip"
               onClick={() => {
                 setSearchQ("");
                 syncUrl(chips, cityFilter, "");
