@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
 // MEH-869: shared category set — aliased on import (no transform; the
@@ -31,6 +32,7 @@ export default function NewEventPage() {
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   if (!authLoading && (!user || user.role !== "producer")) {
     if (typeof window !== "undefined") router.push("/login");
@@ -38,6 +40,26 @@ export default function NewEventPage() {
   }
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
+
+  // MEH-988: click-to-upload replaces the raw Cloudinary-URL input.
+  // REUSES: frontend/components/RecipeForm.jsx:94 — POST /upload/image,
+  // store res.data.url (the secure_url) in form.image_url.
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await api.post("/upload/image", formData);
+      setForm((f) => ({ ...f, image_url: res.data.url }));
+    } catch (err) {
+      showToast.error(err.response?.data?.detail || "העלאת התמונה נכשלה. נסו שוב.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -189,17 +211,42 @@ export default function NewEventPage() {
           </Field>
         </div>
 
-        <Field id="image_url" label={t("field_image_label")}>
-          <input
-            id="image_url"
-            type="url"
-            value={form.image_url}
-            onChange={update("image_url")}
-            className="input-base"
-            placeholder={t("field_image_placeholder")}
-            dir="ltr"
-          />
-        </Field>
+        <div>
+          <label className="block text-sm font-medium text-text mb-1">תמונת האירוע</label>
+          {form.image_url ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.image_url}
+                alt=""
+                className="w-24 h-24 object-cover rounded-[8px] border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
+                aria-label="הסרת התמונה"
+                className="text-sm text-red-600 hover:underline"
+              >
+                ✕ הסרת תמונה
+              </button>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploading}
+                onChange={handleImageUpload}
+              />
+              {uploading ? (
+                <span>מעלה תמונה...</span>
+              ) : (
+                <span>גררו לכאן או לחצו להעלאה · JPG / PNG / WebP</span>
+              )}
+            </label>
+          )}
+        </div>
 
         <Field id="registration_url" label={t("field_registration_url_label")}>
           <input
@@ -216,7 +263,7 @@ export default function NewEventPage() {
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || uploading}
             className="bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium disabled:opacity-60"
           >
             {submitting ? t("submit_publishing") : t("submit")}
