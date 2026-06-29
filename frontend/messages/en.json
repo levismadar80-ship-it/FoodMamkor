@@ -411,7 +411,7 @@
       "explore_map": "Explore on map",
       "load_more": "More businesses",
       "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more Tap a card to view details",
-      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above"
+      "onboarding1": "Filter by organic, delivery and more — tap one of the buttons above"
     },
     "founder_quote": {
       "text": "Real food, from real people, right next door.",
@@ -2297,7 +2297,7 @@
       },
       "artisan_dairy": {
         "label": "Farm dairy",
-        "tooltip": "Milk and dairy directly from the farm, kosher"
+        "tooltip": "Milk and dairy directly from the farm"
       }
     },
     "expiry": {
@@ -2365,7 +2365,7 @@
       "popular_descs": {
         "dairy": "Cheeses, yogurt, butter",
         "bread": "Baked goods, challah, cakes",
-        "meat": "Fresh, kosher, from the farm",
+        "meat": "Fresh, local, quality",
         "oil": "Olive oil, select oils",
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"

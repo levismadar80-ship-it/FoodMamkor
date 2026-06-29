@@ -73,7 +73,7 @@ export function useHomePage() {
   const [stats, setStats] = useState(null);
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading] = useState(false);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  const [chips, setChips] = useState({ organic: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -118,7 +118,6 @@ export function useHomePage() {
       has_delivery: p.get("delivery") === "1",
     };
     const initChips = {
-      kosher: p.get("kosher") === "1",
       organic: p.get("organic") === "1",
       has_delivery: p.get("delivery") === "1",
       verified: p.get("verified") === "1",
@@ -226,7 +225,6 @@ export function useHomePage() {
     const p = new URLSearchParams();
     if (f.category) p.set("category", f.category);
     if (f.delivery_city) p.set("city", f.delivery_city);
-    if (c.kosher) p.set("kosher", "1");
     if (c.organic) p.set("organic", "1");
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
