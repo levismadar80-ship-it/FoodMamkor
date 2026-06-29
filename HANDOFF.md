@@ -5,6 +5,23 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-06-29 — Session close (runtime-error batch + emoji-lock + map)
+
+**Merged to staging today:** MEH-975 (group-buys 422/React#31), MEH-976 (footer newsletter bidi), MEH-977 (Vercel→Railway server-fetch resilience), MEH-978 (/en/map missing key + parity guard), MEH-979 (/map legend breakpoint → no pill overlap), MEH-980 (home.cta variant B) + group-buys Emoji-LOCK (#1413) + **MEH-987** (this PR — emoji-lock sweep ×4).
+
+**In Review — awaiting Sapir mobile glance** (merged but UI to eyeball on staging): MEH-975, MEH-976, MEH-979, MEH-980.
+
+**Canceled:** MEH-983 (`/[locale]/[slug]` InvariantError) — Phase-0 verdict: Next.js framework one-off (3 events / 1 user / 1 day, bot probing the catch-all `[slug]`); no reproducible code defect. No code.
+
+**Open / blocked on Sapir:** MEH-948 (`/map` Turkey screenshot). Code center is correct & fixed (`MapComponent.jsx:301-315` `[32.4,34.95]` z8); geometry proves a zoom-8 Israel frame can't show lat-37 Turkey → it's NOT default-correct and NOT tile-latency. **Need from Sapir:** was the screenshot the untouched default load, or after a pinch-zoom-out/pan? (panned → close; default-on-device → (c) iOS-Safari dvh/zoom race, central `MapComponent`, chunked + `/adversarial-review`.)
+
+**🔴 Systemic gap flagged:** **Sentry is not wired** (frontend SDK present but the MEH-977-class Vercel→Railway runtime errors ran silent for ~2 months — surfaced only via Vercel runtime logs, not Sentry). Worth a ticket to actually wire Sentry capture so runtime errors don't go unnoticed.
+
+### MEH-987 — Emoji-LOCK sweep (4 EmptyState `emoji=` sites) — DRAFT PR
+- **Branch:** `feature/meh-987-emoji-lock-sweep-4` off `origin/staging`. LOW-RISK, frontend-only. `Closes MEH-987`.
+- **Done:** converted the 4 remaining `EmptyState emoji=` props → Phosphor `icon=` (the `icon` prop added in MEH-979b): `settings/page.jsx:1003` 🥕→`Carrot`, `recipes/page.js:105` 🍞→`Bread`, `followers/page.js:71` 🌱→`Plant`, `ReviewsSection.jsx:301` ⭐→`Star` (Star was already imported). All 4 icons confirmed to exist in `@phosphor-icons/react`. `grep emoji=` over app/components → **0 remaining**. `npm run build` green, 0 eslint errors. No automated emoji-lock guard exists (manual convention).
+- **⚠️ SCOPE-GUARD FINDING (LISTed, NOT fixed — per task "if >4, list and stop"):** the frontend has **many more stray UI emoji literals** beyond the 4 `emoji=` props. Real rendered-glyph breaches (production, non-test, non-comment): `verify-email/VerifyEmailClient.jsx:45/59/78` (✉️✅❌), `favorites/FavoritesClient.jsx:83/93` (🌿👇), `privacy/page.js:164` + `terms/page.js:178` (📧), `messages/page.js:30` (💬), `upgrade/UpgradeClient.jsx:31` (⭐), `HomepageMiniMap.jsx:144` (🌿), `ProducersClient.jsx:55/348/362/492/539` (📍🔍🌱🌿), `StarRating.jsx:11` (⭐), `FavoriteButton.jsx:141` (❤️🤍), `WhatsAppShareButton.jsx:32` (💬), `StoryCardCanvas.jsx:130/250` (🌿⬇️), share-text strings in `ShareButton.jsx:18` + `StoryCardCanvas.jsx:217` (👉), and emoji *data* in `lib/holidays.js:10-70` (🫓🧀🍎🌿🕎🌳). Separately, dingbats `✓ ★ ○ ♥` (`PasswordInput`, `ProducerCard` rating ★, `ProfileCompletenessCard` ✓, `MapComponent` ✓) are likely **intentional glyph-LOCK exceptions** — design call, not assumed breaches. **Recommend a dedicated follow-up ticket** (per-surface, with copy/design review) rather than expanding this PR.
+
 ## 2026-06-28 — MEH-971 chunk 1: frontend license-pending opt-in — DRAFT PR (LAST chunk)
 
 - **Branch:** `feature/meh-971-license-pending-frontend` off `origin/staging` (0 divergence). DRAFT PR → `staging`. Frontend-only. `Refs MEH-971` (NOT Closes — epic closes after Sapir mobile QA). **STOP after this — MEH-971 complete pending QA.**
