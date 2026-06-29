@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
-import { LinkSimple } from "@phosphor-icons/react";
+import { LinkSimple, Plant } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default function FollowersPage() {
@@ -68,7 +68,7 @@ export default function FollowersPage() {
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : followerCount === 0 ? (
         <EmptyState
-          emoji="🌱"
+          icon={Plant}
           title={t("empty_title")}
           description={t("empty_description")}
           ctaLabel={copied ? t("share_cta_copied") : t("share_cta")}

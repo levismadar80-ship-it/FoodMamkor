@@ -298,7 +298,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       ) : reviews.length === 0 ? (
         isOwner ? (
           <EmptyState
-            emoji="⭐"
+            icon={Star}
             title={t("owner_empty_title")}
             description={t("owner_empty_description")}
             ctaLabel={t("owner_empty_cta")}
