@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { Bread } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
@@ -102,7 +103,7 @@ export default function ProducerRecipesPage() {
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
-          emoji="🍞"
+          icon={Bread}
           title={t("empty_title")}
           description={t("empty_description")}
           ctaLabel={t("empty_cta")}

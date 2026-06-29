@@ -18,6 +18,7 @@ import {
   Pencil,
   X,
   Camera,
+  Carrot,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -1000,7 +1001,7 @@ function ProductsSection() {
 
       {products?.length === 0 && !adding && (
         <EmptyState
-          emoji="🥕"
+          icon={Carrot}
           title={t("empty.title")}
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
