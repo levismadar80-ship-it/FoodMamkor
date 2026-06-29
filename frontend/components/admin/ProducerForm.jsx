@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Seal, X } from "@phosphor-icons/react";
+import { Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -119,7 +119,7 @@ const EMPTY = {
   grass_fed: false,
   organic_certified: false,
   // MEH-293: dietary flags (gluten_free / vegan / lactose_free) moved to per-product.
-  is_verified: true,
+  // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
   is_recommended: false,
   // MEH-530: admin form persists raw value; backend enforces conditional-
@@ -468,15 +468,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.is_verified}
-              onChange={(e) => update("is_verified", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.verified")}
-          </label>
+          {/* MEH-766 ch3: "verified" checkbox removed — verification is the
+              admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"

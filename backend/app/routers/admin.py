@@ -176,7 +176,8 @@ def admin_create_producer(
         kosher=data.kosher,
         producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
-        is_verified=data.is_verified,
+        # MEH-766 ch3: is_verified no longer set on admin create — column default
+        # False applies; verification is via grant-verified (verified_at) only.
         images=data.images or [],
         # MEH-213 — location mode
         has_physical_location=data.has_physical_location,

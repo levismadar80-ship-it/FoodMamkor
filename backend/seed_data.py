@@ -271,7 +271,7 @@ def seed():
                 top_product_name=p_data.get("top_product_name"),
                 starting_price_label=p_data.get("starting_price_label"),
                 status="approved",
-                is_verified=True,
+                # MEH-766 ch3: seed no longer sets is_verified (column default False).
             )
             db.add(producer)
             db.flush()
