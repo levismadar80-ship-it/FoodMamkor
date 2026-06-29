@@ -28,7 +28,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const priceMatch = priceLabel ? priceLabel.match(/^([^\d₪]*)(.*)$/) : null;
   const pricePrefix = priceMatch?.[1] ?? "";
   const priceNumber = priceMatch?.[2] ?? "";
-  const isVerified = p.is_verified;
+  const isVerified = p.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
   // MEH-798: also pull the Phosphor `icon` for the category chip below.
