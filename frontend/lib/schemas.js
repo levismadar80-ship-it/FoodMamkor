@@ -12,6 +12,9 @@ export const ProducerSchema = z.object({
   phone: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   is_verified: z.boolean().optional(),
+  // MEH-766 ch1: public doc-verification tier (computed backend, ProducerListOut:786).
+  // Declared so z.object stops stripping it; seals read this, is_verified kept (drops ch5).
+  verification_tier: z.enum(["verified", "declared"]).nullable().optional(),
   plan: z.string().optional(),
   images: z.array(z.string()).optional().default([]),
   // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
