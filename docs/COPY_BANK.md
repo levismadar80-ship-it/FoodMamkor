@@ -414,14 +414,16 @@
 ### Homepage bottom CTA
 | Field | Value |
 |---|---|
-| **Heading** | `יש לך עסק? בואי אליו` |
-| **Body** | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` |
-| **Previous body** | `אם את בעלת עסק, חקלאית או מגדלת — הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` |
-| **Button** | `הוסיפו את העסק שלך 🌿` |
-| **i18n keys** | `home.cta.heading` / `home.cta.body` / `home.cta.button` |
-| **Status** | ✅ (MEH-605, PR #682, 2026-05-16) |
-| **Why** | Removes "דירקטורי" (marketplace word) + partial category list ("חקלאית או מגדלת" excluded ~75% of base — bakeries, dairies, wineries, chocolatiers). Brand Hub v1.1 §8: no partial category lists. |
-| **MEH** | MEH-605 |
+| **Heading** | `יש לך עסק? בואו אלינו` |
+| **Body (l1)** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.` |
+| **Body (l2)** | `תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.` |
+| **Body (l3)** | `חינם, בלי עמלות. נשמח להכיר.` |
+| **Previous body** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר.` (MEH-605 single-`body` → 3-line split) |
+| **Button** | `הוסיפו את העסק שלך` |
+| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` / `home.cta.button` |
+| **Status** | ✅ (variant B — MEH-980; ⏳ Sapir veto at merge) |
+| **Why** | Variant B leads with what the business gets (own page, direct line to customers) and adds the free/no-commission reassurance. Keeps the "no partial category list" + no-"דירקטורי" rules from MEH-605. |
+| **MEH** | MEH-605 → MEH-980 |
 
 ### Footer made-with-love
 | Field | Value |
