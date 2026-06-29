@@ -75,7 +75,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
         <p className="text-[13px] text-fg-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
         {/* MEH-826: removed dead is_organic/is_kosher bindings (payload uses
             organic_certified/kosher; design has no dietary badge here). */}
-        {sp.is_verified && (
+        {sp.verification_tier === "verified" && ( // MEH-766 ch1: doc-verification tier
           <div className="flex flex-wrap gap-1 mt-1.5">
             {/* MEH-943: glyph-LOCK — raw ✓ stripped from he.json value; canonical SealCheck (BadgeRow.jsx:130) rendered inline instead. */}
             <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full"><SealCheck size={11} aria-hidden="true" />{t("map.sheet.badge.verified")}</span>
