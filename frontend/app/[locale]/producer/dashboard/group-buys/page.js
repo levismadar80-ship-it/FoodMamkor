@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -285,7 +286,7 @@ export default function ProducerGroupBuysPage() {
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
         <EmptyState
-          emoji="🛒"
+          icon={ShoppingCart}
           title={t("empty_title")}
           description={t("empty_description")}
           ctaLabel={t("empty_cta")}
