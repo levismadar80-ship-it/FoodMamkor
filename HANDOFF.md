@@ -5,6 +5,29 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-02 — Session close (runtime-error batch + emoji-lock + group-buy clarity)
+
+**Merged to staging today:**
+- MEH-975 group-buys 422/React#31 (#1400) · MEH-976 footer newsletter bidi (#1402)
+- MEH-977 server-fetch resilience (#1406) · MEH-978 /en/map key + parity gate (#1404)
+- MEH-979 legend `lg:block` (#1412) · MEH-980 home.cta variant B (#1407)
+- MEH-987 EmptyState 4-emoji sweep (#1416) · MEH-990 emoji residue (#1419 + #1424)
+- MEH-992 group-buy form clarity (#1431)
+
+**Linear state (all closed manually — staging merges don't auto-close):**
+- **Done:** 975, 976, 977, 978, 979, 980, 982, 987, 990, 992, 948
+- **Canceled:** 983 (Next.js catch-all one-off, not reproducible)
+- **948 closed WITHOUT fix** — `/map` default centering verified correct geometrically; reopen trigger documented in its comment (a real user seeing an off-Israel map on a **clean** load → the iOS-`dvh`/zoom-race fix, central `MapComponent`, chunked + `/adversarial-review`).
+
+**Open follow-ups (tracked, not blocking):**
+- **MEH-993** Sentry wiring — 3 chunks, **BLOCKED on Sapir Chunk-1** (create Sentry projects + DSN). Root: the MEH-977-class Vercel→Railway runtime errors ran silent ~2 months (frontend SDK present but capture not wired).
+- **MEH-964** (In Progress) — folded-in 3 bio/custom-questions quick-wins via comment; incl. bio-heading copy decision pending Sapir.
+- **MEH-982 item #8 deferred** — RTL-native date picker (L).
+
+**Sapir pending (not CC):** mobile glance on merged UI · Sentry Chunk-1 setup · bio-heading copy pick.
+
+**Session mechanics note:** #1424 (MEH-990) hit three sequential staging-drift conflicts on merge (append-only CHANGELOG/HANDOFF + one real `events/new/page.js` code conflict where staging's MEH-988 i18n `t()` swap collided with the `✕`→`X` sweep — resolved by **keeping both** the Phosphor `<X>` and the `t()` label). All resolved Accept-Both / combine-both, build green each time. Both #1431 and #1424 squash-merged after their ready-for-review re-triggered required gates settled.
+
 ## 2026-07-02 — MEH-990 follow-up: Emoji-LOCK arrow/dingbat residue → Phosphor — DRAFT PR
 
 - **Branch:** `feature/meh-990-emoji-lock-sweep-rest` (restarted off `origin/staging`; PR #1419 already merged — new PR per merged-PR protocol). LOW-RISK, frontend-only. `Closes MEH-990`.
