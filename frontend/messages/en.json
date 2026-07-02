@@ -1094,6 +1094,7 @@
         "producers": "Businesses",
         "outreach": "Outreach",
         "experiences": "Experiences",
+        "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
         "reviews": "Reviews",
@@ -1407,6 +1408,57 @@
         "submitting": "...",
         "confirm": "Confirm"
       }
+    },
+    "recipes": {
+      "title": "Business recipes",
+      "subtitle": "Moderation for business-submitted recipes",
+      "tabs": {
+        "pending": "Pending",
+        "needs_revision": "Needs revision",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "error_loading": "Error loading recipes",
+      "empty": "No recipes in this status",
+      "columns": {
+        "title": "Title",
+        "created": "Submitted",
+        "published": "Published",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "published_yes": "Published",
+      "published_no": "Not published",
+      "status_labels": {
+        "pending": "Pending",
+        "needs_revision": "Needs revision",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "actions": {
+        "approve": "Approve",
+        "changes": "Changes",
+        "reject": "Reject"
+      },
+      "approve_toast": "Recipe approved and published",
+      "approve_error": "Approval error",
+      "validate_feedback": "Please fill in a note",
+      "changes_toast": "Change request sent",
+      "reject_toast": "Recipe rejected",
+      "submit_error": "Submission error",
+      "modal": {
+        "changes_title": "Request changes",
+        "reject_title": "Reject recipe",
+        "changes_label": "Notes for editing",
+        "reject_label": "Reason for rejection",
+        "changes_placeholder": "e.g.: Exact quantities missing from the ingredients...",
+        "reject_placeholder": "e.g.: Content not relevant to the platform",
+        "submit": "Confirm"
+      },
+      "ingredients_label": "Ingredients:",
+      "instructions_label": "Instructions:",
+      "notes_label": "Moderation notes"
     },
     "experiences": {
       "title": "Community experiences",
