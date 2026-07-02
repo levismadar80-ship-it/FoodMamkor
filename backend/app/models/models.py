@@ -3,6 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     Date,
     DateTime,
@@ -236,6 +237,21 @@ class Producer(Base):
         # Added in migration b504e4be4225 alongside the 4 email_followup_*
         # columns above.
         Index("idx_producers_created_at", "created_at"),
+        # MEH-272: two CHECK constraints that already live on prod/staging
+        # (added by the removed `_migrate_columns` raw SQL, MEH-267 era) but
+        # were never declared in the ORM or the alembic baseline — so fresh
+        # bootstrapped DBs (local dev, new env, CI) silently lacked them.
+        # Pydantic `model_validator` guards the API layer; these protect the
+        # direct-SQL paths (seeds, imports, psql). Migration f9a2c7d41b83 adds
+        # them idempotently (IF NOT EXISTS) so it's a no-op where they exist.
+        CheckConstraint(
+            "has_physical_location OR offers_delivery",
+            name="producer_location_mode",
+        ),
+        CheckConstraint(
+            "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
+            name="delivery_nationwide_xor_cities",
+        ),
     )
 
 
