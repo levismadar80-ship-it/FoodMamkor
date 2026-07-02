@@ -234,6 +234,17 @@ erDiagram
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
 
+> **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
+> `__table_args__`):** `producers` carries two CHECK constraints — a producer
+> must be reachable (`producer_location_mode`: `has_physical_location OR
+> offers_delivery`) and nationwide-delivery excludes an explicit city list
+> (`delivery_nationwide_xor_cities`: `NOT (delivery_nationwide AND
+> array_length(delivery_cities, 1) > 0)`). Both already lived on prod/staging
+> from the removed `_migrate_columns` (MEH-267) but were absent from the ORM +
+> baseline, so fresh DBs lacked them; MEH-272 declares them in the model and
+> re-adds them idempotently (`IF NOT EXISTS`). Pydantic `model_validator`
+> guards the API layer; these protect direct-SQL paths (seeds, imports, psql).
+
 ## 4. Analytics + marketing
 
 ```mermaid
