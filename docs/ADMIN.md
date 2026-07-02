@@ -13,6 +13,7 @@ sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
 | אנליטיקס | /admin/analytics | גרפים + heat map + top producers |
 | חוויות | /admin/experiences | מיתון חוויות — 5 טאבים (ממתינות לאישור / דרוש תיקון / מאושרות / נדחו / הכל) + כפתורי אישור/דחייה/בקשת שינויים + התראת מייל למארח |
+| מתכונים | /admin/recipes | מיתון מתכונים של בתי עסק (MEH-997) — 5 טאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) לפי moderation_status + אישור (מפרסם) / בקשת שינויים (הערה חובה) / דחייה. אין התראה לבית העסק — ההערות מוצגות בדשבורד שלו |
 | כשרות | /admin/kashrut | טבלת בקשות badge + אישור/דחייה + הערות דחייה. Badge צהוב ב-sidebar כשיש בקשות ממתינות |
 | הגדרות | /admin/settings | אימייל/WhatsApp אדמין + freemium + בדיקת Twilio/Cloudinary |
 
@@ -91,7 +92,7 @@ npx playwright test             # E2E
 - נטען ב-`frontend/app/admin/layout.js` כ-fetch ל-`/admin/dashboard` בכל
   שינוי של `pathname`, כך שהמספר מתעדכן כשעוברים בין דפי admin.
 - הסכום: `pending_producers + open_reports + flagged_home_products +
-  pending_experiences + pending_kashrut_requests`.
+  pending_experiences + pending_kashrut_requests + pending_recipes` (MEH-997).
 - מופיע כ-pill צהוב (`bg-yellow-400 text-yellow-900`) על הניווט "לוח
   מחוונים" (הסכום הכולל) ועל "כשרות" (pending_kashrut_requests בלבד).
   רק כשהספירה > 0.
