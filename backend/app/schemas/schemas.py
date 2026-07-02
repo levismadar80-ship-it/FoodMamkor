@@ -717,7 +717,11 @@ class ProducerListOut(BaseModel):
     has_lactose_free_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
-    kosher: str | None = None
+    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
+    # LONGER on the public output — an unverified kosher string must never
+    # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
+    # (admin-internal + owner's own view). Public kosher signal is verified-only
+    # via `kashrut_verified_at` (:757 below). Column stays in the model (no drop).
     # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
     # Moved up from ProducerDetailOut so the /map card can show open/closed status.
     opening_hours: str | None = None
@@ -877,6 +881,9 @@ class ProducerDetailOut(ProducerListOut):
 # by /admin/producers/* and producer_me self endpoints so admins and
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
+    # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
+    # public ProducerListOut but stays admin-internal (the admin table + form).
+    kosher: str | None = None
     producer_license_number: str | None = None
     # MEH-829: street address submitted at registration — admin-visible (+ owner
     # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
@@ -929,6 +936,10 @@ class ProducerAdminOut(ProducerDetailOut):
 # producer-side frontend consumers (the RiskBadge lives only in the
 # admin table, AdminProducersTable.jsx:181).
 class ProducerOwnerOut(ProducerDetailOut):
+    # MEH-986 ch3b: free-text kosher re-declared — removed from public
+    # ProducerListOut but the owner still sees her own value (mirrors the
+    # producer_license_number/address owner-private precedent below).
+    kosher: str | None = None
     producer_license_number: str | None = None
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
