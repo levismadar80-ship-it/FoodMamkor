@@ -40,6 +40,14 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
+  // MEH-992: mirror the backend rule (group_buys.py:192, group < regular)
+  // client-side so a group≥regular price shows an inline helper instead of a
+  // raw 400. Only flags once BOTH prices are entered.
+  const priceInvalid =
+    form.price_per_unit_regular !== "" &&
+    form.price_per_unit_group !== "" &&
+    Number(form.price_per_unit_group) >= Number(form.price_per_unit_regular);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -64,6 +72,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-[16px] border border-border p-6">
       <h2 className="font-headline-md text-lg font-bold text-text">{t("heading")}</h2>
+      {/* MEH-992: one-line concept intro — what a group-buy is */}
+      <p className="text-sm text-fg-muted">{t("concept_intro")}</p>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
@@ -111,29 +121,40 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
         <div>
           <label className="block text-sm font-medium mb-1">{t("price_regular_label")}{t("required_marker")}</label>
-          <input
-            type="number"
-            min={1}
-            step={0.01}
-            value={form.price_per_unit_regular}
-            onChange={set("price_per_unit_regular")}
-            required
-            className="w-full border border-border rounded-[10px] px-3 py-2"
-            dir="ltr"
-          />
+          <div className="relative">
+            {/* MEH-992: ₪ adornment — start-3 = right in RTL; input is dir=ltr so pe-7/text-end reserve+align the right side */}
+            <span className="absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted pointer-events-none" aria-hidden="true">₪</span>
+            <input
+              type="number"
+              min={1}
+              step={0.01}
+              value={form.price_per_unit_regular}
+              onChange={set("price_per_unit_regular")}
+              required
+              className="w-full border border-border rounded-[10px] px-3 py-2 pe-7 text-end"
+              dir="ltr"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t("price_group_label")}{t("required_marker")}</label>
-          <input
-            type="number"
-            min={1}
-            step={0.01}
-            value={form.price_per_unit_group}
-            onChange={set("price_per_unit_group")}
-            required
-            className="w-full border border-border rounded-[10px] px-3 py-2"
-            dir="ltr"
-          />
+          <div className="relative">
+            <span className="absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted pointer-events-none" aria-hidden="true">₪</span>
+            <input
+              type="number"
+              min={1}
+              step={0.01}
+              value={form.price_per_unit_group}
+              onChange={set("price_per_unit_group")}
+              required
+              className="w-full border border-border rounded-[10px] px-3 py-2 pe-7 text-end"
+              dir="ltr"
+            />
+          </div>
+          {/* MEH-992: pre-submit price-rule helper — muted hint, turns red on violation (pre-400) */}
+          <p className={`text-xs mt-1 ${priceInvalid ? "text-red-500" : "text-fg-muted"}`}>
+            {t("price_helper")}
+          </p>
         </div>
 
         <div>
@@ -173,6 +194,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
             className="w-full border border-border rounded-[10px] px-3 py-2"
             dir="ltr"
           />
+          {/* MEH-992: deadline helper — clarify what the date means + Israel time */}
+          <p className="text-xs text-fg-muted mt-1">{t("deadline_helper")}</p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">{t("city_label")}</label>
@@ -188,7 +211,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       {error && <p className="text-red-500 text-sm">{error}</p>}
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || priceInvalid}
         className="bg-primary text-white px-6 py-2.5 rounded-[10px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
       >
         {submitting ? t("submitting") : t("submit")}
