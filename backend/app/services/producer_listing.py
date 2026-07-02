@@ -180,16 +180,17 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
         q = q.filter(Producer.availability_state != "on_vacation")
         count_q = count_q.filter(Producer.availability_state != "on_vacation")
 
+    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
+    # verified-only — it matches admin-verified kashrut (kashrut_verified_at,
+    # stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
     kosher = filters.get("kosher")
     if kosher is not None:
         if kosher:
-            q = q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
-            count_q = count_q.filter(Producer.kosher.isnot(None), Producer.kosher != "")
+            q = q.filter(Producer.kashrut_verified_at.isnot(None))
+            count_q = count_q.filter(Producer.kashrut_verified_at.isnot(None))
         else:
-            q = q.filter((Producer.kosher.is_(None)) | (Producer.kosher == ""))
-            count_q = count_q.filter(
-                (Producer.kosher.is_(None)) | (Producer.kosher == "")
-            )
+            q = q.filter(Producer.kashrut_verified_at.is_(None))
+            count_q = count_q.filter(Producer.kashrut_verified_at.is_(None))
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —
