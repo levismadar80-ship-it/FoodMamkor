@@ -1017,9 +1017,7 @@
     },
     "sheet": {
       "badge": {
-        "verified": "✓ Verified",
-        "organic": "🌿 Organic",
-        "kosher": "✡️ Kosher"
+        "verified": "✓ Verified"
       }
     },
     "page": {
