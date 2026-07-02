@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-02 — MEH-996: Fable 5 full-codebase audit — 3 proof-gated fixes MERGED
+
+- **Merged to staging (Sapir approved "merge all three"; each verified green pre-merge):** **#1441** (`feature/meh-996-audit-i18n-misnested-ns`) i18n misnested namespaces — DeliveryBlock/FollowButton/HolidayBanner read `producer.*` namespaces that exist in neither locale file (keys under `group_buys.*`); repointed per FridayDeliveryStrip precedent + proof test with REAL next-intl provider (`__tests__/I18nNamespaceResolution.test.jsx`). **#1444** (`feature/meh-996-audit-empty-state-form`) PRE-FOUND empty-state+open-form rendered together on the group-buys dashboard + identical recipes sibling — EmptyState now gated on `!showForm`. **#1445** (`feature/meh-996-audit-silent-fetch-fail`) FavoritesClient error-rendered-as-empty-state + admin/analytics eternal-loading — both now show existing error copy. Full findings table + evidence in the PR bodies; CHANGELOG entry added.
+- **Audit coverage:** 11 Pass-A families + Pass-B, run inline (all 9 audit subagents died on the session usage cap at launch). Baselines first: local Postgres stood up (trust auth + `mehamakor_test`) → pytest test_api.py green locally; build + vitest green.
+- **Report-only findings for follow-up tickets:** (a) `ProducersClient.jsx:114-132` filter-chip race — overlapping `/producers` fetches, last-RESOLVED wins (HOT-018 class; central surface → chunked ticket + `/adversarial-review`; fix shape: request-seq counter or `inFlightRef`). (b) `CitiesAutocomplete.jsx:26` `Math.random()` listbox id → `useId` (a11y/hydration nit). (c) `KashrutBadgeStrip.jsx:20-24` date-only UTC parse vs local now → hours-level skew on the ≤30-day expiry warning. (d) **Sentry gap re-confirmed** — #1445's bug class is exactly what Sentry capture would surface; wiring ticket still worth opening (matches the 2026-06-29 note below).
+- **NOT-BUGS verified (don't re-audit):** 35 he-only en.json keys = frozen `en-parity-guard` BASELINE (MEH-472, deliberate); 40/40 FKs have ondelete; `err.detail` consumers guarded (MEH-959 held); no dead routes; hot forms double-submit-guarded; Leaflet `.remove()` cleanup present; backend bare-excepts are logged fail-open by design.
+- **Mobile glance for Sapir (post-merge, staging):** producer page follow button + delivery section show real Hebrew (not key paths); dashboard group-buys/recipes — opening the create form hides the empty state. Staging smoke deferred to Sapir (CC sandbox egress block, MEH-360).
+
 ## 2026-07-02 — Pre-launch batch v2 (8 tasks: 6 draft PRs + 1 report-only + 1 STOP)
 
 Sequential small PRs, one branch+PR per task off `origin/staging`, **none self-merged**. Summary:
