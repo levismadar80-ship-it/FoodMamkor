@@ -15,7 +15,10 @@ import WhatsAppButton from "@/components/WhatsAppButton";
  * Uses WhatsAppButton (existing) for the CTA — no beacon duplication.
  */
 export default function DeliveryBlock({ nationwide, cities = [], producer }) {
-  const t = useTranslations("producer.delivery");
+  // MEH-996: strings live under group_buys.delivery in both locale files —
+  // the producer.delivery namespace never existed (same trap as
+  // FridayDeliveryStrip), so t() rendered raw key paths.
+  const t = useTranslations("group_buys.delivery");
   return (
     <section className="mt-8 border-t border-border pt-6">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
