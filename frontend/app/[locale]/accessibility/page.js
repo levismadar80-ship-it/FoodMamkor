@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Envelope, Phone } from "@phosphor-icons/react/ssr";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -57,7 +58,7 @@ const SECTIONS = [
             href="https://www.w3.org/WAI/WCAG21/quickref/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-primary underline"
             dir="ltr"
           >
             {chunks}
@@ -88,7 +89,7 @@ const SECTIONS = [
         <strong>{t("sections.contact.coordinator_label")}</strong>{" "}
         {t("sections.contact.coordinator_value")}
         <br />
-        📧{" "}
+        <Envelope size={16} className="inline align-[-2px] text-primary" aria-hidden="true" />{" "}
         <a
           href={`mailto:${CONTACT_EMAIL}`}
           className="text-primary hover:underline break-all"
@@ -97,7 +98,7 @@ const SECTIONS = [
           {CONTACT_EMAIL}
         </a>
         <br />
-        📞 {t("sections.contact.phone_placeholder")}
+        <Phone size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("sections.contact.phone_placeholder")}
         <br />
         <span className="text-sm text-fg-muted">
           {t("sections.contact.footnote")}
@@ -114,7 +115,7 @@ const SECTIONS = [
             href="https://www.gov.il/he/departments/accessibility"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-primary underline"
           >
             {chunks}
           </a>

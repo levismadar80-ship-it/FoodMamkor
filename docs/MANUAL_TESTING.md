@@ -3,6 +3,12 @@
 
 ---
 
+## MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile)
+- [ ] **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
+- [ ] **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
+- [ ] **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
+- [ ] **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
+
 ## MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות
 
 עסק **ללא תמונות גלריה** (`producer.images` ריק). פתחי את עמוד העסק (375px מובייל).
@@ -25,6 +31,32 @@
 - [ ] **Regression** — OAuth עדיין נוחת על DETAILS; declarations עדיין חוסמות submit; שדה רישיון עדיין מופיע ל-ירקות/פירות — **תוצאה מצופה:** ללא שינוי (freeze).
 
 ---
+
+## MEH-964 chunk 1A — producer dashboard nested-route shell
+
+לוח הניהול הפך ל-hub-and-spoke עם `layout.js` משותף (tab nav + שער הזדהות אחד) ו-Overview רזה. נכנסות כבעלת עסק (role=producer).
+
+- [ ] **שער הזדהות** — משתמשת לא-producer (או לא מחוברת) על כל `/producer/dashboard/*` → הפניה ל-`/login`
+- [ ] **Tab nav קבוע** — שורת הטאבים (סקירה / עריכה / כלים) נשארת מקובעת למעלה במעבר בין הטאבים; הטאב הפעיל מודגש (`aria-current="page"`)
+- [ ] **סקירה** (`/producer/dashboard`) — ברכה + באנרי סטטוס + כרטיס השלמת פרופיל + מתג זמינות + AnalyticsSection נשארים; אין כפול ואין רגרסיה
+- [ ] **עריכה** (`/producer/dashboard/edit`) — 3 טפסי העריכה (ביו AI / שאלות מותאמות / ערוצי קשר) עובדים זהה לקודם (שמירה ב-PUT /producers/me)
+- [ ] **כלים** (`/producer/dashboard/tools`) — גריד הקישורים המהירים; "הוסיפי אירוע" → `/producer/dashboard/events/new`; "צפי בעסק" → `/producer/{id}`
+- [ ] **תובנות** — הטאב **לא** מופיע עדיין ב-1A (נוסף ב-1B); אין טאב מת / "בקרוב"
+- [ ] **נייד (375px)** — שורת הטאבים נקראת ללא horizontal scroll; כל טאב נפתח תקין
+- [ ] **/en** — תוויות הטאבים באנגלית (Overview / Edit / Tools); אין מחרוזות מפתח גולמיות
+
+## MEH-964 chunk 1B — KPI strip on Overview + תובנות tab
+
+ה-Overview קיבל רצועת 4 KPI נעולה + שורת המרה, והאנליטיקה העמוקה עברה לטאב חדש "תובנות". נכנסות כבעלת עסק (role=producer).
+
+- [ ] **רצועת KPI (סקירה)** — 4 קלפים ב-2×2, סדר RTL ימין→שמאל: פניות בוואטסאפ → צרי קשר → דירוג → צפיות; **זהה בנייד ובדסקטופ**
+- [ ] **ללא דלתות/חצים** — אין מגמה/חץ ליד מספר; תווית חלון אחידה "7 הימים האחרונים" בשלושה הקלפים (דירוג מציג "{N} ביקורות")
+- [ ] **שורת המרה** — מתחת לרצועה, שקטה/מוצללת (לא קלף): "X% מהצופות פנו אלייך" (מונה = וואטסאפ בלבד)
+- [ ] **תג "בעלת עסק השבוע"** — נשאר ב-Overview כשמתקיימים התנאים (profile_strength≥80 + rank=1)
+- [ ] **תובנות** (`/producer/dashboard/insights`) — הטאב הרביעי מופיע; מציג את הקלפים החלוניים (צפיות/חיפושים/וואטסאפ/צרי קשר) + עוקבים/דירוג + 2 הגרפים (קו צפיות + ערים מובילות)
+- [ ] **אין כפילות** — רצועת ה-KPI מופיעה רק ב-Overview, לא ב-תובנות (אנטי-MEH-961/963)
+- [ ] **נייד (375px)** — 4 הטאבים: אם צרים מדי יש גלילה אופקית (overflow-x-auto), בלי חיתוך; רצועת ה-2×2 נקראת
+- [ ] **/en** — תווית הטאב "Insights"; ה-KPI באנגלית (WhatsApp leads / Contact clicks / Rating / Views); אין מחרוזות מפתח גולמיות
 
 ## MEH-288 — ProfileCompletenessCard on producer dashboard
 
@@ -410,7 +442,7 @@ Brand LOCK enforcement — `/neighbor` route + nav links + homepage kitchen sect
 
 ## Producer license number (MEH-530)
 
-Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר ודגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)**. Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
+Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`. Required when one of: לחמים ואפייה / מותססים וכבושים / מוצרים מוכנים / בשר / דגים / חלב וגבינות / שוקולד וממתקים בוטיק / יין, בירה ומשקאות / **דבש (MEH-743)** (MEH-927: "בשר ודגים" split into "בשר" + "דגים", both license-required). Optional + collapsed otherwise. Format warning is inline (`^\d{7,10}$`) and **never blocks submit**.
 
 - [ ] Register bakery WITH license — בחרי קטגוריה "לחמים ואפייה" → שדה "מספר רישיון יצרן (חובה)" מופיע מיד עם helper text "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות". הזיני 1234567 → submit מצליח (200 OK + redirect לדשבורד).
 - [ ] Register bakery WITHOUT license — אותו flow, השאירי ריק → submit מציג שגיאה אדומה "מספר רישיון יצרן חובה לקטגוריה זו" (422 מה-backend).
@@ -418,7 +450,7 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Register vegetables + bakery (mixed) — בחרי שתי קטגוריות → השדה הופך ל"חובה" אוטומטית עם helper text.
 - [ ] Format warning — בשדה (בכל path) הזיני "abc" → טקסט כתום inline "מספר רישיון יצרן הוא 7-10 ספרות". לחיצי על submit — **submit עובר** למרות האזהרה (manual-approval flow). 1234567 → אין warning.
 - [ ] Max length — נסי להזין 21 ספרות → input נחתך ל-20 (`maxLength={20}`).
-- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר ודגים" → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
+- [ ] Admin form — `/admin/producers/new` → "קטגוריות ותגיות" Section → בחרי "בשר" (או "דגים") → השדה מופיע inline עם "(חובה)". POST 422 אם ריק; POST 201 + הערך נשמר אם מלא.
 - [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
@@ -1857,3 +1889,12 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - [ ] **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
 - [ ] **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
 - [ ] **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
+
+## MEH-992 — group-buy dashboard form clarity
+
+טופס יצירת קבוצת רכש (`/he/producer/dashboard/group-buys` → "+ קבוצת רכש חדשה"). Copy חדש ב-he.json בלבד (functional/neutral, ADR-024); en.json לא נגעו.
+
+- [ ] **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
+- [ ] **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
+- [ ] **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
+- [ ] **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)

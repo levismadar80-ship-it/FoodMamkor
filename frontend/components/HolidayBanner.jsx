@@ -10,7 +10,10 @@ import api from "@/lib/api";
 const DISMISS_KEY = "holiday_banner_dismissed";
 
 export default function HolidayBanner({ suppressed = false, onVisibilityChange }) {
-  const t = useTranslations("producer.holiday_banner");
+  // MEH-996: strings live under group_buys.holiday_banner in both locale
+  // files — the producer.holiday_banner namespace never existed (same trap
+  // as FridayDeliveryStrip), so t() rendered raw key paths.
+  const t = useTranslations("group_buys.holiday_banner");
   const [holiday, setHoliday] = useState(null);
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useFocusReturn } from "@/lib/use-focus-return";
 
 export default function ReportButton({ producerId }) {
@@ -25,7 +26,9 @@ export default function ReportButton({ producerId }) {
       await api.post(`/producers/${producerId}/report`, { reason });
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      // MEH-959: detailToMessage collapses a 422 array detail to one string
+      // so it never renders as a raw React child; no-op for string/absent.
+      setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
     }
   };
 

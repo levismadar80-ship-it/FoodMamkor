@@ -18,10 +18,15 @@ import {
   Pencil,
   X,
   Camera,
+  Carrot,
+  Warning,
+  CheckCircle,
+  HourglassSimple,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import CitySearch from "@/components/CitySearch";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
@@ -203,7 +208,7 @@ function ProfileTab() {
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || t("save_error_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || t("save_error_fallback"));
     } finally {
       setSaving(false);
     }
@@ -235,7 +240,7 @@ function ProfileTab() {
       setMessage(t("avatar_uploaded_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || t("avatar_upload_error_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || t("avatar_upload_error_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -345,7 +350,12 @@ function ProfileTab() {
           </p>
         </div>
 
-        {message && <p className="text-sm text-primary" role="status">✓ {message}</p>}
+        {message && (
+          <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
+            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            {message}
+          </p>
+        )}
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
         <button
@@ -534,7 +544,12 @@ function PasswordChangeCard({ isOAuth }) {
           )}
         </div>
 
-        {message && <p className="text-sm text-primary" role="status">✓ {message}</p>}
+        {message && (
+          <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
+            <CheckCircle size={15} weight="fill" aria-hidden="true" />
+            {message}
+          </p>
+        )}
         {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
         <button
@@ -643,7 +658,7 @@ function DangerZoneCard() {
       await deleteAccount(); // clears token + user state via auth context
       setPhase("grace");
     } catch (err) {
-      setError(err?.response?.data?.detail || tCommon("error_retry"));
+      setError(detailToMessage(err?.response?.data?.detail) || tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -652,7 +667,8 @@ function DangerZoneCard() {
   if (phase === "grace") {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
-        <p className="text-2xl">⏳</p>
+        {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
+        <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
         <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
         <p className="text-sm text-fg-muted">
           {t("grace_body")}
@@ -730,21 +746,10 @@ function DangerZoneCard() {
 function BusinessTab() {
   const { user } = useAuth();
   const t = useTranslations("settings.business");
-  const [stats, setStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(true);
   const [supportOpen, setSupportOpen] = useState(false);
 
   const status = user.producer_status || "pending";
   const rejectionReason = user.producer_rejection_reason;
-
-  useEffect(() => {
-    api.get("/producers/me/dashboard")
-      .then((r) => setStats(r.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoadingStats(false));
-  }, []);
-
-  const dimmed = status === "suspended";
 
   return (
     <div className="space-y-6">
@@ -776,7 +781,7 @@ function BusinessTab() {
       )}
       {status === "suspended" && (
         <div className="rounded-[12px] bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-2 text-sm text-amber-800">
-          <span>⚠️</span>
+          <Warning size={18} weight="fill" aria-hidden="true" />
           <span className="font-medium">{t("status_suspended")}</span>
           <button
             type="button"
@@ -788,33 +793,18 @@ function BusinessTab() {
         </div>
       )}
 
-      {/* Stats grid */}
-      <section className={`bg-white border border-border rounded-[16px] p-6 ${dimmed ? "opacity-50 pointer-events-none select-none" : ""}`}>
-        <h2 className="font-semibold text-text mb-4">{t("stats_heading")}</h2>
-        {loadingStats ? (
-          <p className="text-sm text-fg-muted">{t("stats_loading")}</p>
-        ) : stats ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <StatCard label={t("stat_views")} value={stats.views ?? 0} />
-            <StatCard label={t("stat_favorites")} value={stats.favorites ?? 0} />
-            <StatCard label={t("stat_reviews")} value={stats.reviews ?? 0} />
-            <StatCard label={t("stat_avg_rating")} value={stats.avg_rating ? stats.avg_rating.toFixed(1) : "—"} />
-            <StatCard label={t("stat_products")} value={stats.products ?? 0} />
-            <StatCard label={t("stat_orders")} value={stats.orders ?? 0} />
-          </div>
-        ) : (
-          <p className="text-sm text-fg-muted">{t("stats_unavailable")}</p>
-        )}
-      </section>
-
-      {/* Link to producer profile edit */}
-      {status === "approved" && (
-        <div className="text-center">
-          <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
-            {t("edit_profile_link")}
-          </Link>
-        </div>
-      )}
+      {/* MEH-963: the canonical analytics + profile-management surface is
+          /producer/dashboard. The old statistics grid here read fields the
+          /producers/me/dashboard endpoint never returns (views / reviews /
+          products / orders / avg_rating), so it rendered a permanent 0/- wall
+          for every owner — new or established. Removed in favor of an
+          always-visible pointer to the real dashboard (un-gated from
+          status === "approved" — owners need it while pending too). */}
+      <div className="text-center">
+        <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
+          {t("edit_profile_link")}
+        </Link>
+      </div>
 
       {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
     </div>
@@ -870,7 +860,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -952,7 +942,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setEditForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
       setEditUploading(false);
       e.target.value = "";
@@ -1026,7 +1016,7 @@ function ProductsSection() {
 
       {products?.length === 0 && !adding && (
         <EmptyState
-          emoji="🥕"
+          icon={Carrot}
           title={t("empty.title")}
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
@@ -1342,15 +1332,6 @@ function ProductsSection() {
           </div>
         </form>
       )}
-    </div>
-  );
-}
-
-function StatCard({ label, value }) {
-  return (
-    <div className="rounded-[12px] bg-green-50 px-4 py-3 text-center">
-      <p className="text-2xl font-bold text-text">{value}</p>
-      <p className="text-xs text-fg-muted mt-0.5">{label}</p>
     </div>
   );
 }

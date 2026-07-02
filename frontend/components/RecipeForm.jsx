@@ -25,6 +25,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
 
@@ -101,7 +102,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      showToast.error(err.response?.data?.detail || t("errors.upload_image_failed"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("errors.upload_image_failed"));
     } finally {
       setUploading(false);
       e.target.value = "";

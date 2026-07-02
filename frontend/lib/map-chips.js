@@ -19,7 +19,9 @@
 // whenever any of them exists, instead of silently disappearing.
 export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
-  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר", "בשר ודגים", "בשר, עוף ודגים"] },
+  // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
+  // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
+  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"] },
   { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"] },
   { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"] },
   { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },

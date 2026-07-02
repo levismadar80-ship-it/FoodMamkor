@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple } from "@phosphor-icons/react";
+import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -75,9 +75,10 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
         <p className="text-[13px] text-fg-muted mt-0.5">{sp.city}{sp.categories?.[0]?.name ? ` · ${sp.categories[0].name}` : ""}</p>
         {/* MEH-826: removed dead is_organic/is_kosher bindings (payload uses
             organic_certified/kosher; design has no dietary badge here). */}
-        {sp.is_verified && (
+        {sp.verification_tier === "verified" && ( // MEH-766 ch1: doc-verification tier
           <div className="flex flex-wrap gap-1 mt-1.5">
-            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{t("map.sheet.badge.verified")}</span>
+            {/* MEH-943: glyph-LOCK — raw ✓ stripped from he.json value; canonical SealCheck (BadgeRow.jsx:130) rendered inline instead. */}
+            <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full"><SealCheck size={11} aria-hidden="true" />{t("map.sheet.badge.verified")}</span>
           </div>
         )}
         {/* MEH-824 sticky + min-h-[44px] preserved. MEH-826: CTA is now dynamic
@@ -100,7 +101,9 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
             href={spHref}
             className="bg-primary text-white sticky bottom-0 z-10 mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 min-h-[44px] font-medium text-sm"
           >
-            {t("map.producer_card.full_profile")} →
+            {t("map.producer_card.full_profile")}
+            {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+            <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
           </a>
         )}
       </div>

@@ -110,12 +110,14 @@ describe("FavoriteButton", () => {
   // Logged-in behavior (unchanged from MEH-7)
   // ------------------------------------------------------------------
 
-  it("default variant: renders emoji heart when logged in", () => {
+  it("default variant: renders HeartStraight icon (no emoji) when logged in", () => {
     mockUser.current = { id: 1, name: "Test" };
     render(<FavoriteButton producerId={1} />);
     const btn = screen.getByRole("button");
     expect(btn).toBeInTheDocument();
-    expect(btn.textContent).toBe("🤍");
+    // MEH-990: ❤️/🤍 emoji pair → Phosphor HeartStraight (Emoji LOCK).
+    expect(screen.getAllByTestId("heart-icon").length).toBeGreaterThan(0);
+    expect(btn.textContent).toBe("");
   });
 
   it("gallery variant: renders HeartStraight icon and no text", () => {

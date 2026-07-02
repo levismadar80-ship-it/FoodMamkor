@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import MapClient from "./MapClient";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { BRAND_NAME } from "@/lib/constants";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }) {
  */
 async function fetchProducersForSSR() {
   try {
-    const res = await fetch(`${API_URL}/producers?limit=100&offset=0`, {
+    const res = await serverFetch(`${API_URL}/producers?limit=100&offset=0`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];

@@ -51,6 +51,8 @@
 
 > **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; `is_verified` untouched (legacy axis, decoupling deferred). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
+> **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
+
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
 > moderation). Producer-owned recipes go through Claude Haiku pre-check
@@ -360,7 +362,7 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 
 ```
 POST   /auth/register            public  — consumer signup → RegisterAck {detail} (MEH-328 OWASP anti-enum; no auto-login; verify via email)
-POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope)
+POST   /auth/register/producer   public  — producer multi-step; non-upgrade → RegisterAck {detail}; upgrade (auth) → Token + whatsapp_sent (MEH-328 Chunk B; MEH-306 sub-A out of scope). MEH-971 chunk 2: optional body field license_pending:bool=False — when true, skips the register-time license 422 so a license-required producer can submit with NULL license into the pending queue (transient input, not persisted; downstream approval guard + status gate still enforce licensed-only)
 POST   /auth/login               public  — email+password → JWT (no policy validation; verifies hash only per OWASP)
 GET    /auth/me                  auth    — current user
 POST   /auth/google              public  — Google OAuth ID token exchange
@@ -378,8 +380,17 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 GET    /producers                                 public — filters: lat+lng+radius_km, category, delivery_city, has_delivery,
                                                verified, organic, kosher, city (producer city), is_available_today, grass_fed
                                                sort: newest (default) | rating
+                                               MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): ?kosher is VERIFIED-ONLY.
+                                               kosher=true → kashrut_verified_at IS NOT NULL (admin-stamped, admin_kashrut.py:75);
+                                               kosher=false → kashrut_verified_at IS NULL. NEVER keys off the free-text
+                                               Producer.kosher column (which no longer serializes on public ProducerListOut/
+                                               DetailOut — kept only on ProducerAdminOut/OwnerOut).
 GET    /producers/{producer_id}                   public
 GET    /producers/by-slug/{slug}                  public
+GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.
+                                               GROUP BY city over approved producers; NULL/blank city omitted;
+                                               ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
+                                               response_model=list[ProducerCityOut] → [{ "city": str, "count": int }]
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
@@ -509,7 +520,7 @@ PUT    /admin/producers/{id}                   admin
 POST   /admin/producers/{id}/toggle-status     admin
 DELETE /admin/producers/{id}                   admin
 GET    /admin/producers/pending                admin
-POST   /admin/producers/{id}/approve           admin — emails + WhatsApp
+POST   /admin/producers/{id}/approve           admin — emails + WhatsApp; ?allow_without_license=true overrides the MEH-971 license-pending guard (refuses approval when a license-required category has no producer_license_number)
 POST   /admin/producers/{id}/set-ambassador    admin — toggle ambassador flag (trust tier 5)
 POST   /admin/producers/{id}/grant-verified    admin — MEH-762: stamp tier-1 verified_at + verification_doc_type (license|exemption|cosmetics)
 POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified_at + verification_doc_type (mistake correction)

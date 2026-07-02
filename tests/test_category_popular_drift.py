@@ -11,7 +11,7 @@ from seed_data import CATEGORIES
 POPULAR_NAMES = [
     "חלב וגבינות",
     "לחמים ואפייה",
-    "בשר ודגים",
+    "בשר",  # MEH-927: split from "בשר ודגים"; "בשר" is the POPULAR-6 member.
     "שמנים",
     "ירקות",
     "סבונים טבעיים",

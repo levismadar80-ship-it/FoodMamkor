@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { Bell, BellSlash, Check } from "@phosphor-icons/react";
+import { Bell, BellSlash, Check, Confetti, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
@@ -102,10 +102,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     );
   }
 
-  const toggleRow = (key, label, emoji) => (
+  const toggleRow = (key, label, Icon) => (
     <label key={key} className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none">
       <span className="flex items-center gap-2 text-sm text-text">
-        <span aria-hidden="true">{emoji}</span>
+        <Icon size={18} className="text-primary" aria-hidden="true" />
         {label}
       </span>
       <button
@@ -145,10 +145,10 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       </div>
 
       <div className="divide-y divide-border/40">
-        {toggleRow("notify_new_event", t("row_new_event"), "🎉")}
-        {toggleRow("notify_new_product", t("row_new_product"), "🛍️")}
-        {toggleRow("notify_delivery_area", t("row_delivery_area"), "🚚")}
-        {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), "💬")}
+        {toggleRow("notify_new_event", t("row_new_event"), Confetti)}
+        {toggleRow("notify_new_product", t("row_new_product"), Handbag)}
+        {toggleRow("notify_delivery_area", t("row_delivery_area"), Truck)}
+        {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
       </div>
 
       {pushStatus !== "unsupported" && pushStatus !== "granted" && (

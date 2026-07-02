@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Check, Circle } from "@phosphor-icons/react";
 import { passwordRules } from "@/lib/validators";
 
 /**
@@ -100,7 +101,11 @@ export default function PasswordStrength({ password }) {
                 ok ? "text-primary" : "text-fg-muted"
               }`}
             >
-              <span aria-hidden="true">{ok ? "✓" : "○"}</span>
+              {ok ? (
+                <Check size={13} weight="bold" aria-hidden="true" />
+              ) : (
+                <Circle size={13} aria-hidden="true" />
+              )}
               {rule.label}
             </li>
           );

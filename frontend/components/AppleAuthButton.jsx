@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { env } from "@/lib/env";
+import { detailToMessage } from "@/lib/errors";
 
 export default function AppleAuthButton({ onSuccess, onError }) {
   const t = useTranslations("auth.oauth");
@@ -34,7 +35,7 @@ export default function AppleAuthButton({ onSuccess, onError }) {
         await loginWithApple(authorization.id_token, name);
         onSuccess?.();
       } catch (err) {
-        onError?.(err.response?.data?.detail || t("apple_error"));
+        onError?.(detailToMessage(err.response?.data?.detail) || t("apple_error"));
       }
     };
 

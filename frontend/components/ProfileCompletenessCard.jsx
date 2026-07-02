@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
@@ -122,7 +123,7 @@ export default function ProfileCompletenessCard({ producer }) {
         className="bg-background border border-border rounded-[16px] px-6 py-4 mb-8 flex items-center gap-3"
         role="status"
       >
-        <span className="text-primary text-lg font-bold" aria-hidden="true">✓</span>
+        <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
         <p className="font-headline-md text-base font-bold text-primary">
           {t("green_headline")}
         </p>
@@ -152,6 +153,10 @@ export default function ProfileCompletenessCard({ producer }) {
   // silently mislabelling the next step (e.g. always showing "תמונה ראשית").
   const nextKey = FIELD_KEY[missing[0]];
   const nextStepLabel = nextKey ? t(`fields.${nextKey}`) : missing[0];
+  // Route the CTA to where the top-missing field is actually editable: city
+  // lives in account /settings; every other (business) field — and undefined —
+  // is managed on the canonical profile hub /producer/dashboard/edit.
+  const ctaHref = nextKey === "city" ? "/settings" : "/producer/dashboard/edit";
 
   // MEH-897: yellow >70 ("almost there") swaps the single next-step line for a
   // 5-row checklist (completed + remaining). Build the applicable-field list
@@ -202,10 +207,10 @@ export default function ProfileCompletenessCard({ producer }) {
                   return (
                     <li key={slug} className="flex items-center gap-2 text-sm">
                       <span
-                        className="inline-flex w-4 justify-center text-primary font-bold"
+                        className="inline-flex w-4 justify-center text-primary"
                         aria-hidden="true"
                       >
-                        {done ? "✓" : ""}
+                        {done ? <Check size={14} weight="bold" /> : null}
                       </span>
                       <span className={done ? "text-text" : "text-fg-muted"}>
                         {t(`fields.${slug}`)}
@@ -236,12 +241,13 @@ export default function ProfileCompletenessCard({ producer }) {
       </div>
       <div className="mt-5">
         <Link
-          href="/settings"
+          href={ctaHref}
           aria-label={t("cta_aria")}
           className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
         >
           {t("cta")}
-          <span aria-hidden="true">→</span>
+          {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+          <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
         </Link>
       </div>
     </div>

@@ -31,6 +31,12 @@ import { BRAND_NAME } from "@/lib/constants";
  * — that yields the "floating" look without making the header overlap
  * content.
  *
+ * MEH-947: surface is three-way (see the surface ternary below). The two
+ * homepage states are unchanged; INNER pages (!isHomepage) now render a SOLID
+ * cream pill instead of the /60 glass so page content no longer bleeds through
+ * the translucent header as it scrolls underneath (reported on the producer-
+ * registration wizard — headings + the short_description counter looked clipped).
+ *
  * Two surface states (reuse MEH-29 scroll machinery verbatim). MEH-890 chunk 2
  * gave the at-rest pill its own glass surface + dark ink (no scrim), so the two
  * states now differ only in glass opacity / padding, not ink:
@@ -238,9 +244,20 @@ export default function Header() {
             // every page. Surface and width snap on the same threshold
             // (scrollY>=60), just with different conditions: surface keys
             // off (isHomepage && !scrolled), width keys off (!scrolled).
-            transparent
-              ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
-              : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
+            // MEH-947: surface is now THREE-way. The homepage keeps its
+            // float-over-hero glass verbatim (at-rest /85, scrolled /60) — that
+            // translucency is intentional there. INNER pages (!isHomepage) get a
+            // SOLID cream pill instead: their content scrolls *under* the sticky
+            // header, and a 60%-translucent glass let that content bleed through
+            // (register wizard headings + the short_description 0/160 counter
+            // were the reported victims — they read as "clipped behind the
+            // header"). Opaque bg-background blocks the bleed-through; backdrop-
+            // blur is dropped on this branch since nothing shows through to blur.
+            !isHomepage
+              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+              : transparent
+                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
             // MEH-899 (revised): WIDTH — wide at rest (any page at top),
             // compact when scrolled. Distributed: end-cap px-11, inter-group
             // gap-14, lead-group intra-gap gap-11 (see :247). Snaps to

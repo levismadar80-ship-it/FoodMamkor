@@ -55,7 +55,7 @@ def test_declared_tier_when_all_categories_exempt(client, db):
 
 def test_none_tier_license_required_unverified(client, db):
     # D3: license-required + unverified → None (no badge, NOT a negative label).
-    cat = make_category(db, name="בשר ודגים")
+    cat = make_category(db, name="בשר")
     producer = make_producer(db, name="חוות חובה", category=cat)
     body = client.get(f"/producers/{producer.id}").json()
     assert body["verification_tier"] is None
@@ -72,7 +72,7 @@ def test_multi_category_one_license_required_excludes_declared(client, db):
 def test_verified_overrides_license_required_mix(client, db):
     exempt = make_category(db, name="ירקות")
     producer = make_producer(db, name="חוות מעורבת מאומתת", category=exempt)
-    _add_category(db, producer, "בשר ודגים")
+    _add_category(db, producer, "בשר")
     _verify(db, producer, doc_type="exemption")
     body = client.get(f"/producers/{producer.id}").json()
     assert body["verification_tier"] == "verified"
@@ -95,7 +95,7 @@ def test_verified_at_is_date_only_no_time_leak(client, db):
 
 
 def test_public_payload_omits_admin_only_fields(client, db):
-    cat = make_category(db, name="בשר ודגים")
+    cat = make_category(db, name="בשר")
     producer = make_producer(db, name="חוות פרטיות", category=cat)
     producer.producer_license_number = "1234567"
     _verify(db, producer, doc_type="license")

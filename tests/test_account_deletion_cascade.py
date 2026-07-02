@@ -146,14 +146,17 @@ def test_delete_account_with_no_story_card_still_calls_destroy(
     )
 
 
-# --- MEH-755: producer with phone_otp_tokens rows must stay deletable ---
+# --- MEH-755 / MEH-816: producer with phone_otp_tokens rows must stay deletable ---
 #
-# phone_otp_tokens.producer_id is NOT NULL. The ORM relationship
-# (PhoneOtpToken.producer backref) has no delete cascade, so before the fix
-# db.delete(producer) issued UPDATE ... SET producer_id=NULL → NotNullViolation
-# 500. Both delete paths (auth.py::delete_account, admin.py::admin_delete_
-# producer) now bulk-delete the tokens first. Direct model insert is used so
-# the regression doesn't depend on the OTP request endpoint.
+# phone_otp_tokens.producer_id is NOT NULL. Originally (MEH-755) both delete
+# paths bulk-deleted the tokens first, because the ORM relationship would
+# otherwise UPDATE ... SET producer_id=NULL → NotNullViolation 500. MEH-773
+# Chunk B added passive_deletes=True on the Producer.otp_tokens backref, so the
+# ORM now defers to the DB FK ON DELETE CASCADE; MEH-816 removed the redundant
+# explicit pre-deletes. These tests still assert the tokens are gone after each
+# delete path (auth.py::delete_account, admin.py::admin_delete_producer) — now
+# via the cascade. Direct model insert is used so the regression doesn't depend
+# on the OTP request endpoint.
 
 
 def _add_otp_tokens(db, producer_id, n=3):

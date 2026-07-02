@@ -17,6 +17,7 @@ import { useState } from "react";
 import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
@@ -68,7 +69,7 @@ export default function AboutPage() {
       setForm({ name: "", email: "", message: "" });
     } catch (error) {
       setContactStatus("error");
-      setContactMsg(error.response?.data?.detail || tError("generic"));
+      setContactMsg(detailToMessage(error.response?.data?.detail) || tError("generic"));
     }
   };
 

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Crosshair, MapPinLine, Rows } from "@phosphor-icons/react";
+import { MapPinLine, Rows } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
 import MapBottomSheet from "@/components/MapBottomSheet";
+import { haversineKm } from "@/lib/distance";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 
@@ -16,10 +17,21 @@ import FilterChipsBar from "./components/FilterChipsBar";
 import MapCardList from "./components/MapCardList";
 import MapPane from "./components/MapPane";
 import MobileSheetSelectedCard from "./components/MobileSheetSelectedCard";
+import NearMePill from "./components/NearMePill";
 import { useFirstVisitHints } from "./state/useFirstVisitHints";
 import { useMapFilters } from "./state/useMapFilters";
 import { useMapSync } from "./state/useMapSync";
 import { useProducersFeed } from "./state/useProducersFeed";
+
+// MEH-970 chunk 2-lite — "קרוב אליי" near-me pill tuning.
+// Distance filter runs CLIENT-SIDE over the already-loaded producer set:
+// no backend radius param, no extra fetch (staging is sparse — a handful of
+// producers, trivial to scan). Empty-near-me fallback view = the MEH-932
+// producer-band default ([32.4, 34.95] zoom 8, MapComponent.jsx:297-306) so
+// a "no businesses near you" result still shows ALL producers, never a blank.
+const NEAR_ME_RADIUS_KM = 25;
+const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
+const NEAR_ME_DEFAULT_ZOOM = 8;
 
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
@@ -42,9 +54,28 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  const locationModalFiredRef = useRef(false);
   // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
   const [sortBy, setSortBy] = useState("default");
+
+  // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
+  // bottom strip of the full-bleed map and clips a marker there. Reserve that
+  // strip on the map container only while the banner is showing, so the map
+  // shrinks above it (Leaflet's ResizeObserver → invalidateSize recenters and
+  // lifts the clipped marker into view). Presence is read off the
+  // `--cookie-banner-h` CSS var that CookieBanner publishes on <html> (MEH-850);
+  // gating on presence keeps the map full-height once consent is given.
+  const [cookieBannerVisible, setCookieBannerVisible] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const read = () =>
+      setCookieBannerVisible(
+        parseFloat(getComputedStyle(root).getPropertyValue("--cookie-banner-h")) > 0
+      );
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(root, { attributes: true, attributeFilter: ["style"] });
+    return () => mo.disconnect();
+  }, []);
 
   const feed = useProducersFeed();
   const filters = useMapFilters({
@@ -83,7 +114,8 @@ export default function MapPage() {
     filters.setCityFilter(city);
     feed.loadProducers({ delivery_city: city });
     // NOTE: deliberately no flyTo here. The initial view must stay anchored at
-    // [31.7683, 35.2137] zoom 8 (country-wide) — LocationModal only filters
+    // the MEH-932 producer-band default ([32.4, 34.95] zoom 8, set in
+    // MapComponent.jsx:297-305) — LocationModal only filters
     // the producer list by delivery_city, it doesn't pan the map. Users who
     // want to zoom into their city use the "קרוב אליי" (goToMyLocation)
     // button or pan manually.
@@ -123,20 +155,37 @@ export default function MapPage() {
     );
   }, [gpsLoading, sync.mapApiRef]);
 
-  // Was MapClient.jsx:162-169 — location-modal trigger effect.
-  // Depends on userCity so the effect re-runs when use-user-city
-  // hydrates from localStorage (initialises null, then sets the
-  // real value in its own useEffect). Without the dependency the
-  // 800ms timer fires even when a city IS already saved — stale
-  // closure on null.
-  useEffect(() => {
-    if (locationModalFiredRef.current || userCityCtx.city) return;
-    const timer = setTimeout(() => {
-      locationModalFiredRef.current = true;
-      setLocationModalOpen(true);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [userCityCtx.city]);
+  // MEH-970 chunk 2-lite: single near-me invoker shared by the labeled
+  // "קרוב אליי" pill (mobile) and the existing filter-bar crosshair. Reuses
+  // the EXISTING goToMyLocation imperative path (MapComponent) — no second
+  // geolocation handler. onSuccess runs the empty-near-me guard: if NO
+  // producer is within NEAR_ME_RADIUS_KM of the user, fall back to the
+  // MEH-932 default view so the map shows ALL producers instead of a blank
+  // near-me result. It NEVER clears the producer set (allProducers untouched).
+  const handleGoToMyLocation = useCallback(() => {
+    sync.mapApiRef.current?.goToMyLocation(
+      () => setLocationModalOpen(true),
+      ({ lat, lng }) => {
+        const hasNearby = feed.allProducers.some(
+          (p) =>
+            Number.isFinite(p.lat) &&
+            Number.isFinite(p.lng) &&
+            haversineKm(lat, lng, p.lat, p.lng) <= NEAR_ME_RADIUS_KM
+        );
+        if (!hasNearby) {
+          showToast.info(t("map.near_me_pill.empty"));
+          sync.mapApiRef.current
+            ?.getMap()
+            ?.flyTo(NEAR_ME_DEFAULT_CENTER, NEAR_ME_DEFAULT_ZOOM, { duration: 1.2 });
+        }
+      }
+    );
+  }, [sync.mapApiRef, feed.allProducers, t]);
+
+  // MEH-970: the 800ms first-visit auto-open of LocationModal was removed
+  // here — /map now renders immediately on the MEH-932 producer-band default
+  // with no blocking location gate. LocationModal remains reachable only as
+  // the geolocation permission-denied fallback (handleGpsClick, err.code 1).
 
   // Was MapClient.jsx:196-215 — focusProducer deep-link effect.
   useEffect(() => {
@@ -285,23 +334,45 @@ export default function MapPage() {
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
       <div className="lg:hidden" style={{ height: "calc(100dvh - 64px)", position: "relative" }}>
-        {/* Sticky filter bar at top */}
-        <div className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex-1">
-              <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
-            </div>
-            <button type="button" onClick={() => sync.mapApiRef.current?.goToMyLocation(() => setLocationModalOpen(true))} className="cursor-pointer shrink-0 min-w-[44px] min-h-[44px] rounded-md border border-border bg-white flex items-center justify-center hover:bg-green-50 transition" aria-label={t("map.client.aria.my_location")}>
-              <Crosshair size={18} className="text-primary" />
-            </button>
+        {/* Sticky filter bar — MEH-933: offset below the global sticky header
+            band (~64px; mirrors the `calc(100dvh - 64px)` container height above)
+            so the city-search pill clears the logo/search header instead of
+            colliding with it. top-16 = 64px; the map pt below is bumped by the
+            same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
+        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
+          {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
+              removed here — the labeled "קרוב אליי" NearMePill (floating on the
+              map below) is now the SINGLE mobile near-me control. City search
+              reflows to full width. goToMyLocation wiring + empty-near-me
+              fallback live on the pill via handleGoToMyLocation. */}
+          <div className="mb-2">
+            <CitySearch id="map-city-search-mobile" label={t("map.client.city_search.label")} value={filters.cityFilter} onChange={filters.setCityFilter} onSubmit={filters.handleCityFilter} placeholder={t("map.client.city_search.placeholder")} />
           </div>
           {filterChipsBar}
         </div>
 
-        {/* Map fills the rest */}
-        <div className="w-full h-full pt-[110px]">
+        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset).
+            MEH-945: while the cookie banner shows, reserve its footprint at the
+            bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
+            plus its live --cookie-banner-h, plus a 16px clearance for the known
+            ~10px section overflow (the sticky header occupies ~74px but this
+            section subtracts only 64px per MEH-933, spilling ~10px past the
+            viewport bottom) — so the banner no longer overlays the canvas.
+            The map's own `min-h-[500px]` (MapComponent.jsx) would otherwise spill
+            back under the banner on short phones, so relax it to 0 ONLY while we're
+            reserving — the shell always has a definite height + invalidateSize, so
+            the MEH-30 0px guard isn't needed here. Full height restored on dismiss. */}
+        <div
+          className={`w-full h-full pt-[174px] ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" } : undefined}
+        >
           {mapPane}
         </div>
+
+        {/* MEH-970 chunk 2-lite: quiet persistent "קרוב אליי" pill — floats
+            above the PEEK bottom sheet, routes to the shared handleGoToMyLocation
+            (same goToMyLocation path as the filter-bar crosshair). */}
+        <NearMePill onClick={handleGoToMyLocation} />
 
         {/* Bottom sheet */}
         <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length}>

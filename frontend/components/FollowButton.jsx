@@ -17,7 +17,11 @@ import { showToast } from "@/lib/toast";
  * data-only foundation per docs/archive/FEEDBACK_FIXES.md.
  */
 export default function FollowButton({ producerId }) {
-  const t = useTranslations("producer.follow");
+  // MEH-996: strings live under group_buys.follow in both locale files —
+  // the producer.follow namespace never existed (same trap as
+  // FridayDeliveryStrip), so t() rendered raw key paths.
+  const t = useTranslations("group_buys.follow");
+  const tError = useTranslations("error");
   const { user } = useAuth();
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -45,7 +49,9 @@ export default function FollowButton({ producerId }) {
         showToast.success(t("followed_toast"), { icon: <Bell size={18} weight="fill" /> });
       }
     } catch {
-      showToast.error(t("error_generic"));
+      // MEH-996: error_generic exists in neither namespace — shared
+      // error.generic copy instead (MEH-848 precedent).
+      showToast.error(tError("generic"));
     }
     setLoading(false);
   };

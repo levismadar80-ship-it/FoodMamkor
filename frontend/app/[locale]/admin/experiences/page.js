@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { MapPin, Leaf } from "@phosphor-icons/react";
+import { MapPin, Leaf, CurrencyCircleDollar, Lightbulb } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -40,7 +41,7 @@ export default function AdminExperiencesPage() {
         setError("");
       })
       .catch((e) =>
-        setError(e.response?.data?.detail || t("experiences.error_loading"))
+        setError(detailToMessage(e.response?.data?.detail) || t("experiences.error_loading"))
       )
       .finally(() => setLoading(false));
   }, [tab, t]);
@@ -56,7 +57,7 @@ export default function AdminExperiencesPage() {
       showToast.success(t("experiences.approve_toast"), { icon: <Leaf size={18} /> });
       load();
     } catch (e) {
-      alert(e.response?.data?.detail || t("experiences.approve_error"));
+      alert(detailToMessage(e.response?.data?.detail) || t("experiences.approve_error"));
     } finally {
       setBusy(false);
     }
@@ -93,7 +94,7 @@ export default function AdminExperiencesPage() {
       closeModal();
       load();
     } catch (e) {
-      alert(e.response?.data?.detail || t("experiences.submit_error"));
+      alert(detailToMessage(e.response?.data?.detail) || t("experiences.submit_error"));
     } finally {
       setBusy(false);
     }
@@ -316,8 +317,8 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                 </p>
               )}
               {ex.price_per_person != null && (
-                <p className="text-fg-muted">
-                  💰{" "}
+                <p className="text-fg-muted inline-flex items-center gap-1">
+                  <CurrencyCircleDollar size={14} className="text-primary" aria-hidden="true" />
                   {Number(ex.price_per_person) === 0
                     ? t("experiences.free")
                     : t("experiences.price_per_person", { price: ex.price_per_person })}
@@ -337,8 +338,9 @@ function ExperienceRow({ ex, busy, t, locale, onApprove, onChanges, onReject }) 
                     {ex.moderation_reason}
                   </p>
                   {ex.moderation_suggestion && (
-                    <p className="text-xs text-fg-muted mt-1">
-                      💡 {ex.moderation_suggestion}
+                    <p className="text-xs text-fg-muted mt-1 inline-flex items-center gap-1">
+                      <Lightbulb size={14} weight="fill" className="text-amber-500" aria-hidden="true" />
+                      {ex.moderation_suggestion}
                     </p>
                   )}
                 </div>

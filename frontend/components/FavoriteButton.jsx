@@ -132,13 +132,18 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
       </button>
     );
   } else {
-    // default — back-compat emoji heart
+    // default — MEH-990: Phosphor heart (was a ❤️/🤍 emoji pair, Emoji LOCK).
     button = (
       <button
         {...commonProps}
-        className="text-2xl min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
+        className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:scale-110 transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg p-1"
       >
-        {favorited ? "❤️" : "🤍"}
+        <HeartStraight
+          size={24}
+          weight={favorited ? "fill" : "regular"}
+          className={favorited ? "text-red-500" : "text-fg-muted"}
+          aria-hidden="true"
+        />
       </button>
     );
   }

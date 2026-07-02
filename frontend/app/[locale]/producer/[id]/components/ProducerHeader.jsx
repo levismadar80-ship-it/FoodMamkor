@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { MapPin, Heart, Star, Truck } from "@phosphor-icons/react";
+import { MapPin, Heart, Star, Truck, StarOfDavid } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
@@ -125,7 +125,7 @@ export default function ProducerHeader({
       )}
 
       {/* Highlights strip — grass_fed / organic / delivery / kosher */}
-      {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
+      {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || !!producer.kashrut_verified_at) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
@@ -142,9 +142,12 @@ export default function ProducerHeader({
               <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
-          {producer.kosher && (
+          {/* MEH-986 ch3a (P0 legal — חוק איסור הונאה בכשרות): chip renders ONLY for
+              admin-verified kashrut, never from free-text producer.kosher. Mirrors
+              badges.js:167 (`!!producer.kashrut_verified_at`). */}
+          {!!producer.kashrut_verified_at && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
+              <StarOfDavid size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}
         </div>

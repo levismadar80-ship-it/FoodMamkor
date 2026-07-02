@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Package, Seal, Truck } from "@phosphor-icons/react";
+import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid } from "@phosphor-icons/react";
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -64,10 +64,10 @@ function CompletenessBadge({ missing, priority }) {
     return (
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
-        className="inline-flex items-center text-base leading-none cursor-help"
+        className="inline-flex items-center leading-none cursor-help"
         aria-label={t("producers.table.completeness.missing_critical_aria")}
       >
-        🔴
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-red-500" aria-hidden="true" />
       </span>
     );
   }
@@ -75,20 +75,20 @@ function CompletenessBadge({ missing, priority }) {
     return (
       <span
         title={t("producers.table.completeness.missing_title", { fields })}
-        className="inline-flex items-center text-base leading-none cursor-help"
+        className="inline-flex items-center leading-none cursor-help"
         aria-label={t("producers.table.completeness.missing_aria")}
       >
-        🟡
+        <Circle size={ICON_SIZE_SM} weight="fill" className="text-amber-500" aria-hidden="true" />
       </span>
     );
   }
   return (
     <span
       title={t("producers.table.completeness.complete_title")}
-      className="inline-flex items-center text-base leading-none cursor-help opacity-60"
+      className="inline-flex items-center leading-none cursor-help opacity-60"
       aria-label={t("producers.table.completeness.complete_aria")}
     >
-      🟢
+      <Circle size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" />
     </span>
   );
 }
@@ -97,12 +97,24 @@ function ProducerTags({ producer }) {
   const t = useTranslations("admin");
   return (
     <div className="flex gap-1 flex-wrap">
-      {producer.is_verified && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
+      {producer.verification_tier === "verified" && <span title={t("producers.table.tags.verified")}><Seal size={ICON_SIZE_SM} weight="fill" className="text-primary" aria-hidden="true" /></span>}
       {producer.organic_certified && <span title={t("producers.table.tags.organic_certified")}><Leaf size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.grass_fed && <span title={t("producers.table.tags.grass_fed")}><Cow size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.has_delivery && <span title={t("producers.table.tags.delivery")}><Truck size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
       {producer.pickup_points && <span title={t("producers.table.tags.pickup_points")}><Package size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
-      {producer.kosher && <span title={producer.kosher}>✡️</span>}
+      {producer.kosher && <span title={producer.kosher}><StarOfDavid size={ICON_SIZE_SM} className="text-primary" aria-hidden="true" /></span>}
+      {/* MEH-971 chunk 3: license-pending flag — license-required category with
+          no license number. Unmissable text badge so the admin verifies before
+          approving (the chunk-4 guard blocks approval without an override). */}
+      {producer.license_pending && (
+        <span
+          title={t("producers.table.tags.license_pending_title")}
+          aria-label={t("producers.table.tags.license_pending_title")}
+          className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[10px] font-medium"
+        >
+          {t("producers.table.tags.license_pending")}
+        </span>
+      )}
     </div>
   );
 }

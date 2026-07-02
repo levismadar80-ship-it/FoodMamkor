@@ -3,10 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
+import { detailToMessage } from "@/lib/errors";
 import api from "@/lib/api";
+
+// MEH-975: schema bounds for GroupBuyCommitRequest.quantity
+// (backend/app/schemas/schemas.py:1602 — int, ge=1, le=100). Clamp the
+// number input to these before POST so a cleared field (Number("")===0)
+// or an over-cap value never produces a 422 (which renders an array detail
+// and crashed the tree — React #31).
+const QTY_MIN = 1;
+const QTY_MAX = 100;
+
+function clampQuantity(value) {
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n)) return QTY_MIN;
+  return Math.min(QTY_MAX, Math.max(QTY_MIN, n));
+}
 
 function Confetti() {
   const canvasRef = useRef(null);
@@ -126,14 +142,20 @@ export default function GroupBuyDetailClient({ id }) {
     setError("");
     setSubmitting(true);
     try {
-      await api.post(`/group-buys/${id}/commit`, { quantity, phone: phone || undefined });
+      // MEH-975: send a schema-valid quantity (1–100) regardless of input state.
+      await api.post(`/group-buys/${id}/commit`, {
+        quantity: clampQuantity(quantity),
+        phone: phone || undefined,
+      });
       await load();
       if (gb?.status === "funded" || prevStatusRef.current === "funded") {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4500);
       }
     } catch (err) {
-      setError(err.response?.data?.detail || tError("generic"));
+      // MEH-975: route through detailToMessage so a 422 `detail` ARRAY never
+      // renders as a React child (React #31). Falls back to generic Hebrew copy.
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +168,8 @@ export default function GroupBuyDetailClient({ id }) {
       await api.delete(`/group-buys/${id}/commit`);
       await load();
     } catch (err) {
-      setError(err.response?.data?.detail || t("errors.cancel_failed"));
+      // MEH-975: same array-detail crash guard as handleCommit.
+      setError(detailToMessage(err.response?.data?.detail) || t("errors.cancel_failed"));
     } finally {
       setCancelling(false);
     }
@@ -163,7 +186,7 @@ export default function GroupBuyDetailClient({ id }) {
   if (!gb) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-4xl mb-4">🔍</p>
+        <MagnifyingGlass size={40} className="text-fg-muted mx-auto mb-4" aria-hidden="true" />
         <p className="text-lg font-medium text-text">{t("not_found_title")}</p>
         <Link href="/group-buys" className="text-primary hover:underline mt-4 inline-block">
           {t("back_to_list")}
@@ -291,10 +314,11 @@ export default function GroupBuyDetailClient({ id }) {
                 <label className="block text-sm font-medium mb-1">{t("quantity_label")}</label>
                 <input
                   type="number"
-                  min={1}
-                  max={gb.max_participants || 100}
+                  min={QTY_MIN}
+                  max={QTY_MAX}
                   value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
                   className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
                   dir="ltr"
                 />

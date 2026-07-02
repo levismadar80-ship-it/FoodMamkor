@@ -13,7 +13,12 @@ repos:
     hooks:
       - id: eslint
         name: ESLint (frontend)
-        entry: bash -c 'cd frontend && npx eslint --max-warnings=0 "${@#frontend/}"' --
+        # MEH-616: no --max-warnings=0. Per MEH-443 the frontend lint rules
+        # ship at "warn" and are FEEDBACK, not a commit gate, until they're
+        # promoted to "error" (after MEH-437/438/439/440 + 30-day soak).
+        # eslint still exits non-zero on genuine errors (e.g. no-undef), so
+        # errors block the commit; warnings surface but don't.
+        entry: bash -c 'cd frontend && npx eslint "${@#frontend/}"' --
         language: system
         files: ^frontend/.*\.(js|jsx)$
         pass_filenames: true

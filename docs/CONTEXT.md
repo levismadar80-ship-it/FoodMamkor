@@ -53,7 +53,7 @@ Next.js + Tailwind → Vercel (frontend) · FastAPI + Python → Railway (backen
 
 - **Colors:** primary `#2e6853` · background `#F5F0E8` (warm cream — NEVER pure white) · text `#1C1A17`. Full token table in `docs/DESIGN.md`.
 - **Fonts:** Frank Ruhl Libre 900 for Hebrew headlines · DM Sans for body. Full font stack (Latin accents, Hebrew fallback, weights, loading) in `docs/DESIGN.md`.
-- **Voice:** Hebrew RTL, hybrid policy — gerund/plural for UI, feminine allowed for brand narrative, 4-quadrant CTA matrix (see ADR-014)
+- **Voice:** Hebrew RTL, hybrid policy — gerund/plural for UI, feminine allowed for brand narrative (see ADR-014, refined by ADR-024 — surface-function + owner-noun gender)
 - **Hero direction:** Direction A canonical · Direction B campaign-only with 3 preconditions (see ADR-018)
 - **Component state tokens:** opacity-on-cream + `--fg-muted` only; no new state-color tokens (see ADR-019)
 - **Icons:** three-tier — Phosphor for functional UI, hand-drawn SVG for category glyphs, custom illustration for editorial (see ADR-013). **Lucide FORBIDDEN.**
@@ -94,6 +94,15 @@ Before any action on Drive, Slack, Linear, Gmail, Sentry, Vercel, Notion, Canva,
 - **L3 — Mid-task failure:** STOP. No silent retries, no workarounds. Surface options to Sapir: (a) reconnect, (b) skip, (c) different approach.
 - **L4 — Long sessions (>30 messages):** re-verify connector access before the next action burst. Auth tokens drift; never assume.
 
+## 8.5 · Claude Design ↔ Claude Code (/design-sync)
+
+The `/design-sync` MCP imports the design system from the codebase into Claude Design as a **snapshot — not a live watcher**. Re-run `/design-sync` after any brand/token change in code, or the Canva DS goes stale (like rebuilding a snapshot test after a schema change).
+
+- **Truth direction:** the Canva DS is a *derivative* of code. `docs/BRAND.md` + `docs/DESIGN.md` + code tokens stay SoT (per §3). The Canva DS never overrides them; on conflict, code wins. Do NOT treat a Canva edit as a brand decision — that path is ADR-014/BRAND.md, not the canvas.
+- **Use the MCP for components + tokens only**, never "implement the designs in this project" (the handoff button opens a fresh CC session and batch-builds whole projects — bypasses the YELLOW chunk plan + WAIT gates). Scope always comes from the Linear issue, chunk-by-chunk. The DS is reference, not orchestrator.
+- **`/design-sync` permission prompts = RED-tier (§6).** If the sync requests access beyond the tokens/components being synced, STOP and surface — Sapir approves. Never approve a broad scope reflexively.
+- **Executor never verifies its own sync.** The session that ran `/design-sync` does not validate its own output; the orchestrator (or a separate surface) diffs source tokens vs synced result (per §9).
+
 ## 9 · Skeptic Mode applied to orchestrator claims
 
 When Claude Code finds disagreement with file:line evidence against an orchestrator (Claude.ai chat) claim, the orchestrator is **wrong by default**. Claude.ai memory and inferred facts CAN be wrong (proven 3x on 2026-05-23 alone). Pattern: CC Phase 0 disagreement → STOP, orchestrator verifies against UI before "go".
@@ -118,7 +127,7 @@ Every schema change goes through an Alembic revision. Risky changes (DROP COLUMN
 
 Canonical location: `docs/templates/` (per ADR-020). Project Knowledge holds a manual snapshot (non-canonical, refresh on canonical change).
 
-Current set: `00-model-selection-guide` · `01-claude-design` · `02-claude-code-feature` · `03-claude-code-bug` · `04-claude-code-refactor` · `05-claude-research` · `06-linear-issue` · `07-linear-quick` · `08-linear-issue-examples`. Template 09 (Council Mode) status under reconciliation in MEH-690.
+The canonical, enumerated index (all templates + recommended models) lives in [`docs/templates/README.md`](./templates/README.md) — the single source for the set; not duplicated here to avoid drift. Template 09 (Council Mode) status under reconciliation in MEH-690.
 
 Every Linear issue uses 8 sections + XML positive framing in the prompt: `<role>` · `<intent>` · `<acceptance_criteria>` · `<file_locations>` · `<scope>` · `<constraints>` · `<examples>` · `<confidence_calibration>` · `<over_engineering_guard>` · `<verification_step>`. If task type is unclear → ask, don't guess.
 

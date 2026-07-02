@@ -1017,9 +1017,7 @@
     },
     "sheet": {
       "badge": {
-        "verified": "✓ Verified",
-        "organic": "🌿 Organic",
-        "kosher": "✡️ Kosher"
+        "verified": "✓ Verified"
       }
     },
     "page": {
@@ -1054,7 +1052,7 @@
       "open_in_google": "Open in"
     },
     "bottom_sheet": {
-      "title": "Local businesses in this area",
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
       "show_map": "Show map"
     },
     "chip_scroll": {
@@ -1067,21 +1065,16 @@
       "loading": "Loading...",
       "loading_f": "Loading...",
       "saving": "Saving...",
-      "saving_f": "Saving...",
       "sending": "Sending...",
       "save": "Save",
       "saved": "✓ Saved",
       "saved_check": "Saved ✓",
       "cancel": "Cancel",
       "delete": "Delete",
-      "delete_f": "Delete",
       "edit": "Edit",
       "view": "View",
-      "view_f": "View",
       "approve": "Approve",
-      "approve_f": "Approve",
       "reject": "Reject",
-      "reject_f": "Reject",
       "search": "Search",
       "submit": "Confirm",
       "back": "← Back to admin panel",
@@ -1230,7 +1223,9 @@
           "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "delivery": "Delivery",
-          "pickup_points": "Pickup points"
+          "pickup_points": "Pickup points",
+          "license_pending": "License pending",
+          "license_pending_title": "In a license-required category with no license number — verify before approving."
         },
         "actions": {
           "approve_short": "✓ Approve",
@@ -2300,7 +2295,7 @@
       },
       "artisan_dairy": {
         "label": "Farm dairy",
-        "tooltip": "Milk and dairy directly from the farm, kosher"
+        "tooltip": "Milk and dairy directly from the farm"
       }
     },
     "expiry": {
@@ -2368,7 +2363,7 @@
       "popular_descs": {
         "dairy": "Cheeses, yogurt, butter",
         "bread": "Baked goods, challah, cakes",
-        "meat": "Fresh, kosher, from the farm",
+        "meat": "Fresh, local, quality",
         "oil": "Olive oil, select oils",
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"
@@ -3285,6 +3280,18 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "nav": {
+        "aria": "Dashboard navigation",
+        "overview": "Overview",
+        "edit": "Edit",
+        "insights": "Insights",
+        "tools": "Tools"
+      },
+      "load_error": {
+        "title": "We couldn't load your dashboard",
+        "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
+        "cta": "Contact us"
+      },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
@@ -3340,9 +3347,9 @@
         "group_aria": "Availability",
         "options": {
           "accepting_orders": "Open to orders",
-          "available_today": "Available today 🟢",
-          "full_this_week": "Busy this week 🟠",
-          "on_vacation": "On a break ⏸"
+          "available_today": "Available today",
+          "full_this_week": "Busy this week",
+          "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
         "remove_vacation_date_aria": "Remove return date"
@@ -3371,6 +3378,15 @@
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
+        "kpi": {
+          "whatsapp_leads": "WhatsApp leads",
+          "contact_clicks": "Contact clicks",
+          "rating": "Rating",
+          "views": "Views",
+          "window_7d": "Last 7 days",
+          "rating_sub": "{count} reviews",
+          "conversion_line": "{rate}% of viewers reached out"
+        },
         "hero": {
           "views_week_label": "Views this week",
           "views_week_sub": "Last 7 days",
@@ -3468,6 +3484,35 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
+      "categories": {
+        "heading": "Categories",
+        "subtitle": "Choose the categories that describe your business — they determine where you appear in search and on the map.",
+        "save_cta": "Save categories",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "images": {
+        "heading": "Images",
+        "subtitle": "Upload photos of your business and products — they appear in the gallery on your business page.",
+        "add_cta": "Add images · JPG / PNG / WebP",
+        "uploading": "Uploading image…",
+        "remove_aria": "Remove image",
+        "save_cta": "Save images",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "upload_error": "Image upload failed. Please try again.",
+        "save_error": "Save failed. Please try again."
+      },
+      "location": {
+        "heading": "Map location",
+        "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
+        "current_prefix": "Current location:",
+        "save_cta": "Save location",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
       "custom_questions": {
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
@@ -3554,8 +3599,12 @@
       "field_price_hint": "0 = free",
       "field_max_participants_label": "Max participants",
       "field_max_participants_hint": "Blank = no limit",
-      "field_image_label": "Image URL (Cloudinary)",
-      "field_image_placeholder": "https://res.cloudinary.com/…",
+      "image_label": "Event image",
+      "image_upload_hint": "Drag here or click to upload · JPG / PNG / WebP",
+      "image_uploading": "Uploading image…",
+      "image_remove": "Remove image",
+      "image_remove_aria": "Remove image",
+      "image_upload_error": "Image upload failed. Please try again.",
       "field_registration_url_label": "External registration link (optional)",
       "field_registration_url_placeholder": "https://…",
       "submit_publishing": "Publishing…",
@@ -3794,7 +3843,8 @@
       "groupB_desc": "Here the law exempts from licensing. Most businesses will be <b>\"Declared\"</b> — a full path in its own right. Whoever wishes can add an exemption approval or registration and also receive a \"Verified\" badge.",
       "caveat": "Our process is personal, and the criteria update with the law and with new categories. If something isn't clear — talk to us, and we'll explain.",
       "catA": {
-        "meat_fish": "Meat & fish",
+        "meat": "Meat",
+        "fish": "Fish",
         "dairy": "Milk & cheese",
         "bread": "Breads & baking",
         "prepared": "Prepared foods",
@@ -3810,7 +3860,6 @@
         "spices": { "label": "Spices & culinary herbs", "doc": "Verified: an official exemption approval." },
         "soaps": { "label": "Natural soaps", "doc": "Verified: registration in the cosmetics registry (Ministry of Health)." },
         "creams": { "label": "Skin creams & oils", "doc": "Verified: registration in the cosmetics registry." },
-        "herbal": { "label": "Herbal preparations", "doc": "Verified: registration in the cosmetics registry." },
         "candles": { "label": "Candles & aroma", "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine." }
       }
     },

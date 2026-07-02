@@ -41,7 +41,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Check, Circle, CircleNotch } from "@phosphor-icons/react";
 
 import api from "@/lib/api";
 import { failureMessage } from "@/lib/passwordMessages";
@@ -178,7 +178,11 @@ export default function PasswordInput({
               tooShort ? "text-fg-muted" : "text-primary"
             }`}
           >
-            <span aria-hidden="true">{tooShort ? "○" : "✓"}</span>
+            {tooShort ? (
+              <Circle size={13} aria-hidden="true" />
+            ) : (
+              <Check size={13} weight="bold" aria-hidden="true" />
+            )}
             {tooShort
               ? failureMessage("too_short", tValidation)
               : tForm("min_length", { min: PASSWORD_MIN_LENGTH })}
@@ -192,9 +196,13 @@ export default function PasswordInput({
                   : "text-red-500"
             }`}
           >
-            <span aria-hidden="true">
-              {breachOk ? "✓" : breachPending ? "…" : "○"}
-            </span>
+            {breachOk ? (
+              <Check size={13} weight="bold" aria-hidden="true" />
+            ) : breachPending ? (
+              <CircleNotch size={13} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Circle size={13} aria-hidden="true" />
+            )}
             {breachPending
               ? tForm("checking")
               : apiFailures.includes("too_common")
@@ -203,7 +211,7 @@ export default function PasswordInput({
           </li>
           {showCurrentPasswordReuse && (
             <li className="text-xs flex items-center gap-1.5 text-fg-muted">
-              <span aria-hidden="true">○</span>
+              <Circle size={13} aria-hidden="true" />
               {tForm("different_from_current")}
             </li>
           )}

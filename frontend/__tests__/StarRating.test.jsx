@@ -37,8 +37,9 @@ describe("StarRating", () => {
     expect(screen.getByText("(7 ביקורות)")).toBeInTheDocument();
   });
 
-  it("shows the star glyph", () => {
-    render(<StarRating avg={4} count={1} />);
-    expect(screen.getByText("⭐")).toBeInTheDocument();
+  it("shows the star icon", () => {
+    // MEH-990: ⭐ glyph → Phosphor Star (Emoji LOCK) — assert the rendered svg.
+    const { container } = render(<StarRating avg={4} count={1} />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
   });
 });

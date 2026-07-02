@@ -16,7 +16,7 @@ colors:
   text: "#1C1A17"
   muted: "#6B6860"
   fg-muted: "#5c584f"
-  accent: "#8B6914"
+  accent: "#896714"
   honey: "#C8821E"
   gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
@@ -181,7 +181,8 @@ instead, and *Do's and Don'ts* for why.
   of ADR-019). Used for state de-emphasis (disabled, loading, vacation) instead
   of introducing new state colors. Slightly deeper than `muted` for stronger
   recede without a color shift.
-- **Accent (`#8B6914`):** Warm gold. Used **sparingly** — prices, "premium"
+- **Accent (`#896714`):** Warm gold (darkened from `#8B6914` for WCAG AA
+  small-text on cream — MEH-917). Used **sparingly** — prices, "premium"
   highlights, pull-quotes. A second voice, never a second brand color.
 - **Gold-on-dark (`#E7C88A`):** The gold voice for **dark green surfaces only**
   (`green-900` sheets/footers), where `accent` fails contrast (≈1.6:1 on
@@ -303,6 +304,13 @@ front matter for the normative token bindings.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
   `label-md`. The save/like ("heart") affordance is **green or gold, never a red
   fill** (BRAND.md §3; the brand has no red token — see Do's and Don'ts).
+- **Map near-me pill (`NearMePill`, MEH-970):** quiet floating pill on mobile
+  `/map` — `Crosshair` glyph (`primary`) + "קרוב אליי" label, `surface` on a
+  pill (rounded-full) with hairline `border` + `shadow-md`. It is the **single**
+  mobile near-me control (the old icon-only crosshair was removed). Sits at the
+  `z-[1000]` map-controls tier, below the cookie banner (`z-[1100]`) and chat FAB
+  (`z-[9999]`); positioned `bottom-[16vh]` to clear the `PEEK=14vh` bottom sheet.
+  RTL logical props only (`start-4`).
 
 ## Do's and Don'ts
 

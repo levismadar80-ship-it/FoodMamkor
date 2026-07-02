@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import ExperienceDetailClient from "./ExperienceDetailClient";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // MEH-476 PR 3b2: per-page hreflang + per-locale title. Was hardcoded HE
@@ -10,7 +11,7 @@ import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 // or experience not found (404 path).
 async function getExperience(id) {
   try {
-    const res = await fetch(`${API_URL}/experiences/${id}`, {
+    const res = await serverFetch(`${API_URL}/experiences/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

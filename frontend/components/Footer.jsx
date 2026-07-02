@@ -7,7 +7,7 @@ import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
+import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -15,14 +15,12 @@ import { BRAND_NAME } from "@/lib/constants";
  * canonical docs/DESIGN.md §Footer spec.
  *
  * Structure (top → bottom):
- *   1. CTA row — teal-tinted panel inside the primary-dark footer,
- *      "יש לך עסק?" pitch on the right, "הוסיפי את העסק שלך" CTA on the
- *      left (primary #2e6853 brand green; MEH-703 retired the prior secondary).
- *   2. 3-column body — Brand / Navigation / Newsletter. Dropped the
- *      previous 4-nav-column sitemap that had drifted from DESIGN.md
- *      and doubled up with the new CTA row (add-business pitch was in
- *      two places).
- *   3. Copyright bar — © line on the right, four utility links on the left
+ *   1. 3-column body — Brand / Navigation / Newsletter. The Navigation
+ *      column carries the quiet producer nav-link → /register/producer
+ *      (MEH-721). The dedicated "add business" pitch panel that used to
+ *      sit above this body was removed in MEH-721 — the producer CTA now
+ *      lives on /about/for-businesses (MEH-923) + this nav-link.
+ *   2. Copyright bar — © line on the right, four utility links on the left
  *      (login · terms · privacy · accessibility).
  *
  * Scope guarantees:
@@ -34,22 +32,20 @@ import { BRAND_NAME } from "@/lib/constants";
  * on the dark surface (≥6.3:1 vs the prior #6a8a6a 2.6:1 / #9ab89a 4.3:1
  * fails); added the IS-5568 accessibility-statement link; nav-column h3
  * dropped Hebrew uppercase/tracking; sr-only <h2> anchors the heading
- * hierarchy; both footer arrows (CTA + newsletter submit) became Phosphor
- * ArrowRight + rtl:rotate-180 — bidi-correct (forward in both he and en).
+ * hierarchy; the newsletter-submit arrow is Phosphor ArrowRight +
+ * rtl:rotate-180 — bidi-correct (forward in both he and en). (The CTA
+ * arrow was removed with the pitch panel in MEH-721.)
  *
- * CTA button color: `primary` (#2e6853) via `bg-primary`. MEH-703
- * consolidated the brand palette to a single green and retired the prior
- * sage `secondary` accent (whose white-on-sage was ~2.2:1, failing WCAG AA);
- * white-on-#2e6853 passes AA — the drop-in this header already anticipated.
+ * History:
+ *   - MEH-721: producer-CTA pitch panel moved out of global footer →
+ *     /about/for-businesses + footer nav-link.
+ *   - MEH-976: newsletter input switched to unicode-bidi:plaintext (+ pe-11)
+ *     so the Hebrew placeholder no longer collides with the submit arrow;
+ *     replaces the MEH-968 dir="ltr" + ps-11 attempt.
  */
 export default function Footer() {
   const t = useTranslations();
-  // MEH-669: hide the "add your business" CTA panel from admins.
-  // Server-side guard at backend/app/routers/auth.py:432 enforces the
-  // policy; this is defense-in-depth UX so admins don't see an action
-  // they're not allowed to take.
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
+  // MEH-721: producer-CTA panel moved out of global footer — see file-header History block.
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState(null); // null | 'loading' | 'success' | 'error'
   const [message, setMessage] = useState("");
@@ -66,7 +62,7 @@ export default function Footer() {
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.detail || t("error.generic"));
+      setMessage(detailToMessage(err.response?.data?.detail) || t("error.generic"));
     }
   };
 
@@ -77,47 +73,16 @@ export default function Footer() {
     { href: "/about", label: t("nav.footer.about") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-721: quiet replacement for the removed global-footer pitch CTA.
+    { href: "/register/producer", label: t("nav.footer.add_business") },
   ];
 
   return (
     <footer className="mt-16 bg-primary-dark text-green-50">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        {/* ================= CTA row ================= */}
-        {/* MEH-669: panel hidden from admins (defense-in-depth alongside
-            backend 403 at auth.py:432). Whole panel is wrapped — hiding
-            only the Link would leave an orphan "יש לך עסק?" pitch box. */}
-        {!isAdmin && (
-          <div
-            className="mb-10 rounded-[10px] flex flex-col sm:flex-row items-center justify-between gap-4 bg-primary/15 border border-primary/30"
-            style={{
-              padding: "12px 24px",
-            }}
-          >
-            <Link
-              href="/register/producer"
-              className="inline-flex items-center gap-2 font-medium whitespace-nowrap transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-white/60 bg-primary"
-              style={{
-                color: "white",
-                borderRadius: "8px",
-                padding: "10px 20px",
-              }}
-            >
-              {t("nav.footer.add_business")}
-              {/* MEH-867: bidi-correct — points forward in both locales
-                  (ArrowRight in LTR/en; rtl:rotate-180 flips it leftward in he). */}
-              <ArrowRight size={14} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-            </Link>
-            <div className="text-center sm:text-start">
-              <p className="font-headline-md text-white" style={{ fontSize: "14px" }}>
-                {t("nav.footer.cta_pitch")}
-              </p>
-              <p className="text-green-100" style={{ fontSize: "11px" }}>
-                {t("nav.footer.cta_subpitch")}
-              </p>
-            </div>
-          </div>
-        )}
-
+        {/* MEH-721: the "add your business" pitch panel was removed from the
+            global footer. The producer CTA stays reachable via the quiet
+            footer nav-link below and the /about/for-businesses CTAs (MEH-923). */}
         {/* ================= 3-column body ================= */}
         <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-8">
           {/* Column 1 — Brand. MEH-867: sr-only <h2> doubles as the footer
@@ -145,7 +110,8 @@ export default function Footer() {
               className="inline-flex items-center gap-2 text-green-100 hover:text-white transition"
             >
               <InstagramLogo size={20} aria-hidden="true" />
-              <span className="font-body-md">@meha_makor</span>
+              {/* MEH-968: <bdi> isolates the Latin handle so the leading "@" stays leading in the RTL footer (was rendering as "meha_makor@"). */}
+              <bdi className="font-body-md">@meha_makor</bdi>
             </a>
           </div>
 
@@ -187,12 +153,12 @@ export default function Footer() {
                 id="footer-newsletter-email"
                 type="email"
                 required
-                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
+                /* MEH-976: unicode-bidi:plaintext → Hebrew placeholder resolves RTL (opposite the end-0 arrow → clear gap), typed Latin email resolves LTR; pe-11 reserves the 44px on the arrow side for the LTR value. Replaces MEH-968 dir="ltr"+ps-11. */
                 className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)", unicodeBidi: "plaintext" }}
               />
               <button
                 type="submit"

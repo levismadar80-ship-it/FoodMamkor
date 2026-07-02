@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Star } from "@phosphor-icons/react";
 
 export default function StarRating({ avg, count }) {
   const t = useTranslations("common.star_rating");
@@ -8,7 +9,7 @@ export default function StarRating({ avg, count }) {
 
   return (
     <div className="flex items-center gap-1 text-sm">
-      <span className="text-yellow-500">⭐</span>
+      <Star size={16} weight="fill" className="text-yellow-500" aria-hidden="true" />
       <span className="font-medium">{avg?.toFixed(1)}</span>
       <span className="text-muted">{t("count_aria", { count })}</span>
     </div>

@@ -9,18 +9,15 @@ import AxeBuilder from "@axe-core/playwright";
 
 const GATE_IMPACTS = ["critical", "serious"] as const;
 
-// Rule IDs reported but NOT gated. axe rates these "serious", but they are the
-// site-wide contrast/brand-palette backlog the audit classifies MODERATE and
-// explicitly defers (brand-color change is out of scope — see
-// docs/audits/2026-06-13-a11y.md Vector 5/6 + docs/ACCESSIBILITY.md "Tightening
-// the gate later"). The footer's low-contrast links/copy trip these on every
-// route, so gating them would make the net red on day one and mask genuine new
-// critical/serious regressions. TODO(MEH-230 follow-up): remove "color-contrast"
-// once the Vector 5 sites in docs/audits/2026-06-13-a11y.md reach 0 (text-accent,
-// text-honey, green-300, footer placeholder, home-hero cta_subpitch); remove
-// "link-in-text-block" once the login/register inline links carry a non-color
-// affordance (underline). Each removal re-tightens the gate for that rule.
-const GATE_IGNORE_RULES = new Set(["color-contrast", "link-in-text-block"]);
+// Rule IDs reported but NOT gated. `color-contrast` stays ignored while the
+// known deferred pairs still trip it on gated routes — the BottomNav inactive
+// labels + the dairy map-card (MEH-919 #1/#3, token/palette-traced) and the
+// producers image-missing placeholder (MEH-815 #5). Remove "color-contrast"
+// once those land.
+// `link-in-text-block` was REMOVED from this set (MEH-921 ratchet): #1327 gave
+// every flagged inline prose link a persistent underline, and the 2026-06-23
+// post-merge axe pass confirmed it is 0 on all gated routes.
+const GATE_IGNORE_RULES = new Set(["color-contrast"]);
 
 type AxeResults = Awaited<ReturnType<AxeBuilder["analyze"]>>;
 
@@ -149,15 +146,16 @@ test.describe("axe a11y net (critical/serious = 0)", () => {
 
 // MEH-921 — extend the MEH-230 net to the public guest routes surfaced by
 // the 2026-06-23 staging axe audit (the net previously covered only 6 routes, so
-// the contact/landmark/contrast backlog accumulated unguarded). Same gate +
-// GATE_IGNORE_RULES. These routes' only serious hits are color-contrast +
-// link-in-text-block (both ignored) + landmark (moderate, not gated), so they
-// pass the gate today. Routes still red-gated by an open fix are listed below
-// and added once their fix lands (the ratchet):
-//   /contact — `label` critical (MEH-916 / PR #1322)
+// the contact/landmark/contrast backlog accumulated unguarded). Same gate.
+// These routes' remaining serious hits were link-in-text-block (now fixed +
+// gated, #1327) + color-contrast (still ignored) + landmark (moderate, not
+// gated), so they pass the gate. /contact graduated in the ratchet — its label
+// crit (#1322) + link-in-text (#1327) are fixed (post-merge axe = 0).
+// Routes still red-gated by an open fix, added once it lands:
 //   /events  — `aria-required-children` critical (MEH-858 tablist follow-up)
 //   /search  — `document-title` serious (not in GATE_IGNORE_RULES)
 const EXTENDED_PUBLIC_ROUTES = [
+  "/contact",
   "/about",
   "/about/process",
   "/about/for-businesses",

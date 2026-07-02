@@ -134,7 +134,9 @@ export default function BottomNav() {
     [
       "relative w-full min-w-[64px] min-h-[44px] flex flex-col items-center justify-center gap-[4px]",
       "rounded-full px-1 py-1.5 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
-      active ? "text-primary" : "text-fg-muted",
+      // MEH-919: inactive label darkened from fg-muted (#5c584f → 3.53 on the
+      // sage nav capsule) to #4b4841 (4.55) for WCAG AA; active stays text-primary.
+      active ? "text-primary" : "text-[#4b4841]",
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
   const labelCls = "relative z-10 font-body text-[10.5px] font-semibold leading-none";

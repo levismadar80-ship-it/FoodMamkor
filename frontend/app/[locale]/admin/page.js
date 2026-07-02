@@ -15,6 +15,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { getProducerStatusLabel } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -27,7 +28,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     api.get("/admin/dashboard")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.detail || t("common.error_loading")));
+      .catch((e) => setError(detailToMessage(e.response?.data?.detail) || t("common.error_loading")));
   }, [t]);
 
   if (error) {
@@ -210,7 +211,7 @@ export default function AdminDashboard() {
           {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
-                <span>🆕</span>
+                <Sparkle size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
                 <span>{t("dashboard.activity.added_producer")}</span>
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}
