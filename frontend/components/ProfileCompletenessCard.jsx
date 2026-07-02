@@ -153,6 +153,10 @@ export default function ProfileCompletenessCard({ producer }) {
   // silently mislabelling the next step (e.g. always showing "תמונה ראשית").
   const nextKey = FIELD_KEY[missing[0]];
   const nextStepLabel = nextKey ? t(`fields.${nextKey}`) : missing[0];
+  // Route the CTA to where the top-missing field is actually editable: city
+  // lives in account /settings; every other (business) field — and undefined —
+  // is managed on the canonical profile hub /producer/dashboard/edit.
+  const ctaHref = nextKey === "city" ? "/settings" : "/producer/dashboard/edit";
 
   // MEH-897: yellow >70 ("almost there") swaps the single next-step line for a
   // 5-row checklist (completed + remaining). Build the applicable-field list
@@ -237,7 +241,7 @@ export default function ProfileCompletenessCard({ producer }) {
       </div>
       <div className="mt-5">
         <Link
-          href="/settings"
+          href={ctaHref}
           aria-label={t("cta_aria")}
           className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
         >
