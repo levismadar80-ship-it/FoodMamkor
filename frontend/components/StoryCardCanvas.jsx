@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, DownloadSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 
 const W = 1080;
@@ -206,7 +207,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       setUploadedUrl(r.data.url);
       onUploaded?.(r.data.url);
     } catch (err) {
-      alert(err.response?.data?.detail || t("upload_error"));
+      alert(detailToMessage(err.response?.data?.detail) || t("upload_error"));
     } finally {
       setUploading(false);
     }

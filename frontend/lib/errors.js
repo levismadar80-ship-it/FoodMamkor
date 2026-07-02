@@ -96,17 +96,19 @@ export function errorMessage(err, t) {
 
   // 4xx — the server had something to say
   if (status === 400 || status === 409 || status === 422) {
-    // Prefer the server's Hebrew detail when it's a string, else generic
-    return typeof detail === "string" && detail ? detail : t("mapper.bad_request");
+    // MEH-959: detailToMessage handles both the string (400/409) and the
+    // 422 array (RequestValidationError) shapes, so a validation error now
+    // surfaces its Hebrew message instead of collapsing to the generic copy.
+    return detailToMessage(detail) || t("mapper.bad_request");
   }
   if (status === 401) {
     return t("mapper.unauthorized");
   }
   if (status === 403) {
-    return typeof detail === "string" && detail ? detail : t("mapper.forbidden");
+    return detailToMessage(detail) || t("mapper.forbidden");
   }
   if (status === 404) {
-    return typeof detail === "string" && detail ? detail : t("mapper.not_found");
+    return detailToMessage(detail) || t("mapper.not_found");
   }
   if (status === 429) {
     return t("mapper.rate_limited");

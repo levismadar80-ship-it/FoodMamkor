@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
@@ -30,7 +31,7 @@ export default function ContactClient() {
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
       setStatus("error");
-      setErrorMsg(err.response?.data?.detail || t("error_default"));
+      setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));
     }
   };
 

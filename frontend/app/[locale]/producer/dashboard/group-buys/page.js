@@ -7,6 +7,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -54,7 +55,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       });
       onCreated();
     } catch (err) {
-      setError(err.response?.data?.detail || tError("generic"));
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setSubmitting(false);
     }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
@@ -48,7 +49,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
         // Toast survives the router.push to /login (parent's onError
         // redirects but drops the message); without it the user lands
         // on /login with no context and the OAuth button looks broken.
-        const msg = detail || t("producer_already_account");
+        const msg = detailToMessage(detail) || t("producer_already_account");
         showToast.error(msg, { duration: 5000 });
         onError?.(msg, { redirectToLogin: true });
       } else if (status === 429) {
@@ -56,7 +57,7 @@ export default function ProducerOAuthButtons({ onSuccess, onError }) {
       } else if (status === 401) {
         onError?.(t("connection_failed"));
       } else {
-        onError?.(detail || t("generic_error"));
+        onError?.(detailToMessage(detail) || t("generic_error"));
       }
     } finally {
       setLoading(false);
