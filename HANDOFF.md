@@ -5,6 +5,61 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-02 — Pre-launch batch v2 (8 tasks: 6 draft PRs + 1 report-only + 1 STOP)
+
+Sequential small PRs, one branch+PR per task off `origin/staging`, **none self-merged**. Summary:
+
+| Task | Issue | PR / output | Status |
+|---|---|---|---|
+| T1 | modals.location.geo_failure residual | **#1432** (draft) | `שלך` dropped → locked sibling copy; zero functional map/location `שלך` left |
+| T2 | MEH-965 dead-key sweep badge.organic/.kosher | **#1434** (draft) | only reader is `.verified`; removed both from he+en; vitest 686✓ |
+| T3 | CHANGELOG merge=union | **#1435** (draft) | `.gitattributes` += `docs/CHANGELOG.md merge=union`; `check-attr`→union |
+| T4 | MEH-616 pre-commit eslint | **#1437** (draft) | dropped `--max-warnings=0`; verified warn→exit0, error→exit1 |
+| T5 | MEH-925 skip claude-review on drafts | **report only** | paste-ready diff in batch report (workflows deny-listed) |
+| T6 | MEH-807 home hero cold gray | **STOP (no PR)** | asset present + CSP OK + scrim intentional → no a/b/c/d defect; needs live inspection (can't screenshot from sandbox) |
+| T7 | MEH-272 producer CHECK constraints | **#1439** (draft) | ORM `__table_args__` + guarded revision `f9a2c7d41b83`; **DO NOT MERGE before Sapir reviews; apply manual** |
+| T8 | MEH-273 alembic advisory lock | **#1442** (draft) | `pg_advisory_xact_lock` in `run_migrations_online`; offline untouched |
+
+**T5 (MEH-925) paste-ready diff — Sapir applies** (`.github/workflows/claude-review.yml`; pull_request-only + non-required, so no `event_name` half needed — just the draft guard + `ready_for_review` re-trigger, mirroring MEH-926):
+```diff
+@@ on: pull_request:
+-    types: [opened, synchronize]
++    types: [opened, synchronize, ready_for_review]
+@@ jobs.review (after `timeout-minutes: 10`):
++    # MEH-925: skip on draft PRs (~1,837 min/mo + API$). pull_request-only +
++    # non-required job, so no event_name guard needed. `ready_for_review` in
++    # types is the load-bearing re-trigger once the PR leaves draft.
++    if: ${{ github.event.pull_request.draft == false }}
+```
+Required-check names untouched (this job is `Adversarial review (calibration)`, `continue-on-error: true` — not required).
+
+**T6 (MEH-807) diagnosis for Sapir:** the hero (`HomeHero.jsx`) references a **valid, present** Cloudinary asset (`home/hero-produce`, active 4032×3024) with `img-src` CSP allowing `res.cloudinary.com`; the `scrim-ink` is a bottom-anchored gradient (intentional MEH-788 AA contrast, no DESIGN.md opacity spec to reduce to); no glassmorphism. **None of the a/b/c/d causes hold.** Most likely: a load-flash (no fallback bg-color behind the 1.7 MB image). Recommended low-risk fix = a warm brand-token fallback bg on the hero section — but it touches a locked surface (ADR-018/MEH-788) and the required 375px before/after screenshot can't be produced from the CC sandbox, so STOP + Sapir call.
+
+**Batch mechanics:** each branch resynced vs `origin/staging` before push (rule 25); no CHANGELOG conflicts this round (staging quiet between pushes). T4's temp eslint fixtures cleaned via `git clean`. T8 hit the lint-feedback 3-strike hook on an intermediate E402 state (constant placed before a later import); resolved by moving the constant below imports — final env.py ruff-clean.
+
+## 2026-07-02 — Session close (runtime-error batch + emoji-lock + group-buy clarity)
+
+**Merged to staging today:**
+- MEH-975 group-buys 422/React#31 (#1400) · MEH-976 footer newsletter bidi (#1402)
+- MEH-977 server-fetch resilience (#1406) · MEH-978 /en/map key + parity gate (#1404)
+- MEH-979 legend `lg:block` (#1412) · MEH-980 home.cta variant B (#1407)
+- MEH-987 EmptyState 4-emoji sweep (#1416) · MEH-990 emoji residue (#1419 + #1424)
+- MEH-992 group-buy form clarity (#1431)
+
+**Linear state (all closed manually — staging merges don't auto-close):**
+- **Done:** 975, 976, 977, 978, 979, 980, 982, 987, 990, 992, 948
+- **Canceled:** 983 (Next.js catch-all one-off, not reproducible)
+- **948 closed WITHOUT fix** — `/map` default centering verified correct geometrically; reopen trigger documented in its comment (a real user seeing an off-Israel map on a **clean** load → the iOS-`dvh`/zoom-race fix, central `MapComponent`, chunked + `/adversarial-review`).
+
+**Open follow-ups (tracked, not blocking):**
+- **MEH-993** Sentry wiring — 3 chunks, **BLOCKED on Sapir Chunk-1** (create Sentry projects + DSN). Root: the MEH-977-class Vercel→Railway runtime errors ran silent ~2 months (frontend SDK present but capture not wired).
+- **MEH-964** (In Progress) — folded-in 3 bio/custom-questions quick-wins via comment; incl. bio-heading copy decision pending Sapir.
+- **MEH-982 item #8 deferred** — RTL-native date picker (L).
+
+**Sapir pending (not CC):** mobile glance on merged UI · Sentry Chunk-1 setup · bio-heading copy pick.
+
+**Session mechanics note:** #1424 (MEH-990) hit three sequential staging-drift conflicts on merge (append-only CHANGELOG/HANDOFF + one real `events/new/page.js` code conflict where staging's MEH-988 i18n `t()` swap collided with the `✕`→`X` sweep — resolved by **keeping both** the Phosphor `<X>` and the `t()` label). All resolved Accept-Both / combine-both, build green each time. Both #1431 and #1424 squash-merged after their ready-for-review re-triggered required gates settled.
+
 ## 2026-07-02 — MEH-990 follow-up: Emoji-LOCK arrow/dingbat residue → Phosphor — DRAFT PR
 
 - **Branch:** `feature/meh-990-emoji-lock-sweep-rest` (restarted off `origin/staging`; PR #1419 already merged — new PR per merged-PR protocol). LOW-RISK, frontend-only. `Closes MEH-990`.
