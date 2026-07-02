@@ -42,10 +42,15 @@ function FavoriteCardWrapper({ fav }) {
 
 export default function FavoritesClient() {
   const t = useTranslations("favorites");
+  // MEH-996: shared generic error copy for the failed-fetch state.
+  const tError = useTranslations("error");
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  // MEH-996: a failed fetch used to fall through to the "no favorites yet"
+  // empty state — indistinguishable from a real empty list (MEH-977 class).
+  const [loadError, setLoadError] = useState(false);
   const isFirstVisit = useFirstVisit("favorites_tour");
 
   useEffect(() => {
@@ -56,8 +61,11 @@ export default function FavoritesClient() {
     if (user) {
       api
         .get("/users/me/favorites")
-        .then((r) => setFavorites(r.data))
-        .catch(() => {})
+        .then((r) => {
+          setFavorites(r.data);
+          setLoadError(false);
+        })
+        .catch(() => setLoadError(true))
         .finally(() => setLoading(false));
     }
   }, [user, authLoading, router]);
@@ -77,6 +85,10 @@ export default function FavoritesClient() {
 
       {loading ? (
         <SkeletonProducerGrid count={6} />
+      ) : loadError ? (
+        <div className="text-center py-20">
+          <p className="text-fg-muted">{tError("generic")}</p>
+        </div>
       ) : favorites.length === 0 ? (
         <div className="text-center py-20">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-50 mb-6">

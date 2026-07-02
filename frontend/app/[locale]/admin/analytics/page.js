@@ -8,10 +8,17 @@ import api from "@/lib/api";
 export default function AdminAnalyticsPage() {
   const t = useTranslations("admin");
   const [data, setData] = useState(null);
+  // MEH-996: a failed fetch used to leave `data` null forever → permanent
+  // loading text with no error signal (MEH-977 class).
+  const [loadError, setLoadError] = useState(false);
   useEffect(() => {
-    api.get("/admin/analytics").then((r) => setData(r.data)).catch(() => {});
+    api
+      .get("/admin/analytics")
+      .then((r) => setData(r.data))
+      .catch(() => setLoadError(true));
   }, []);
 
+  if (loadError) return <div className="text-muted">{t("common.error_loading")}</div>;
   if (!data) return <div className="text-muted">{t("common.loading")}</div>;
 
   // Two stacked line series for monthly chart
