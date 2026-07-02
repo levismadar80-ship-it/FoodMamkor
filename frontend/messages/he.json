@@ -1016,9 +1016,7 @@
     },
     "sheet": {
       "badge": {
-        "verified": "מאומת",
-        "organic": "אורגני",
-        "kosher": "כשר"
+        "verified": "מאומת"
       }
     },
     "page": {
@@ -2232,7 +2230,7 @@
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
       "geo_loading": "בחיפוש...",
-      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "geo_failure": "לא הצלחנו לקבל את המיקום",
       "current_location_fallback": "מיקום נוכחי",
       "skip": "דלגו לעכשיו",
       "popular_cities": {
@@ -3519,6 +3517,18 @@
         "save_cta": "שמירת קטגוריות",
         "saving": "בשמירה…",
         "saved": "נשמר",
+        "save_error": "השמירה נכשלה. נסו שוב."
+      },
+      "images": {
+        "heading": "תמונות",
+        "subtitle": "העלו תמונות של העסק והמוצרים — הן מופיעות בגלריה בעמוד העסק שלכם.",
+        "add_cta": "הוספת תמונות · JPG / PNG / WebP",
+        "uploading": "מעלה תמונה…",
+        "remove_aria": "הסרת התמונה",
+        "save_cta": "שמירת תמונות",
+        "saving": "בשמירה…",
+        "saved": "נשמר",
+        "upload_error": "העלאת התמונה נכשלה. נסו שוב.",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
       "custom_questions": {
