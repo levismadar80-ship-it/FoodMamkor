@@ -23,7 +23,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PencilSimple, Warning } from "@phosphor-icons/react";
+import { PencilSimple, Warning, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
@@ -74,6 +74,12 @@ export default function ProducerDashboardEditPage() {
 
       {/* Edit-tab chunk A — producer-facing categories editor */}
       <CategoriesCard
+        profile={profile}
+        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+      />
+
+      {/* Edit-tab chunk B — producer-facing gallery images editor */}
+      <ImagesCard
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
       />
@@ -405,6 +411,138 @@ function CategoriesCard({ profile, onSave }) {
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// Edit-tab chunk B: producer-facing gallery images editor.
+// Mirrors ContactChannelsCard (card/save/dirty pattern) + the admin
+// ProducerForm image grid (upload loop + remove + hover-grid, producer-self
+// version). Multi-file upload via POST /upload/image; saves images[] via PUT
+// /producers/me (backend runs Cloudinary cleanup for removed URLs). Upload
+// errors are surfaced inline via detailToMessage (lib/errors.js).
+// REUSES: components/admin/ProducerForm.jsx:219-243,630-662.
+// ============================================================
+
+function ImagesCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.images");
+  const seed = profile?.images || [];
+  const [images, setImages] = useState(seed);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  // Dirty when the list differs from the seeded set (order-sensitive: a reorder
+  // would count as dirty, but this editor has no reorder — add/remove only).
+  const dirty =
+    seed.length !== images.length || seed.some((url, i) => url !== images[i]);
+
+  const handleUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setSaved(false);
+    setErrorMsg(null);
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const r = await api.post("/upload/image", fd);
+        uploaded.push(r.data.url);
+      }
+      setImages((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  // Remove by index (not by URL value): if images[] ever holds a duplicate
+  // URL (backend drift / bad prior save), a value-filter would drop every
+  // copy at once. Index-based removal deletes exactly the clicked thumbnail.
+  const removeImage = (index) => {
+    setSaved(false);
+    setErrorMsg(null);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      await api.put("/producers/me", { images });
+      onSave({ images });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 transition">
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          disabled={uploading}
+          onChange={handleUpload}
+        />
+        {uploading ? t("uploading") : t("add_cta")}
+      </label>
+
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
+          {images.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={url}
+                alt=""
+                className="w-full h-24 object-cover rounded-[8px] border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                aria-label={t("remove_aria")}
+              >
+                <X size={14} weight="bold" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || uploading || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
       </button>
     </div>
   );
