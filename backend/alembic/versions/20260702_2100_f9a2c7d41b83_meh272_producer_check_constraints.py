@@ -20,6 +20,11 @@ no-op where the constraint exists, a create on a fresh DB. This mirrors the
 guard style the old `_migrate_columns` used, so re-running on an already-
 migrated environment is safe. downgrade drops both (IF EXISTS).
 
+The guard is scoped to `conrelid = 'producers'::regclass`: pg_constraint
+uniqueness is (conrelid, conname), not global, so an unscoped conname match
+could see a same-named constraint on another table and silently skip adding
+it to `producers` — reintroducing the exact regression this fixes.
+
 # DO NOT autogenerate this — the constraints pre-exist on prod/staging, so
 # autogenerate would emit a bare ADD that fails there. Hand-written guard is
 # required (MEH-272 acceptance).
@@ -43,7 +48,9 @@ def upgrade() -> None:
         DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint WHERE conname = 'producer_location_mode'
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'producer_location_mode'
+                  AND conrelid = 'producers'::regclass
             ) THEN
                 ALTER TABLE producers
                     ADD CONSTRAINT producer_location_mode
@@ -60,7 +67,9 @@ def upgrade() -> None:
         DO $$
         BEGIN
             IF NOT EXISTS (
-                SELECT 1 FROM pg_constraint WHERE conname = 'delivery_nationwide_xor_cities'
+                SELECT 1 FROM pg_constraint
+                WHERE conname = 'delivery_nationwide_xor_cities'
+                  AND conrelid = 'producers'::regclass
             ) THEN
                 ALTER TABLE producers
                     ADD CONSTRAINT delivery_nationwide_xor_cities
