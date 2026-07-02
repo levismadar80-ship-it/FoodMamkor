@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { Bread } from "@phosphor-icons/react";
@@ -58,7 +59,7 @@ export default function ProducerRecipesPage() {
       showToast.success(t("toast_deleted"));
       load();
     } catch (err) {
-      showToast.error(err.response?.data?.detail || t("toast_delete_error"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("toast_delete_error"));
     }
   };
 

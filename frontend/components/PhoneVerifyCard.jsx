@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChatCircleText } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 
 /**
@@ -47,7 +48,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_no_phone"));
-      else if (sc === 429) showToast.error(err.response?.data?.detail || t("error_rate_limited"));
+      else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
       else setError(t("error_generic"));
     } finally {
       setSending(false);
@@ -65,7 +66,7 @@ export default function PhoneVerifyCard({ onVerified }) {
     } catch (err) {
       const sc = err.response?.status;
       if (sc === 400) setError(t("error_invalid"));
-      else if (sc === 429) showToast.error(err.response?.data?.detail || t("error_rate_limited"));
+      else if (sc === 429) showToast.error(detailToMessage(err.response?.data?.detail) || t("error_rate_limited"));
       else setError(t("error_generic"));
     } finally {
       setConfirming(false);

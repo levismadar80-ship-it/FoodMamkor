@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
@@ -54,7 +55,7 @@ export default function NewEventPage() {
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      showToast.error(err.response?.data?.detail || t("image_upload_error"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("image_upload_error"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -76,7 +77,7 @@ export default function NewEventPage() {
       const r = await api.post("/events", payload);
       router.push(`/events/${r.data.id}`);
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
