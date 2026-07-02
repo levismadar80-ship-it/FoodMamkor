@@ -463,10 +463,13 @@ function ImagesCard({ profile, onSave }) {
     }
   };
 
-  const removeImage = (url) => {
+  // Remove by index (not by URL value): if images[] ever holds a duplicate
+  // URL (backend drift / bad prior save), a value-filter would drop every
+  // copy at once. Index-based removal deletes exactly the clicked thumbnail.
+  const removeImage = (index) => {
     setSaved(false);
     setErrorMsg(null);
-    setImages((prev) => prev.filter((u) => u !== url));
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -504,8 +507,8 @@ function ImagesCard({ profile, onSave }) {
 
       {images.length > 0 && (
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-          {images.map((url) => (
-            <div key={url} className="relative group">
+          {images.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={url}
@@ -514,7 +517,7 @@ function ImagesCard({ profile, onSave }) {
               />
               <button
                 type="button"
-                onClick={() => removeImage(url)}
+                onClick={() => removeImage(i)}
                 className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                 aria-label={t("remove_aria")}
               >
