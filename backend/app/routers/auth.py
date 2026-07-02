@@ -61,7 +61,6 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
-    PhoneOtpToken,
     Report,
 )
 from app.rate_limit import email_from_body, limiter
@@ -1337,14 +1336,11 @@ def delete_account(
         db.flush()
         producer = db.query(Producer).filter(Producer.id == producer_id).first()
         if producer is not None:
-            # MEH-755: delete OTP tokens explicitly before db.delete(producer).
-            # phone_otp_tokens.producer_id is NOT NULL, but the ORM relationship
-            # (models.py PhoneOtpToken.producer backref) has no delete cascade,
-            # so the unit-of-work tries to nullify producer_id on delete →
-            # NotNullViolation 500. Bulk-delete pre-empts the nullify.
-            db.query(PhoneOtpToken).filter(
-                PhoneOtpToken.producer_id == producer.id
-            ).delete()
+            # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE)
+            # plus passive_deletes=True on the Producer.otp_tokens backref
+            # (MEH-773 Chunk B), so no explicit pre-delete is needed. DO NOT
+            # re-add one — passive_deletes already pre-empts the NotNullViolation
+            # the old MEH-755 bulk-delete guarded.
             db.delete(producer)
 
     # 3. Finally, delete the user itself.
