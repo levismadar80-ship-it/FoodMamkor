@@ -5,6 +5,25 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-02 — Pre-launch GREEN batch (6 tasks: 4 draft PRs + 1 no-op + 1 discovery)
+
+Sequential LOW-RISK batch, one branch+PR per task off `origin/staging`, **none self-merged** (Sapir merges the sweep). Summary:
+
+| Task | Issue | PR | Status |
+|---|---|---|---|
+| 1 | MEH-989 availability toggle error detail | **#1421** (pre-existing) | Already done — diff matches AC, no action |
+| 2 | MEH-959 adopt `detailToMessage()` in 422 consumers | **#1425** (draft) | 25 files wired; build green, vitest 686✓ |
+| 3 | MEH-985 + MEH-981 map/location functional-voice | — (no PR) | **No-op** — all 6 scoped keys already neutral on staging (MEH-981 #1398 merged; MEH-985's 4 strings incl. `map.component.geo_failure` already fixed). 1 residual flagged (see below). |
+| 4 | MEH-939 stale center-coord comments | **#1427** (draft) | `HomepageMiniMap.jsx:41` clarified (valid history + note); `MapClient` already fixed by MEH-970. Comment-only. |
+| 5 | MEH-816 remove redundant OTP pre-deletes | **#1428** (draft) | Removed both pre-deletes + unused import; Phase-0 confirmed `passive_deletes`+FK cascade; existing cascade tests cover; pytest→CI. |
+| 6 | MEH-982 dashboard clarity discovery | — (read-only) | Report delivered to Sapir (final batch message). |
+
+**Task 3 residual for Sapir (copy-lock needed):** `modals.location.geo_failure` = `לא הצלחנו לקבל את המיקום שלך` still carries `שלך`. Both MEH-985/981 explicitly EXCLUDE `modals.location.*` and no locked copy was given → not touched (per "don't invent copy"). The neutral sibling `map.component.geo_failure` = `לא הצלחנו לקבל את המיקום` is the obvious lock if Sapir approves — trivial one-word follow-up.
+
+**Task 6 (MEH-982) key findings:** (a) `"צו ביו"` is **not a code typo** — the real CTA is `generate_cta: "צרו ביו"` (`edit/page.js:365`, plural imperative, correct); Sapir misread the thin `ר`. (b) `"ר222"` is **test data, not a bug** — zero code matches; it's Sapir's own typed value persisted to her profile. (c) group-buy `deadline` datetime-local is `dir="ltr"` (`group-buys/page.js:167-174`) — label/control visual mismatch, S-effort helper fix. Full prioritized report in the batch's final message → open follow-ups after review.
+
+**Batch mechanics:** each feature branch synced against `origin/staging` before push (rule 25); PR #1425 hit the expected CHANGELOG Accept-Both conflict (resolved). All draft PRs auto-subscribed for CI/review; claude[bot] review on #1427 came back all-clean. No STOP conditions hit.
+
 ## 2026-06-29 — Session close (runtime-error batch + emoji-lock + map)
 
 **Merged to staging today:** MEH-975 (group-buys 422/React#31), MEH-976 (footer newsletter bidi), MEH-977 (Vercel→Railway server-fetch resilience), MEH-978 (/en/map missing key + parity guard), MEH-979 (/map legend breakpoint → no pill overlap), MEH-980 (home.cta variant B) + group-buys Emoji-LOCK (#1413) + **MEH-987** (this PR — emoji-lock sweep ×4).
