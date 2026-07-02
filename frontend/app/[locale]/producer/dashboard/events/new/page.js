@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
@@ -225,9 +226,11 @@ export default function NewEventPage() {
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
                 aria-label="הסרת התמונה"
-                className="text-sm text-red-600 hover:underline"
+                className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
               >
-                ✕ הסרת תמונה
+                {/* MEH-990: raw ✕ dingbat → Phosphor X */}
+                <X size={14} weight="bold" aria-hidden="true" />
+                הסרת תמונה
               </button>
             </div>
           ) : (

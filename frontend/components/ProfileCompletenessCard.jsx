@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { Check } from "@phosphor-icons/react";
+import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
@@ -242,7 +242,8 @@ export default function ProfileCompletenessCard({ producer }) {
           className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
         >
           {t("cta")}
-          <span aria-hidden="true">→</span>
+          {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+          <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
         </Link>
       </div>
     </div>
