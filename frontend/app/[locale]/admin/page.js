@@ -15,6 +15,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { getProducerStatusLabel } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -27,7 +28,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     api.get("/admin/dashboard")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.detail || t("common.error_loading")));
+      .catch((e) => setError(detailToMessage(e.response?.data?.detail) || t("common.error_loading")));
   }, [t]);
 
   if (error) {

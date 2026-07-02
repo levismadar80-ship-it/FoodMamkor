@@ -26,6 +26,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import CitySearch from "@/components/CitySearch";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
@@ -207,7 +208,7 @@ function ProfileTab() {
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || t("save_error_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || t("save_error_fallback"));
     } finally {
       setSaving(false);
     }
@@ -239,7 +240,7 @@ function ProfileTab() {
       setMessage(t("avatar_uploaded_msg"));
       setTimeout(() => setMessage(null), 3000);
     } catch (err) {
-      setError(err?.response?.data?.detail || t("avatar_upload_error_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || t("avatar_upload_error_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -657,7 +658,7 @@ function DangerZoneCard() {
       await deleteAccount(); // clears token + user state via auth context
       setPhase("grace");
     } catch (err) {
-      setError(err?.response?.data?.detail || tCommon("error_retry"));
+      setError(detailToMessage(err?.response?.data?.detail) || tCommon("error_retry"));
     } finally {
       setLoading(false);
     }
@@ -859,7 +860,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -941,7 +942,7 @@ function ProductsSection() {
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setEditForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
-      setError(err?.response?.data?.detail || tErr("upload_failed_fallback"));
+      setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
       setEditUploading(false);
       e.target.value = "";

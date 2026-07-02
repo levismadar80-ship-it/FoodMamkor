@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
@@ -55,7 +56,7 @@ export default function NewEventPage() {
       const res = await api.post("/upload/image", formData);
       setForm((f) => ({ ...f, image_url: res.data.url }));
     } catch (err) {
-      showToast.error(err.response?.data?.detail || "העלאת התמונה נכשלה. נסו שוב.");
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("image_upload_error"));
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -77,7 +78,7 @@ export default function NewEventPage() {
       const r = await api.post("/events", payload);
       router.push(`/events/${r.data.id}`);
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
     } finally {
       setSubmitting(false);
     }
@@ -213,7 +214,7 @@ export default function NewEventPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text mb-1">תמונת האירוע</label>
+          <label className="block text-sm font-medium text-text mb-1">{t("image_label")}</label>
           {form.image_url ? (
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -225,12 +226,12 @@ export default function NewEventPage() {
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
-                aria-label="הסרת התמונה"
+                aria-label={t("image_remove_aria")}
                 className="inline-flex items-center gap-1 text-sm text-red-600 hover:underline"
               >
-                {/* MEH-990: raw ✕ dingbat → Phosphor X */}
+                {/* MEH-990: raw ✕ dingbat → Phosphor X (keeps MEH-i18n t() label from staging) */}
                 <X size={14} weight="bold" aria-hidden="true" />
-                הסרת תמונה
+                {t("image_remove")}
               </button>
             </div>
           ) : (
@@ -243,9 +244,9 @@ export default function NewEventPage() {
                 onChange={handleImageUpload}
               />
               {uploading ? (
-                <span>מעלה תמונה...</span>
+                <span>{t("image_uploading")}</span>
               ) : (
-                <span>גררו לכאן או לחצו להעלאה · JPG / PNG / WebP</span>
+                <span>{t("image_upload_hint")}</span>
               )}
             </label>
           )}
