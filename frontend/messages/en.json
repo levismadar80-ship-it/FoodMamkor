@@ -3504,6 +3504,15 @@
         "upload_error": "Image upload failed. Please try again.",
         "save_error": "Save failed. Please try again."
       },
+      "location": {
+        "heading": "Map location",
+        "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
+        "current_prefix": "Current location:",
+        "save_cta": "Save location",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
       "custom_questions": {
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
