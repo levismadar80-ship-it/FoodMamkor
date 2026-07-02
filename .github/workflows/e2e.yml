@@ -38,7 +38,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.deployment.sha }}
           fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
@@ -81,7 +81,7 @@ jobs:
       !startsWith(github.event.deployment.ref, 'dependabot/')
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # deployment.sha is the commit Vercel deployed. Fall back to
           # github.sha (same value for deployment_status events) in case
