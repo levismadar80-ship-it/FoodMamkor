@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { ArrowRight } from "@phosphor-icons/react";
 
 /**
  * OnboardingTip — small tooltip bubble for first-visit tours.
@@ -55,9 +56,11 @@ export default function OnboardingTip({
             <button
               type="button"
               onClick={onNext ?? onDismiss}
-              className="mt-2 text-xs font-semibold text-green-50 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-green-50 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg"
             >
-              {ctaLabel} →
+              {ctaLabel}
+              {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+              <ArrowRight size={12} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
             </button>
           </div>
           {/* Caret — points down toward the BottomNav tab */}

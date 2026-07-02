@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-02 — MEH-990 follow-up: Emoji-LOCK arrow/dingbat residue → Phosphor — DRAFT PR
+
+- **Branch:** `feature/meh-990-emoji-lock-sweep-rest` (restarted off `origin/staging`; PR #1419 already merged — new PR per merged-PR protocol). LOW-RISK, frontend-only. `Closes MEH-990`.
+- **Why:** the merged #1419 entry below claimed "Post-fix DOM emoji grep = **clean**" — that was **overstated**. #1419's grep matched pictographic emoji but **missed raw arrow/geometric dingbats** (`→ ← ⏳ ✕`) rendered in JSX. A fresh frontend-wide scan (app/components/lib, non-test, non-comment) found **7 genuine DOM affordance sites**.
+- **Swept (all → Phosphor, MEH-938 `→`→`ArrowRight rtl:rotate-180` pattern, `aria-hidden`, tokens):** `events/EventsClient.jsx:287`, `map/components/MobileSheetSelectedCard.jsx:104`, `components/ProfileCompletenessCard.jsx:245`, `components/OnboardingTip.jsx:60` (all CTA `→`→`ArrowRight`); `components/GuideArticle.jsx:160` back `←`→`ArrowRight` (**server component → `@phosphor-icons/react/ssr`** import, else RSC `createContext` build fail); `settings/page.jsx:668` `⏳`→`HourglassSimple`; `producer/dashboard/events/new/page.js:230` `✕`→`X`. Test-mock fix: `DashboardSingleCompletenessWidget.test.jsx` phosphor mock += `Check`/`ArrowRight`.
+- **Verify:** `npm run build` exit 0; vitest **686 passed / 0 failed / 41 skipped**; 0 eslint errors; 0 physical RTL classes added (only `ms-1`/`inline-flex`/`mx-auto`/`rtl:rotate-180`). Backend untouched → pytest N/A.
+- **Left intentionally (NOT breaches — documented):** `ImageGallery`/`Lightbox` carousel `←→` (physical-by-design per `.claude/rules/rtl.md` allowlist, `aria-hidden`); `ChatWidget ●` typing dots (decorative animation); `admin/reviews <option> ⭐` (`<option>` can't hold icon children); `admin/settings` diff `→` separator (functional template string); `MapComponent:106 ✓` (**central** — Leaflet `divIcon` HTML-string, needs SVG + `/adversarial-review`); `StoryCardCanvas`/`ShareButton 🌿👉` (canvas art / share-text — not DOM); `lib/holidays.js` emoji data ×6 (design + copy call); **he.json copy `✓/→` — copy-approval-gated (rule 22), `en.json` untouched**. Post-fix render-grep residue = only these documented deferrals + `→` inside trailing `//` code comments (not rendered).
+- **✅ Flagged follow-up cleared:** the arrow/dingbat DOM residue left by #1419 is now swept; remaining items are genuinely deferred (central/canvas/copy/design), not oversights.
 ## 2026-07-02 — Pre-launch GREEN batch (6 tasks: 4 draft PRs + 1 no-op + 1 discovery)
 
 Sequential LOW-RISK batch, one branch+PR per task off `origin/staging`, **none self-merged** (Sapir merges the sweep). Summary:
