@@ -52,6 +52,10 @@ const BASELINE = new Set([
   "dashboard.producer.completeness.checklist_aria",
   "dashboard.producer.completeness.checklist_done",
   "dashboard.producer.completeness.checklist_todo",
+  // MEH-992 — group-buy form clarity copy (he-first per ADR-024; en wave under MEH-472).
+  "group_buys.dashboard.form.concept_intro",
+  "group_buys.dashboard.form.price_helper",
+  "group_buys.dashboard.form.deadline_helper",
   "map.near_me_pill.aria",
   "map.near_me_pill.empty",
   "map.near_me_pill.label",
