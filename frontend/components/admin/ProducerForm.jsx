@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
@@ -231,7 +232,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
     } catch (err) {
-      setError(err.response?.data?.detail || t("producers.form.errors.image_upload"));
+      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.image_upload"));
     } finally {
       setUploading(false);
     }
@@ -268,7 +269,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       router.push("/admin?tab=producers");
     } catch (err) {
-      setError(err.response?.data?.detail || t("producers.form.errors.save"));
+      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.save"));
     } finally {
       setSaving(false);
     }

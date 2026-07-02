@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -52,7 +53,7 @@ export default function AdminKashrutPage() {
       showToast.success(t("kashrut.approved_toast"));
       load();
     } catch (e) {
-      showToast.error(e.response?.data?.detail || t("common.error_generic"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
     }
     setBusy(false);
   }
@@ -66,7 +67,7 @@ export default function AdminKashrutPage() {
       setRejectNotes("");
       load();
     } catch (e) {
-      showToast.error(e.response?.data?.detail || t("common.error_generic"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("common.error_generic"));
     }
     setBusy(false);
   }

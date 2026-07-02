@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import { useGoogleSignIn } from "@/lib/use-google-sign-in";
 import { env } from "@/lib/env";
+import { detailToMessage } from "@/lib/errors";
 
 export default function GoogleAuthButton({ onSuccess, onError }) {
   const t = useTranslations("auth.oauth");
@@ -17,7 +18,7 @@ export default function GoogleAuthButton({ onSuccess, onError }) {
       await loginWithGoogle(response.credential);
       onSuccess?.();
     } catch (err) {
-      onError?.(err.response?.data?.detail || t("google_error"));
+      onError?.(detailToMessage(err.response?.data?.detail) || t("google_error"));
     }
   };
 
