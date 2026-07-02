@@ -103,13 +103,17 @@ export default function ProducerRecipesPage() {
       {items === null ? (
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
-        <EmptyState
-          icon={Bread}
-          title={t("empty_title")}
-          description={t("empty_description")}
-          ctaLabel={t("empty_cta")}
-          ctaOnClick={() => setShowForm(true)}
-        />
+        // MEH-996: empty state and the open create form are mutually
+        // exclusive — never mounted together (settings/page.jsx precedent).
+        !showForm && (
+          <EmptyState
+            icon={Bread}
+            title={t("empty_title")}
+            description={t("empty_description")}
+            ctaLabel={t("empty_cta")}
+            ctaOnClick={() => setShowForm(true)}
+          />
+        )
       ) : (
         <div className="space-y-4">
           {items.map((r) => (
