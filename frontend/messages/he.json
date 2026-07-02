@@ -2232,7 +2232,7 @@
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
       "geo_loading": "בחיפוש...",
-      "geo_failure": "לא הצלחנו לקבל את המיקום שלך",
+      "geo_failure": "לא הצלחנו לקבל את המיקום",
       "current_location_fallback": "מיקום נוכחי",
       "skip": "דלגו לעכשיו",
       "popular_cities": {
