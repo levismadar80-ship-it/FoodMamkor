@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PencilSimple, Warning } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
@@ -67,6 +68,12 @@ export default function ProducerDashboardEditPage() {
 
       {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
       <ContactChannelsCard
+        profile={profile}
+        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+      />
+
+      {/* Edit-tab chunk A — producer-facing categories editor */}
+      <CategoriesCard
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
       />
@@ -280,6 +287,110 @@ function ContactChannelsCard({ profile, onSave }) {
           ))}
         </div>
       </fieldset>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// Edit-tab chunk A: producer-facing categories editor.
+// Mirrors ContactChannelsCard — local selection seeded from
+// profile.categories, saves category_ids via PUT /producers/me. A
+// license-required category chosen with no license number triggers a backend
+// 422 (ensure_license_for_categories, producer_me.py); the Hebrew detail is
+// surfaced inline via detailToMessage (lib/errors.js), never the generic copy.
+// REUSES: components/admin/ProducerForm.jsx:207-217,433-451 (GET /categories
+// checkbox grid + toggle), producer-self version.
+// ============================================================
+
+function CategoriesCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.categories");
+  const [allCategories, setAllCategories] = useState([]);
+  const seedIds = (profile?.categories || []).map((c) => c.id);
+  const [selected, setSelected] = useState(seedIds);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/categories")
+      .then((r) => {
+        if (!cancelled) setAllCategories(r.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setAllCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Dirty when the selection differs from the seeded set (order-independent).
+  const dirty =
+    seedIds.length !== selected.length ||
+    seedIds.some((id) => !selected.includes(id));
+
+  const toggle = (id) => {
+    setSaved(false);
+    setErrorMsg(null);
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      await api.put("/producers/me", { category_ids: selected });
+      // Keep the parent profile in sync so a re-render reseeds correctly.
+      onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      // Surface the backend Hebrew detail (e.g. license-required 422) inline;
+      // detailToMessage normalises the FastAPI 422 detail-array (MEH-989).
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {allCategories.map((c) => (
+          <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selected.includes(c.id)}
+              onChange={() => toggle(c.id)}
+              className="w-4 h-4 accent-primary"
+            />
+            <span>{c.name}</span>
+          </label>
+        ))}
+      </div>
 
       {errorMsg && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
