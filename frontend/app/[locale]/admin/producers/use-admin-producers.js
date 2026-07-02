@@ -8,7 +8,7 @@ import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPage } from "@/lib/pagination";
 import { exportProducersToCSV } from "@/lib/admin-producers-export";
 import { useAdminAction } from "@/lib/use-admin-action";
-import { errorMessage } from "@/lib/errors";
+import { detailToMessage, errorMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
@@ -126,7 +126,7 @@ function useImportFlow(loadAllProducers) {
       });
       setImportPreview({ ...r.data, _file: file });
     } catch (err) {
-      setImportError(err.response?.data?.detail || t("producers.import.errors_loading"));
+      setImportError(detailToMessage(err.response?.data?.detail) || t("producers.import.errors_loading"));
     } finally {
       setImporting(false);
     }
@@ -145,7 +145,7 @@ function useImportFlow(loadAllProducers) {
       setImportPreview(null);
       loadAllProducers();
     } catch (err) {
-      setImportError(err.response?.data?.detail || t("producers.import.errors_importing"));
+      setImportError(detailToMessage(err.response?.data?.detail) || t("producers.import.errors_importing"));
     } finally {
       setImporting(false);
     }

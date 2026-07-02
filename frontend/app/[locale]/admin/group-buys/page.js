@@ -6,6 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 
 // Status class map; labels resolved via t() in render
 const STATUS_CLS = {
@@ -36,7 +37,7 @@ export default function AdminGroupBuysPage() {
       const r = await api.get("/admin/group-buys", { params });
       setItems(r.data);
     } catch (err) {
-      setError(err.response?.data?.detail || t("group_buys.load_error"));
+      setError(detailToMessage(err.response?.data?.detail) || t("group_buys.load_error"));
     }
   };
 
@@ -46,7 +47,7 @@ export default function AdminGroupBuysPage() {
       await api.patch(`/admin/group-buys/${id}/status`, null, { params: { status: newStatus } });
       await load();
     } catch (err) {
-      setError(err.response?.data?.detail || t("group_buys.update_error"));
+      setError(detailToMessage(err.response?.data?.detail) || t("group_buys.update_error"));
     } finally {
       setUpdating(null);
     }

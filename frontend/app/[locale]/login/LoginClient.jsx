@@ -12,6 +12,7 @@ import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import { validateEmail } from "@/lib/validators";
 import { safeInternalRedirect } from "@/lib/safe-redirect";
+import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { env } from "@/lib/env";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -91,7 +92,7 @@ function LoginPageBody() {
       await login(email, password);
       router.push(redirectTo);
     } catch (err) {
-      setError(err.response?.data?.detail || tError("generic"));
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setLoading(false);
     }

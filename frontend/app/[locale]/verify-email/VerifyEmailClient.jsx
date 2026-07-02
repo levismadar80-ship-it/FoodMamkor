@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Envelope, CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 
 function VerifyEmailContent() {
   const t = useTranslations();
@@ -33,7 +34,7 @@ function VerifyEmailContent() {
       .catch((err) => {
         setVerifyState("error");
         setErrorMsg(
-          err.response?.data?.detail || t("auth.verifyEmail.errors.invalid_or_expired")
+          detailToMessage(err.response?.data?.detail) || t("auth.verifyEmail.errors.invalid_or_expired")
         );
       });
   }, [token, t]);
