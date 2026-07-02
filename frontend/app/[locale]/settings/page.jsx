@@ -21,6 +21,7 @@ import {
   Carrot,
   Warning,
   CheckCircle,
+  HourglassSimple,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -666,7 +667,8 @@ function DangerZoneCard() {
   if (phase === "grace") {
     return (
       <section className="bg-white border border-red-200 rounded-[16px] p-6 text-center space-y-3">
-        <p className="text-2xl">⏳</p>
+        {/* MEH-990: raw ⏳ emoji → Phosphor HourglassSimple (grace/waiting state) */}
+        <HourglassSimple size={32} weight="regular" aria-hidden="true" className="text-fg-muted" />
         <h2 className="font-semibold text-text">{t("grace_heading")}</h2>
         <p className="text-sm text-fg-muted">
           {t("grace_body")}

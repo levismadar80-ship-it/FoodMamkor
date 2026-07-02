@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck } from "@phosphor-icons/react";
+import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
 
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -101,7 +101,9 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
             href={spHref}
             className="bg-primary text-white sticky bottom-0 z-10 mt-2 w-full flex items-center justify-center gap-2 rounded-sm py-2.5 min-h-[44px] font-medium text-sm"
           >
-            {t("map.producer_card.full_profile")} →
+            {t("map.producer_card.full_profile")}
+            {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+            <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
           </a>
         )}
       </div>

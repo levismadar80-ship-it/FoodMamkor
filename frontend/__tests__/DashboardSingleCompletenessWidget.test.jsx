@@ -66,6 +66,9 @@ vi.mock("@phosphor-icons/react", () => ({
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
+  Check: (p) => <span {...p} />,
+  ArrowRight: (p) => <span {...p} />,
 }));
 vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
