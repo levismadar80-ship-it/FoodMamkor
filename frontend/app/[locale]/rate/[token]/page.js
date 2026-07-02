@@ -6,6 +6,7 @@ import { SmileyMeh, HandsPraying } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StarSelector from "@/components/StarSelector";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 
 export default function RatingPage() {
   const t = useTranslations("rate");
@@ -35,7 +36,7 @@ export default function RatingPage() {
       await api.post(`/home-products/rate/${token}`, { stars, comment: comment || null });
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.detail || t("error_generic"));
+      setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
     }
   };
 
