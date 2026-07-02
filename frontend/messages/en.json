@@ -1017,9 +1017,7 @@
     },
     "sheet": {
       "badge": {
-        "verified": "✓ Verified",
-        "organic": "🌿 Organic",
-        "kosher": "✡️ Kosher"
+        "verified": "✓ Verified"
       }
     },
     "page": {
@@ -3484,6 +3482,26 @@
         "save_cta": "Save contact channels",
         "saving": "Saving…",
         "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "categories": {
+        "heading": "Categories",
+        "subtitle": "Choose the categories that describe your business — they determine where you appear in search and on the map.",
+        "save_cta": "Save categories",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "images": {
+        "heading": "Images",
+        "subtitle": "Upload photos of your business and products — they appear in the gallery on your business page.",
+        "add_cta": "Add images · JPG / PNG / WebP",
+        "uploading": "Uploading image…",
+        "remove_aria": "Remove image",
+        "save_cta": "Save images",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "upload_error": "Image upload failed. Please try again.",
         "save_error": "Save failed. Please try again."
       },
       "custom_questions": {
