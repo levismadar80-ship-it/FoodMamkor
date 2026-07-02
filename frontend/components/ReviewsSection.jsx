@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
@@ -176,7 +177,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
-      setError(err.response?.data?.detail || tError("generic"));
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setSubmitting(false);
     }

@@ -7,6 +7,7 @@ import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -61,7 +62,7 @@ export default function Footer() {
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.detail || t("error.generic"));
+      setMessage(detailToMessage(err.response?.data?.detail) || t("error.generic"));
     }
   };
 
