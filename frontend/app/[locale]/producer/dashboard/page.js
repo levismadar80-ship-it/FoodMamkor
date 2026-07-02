@@ -134,8 +134,10 @@ export default function ProducerDashboardPage() {
       if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
       await api.post("/producers/me/availability-state", body);
       if (state !== "on_vacation") setVacationUntil("");
-    } catch {
-      alert(t("error_availability_update"));
+    } catch (err) {
+      // MEH-989: surface the backend's Hebrew detail (e.g. missing vacation
+      // date → 422, rate limit → 429); fall back to generic only when absent.
+      alert(err?.response?.data?.detail || t("error_availability_update"));
       // Refetch on failure so the UI doesn't stay out of sync.
       api
         .get("/producers/me/dashboard")
