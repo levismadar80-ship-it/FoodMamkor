@@ -61,7 +61,6 @@ from app.models.models import (
     HomeProduct,
     HomeProductRating,
     HomeProductWhatsAppClick,
-    PhoneOtpToken,
     Report,
 )
 from app.rate_limit import email_from_body, limiter
@@ -448,7 +447,18 @@ async def register_producer(
     # MEH-530: 422s with Hebrew copy if any selected category requires a
     # license and the body didn't supply one. Same input-validation
     # classification as the contact-method checks above.
-    ensure_license_for_categories(db, data.category_ids, data.producer_license_number)
+    # MEH-971 chunk 2: license_pending opt-in skips this data-quality 422 so the
+    # producer lands in the pending queue with NULL license. SINGLE shared gate
+    # (above the upgrade/non-upgrade split) → covers both paths. NOT a security
+    # relaxation — licensed-only is enforced downstream: chunk-4 approval guard
+    # (admin.py) blocks approving a license-required producer with NULL license,
+    # and publication requires status=="approved" (producer_listing.py). A
+    # malicious license_pending=true only parks the actor in the unpublishable
+    # pending queue.
+    if not data.license_pending:
+        ensure_license_for_categories(
+            db, data.category_ids, data.producer_license_number
+        )
 
     if upgrade_path:
         # ---- UPGRADE PATH (UNCHANGED in MEH-328) -----------------------
@@ -726,7 +736,7 @@ def google_auth(
             if not user.google_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True
             db.commit()
@@ -851,7 +861,7 @@ def register_producer_oauth(
             if not getattr(user, sub_field):
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
         else:
             # MEH-375 (YF-4): re-host the Google avatar only on the
@@ -892,7 +902,7 @@ def register_producer_oauth(
     if user.producer_id or getattr(user, "is_producer", False):
         raise HTTPException(
             status_code=409,
-            detail="יש לך כבר עסק רשום בחשבון זה. התחברי כדי לנהל אותו.",
+            detail="יש לך כבר עסק רשום בחשבון זה. התחברו כדי לנהל אותו.",
         )
 
     # MEH-138 + MEH-375: backfill the Google avatar only when the
@@ -1050,7 +1060,7 @@ def apple_auth(
             if not user.apple_id:
                 raise HTTPException(
                     status_code=409,
-                    detail="אימייל זה כבר רשום עם סיסמה. התחברי עם סיסמה במקום.",
+                    detail="אימייל זה כבר רשום עם סיסמה. התחברו עם סיסמה במקום.",
                 )
             user.email_verified = True
             db.commit()
@@ -1326,14 +1336,11 @@ def delete_account(
         db.flush()
         producer = db.query(Producer).filter(Producer.id == producer_id).first()
         if producer is not None:
-            # MEH-755: delete OTP tokens explicitly before db.delete(producer).
-            # phone_otp_tokens.producer_id is NOT NULL, but the ORM relationship
-            # (models.py PhoneOtpToken.producer backref) has no delete cascade,
-            # so the unit-of-work tries to nullify producer_id on delete →
-            # NotNullViolation 500. Bulk-delete pre-empts the nullify.
-            db.query(PhoneOtpToken).filter(
-                PhoneOtpToken.producer_id == producer.id
-            ).delete()
+            # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE)
+            # plus passive_deletes=True on the Producer.otp_tokens backref
+            # (MEH-773 Chunk B), so no explicit pre-delete is needed. DO NOT
+            # re-add one — passive_deletes already pre-empts the NotNullViolation
+            # the old MEH-755 bulk-delete guarded.
             db.delete(producer)
 
     # 3. Finally, delete the user itself.

@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 from alembic import context
 
@@ -34,6 +34,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+# MEH-273: fixed 64-bit key for the migration advisory lock (run_migrations_online).
+# Any stable arbitrary bigint works — it just namespaces the lock to alembic runs
+# so an unrelated pg_advisory lock elsewhere can't collide. Must be identical
+# across all runners for the mutual exclusion to hold.
+MIGRATION_ADVISORY_LOCK_KEY = 273273273
 
 
 def run_migrations_offline() -> None:
@@ -64,6 +70,22 @@ def run_migrations_online() -> None:
             compare_type=True,
         )
         with context.begin_transaction():
+            # MEH-273: serialize concurrent `alembic upgrade` runs. Two runners
+            # (e.g. overlapping Railway deploys, both booting the Dockerfile
+            # migrate step) would otherwise race on `upgrade head` — the loser
+            # can observe a half-applied head and partially re-apply a revision.
+            # A transaction-scoped Postgres advisory lock makes the second
+            # invocation BLOCK here until the first commits; it then re-reads the
+            # now-current head and no-ops. Auto-released on commit/rollback (no
+            # leak, no explicit unlock). Single-runner acquires it uncontended —
+            # no behavior change. Relies on the single-transaction default (this
+            # env.py does NOT set transaction_per_migration, so every revision
+            # shares this one transaction). Offline mode (--sql) is untouched: it
+            # emits SQL with no live session to lock.
+            connection.execute(
+                text("SELECT pg_advisory_xact_lock(:lock_key)"),
+                {"lock_key": MIGRATION_ADVISORY_LOCK_KEY},
+            )
             context.run_migrations()
 
 

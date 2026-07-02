@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
@@ -263,17 +263,17 @@ export default function NewExperienceClient() {
         )}
         {verdict?.status === "FLAGGED" && (
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-[12px] p-3 text-sm">
-            ⚠️ {verdict.reason}
+            <Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason}
             {verdict.suggestion && (
               <p className="text-xs text-yellow-700 mt-1">
-                💡 {verdict.suggestion}
+                <Lightbulb size={14} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.suggestion}
               </p>
             )}
           </div>
         )}
         {verdict?.status === "REJECTED" && (
           <div className="bg-red-50 border border-red-300 text-red-800 rounded-[12px] p-3 text-sm">
-            ❌ {verdict.reason || t("rejected_fallback")}
+            <XCircle size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {verdict.reason || t("rejected_fallback")}
           </div>
         )}
 

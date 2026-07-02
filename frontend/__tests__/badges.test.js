@@ -133,12 +133,16 @@ describe("allBadges", () => {
     expect(keys).not.toContain("lactose_free");
   });
 
-  it("kosher — when kosher is a non-empty string", () => {
-    expect(allBadges({ kosher: "חלבי" }).map((b) => b.key)).toEqual(["kosher"]);
-    expect(allBadges({ kosher: "כשר למהדרין" }).map((b) => b.key)).toEqual(["kosher"]);
+  // MEH-986 ch2: kosher badge is verified-gated (kashrut_verified_at), NOT the
+  // free-text producer.kosher field (חוק איסור הונאה בכשרות — no unverified
+  // kosher claim). Free-text kosher with no verification → NO badge.
+  it("kosher — only when kashrut_verified_at is present (verified)", () => {
+    expect(allBadges({ kashrut_verified_at: "2026-01-01T00:00:00Z" }).map((b) => b.key)).toEqual(["kosher"]);
+    expect(allBadges({ kashrut_verified_at: null }).map((b) => b.key)).toEqual([]);
+    // free-text kosher without verification must NOT earn the badge anymore
+    expect(allBadges({ kosher: "חלבי" }).map((b) => b.key)).toEqual([]);
+    expect(allBadges({ kosher: "כשר למהדרין" }).map((b) => b.key)).toEqual([]);
     expect(allBadges({ kosher: "" }).map((b) => b.key)).toEqual([]);
-    expect(allBadges({ kosher: "   " }).map((b) => b.key)).toEqual([]);
-    expect(allBadges({ kosher: null }).map((b) => b.key)).toEqual([]);
   });
 
   it("delivery — via delivery_count > 0", () => {
@@ -161,7 +165,7 @@ describe("allBadges", () => {
     const badges = allBadges({
       products_count: 10,
       has_delivery: true,
-      kosher: "חלבי",
+      kashrut_verified_at: "2026-01-01T00:00:00Z",
       grass_fed: true,
       has_gluten_free_products: true,
       has_vegan_products: true,
@@ -274,7 +278,7 @@ describe("badgeCount", () => {
       badgeCount({
         organic_certified: true,
         grass_fed: true,
-        kosher: "חלבי",
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
       }),
     ).toBe(3);
   });

@@ -15,9 +15,8 @@ import { test, expect } from "@playwright/test";
  * which pins nav + submit-body shape + char-count with mocks. This spec drives
  * the REAL rendered 5-frame wizard (MEH-847 nav · MEH-853 city/address ·
  * MEH-860 tagline) from ACCOUNT → CONFIRM and asserts the non-upgrade success
- * state. No overlap with MEH-830 (CategorySelector — its card is the one
- * locator kept name-based below: it's a DB seed category, not frozen UI copy,
- * and the component is out of this ticket's scope).
+ * state. The CategorySelector card is selected via its data-testid
+ * (`category-chip-<id>`, added in MEH-984) — fully testid-based now.
  */
 
 const REGISTER_POST = "**/auth/register/producer";
@@ -52,6 +51,8 @@ test.describe("Producer register wizard (5-frame)", () => {
 
     // ── ACCOUNT ──
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    // MEH-960: hero pitch is visible while filling the wizard (steps 1-4)…
+    await expect(page.getByTestId("register-hero-heading")).toBeVisible();
     await page.getByTestId("register-account-name").fill("טסט בדיקה");
     await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
     await page.getByTestId("register-account-password").fill("Abcdefgh1234"); // ≥12 (passwordValid)
@@ -67,11 +68,14 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
 
-    // ── CATEGORY (frame 02) — pick the first popular card (non-agricultural) ──
-    // CategorySelector card is name-based (DB seed category, not UI copy),
-    // scoped under the frame testid. MEH-830 owns the component.
+    // ── CATEGORY (frame 02) — pick a license-required card ──
+    // MEH-984: chip selected by stable data-testid (category-chip-<id>); the
+    // beforeEach mock pins id 1 to a license-required category (Milk & Cheese).
     await expect(page.getByTestId("register-frame-category")).toBeVisible();
-    await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
+    // MEH-952: "חלב וגבינות" is a license-required category — the number is now
+    // gated inline on CATEGORY (blocking error), so fill it before advancing.
+    await page.getByTestId("register-category-license").fill("1234567");
     await page.getByTestId("register-category-next").click();
 
     // ── STORY (frame 03) — tagline (short_description) + declarations ──
@@ -87,6 +91,9 @@ test.describe("Producer register wizard (5-frame)", () => {
     // testid assertion (not getByText) so the /בדקי/ heading-vs-body
     // strict-mode ambiguity can't resurface on copy edits.
     await expect(page.getByTestId("register-frame-confirm")).toBeVisible({ timeout: 10_000 });
+    // MEH-960: …and hidden on CONFIRM, so it doesn't double up with the
+    // success-screen heading (the bug this guard fixes).
+    await expect(page.getByTestId("register-hero-heading")).not.toBeVisible();
   });
 
   // MEH-886: assert the MEH-883 error-state a11y wirings on the real DOM —
@@ -127,7 +134,8 @@ test.describe("Producer register wizard (5-frame)", () => {
     await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
     await page.getByTestId("register-details-address").fill("הרצל 1");
     await page.getByTestId("register-details-next").click();
-    await page.getByTestId("register-frame-category").getByText("חלב וגבינות").click();
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
+    await page.getByTestId("register-category-license").fill("1234567"); // MEH-952: license gate on CATEGORY
     await page.getByTestId("register-category-next").click();
 
     // ── STORY: submit WITHOUT the declarations → submit error as role="alert" ──
@@ -136,5 +144,41 @@ test.describe("Producer register wizard (5-frame)", () => {
     await expect(page.getByTestId("register-frame-story").getByRole("alert")).toBeVisible(); // submit-gate error
     await expect(page.getByTestId("register-frame-story")).toBeVisible(); // still on STORY (blocked)
     await expect(page.getByTestId("register-frame-confirm")).not.toBeVisible(); // did NOT silently advance to CONFIRM
+  });
+
+  // MEH-971 chunk 1: the license-pending opt-in relaxes the CATEGORY advance
+  // gate. Two cases in one flow — unchecked + empty license → blocked;
+  // checked → advances to STORY with no license number entered.
+  test("license-pending opt-in bypasses the CATEGORY license gate", async ({ page }) => {
+    await page.goto("/register/producer");
+
+    // ACCOUNT → DETAILS
+    await expect(page.getByTestId("register-frame-account")).toBeVisible();
+    await page.getByTestId("register-account-name").fill("טסט בדיקה");
+    await page.getByTestId("register-account-email").fill(`wizard+${Date.now()}@mehamakor.online`);
+    await page.getByTestId("register-account-password").fill("Abcdefgh1234");
+    await page.getByTestId("register-account-next").click();
+
+    // DETAILS → CATEGORY
+    await expect(page.getByTestId("register-frame-details")).toBeVisible();
+    await page.getByTestId("register-details-name").fill("העסק שלי");
+    await page.getByTestId("register-details-phone").fill("0501234567");
+    await page.getByTestId("register-details-city").getByRole("combobox").fill("תל אביב");
+    await page.getByTestId("register-details-address").fill("הרצל 1");
+    await page.getByTestId("register-details-next").click();
+
+    // CATEGORY: pick a license-required category, leave the license empty.
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await page.getByTestId("category-chip-1").click(); // MEH-984: stable testid (mock id 1 = license-required category)
+
+    // (a) unchecked + empty license → advance BLOCKED (stays on CATEGORY).
+    await page.getByTestId("register-category-next").click();
+    await expect(page.getByTestId("register-frame-category")).toBeVisible();
+    await expect(page.getByTestId("register-frame-story")).not.toBeVisible();
+
+    // (b) check the opt-in → advance SUCCEEDS to STORY (no license entered).
+    await page.getByTestId("register-license-pending-optin").check();
+    await page.getByTestId("register-category-next").click();
+    await expect(page.getByTestId("register-frame-story")).toBeVisible();
   });
 });

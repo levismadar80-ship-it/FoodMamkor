@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
-import { CheckCircle, Warning } from "@phosphor-icons/react";
+import { CheckCircle, Warning, Lightbulb } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAdminAction } from "@/lib/use-admin-action";
 
@@ -161,7 +161,7 @@ export default function AdminReportsPage() {
                       >
                         <p className="font-medium"><Warning size={16} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {hp.moderation_reason || t("reports.flagged.default_reason")}</p>
                         {hp.moderation_suggestion && (
-                          <p className="mt-1 opacity-80">💡 {hp.moderation_suggestion}</p>
+                          <p className="mt-1 opacity-80"><Lightbulb size={14} weight="fill" className="inline align-[-2px]" aria-hidden="true" /> {hp.moderation_suggestion}</p>
                         )}
                       </div>
                     </div>

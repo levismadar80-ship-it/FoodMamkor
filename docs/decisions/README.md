@@ -44,6 +44,7 @@ Permanent architectural decisions recorded once, never re-litigated.
 | [021](./ADR-021-personal-prefs-dual-surface.md) | Personal-preferences dual-surface architecture (PK pointer vs Settings full) | Accepted | 2026-06-03 | MEH-691 |
 | [022](./ADR-022-two-tier-licensing-model.md) | Two-tier licensing model — מאומת / מוצהר | Accepted | 2026-06-05 | MEH-742 |
 | [023](./ADR-023-motion-nav-indicator-spring.md) | Motion — restrained spring for bottom-nav indicator | Accepted | 2026-06-16 | MEH-789 |
+| [024](./ADR-024-voice-surface-function.md) | Voice — surface-function taxonomy + owner-noun gender (refines ADR-014) | Accepted | 2026-06-25 | MEH-944 |
 
 ## Related
 - `docs/LOCKED_DECISIONS.md` — older free-form decisions; being migrated

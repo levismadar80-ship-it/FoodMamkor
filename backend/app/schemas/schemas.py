@@ -153,6 +153,16 @@ class ProducerRegister(BaseModel):
     # created with declared_at/declaration_version stamped. The frontend
     # checkbox (agreedToTerms) feeds this value; declaration COPY is Chunk C.
     declaration_accepted: bool = False
+    # MEH-971 chunk 2: license-pending opt-in. Transient INPUT only (never a DB
+    # column) — when True the register-time ensure_license_for_categories 422 is
+    # skipped, so a producer in a license-required category can submit with no
+    # license number and land in the pending queue (status="pending_whatsapp").
+    # NOT a security control: the licensed-only rule is still enforced
+    # downstream — chunk-4 approval guard (admin.py) refuses to approve a
+    # license-required producer with NULL license, and publication requires
+    # status=="approved" (producer_listing.py). Default False = unchanged for
+    # every existing caller.
+    license_pending: bool = False
     # MEH-293/MEH-479: dietary flags moved to per-product tagging via /settings.
     # Delivery areas
     delivery_areas: list["DeliveryAreaCreate"] = []
@@ -287,6 +297,14 @@ class CategoryOut(BaseModel):
     emoji: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ProducerCityOut(BaseModel):
+    """MEH-970 — one row of GET /producers/cities: live approved-producer
+    count for a single city, consumed by the /map region control."""
+
+    city: str
+    count: int
 
 
 # --- Delivery Area ---
@@ -449,7 +467,8 @@ class ProducerAdminCreate(BaseModel):
     # (manual-approval flow), still bounded by the 20-char DB column.
     producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
-    is_verified: bool = True
+    # MEH-766 ch3: is_verified removed from admin create — verification is via
+    # grant-verified (verified_at) only; column stays at default False (drops ch6).
     # MEH-18
     is_recommended: bool = False
     images: list[str] = []
@@ -557,7 +576,8 @@ class ProducerUpdate(BaseModel):
     # routers/producer_me.py + routers/admin.py.
     producer_license_number: str | None = Field(default=None, max_length=20)
     admin_notes: str | None = None
-    is_verified: bool | None = None
+    # MEH-766 ch3: is_verified removed from ProducerUpdate — the admin PUT
+    # setattr-loop can no longer write it (verification = grant-verified only).
     # MEH-18
     is_recommended: bool | None = None
     is_available_today: bool | None = None
@@ -697,7 +717,11 @@ class ProducerListOut(BaseModel):
     has_lactose_free_products: bool = False
     has_delivery: bool = False
     pickup_points: bool = False
-    kosher: str | None = None
+    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): free-text `kosher` is NO
+    # LONGER on the public output — an unverified kosher string must never
+    # serialize to consumers. Re-declared on ProducerAdminOut / ProducerOwnerOut
+    # (admin-internal + owner's own view). Public kosher signal is verified-only
+    # via `kashrut_verified_at` (:757 below). Column stays in the model (no drop).
     # MEH-102/MEH-826: weekly hours "Sun-Thu 09:00-18:00, Fri 09:00-14:00".
     # Moved up from ProducerDetailOut so the /map card can show open/closed status.
     opening_hours: str | None = None
@@ -857,6 +881,9 @@ class ProducerDetailOut(ProducerListOut):
 # by /admin/producers/* and producer_me self endpoints so admins and
 # owners can see the value they themselves submitted.
 class ProducerAdminOut(ProducerDetailOut):
+    # MEH-986 ch3b: free-text kosher re-declared here — it was removed from the
+    # public ProducerListOut but stays admin-internal (the admin table + form).
+    kosher: str | None = None
     producer_license_number: str | None = None
     # MEH-829: street address submitted at registration — admin-visible (+ owner
     # via ProducerOwnerOut). NOT on ProducerDetailOut/ListOut (public), matching
@@ -873,6 +900,28 @@ class ProducerAdminOut(ProducerDetailOut):
     # no binding declaration was made (admin-created / imported producers).
     declared_at: datetime | None = None
     declaration_version: str | None = None
+    # MEH-971 chunk 3: admin-only "license pending — verify before approving"
+    # flag. COMPUTED below (never a stored column) — True iff the producer is in
+    # >=1 license-required category AND has no license number. Status-independent
+    # so an override-approved producer (chunk-4 allow_without_license) still
+    # shows it. Mirrors _compute_verification_tier's name-membership predicate
+    # over the already-loaded categories (constants.LICENSE_REQUIRED_CATEGORIES)
+    # — no DB round-trip, no N+1. Admin-only: lives on ProducerAdminOut, never
+    # the public ProducerListOut/DetailOut.
+    license_pending: bool = False
+
+    @model_validator(mode="after")
+    def _compute_license_pending(self):
+        # Inline import mirrors the sibling _compute_verification_tier validator
+        # (above) — keeps the constants dependency out of the module-top imports.
+        from app.constants import LICENSE_REQUIRED_CATEGORIES
+
+        needs_license = any(
+            c.name in LICENSE_REQUIRED_CATEGORIES for c in (self.categories or [])
+        )
+        license_missing = not (self.producer_license_number or "").strip()
+        self.license_pending = needs_license and license_missing
+        return self
 
 
 # MEH-767 (HOT-001): owner-facing self-serve response shape for
@@ -887,6 +936,10 @@ class ProducerAdminOut(ProducerDetailOut):
 # producer-side frontend consumers (the RiskBadge lives only in the
 # admin table, AdminProducersTable.jsx:181).
 class ProducerOwnerOut(ProducerDetailOut):
+    # MEH-986 ch3b: free-text kosher re-declared — removed from public
+    # ProducerListOut but the owner still sees her own value (mirrors the
+    # producer_license_number/address owner-private precedent below).
+    kosher: str | None = None
     producer_license_number: str | None = None
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).

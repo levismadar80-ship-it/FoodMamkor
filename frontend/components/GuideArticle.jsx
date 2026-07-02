@@ -16,6 +16,7 @@
  * History:  MEH-539 (creation, 2026-05-16) — Phase 2D of MEH-615.
  */
 import Link from "next/link";
+import { ArrowRight } from "@phosphor-icons/react/ssr";
 import { BRAND_NAME } from "@/lib/constants";
 
 // MEH-821: brand colors via canonical ADR-019 token classes (text-primary,
@@ -157,7 +158,9 @@ export default function GuideArticle({
             href={backHref}
             className="inline-flex items-center gap-2 text-[15px] underline text-primary"
           >
-            ← חזרה למדריכים
+            {/* MEH-990: raw ← dingbat → Phosphor ArrowRight; rtl:rotate-180 = back/reading-forward in he (MEH-938 pattern) */}
+            <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
+            חזרה למדריכים
           </Link>
         </footer>
       </article>

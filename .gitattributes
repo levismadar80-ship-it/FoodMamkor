@@ -1,3 +1,12 @@
 # Enforce LF line endings for shell scripts on all platforms.
 # Prevents CRLF corruption on Windows clones that would break #!/bin/bash shebangs.
 *.sh text eol=lf
+
+# Append-only session log — use git's built-in `union` merge driver so
+# concurrent additions from different branches both land instead of
+# conflicting. Removes the manual Accept-Both resync every batch PR needed
+# on `## Unreleased` (MEH-985/986/959 sessions). Caveat: union keeps BOTH
+# sides of a conflict hunk and may interleave line-adjacent edits — an
+# acceptable trade for an append-only changelog (never edit old entries
+# in-place expecting a clean 3-way merge).
+docs/CHANGELOG.md merge=union

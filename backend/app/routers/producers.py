@@ -22,6 +22,7 @@ from app.routers.producer_follows import router as producer_follows_router
 from app.schemas.schemas import (
     CategoryOut,
     ContactClickIn,
+    ProducerCityOut,
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
@@ -129,6 +130,31 @@ def producers_count(request: Request, db: Session = Depends(get_db)):
         or 0
     )
     return {"count": count}
+
+
+@router.get("/producers/cities", response_model=list[ProducerCityOut])
+@limiter.limit("60/minute")
+def producers_cities(request: Request, db: Session = Depends(get_db)):
+    """MEH-970 — per-city approved-producer counts for the /map region control.
+
+    GROUP BY city over approved producers only. NULL / blank cities are
+    omitted so a chip never lands on an empty map (empty-region guard). Counts
+    are computed live from the DB — never hardcoded (over-claim guard MEH-519).
+    Ordered by count desc, then city name. Returns ``[{"city": str, "count": int}]``.
+    The /map frontend buckets these into regions client-side (MEH-970 chunk 2).
+    """
+    rows = (
+        db.query(Producer.city, func.count(Producer.id).label("count"))
+        .filter(
+            Producer.status == "approved",
+            Producer.city.isnot(None),
+            func.trim(Producer.city) != "",
+        )
+        .group_by(Producer.city)
+        .order_by(func.count(Producer.id).desc(), Producer.city)
+        .all()
+    )
+    return [{"city": city, "count": count} for city, count in rows]
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)

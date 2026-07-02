@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
 import CategorySelector from "@/components/CategorySelector";
@@ -85,6 +86,16 @@ function RegisterProducerPageBody() {
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [stepError, setStepError] = useState("");
+  // MEH-952: blocking error shown next to the license field on CATEGORY when a
+  // license-required category is selected but the number is blank — surfaces the
+  // requirement at the field instead of letting the backend 422 land on STORY.
+  // The backend check in license_validation.py stays the unchanged backstop.
+  const [licenseRequiredError, setLicenseRequiredError] = useState(false);
+  // MEH-971: license-pending opt-in. When checked (license-required category
+  // only), the CATEGORY advance gate stops blocking on an empty license and the
+  // submit sends license_pending:true so the producer can register without a
+  // license number and enter the pending queue.
+  const [licensePending, setLicensePending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   // MEH-759 Chunk C (ADR-022 gate 2): the binding licensing declaration and
   // the conditional grower declaration are separate affirmative acts from the
@@ -234,6 +245,16 @@ function RegisterProducerPageBody() {
         ? prev.category_ids.filter((c) => c !== id)
         : [...prev.category_ids, id],
     }));
+    // MEH-952: any category change invalidates a prior "license required" block —
+    // clear it so re-selecting a license-required category can't resurface the
+    // error before the user clicks "next" again (the error <p> lives inside the
+    // licenseRequired branch, which remounts on re-select with stale state).
+    setLicenseRequiredError(false);
+    // MEH-971 chunk 1: a category change also drops a prior license-pending
+    // opt-in so the checkbox can't reappear pre-checked after toggling away
+    // from and back to a license-required category (payload is already guarded
+    // by licenseRequired, but the stale checked state would mislead).
+    setLicensePending(false);
   };
 
   // MEH-328 Chunk C: handleEmailBlur removed. It called the deleted
@@ -262,6 +283,9 @@ function RegisterProducerPageBody() {
         // MEH-530: empty string normalises server-side to "missing" via
         // license_validation._normalize_license — safe to send unconditionally.
         producer_license_number: form.producer_license_number,
+        // MEH-971 chunk 1: only true when a license-required category is
+        // selected AND the opt-in box is checked (backend default False).
+        license_pending: licenseRequired && licensePending,
         primary_contact_method: "whatsapp",
         // MEH-759 (ADR-022 gate 2, Chunk C): the binding declaration (+ the
         // grower declaration when an agricultural category is selected) folds
@@ -305,7 +329,11 @@ function RegisterProducerPageBody() {
       if (status === 409 && isUpgrade) {
         setError(t("auth.register.producer.errors.already_has_producer"));
       } else {
-        setError(detail || t("auth.register.producer.errors.generic"));
+        // MEH-957: a 422 returns `detail` as an ARRAY of Pydantic error
+        // objects; setting that into `error` rendered an array of objects as
+        // a React child and white-screened the form. detailToMessage()
+        // collapses string/array shapes to one sentence (null otherwise).
+        setError(detailToMessage(detail) || t("auth.register.producer.errors.generic"));
       }
     } finally {
       setLoading(false);
@@ -321,8 +349,15 @@ function RegisterProducerPageBody() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-white rounded-md p-8">
-        <h1 className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
-        <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+        {/* MEH-960: hero pitch is wizard chrome — hide on CONFIRM so it doesn't
+            double up with the success-screen heading. Mirrors the
+            step < STEP.CONFIRM guard on the banners + stepper. */}
+        {step < STEP.CONFIRM && (
+          <>
+            <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+            <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+          </>
+        )}
 
         {/* MEH-143: logged-in upgrade banner */}
         {isUpgrade && step < STEP.CONFIRM && (
@@ -362,7 +397,7 @@ function RegisterProducerPageBody() {
               <div
                 key={s}
                 aria-current={s === step ? "step" : undefined}
-                className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted opacity-40"}`}
+                className={`flex flex-col items-center gap-1 ${s <= step ? "text-accent" : "text-fg-muted"}`}
               >
                 <span dir="ltr" className="font-english italic text-2xl leading-none">
                   {String(s).padStart(2, "0")}
@@ -557,6 +592,10 @@ function RegisterProducerPageBody() {
               value={form.city}
               onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
             />
+            {/* MEH-951: visual-only required marker — no submit-gating change. */}
+            <p className="text-xs text-fg-muted mt-1 text-start">
+              {t("auth.register.producer.fields.city_required_marker")}
+            </p>
             </div>
 
             {/* address is optional (no "*", not gated at submit) — label carries
@@ -574,6 +613,10 @@ function RegisterProducerPageBody() {
                 className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
                 dir="rtl"
               />
+              {/* MEH-951: map-privacy reassurance under the address field. */}
+              <p className="text-xs text-fg-muted mt-1 text-start">
+                {t("auth.register.producer.fields.address_map_privacy_hint")}
+              </p>
             </div>
 
             <div className="flex gap-3">
@@ -622,10 +665,20 @@ function RegisterProducerPageBody() {
                 <p className="text-xs text-fg-muted mb-2 text-start">
                   {t("auth.register.producer.fields.license_required_hint")}
                 </p>
+                {/* MEH-951: "what is this" extension after the required hint. */}
+                <p className="text-xs text-fg-muted mb-2 text-start">
+                  {t("auth.register.producer.fields.license_what_is_it")}
+                </p>
                 <input
                   id="producer-license-required"
+                  data-testid="register-category-license"
                   value={form.producer_license_number}
-                  onChange={set("producer_license_number")}
+                  // MEH-952: clear the blocking required-error as soon as the
+                  // user starts entering a number (avoids a stale red message).
+                  onChange={(e) => {
+                    set("producer_license_number")(e);
+                    if (licenseRequiredError) setLicenseRequiredError(false);
+                  }}
                   maxLength={20}
                   inputMode="numeric"
                   // text-right kept: dir="ltr" numeric license — physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
@@ -635,6 +688,36 @@ function RegisterProducerPageBody() {
                 {licenseWarning && (
                   <p className="text-xs text-fg-muted mt-1 text-start">
                     {t("auth.register.producer.validation.license_format")}
+                  </p>
+                )}
+                {/* MEH-952: blocking required-error — validation-red (distinct
+                    from the gray, non-blocking format warning above). role=alert
+                    announces it; mirrors the inline phone-error placement. */}
+                {!licensePending && licenseRequiredError && (
+                  <p role="alert" className="text-xs text-red-500 mt-1 text-start">
+                    {t("auth.register.producer.validation.license_required")}
+                  </p>
+                )}
+                {/* MEH-971 chunk 1: opt-in to submit without a license number.
+                    Checking it relaxes the advance gate + sends license_pending. */}
+                <label className="flex items-start gap-2 text-sm cursor-pointer mt-3">
+                  <input
+                    type="checkbox"
+                    data-testid="register-license-pending-optin"
+                    checked={licensePending}
+                    onChange={(e) => {
+                      setLicensePending(e.target.checked);
+                      if (e.target.checked) setLicenseRequiredError(false);
+                    }}
+                    className="w-5 h-5 accent-primary mt-0.5 flex-shrink-0"
+                  />
+                  <span className="leading-relaxed text-fg-muted">
+                    {t("auth.register.producer.fields.license_pending_optin_label")}
+                  </span>
+                </label>
+                {licensePending && (
+                  <p className="text-xs text-fg-muted mt-1 text-start">
+                    {t("auth.register.producer.fields.license_pending_optin_hint")}
                   </p>
                 )}
               </div>
@@ -692,10 +775,24 @@ function RegisterProducerPageBody() {
             )}
 
             <div className="flex gap-3">
-              <button data-testid="register-category-back" onClick={() => { setStepError(""); setError(""); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
+              <button data-testid="register-category-back" onClick={() => { setStepError(""); setError(""); setLicenseRequiredError(false); setStep(STEP.DETAILS); }} className="text-muted">{t("auth.register.producer.actions.back")}</button>
               <button
                 data-testid="register-category-next"
-                onClick={() => setStep(STEP.STORY)}
+                onClick={() => {
+                  // MEH-952: block advance when a license-required category is
+                  // selected but the number is blank; show the error at the field.
+                  // MEH-971 chunk 1: the license-pending opt-in bypasses this gate.
+                  if (
+                    licenseRequired &&
+                    !licensePending &&
+                    !form.producer_license_number.trim()
+                  ) {
+                    setLicenseRequiredError(true);
+                    return;
+                  }
+                  setLicenseRequiredError(false);
+                  setStep(STEP.STORY);
+                }}
                 className="flex-1 border-2 border-primary-dark text-primary-dark bg-transparent py-3 rounded-md hover:bg-primary-dark hover:text-white transition font-medium"
               >
                 {t("auth.register.producer.actions.next")}

@@ -83,7 +83,7 @@ ENRICHMENTS = {
         "B": "משפחת שניידר",
         "D": "https://www.instagram.com/moshbutz_schneider/",
         "H": "קצרין, רמת הגולן",
-        "I": "בשר ודגים",
+        "I": "בשר",  # MEH-927: "בשר ודגים" split; butcher maps to "בשר".
         "J": "כן",
         "K": "כן",
         "L": "כל הארץ",

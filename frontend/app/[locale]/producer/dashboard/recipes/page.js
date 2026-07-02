@@ -18,8 +18,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
+import { Bread } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
 import RecipeForm from "@/components/RecipeForm";
 import RecipeStatusBadge from "@/components/RecipeStatusBadge";
@@ -57,7 +59,7 @@ export default function ProducerRecipesPage() {
       showToast.success(t("toast_deleted"));
       load();
     } catch (err) {
-      showToast.error(err.response?.data?.detail || t("toast_delete_error"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("toast_delete_error"));
     }
   };
 
@@ -101,13 +103,17 @@ export default function ProducerRecipesPage() {
       {items === null ? (
         <div className="text-center py-16 text-fg-muted">{t("loading")}</div>
       ) : items.length === 0 ? (
-        <EmptyState
-          emoji="🍞"
-          title={t("empty_title")}
-          description={t("empty_description")}
-          ctaLabel={t("empty_cta")}
-          ctaOnClick={() => setShowForm(true)}
-        />
+        // MEH-996: empty state and the open create form are mutually
+        // exclusive — never mounted together (settings/page.jsx precedent).
+        !showForm && (
+          <EmptyState
+            icon={Bread}
+            title={t("empty_title")}
+            description={t("empty_description")}
+            ctaLabel={t("empty_cta")}
+            ctaOnClick={() => setShowForm(true)}
+          />
+        )
       ) : (
         <div className="space-y-4">
           {items.map((r) => (

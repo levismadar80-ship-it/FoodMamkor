@@ -414,14 +414,16 @@
 ### Homepage bottom CTA
 | Field | Value |
 |---|---|
-| **Heading** | `יש לך עסק? בואי אליו` |
-| **Body** | `אם יש לך עסק שמייצר אוכל אמיתי — נשמח להכיר. מהמקור הוא הבית של בעלות עסק קטנות בישראל. כל עסק נבחר אישית, ומקבל עמוד מלא עם תמונות וסיפור.` |
-| **Previous body** | `אם את בעלת עסק, חקלאית או מגדלת — הצטרפו לדירקטורי הראשון בישראל לאוכל אמיתי.` |
-| **Button** | `הוסיפו את העסק שלך 🌿` |
-| **i18n keys** | `home.cta.heading` / `home.cta.body` / `home.cta.button` |
-| **Status** | ✅ (MEH-605, PR #682, 2026-05-16) |
-| **Why** | Removes "דירקטורי" (marketplace word) + partial category list ("חקלאית או מגדלת" excluded ~75% of base — bakeries, dairies, wineries, chocolatiers). Brand Hub v1.1 §8: no partial category lists. |
-| **MEH** | MEH-605 |
+| **Heading** | `יש לך עסק? בואו אלינו` |
+| **Body (l1)** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.` |
+| **Body (l2)** | `תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.` |
+| **Body (l3)** | `חינם, בלי עמלות. נשמח להכיר.` |
+| **Previous body** | `מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר.` (MEH-605 single-`body` → 3-line split) |
+| **Button** | `הוסיפו את העסק שלך` |
+| **i18n keys** | `home.cta.heading` / `home.cta.body_l1` / `home.cta.body_l2` / `home.cta.body_l3` / `home.cta.button` |
+| **Status** | ✅ (variant B — MEH-980; ⏳ Sapir veto at merge) |
+| **Why** | Variant B leads with what the business gets (own page, direct line to customers) and adds the free/no-commission reassurance. Keeps the "no partial category list" + no-"דירקטורי" rules from MEH-605. |
+| **MEH** | MEH-605 → MEH-980 |
 
 ### Footer made-with-love
 | Field | Value |
@@ -473,17 +475,17 @@
 
 ## Anti-patterns (do not use)
 
-- ❌ `יצרן` / `יצרנית` — always "בית עסק" / "בעלת עסק"
+- ❌ `יצרן` / `יצרנית` — use "בית עסק" (ישות) / "בעלי עסקים" (גנרי) / "בעלת/בעל עסק" (ספציפיים), per ADR-024
 - ❌ "marketplace" / "פלטפורמה" — we are a directory, not a marketplace  
 - ❌ `שגיאה התרחשה` — use `משהו השתבש, נסו שוב`
-- ❌ Mixed gender (זכר) — brand voice is consistently נקבה (feminine)
+- ❌ מגדר לפי surface (ADR-024): functional=רבים ניטרלי · narrative/warmth=נקבה. אסור: slash · פנייה זכרית לקוראת ("המשתמש שלך")
 - ❌ `מוצרים` for food business pages — use `פריטים` or category-specific terms
 
 ---
 
 ## Customer-centric voice rule (MEH-579, May 14, 2026)
 
-Feminine grammar is necessary but not sufficient. Every line of user-facing
+On narrative/warmth surfaces, feminine grammar is necessary but not sufficient. Every line of user-facing
 UI copy must also pass the **subject test**: who is the grammatical subject?
 
 | ❌ Founder-voice | ✅ Customer-voice |
@@ -691,3 +693,31 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 | **Status** | ✅ canonical |
 | **Appears in** | `frontend/messages/he.json:534` (SEO/meta description) · `frontend/messages/he.json:2012` (/about page paragraph p5) |
 | **Why** | Recurs as the closing beat across surfaces — pairs the "מקום אחד" (one place) promise with the time-saved payoff. Keep verbatim; do not paraphrase to "בלי לבזבז זמן" or similar. |
+
+---
+
+## Section 8 — Testimonials (intake guardrail)
+
+> **Source:** Template 10 (`docs/templates/10-testimonial-intake.md`). Process rule for converting a real message into an on-site testimonial — not copy strings, a guardrail every testimonial must pass.
+
+### Hard rules (every testimonial, no exceptions)
+
+1. **Only what actually happened** — zero invented or rounded numbers/stats.
+2. **Quote stays verbatim** — trim for length only (mark cuts `[…]`); never reword, never fix grammar.
+3. **Speaker approval** on final wording + name/business/city before publish. No approval → not published (`DRAFT`).
+4. **Licensed-business framing only** — never imply home-cooking.
+
+### Voice — ADR-024 HYBRID (refines ADR-014)
+
+| Part | Rule |
+| -- | -- |
+| The quote | Exempt — verbatim, no voice rules applied |
+| Editorial framing | Feminine allowed (reader-address) · brand-we plural |
+| UI chrome (button/link) | gerund/plural, never feminine |
+| Attribution noun (ADR-024) | `בית העסק` (entity) · `בעלת עסק` (woman) · `בעל עסק` (man) — never `יצרן`/`יצרנית` |
+
+**Forbidden in any testimonial surface:** `יצרן`/`יצרנית` · `אוכל ביתי`/`שכנות מבשלות`/`מהמטבח של השכן` · `marketplace` · `מגזין`. **Zero emoji** in testimonial copy (Emoji LOCK v2).
+
+### Status
+
+🕐 Guardrail only — no testimonial copy locked yet. Each published testimonial gets its own row here (quote · attribution · i18n key · speaker-approval date) when it goes live.

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Leaf } from "@phosphor-icons/react";
+import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-653: CONTACT_EMAIL now read from NEXT_PUBLIC_CONTACT_EMAIL (lib/env.client)
@@ -30,7 +31,7 @@ export default function ContactClient() {
       setForm({ name: "", email: "", message: "" });
     } catch (err) {
       setStatus("error");
-      setErrorMsg(err.response?.data?.detail || t("error_default"));
+      setErrorMsg(detailToMessage(err.response?.data?.detail) || t("error_default"));
     }
   };
 
@@ -58,7 +59,7 @@ export default function ContactClient() {
 
           <div className="bg-green-50/60 border border-border rounded-[12px] p-4 mb-6 text-sm">
             <p className="flex items-center gap-2 flex-wrap">
-              <span>📧</span>
+              <Envelope size={16} className="text-primary" aria-hidden="true" />
               <span>{t("email_label")}</span>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
@@ -69,7 +70,7 @@ export default function ContactClient() {
               </a>
             </p>
             <p className="flex items-center gap-2 mt-2">
-              <span>⏱️</span>
+              <Timer size={16} className="text-primary" aria-hidden="true" />
               <span>{t("response_sla")}</span>
             </p>
           </div>
@@ -160,7 +161,7 @@ export default function ContactClient() {
               <p className="text-xs text-fg-muted text-center">
                 {t.rich("privacy_notice", {
                   link: (chunks) => (
-                    <a href="/privacy" className="text-primary hover:underline">
+                    <a href="/privacy" className="text-primary underline">
                       {chunks}
                     </a>
                   ),

@@ -12,6 +12,8 @@ import { useTranslations } from "next-intl";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
+import { styleForProducer } from "@/lib/map-categories";
+import { categoryGlyphSvg } from "@/lib/marker-glyph";
 
 /**
  * MapComponent — raw-Leaflet map with custom category-colored markers
@@ -38,17 +40,27 @@ import { CoordSchema } from "@/lib/schemas";
 // dynamically loaded with ssr:false).
 
 /**
- * Circle map pin — S5 FINAL (MEH-763 Chunk 2).
+ * Circle map pin — S5 FINAL (MEH-763 Chunk 2); no-photo fallback reworked by MEH-936.
  *
- * Anatomy (uniform 36px circle — identity lives in the photo, NOT a category
- * colour; category colour/icon now appear only in the legend + card dots, so the
- * "≤4 category colours, deuteranopia-safe" rule holds by construction — F2):
+ * Anatomy (uniform 36px circle):
  *   - Round photo: producer's first image, square Cloudinary crop, lazy.
- *   - No-photo fallback: MEH-638 monogram — first name letter, white on primary.
+ *   - No-photo fallback (MEH-936): the producer's category Phosphor glyph
+ *     (white, weight="fill") on the category colour — same mapping as the legend
+ *     (MapPane.jsx) + the card dots. Empty/null category → DEFAULT (Leaf on
+ *     primary). Replaces the MEH-638 name-monogram.
  *   - Border: 2px primary; selected (active) → 3px primary-dark.
  *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
  *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
  *   - Visited: opacity 0.4 (dimmed).
+ *
+ * MEH-936 intentionally OVERRIDES the MEH-763 F2 lock ("category colour/icon
+ * only in legend + card dots; markers carry no category colour, so the
+ * '≤4 category colours, deuteranopia-safe' rule holds by construction"). The
+ * no-photo fallback now carries BOTH the category colour AND its distinct glyph
+ * shape — redundant encoding (colour + shape, never colour alone) is the
+ * WCAG-recommended way to convey category to colour-blind users, so this
+ * strengthens deuteranopia-safety rather than weakening it. Photo markers are
+ * unchanged and still carry no category colour.
  *
  * Was a category-colour circle + white Phosphor icon sized 28/32/36 by state.
  */
@@ -65,17 +77,20 @@ function createCategoryMarker(
   const dimmed = visited && !active && !hovered;
   const opacity = dimmed ? 0.4 : 1;
   const isPremium = producer.plan === "premium";
-  const isVerified = producer.is_verified;
+  const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
-  // Round photo (square crop) or MEH-638 monogram fallback. No onerror→monogram
-  // swap: strict CSP blocks inline handlers, so we branch on image presence.
+  // Round photo (square crop), else MEH-936 category-glyph fallback. No
+  // onerror→fallback swap: strict CSP blocks inline handlers, so we branch on
+  // image presence. The glyph + colour come from styleForProducer (the legend's
+  // single source of truth); empty/null category degrades to DEFAULT (Leaf on
+  // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
   const imgUrl = producer.images?.[0]
     ? optimizeCloudinary(producer.images[0], { aspectRatio: "1:1" })
     : null;
-  const monogram = (producer.name || "").trim().charAt(0).toUpperCase();
+  const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const inner = imgUrl
     ? `<img src="${imgUrl}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
-    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2e6853;color:#fff;font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:16px;line-height:1;">${monogram}</div>`;
+    : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.
   // pointer-events:none prevents intercepting marker clicks.
@@ -222,7 +237,11 @@ export default function MapComponent({
       // search) and calls this imperative method on success. Geolocation
       // + the "my location" marker stay here because they operate on
       // the internal `mapInstanceRef` and `myLocationMarkerRef`.
-      goToMyLocation: (onPermissionDenied) => {
+      // MEH-970: optional onSuccess({lat,lng}) lets the caller (MapClient)
+      // run the empty-near-me guard against the loaded producer set after the
+      // map has flown to the user. Backwards-compatible — existing one-arg
+      // callers are unaffected. Geolocation + marker logic stay here.
+      goToMyLocation: (onPermissionDenied, onSuccess) => {
         if (!mapInstanceRef.current || !navigator.geolocation) return;
         navigator.geolocation.getCurrentPosition(
           (pos) => {
@@ -246,6 +265,7 @@ export default function MapComponent({
                 interactive: true,
               }).addTo(mapInstanceRef.current);
             }
+            onSuccess?.({ lat: latitude, lng: longitude });
           },
           // PERMISSION_DENIED (err.code === 1) → hand off to MapClient so it can
           // open the city-search fallback (LocationModal) instead of a dead-end
@@ -279,15 +299,20 @@ export default function MapComponent({
     if (!containerRef.current || mapInstanceRef.current) return;
 
     mapInstanceRef.current = L.map(containerRef.current, { zoomControl: true }).setView(
-      // Default view — Jerusalem at zoom 8 so the whole country fits
-      // comfortably on mobile. Previously [31.5, 34.8] (off-coast of
-      // Ashdod) which on narrow viewports panned the camera enough to
-      // show the Sinai / Saudi border instead of Israel proper.
-      [31.7683, 35.2137],
+      // Default view — MEH-932: fixed center on the Israel producer band
+      // [32.4, 34.95] zoom 8, not Jerusalem [31.7683, 35.2137]. The Jerusalem
+      // center pulled half the Mediterranean + Arabic-labelled neighbours into
+      // frame on mobile; this recenters north-west onto the coastal/central
+      // producer cluster. FIXED center/zoom only — the auto-fitBounds was
+      // deliberately removed (see the producers effect below), so this setView
+      // is the single source of the initial camera. Zoom 8 keeps the whole
+      // producer band (incl. north/Golan) in-frame; tighter zoom 9 is an option
+      // pending mobile preview QA (MEH-932 PR notes).
+      [32.4, 34.95],
       8,
     );
     // Expose initial center for E2E tests (05-map-navigation.spec.ts)
-    if (typeof window !== "undefined") window.__MAP_CENTER__ = [31.7683, 35.2137];
+    if (typeof window !== "undefined") window.__MAP_CENTER__ = [32.4, 34.95];
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(mapInstanceRef.current);
@@ -444,9 +469,10 @@ export default function MapComponent({
     });
 
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
-    // [31.7683, 35.2137] zoom 8 (full-country view). The fitBounds was
-    // centering on wherever the producers clustered (often northern Israel
-    // when test data was sparse), making the map look off-center on load.
+    // (MEH-932: now [32.4, 34.95] zoom 8, the fixed producer-band view). The
+    // fitBounds was centering on wherever the producers clustered (often
+    // northern Israel when test data was sparse), making the map look
+    // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [producers, visitedIds]);
 
