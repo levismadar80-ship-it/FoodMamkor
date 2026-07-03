@@ -530,7 +530,7 @@ GET    /admin/kashrut                          admin — list badge requests (?s
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
 POST   /admin/producers/{id}/reject            admin — with reason (terminal → status=rejected)
-POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
+POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status ∉ pending/pending_whatsapp, MEH-769 precedent); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
 POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
 # Home products moderation

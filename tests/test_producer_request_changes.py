@@ -119,6 +119,30 @@ def test_request_changes_non_admin_is_403(client, db):
     assert producer.requested_changes is None
 
 
+# --- status guard — pending-only (MEH-769 409 precedent) --------------------
+
+
+def test_request_changes_on_approved_producer_is_409(client, db):
+    """request-changes leaves status unchanged, so it must refuse a
+    non-pending producer — else it leaves an incoherent approved+trail state."""
+    producer = make_producer(db, status="approved", images=[TEST_IMAGE])
+    resp = _request_changes(client, producer.id, _admin(db))
+    assert resp.status_code == 409, resp.text
+    db.refresh(producer)
+    assert producer.requested_changes is None
+    assert producer.status == "approved", "guard must not change status"
+
+
+def test_request_changes_on_pending_whatsapp_is_allowed(client, db):
+    """pending_whatsapp is still a pre-approval state → allowed."""
+    producer = make_producer(db, status="pending_whatsapp")
+    resp = _request_changes(client, producer.id, _admin(db))
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.requested_changes == FEEDBACK
+    assert producer.status == "pending_whatsapp"
+
+
 # --- email fires to the producer's own address ------------------------------
 
 

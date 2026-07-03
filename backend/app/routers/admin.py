@@ -580,6 +580,18 @@ def request_producer_changes(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
 
+    # MEH-1011: request-changes is a pending-only operation — it deliberately
+    # leaves status unchanged, so applying it to an already-decided producer
+    # (approved / rejected / inactive) would leave an incoherent record
+    # (e.g. approved + non-null requested_changes, which the "ממתין להשלמה"
+    # badge keys off). 409 mirrors toggle-status's invalid-transition guard
+    # (MEH-769). reject_producer needs no such guard — it transitions status.
+    if producer.status not in ("pending", "pending_whatsapp"):
+        raise HTTPException(
+            status_code=409,
+            detail="ניתן לשלוח בקשת השלמה רק לבית עסק בהמתנה לאישור",
+        )
+
     producer.requested_changes = feedback
     # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
     producer.changes_requested_at = datetime.now(timezone.utc)
