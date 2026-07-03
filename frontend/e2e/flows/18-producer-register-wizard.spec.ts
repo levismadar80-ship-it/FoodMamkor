@@ -48,6 +48,8 @@ test.describe("Producer register wizard (5-frame)", () => {
 
   test("ACCOUNT → DETAILS → CATEGORY → STORY → CONFIRM (new-registration path)", async ({ page }) => {
     await page.goto("/register/producer");
+    // MEH-994: click through the pre-flight intro screen to reach frame 01.
+    await page.getByTestId("register-preflight-start").click();
 
     // ── ACCOUNT ──
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -101,6 +103,8 @@ test.describe("Producer register wizard (5-frame)", () => {
   // field's aria-invalid + aria-describedby (inline as-you-type).
   test("error states expose ARIA (role=alert + phone aria-invalid/describedby)", async ({ page }) => {
     await page.goto("/register/producer");
+    // MEH-994: click through the pre-flight intro screen to reach frame 01.
+    await page.getByTestId("register-preflight-start").click();
 
     // ── ACCOUNT: invalid email → stepError announced as role="alert" ──
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
@@ -151,6 +155,8 @@ test.describe("Producer register wizard (5-frame)", () => {
   // checked → advances to STORY with no license number entered.
   test("license-pending opt-in bypasses the CATEGORY license gate", async ({ page }) => {
     await page.goto("/register/producer");
+    // MEH-994: click through the pre-flight intro screen to reach frame 01.
+    await page.getByTestId("register-preflight-start").click();
 
     // ACCOUNT → DETAILS
     await expect(page.getByTestId("register-frame-account")).toBeVisible();
