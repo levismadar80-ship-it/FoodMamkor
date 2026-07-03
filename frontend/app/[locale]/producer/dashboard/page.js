@@ -433,13 +433,13 @@ export default function ProducerDashboardPage() {
 //     (§5 honesty clause) and a lifetime row duplicates the rating KPI
 //     (FLAG-1). Returns with MEH-966 (per-event feed).
 //   - Rows = 2 event types in fixed locked order (whatsapp -> view), each
-//     gated on its own last_7d > 0. NO per-row relative times ("אתמול" never
+//     gated on its own last_7d > 0. NO per-row relative times (never
 //     rendered) — the payload has no per-event timestamps. Uniform 7-day frame.
-//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — "חדשות" must be
-//     truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state card.
+//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — the "new" claim
+//     must be truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state.
 // Card sizes to rows.length (0/1/2 collapse — no fixed-count padding). ONE
 // section-level CTA -> wa.me (gated with the hero on whatsapp last_7d > 0:
-// "לענות" with zero inquiries would be the same false claim).
+// a reply CTA with zero inquiries would be the same false claim).
 // ============================================================
 
 function ActivityPulse({ analytics }) {
