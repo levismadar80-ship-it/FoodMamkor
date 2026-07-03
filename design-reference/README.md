@@ -3,9 +3,11 @@
 Canonical design source for the design-code parity program. Imported 2026-07-03
 from two Claude Design "Send to local coding agent" exports:
 `S2 — Logo System-handoff.zip` + `Mehamakor DS — Components-handoff (1).zip`
-(the ZIPs themselves live in this PR's history under `design-export-input/`,
-removed after extraction). The old "Mehamakor Design System" project is
-**excluded** — its stale pre-export snapshot is quarantined in
+(delivered via branch `feature/meh-991-design-export`; under the repo's
+squash-merge flow the raw ZIPs never enter staging history — the export branch
+holds them until deleted, and Sapir retains the original exports locally).
+The old "Mehamakor Design System" project is **excluded** — its stale
+pre-export snapshot is quarantined in
 [`_archive-2026-06/`](./_archive-2026-06/README.md) and is not audit material.
 
 Gap analysis lives in [`docs/DESIGN-GAP-MATRIX.md`](../docs/DESIGN-GAP-MATRIX.md).
@@ -16,7 +18,7 @@ with repo idioms (tokens, logical properties), don't copy prototype internals.
 
 | Dir | Source | Contents |
 |---|---|---|
-| `s2-logo/` | S2 zip `project/` | Page-level frames (Phases 1–6, S5–S14), logo system, nav lab sources. `debug/` iteration screenshots (50 files, 2.2MB) excluded — recoverable from the ZIP in PR history. |
+| `s2-logo/` | S2 zip `project/` | Page-level frames (Phases 1–6, S5–S14), logo system, nav lab sources. `debug/` iteration screenshots (50 files, 2.2MB) excluded — recoverable from the export branch ZIP / Sapir's originals. |
 | `ds-components/` | DS zip `project/` | DS bundle + token css + `components/` — **synced copies of the repo's own React library** (design context, NOT new design work) + component-level frames. |
 | `dashboard/` | DS zip | Producer Dashboard redesign (MEH-964) — frame + app/overview/sections/ui jsx. **COLLISION: audit only, MEH-964 owns implementation.** |
 | `join/` | DS zip | Join page conversion hub (MEH-995). **Hifi v3 is authoritative; v2 kept for provenance. COLLISION: MEH-995 gated.** |
