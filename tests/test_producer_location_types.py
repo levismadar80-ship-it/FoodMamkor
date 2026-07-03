@@ -103,9 +103,11 @@ class TestNationwideXorCities:
         resp = client.put(
             f"/admin/producers/{p.id}",
             json={
+                # MEH-903 A: XOR now guards delivery_area_cities (delivery_areas
+                # store), not the legacy delivery_cities column.
                 "offers_delivery": True,
                 "delivery_nationwide": True,
-                "delivery_cities": ["תל אביב", "חיפה"],
+                "delivery_area_cities": ["תל אביב", "חיפה"],
             },
             headers=auth_header(admin),
         )
@@ -115,7 +117,7 @@ class TestNationwideXorCities:
         p = make_producer(db)
         resp = client.put(
             f"/admin/producers/{p.id}",
-            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_cities": []},
+            json={"offers_delivery": True, "delivery_nationwide": True, "delivery_area_cities": []},
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
@@ -126,14 +128,17 @@ class TestNationwideXorCities:
         resp = client.put(
             f"/admin/producers/{p.id}",
             json={
+                # MEH-903 A: cities now flow through delivery_area_cities into the
+                # delivery_areas relation; the response exposes them under
+                # delivery_areas[].city (the flat delivery_cities column is inert).
                 "offers_delivery": True,
                 "delivery_nationwide": False,
-                "delivery_cities": ["ירושלים"],
+                "delivery_area_cities": ["ירושלים"],
             },
             headers=auth_header(admin),
         )
         assert resp.status_code == 200
-        assert "ירושלים" in resp.json()["delivery_cities"]
+        assert "ירושלים" in [da["city"] for da in resp.json()["delivery_areas"]]
 
 
 # ---------- Geo-search excludes delivery-only ----------
