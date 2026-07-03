@@ -73,7 +73,12 @@ export function useMapSync({
   // hidden container (display:none, 0×0) produces degenerate bounds — we validate
   // below before using them.
   const mapRef = useRef(null);
-  const cardRefs = useRef(new Map()); // producer.id → card wrapper DOM node
+  // MEH-1010: producer.id → Set of card wrapper DOM nodes. The card list
+  // renders twice (desktop sidebar + mobile sheet) — a single-node map let
+  // the mobile mount overwrite the desktop node, so desktop marker-click
+  // scrollIntoView hit a display:none element and no-oped. Registration in
+  // MapCardList.jsx; the visible node is resolved at click time below.
+  const cardRefs = useRef(new Map());
   const hoverTimerRef = useRef(null);
   const [mapBounds, setMapBounds] = useState(null);
 
@@ -118,7 +123,17 @@ export function useMapSync({
     if (!isDesktop) {
       setSheetSnap(HALF);
     }
-    const el = cardRefs.current.get(producer.id);
+    // MEH-1010: pick the VISIBLE wrapper from the per-id Set (offsetParent is
+    // null inside the display:none shell) — same visible-instance discipline
+    // as registerMapApi above. Prune disconnected nodes while we're here.
+    const nodes = cardRefs.current.get(producer.id);
+    let el = null;
+    if (nodes) {
+      for (const n of nodes) {
+        if (!n.isConnected) { nodes.delete(n); continue; }
+        if (n.offsetParent !== null) el = n;
+      }
+    }
     if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
 
