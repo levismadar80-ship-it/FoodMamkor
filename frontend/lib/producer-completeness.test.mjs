@@ -11,6 +11,8 @@ const FULL = {
   instagram: "@foo",
   categories: [{ id: "c1", name: "ירקות" }],
   images: ["https://example.com/a.jpg"],
+  // MEH-1002: 6th field — tagline (short_description) OR long story (description).
+  short_description: "גבינות עיזים מהחווה",
 };
 
 let passed = 0;
@@ -83,6 +85,45 @@ it("missing categories AND city → red (city wins)", () => {
   const r = producerCompleteness({ ...FULL, city: null, categories: [] });
   assert.equal(r.priority, "red");
   assert.deepEqual(r.missing, ["עיר", "קטגוריה"]);
+});
+
+// MEH-1002: "תיאור קצר" — OR of short_description / description, yellow-tier.
+it("missing both short_description and description → yellow, flags תיאור קצר", () => {
+  const r = producerCompleteness({ ...FULL, short_description: null });
+  assert.equal(r.priority, "yellow");
+  assert.deepEqual(r.missing, ["תיאור קצר"]);
+});
+
+it("whitespace-only short_description (no description) → still missing", () => {
+  const r = producerCompleteness({ ...FULL, short_description: "   " });
+  assert.equal(r.priority, "yellow");
+  assert.ok(r.missing.includes("תיאור קצר"));
+});
+
+it("only long description filled → תיאור קצר not missing (OR semantics)", () => {
+  const r = producerCompleteness({
+    ...FULL,
+    short_description: null,
+    description: "סיפור העסק המלא שלנו",
+  });
+  assert.equal(r.priority, "green");
+  assert.deepEqual(r.missing, []);
+});
+
+it("only short_description filled → green (tagline alone satisfies)", () => {
+  const r = producerCompleteness({ ...FULL, description: null });
+  assert.equal(r.priority, "green");
+  assert.deepEqual(r.missing, []);
+});
+
+it("missing description never turns the profile red (yellow-tier only)", () => {
+  // Everything red-relevant present, only the description pair empty.
+  const r = producerCompleteness({
+    ...FULL,
+    short_description: undefined,
+    description: undefined,
+  });
+  assert.equal(r.priority, "yellow");
 });
 
 it("undefined images / categories → treated as empty", () => {
