@@ -28,10 +28,11 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  */
 
 // Total fields the heuristic can flag. city + (coords XOR delivery-areas) +
-// contact + category + image = 5 max for any producer shape (the coords /
-// delivery-areas pair is mutually exclusive on isDeliveryOnly). Kept here as a
-// named constant per exec §10.
-const TOTAL_FIELDS = 5;
+// contact + category + image + short-description = 6 max for any producer
+// shape (the coords / delivery-areas pair is mutually exclusive on
+// isDeliveryOnly). Kept here as a named constant per exec §10.
+// MEH-1002: 5 → 6 with the short_desc field (MEH-964 checklist parity).
+const TOTAL_FIELDS = 6;
 
 // Map a raw Hebrew missing-field string (returned verbatim by the heuristic)
 // to a stable i18n key for the "next step" label, so the dashboard stays fully
@@ -131,9 +132,9 @@ export default function ProfileCompletenessCard({ producer }) {
     );
   }
 
-  // Headline + sub per state. percent never lands exactly on 70 for the 5-field
-  // model (steps of 20%), so >70 cleanly separates "almost there" from the
-  // lower yellow band.
+  // Headline + sub per state. percent never lands exactly on 70 for the 6-field
+  // model (steps of ~16.7%: 0/17/33/50/67/83/100), so >70 cleanly separates
+  // "almost there" from the lower yellow band.
   let headline;
   let sub;
   if (priority === "red") {
@@ -159,10 +160,10 @@ export default function ProfileCompletenessCard({ producer }) {
   const ctaHref = nextKey === "city" ? "/settings" : "/producer/dashboard/edit";
 
   // MEH-897: yellow >70 ("almost there") swaps the single next-step line for a
-  // 5-row checklist (completed + remaining). Build the applicable-field list
+  // 6-row checklist (completed + remaining). Build the applicable-field list
   // here, mirroring the coords XOR delivery split the heuristic itself makes
   // per producer shape (lib/producer-completeness.js:25 isDeliveryOnly) — never
-  // both apply, so the list is always exactly 5. Each row reuses the existing
+  // both apply, so the list is always exactly 6. Each row reuses the existing
   // fields.* key; membership in `missing` (raw HE labels) marks remaining.
   // he-only until MEH-472 sweeps the English strings: the checklist's a11y
   // keys (checklist_*) live in he.json only, so an /en visit would surface raw
@@ -178,6 +179,8 @@ export default function ProfileCompletenessCard({ producer }) {
     "contact",
     "category",
     "image",
+    // MEH-1002: 6th field (short_description OR description satisfies it).
+    "short_desc",
   ];
   const missingLabels = new Set(missing);
 
@@ -199,7 +202,7 @@ export default function ProfileCompletenessCard({ producer }) {
           <p className="text-sm md:text-base text-fg-muted mt-1">{sub}</p>
           {isYellowHigh ? (
             <>
-              {/* 5-row checklist: completed → text-primary ✓ + label;
+              {/* 6-row checklist: completed → text-primary ✓ + label;
                   remaining → text-fg-muted label, no marker (per locked design). */}
               <ul className="mt-4 space-y-2" aria-label={t("checklist_aria")}>
                 {checklistSlugs.map((slug) => {

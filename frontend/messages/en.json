@@ -3494,7 +3494,8 @@
           "delivery": "Delivery areas",
           "contact": "Contact details (phone/Instagram)",
           "category": "Category",
-          "image": "Main photo"
+          "image": "Main photo",
+          "short_desc": "Short description"
         }
       },
       "strength": {
