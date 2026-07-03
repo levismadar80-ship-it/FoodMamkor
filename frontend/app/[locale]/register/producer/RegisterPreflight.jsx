@@ -43,7 +43,8 @@ export default function RegisterPreflight({ showAccountLine, onStart }) {
         </ul>
       </div>
 
-      {/* Duration — number matches the live page subtitle ("5 דקות"). */}
+      {/* MEH-994b: duration = "10 דקות" everywhere (Sapir decision) — must match
+          the page subtitle and the /about/for-businesses FAQ. */}
       <p className="text-fg-muted text-sm flex items-center gap-2">
         <Clock size={16} className="shrink-0" aria-hidden="true" />
         {t("duration")}
