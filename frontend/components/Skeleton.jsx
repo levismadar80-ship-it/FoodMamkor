@@ -74,9 +74,9 @@ export function SkeletonProducerGrid({ count = 8 }) {
         .skeleton-box {
           background: linear-gradient(
             90deg,
-            #e8e0d0 25%,
+            #e5dfd3 25%,
             #f5f0e8 50%,
-            #e8e0d0 75%
+            #e5dfd3 75%
           );
           background-size: 200% 100%;
           animation: shimmer 1.5s infinite ease-in-out;
@@ -92,7 +92,7 @@ export function SkeletonProducerGrid({ count = 8 }) {
         @media (prefers-reduced-motion: reduce) {
           .skeleton-box {
             animation: none;
-            background: #e8e0d0;
+            background: #e5dfd3;
           }
         }
       `}</style>

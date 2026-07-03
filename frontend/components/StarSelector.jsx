@@ -26,7 +26,7 @@ export default function StarSelector({ value, onChange }) {
             <Star
               size={36}
               weight={filled ? "fill" : "regular"}
-              color={filled ? "#8B6914" : "#e8e0d0"}
+              color={filled ? "#896714" : "#e5dfd3"}
             />
           </button>
         );
