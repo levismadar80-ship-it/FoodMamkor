@@ -21,6 +21,7 @@ import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 import { getPrimaryMethod } from "@/lib/contact-method";
+import { badgeCount } from "@/lib/badges";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
@@ -153,6 +154,7 @@ function CardHeart({ producer, onCountChange }) {
   };
 
   // MEH-643/MEH-472: single gerund aria "שמירה" (matches the "טעינה" pattern).
+  // MEH-991 (CARD-05): cream circle per Populated frame; 44px box kept (touch-target floor >= design 40px).
   return (
     <button
       type="button"
@@ -161,7 +163,7 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-3 start-3 z-10 w-11 h-11 bg-surface-card/95 hover:bg-surface-card rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-3 start-3 z-10 w-11 h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
@@ -231,13 +233,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       className={[
         // MEH-643 (Assembly v2): flat surface-card, 1px border, sharp corners,
         // NO shadow-lift on hover — hover = border color shift only.
-        "bg-surface-card overflow-hidden border flex flex-col rounded-none group transition-colors duration-base ease-quart",
+        // MEH-991 (CARD-22): pressed feedback per v4 spec — opacity .95 + scale .98.
+        "bg-surface-card overflow-hidden border flex flex-col rounded-none group transition-colors duration-base ease-quart active:opacity-95 active:scale-[0.98]",
         active ? "border-primary ring-2 ring-primary" : "border-border hover:border-primary",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
     >
       <div className="relative">
-        <Link href={producerHref} className="block">
+        <Link href={producerHref} className="block focus-ring">
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc ? (
               <Image
@@ -253,8 +256,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
                 className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
-                <Leaf size={40} weight="light" className="text-primary/70" data-testid="leaf-icon" aria-hidden="true" />
-                <span className="font-headline-md text-sm font-bold text-primary/80">
+                <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                <span className="font-headline-md text-base font-bold text-primary/50">
                   {BRAND_NAME}
                 </span>
               </div>
@@ -267,6 +270,16 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             icon-only seal; declared shows nothing (no placeholder). */}
         <div className="absolute bottom-3 start-3 z-[2] flex flex-wrap items-center gap-1.5">
           <BadgeRow producer={producer} limit={2} surface="card" />
+          {badgeCount(producer) > 2 && (
+            // MEH-991 (CARD-09): v4 LOCK — third badge collapses to +N.
+            <span
+              className="inline-flex items-center rounded-full bg-surface-card/95 border border-border text-fg-muted px-1.5 py-0.5 text-[11px] font-medium"
+              data-testid="badge-overflow"
+              dir="ltr"
+            >
+              +{badgeCount(producer) - 2}
+            </span>
+          )}
           {(producer.trust_tier ?? 1) >= 3 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
@@ -289,8 +302,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         )}
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
-          <Link href={producerHref} className="block min-w-0">
-            <h3 className="font-headline-md font-bold text-[20px] text-text hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+          <Link href={producerHref} className="block min-w-0 focus-ring">
+            <h3 className="font-headline-md font-bold text-[20px] text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
