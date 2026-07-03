@@ -990,7 +990,7 @@ The fix applies to **4 distinct UI surfaces** — verify each:
 
 - [ ] **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL
 - [ ] **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct wa.me URL
-- [ ] **`/map` popup** → click a producer marker → popup has a WhatsApp link → opens wa.me with correct number
+- [ ] **`/map` mobile sheet card** → tap a producer marker (mobile) → pinned sheet card has a WhatsApp link → opens wa.me with correct number. (MEH-1010: the desktop mini-popup was retired — on desktop, marker click scrolls+highlights the sidebar card; WhatsApp CTA lives on the card.)
 - [ ] **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct wa.me URL
 
 ### Empty-input guards still work
@@ -1260,6 +1260,17 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] "קרוב אלי" clickable with sheet open
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
+
+---
+
+## /map desktop — marker click = card-sync (MEH-1010)
+
+- [ ] Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
+- [ ] Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
+- [ ] Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+highlight. תוצאה מצופה: זהה למרקר בודד.
+- [ ] Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
+- [ ] Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
+- [ ] Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
 
 ---
 

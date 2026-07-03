@@ -16,9 +16,19 @@ import MapProducerCard from "@/components/MapProducerCard";
  * a prop callback that the slim shell constructs from the same
  * five setter calls the source used inline.
  *
- * The ref callback at the producer-card wrapper writes to
- * useMapSync.cardRefs Map so handleCardMouseEnter can scrollIntoView
- * by id later.
+ * The ref callback at the producer-card wrapper registers into
+ * useMapSync.cardRefs so handleMarkerClick can scrollIntoView by id.
+ *
+ * MEH-1010: cardRefs maps producer.id → Set of wrapper nodes, NOT a
+ * single node. This list renders TWICE in MapClient.jsx (desktop
+ * sidebar + mobile bottom sheet); a plain id→node Map let the mobile
+ * instance (last mount) overwrite the desktop node, so on desktop
+ * scrollIntoView targeted a display:none element and silently no-oped.
+ * handleMarkerClick picks the VISIBLE node from the Set at click time
+ * (same visible-instance discipline as useMapSync.registerMapApi).
+ * React 18 callback refs get null on unmount without telling us which
+ * node died, so removal happens by pruning disconnected nodes at both
+ * registration and pick time instead.
  */
 export default function MapCardList({
   visibleProducers,
@@ -37,10 +47,18 @@ export default function MapCardList({
         <div
           key={p.id}
           id={`card-${p.id}`}
-          ref={(el) => { if (el) cardRefs.current.set(p.id, el); else cardRefs.current.delete(p.id); }}
+          ref={(el) => {
+            if (!el) return; // unmount: pruned lazily (see docblock)
+            const nodes = cardRefs.current.get(p.id) ?? new Set();
+            nodes.add(el);
+            for (const n of nodes) if (!n.isConnected) nodes.delete(n);
+            cardRefs.current.set(p.id, nodes);
+          }}
           onMouseEnter={() => onCardMouseEnter(p.id)}
           onMouseLeave={onCardMouseLeave}
-          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-lg" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-lg bg-green-50/[6%]" : ""} transition`}
+          // MEH-1010: active gains a desktop-only ring (marker-click card-sync
+          // highlight per AC); mobile keeps the border-only look unchanged.
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-lg" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-lg bg-green-50/[6%] lg:ring-2 lg:ring-primary" : ""} transition`}
         >
           <MapProducerCard
             producer={p}
