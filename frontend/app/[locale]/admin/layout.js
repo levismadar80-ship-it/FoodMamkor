@@ -44,7 +44,11 @@ import api from "@/lib/api";
 // Admin pattern). Labels come from admin.layout.nav_sections.*. hrefs, keys,
 // icons, badge wiring, and isActive() are all unchanged — this is markup +
 // i18n only. The desktop sidebar renders the labels; the mobile horizontal
-// nav flattens back to NAV_HREFS below so its behavior is identical to before.
+// nav reuses the flattened NAV_HREFS (derived below), so it now follows the
+// same section order as the sidebar. That reorder is deliberate and benign —
+// it's a horizontal scroll with no fixed tab-order dependency, and keeping a
+// single source of truth (NAV_SECTIONS) avoids two nav lists drifting apart.
+// Same items, hrefs, badges, and active state as before.
 const NAV_SECTIONS = [
   {
     key: "overview",
@@ -91,7 +95,7 @@ const NAV_SECTIONS = [
   },
 ];
 
-// Flat list preserved for the mobile horizontal nav — same order, same items.
+// Flattened list for the mobile horizontal nav (order follows the sections).
 const NAV_HREFS = NAV_SECTIONS.flatMap((s) => s.items);
 
 export default function AdminLayout({ children }) {
@@ -146,8 +150,8 @@ export default function AdminLayout({ children }) {
         </div>
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           {NAV_SECTIONS.map((section) => (
-            <div key={section.key} className="space-y-1">
-              <p className="text-xs text-white/50 px-3 pt-4 pb-1">
+            <div key={section.key} className="space-y-1 pt-4 first:pt-0">
+              <p className="text-xs text-white/50 px-3 pb-1">
                 {t(`layout.nav_sections.${section.key}`)}
               </p>
               {section.items.map((n) => {
