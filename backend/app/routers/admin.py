@@ -28,6 +28,7 @@ from app.schemas.schemas import (
     ProducerAdminOut,
     ProducerUpdate,
     RemoveListingBody,
+    RequestChangesIn,
     StoryCardUploadRequest,
 )
 from app.services.license_validation import (
@@ -479,6 +480,10 @@ def approve_producer(
             user.id,
         )
     producer.status = "approved"
+    # MEH-1011: clear the request-changes trail on approve — the completion
+    # request (if any) is resolved once the business is approved.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
     db.commit()
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
@@ -546,6 +551,69 @@ def reject_producer(
         )
 
     return {"detail": "Producer rejected"}
+
+
+# MEH-1011: producer request-changes — non-terminal "please complete" path.
+# Unlike reject_producer (terminal → status="rejected"), this KEEPS the
+# producer pending and records the admin's feedback so the business can fix
+# the gap (missing photo / license) and be approved. dashboard_link is a
+# constant — the producer self-serve dashboard is a single fixed route.
+_DASHBOARD_LINK = "https://mehamakor.online/producer/dashboard"
+
+
+@router.post("/producers/{producer_id}/request-changes")
+def request_producer_changes(
+    producer_id: UUID,
+    body: RequestChangesIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Send a completion request to a pending producer. `feedback` is required
+    (it becomes the body of the email to the producer) — empty/whitespace → 400,
+    mirroring admin_recipes.py:123. Status stays "pending"; no rejection.
+    """
+    feedback = (body.feedback or "").strip()
+    if not feedback:
+        raise HTTPException(status_code=400, detail="feedback is required")
+
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    producer.requested_changes = feedback
+    # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
+    producer.changes_requested_at = datetime.now(timezone.utc)
+    # status intentionally unchanged — stays "pending"/"pending_whatsapp".
+    db.commit()
+
+    p_name = producer.name
+
+    producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    if producer_user:
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
+            f"שלום,\n\n"
+            f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
+            f"בית העסק, נשאר להשלים:\n\n"
+            f"{feedback}\n\n"
+            f"אפשר להשלים את הפרטים בלוח הבקרה: {_DASHBOARD_LINK}\n"
+            f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
+
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f"📝 נשלחה בקשת השלמה ל-{p_name}",
+        )
+
+    return {
+        "detail": "בקשת השלמה נשלחה",
+        "requested_changes": producer.requested_changes,
+        "changes_requested_at": producer.changes_requested_at.isoformat(),
+    }
 
 
 # MEH-762 (ADR-022 public tier contract, Chunk 2): admin stamping for the

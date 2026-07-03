@@ -177,6 +177,15 @@ class Producer(Base):
     # user with a producer_id since MEH-206 (ORM never declared it, _migrate_columns
     # never added it to the DB, baseline didn't pick it up).
     rejection_reason = Column(Text, nullable=True)
+    # MEH-1011: producer "request-changes" trail — the non-terminal twin of
+    # rejection_reason. When the admin sends a completion request (missing
+    # photo / license), status STAYS "pending"; `requested_changes` holds the
+    # admin's free-text feedback and `changes_requested_at` stamps when it was
+    # sent (tz-aware — MEH-762 D1 precedent, NOT naive utcnow). Both nullable,
+    # Expand-only (ADR-007, no backfill); cleared on approve. Admin-only
+    # exposure via ProducerAdminOut. Paired migration: a1b2c3d4e5f6.
+    requested_changes = Column(Text, nullable=True)
+    changes_requested_at = Column(DateTime(timezone=True), nullable=True)
     # MEH-539: timestamps for the 4 onboarding follow-up emails (Day 2 / 5 /
     # 10 / 30). NULL = not yet sent — non-null is the durable "delivered to
     # Resend" record. Scheduler (APScheduler, daily) reads created_at +

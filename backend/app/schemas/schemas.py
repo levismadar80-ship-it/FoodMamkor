@@ -906,6 +906,12 @@ class ProducerAdminOut(ProducerDetailOut):
     # no binding declaration was made (admin-created / imported producers).
     declared_at: datetime | None = None
     declaration_version: str | None = None
+    # MEH-1011: producer request-changes trail — admin-only (never on the
+    # public ProducerDetailOut/ListOut). `requested_changes` = the admin's
+    # free-text completion feedback; `changes_requested_at` = tz-aware stamp.
+    # Both NULL once the producer is approved (approve_producer clears them).
+    requested_changes: str | None = None
+    changes_requested_at: datetime | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
@@ -1000,6 +1006,18 @@ class GrantVerifiedIn(BaseModel):
     # handler. 1:1 with VERIFICATION.md §3 document_type. "cosmetics" has no
     # tooltip key yet (MEH-758 micro-follow-up); the Chunk-3 resolver maps it.
     doc_type: Literal["license", "exemption", "cosmetics"]
+
+
+class RequestChangesIn(BaseModel):
+    """MEH-1011: admin "request-changes" payload for a pending producer.
+
+    REUSES: schemas.py:1499 ProducerRecipeModerationAction — single optional
+    `feedback` field. Unlike recipes (where empty feedback is only rejected in
+    the handler), here the feedback is emailed to the producer verbatim, so the
+    handler rejects empty/whitespace-only with a 400 (admin_recipes.py:123).
+    """
+
+    feedback: str | None = Field(None, max_length=2000)
 
 
 # --- User ---
