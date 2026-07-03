@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-964 1C: anonymous activity pulse on Overview — DRAFT PR #1456
+
+- **Branch:** `feature/meh-964-dashboard-overview-redesign-1c` off `origin/staging`. YELLOW chunk (1C of 4), `Refs MEH-964` (1D closes). **WAITING on Sapir mobile QA** — preview: https://food-mamkor-git-feature-m-92d8ac-levismadar80-ship-its-projects.vercel.app
+- **Phase-0 STOP → resolved:** open PR #1377 (original 1B) touched `dashboard/page.js` → stopped per gate; evidence showed it superseded by merged #1384 → Sapir approved close; closed with comment.
+- **Sapir rulings (recorded in PR + CHANGELOG, deltas-precedent format):** reviews row DROPPED (lifetime-only `total_reviews` = false recency claim + rating-KPI duplicate; returns w/ MEH-966); pulse = 2 rows (וואטסאפ → צפייה) each gated on own `last_7d > 0`, no relative times; hero binds `whatsapp_clicks.last_7d` NOT `.total`; both 0 → zero-state. CTA gated with hero (CC inference from ruling 4 — flagged, reversible).
+- **Done:** inline `ActivityPulse` in `page.js` (480 LOC < 600 threshold, mirrors OverviewStatsHero pattern); `dashboard.producer.pulse.*` he+en; testids `activity-pulse[-hero/-row-*/-cta/-empty]`; dedicated `DashboardActivityPulse.test.jsx` (4 gating cases) + widget-test phosphor mock += WhatsappLogo/Eye. Review-bot minors applied (English comments, dedicated test).
+- **Verify:** build exit 0 · vitest **702 passed** · 0 eslint errors · 0 physical RTL classes. 3× rule-25 staging resyncs absorbed cleanly (#1454/#1455 merged mid-work).
+- **Flags for Sapir:** hero ICU one/two branches = grammatical derivations pending verbatim approval (rule 22); `.ai/design-inventory.md` pulse row deferred to 1D (MEH-1004 governance vs 1C scope-lock, meta-patterns §4).
+- **Next:** 1D (empty-states + share-gate + availability-disable-until-published + view-public one-tap) after 1C merges.
+
 ## 2026-07-03 — MEH-1004: design-code truth — template 01 v2.1 + design-inventory bootstrap — DRAFT PR
 
 - **Branch:** `feature/meh-1004-design-code-truth` off `origin/staging`. Docs-only, GREEN, end-to-end authority per ticket (Phase 0+1+2, draft PR, Sapir merges — Rule 23).
