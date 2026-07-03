@@ -91,6 +91,34 @@ def test_request_changes_unknown_producer_is_404(client, db):
     assert resp.status_code == 404, resp.text
 
 
+# --- auth guard (require_admin) — send a schema-valid body so the 401/403 is
+# the guard talking, not body validation (regression rule 6) --------------
+
+
+def test_request_changes_unauthenticated_is_401(client, db):
+    producer = make_producer(db, status="pending")
+    resp = client.post(
+        f"/admin/producers/{producer.id}/request-changes",
+        json={"feedback": FEEDBACK},
+    )
+    assert resp.status_code == 401, resp.text
+    db.refresh(producer)
+    assert producer.requested_changes is None
+
+
+def test_request_changes_non_admin_is_403(client, db):
+    producer = make_producer(db, status="pending")
+    consumer = make_user(db, role="consumer")
+    resp = client.post(
+        f"/admin/producers/{producer.id}/request-changes",
+        json={"feedback": FEEDBACK},
+        headers=auth_header(consumer),
+    )
+    assert resp.status_code == 403, resp.text
+    db.refresh(producer)
+    assert producer.requested_changes is None
+
+
 # --- email fires to the producer's own address ------------------------------
 
 
@@ -124,15 +152,16 @@ def test_approve_clears_requested_changes(client, db, monkeypatch):
     monkeypatch.setattr(
         admin_module, "notify_producer_approved", lambda *a, **k: None
     )
+    admin = _admin(db)
     producer = make_producer(db, status="pending", images=[TEST_IMAGE])
     # seed a prior request-changes
-    resp = _request_changes(client, producer.id, _admin(db))
+    resp = _request_changes(client, producer.id, admin)
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
     assert producer.requested_changes is not None
 
     resp = client.post(
-        f"/admin/producers/{producer.id}/approve", headers=auth_header(_admin(db))
+        f"/admin/producers/{producer.id}/approve", headers=auth_header(admin)
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
