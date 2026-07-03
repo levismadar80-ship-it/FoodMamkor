@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-903: delivery_cities Expand-Contract — A ✅ merged, B ✅ verified-closed, C parked
+
+Re-anchored Phase 0 (@6c46b434) proved `producers.delivery_cities` was a LIVE drifted **column** (admin-only writer, admin-form-only reader) alongside the `delivery_areas` **table SoT** — blind drop was NO-GO. Executed as Expand-Contract:
+
+- **Chunk A (Expand) — ✅ MERGED `#1449`** (squash `7a929bc8`). `delivery_areas` is now the single delivery write-store. `admin.py`: dropped the create `delivery_cities=` kwarg + popped `delivery_cities` from the update payload before setattr (renamed local areas var for clarity) → column written by **nobody**. `schemas.py`: both `_validate_location_mode` XOR validators re-pointed `delivery_cities`→`delivery_area_cities` (exact nationwide-XOR-cities semantic, only field source changed; column input fields stay declared-but-inert). `ProducerForm.jsx`: two city inputs → **one** `CitiesAutocomplete` feeding `delivery_area_cities`; comma `<Field>` removed; initial populate reads `initial.delivery_areas[].city`. Tests: 3 `test_producer_location_types.py` cases re-pointed to `delivery_area_cities`/`delivery_areas[].city`. Verified: `test_api.py` 202✓ + location/integrity(MEH-272) 18✓, `npm run build`✓, 0 eslint errors. Scope held to the 4 files + CHANGELOG (`producer_me.py`/`auth.py`/`producer_import.py`/`models.py`/`ProducerListOut` untouched).
+- **Chunk B (Verify) — ✅ CLOSED "verified, nothing to reconcile".** Read-only re-grep vs live staging confirmed the Chunk-A invariant holds (zero column writers except the `models.py:161` def; owner PATCH still excludes the column; form unified). **MEH-272 CHECK-interaction flag resolved:** the flip-500 risk required a pre-existing **non-empty** `delivery_cities` column; **Sapir verified `SELECT count(*) … WHERE array_length(delivery_cities,1)>0` = 0 on staging AND prod**, so the risk is moot and no reconciliation revision was needed. Handed Sapir the 4 inspection queries; Q1=0 closed the gate.
+- **Chunk C (Contract) — PARKED post-launch (do NOT start).** Drops the `delivery_cities` column + the `delivery_nationwide_xor_cities` CHECK (ORM `models.py:161,252` + Alembic DROP revision, CC-authors/Sapir-applies) and removes the inert output/input schema fields (`schemas.py:481/597/774`, `ProducerListOut`). Post-Contract the nationwide-XOR invariant lives at the Pydantic layer only (a DB CHECK can't span the `delivery_areas` table). MEH-272's sibling `producer_location_mode` CHECK survives (references booleans, not the column).
+
+**Pending (not CC):** nothing blocking for 903 — Chunk C is a deliberate post-launch parking, not a TODO. Also still open from prior sessions: MEH-993 Sentry Chunk-1 (Sapir DSN), MEH-964 dashboard chunks, bio-heading copy pick.
+
 ## 2026-07-03 — MEH-1004: design-code truth — template 01 v2.1 + design-inventory bootstrap — DRAFT PR
 
 - **Branch:** `feature/meh-1004-design-code-truth` off `origin/staging`. Docs-only, GREEN, end-to-end authority per ticket (Phase 0+1+2, draft PR, Sapir merges — Rule 23).
