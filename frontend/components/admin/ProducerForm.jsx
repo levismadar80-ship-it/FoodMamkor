@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
@@ -643,7 +644,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               <div key={url} className="relative group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={optimizeCloudinary(url)}
                   alt=""
                   className="w-full h-24 object-cover rounded-[8px] border border-border"
                 />

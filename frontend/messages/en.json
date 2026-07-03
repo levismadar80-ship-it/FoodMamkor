@@ -3490,7 +3490,8 @@
         "save_cta": "Save categories",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "fetch_error": "Couldn't load categories. Refresh the page and try again."
       },
       "images": {
         "heading": "Images",
