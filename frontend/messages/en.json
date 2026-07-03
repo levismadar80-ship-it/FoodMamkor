@@ -3429,6 +3429,17 @@
           "sub": "Publish and manage recipes that promote your products"
         }
       },
+      "pulse": {
+        "section_aria": "Recent activity",
+        "window_7d": "Last 7 days",
+        "hero": "{count, plural, one {1 new WhatsApp inquiry — open to reply} other {# new WhatsApp inquiries — open to reply}}",
+        "rows": {
+          "whatsapp": "WhatsApp inquiry",
+          "view": "Profile view"
+        },
+        "cta": "Open WhatsApp to reply",
+        "zero_state": "No activity yet — share your page to get started"
+      },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
         "kpi": {
