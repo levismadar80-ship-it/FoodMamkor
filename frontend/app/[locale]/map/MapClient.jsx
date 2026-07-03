@@ -12,7 +12,6 @@ import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
 
 import CityPickerModal from "./components/CityPickerModal";
-import DesktopMiniPopup from "./components/DesktopMiniPopup";
 import FilterChipsBar from "./components/FilterChipsBar";
 import MapCardList from "./components/MapCardList";
 import MapPane from "./components/MapPane";
@@ -75,6 +74,29 @@ export default function MapPage() {
     const mo = new MutationObserver(read);
     mo.observe(root, { attributes: true, attributeFilter: ["style"] });
     return () => mo.disconnect();
+  }, []);
+
+  // MEH-1010: Enter-on-marker keyboard activation (MEH-765 AC). Leaflet only
+  // maps Enter→action through bindPopup's keypress handler (leaflet-src
+  // Popup section, keyCode 13) — and MEH-30 #8 deliberately binds no popups,
+  // so `keyboard: true` alone left focused markers inert on Enter despite
+  // the MEH-765 comment's assumption. Markers are role="button" divIcons,
+  // which get NO native key activation. Delegate at document level (markers
+  // re-render on cluster expand, so per-node listeners would churn) and
+  // re-dispatch as a bubbling click: Leaflet's container-level
+  // _handleDOMEvent routes it to the marker's interactive target — the same
+  // path a mouse click takes, single markers and clusters alike.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key !== "Enter") return;
+      const el = e.target;
+      if (el instanceof Element && el.classList.contains("leaflet-marker-icon")) {
+        e.preventDefault();
+        el.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const feed = useProducersFeed();
@@ -322,13 +344,13 @@ export default function MapPage() {
           </div>
         </div>
 
-        {/* Map pane */}
+        {/* Map pane — MEH-1010: DesktopMiniPopup retired (Airbnb bottom-popup
+            anti-pattern; duplicated the sidebar). Desktop marker click now
+            scrolls+highlights the matching sidebar card via
+            useMapSync.handleMarkerClick. selectedProducer stays owned by
+            useMapFilters — the mobile MobileSheetSelectedCard still consumes it. */}
         <div className="relative">
           {mapPane}
-          <DesktopMiniPopup
-            selectedProducer={filters.selectedProducer}
-            onClose={() => filters.setSelectedProducer(null)}
-          />
         </div>
       </div>
 
