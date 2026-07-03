@@ -89,13 +89,14 @@ export default function MapPage() {
   // (legend toggle bottom-4; the ex-DesktopMiniPopup CTA in Sapir's 03/07
   // screenshot). Measure the shell's real document-top offset (header + any
   // in-flow banner, scroll-independent) and subtract THAT. Re-measured on
-  // resize (banner text wraps). Without a banner the measured offset is just
-  // the header band, so the no-banner layout is unchanged — this also
-  // absorbs the pre-existing ~10px drift between the real header (~74px) and
-  // the hardcoded 64 (the MEH-933 note). Banner unmount without a route
-  // change (e.g. verifying in another tab) leaves a small gap until the next
-  // resize/navigation — accepted; clipping cannot recur from a stale LARGER
-  // offset.
+  // (a) window resize (banner text wraps) and (b) <main> childList mutations
+  // — VerifyBanner mounts only after auth resolves, which can be AFTER this
+  // effect's first measure, and mounting an in-flow block fires no resize
+  // event (PR #1460 review catch); the MutationObserver (same pattern as the
+  // MEH-945 cookie effect above) covers late mount AND unmount. Without a
+  // banner the measured offset is just the header band, so the no-banner
+  // layout is unchanged — this also absorbs the pre-existing ~10px drift
+  // between the real header (~74px) and the hardcoded 64 (the MEH-933 note).
   const desktopShellRef = useRef(null);
   const [desktopTopOffset, setDesktopTopOffset] = useState(DESKTOP_HEADER_OFFSET_PX);
   useEffect(() => {
@@ -110,7 +111,15 @@ export default function MapPage() {
     };
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    // VerifyBanner is a direct child of <main id="main-content"> (layout.js:221)
+    // — its mount/unmount is a childList mutation there.
+    const main = document.getElementById("main-content");
+    const bannerObserver = main ? new MutationObserver(measure) : null;
+    bannerObserver?.observe(main, { childList: true });
+    return () => {
+      window.removeEventListener("resize", measure);
+      bannerObserver?.disconnect();
+    };
   }, []);
 
   // MEH-1010: Enter-on-marker keyboard activation (MEH-765 AC). Leaflet only
