@@ -35,10 +35,16 @@ import AccountSheet from "@/components/AccountSheet";
  *
  * Transitional: the legacy hamburger drawer still lives in Header.jsx until
  * the Header minimal-top PR (MEH-789 PR-B), so secondary items are briefly
- * reachable from both. MEH-789 (chunk 2): the pill hides on scroll-down /
- * reveals on scroll-up (rAF + 60px threshold, mirrored inline from
- * Header.jsx:91-116), staying visible while the account sheet is open.
+ * reachable from both. MEH-1014: the pill no longer hides on scroll — it
+ * MINIMIZES (labels collapse, icons stay, height 56→48px) and never leaves the
+ * screen. rAF + asymmetric hysteresis (down 24px → compact, up 8px → expand) +
+ * a scroll clamp kill the iOS rubber-band flicker the old hide-on-scroll had.
  */
+// MEH-1014: tunable minimize thresholds (Sapir may tune after QA).
+const HIDE_DELTA = 24; // accumulated downward px before compacting
+const REVEAL_DELTA = 8; // accumulated upward px before expanding
+const TOP_THRESHOLD = 60; // scrollY under this → always expanded
+
 export default function BottomNav() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -50,39 +56,72 @@ export default function BottomNav() {
   // re-render while the sheet is open and bounce keyboard focus.
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
-  // MEH-789 (chunk 2): hide-on-scroll-down / reveal-on-scroll-up for the
-  // floating pill. State + rAF/last-Y refs mirror Header.jsx:57-64.
-  const [hidden, setHidden] = useState(false);
+  // MEH-1014: minimize-on-scroll-down / expand-on-scroll-up for the floating
+  // pill. `compact` collapses labels + shrinks height; the pill never slides
+  // off. rAF/last-Y refs mirror Header.jsx:57-64; the two accumulator refs
+  // hold directional distance for the asymmetric hysteresis.
+  const [compact, setCompact] = useState(false);
   const rafRef = useRef(null);
   const lastYRef = useRef(0);
+  const downAccRef = useRef(0);
+  const upAccRef = useRef(0);
 
-  // MEH-789 (chunk 2): rAF-throttled scroll listener mirrored inline from
-  // Header.jsx:91-116 (MEH-29/734). Intentional copy — a shared hook
+  // MEH-1014: rAF-throttled scroll listener. Still mirrored inline from
+  // Header.jsx:91-116 (MEH-29/734) — intentional copy, a shared hook
   // extraction is a separate ticket; do NOT DRY this against Header here.
-  // Down past the 60px threshold hides the pill; any scroll up — or being
-  // near the top — reveals. The sheet-open guard is applied at render
-  // (hidden && !sheetOpen), so this listener stays pure and stable ([] deps).
+  // Clamp kills iOS rubber-band overscroll (negative y / y past the max
+  // producing phantom deltas); asymmetric accumulators give minimize a
+  // longer runway (24px) than expand (8px) so it settles instead of
+  // flickering. Sheet-open guard is applied at render (compact && !sheetOpen),
+  // so this listener stays pure and stable ([] deps).
   useEffect(() => {
+    const clampY = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      return Math.max(0, Math.min(window.scrollY, max));
+    };
     const onScroll = () => {
       if (rafRef.current) return;
       rafRef.current = window.requestAnimationFrame(() => {
-        const y = window.scrollY;
-        if (y < 60) setHidden(false);
-        else if (y > lastYRef.current) setHidden(true);
-        else if (y < lastYRef.current) setHidden(false);
+        const y = clampY();
+        const dy = y - lastYRef.current;
+        if (y < TOP_THRESHOLD) {
+          // Near the top → always expanded; reset both accumulators.
+          downAccRef.current = 0;
+          upAccRef.current = 0;
+          setCompact(false);
+        } else if (dy > 0) {
+          // Downward: a direction change resets the opposite (up) accumulator.
+          upAccRef.current = 0;
+          downAccRef.current += dy;
+          if (downAccRef.current >= HIDE_DELTA) setCompact(true);
+        } else if (dy < 0) {
+          // Upward: a direction change resets the opposite (down) accumulator.
+          downAccRef.current = 0;
+          upAccRef.current += -dy;
+          if (upAccRef.current >= REVEAL_DELTA) setCompact(false);
+        }
         lastYRef.current = y;
         rafRef.current = null;
       });
     };
-    // Seed last-Y with the restored offset so a reload / back-forward at a
-    // scrolled position isn't read as a downward delta (mirrors MEH-734).
-    lastYRef.current = window.scrollY;
+    // Seed last-Y with the restored (clamped) offset so a reload / back-forward
+    // at a scrolled position isn't read as a downward delta (mirrors MEH-734).
+    lastYRef.current = clampY();
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     };
+  }, []);
+
+  // MEH-1014: focus within the nav forces expansion (mirrors the MEH-734
+  // focus guard removed from Header in MEH-884) so keyboard/AT users never
+  // land on a collapsed label. Reset the down accumulator so the next small
+  // scroll-down doesn't immediately re-compact under their focus.
+  const expandOnFocus = useCallback(() => {
+    downAccRef.current = 0;
+    setCompact(false);
   }, []);
 
   // MEH-669: hide the business entry from producers + admins (defense-in-depth;
@@ -128,11 +167,17 @@ export default function BottomNav() {
     return () => ro.disconnect();
   }, [activeRouteIndex]);
 
+  // MEH-1014: the sheet always renders the pill expanded (it must sit above its
+  // own sheet at full size), so the render-time compact flag folds in sheetOpen.
+  const isCompact = compact && !sheetOpen;
+
   // Active = green ink (text-primary) over the shared tint indicator; idle =
-  // muted. `relative` keeps icon/label (z-10) above the z-0 capsule.
+  // muted. `relative` keeps icon/label (z-10) above the z-0 capsule. MEH-1014:
+  // the tap target relaxes from 44→40px min-height in compact mode.
   const tabCls = (active) =>
     [
-      "relative w-full min-w-[64px] min-h-[44px] flex flex-col items-center justify-center gap-[4px]",
+      "relative w-full min-w-[64px] flex flex-col items-center justify-center gap-[4px]",
+      isCompact ? "min-h-[40px]" : "min-h-[44px]",
       "rounded-full px-1 py-1.5 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       // MEH-919: inactive label darkened from fg-muted (#5c584f → 3.53 on the
       // sage nav capsule) to #4b4841 (4.55) for WCAG AA; active stays text-primary.
@@ -140,6 +185,15 @@ export default function BottomNav() {
     ].join(" ");
   // z-10 lifts icon + label above the z-0 tint capsule.
   const labelCls = "relative z-10 font-body text-[10.5px] font-semibold leading-none";
+  // MEH-1014: label collapse wrapper. overflow-hidden clips the text as
+  // max-height animates to 0; opacity fades it in tandem. Only height/opacity/
+  // max-height transition — the pill's backdrop-filter (nav-pill-glass) is
+  // never animated. motion-reduce → instant.
+  const labelWrapCls = [
+    "relative z-10 block overflow-hidden text-center",
+    "transition-[opacity,max-height] duration-base ease-quart motion-reduce:transition-none",
+    isCompact ? "opacity-0 max-h-0" : "opacity-100 max-h-4",
+  ].join(" ");
 
   // Static tint capsule for the account tab (not on the route track — the route
   // tabs share the single MEH-852 liquid-stretch indicator instead).
@@ -150,28 +204,28 @@ export default function BottomNav() {
       {/* Floating shell — full-width row with ~14px side gutters (px) + a
           safe-area-inset + 16px bottom gutter; holds the wide pill. */}
       <div
-        className={[
-          "md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px]",
-          // MEH-789 (chunk 2): transform-only slide, never backdrop-filter.
-          // motion-reduce → instant (mirrors Header MEH-734). translate-y is
-          // vertical (direction-neutral — no RTL concern); 120% clears the
-          // pill + drop-shadow + safe-area inset. Held visible while the sheet
-          // is open so the account control never slides off under its own sheet.
-          "transition-transform duration-base ease-quart motion-reduce:transition-none",
-          hidden && !sheetOpen ? "translate-y-[120%]" : "translate-y-0",
-        ].join(" ")}
+        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px]"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+        // MEH-1014: any focus landing inside the pill forces it back to full
+        // size (mirror of the MEH-734 focus guard). onFocusCapture catches it
+        // on the way down before the focused control is a collapsed label.
+        onFocusCapture={expandOnFocus}
       >
         {/* MEH-789 (chunk 3): frosted warm-glass surface (.nav-pill-glass in
             globals.css) replaces the opaque bg-background + border; shadow kept.
-            backdrop-filter is never animated — the chunk-2 hide is transform-only.
-            MEH-852 size tune: wide pill (w-full, ~14px side margins from the shell
-            px) at a deliberately slim h-14 (56px, Material standard); rounded-full
-            = 28px radius (height/2). Tabs flex-1, evenly spread. */}
+            backdrop-filter is never animated — MEH-1014 minimize transitions
+            height only. MEH-852 size tune: wide pill (w-full, ~14px side margins
+            from the shell px); rounded-full = radius height/2. Tabs flex-1.
+            MEH-1014: h-14→h-12 (56→48px) + p-1.5→p-1 when compact; only height
+            transitions (padding + labels handled separately). */}
         <nav
           ref={navRef}
           aria-label={t("nav.mobile_label")}
-          className="relative w-full h-14 flex items-stretch justify-between gap-1 p-1.5 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]"
+          className={[
+            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]",
+            "transition-[height] duration-base ease-quart motion-reduce:transition-none",
+            isCompact ? "h-12 p-1" : "h-14 p-1.5",
+          ].join(" ")}
         >
           {/* MEH-852: single directional liquid-stretch indicator for the active
               route tab (replaces the per-tab layoutId capsule). Leading edge
@@ -226,7 +280,9 @@ export default function BottomNav() {
                     aria-hidden="true"
                     className="relative z-10"
                   />
-                  <span className={labelCls}>{tab.label}</span>
+                  <span className={labelWrapCls}>
+                    <span className={labelCls}>{tab.label}</span>
+                  </span>
                 </Link>
               </div>
             );
@@ -275,7 +331,9 @@ export default function BottomNav() {
                   className="relative z-10"
                 />
               )}
-              <span className={labelCls}>{t("nav.account")}</span>
+              <span className={labelWrapCls}>
+                <span className={labelCls}>{t("nav.account")}</span>
+              </span>
             </button>
           </div>
         </nav>
