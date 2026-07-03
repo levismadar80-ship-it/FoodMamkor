@@ -372,7 +372,12 @@ function CategoriesCard({ profile, onSave }) {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+    // Mount-only fetch — `t` is deliberately NOT a dependency. It's only used
+    // for the fallback copy in the catch, and an unstable `t` identity (as in
+    // the test i18n mock) would refire the effect on every render → infinite
+    // refetch loop (hung the CI vitest job on this PR's first push).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Dirty when the selection differs from the seeded set (order-independent).
   const dirty =

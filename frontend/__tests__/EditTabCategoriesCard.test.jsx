@@ -19,10 +19,19 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: 1, role: "producer" }, loading: false }),
 }));
-vi.mock("next-intl", () => ({
-  useLocale: () => "he",
-  useTranslations: (ns) => (key) => `${ns}.${key}`,
-}));
+vi.mock("next-intl", () => {
+  // Stable translator identity per namespace — mirrors next-intl's real
+  // behavior. A fresh closure per render would refire any effect that
+  // (accidentally) depends on `t` → infinite loop (hung CI on first push).
+  const cache = new Map();
+  return {
+    useLocale: () => "he",
+    useTranslations: (ns) => {
+      if (!cache.has(ns)) cache.set(ns, (key) => `${ns}.${key}`);
+      return cache.get(ns);
+    },
+  };
+});
 
 const PROFILE = {
   id: 1,

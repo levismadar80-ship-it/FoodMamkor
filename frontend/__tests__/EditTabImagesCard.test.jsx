@@ -14,10 +14,18 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: { id: 1, role: "producer" }, loading: false }),
 }));
-vi.mock("next-intl", () => ({
-  useLocale: () => "he",
-  useTranslations: (ns) => (key) => `${ns}.${key}`,
-}));
+vi.mock("next-intl", () => {
+  // Stable translator identity per namespace — mirrors next-intl (see
+  // EditTabCategoriesCard.test.jsx for the hang this prevents).
+  const cache = new Map();
+  return {
+    useLocale: () => "he",
+    useTranslations: (ns) => {
+      if (!cache.has(ns)) cache.set(ns, (key) => `${ns}.${key}`);
+      return cache.get(ns);
+    },
+  };
+});
 
 const BASE_PROFILE = {
   id: 1,
