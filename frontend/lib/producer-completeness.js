@@ -49,7 +49,7 @@ export function producerCompleteness(p) {
   if (!p.categories || p.categories.length === 0) missing.push(COMPLETENESS_FIELDS.category);
   if (!p.images || p.images.length === 0) missing.push(COMPLETENESS_FIELDS.image);
 
-  // MEH-1002: "תיאור קצר" = the public description surface. Both fields render
+  // MEH-1002: short_desc = the public description surface. Both fields render
   // to customers — the tagline (short_description: ProducerCard.jsx:208,
   // ProducerHeader.jsx:81) and the long story (description:
   // ProducerSections.jsx:77) — so either one filled satisfies the check.

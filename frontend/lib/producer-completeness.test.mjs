@@ -88,7 +88,7 @@ it("missing categories AND city → red (city wins)", () => {
 });
 
 // MEH-1002: "תיאור קצר" — OR of short_description / description, yellow-tier.
-it("missing both short_description and description → yellow, flags תיאור קצר", () => {
+it("short_description null + description absent → yellow, flags תיאור קצר", () => {
   const r = producerCompleteness({ ...FULL, short_description: null });
   assert.equal(r.priority, "yellow");
   assert.deepEqual(r.missing, ["תיאור קצר"]);

@@ -31,7 +31,7 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
 // contact + category + image + short-description = 6 max for any producer
 // shape (the coords / delivery-areas pair is mutually exclusive on
 // isDeliveryOnly). Kept here as a named constant per exec §10.
-// MEH-1002: 5 → 6 with the "תיאור קצר" field (MEH-964 checklist parity).
+// MEH-1002: 5 → 6 with the short_desc field (MEH-964 checklist parity).
 const TOTAL_FIELDS = 6;
 
 // Map a raw Hebrew missing-field string (returned verbatim by the heuristic)
@@ -179,7 +179,7 @@ export default function ProfileCompletenessCard({ producer }) {
     "contact",
     "category",
     "image",
-    // MEH-1002: 6th field — "תיאור קצר" (short_description OR description).
+    // MEH-1002: 6th field (short_description OR description satisfies it).
     "short_desc",
   ];
   const missingLabels = new Set(missing);
