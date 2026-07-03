@@ -1253,7 +1253,7 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
 - [ ] Mobile: X close button stays at top-left during scroll → tap → closes
 - [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
-- [ ] Desktop: legend visible at bottom-right (z-800)
+- [ ] Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
 
 ### Regression
 - [ ] "חפשי באזור זה" button works (z-1000)

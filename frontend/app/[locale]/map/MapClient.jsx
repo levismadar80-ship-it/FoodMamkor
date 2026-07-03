@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { MapPinLine, Rows } from "@phosphor-icons/react";
 
@@ -32,6 +32,11 @@ import { useProducersFeed } from "./state/useProducersFeed";
 const NEAR_ME_RADIUS_KM = 25;
 const NEAR_ME_DEFAULT_CENTER = [32.4, 34.95];
 const NEAR_ME_DEFAULT_ZOOM = 8;
+
+// MEH-1009: SSR/first-paint fallback for the desktop shell's top offset —
+// matches the 64px the height calc always hardcoded; corrected by a live
+// measurement on mount (see the measurement effect in MapPage).
+const DESKTOP_HEADER_OFFSET_PX = 64;
 
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
@@ -75,6 +80,38 @@ export default function MapPage() {
     const mo = new MutationObserver(read);
     mo.observe(root, { attributes: true, attributeFilter: ["style"] });
     return () => mo.disconnect();
+  }, []);
+
+  // MEH-1009: TOP-edge twin of the MEH-945 reservation above. In-flow banners
+  // above {children} (VerifyBanner is the first block of <main>,
+  // layout.js:221) push the map shell down, but the desktop shell height was
+  // a hardcoded calc(100vh - 64px) — so the shell overflowed the fold by
+  // exactly the banner height and clipped bottom-anchored map controls
+  // (legend toggle bottom-4; the ex-DesktopMiniPopup CTA in Sapir's 03/07
+  // screenshot). Measure the shell's real document-top offset (header + any
+  // in-flow banner, scroll-independent) and subtract THAT. Re-measured on
+  // resize (banner text wraps). Without a banner the measured offset is just
+  // the header band, so the no-banner layout is unchanged — this also
+  // absorbs the pre-existing ~10px drift between the real header (~74px) and
+  // the hardcoded 64 (the MEH-933 note). Banner unmount without a route
+  // change (e.g. verifying in another tab) leaves a small gap until the next
+  // resize/navigation — accepted; clipping cannot recur from a stale LARGER
+  // offset.
+  const desktopShellRef = useRef(null);
+  const [desktopTopOffset, setDesktopTopOffset] = useState(DESKTOP_HEADER_OFFSET_PX);
+  useEffect(() => {
+    const measure = () => {
+      const el = desktopShellRef.current;
+      if (!el) return;
+      // display:none (mobile viewport) → rect is 0×0 at top 0; keep default.
+      // ceil, not round: under-subtracting by a fraction would push the shell
+      // bottom back past the fold; a fraction of over-subtraction is invisible.
+      const top = Math.ceil(el.getBoundingClientRect().top + window.scrollY);
+      setDesktopTopOffset(top > 0 ? top : DESKTOP_HEADER_OFFSET_PX);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, []);
 
   const feed = useProducersFeed();
@@ -278,7 +315,9 @@ export default function MapPage() {
   return (
     <>
       {/* =================== DESKTOP (lg+) — split view =================== */}
-      <div className="hidden lg:grid" style={{ height: "calc(100vh - 64px)", gridTemplateColumns: hints.splitRatio }}>
+      {/* MEH-1009: height subtracts the MEASURED top offset (header + in-flow
+          top banners), not a hardcoded 64 — see the measurement effect above. */}
+      <div ref={desktopShellRef} className="hidden lg:grid" style={{ height: `calc(100vh - ${desktopTopOffset}px)`, gridTemplateColumns: hints.splitRatio }}>
         {/* List pane (RTL → first child = right) */}
         <div className="overflow-y-auto border-l border-border flex flex-col">
           <div className="p-4 pb-2 flex items-center justify-between shrink-0">
