@@ -69,6 +69,10 @@ vi.mock("@phosphor-icons/react", () => ({
   // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
   Check: (p) => <span {...p} />,
   ArrowRight: (p) => <span {...p} />,
+  // MEH-964 1C: ActivityPulse references WhatsappLogo + Eye in its rows array
+  // on every render (the count gate only hides them from the DOM).
+  WhatsappLogo: (p) => <span {...p} />,
+  Eye: (p) => <span {...p} />,
 }));
 vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
