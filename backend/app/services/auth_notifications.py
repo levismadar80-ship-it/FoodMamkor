@@ -1,5 +1,7 @@
 """
-WhatsApp + email notifications for the producer-registration flow.
+WhatsApp + email notifications for the producer-registration flow,
+plus the admin-facing recipe-submission ping (MEH-1000) that reuses the
+same admin channel as notify_admin_new_producer.
 
 Producer-facing notifications fail-open so a WhatsApp outage cannot
 break producer signup or admin approval. MEH-287 retained: every skip
@@ -121,6 +123,44 @@ def notify_producer_approved(
         return True
     logger.error(f"[WHATSAPP] Producer approved FAILED for {mask_phone(normalized)}")
     return False
+
+
+def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
+    """Ping admin (WhatsApp + email) that a recipe awaits moderation.
+
+    MEH-1000 — closes the MEH-997 journey-1b gap: the /admin/recipes
+    queue was poll-only while producer registration already notified.
+    REUSES: notify_admin_new_producer below — same free-text send_text
+    to settings.admin_whatsapp_to + email to settings.admin_email, no
+    Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks
+    the submission).
+    """
+    message = (
+        f"מתכון חדש ממתין לאישור: {recipe_title}\n"
+        f"בית עסק: {producer_name}\n"
+        f"לאישור: {settings.frontend_url}/admin/recipes"
+    )
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+
+        # Email
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - מתכון חדש ממתין לאישור: {recipe_title}",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin recipe-pending notification FAILED for "
+            f"'{recipe_title}' (business '{producer_name}'): {e}"
+        )
 
 
 def notify_admin_new_producer(name: str, city: str | None) -> None:
