@@ -38,7 +38,7 @@ carry their own styling; you only need these for your own layout/glue.)
 | Role | Classes |
 |---|---|
 | Brand green | `bg-primary` `text-primary` `bg-action-primary` `hover:bg-primary-dark` (#2e6853) |
-| Gold accent | `text-accent` `bg-accent` (#8b6914) |
+| Gold accent | `text-accent` `bg-accent` (#896714 — repo canon per docs/DESIGN.md + MEH-917 AA; the export's #8b6914 is stale) |
 | Surfaces | `bg-background` (cream page) · `bg-surface` (white) · `bg-surface-card` (#fffefb) |
 | Ink | `text-text` (near-black body) · `text-fg-muted` / `text-muted` (secondary) · `text-background` (cream-on-green) |
 | Lines/fills | `border-border` · `bg-green-50` · `text-green-700` |
