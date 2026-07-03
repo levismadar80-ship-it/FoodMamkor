@@ -24,6 +24,7 @@ import {
   Seal,
   Tag,
   ChatCircleSlash,
+  Bread,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -43,6 +44,9 @@ const NAV_HREFS = [
   { href: "/admin/producers", key: "producers", Icon: Storefront },
   { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
   { href: "/admin/experiences", key: "experiences", Icon: Sparkle },
+  // MEH-997: recipes moderation queue — the admin UI chunk the recipes
+  // epic (MEH-587→591) shipped without.
+  { href: "/admin/recipes", key: "recipes", Icon: Bread },
   { href: "/admin/users", key: "users", Icon: Users },
   { href: "/admin/content", key: "content", Icon: Note },
   { href: "/admin/reviews", key: "reviews", Icon: Star },
@@ -63,7 +67,8 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   // feature/producer-analytics: pending moderation badge on the sidebar —
   // sums pending producers + open reports + flagged home products +
-  // pending experiences. Fetched from /admin/dashboard, which the admin
+  // pending experiences + pending recipes (MEH-997) + pending kashrut.
+  // Fetched from /admin/dashboard, which the admin
   // home page already calls — but we call it here too so the badge shows
   // on every /admin/* subpath. Cheap: the endpoint is fast.
   const [pendingModCount, setPendingModCount] = useState(null);

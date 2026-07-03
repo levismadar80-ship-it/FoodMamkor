@@ -22,7 +22,8 @@ import he from "../messages/he.json";
 // them to en means deleting its line here (the second test enforces that).
 
 const BASELINE = new Set([
-  "admin.layout.nav.whatsapp_failures",
+  // MEH-997: admin.layout.nav.whatsapp_failures translated (sidebar rendered
+  // the raw key in /en) — removed from the baseline per the honesty test.
   "admin.whatsapp_failures.columns.error_code",
   "admin.whatsapp_failures.columns.error_message",
   "admin.whatsapp_failures.columns.kind",
