@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-1004: design-code truth — template 01 v2.1 + design-inventory bootstrap — DRAFT PR
+
+- **Branch:** `feature/meh-1004-design-code-truth` off `origin/staging`. Docs-only, GREEN, end-to-end authority per ticket (Phase 0+1+2, draft PR, Sapir merges — Rule 23).
+- **Shipped:** (1) `docs/templates/01-claude-design.md` → **v2.1** — mandatory `<code_truth>` block after `<brand_lock>` (orchestrator-generated per session, live-verified file:line, explicit NOT-available list) + filled producer-dashboard example + prose section on why/how; deliverable #7 — data binding annotation per dynamic element ("צפיות ← analytics.profile_views.last_7d"), unbound → NEEDS-BACKEND; gold `#8B6914` → `#896714` (post-fix grep = 0). (2) **NEW `.ai/design-inventory.md`** — governance rule in header (same-PR updates; a standalone doc that rots is the anti-pattern); producer-dashboard surface fully verified file:line (`producer_me.py:61/406/488` payloads; layout tabs `layout.js:33-38`; the 3 edit-tab editors #1436/#1440/#1446; NOT-available: producer notifications, per-view viewer identity, per-KPI numeric deltas).
+- **Phase-0 deviation surfaced (meta-patterns §1):** the ticket listed "self-serve gallery editor" as NOT-available — stale; it shipped in **#1440** (`edit/page.js:432`) and is inventoried as **available**, with a correction note in the inventory + PR body.
+- **templates/README.md untouched** — its table lists no per-file versions, so the conditional scope allowance didn't apply.
+- **Sapir pending:** review + merge draft PR (docs-only → 6 required checks satisfied via MEH-736 twins; no mobile QA needed).
+
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
 - **Branch:** `claude/e2e-audit-critical-journeys-17eclw` (harness-designated remote-session branch, cut from `origin/staging` tip; the repo's no-`claude/*` rule couldn't be honored — the harness locks pushes to this branch. One PR with separated commits instead of one-PR-per-break for the same reason; flagged in the PR body).
