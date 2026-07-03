@@ -341,7 +341,10 @@ function ContactChannelsCard({ profile, onSave }) {
 // checkbox grid + toggle), producer-self version.
 // ============================================================
 
-function CategoriesCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabCategoriesCard.test.jsx). Mounting the
+// whole page under jsdom hangs the vitest runner, so the cards are tested
+// directly — the default page export is unchanged.
+export function CategoriesCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.categories");
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
@@ -372,12 +375,12 @@ function CategoriesCard({ profile, onSave }) {
     return () => {
       cancelled = true;
     };
-    // Mount-only fetch — `t` is deliberately NOT a dependency. It's only used
-    // for the fallback copy in the catch, and an unstable `t` identity (as in
-    // the test i18n mock) would refire the effect on every render → infinite
-    // refetch loop (hung the CI vitest job on this PR's first push).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // `t` (next-intl translator) has a stable identity per locale/namespace,
+    // so listing it re-runs the fetch only on a real locale change — never a
+    // per-render loop. (The earlier loop came from an ad-hoc test mock that
+    // returned a fresh `t` each render; tests now use the real
+    // NextIntlClientProvider, so the honest dependency is safe.)
+  }, [t]);
 
   // Dirty when the selection differs from the seeded set (order-independent).
   const dirty =
@@ -465,7 +468,8 @@ function CategoriesCard({ profile, onSave }) {
 // REUSES: components/admin/ProducerForm.jsx:219-243,630-662.
 // ============================================================
 
-function ImagesCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
+export function ImagesCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.images");
   const seed = profile?.images || [];
   const [images, setImages] = useState(seed);
@@ -597,7 +601,8 @@ function ImagesCard({ profile, onSave }) {
 // REUSES: components/AddressSearch.jsx (onSelect {street,neighborhood,city,lat,lng}).
 // ============================================================
 
-function LocationCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
+export function LocationCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.location");
   const seedLat = profile?.lat ?? null;
   const seedLng = profile?.lng ?? null;
