@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-1014: BottomNav minimize-on-scroll — DRAFT PR
+
+- **Branch:** `claude/bottomnav-minimize-scroll-ck0x90` (harness-locked; Linear spec'd `feature/meh-1014-*` — same precedent as #1464, flagged in PR body). Cut off `origin/staging` (divergence 0 at start). `BottomNav.jsx` only + DoD docs.
+- **What changed:** the mobile pill's MEH-789-chunk-2 hide (`translate-y-[120%]` off-screen slide) flickered on scroll reversals + iOS rubber-band. Replaced hide→**minimize**: state `hidden`→`compact`; on scroll-down the pill shrinks in place (`nav h-14→h-12`, `p-1.5→p-1`, tab `min-h 44→40`) and labels collapse (`opacity-0 max-h-0 overflow-hidden`), icons stay size-22. Pill never leaves the screen. Flicker fix = **asymmetric hysteresis on accumulated per-direction delta** (module tunables `HIDE_DELTA=24`/`REVEAL_DELTA=8`/`TOP_THRESHOLD=60`) + `scrollY` clamped to `[0, scrollHeight-innerHeight]`; direction change zeroes the opposite accumulator. `sheetOpen`→expanded (replaces `hidden && !sheetOpen`); `onFocusCapture` on shell→expand (mirrors MEH-734/884 focus guard). Transitions height/opacity/max-height only — `.nav-pill-glass`/backdrop-filter never animated (transform-slide deleted, not repurposed).
+- **MEH-852 indicator:** re-measures on compact toggle — `h-14↔h-12` fires its `ResizeObserver`; `compact` added to the measure-effect deps (`[activeRouteIndex, compact]`) per Sapir's belt-and-suspenders instruction for a synchronous re-measure ahead of the `p-1.5↔p-1` tab-rect shift.
+- **Verify:** build ✓ (`✓ Compiled`, 113/113 SSG), `npx vitest run` 702 passed / 41 skipped / 0 failed (BottomNav 7/7), `grep translate-y-[120%]` = 0. Rule 23: stopped at **DRAFT** — no merge; awaiting Sapir mobile QA on the preview.
+- **Scope held:** Header untouched (MEH-884 already detached its hide); no shared-hook extraction (inline-copy note at listener stands); i18n untouched; no new deps. Constants are Sapir-tunable after QA.
+
 ## 2026-07-03 — /map desktop batch: MEH-1010 (card-sync) + MEH-1009 (banner reservation) — 2 DRAFT PRs
 
 Batch session per Sapir's two-task prompt; Linear descriptions (rewritten mid-session) = source of truth.
