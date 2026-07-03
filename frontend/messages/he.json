@@ -1098,6 +1098,7 @@
         "producers": "בתי עסק",
         "outreach": "גיוס",
         "experiences": "חוויות",
+        "recipes": "מתכונים",
         "users": "משתמשים",
         "content": "תוכן",
         "reviews": "ביקורות",
@@ -1412,6 +1413,57 @@
         "submitting": "...",
         "confirm": "אישור"
       }
+    },
+    "recipes": {
+      "title": "מתכונים של בתי עסק",
+      "subtitle": "מודרציה למתכונים שהגישו בתי עסק",
+      "tabs": {
+        "pending": "ממתינים",
+        "needs_revision": "דרוש תיקון",
+        "approved": "מאושרים",
+        "rejected": "נדחו",
+        "all": "הכל"
+      },
+      "error_loading": "שגיאה בטעינת המתכונים",
+      "empty": "אין מתכונים בסטטוס הזה",
+      "columns": {
+        "title": "כותרת",
+        "created": "הוגש",
+        "published": "פרסום",
+        "status": "סטטוס",
+        "actions": "פעולות"
+      },
+      "published_yes": "פורסם",
+      "published_no": "לא פורסם",
+      "status_labels": {
+        "pending": "ממתין",
+        "needs_revision": "דרוש תיקון",
+        "approved": "מאושר",
+        "rejected": "נדחה"
+      },
+      "actions": {
+        "approve": "אשרי",
+        "changes": "שינויים",
+        "reject": "דחי"
+      },
+      "approve_toast": "המתכון אושר ופורסם",
+      "approve_error": "שגיאה באישור",
+      "validate_feedback": "יש למלא הערה",
+      "changes_toast": "נשלחה בקשה לשינויים",
+      "reject_toast": "המתכון נדחה",
+      "submit_error": "שגיאה בשליחה",
+      "modal": {
+        "changes_title": "בקשי שינויים",
+        "reject_title": "דחי מתכון",
+        "changes_label": "הערות לעריכה",
+        "reject_label": "סיבת הדחייה",
+        "changes_placeholder": "לדוגמה: חסרות כמויות מדויקות במרכיבים...",
+        "reject_placeholder": "לדוגמה: תוכן לא רלוונטי לפלטפורמה",
+        "submit": "אישור"
+      },
+      "ingredients_label": "מרכיבים:",
+      "instructions_label": "הוראות הכנה:",
+      "notes_label": "הערות מודרציה"
     },
     "experiences": {
       "title": "חוויות קהילתיות",
