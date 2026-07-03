@@ -5,6 +5,21 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-1004: design-code truth — template 01 v2.1 + design-inventory bootstrap — DRAFT PR
+
+- **Branch:** `feature/meh-1004-design-code-truth` off `origin/staging`. Docs-only, GREEN, end-to-end authority per ticket (Phase 0+1+2, draft PR, Sapir merges — Rule 23).
+- **Shipped:** (1) `docs/templates/01-claude-design.md` → **v2.1** — mandatory `<code_truth>` block after `<brand_lock>` (orchestrator-generated per session, live-verified file:line, explicit NOT-available list) + filled producer-dashboard example + prose section on why/how; deliverable #7 — data binding annotation per dynamic element ("צפיות ← analytics.profile_views.last_7d"), unbound → NEEDS-BACKEND; gold `#8B6914` → `#896714` (post-fix grep = 0). (2) **NEW `.ai/design-inventory.md`** — governance rule in header (same-PR updates; a standalone doc that rots is the anti-pattern); producer-dashboard surface fully verified file:line (`producer_me.py:61/406/488` payloads; layout tabs `layout.js:33-38`; the 3 edit-tab editors #1436/#1440/#1446; NOT-available: producer notifications, per-view viewer identity, per-KPI numeric deltas).
+- **Phase-0 deviation surfaced (meta-patterns §1):** the ticket listed "self-serve gallery editor" as NOT-available — stale; it shipped in **#1440** (`edit/page.js:432`) and is inventoried as **available**, with a correction note in the inventory + PR body.
+- **templates/README.md untouched** — its table lists no per-file versions, so the conditional scope allowance didn't apply.
+- **Sapir pending:** review + merge draft PR (docs-only → 6 required checks satisfied via MEH-736 twins; no mobile QA needed).
+## 2026-07-03 — MEH-1002: completeness heuristic + "תיאור קצר" 6th field — DRAFT PR #1452
+
+- **Branch:** `feature/meh-1002-completeness-short-desc` off `origin/staging` (harness allowed the feature/* push this time — no `claude/*` fallback needed). GREEN/LOW-RISK, frontend-only, Phase 0+1+2 end-to-end per issue authority. `Closes MEH-1002`.
+- **Phase-0 mapping (the issue's open question):** BOTH description fields render publicly — `short_description` (`ProducerCard.jsx:208`, `ProducerHeader.jsx:81`) + long `description` (`ProducerSections.jsx:77`) → per the issue's OR clause, "תיאור קצר" is missing only when **both** are empty/whitespace. Payload verified: `ProducerOwnerOut` inherits both via `ProducerListOut` (`schemas.py:695-696`) — no STOP condition.
+- **Done:** `COMPLETENESS_FIELDS += short_desc`; yellow-tier check (red untouched); `TOTAL_FIELDS` 5→6 + 6-row checklist in ProfileCompletenessCard; `fields.short_desc` he+en; heuristic node suite +5 cases (16✓), card vitest re-percentaged (83/67) + new case. Full vitest 696✓, build exit 0, 0 eslint errors. CHANGELOG + MANUAL_TESTING updated.
+- **Flagged in PR body:** (a) admin producers list (shared heuristic) now yellow-dots producers with no description — accepted per issue; (b) owner edit hub has NO `short_description` input yet (only AI-bio panel → `description`) — OR semantics keep the item self-serve-completable; tagline input belongs to the MEH-964 skin.
+- **Sapir pending:** review + merge #1452 (Rule 23 — CC doesn't merge); mobile glance — the card % shifts visually (missing-image-only profile now 83%, not 80%).
+
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
 - **Branch:** `claude/e2e-audit-critical-journeys-17eclw` (harness-designated remote-session branch, cut from `origin/staging` tip; the repo's no-`claude/*` rule couldn't be honored — the harness locks pushes to this branch. One PR with separated commits instead of one-PR-per-break for the same reason; flagged in the PR body).

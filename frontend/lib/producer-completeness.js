@@ -18,6 +18,7 @@ export const COMPLETENESS_FIELDS = {
   contact: "פרטי קשר (טלפון/אינסטגרם)",
   category: "קטגוריה",
   image: "תמונה",
+  short_desc: "תיאור קצר",
 };
 
 export function producerCompleteness(p) {
@@ -47,6 +48,15 @@ export function producerCompleteness(p) {
   if (noContact) missing.push(COMPLETENESS_FIELDS.contact);
   if (!p.categories || p.categories.length === 0) missing.push(COMPLETENESS_FIELDS.category);
   if (!p.images || p.images.length === 0) missing.push(COMPLETENESS_FIELDS.image);
+
+  // MEH-1002: short_desc = the public description surface. Both fields render
+  // to customers — the tagline (short_description: ProducerCard.jsx:208,
+  // ProducerHeader.jsx:81) and the long story (description:
+  // ProducerSections.jsx:77) — so either one filled satisfies the check.
+  // Yellow-tier only: never part of redCondition below.
+  const noDescription =
+    !(p.short_description || "").trim() && !(p.description || "").trim();
+  if (noDescription) missing.push(COMPLETENESS_FIELDS.short_desc);
 
   let priority = "green";
   const redCondition = !p.city
