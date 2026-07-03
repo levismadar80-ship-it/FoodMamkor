@@ -13,6 +13,7 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import RegisterPreflight from "./RegisterPreflight";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
 import { getSeasonalPlaceholder } from "@/lib/producer-description-placeholders";
@@ -80,6 +81,11 @@ function RegisterProducerPageBody() {
     return STEP.ACCOUNT;
   });
   const [prefillApplied, setPrefillApplied] = useState(false);
+  // MEH-994: pre-flight intro screen ("לפני שמתחילים") gates the wizard until
+  // the CTA is clicked. Entry chrome only — no STEP change, no localStorage
+  // "seen" flag (shows on every visit by design). Both auth states see it;
+  // the upgrade path hides the account-creation checklist line.
+  const [showPreflight, setShowPreflight] = useState(true);
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -344,6 +350,27 @@ function RegisterProducerPageBody() {
   // prevents the flash of email/password inputs for already-authenticated users.
   if (authLoading && step === STEP.ACCOUNT) {
     return <div className="max-w-2xl mx-auto px-4 py-12 text-center text-fg-muted">{t("auth.register.producer.loading")}</div>;
+  }
+
+  // MEH-994: pre-flight screen before frame 01. Early return keeps the wizard
+  // tree below byte-identical (functional-freeze, MEH-132). Hero h1+subtitle
+  // are repeated here so the page identity doesn't jump when the CTA is
+  // clicked. showAccountLine: upgrade users (and token-holders whose step
+  // already initialized past ACCOUNT) never see the account-creation frame,
+  // so the checklist must not promise it.
+  if (showPreflight) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="bg-white rounded-md p-8">
+          <h1 data-testid="register-hero-heading" className="font-headline-lg text-3xl font-black text-text mb-2 text-center">{t("auth.register.producer.heading")}</h1>
+          <p className="text-fg-muted text-center mb-4">{t("auth.register.producer.subtitle")}</p>
+          <RegisterPreflight
+            showAccountLine={!isUpgrade && step === STEP.ACCOUNT}
+            onStart={() => setShowPreflight(false)}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (

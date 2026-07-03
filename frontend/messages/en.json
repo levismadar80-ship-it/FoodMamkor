@@ -209,6 +209,19 @@
       "producer": {
         "heading": "Give your business a home",
         "subtitle": "5 minutes. No commissions. The customer comes straight to you",
+        "preflight": {
+          "title": "Before you start",
+          "prepare_title": "Good to have ready",
+          "item_account": "An email address for your account (or Google sign-in)",
+          "item_story": "A short story about your business",
+          "item_photos": "2–3 photos of your business or products",
+          "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
+          "duration": "The whole process takes about 5 minutes",
+          "after_title": "What happens next",
+          "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
+          "after_link": "How the acceptance process works",
+          "cta": "Start"
+        },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
         "default_description": "Local business. More details coming soon.",
