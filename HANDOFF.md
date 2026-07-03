@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-1002: completeness heuristic + "תיאור קצר" 6th field — DRAFT PR #1452
+
+- **Branch:** `feature/meh-1002-completeness-short-desc` off `origin/staging` (harness allowed the feature/* push this time — no `claude/*` fallback needed). GREEN/LOW-RISK, frontend-only, Phase 0+1+2 end-to-end per issue authority. `Closes MEH-1002`.
+- **Phase-0 mapping (the issue's open question):** BOTH description fields render publicly — `short_description` (`ProducerCard.jsx:208`, `ProducerHeader.jsx:81`) + long `description` (`ProducerSections.jsx:77`) → per the issue's OR clause, "תיאור קצר" is missing only when **both** are empty/whitespace. Payload verified: `ProducerOwnerOut` inherits both via `ProducerListOut` (`schemas.py:695-696`) — no STOP condition.
+- **Done:** `COMPLETENESS_FIELDS += short_desc`; yellow-tier check (red untouched); `TOTAL_FIELDS` 5→6 + 6-row checklist in ProfileCompletenessCard; `fields.short_desc` he+en; heuristic node suite +5 cases (16✓), card vitest re-percentaged (83/67) + new case. Full vitest 696✓, build exit 0, 0 eslint errors. CHANGELOG + MANUAL_TESTING updated.
+- **Flagged in PR body:** (a) admin producers list (shared heuristic) now yellow-dots producers with no description — accepted per issue; (b) owner edit hub has NO `short_description` input yet (only AI-bio panel → `description`) — OR semantics keep the item self-serve-completable; tagline input belongs to the MEH-964 skin.
+- **Sapir pending:** review + merge #1452 (Rule 23 — CC doesn't merge); mobile glance — the card % shifts visually (missing-image-only profile now 83%, not 80%).
+
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
 - **Branch:** `claude/e2e-audit-critical-journeys-17eclw` (harness-designated remote-session branch, cut from `origin/staging` tip; the repo's no-`claude/*` rule couldn't be honored — the harness locks pushes to this branch. One PR with separated commits instead of one-PR-per-break for the same reason; flagged in the PR body).
