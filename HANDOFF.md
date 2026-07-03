@@ -14,6 +14,14 @@
 - **Sapir pending:** mobile QA on the preview (scroll-flicker gone, labels collapse smoothly, sheet-open expands with no jump, focus expands); mark ready-for-review; merge. Rule 23 — DRAFT only, not merged.
 - **Out of scope (untouched):** Header.jsx (hide detached in MEH-884), shared-hook extraction (inline-copy note stands), i18n. No velocity detection / IntersectionObserver / new deps.
 
+## 2026-07-03 — MEH-1012: correct stale "docs-only → direct commit" rule — DRAFT PR
+
+- **Branch:** `feature/meh-1012-fix-docs-only-rule` off `origin/staging`. LOW-RISK docs-only, end-to-end authority. `Closes MEH-1012`.
+- **Fix:** Regression rule 7 (`.claude/rules/workflow.md:275`) + PR-approval guide (`:442`) claimed docs-only → direct staging commit, no PR. The `protect-staging` ruleset blocks all direct pushes (proven 2026-07-03: the MEH-1010/1009 HANDOFF push was rejected → PR #1461). Both rewritten to branch+PR, MEH-736 twin checks satisfy gates, merge Sapir-only. Rule numbering preserved. CLAUDE.md carries no copy (grep-verified). Build green.
+- **The 2026-07-03 batch PRs below all MERGED** (post-session): #1459 (MEH-1010 `8570c900`), #1460 (MEH-1009 `0df9dcf4`), #1461 (HANDOFF `85b9a927`). #1460 got a late-mount MutationObserver fix from auto-review before merge.
+- **Sapir pending:** review + merge the MEH-1012 PR (docs-only → 6 required checks via MEH-736 twins; no mobile QA).
+- **Follow-up:** MEH-1013 — the docs-only twin jobs `.claude/rules/testing.md` promises aren't actually in `pr-checks.yml`/`deploy.yml` (mechanical workflow gap, CC-deny).
+
 ## 2026-07-03 — /map desktop batch: MEH-1010 (card-sync) + MEH-1009 (banner reservation) — 2 DRAFT PRs
 
 Batch session per Sapir's two-task prompt; Linear descriptions (rewritten mid-session) = source of truth.
