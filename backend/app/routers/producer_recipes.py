@@ -160,8 +160,7 @@ def create_my_recipe(
     # expire_on_commit + session close would break lazy access inside the
     # background task. REUSES: auth.py:527-535 (registration notify pattern).
     producer_name = (
-        db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
-        or ""
+        db.query(Producer.name).filter(Producer.id == user.producer_id).scalar() or ""
     )
     background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
 
@@ -303,9 +302,7 @@ def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slow
             db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
             or ""
         )
-        background_tasks.add_task(
-            notify_admin_new_recipe, producer_name, recipe.title
-        )
+        background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
 
     recipe = (
         db.query(ProducerRecipe)
