@@ -175,12 +175,14 @@ class TestCreateFiresNotification:
                 json=_payload(),
                 headers=auth_header(owner),
             )
-            status = resp.status_code
         except RuntimeError:
-            # TestClient surfaces background-task exceptions after the
-            # response is complete; a real client already got the 201.
-            status = 201
-        assert status == 201
+            # TestClient re-raises background-task exceptions AFTER the
+            # response completed — a real client already got its 201. We
+            # can't read the status here, so the persisted row below is
+            # the proof the submission itself succeeded.
+            pass
+        else:
+            assert resp.status_code == 201, resp.text
         assert db.query(ProducerRecipe).count() == 1
 
 

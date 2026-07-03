@@ -146,6 +146,13 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
         if settings.admin_whatsapp_to:
             if send_text(settings.admin_whatsapp_to, message):
                 logger.info("[WHATSAPP] Recipe-pending notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH recipe context.
+                logger.warning(
+                    "[WHATSAPP] Recipe-pending notification NOT delivered for "
+                    f"'{recipe_title}' (business '{producer_name}')"
+                )
         else:
             logger.debug(f"[WHATSAPP] Would send: {message}")
 
