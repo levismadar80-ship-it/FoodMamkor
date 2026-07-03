@@ -31,6 +31,13 @@ KNOWN_DYNAMIC_EXPANSIONS: dict[tuple[str, str], list[tuple[str, str]]] = {
         ("POST", "/admin/experiences/{_}/request-changes"),
         ("POST", "/admin/experiences/{_}/reject"),
     ],
+    # frontend/app/[locale]/admin/recipes/page.js:97 (MEH-997) — endpoint is
+    # "request-changes" or "reject" (ternary on modalAction, same file :96);
+    # 1:1 mirror of the experiences queue above.
+    ("POST", "/admin/recipes/{_}/{_}"): [
+        ("POST", "/admin/recipes/{_}/request-changes"),
+        ("POST", "/admin/recipes/{_}/reject"),
+    ],
 }
 
 FRONTEND_EXTS = {".js", ".jsx", ".ts", ".tsx"}

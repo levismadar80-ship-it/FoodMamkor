@@ -28,7 +28,7 @@ from app.models import (
     StaticPage,
     User,
 )
-from app.models.models import KashrutBadgeRequest
+from app.models.models import KashrutBadgeRequest, ProducerRecipe
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -520,7 +520,8 @@ def get_dashboard(
     week_ago = now - timedelta(days=7)
 
     # feature/producer-analytics: pending moderation is the sum across
-    # four queues. Individual counts stay available for the alert cards.
+    # six queues (MEH-997 added recipes). Individual counts stay
+    # available for the alert cards.
     pending_producers = (
         db.query(func.count(Producer.id))
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
@@ -546,12 +547,22 @@ def get_dashboard(
         .scalar()
         or 0
     )
+    # MEH-997: recipes were the one moderation queue missing from the
+    # sidebar badge (admin_recipes.py shipped in MEH-589 with no UI and
+    # no count). Mirrors the experiences pair: pending + awaiting-fix.
+    pending_recipes = (
+        db.query(func.count(ProducerRecipe.id))
+        .filter(ProducerRecipe.moderation_status.in_(["pending", "needs_revision"]))
+        .scalar()
+        or 0
+    )
     pending_moderation_count = int(
         pending_producers
         + open_reports
         + flagged_home_products
         + pending_experiences
         + pending_kashrut_requests
+        + pending_recipes
     )
 
     stats = {
@@ -584,6 +595,7 @@ def get_dashboard(
         "flagged_home_products": int(flagged_home_products),
         "pending_experiences": int(pending_experiences),
         "pending_kashrut_requests": int(pending_kashrut_requests),
+        "pending_recipes": int(pending_recipes),
         "pending_moderation_count": pending_moderation_count,
     }
 
