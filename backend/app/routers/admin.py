@@ -182,7 +182,9 @@ def admin_create_producer(
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
         delivery_nationwide=data.delivery_nationwide,
-        delivery_cities=data.delivery_cities,
+        # MEH-903 A: the legacy delivery_cities column is no longer written —
+        # delivery_areas (via _apply_delivery_cities below) is the single store.
+        # Column stays declared (drop = Chunk C); new rows keep the [] default.
         status="approved",  # admin = pre-approved
     )
     db.add(producer)
@@ -209,7 +211,11 @@ def admin_update_producer(
 
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
-    delivery_cities = payload.pop("delivery_area_cities", None)
+    delivery_area_cities = payload.pop("delivery_area_cities", None)
+    # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
+    # is the single store now. Pop it out of the payload so the bulk setattr loop
+    # below can't resurrect the write. Column stays declared (drop = Chunk C).
+    payload.pop("delivery_cities", None)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,
@@ -254,8 +260,8 @@ def admin_update_producer(
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
-    if delivery_cities is not None:
-        _apply_delivery_cities(db, producer, delivery_cities)
+    if delivery_area_cities is not None:
+        _apply_delivery_cities(db, producer, delivery_area_cities)
 
     db.commit()
     db.refresh(producer)

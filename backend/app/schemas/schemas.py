@@ -510,7 +510,10 @@ class ProducerAdminCreate(BaseModel):
     def _validate_location_mode(self):
         if not self.has_physical_location and not self.offers_delivery:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
-        if self.delivery_nationwide and len(self.delivery_cities) > 0:
+        # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
+        # instead of the legacy delivery_cities column — same nationwide-XOR-cities
+        # semantic, only the field source changed.
+        if self.delivery_nationwide and len(self.delivery_area_cities) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         return self
 
@@ -668,7 +671,10 @@ class ProducerUpdate(BaseModel):
         if hp is not None and od is not None and not hp and not od:
             raise ValueError("חייב לפחות אחד: חנות פיזית או משלוחים")
         dn = self.delivery_nationwide
-        dc = self.delivery_cities
+        # MEH-903 A: XOR now guards delivery_area_cities (the delivery_areas store)
+        # instead of the legacy delivery_cities column — same nationwide-XOR-cities
+        # semantic, only the field source changed.
+        dc = self.delivery_area_cities
         if dn and dc and len(dc) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
         return self
