@@ -110,6 +110,7 @@ graph TD
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
