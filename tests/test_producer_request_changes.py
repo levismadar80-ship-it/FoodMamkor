@@ -192,3 +192,25 @@ def test_approve_clears_requested_changes(client, db, monkeypatch):
     assert producer.status == "approved"
     assert producer.requested_changes is None, "approve must clear requested_changes"
     assert producer.changes_requested_at is None, "approve must clear the stamp"
+
+
+def test_reject_clears_requested_changes(client, db):
+    """A producer that got a request-changes, then rejected, must not keep a
+    stale trail — symmetric with approve-clears (MEH-1011)."""
+    admin = _admin(db)
+    producer = make_producer(db, status="pending")
+    resp = _request_changes(client, producer.id, admin)
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.requested_changes is not None
+
+    resp = client.post(
+        f"/admin/producers/{producer.id}/reject",
+        json={"reason": "לא מתאים"},
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 200, resp.text
+    db.refresh(producer)
+    assert producer.status == "rejected"
+    assert producer.requested_changes is None, "reject must clear requested_changes"
+    assert producer.changes_requested_at is None, "reject must clear the stamp"

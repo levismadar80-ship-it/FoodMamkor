@@ -530,6 +530,11 @@ def reject_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.status = "rejected"
+    # MEH-1011: clear any request-changes trail on reject — a rejected producer
+    # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
+    # with approve_producer's clearing.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
     db.commit()
 
     reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
