@@ -1251,6 +1251,7 @@
         },
         "actions": {
           "approve_short": "✓ Approve",
+          "request_changes": "Request completion",
           "edit": "Edit",
           "view": "View",
           "suspend": "Suspend",
@@ -1281,11 +1282,25 @@
         },
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
+        "awaiting_completion": "Awaiting completion",
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again."
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
+      },
+      "request_changes": {
+        "modal_title": "Request completion from the business",
+        "modal_label": "What's missing?",
+        "modal_placeholder": "Describe what needs to be completed…",
+        "submit": "Send request",
+        "validate": "Please describe what needs to be completed.",
+        "invalid_state": "A completion request can only be sent to a business awaiting approval.",
+        "approve_blocked_info": "Can't approve yet — we opened a completion request with the missing detail. You can edit and send it.",
+        "chips": {
+          "photo": "Missing photo — at least one image must be uploaded",
+          "license": "Missing producer license number"
+        }
       },
       "new": {
         "title": "Add new business",
