@@ -445,7 +445,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 className="w-4 h-4 accent-primary"
               />
               <span>
-                {c.emoji} {c.name}
+                {c.name}
               </span>
             </label>
           ))}

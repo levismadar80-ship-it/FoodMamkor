@@ -140,7 +140,7 @@ async function drawCard(canvas, producer, strings) {
   wrapText(ctx, producer.name || "", W / 2, nameY, W - 160, 68);
 
   // City + category line
-  const categories = producer.categories?.map((c) => c.emoji ? `${c.emoji} ${c.name}` : c.name).join("  ·  ") || "";
+  const categories = producer.categories?.map((c) => c.name).join("  ·  ") || "";
   const cityLine = [producer.city, categories].filter(Boolean).join("  ·  ");
   ctx.fillStyle = "#EAF3DE";
   ctx.font = `400 28px "DM Sans", sans-serif`;

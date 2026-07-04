@@ -91,7 +91,6 @@ export function HomeProducersGrid({
           <span className="text-sm text-fg-muted">{t("home.producers.filter_showing")}</span>
           {categories.find((c) => String(c.id) === filters.category) && (
             <span className="bg-green-50 text-primary px-3 py-1 rounded-full text-sm">
-              {categories.find((c) => String(c.id) === filters.category).emoji}{" "}
               {categories.find((c) => String(c.id) === filters.category).name}
             </span>
           )}
