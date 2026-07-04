@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import AdminProducersImportPreview from "./AdminProducersImportPreview";
 import AdminProducersToolbar from "./AdminProducersToolbar";
 import AdminProducersTable from "./AdminProducersTable";
+import RequestChangesModal from "./RequestChangesModal";
 import { useAdminProducers } from "./use-admin-producers";
 
 function SuspenseFallback() {
@@ -70,6 +71,7 @@ function ProducersAdminPage() {
         storyCardOpenId={h.storyCardOpenId}
         onSetStoryCardOpenId={h.setStoryCardOpenId}
         onQuickApprove={h.quickApprove}
+        onRequestChanges={h.openRequestChanges}
         onToggleStatus={h.toggleStatus}
         onToggleAmbassador={h.toggleAmbassador}
         onDeleteProducer={h.deleteProducer}
@@ -81,6 +83,17 @@ function ProducersAdminPage() {
         onPageChange={h.setPage}
         onPerPageChange={h.handlePerPageChange}
         visibleCount={h.visible.length}
+      />
+
+      {/* MEH-1011 Chunk 2: request-changes composer — opened by the row button
+          or auto-opened on approve-422 with the gate-matched chip prefilled. */}
+      <RequestChangesModal
+        producer={h.modalProducer}
+        feedback={h.feedback}
+        setFeedback={h.setFeedback}
+        onClose={h.closeRequestChanges}
+        onSubmit={h.submitRequestChanges}
+        submitting={h.modalProducer ? h.isBusy(`request-changes:${h.modalProducer.id}`) : false}
       />
     </div>
   );

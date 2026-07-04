@@ -14,6 +14,14 @@ import { showToast } from "@/lib/toast";
 // Default rows-per-page on the admin producers table (MEH-23 pagination).
 const DEFAULT_PER_PAGE = 25;
 
+// MEH-1011 Chunk 2: map an approve-422 detail string to the request-changes
+// chip key. The license gate detail (MEH-971) contains "רישיון"; the photo
+// gate (MEH-799) doesn't — so "רישיון" present → license, else → photo.
+// Pure + exported so the mapping is unit-testable without the hook.
+export function approveGateReason(detail) {
+  return (detail || "").includes("רישיון") ? "license" : "photo";
+}
+
 // Sub-hook 1 — data state, list fetch, filter/page state.
 function useProducersData() {
   const searchParams = useSearchParams();
@@ -63,11 +71,65 @@ function useProducerActions(loadAllProducers) {
   // MEH-848: errorMessage() copy now lives under the error.* namespace.
   const tError = useTranslations("error");
   const { run, isBusy } = useAdminAction();
-  const quickApprove = (id) =>
-    run(`approve:${id}`, async () => {
-      await api.post(`/admin/producers/${id}/approve`);
-      loadAllProducers();
-    });
+
+  // MEH-1011 Chunk 2: request-changes modal state (shared by the row button
+  // and the approve-422 auto-open path). `modalProducer` null = closed.
+  const [modalProducer, setModalProducer] = useState(null);
+  const [feedback, setFeedback] = useState("");
+  const openRequestChanges = (producer, prefill = "") => {
+    setModalProducer(producer);
+    setFeedback(prefill);
+  };
+  const closeRequestChanges = () => {
+    setModalProducer(null);
+    setFeedback("");
+  };
+  const submitRequestChanges = () => {
+    if (!modalProducer) return;
+    const fb = feedback.trim();
+    if (!fb) {
+      showToast.error(t("producers.request_changes.validate"));
+      return;
+    }
+    const id = modalProducer.id;
+    return run(
+      `request-changes:${id}`,
+      async () => {
+        await api.post(`/admin/producers/${id}/request-changes`, { feedback: fb });
+        closeRequestChanges();
+        loadAllProducers();
+      },
+      // 409 = producer no longer pending (mirrors toggleStatus:82 precedent).
+      (err) =>
+        showToast.error(
+          err?.response?.status === 409
+            ? t("producers.request_changes.invalid_state")
+            : errorMessage(err, tError),
+        ),
+    );
+  };
+
+  const quickApprove = (producer) =>
+    run(
+      `approve:${producer.id}`,
+      async () => {
+        await api.post(`/admin/producers/${producer.id}/approve`);
+        loadAllProducers();
+      },
+      // MEH-1011 Chunk 2: the MEH-799 (photo) / MEH-971 (license) approve gates
+      // return 422. Instead of a dead-end toast, auto-open request-changes with
+      // the gate-matched chip prefilled so the admin can send it in one click.
+      (err) => {
+        if (err?.response?.status === 422) {
+          const reason = approveGateReason(err.response.data?.detail);
+          const prefill = t(`producers.request_changes.chips.${reason}`);
+          openRequestChanges(producer, prefill);
+          showToast.info(t("producers.request_changes.approve_blocked_info"));
+        } else {
+          showToast.error(errorMessage(err, tError));
+        }
+      },
+    );
   const toggleStatus = (id) =>
     run(
       `status:${id}`,
@@ -104,7 +166,12 @@ function useProducerActions(loadAllProducers) {
       await api.post(`/admin/producers/${id}/set-ambassador`, { ambassador: !current });
       loadAllProducers();
     });
-  return { quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy };
+  return {
+    quickApprove, toggleStatus, deleteProducer, toggleAmbassador, isBusy,
+    // MEH-1011 Chunk 2: request-changes modal controller.
+    modalProducer, feedback, setFeedback,
+    openRequestChanges, closeRequestChanges, submitRequestChanges,
+  };
 }
 
 // Sub-hook 3 — Excel import flow (dry-run preview, then confirm).

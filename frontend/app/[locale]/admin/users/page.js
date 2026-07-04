@@ -132,7 +132,7 @@ export default function AdminUsersPage() {
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
                                 {t("users.roles.admin")}
                               </span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#8B6914] font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-accent font-medium">
                                 {t("users.roles.admin_protected")}
                               </span>
                             </>

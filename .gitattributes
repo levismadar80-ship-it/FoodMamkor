@@ -10,3 +10,7 @@
 # acceptable trade for an append-only changelog (never edit old entries
 # in-place expecting a clean 3-way merge).
 docs/CHANGELOG.md merge=union
+
+# MEH-991: Claude Design export is vendored reference material, not project
+# code — keep it out of GitHub language stats and collapse it in diffs.
+design-reference/** linguist-vendored
