@@ -24,7 +24,9 @@ export default function OpeningHours({ opening_hours }) {
       {status && (
         <div className="flex items-center gap-2 mb-4 text-sm font-medium">
           <span
-            className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.isOpen ? "bg-primary" : "bg-[#A32D2D]"}`}
+            // MEH-991 (BIZ-15): S6 palette has zero red — closed state recedes
+            // to fg-muted, not raw #A32D2D. Open stays brand green.
+            className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${status.isOpen ? "bg-primary" : "bg-fg-muted"}`}
             aria-hidden="true"
           />
           {status.isOpen ? (
@@ -37,7 +39,7 @@ export default function OpeningHours({ opening_hours }) {
               )}
             </span>
           ) : (
-            <span className="text-[#A32D2D]">
+            <span className="text-fg-muted">
               {t("closed_now")}
               {status.nextDayKey && (
                 <span className="text-fg-muted font-normal">
