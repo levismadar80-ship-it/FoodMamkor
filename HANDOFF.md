@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1028: ProducerCard mobile density variant (CARD-27) — DRAFT PR (WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1028-producercard-mobile-density` off `origin/staging` (clean cut, divergence 0). ProducerCard = CENTRAL → Phase-0 read-only first, adversarial-review class, DRAFT-only (Sapir merges). Batch item 1 of 2 (MEH-991 YELLOW pair). `Closes MEH-1028`.
+- **What shipped:** mobile-first density variant in `ProducerCard.jsx` (default = mobile <640px, `sm:` = desktop-up), desktop byte-identical — name `text-[20px]`→`text-[16px] sm:text-[20px]`; heart box `w-11 h-11`→`w-[34px] h-[34px] sm:w-11 sm:h-11` + inset `top-3 start-3`→`top-2 start-2 sm:top-3 sm:start-3`; description `+ hidden sm:block`. 3 edits, ProducerCard.jsx only. Test untouched (no size assertions; `hidden` keeps the node in jsdom → 42✓).
+- **Two flags for Sapir review:** (1) **"insets" interpretation** — applied to the heart inset (only 12px `-3` element that isn't the badge row, which must stay unchanged; only reading consistent with "desktop keeps 12px" + no-desktop-shift). If the intended target was the content padding, say so and I'll re-scope. (2) **A11y trade-off** — 34px mobile heart is below the 44px WCAG touch floor the old comment guarded; implemented per v4 lock + annotated inline.
+- **Verify:** `npm run build` exit 0 · vitest `ProducerCard.test.jsx` **42 passed** · 0 physical RTL classes in diff. `npm install` run first (fresh container).
+- **Scope held:** ProducerCard.jsx + CHANGELOG + HANDOFF only. Did NOT touch Skeleton/lib/MapProducerCard (STOP-condition — none needed).
+
 ## 2026-07-04 — MEH-1023 Chunk A: admin users role actions → overflow menu — DRAFT PR (WAIT for Sapir QA before Chunk B)
 
 - **Branch:** `feature/meh-1023-admin-role-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK (central admin surface), chunk-by-chunk. `Refs MEH-1023` (Chunk B closes). Harness allowed the `feature/*` push — no `claude/*` fallback needed.
