@@ -89,7 +89,9 @@ async def upload_image(
         ):
             raise HTTPException(
                 status_code=403,
-                detail="חשבון החינם מוגבל ל-3 תמונות. שדרגי לפרמיום להעלאה ללא הגבלה.",
+                # MEH-1008: neutral cap copy — no premium/upgrade promise while the
+                # pricing model is undecided (MEH-617); gender-neutral plural (ADR-024).
+                detail="אפשר להעלות עד 3 תמונות לבית עסק. כדי להוסיף תמונה חדשה, הסירו קודם תמונה קיימת.",
             )
 
     if not settings.cloudinary_cloud_name:
