@@ -1,0 +1,88 @@
+/* navsystem-pill.css — signature bottom pill · account sheet · canvas cards */
+
+/* ── Bottom pill (mobile signature) ────────────────────────────── */
+.botbar-shell{position:absolute;bottom:0;inset-inline:0;display:flex;justify-content:center;padding:0 16px 16px;z-index:6;direction:rtl;}
+.botbar{width:100%;max-width:343px;display:flex;align-items:stretch;justify-content:space-between;padding:6px;}
+.tab{flex:1;min-width:64px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:transparent;border:none;border-radius:9999px;cursor:pointer;padding:6px 4px;text-decoration:none;
+  color:var(--fg-muted);transition:background-color var(--dur-fast) var(--ease-quart),color var(--dur-fast) var(--ease-quart);}
+.tab i{font-size:22px;line-height:1;}
+.tab-label{font-family:var(--font-body);font-weight:500;font-size:11px;line-height:1;}
+.no-labels .tab-label{display:none;}
+.no-labels .tab{gap:0;}
+.tab .tab-avatar{width:24px;height:24px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;font-size:12px;
+  background:var(--light);color:var(--green-dark);border:1px solid rgba(46,104,83,.3);}
+
+/* surface-aware idle colors */
+.bot-dark .tab{color:rgba(245,240,232,.72);}
+.bot-over .tab{color:rgba(245,240,232,.88);}
+
+/* active treatments (tweakable) */
+/* 1 · pill-in-pill, filled green (Direction A) */
+.act-green .tab.is-active{background:var(--green);color:#F5F0E8;}
+.act-green.bot-over .tab.is-active{background:rgba(245,240,232,.94);color:var(--green-dark);}
+.act-green.bot-dark .tab.is-active{background:rgba(245,240,232,.94);color:var(--green-dark);}
+/* 2 · pill-in-pill, light green (Direction B) */
+.act-light .tab.is-active{background:var(--light);color:var(--green-dark);}
+.act-light.bot-over .tab.is-active{background:rgba(245,240,232,.22);color:#fff;}
+.act-light.bot-dark .tab.is-active{background:rgba(245,240,232,.14);color:var(--gold-on-dark);}
+/* 3 · gold dot + hairline (Direction D) */
+.act-gold .tab{position:relative;}
+.act-gold .tab.is-active{color:var(--text);}
+.act-gold .tab.is-active::after{content:"";position:absolute;bottom:4px;inset-inline:22px;height:1.5px;background:var(--gold);}
+.act-gold .tab.is-active::before{content:"";position:absolute;bottom:7px;inset-inline-start:calc(50% - 2px);width:4px;height:4px;border-radius:9999px;background:var(--gold);}
+.act-gold.bot-over .tab.is-active{color:#fff;}
+.act-gold.bot-over .tab.is-active::after,.act-gold.bot-over .tab.is-active::before{background:var(--gold-on-dark);}
+.act-gold.bot-dark .tab.is-active{color:var(--gold-on-dark);}
+.act-gold.bot-dark .tab.is-active::after,.act-gold.bot-dark .tab.is-active::before{background:var(--gold-on-dark);}
+
+@media (prefers-reduced-motion: reduce){
+  .tab,.pillsurf,.ico-btn,.cta{transition:none;}
+}
+
+/* ── Account sheet (drawer DNA, secondary only) ────────────────── */
+.sheet-scrim{position:absolute;inset:0;background:rgba(20,32,25,.45);z-index:7;}
+.sheet{position:absolute;bottom:88px;inset-inline:16px;z-index:8;border-radius:20px;direction:rtl;
+  background:var(--green-900);padding:22px 22px 18px;border:1px solid rgba(245,240,232,.08);
+  box-shadow:0 12px 40px rgba(20,50,40,.45);}
+.sheet-head{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid rgba(245,240,232,.12);}
+.sheet-avatar{width:40px;height:40px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:700;font-size:18px;
+  background:rgba(245,240,232,.14);color:var(--background);border:1px solid rgba(245,240,232,.3);}
+.sheet-name{font-family:var(--font-display);font-weight:700;font-size:18px;color:var(--background);margin:0;}
+.sheet-sub{font-size:12px;color:rgba(245,240,232,.6);margin:2px 0 0;}
+.sheet-rows{list-style:none;margin:0;padding:4px 0 0;}
+.sheet-row{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 4px;
+  background:transparent;border:none;cursor:pointer;text-decoration:none;
+  font-family:var(--font-body);font-weight:500;font-size:14.5px;color:var(--background);
+  border-bottom:1px solid rgba(245,240,232,.08);}
+.sheet-rows li:last-child .sheet-row{border-bottom:none;}
+.sheet-row i{font-size:19px;color:rgba(245,240,232,.65);}
+.sheet-row .sheet-num{margin-inline-start:auto;font-family:var(--font-italic);font-style:italic;font-size:13px;color:var(--gold-on-dark);direction:ltr;}
+.sheet-row.is-biz{color:var(--background);}
+.sheet-row .biz-arrow{margin-inline-start:auto;font-family:var(--font-italic);font-style:italic;font-size:16px;color:var(--gold-on-dark);}
+.sheet-row.is-biz i{color:var(--gold-on-dark);}
+.sheet-row.is-quiet{color:rgba(245,240,232,.65);font-size:13.5px;}
+.sheet-row .lang-b{color:var(--background);font-weight:600;}
+
+/* ── Canvas cards ──────────────────────────────────────────────── */
+.card{height:100%;padding:34px 36px;background:var(--bg-card);direction:ltr;text-align:left;display:flex;flex-direction:column;gap:16px;overflow:hidden;}
+.card-eyebrow{font-weight:500;font-size:11px;letter-spacing:.18em;color:var(--gold);margin:0;}
+.card h3{font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.15;color:var(--text);margin:0;letter-spacing:-.01em;}
+.card p{font-size:14.5px;line-height:1.65;color:var(--fg-muted);margin:0;}
+.card p b{color:var(--text);font-weight:600;}
+.card-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+.card-list li{position:relative;padding-inline-start:22px;font-size:13.5px;line-height:1.6;color:var(--fg-muted);}
+.card-list li b{color:var(--text);font-weight:600;}
+.card-num{position:absolute;inset-inline-start:0;top:0;font-family:var(--font-italic);font-style:italic;font-weight:600;font-size:15px;color:var(--gold);}
+.card-x{position:absolute;inset-inline-start:0;top:1px;font-weight:700;font-size:13px;color:#9a3b22;}
+.card-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);font-size:13px;line-height:1.6;color:var(--fg-muted);}
+.card-foot b{color:var(--text);}
+.card-divider{height:1px;background:var(--border);margin:4px 0;}
+.spec table{width:100%;border-collapse:collapse;}
+.spec tr{border-bottom:1px solid var(--border);}
+.spec tr:last-child{border-bottom:none;}
+.spec th{text-align:left;font-weight:500;font-size:12.5px;color:var(--fg-muted);padding:9px 0;font-family:var(--font-body);}
+.spec td{text-align:right;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12px;color:var(--green-dark);padding:9px 0;white-space:nowrap;}
+.spec-k{font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:10px 0 4px;}

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProducerCard v4 — Populated</title>
+<link rel="stylesheet" href="_ds/mehamakor-design-system-0e28208b-1d76-4e18-a78e-dacea5c8a0dc/colors_and_type.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; }
+
+  /* ============================================================
+     PAGE SCAFFOLD (presentation chrome — not part of the card)
+     ============================================================ */
+  .page { max-width: 1280px; margin-inline: auto; padding: 48px 32px 96px; }
+
+  .doc-head { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 56px; }
+  .doc-kicker {
+    font-family: var(--font-body); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent);
+    direction: ltr; display: inline-flex; gap: 10px; align-items: center;
+  }
+  .doc-kicker .tag { color: var(--fg-muted); }
+  .doc-head h1 { font-size: 40px; line-height: 1.05; margin: 14px 0 8px; }
+  .doc-head p { margin: 0; max-width: 60ch; color: var(--fg-muted); font-size: 15px; line-height: 1.6; }
+
+  .sec-label {
+    display: flex; align-items: baseline; gap: 14px; margin: 0 0 28px;
+  }
+  .sec-num { font-family: var(--font-english); font-style: italic; font-weight: 600; font-size: 22px; color: var(--accent); direction: ltr; }
+  .sec-label h2 { font-size: 26px; margin: 0; }
+  .sec-label .meta { margin-inline-start: auto; font-size: 12px; color: var(--fg-muted); font-family: var(--font-body); letter-spacing: 0.04em; }
+
+  section.block { margin-bottom: 88px; }
+
+  /* ============================================================
+     PRODUCERCARD v4 — LOCKED ANATOMY (MEH-643 Assembly v2)
+     Flat surface-card · 1px border · radius 0 · NO shadow-lift
+     ============================================================ */
+  .pc {
+    --pc-surface: #ffffff;
+    display: flex; flex-direction: column;
+    background: var(--pc-surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    overflow: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 200ms var(--ease-out);
+  }
+
+  .pc-media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--background);
+  }
+  .pc-media img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 300ms var(--ease-out);
+  }
+
+  /* No-photo fallback: cream + light leaf glyph + wordmark */
+  .pc-fallback {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; background: var(--background);
+  }
+  .pc-fallback svg { width: 60px; height: 60px; color: var(--primary); opacity: 0.32; }
+  .pc-fallback .wordmark {
+    font-family: var(--font-headline); font-weight: 700; font-size: 16px;
+    color: var(--primary); opacity: 0.5; letter-spacing: 0.02em;
+  }
+
+  /* Heart — top-start, green outline, never red */
+  .pc-heart {
+    position: absolute; top: 12px; inset-inline-start: 12px;
+    width: 40px; height: 40px; border-radius: 9999px;
+    background: rgba(245,240,232,0.92);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+    z-index: 2;
+  }
+  .pc-heart svg { width: 21px; height: 21px; }
+
+  /* Badge row — bottom-start over image, max 2 */
+  .pc-badges {
+    position: absolute; bottom: 12px; inset-inline-start: 12px;
+    display: flex; gap: 6px; z-index: 2;
+  }
+  .pc-seal {
+    width: 30px; height: 30px; border-radius: 9999px;
+    background: rgba(245,240,232,0.95);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  .pc-seal svg { width: 19px; height: 19px; }
+  .pc-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(245,240,232,0.95);
+    padding: 5px 11px; border-radius: 2px;
+    font-family: var(--font-body); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .pc-chip--rec { color: var(--accent); }
+  .pc-chip--new { color: var(--accent-warm); }
+
+  /* Body — p-4, gap-2 */
+  .pc-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .pc-eyebrow {
+    font-family: var(--font-body); font-weight: 500; font-size: 11px;
+    letter-spacing: 0.15em; color: var(--fg-muted);
+    line-height: 1;
+  }
+
+  .pc-namerow { display: flex; align-items: baseline; gap: 12px; }
+  .pc-name {
+    font-family: var(--font-headline); font-weight: 700; font-size: 20px;
+    line-height: 1.25; color: var(--site-text); margin: 0;
+    transition: color 200ms var(--ease-out);
+  }
+  .pc-rating {
+    margin-inline-start: auto; direction: ltr; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: var(--font-english); font-style: italic; font-weight: 600;
+    font-size: 15px; color: var(--fg-muted);
+  }
+  .pc-rating .star { color: var(--accent); font-style: normal; }
+  .pc-rating .sep { opacity: 0.5; margin: 0 1px; }
+
+  .pc-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 7px; row-gap: 4px;
+    font-family: var(--font-body); font-size: 13px; color: var(--fg-muted);
+  }
+  .pc-avail-unit, .pc-loc { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .pc-dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--secondary); box-shadow: 0 0 0 3px rgba(76,176,139,0.18); flex: none; }
+  .pc-avail { color: #2E4A2E; font-weight: 500; }
+  .pc-meta .sep { opacity: 0.45; }
+  .pc-dist { direction: ltr; font-family: var(--font-english); font-style: italic; font-weight: 600; }
+
+  .pc-desc {
+    font-family: var(--font-body); font-size: 13px; line-height: 1.5;
+    color: rgba(28,26,23,0.82); margin: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* HOVER (shipped, LOCKED): name→green · border→green · image→scale 1.02
+     NO underline · NO shadow */
+  .pc:hover, .pc.is-hover {
+    border-color: var(--primary);
+  }
+  .pc:hover .pc-name, .pc.is-hover .pc-name { color: var(--primary); }
+  .pc:hover .pc-media img, .pc.is-hover .pc-media img { transform: scale(1.02); }
+
+  /* ============================================================
+     HERO SHOWCASE
+     ============================================================ */
+  .hero-wrap { display: flex; gap: 64px; align-items: flex-start; flex-wrap: wrap; }
+  .hero-card-col { flex: none; width: 380px; position: relative; padding-inline-start: 44px; }
+  .hero-card-col .pc-media { aspect-ratio: 4 / 3; }
+
+  /* numbered anatomy pins */
+  .pin {
+    position: absolute; z-index: 5;
+    width: 24px; height: 24px; border-radius: 9999px;
+    background: var(--primary); color: #fff;
+    font-family: var(--font-english); font-style: italic; font-weight: 600; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    direction: ltr; box-shadow: 0 2px 8px rgba(46,74,46,0.35);
+    inset-inline-start: 10px; transform: translateY(-50%);
+  }
+
+  .legend { flex: 1; min-width: 300px; max-width: 440px; }
+  .legend ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+  .legend li { display: flex; gap: 14px; align-items: flex-start; }
+  .legend .ix {
+    flex: none; width: 22px; height: 22px; border-radius: 9999px;
+    border: 1px solid var(--primary); color: var(--primary);
+    font-family: var(--font-english); font-style: italic; font-weight: 600; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; direction: ltr; margin-top: 1px;
+  }
+  .legend .ltxt strong { font-family: var(--font-headline); font-weight: 700; font-size: 15px; color: var(--site-text); display: block; }
+  .legend .ltxt span { font-size: 13px; color: var(--fg-muted); line-height: 1.5; }
+
+  /* ============================================================
+     HOVER COMPARISON
+     ============================================================ */
+  .compare { display: flex; gap: 40px; flex-wrap: wrap; }
+  .compare-item { width: 300px; }
+  .compare-item .pc-media { aspect-ratio: 4 / 3; }
+  .state-tag {
+    display: inline-flex; align-items: center; gap: 7px; margin-bottom: 14px;
+    font-family: var(--font-body); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.12em; text-transform: uppercase; direction: ltr;
+  }
+  .state-tag .swatch { width: 9px; height: 9px; border-radius: 9999px; }
+  .state-tag.rest { color: var(--fg-muted); }
+  .state-tag.rest .swatch { background: var(--border); }
+  .state-tag.hov { color: var(--primary); }
+  .state-tag.hov .swatch { background: var(--primary); }
+  .hover-note {
+    margin-top: 24px; max-width: 560px; border-inline-start: 3px solid var(--primary);
+    background: rgba(46,104,83,0.05); padding: 16px 20px;
+  }
+  .hover-note b { font-family: var(--font-headline); font-weight: 700; color: var(--primary); }
+  .hover-note .yes { color: var(--primary); font-weight: 600; }
+  .hover-note .no { color: #A32D2D; font-weight: 600; text-decoration: line-through; text-decoration-thickness: 1px; }
+  .hover-note p { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--fg-muted); }
+
+  /* ============================================================
+     DIRECTORY GRIDS
+     ============================================================ */
+  .grid-desktop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .grid-desktop .pc-media { aspect-ratio: 4 / 3; }
+
+  /* mobile frame 375 */
+  .frame-mobile {
+    width: 375px; border: 1px solid var(--border); background: var(--background);
+    padding: 16px; border-radius: 28px;
+    box-shadow: 0 1px 0 var(--border);
+  }
+  .frame-mobile .frame-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 2px 6px 14px; color: var(--fg-muted); font-family: var(--font-body);
+    font-size: 12px; direction: ltr; opacity: 0.7;
+  }
+  .grid-mobile { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-mobile .pc-media { aspect-ratio: 1 / 1; }
+  .grid-mobile .pc-body { padding: 12px; gap: 6px; }
+  .grid-mobile .pc-name { font-size: 16px; }
+  .grid-mobile .pc-rating { font-size: 13px; gap: 2px; }
+  .grid-mobile .pc-namerow { gap: 6px; }
+  .grid-mobile .pc-heart { width: 34px; height: 34px; top: 8px; inset-inline-start: 8px; }
+  .grid-mobile .pc-heart svg { width: 18px; height: 18px; }
+  .grid-mobile .pc-badges { bottom: 8px; inset-inline-start: 8px; }
+  .grid-mobile .pc-desc { display: none; }
+  .grid-mobile .pc-meta { font-size: 11.5px; gap: 5px; row-gap: 3px; }
+  .grid-mobile .pc-meta .unit-sep { display: none; }
+  .grid-mobile .pc-avail-unit, .grid-mobile .pc-loc { gap: 5px; }
+
+  .viewport-note { font-size: 12px; color: var(--fg-muted); letter-spacing: 0.06em; margin-bottom: 18px; direction: ltr; text-transform: uppercase; font-family: var(--font-body); font-weight: 600; }
+
+  .side-by-side { display: flex; gap: 64px; align-items: flex-start; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ DOC HEADER ============ -->
+  <header class="doc-head">
+    <div class="doc-kicker"><span>ProducerCard&nbsp;·&nbsp;v4</span><span class="tag">// MEH-643 Assembly v2 · populated</span></div>
+    <h1>בית עסק — כרטיס מאוכלס</h1>
+    <p>הרכיב המשוחרר (shipped) של mehamakor.online, מאוכלס בנתונים אמיתיים — כך נראית הספרייה כשלעסקים יש פרופיל מלא. שכפול נאמן של האנטומיה הנעולה, ללא עיצוב מחדש.</p>
+  </header>
+
+  <!-- ============ 1 · HERO CARD + ANATOMY ============ -->
+  <section class="block">
+    <div class="sec-label">
+      <span class="sec-num">01</span>
+      <h2>כרטיס ראשי — אנטומיה</h2>
+      <span class="meta">desktop · media 4:3</span>
+    </div>
+
+    <div class="hero-wrap">
+      <div class="hero-card-col">
+        <article class="pc">
+          <div class="pc-media">
+            <img src="https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&w=760&q=80" alt="גבינות כבשים בהתיישנות">
+            <button class="pc-heart" aria-label="שמרי במועדפים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+            <div class="pc-badges">
+              <span class="pc-seal" title="מאומת"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23,138.44,15.5,128,15.5S109.72,23,102.82,29.64c-3.94,3.77-8,7.67-11.57,9.14C88,40.14,82.56,40.22,77.31,40.3c-9.76.15-20.82.31-28.51,8s-7.85,18.75-8,28.51c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23,109.72,15.5,117.56,15.5,128s7.46,18.28,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,233,117.56,240.5,128,240.5s18.28-7.46,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C233,146.28,240.5,138.44,240.5,128S233,109.72,225.86,102.82Zm-52.2,6.84-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></svg></span>
+            </div>
+          </div>
+          <div class="pc-body">
+            <div class="pc-eyebrow">גבינות</div>
+            <div class="pc-namerow">
+              <h3 class="pc-name">מחלבת בן ארי</h3>
+              <span class="pc-rating"><span class="star">★</span>4.8<span class="sep">·</span>24</span>
+            </div>
+            <div class="pc-meta">
+              <span class="pc-avail-unit"><span class="pc-dot" aria-hidden="true"></span><span class="pc-avail">פעיל היום</span></span>
+              <span class="sep unit-sep">·</span>
+              <span class="pc-loc"><span>כפר חיים</span><span class="sep">·</span><span class="pc-dist">12 km</span></span>
+            </div>
+            <p class="pc-desc">גבינות כבשים בהתיישנות ארוכה</p>
+          </div>
+        </article>
+
+        <!-- anatomy pins -->
+        <!-- anatomy pins (positioned by JS to each element's center) -->
+      </div>
+
+      <div class="legend">
+        <ol>
+          <li><span class="ix">1</span><span class="ltxt"><strong>לב — top-start, מתאר ירוק</strong><span>‏‎text-primary outline. לעולם לא אדום על הכרטיס.</span></span></li>
+          <li><span class="ix">2</span><span class="ltxt"><strong>חותם מאומת — gold seal, אייקון בלבד</strong><span>‏bottom-start, מעל התמונה. עד 2 תגיות.</span></span></li>
+          <li><span class="ix">3</span><span class="ltxt"><strong>עינית קטגוריה</strong><span>‏uppercase tracked · fg-muted · 11px.</span></span></li>
+          <li><span class="ix">4</span><span class="ltxt"><strong>שם + דירוג</strong><span>‏Frank Ruhl 700 / 20px · דירוג ב-end‏: ★ gold, fg-muted, dir=ltr.</span></span></li>
+          <li><span class="ix">5</span><span class="ltxt"><strong>זמינות · עיר · מרחק</strong><span>‏נקודה ירוקה = פעיל היום · עיר · מרחק (· 12 km, ltr).</span></span></li>
+          <li><span class="ix">6</span><span class="ltxt"><strong>תיאור — שורה אחת</strong><span>‏‎truncate · fg 82%.</span></span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · HOVER (LOCKED) ============ -->
+  <section class="block">
+    <div class="sec-label">
+      <span class="sec-num">02</span>
+      <h2>מצב Hover — נעול (shipped)</h2>
+      <span class="meta">do not ship the old gold underline</span>
+    </div>
+
+    <div class="compare">
+      <div class="compare-item">
+        <div class="state-tag rest"><span class="swatch"></span>rest</div>
+        <article class="pc">
+          <div class="pc-media">
+            <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=620&q=80" alt="מחמצת">
+            <button class="pc-heart" aria-label="שמרי במועדפים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-eyebrow">לחם ומאפים</div>
+            <div class="pc-namerow">
+              <h3 class="pc-name">מאפיית המחמצת של דנה</h3>
+              <span class="pc-rating"><span class="star">★</span>4.6<span class="sep">·</span>18</span>
+            </div>
+            <div class="pc-meta">
+              <span class="pc-dot" aria-hidden="true"></span>
+              <span class="pc-avail">פעיל היום</span>
+              <span class="sep">·</span>
+              <span>תל אביב</span>
+              <span class="sep">·</span>
+              <span class="pc-dist">4 km</span>
+            </div>
+            <p class="pc-desc">מחמצת על שאור בן 9 שנים</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="compare-item">
+        <div class="state-tag hov"><span class="swatch"></span>hover (forced)</div>
+        <article class="pc is-hover">
+          <div class="pc-media">
+            <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=620&q=80" alt="מחמצת">
+            <button class="pc-heart" aria-label="שמרי במועדפים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+          </div>
+          <div class="pc-body">
+            <div class="pc-eyebrow">לחם ומאפים</div>
+            <div class="pc-namerow">
+              <h3 class="pc-name">מאפיית המחמצת של דנה</h3>
+              <span class="pc-rating"><span class="star">★</span>4.6<span class="sep">·</span>18</span>
+            </div>
+            <div class="pc-meta">
+              <span class="pc-dot" aria-hidden="true"></span>
+              <span class="pc-avail">פעיל היום</span>
+              <span class="sep">·</span>
+              <span>תל אביב</span>
+              <span class="sep">·</span>
+              <span class="pc-dist">4 km</span>
+            </div>
+            <p class="pc-desc">מחמצת על שאור בן 9 שנים</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="hover-note">
+      <b>Hover, נעול:</b>
+      <p><span class="yes">שם → ירוק (text-primary)</span> · <span class="yes">מסגרת → ירוקה (border-primary)</span> · <span class="yes">תמונה → scale 1.02</span></p>
+      <p><span class="no">קו תחתון זהב</span> &nbsp; <span class="no">shadow-lift</span> &nbsp; <span class="no">translate-y</span> &nbsp;— הוסרו מהמוקאפ הישן.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3 · DIRECTORY GRID — DESKTOP 1280 ============ -->
+  <section class="block">
+    <div class="sec-label">
+      <span class="sec-num">03</span>
+      <h2>ספרייה — שולחני</h2>
+      <span class="meta">1280 · 4-up · mixed states</span>
+    </div>
+    <div class="viewport-note">viewport 1280 · grid-cols-4 · gap 24</div>
+
+    <div class="grid-desktop" id="grid-desktop"></div>
+  </section>
+
+  <!-- ============ 4 · DIRECTORY GRID — MOBILE 375 ============ -->
+  <section class="block">
+    <div class="sec-label">
+      <span class="sec-num">04</span>
+      <h2>ספרייה — נייד</h2>
+      <span class="meta">375 · 2-up · media 1:1</span>
+    </div>
+    <div class="viewport-note">viewport 375 · grid-cols-2 · media 1:1</div>
+
+    <div class="frame-mobile">
+      <div class="frame-bar"><span>9:41</span><span>מהמקור</span></div>
+      <div class="grid-mobile" id="grid-mobile"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // Real data — the four shipped businesses (no Lorem Ipsum)
+  const PRODUCERS = [
+    {
+      cat: 'גבינות', name: 'מחלבת בן ארי', city: 'כפר חיים', dist: '12 km',
+      rating: '4.8', reviews: '24', avail: true, desc: 'גבינות כבשים בהתיישנות ארוכה',
+      img: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&w=640&q=80',
+      verified: true
+    },
+    {
+      cat: 'לחם ומאפים', name: 'מאפיית המחמצת של דנה', city: 'תל אביב', dist: '4 km',
+      rating: '4.6', reviews: '18', avail: true, desc: 'מחמצת על שאור בן 9 שנים',
+      img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=640&q=80'
+    },
+    {
+      cat: 'מותססים וכבושים', name: 'תסס — מותססים טבעיים', city: 'ירושלים', dist: '58 km',
+      rating: '4.9', reviews: '31', avail: false, desc: 'קימצ\'י וקומבוצ\'ה בתסיסה פראית',
+      img: 'https://images.unsplash.com/photo-1606756790138-261d2b21cd75?auto=format&fit=crop&w=640&q=80',
+      rec: true
+    },
+    {
+      cat: 'דבש', name: 'כוורת הדבש של יעל', city: 'זכרון יעקב', dist: '31 km',
+      rating: '4.7', reviews: '12', avail: false, desc: 'דבש פרחי בר מהכרמל',
+      img: null
+    }
+  ];
+
+  function badgeRow(p) {
+    const parts = [];
+    if (p.verified) parts.push('<span class="pc-seal" title="מאומת"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M225.86,102.82c-3.77-3.94-7.67-8-9.14-11.57-1.36-3.27-1.44-8.69-1.52-13.94-.15-9.76-.31-20.82-8-28.51s-18.75-7.85-28.51-8c-5.25-.08-10.67-.16-13.94-1.52-3.56-1.47-7.63-5.37-11.57-9.14C146.28,23,138.44,15.5,128,15.5S109.72,23,102.82,29.64c-3.94,3.77-8,7.67-11.57,9.14C88,40.14,82.56,40.22,77.31,40.3c-9.76.15-20.82.31-28.51,8s-7.85,18.75-8,28.51c-.08,5.25-.16,10.67-1.52,13.94-1.47,3.56-5.37,7.63-9.14,11.57C23,109.72,15.5,117.56,15.5,128s7.46,18.28,14.14,25.18c3.77,3.94,7.67,8,9.14,11.57,1.36,3.27,1.44,8.69,1.52,13.94.15,9.76.31,20.82,8,28.51s18.75,7.85,28.51,8c5.25.08,10.67.16,13.94,1.52,3.56,1.47,7.63,5.37,11.57,9.14C109.72,233,117.56,240.5,128,240.5s18.28-7.46,25.18-14.14c3.94-3.77,8-7.67,11.57-9.14,3.27-1.36,8.69-1.44,13.94-1.52,9.76-.15,20.82-.31,28.51-8s7.85-18.75,8-28.51c.08-5.25.16-10.67,1.52-13.94,1.47-3.56,5.37-7.63,9.14-11.57C233,146.28,240.5,138.44,240.5,128S233,109.72,225.86,102.82Zm-52.2,6.84-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></svg></span>');
+    if (p.rec) parts.push('<span class="pc-chip pc-chip--rec">מומלץ</span>');
+    if (p.isNew) parts.push('<span class="pc-chip pc-chip--new">חדש</span>');
+    return parts.length ? `<div class="pc-badges">${parts.join('')}</div>` : '';
+  }
+
+  function media(p) {
+    const inner = p.img
+      ? `<img src="${p.img}" alt="${p.desc}">`
+      : `<div class="pc-fallback"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M223.45,40.07a8,8,0,0,0-7.52-7.52C139.8,28.08,78.82,51,52.82,94a87.09,87.09,0,0,0-12.76,49c.57,15.92,5.21,32,13.79,47.85l-19.51,19.5a8,8,0,0,0,11.32,11.32l19.5-19.51C81,210.73,97.09,215.37,113,215.94q1.67.06,3.33.06A86.93,86.93,0,0,0,162,203.18C205,177.18,227.93,116.21,223.45,40.07ZM153.75,189.5c-22.75,13.78-49.68,14-76.71.77l88.63-88.62a8,8,0,0,0-11.32-11.32L65.73,179c-13.19-27-13-54,.77-76.71,22.09-36.47,74.6-56.44,141-54.16C209.74,114.89,189.75,167.45,153.75,189.5Z"/></svg><span class="wordmark">מהמקור</span></div>`;
+    return `<div class="pc-media">${inner}
+      <button class="pc-heart" aria-label="שמרי במועדפים"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+      ${badgeRow(p)}
+    </div>`;
+  }
+
+  function metaRow(p) {
+    const avail = p.avail
+      ? `<span class="pc-avail-unit"><span class="pc-dot" aria-hidden="true"></span><span class="pc-avail">פעיל היום</span></span><span class="sep unit-sep">·</span>`
+      : '';
+    return `<div class="pc-meta">${avail}<span class="pc-loc"><span>${p.city}</span><span class="sep">·</span><span class="pc-dist">${p.dist}</span></span></div>`;
+  }
+
+  function card(p, hover) {
+    return `<article class="pc${hover ? ' is-hover' : ''}">
+      ${media(p)}
+      <div class="pc-body">
+        <div class="pc-eyebrow">${p.cat}</div>
+        <div class="pc-namerow">
+          <h3 class="pc-name">${p.name}</h3>
+          <span class="pc-rating"><span class="star">★</span>${p.rating}<span class="sep">·</span>${p.reviews}</span>
+        </div>
+        ${metaRow(p)}
+        <p class="pc-desc">${p.desc}</p>
+      </div>
+    </article>`;
+  }
+
+  document.getElementById('grid-desktop').innerHTML = PRODUCERS.map(p => card(p)).join('');
+  document.getElementById('grid-mobile').innerHTML = PRODUCERS.map(p => card(p)).join('');
+
+  // Position anatomy pins on a rail aligned to each element's vertical center
+  function placePins() {
+    const col = document.querySelector('.hero-card-col');
+    if (!col) return;
+    col.querySelectorAll('.pin').forEach(p => p.remove());
+    const targets = [
+      [1, '.pc-heart'], [2, '.pc-seal'], [3, '.pc-eyebrow'],
+      [4, '.pc-namerow'], [5, '.pc-meta'], [6, '.pc-desc']
+    ];
+    const colTop = col.getBoundingClientRect().top;
+    targets.forEach(([n, sel]) => {
+      const el = col.querySelector(sel);
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const y = r.top - colTop + r.height / 2;
+      const pin = document.createElement('span');
+      pin.className = 'pin';
+      pin.textContent = n;
+      pin.style.top = y + 'px';
+      col.appendChild(pin);
+    });
+  }
+  placePins();
+  window.addEventListener('resize', placePins);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(placePins);
+  window.addEventListener('load', placePins);
+</script>
+</body>
+</html>

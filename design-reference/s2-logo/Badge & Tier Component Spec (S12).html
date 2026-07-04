@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S12 · MEH-758 · תג מאומת · Badge &amp; Tier Component Spec</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- ADR-013 LOCK: Phosphor REGULAR weight only. -->
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR BRAND TOKENS — verbatim from colors_and_type.css
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --primary:#2e6853; --primary-light:#3a7d64; --primary-dark:#2E4A2E;
+  --secondary:#4cb08b; --background:#F5F0E8; --site-text:#1C1A17;
+  --site-muted:#5c584f; --accent:#8B6914; --accent-warm:#E8823A;
+  --light:#EAF3DE; --border:#e8e0d0;
+  --font-headline:'Frank Ruhl Libre','Heebo',serif;
+  --font-english:'Cormorant Garamond',serif;
+  --font-body:'DM Sans','Heebo',system-ui,sans-serif;
+
+  /* spec-document chrome (annotation layer, NOT the brand surface) */
+  --doc-bg:#e7e1d6; --doc-ink:#2a2620; --doc-mute:#6f695e;
+  --doc-rule:rgba(42,38,32,0.16); --doc-mono:ui-monospace,Menlo,monospace;
+  --measure:#b06a2e; /* annotation dimension lines */
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+
+html,body{background:var(--doc-bg); color:var(--doc-ink);
+  font-family:var(--font-body); font-size:14px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;}
+body{padding:48px 40px 120px; min-width:1180px;}
+
+.num{font-feature-settings:"tnum" 1,"lnum" 1; font-variant-numeric:tabular-nums lining-nums; direction:ltr; unicode-bidi:isolate;}
+
+/* ── DOC MASTHEAD ─────────────────────────────────────────────── */
+.doc{max-width:1760px; margin:0 auto;}
+.masthead{display:grid; grid-template-columns:1fr auto; align-items:end;
+  border-bottom:1px solid var(--doc-rule); padding-bottom:26px; margin-bottom:30px; gap:32px;}
+.phase-nav{display:inline-flex; gap:7px; align-items:center; margin-bottom:14px;
+  font-family:var(--doc-mono); font-size:11px; letter-spacing:.06em; color:var(--doc-mute);}
+.pip{display:inline-flex; align-items:center; gap:4px;}
+.pip i{width:7px; height:7px; border:1px solid rgba(42,38,32,.32); display:inline-block; border-radius:50%;}
+.pip.on i{background:var(--primary); border-color:var(--primary);}
+.pip.now i{background:var(--accent); border-color:var(--accent); outline:2px solid rgba(139,105,20,.22); outline-offset:2px;}
+.masthead h1{font-family:var(--font-headline); font-weight:900; font-size:42px; line-height:1.04; color:var(--doc-ink);}
+.masthead h1 em{font-family:var(--font-english); font-style:italic; font-weight:600; color:#6b4f0f;}
+.masthead .sub{font-family:var(--font-english); font-style:italic; font-size:18px; color:var(--doc-mute); margin-top:9px; max-width:86ch; line-height:1.5;}
+.masthead .sub code{font-family:var(--doc-mono); font-style:normal; font-size:12px; color:var(--primary-dark);}
+.stamp{font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--doc-mute); text-align:right; line-height:1.95;}
+.stamp strong{color:var(--doc-ink); font-weight:700;}
+.stamp .dot{color:var(--accent);}
+
+/* ── LEGEND ───────────────────────────────────────────────────── */
+.legend{display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+  border:1px solid var(--doc-rule); border-radius:10px; padding:14px 20px; margin-bottom:40px;
+  background:rgba(255,255,255,.32);}
+.legend .lh{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-ink); font-weight:600;}
+.legend .item{display:inline-flex; align-items:center; gap:9px; font-size:12.5px; color:var(--doc-mute);}
+.legend .item b{color:var(--doc-ink); font-weight:600;}
+.sw{width:26px; height:14px; border-radius:3px; flex:none;}
+.sw.locked{background:var(--background); border:1px solid var(--primary); position:relative;}
+.sw.locked::after{content:""; position:absolute; inset-inline-start:3px; top:3px; width:5px; height:5px; border-radius:50%; background:var(--primary);}
+.sw.draft{background:var(--background); border:1px dashed var(--accent);}
+.sw.decided{background:rgba(139,105,20,.14); border:1px solid var(--accent);}
+
+/* ── SECTION SCAFFOLD ─────────────────────────────────────────── */
+.dsec{margin-bottom:64px;}
+.dsec-head{display:flex; align-items:baseline; gap:16px; border-bottom:1px solid var(--doc-rule); padding-bottom:14px; margin-bottom:30px;}
+.dsec-head .si{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:30px; color:var(--accent); line-height:1;}
+.dsec-head h2{font-family:var(--font-headline); font-weight:700; font-size:25px; color:var(--doc-ink); line-height:1.1;}
+.dsec-head .he{font-family:var(--font-headline); font-weight:700; direction:rtl;}
+.dsec-head .tail{margin-inline-start:auto; font-family:var(--doc-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--doc-mute); align-self:flex-end;}
+.lede{font-family:var(--font-english); font-style:italic; font-size:17px; color:var(--doc-mute); max-width:92ch; line-height:1.5; margin-bottom:26px;}
+.lede b{font-family:var(--font-body); font-style:normal; font-weight:600; color:var(--doc-ink); font-size:14px;}
+
+/* generic annotation caption */
+.cap{font-size:11px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-mute);
+  display:flex; align-items:baseline; gap:12px; margin-bottom:14px;}
+.cap .label{color:var(--doc-ink); font-size:12.5px; letter-spacing:.1em;}
+.cap .dims{font-family:var(--font-english); font-style:italic; font-size:13px; color:var(--accent); text-transform:none;}
+.capnote{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--doc-mute); margin-top:14px; max-width:64ch; line-height:1.55;}
+.capnote b{font-family:var(--font-body); font-style:normal; font-weight:600; color:var(--doc-ink); font-size:11.5px; letter-spacing:.04em; text-transform:uppercase;}
+.capnote code{font-family:var(--doc-mono); font-style:normal; font-size:11px; color:var(--primary-dark);}
+
+/* a brand-surface viewport tile */
+.vp{background:var(--background); border:1px solid rgba(42,38,32,.18); position:relative; overflow:hidden;
+  box-shadow:0 1px 0 rgba(42,38,32,.04);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");}
+.surf{direction:rtl; font-family:var(--font-body); color:var(--site-text);}
+
+/* ══════════════════════════════════════════════════════════════
+   ░░ THE LOCKED COMPONENT — מאומת badge chip + tooltip ░░
+   These rules are the spec. Port them verbatim.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── chip ── */
+.mk-badge{
+  display:inline-flex; align-items:center; gap:7px;
+  background:rgba(139,105,20,.07);
+  border:1px solid var(--accent);
+  color:var(--accent);
+  border-radius:9999px;
+  padding:7px 15px 7px 13px;            /* trailing(start) 15 · leading(icon end) 13 — optical */
+  font-family:var(--font-body); font-weight:600; font-size:15px; line-height:1;
+  white-space:nowrap; cursor:default;
+  -webkit-tap-highlight-color:transparent;
+}
+.mk-badge svg{width:17px; height:17px; flex:none;}
+/* chip is a button when it owns a tooltip (focusable + tappable) */
+button.mk-badge{cursor:pointer; appearance:none;}
+button.mk-badge:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 50%,transparent); outline-offset:2px;}
+
+/* ── icon-only seal (dense surfaces) ── */
+.mk-seal{display:inline-flex; align-items:center; justify-content:center; color:var(--accent); flex:none;
+  background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; line-height:0;}
+.mk-seal svg{width:16px; height:16px;}
+.mk-seal:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 50%,transparent); outline-offset:3px; border-radius:50%;}
+
+/* ── tooltip ── */
+.mk-tip{position:relative; display:inline-flex;}
+.mk-tip .bubble{
+  position:absolute; bottom:calc(100% + 9px); inset-inline-start:50%; transform:translateX(50%) translateY(4px);
+  background:var(--primary-dark); color:#F5F0E8;
+  font-family:var(--font-body); font-weight:500; font-size:12.5px; line-height:1.45;
+  padding:9px 13px; border-radius:8px; width:max-content; max-width:240px; text-align:start;
+  box-shadow:0 6px 24px rgba(46,74,46,.28);
+  opacity:0; pointer-events:none; transition:opacity 160ms ease, transform 160ms ease; z-index:20;}
+.mk-tip .bubble .num{color:#e9d9a6;}
+.mk-tip .bubble::after{content:""; position:absolute; top:100%; inset-inline-start:50%; transform:translateX(50%);
+  border:6px solid transparent; border-top-color:var(--primary-dark);}
+/* shown on desktop hover, keyboard focus, and explicit open (mobile tap) */
+.mk-tip:hover .bubble,
+.mk-tip:focus-within .bubble,
+.mk-tip.is-open .bubble{opacity:1; transform:translateX(50%) translateY(0); pointer-events:auto;}
+
+/* ── declared trust-line (state 3 · the equality slot) ── */
+.mk-declared{display:inline-flex; align-items:center; gap:7px; color:var(--primary-dark);
+  font-family:var(--font-body); font-weight:600; font-size:14px;}
+.mk-declared i{color:var(--primary); font-size:16px;}
+
+/* ══════════════════════════════════════════════════════════════
+   §00 OPTIONS
+   ══════════════════════════════════════════════════════════════ */
+.qblock{margin-bottom:38px;}
+.qhead{display:flex; align-items:baseline; gap:12px; margin-bottom:6px;}
+.qhead .qn{font-family:var(--doc-mono); font-size:11px; letter-spacing:.1em; color:var(--accent); border:1px solid rgba(139,105,20,.4); border-radius:5px; padding:3px 8px; text-transform:uppercase;}
+.qhead h3{font-family:var(--font-headline); font-weight:700; font-size:19px; color:var(--doc-ink); direction:rtl;}
+.qhead h3 .lat{direction:ltr; unicode-bidi:isolate; font-family:var(--font-body); font-weight:600; font-size:15px; color:var(--doc-mute);}
+.qsub{font-size:13px; color:var(--doc-mute); margin-bottom:20px; max-width:90ch;}
+.opts{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+.opts.two{grid-template-columns:repeat(2,1fr); max-width:840px;}
+.opt{border:1px solid var(--doc-rule); border-radius:14px; background:rgba(255,255,255,.34); padding:18px 18px 20px; position:relative; display:flex; flex-direction:column;}
+.opt.pick{border-color:var(--accent); box-shadow:0 0 0 1px rgba(139,105,20,.45), 0 8px 28px rgba(139,105,20,.1); background:rgba(139,105,20,.045);}
+.opt .ol{display:flex; align-items:center; gap:9px; margin-bottom:14px;}
+.opt .ok{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:22px; color:var(--accent); line-height:1;}
+.opt .ot{font-weight:600; font-size:14px; color:var(--doc-ink);}
+.opt .pickstamp{margin-inline-start:auto; display:inline-flex; align-items:center; gap:5px; font-family:var(--doc-mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:#fff; background:var(--accent); border-radius:5px; padding:4px 8px;}
+.opt .rejstamp{margin-inline-start:auto; font-family:var(--doc-mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--doc-mute);}
+.opt .demo{border:1px dashed var(--doc-rule); border-radius:10px; padding:16px; margin-bottom:14px; min-height:118px; display:flex; align-items:center; justify-content:center; background:var(--background);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");}
+.opt .pc{display:grid; gap:7px; font-size:12.5px; line-height:1.5; margin-top:auto;}
+.opt .pc .row{display:grid; grid-template-columns:16px 1fr; gap:8px; align-items:start;}
+.opt .pc .row .g{color:var(--primary); font-weight:700;}
+.opt .pc .row .b{color:#8B2E2E; font-weight:700;}
+.opt .pc .row span:last-child{color:var(--doc-mute);}
+.verdict{margin-top:18px; border-inline-start:3px solid var(--accent); padding:10px 0 10px 0; padding-inline-start:18px; max-width:96ch;}
+.verdict b{color:var(--doc-ink); font-weight:600;}
+.verdict .he{direction:rtl; unicode-bidi:isolate; font-weight:600; color:var(--primary-dark);}
+
+/* mini mock helpers for option demos */
+.mini-hd{direction:rtl; text-align:start; width:100%;}
+.mini-hd .eb{font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:6px;}
+.mini-hd .eb .r{width:18px; height:1px; background:var(--accent);}
+.mini-hd .nm{font-family:var(--font-headline); font-weight:900; font-size:26px; line-height:1; margin:7px 0 4px; color:var(--site-text); display:flex; align-items:flex-start; gap:9px;}
+.mini-hd .pl{font-size:11px; color:var(--site-muted);}
+.collapse-line{margin-top:11px; display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--primary-dark); font-weight:600; border-bottom:1px dashed rgba(46,104,83,.4); padding-bottom:3px;}
+.collapse-line i{font-size:14px; transition:transform .2s;}
+.info-i{width:18px; height:18px; border-radius:50%; border:1px solid var(--site-muted); color:var(--site-muted); display:inline-flex; align-items:center; justify-content:center; font-size:11px; flex:none;}
+.story-chip{margin-top:12px; border-inline-start:2px solid var(--secondary); padding-inline-start:11px; text-align:start;}
+.story-chip .st{font-family:var(--font-english); font-style:italic; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--primary); margin-bottom:4px;}
+.story-chip .sx{font-size:11.5px; color:var(--site-text); line-height:1.5;}
+
+/* ══════════════════════════════════════════════════════════════
+   §01 ANATOMY
+   ══════════════════════════════════════════════════════════════ */
+.anatomy{display:grid; grid-template-columns:1.15fr .85fr; gap:48px; align-items:start;}
+.anat-stage{border:1px solid var(--doc-rule); border-radius:16px; background:rgba(255,255,255,.34); padding:64px 56px; display:flex; flex-direction:column; align-items:center; gap:54px; position:relative;}
+.blowup{transform:scale(2.4); transform-origin:center; position:relative;}
+/* measurement annotations around the blown-up chip */
+.measure{position:absolute; font-family:var(--doc-mono); font-size:9px; color:var(--measure); white-space:nowrap; letter-spacing:.02em;}
+.mline{position:absolute; background:var(--measure);}
+.callouts{position:relative; width:100%; max-width:520px;}
+.callout{display:grid; grid-template-columns:128px 1fr; gap:14px; align-items:baseline; padding:9px 0; border-bottom:1px solid rgba(42,38,32,.08); font-size:12.5px;}
+.callout .lab{font-family:var(--doc-mono); font-size:10.5px; color:var(--accent); letter-spacing:.02em;}
+.callout .val{color:var(--doc-ink);}
+.callout .val b{font-weight:600;}
+.callout .val .he{direction:rtl; unicode-bidi:isolate;}
+.tok-table{width:100%; border-collapse:collapse; font-size:12px;}
+.tok-table caption{font-family:var(--doc-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--doc-mute); text-align:start; padding-bottom:10px;}
+.tok-table th{text-align:start; font-family:var(--doc-mono); font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--doc-mute); font-weight:600; padding:7px 10px; border-bottom:1px solid var(--doc-rule);}
+.tok-table td{padding:8px 10px; border-bottom:1px solid rgba(42,38,32,.08); vertical-align:top; color:var(--doc-ink);}
+.tok-table td.k{font-family:var(--doc-mono); font-size:11px; color:var(--primary-dark); white-space:nowrap;}
+.tok-table td.v{font-family:var(--doc-mono); font-size:11px; color:var(--accent); white-space:nowrap;}
+.swatch{display:inline-block; width:11px; height:11px; border-radius:3px; vertical-align:-1px; margin-inline-end:6px; border:1px solid rgba(0,0,0,.1);}
+
+/* ══════════════════════════════════════════════════════════════
+   §02 STATES
+   ══════════════════════════════════════════════════════════════ */
+.states{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+.state{border:1px solid var(--doc-rule); border-radius:14px; background:rgba(255,255,255,.34); overflow:hidden; display:flex; flex-direction:column;}
+.state .sh{padding:14px 18px; border-bottom:1px solid var(--doc-rule); display:flex; align-items:baseline; gap:10px;}
+.state .sh .sn{font-family:var(--font-english); font-style:italic; font-weight:600; font-size:20px; color:var(--accent);}
+.state .sh .stt{font-family:var(--font-headline); font-weight:700; font-size:18px; direction:rtl; color:var(--doc-ink);}
+.state .sh .lat{margin-inline-start:auto; font-family:var(--doc-mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--doc-mute); align-self:center;}
+.state .stage{padding:46px 22px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; min-height:150px; background:var(--background);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");}
+.state .stage .raw-tip{font-family:var(--doc-mono); font-size:11px; color:var(--primary-dark); direction:rtl; text-align:center; background:rgba(46,104,83,.06); border:1px solid rgba(46,104,83,.18); border-radius:8px; padding:8px 12px; max-width:90%;}
+.state .sb{padding:16px 18px 20px; border-top:1px solid var(--doc-rule); font-size:12.5px; line-height:1.55; color:var(--doc-mute);}
+.state .sb b{color:var(--doc-ink); font-weight:600;}
+.state .sb .he{direction:rtl;}
+.state.equal{border-color:var(--secondary); box-shadow:0 0 0 1px rgba(76,176,139,.3);}
+.eqnote{margin-top:24px; display:grid; grid-template-columns:auto 1fr; gap:13px; align-items:start; background:rgba(46,104,83,.05); border:1px solid rgba(46,104,83,.2); border-radius:14px; padding:18px 20px; max-width:1000px;}
+.eqnote i{color:var(--primary); font-size:21px; margin-top:1px;}
+.eqnote p{font-size:13.5px; line-height:1.6; color:var(--site-text);}
+.eqnote p b{color:var(--primary-dark);}
+.eqnote .he{direction:rtl; unicode-bidi:isolate; font-weight:600;}
+
+/* ══════════════════════════════════════════════════════════════
+   §03 INTERACTION
+   ══════════════════════════════════════════════════════════════ */
+.intgrid{display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;}
+.try{border:1px solid var(--doc-rule); border-radius:14px; background:rgba(255,255,255,.34); padding:26px;}
+.try h4{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:6px;}
+.try .hint{font-family:var(--font-english); font-style:italic; font-size:13.5px; color:var(--doc-mute); margin-bottom:24px;}
+.try .stagebox{background:var(--background); border:1px solid var(--border); border-radius:12px; padding:46px 24px 40px; display:flex; align-items:center; justify-content:center; gap:18px; flex-wrap:wrap;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");}
+.try .nb{font-family:var(--doc-mono); font-size:10.5px; color:var(--doc-mute); margin-top:16px; line-height:1.6;}
+.int-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px;}
+.int-table th{text-align:start; font-family:var(--doc-mono); font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--doc-mute); font-weight:600; padding:9px 12px; border-bottom:1px solid var(--doc-rule);}
+.int-table td{padding:10px 12px; border-bottom:1px solid rgba(42,38,32,.08); vertical-align:top; color:var(--doc-ink); line-height:1.5;}
+.int-table td.env{font-family:var(--doc-mono); font-size:10.5px; color:var(--primary-dark); white-space:nowrap;}
+.int-table td .he{direction:rtl; unicode-bidi:isolate;}
+.kbd{font-family:var(--doc-mono); font-size:10px; background:rgba(42,38,32,.07); border:1px solid var(--doc-rule); border-radius:4px; padding:1px 6px;}
+
+/* ══════════════════════════════════════════════════════════════
+   §04 SURFACES
+   ══════════════════════════════════════════════════════════════ */
+.surfgrid{display:flex; gap:40px; flex-wrap:wrap; align-items:flex-start;}
+.surfcol{display:flex; flex-direction:column;}
+
+/* business hero mock */
+.bp-hero-mock{padding:30px 26px;}
+.bp-hero-mock .eb{font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+.bp-hero-mock .eb .r{width:28px; height:1px; background:var(--accent);}
+.bp-hero-mock .nrow{display:flex; align-items:flex-start; gap:14px;}
+.bp-hero-mock .nm{font-family:var(--font-headline); font-weight:900; font-size:52px; line-height:.98; letter-spacing:-.01em; color:var(--site-text);}
+.bp-hero-mock .chipwrap{margin-top:14px;}
+.bp-hero-mock .pl{font-size:14px; color:var(--site-muted); display:flex; align-items:center; gap:8px; margin-top:14px;}
+.bp-hero-mock .pl i{color:var(--primary-dark); font-size:16px;}
+/* declared trust block lives in a structural slot under contact, same as verified */
+.bp-trust{margin-top:22px; border-top:1px solid var(--border); padding-top:18px; max-width:46ch;}
+.bp-trust .tl{display:flex; align-items:center; gap:9px; margin-bottom:8px;}
+.bp-trust .dtline{font-size:13.5px; line-height:1.6; color:var(--site-text); display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;}
+.bp-trust .dtline .mk-declared{flex:none;}
+.bp-trust .dtline .dsep{color:var(--site-muted);}
+.bp-trust p{font-size:13px; line-height:1.6; color:var(--site-text);}
+.bp-trust a{color:var(--primary); font-weight:600; text-decoration:none; border-bottom:1px solid rgba(46,104,83,.4); display:inline-flex; align-items:center; gap:5px; margin-top:9px; font-size:12.5px;}
+
+/* producer card mock */
+.pcard{width:248px; background:#fff; border:1px solid var(--border); border-radius:16px; overflow:hidden;}
+.pcard .ph{height:130px; background:linear-gradient(135deg,#d9c7a6,#cdb98a); position:relative;}
+.pcard .ph .cr{position:absolute; bottom:8px; inset-inline-start:10px; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.9);}
+.pcard .bd{padding:15px 16px; display:grid; gap:7px;}
+.pcard .ce{font-size:11px; letter-spacing:.15em; text-transform:uppercase; color:var(--site-muted); font-weight:500;}
+.pcard .nr{display:flex; align-items:center; gap:7px;}
+.pcard .pn{font-family:var(--font-headline); font-weight:700; font-size:20px; line-height:1.2; color:var(--site-text);}
+.pcard .mt{font-size:12.5px; color:var(--site-muted);}
+.pcard .hr{font-size:12.5px; color:var(--site-muted); display:inline-flex; align-items:center; gap:6px;}
+.pcard .hr i{font-size:14px;}
+
+/* map popup mock */
+.mapbg{width:300px; height:230px; border-radius:14px; overflow:hidden; position:relative;
+  background:linear-gradient(135deg,#dfe6d4,#cdd9c2); border:1px solid var(--border);}
+.mapbg::before{content:""; position:absolute; inset:0; opacity:.5;
+  background-image:linear-gradient(rgba(46,104,83,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(46,104,83,.08) 1px,transparent 1px); background-size:26px 26px;}
+.mappin{position:absolute; top:46px; inset-inline-start:50%; transform:translateX(50%); color:var(--primary); font-size:30px;}
+.mappop{position:absolute; bottom:14px; inset-inline:14px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:13px 15px; box-shadow:0 8px 28px rgba(46,74,46,.2);}
+.mappop .nr{display:flex; align-items:center; gap:7px; margin-bottom:5px;}
+.mappop .pn{font-family:var(--font-headline); font-weight:700; font-size:18px; color:var(--site-text); line-height:1.15;}
+.mappop .mt{font-size:12px; color:var(--site-muted); margin-bottom:11px;}
+.mappop .wa{display:inline-flex; align-items:center; justify-content:center; gap:7px; width:100%; background:var(--primary); color:#fff; border-radius:9999px; padding:9px; font-size:13px; font-weight:600;}
+.mappop .wa i{font-size:16px;}
+
+/* per-surface rule list under each demo */
+.srules{margin-top:16px; max-width:300px;}
+.srules li{list-style:none; font-size:12px; line-height:1.5; color:var(--doc-mute); padding-inline-start:18px; position:relative; margin-bottom:9px;}
+.srules li::before{content:""; position:absolute; inset-inline-start:0; top:7px; width:5px; height:5px; border-radius:50%; background:var(--accent);}
+.srules li b{color:var(--doc-ink); font-weight:600;}
+.srules li .he{direction:rtl; unicode-bidi:isolate;}
+
+/* ── DOC FOOTER ───────────────────────────────────────────────── */
+.doc-foot{margin-top:30px; padding-top:34px; border-top:1px solid var(--doc-rule);
+  display:grid; grid-template-columns:1fr 1fr; gap:48px; max-width:1320px;}
+.doc-foot h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:16px;}
+.doc-foot ol,.doc-foot ul{list-style:none;}
+.doc-foot li{margin-bottom:14px; font-size:13.5px; line-height:1.55; color:var(--doc-mute); padding-inline-start:30px; position:relative;}
+.doc-foot .n{position:absolute; inset-inline-start:0; top:-2px; font-family:var(--font-english); font-style:italic; font-weight:600; font-size:18px; color:var(--accent);}
+.doc-foot li b{color:var(--doc-ink); font-weight:600;}
+.doc-foot li .he{direction:rtl; unicode-bidi:isolate; font-weight:600;}
+.doc-foot .src{font-family:var(--font-english); font-style:italic; color:var(--primary-dark);}
+.doc-foot li .x{position:absolute; inset-inline-start:2px; top:0; color:#8B2E2E; font-weight:700;}
+
+/* ── COPY TABLE ───────────────────────────────────────────────── */
+.copytable{margin-top:56px; padding-top:34px; border-top:1px solid var(--doc-rule); max-width:1760px;}
+.copytable h4{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--doc-ink); margin-bottom:6px;}
+.copytable .note{font-family:var(--font-english); font-style:italic; font-size:14px; color:var(--doc-mute); margin-bottom:18px; max-width:96ch;}
+.copytable .note b{font-family:var(--font-body); font-style:normal; font-weight:600; color:var(--primary-dark); font-size:12.5px;}
+.copytable table{border-collapse:collapse; width:100%; font-size:12.5px;}
+.copytable th{text-align:start; font-family:var(--doc-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--doc-mute); font-weight:600; padding:8px 14px; border-bottom:1px solid var(--doc-rule); vertical-align:bottom;}
+.copytable td{padding:9px 14px; border-bottom:1px solid rgba(42,38,32,.08); vertical-align:top; color:var(--doc-ink); line-height:1.5;}
+.copytable td.k{font-family:var(--doc-mono); font-size:11px; color:var(--primary-dark); white-space:nowrap;}
+.copytable td.he{direction:rtl; font-family:var(--font-body); max-width:46ch;}
+.copytable td.st{font-family:var(--doc-mono); font-size:10px; letter-spacing:.04em; color:var(--doc-mute); white-space:nowrap;}
+.copytable td.st.lock{color:var(--primary-dark);}
+.copytable td.st.pend{color:var(--accent);}
+.copytable tr:hover td{background:rgba(255,255,255,.28);}
+.copytable .grp td{background:rgba(42,38,32,.05); font-family:var(--doc-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--doc-mute); font-weight:600;}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ░░ MASTHEAD ░░ -->
+  <header class="masthead">
+    <div>
+      <nav class="phase-nav" aria-label="phase">
+        <span class="pip on"><i></i>S2</span><span>·</span>
+        <span class="pip on"><i></i>S5</span><span>·</span>
+        <span class="pip on"><i></i>S6</span><span>·</span>
+        <span class="pip on"><i></i>S7</span><span>·</span>
+        <span class="pip on"><i></i>S8</span><span>·</span>
+        <span class="pip on"><i></i>S9</span><span>·</span>
+        <span class="pip on"><i></i>S10</span><span>·</span>
+        <span class="pip on"><i></i>S11</span><span>·</span>
+        <span class="pip now"><i></i>S12</span>
+      </nav>
+      <h1>תג מאומת — <em>Badge &amp; Tier Component</em></h1>
+      <p class="sub">Component spec — addendum to the business page <code>S6</code>. Visual direction <strong style="font-style:normal;color:var(--primary-dark)">locked in S11</strong> (gold chip <code>#8B6914</code>, seal glyph, cream field) and <em>not</em> re-opened here. This sheet decides what S11 left open — <strong style="font-style:normal;color:var(--primary-dark)">placement, states, and the explainer treatment</strong> — and ports to a CC prompt without guesswork. Tier words are <strong style="font-style:normal;color:var(--primary-dark)">מאומת / מוצהר</strong> only.</p>
+    </div>
+    <div class="stamp">
+      Series&nbsp;<strong>S12</strong> <span class="dot">·</span> MEH-758 <span class="dot">·</span> <strong>FINAL</strong><br>
+      addendum&nbsp;<strong>S6</strong> <span class="dot">·</span> visual lock&nbsp;<strong>S11</strong><br>
+      3 states <span class="dot">·</span> 3 surfaces <span class="dot">·</span> mobile+desktop<br>
+      RTL <span class="dot">·</span> tooltip&nbsp;<strong>tap + hover</strong><br>
+      Phosphor&nbsp;regular <span class="dot">·</span> <strong>no emoji</strong>
+    </div>
+  </header>
+
+  <!-- ░░ LEGEND ░░ -->
+  <div class="legend">
+    <span class="lh">Status keys</span>
+    <span class="item"><span class="sw locked"></span><b>Locked copy</b> — Sapir-verbatim, MEH-758 (tooltips + declared explainer). Port exactly.</span>
+    <span class="item"><span class="sw decided"></span><b>Decided here</b> — S12 spec call on placement / behavior. Build as written.</span>
+    <span class="item"><span class="sw draft"></span><b>Pending Sapir lock</b> — none remaining. All strings locked at S12 FINAL.</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       §00 · OPTIONS — the two open questions
+       ══════════════════════════════════════════════════════════ -->
+  <section class="dsec">
+    <div class="dsec-head">
+      <span class="si">00</span>
+      <h2>Open questions <span class="he">— מה שפתוח</span></h2>
+      <span class="tail">Options-first · 2 questions · everything else decided</span>
+    </div>
+    <p class="lede">Only two things were left open after S11. Three options max each — mini-mocked below with the trade-off, and <b>my pick stamped.</b> Everything past this section is decided and specced, not offered.</p>
+
+    <!-- Q1 -->
+    <div class="qblock">
+      <div class="qhead"><span class="qn">Q1</span><h3>איפה חי הסבר ה<span style="color:var(--primary-dark)">מוצהר</span> בעמוד עסק <span class="lat">· declared-explainer placement</span></h3></div>
+      <p class="qsub">A declared (no-chip) business needs the explainer reachable on its own page — without ever making the page read as if a badge is <em>missing</em>. The test: would a verified business's page have a structurally identical slot? If not, it flags absence.</p>
+      <div class="opts">
+
+        <!-- A -->
+        <div class="opt">
+          <div class="ol"><span class="ok">a</span><span class="ot">Collapsible line under header</span><span class="rejstamp">not chosen</span></div>
+          <div class="demo">
+            <div class="mini-hd">
+              <div class="eb"><span class="r"></span>ירקות · משק משפחתי</div>
+              <div class="nm">חוות תמר</div>
+              <div class="pl">כפר ויתקין · עמק חפר</div>
+              <div class="collapse-line"><i class="ph ph-caret-down"></i>למה אין כאן תג מאומת?</div>
+            </div>
+          </div>
+          <div class="pc">
+            <div class="row"><span class="g">+</span><span>Compact; explainer on demand.</span></div>
+            <div class="row"><span class="b">✕</span><span>Reads as "click to find what's wrong." A verified page has no such toggle — so it flags the absence. Fails the equality test.</span></div>
+          </div>
+        </div>
+
+        <!-- B -->
+        <div class="opt">
+          <div class="ol"><span class="ok">b</span><span class="ot">Info-icon tooltip</span><span class="rejstamp">not chosen</span></div>
+          <div class="demo">
+            <div class="mini-hd">
+              <div class="eb"><span class="r"></span>ירקות · משק משפחתי</div>
+              <div class="nm">חוות תמר <span class="info-i" style="margin-top:6px;">i</span></div>
+              <div class="pl">כפר ויתקין · עמק חפר</div>
+            </div>
+          </div>
+          <div class="pc">
+            <div class="row"><span class="g">+</span><span>Mirrors the verified chip's slot near the name.</span></div>
+            <div class="row"><span class="b">✕</span><span>A bare "i" by a no-chip name reads as a caveat to hunt for. Hides a positive message behind a hover/tap. Anxious, not calm.</span></div>
+          </div>
+        </div>
+
+        <!-- C · PICK -->
+        <div class="opt pick">
+          <div class="ol"><span class="ok">c</span><span class="ot">Calm line in a shared trust slot</span><span class="pickstamp"><i class="ph ph-seal-check" style="font-size:11px;"></i>pick</span></div>
+          <div class="demo">
+            <div class="mini-hd">
+              <div class="eb"><span class="r"></span>ירקות · משק משפחתי</div>
+              <div class="nm">חוות תמר</div>
+              <div class="story-chip">
+                <div class="st">מוצהר</div>
+                <div class="sx">העסק חתם על הצהרה מחייבת שהוא פועל כדין — ועבר היכרות אישית, כמו כל בית עסק כאן.</div>
+              </div>
+            </div>
+          </div>
+          <div class="pc">
+            <div class="row"><span class="g">+</span><span><b>Structural, not exceptional.</b> Every page has a trust slot — verified shows chip + date, declared shows this calm line. Same place, same weight.</span></div>
+            <div class="row"><span class="g">+</span><span>Always visible — affirmative, never hidden behind a toggle. Links out to S11 process page for depth.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict"><b>Pick — C, adapted.</b> The declared explainer lives in a <span class="he">בלוק אמון</span> that is <b>present on every business page regardless of tier</b>. Verified pages fill it with the chip + verification date; declared pages fill it with the locked <span class="he">מוצהר</span> line. Because the slot is structural, the declared page never reads as "missing" something — it reads as <em>filled differently</em>. That is the equality test, passed by architecture rather than by reassuring copy.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="qblock">
+      <div class="qhead"><span class="qn">Q2</span><h3>התנהגות התג במשטחים קטנים <span class="lat">· card &amp; map behavior</span></h3></div>
+      <p class="qsub">On a producer card in a list and in a map popup, the full chip competes with the business name and — across a dense list — turns into gold noise. Full chip everywhere, or icon-only with a tap-tooltip?</p>
+      <div class="opts two">
+
+        <!-- A -->
+        <div class="opt">
+          <div class="ol"><span class="ok">a</span><span class="ot">Full chip on every surface</span><span class="rejstamp">partial</span></div>
+          <div class="demo" style="gap:16px;flex-wrap:wrap;">
+            <div class="pcard" style="width:210px;">
+              <div class="ph"></div>
+              <div class="bd">
+                <div class="ce">חלב וגבינות</div>
+                <div class="nr" style="flex-wrap:wrap;gap:8px;"><span class="pn">גבינות עין ורד</span>
+                  <span class="mk-badge" style="font-size:12px;padding:5px 11px 5px 9px;"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>מאומת</span>
+                </div>
+                <div class="mt">עין ורד · <span class="num">4.6</span> ק״מ</div>
+              </div>
+            </div>
+          </div>
+          <div class="pc">
+            <div class="row"><span class="g">+</span><span>Explicit; no learning needed. Right for a single, deliberate card.</span></div>
+            <div class="row"><span class="b">✕</span><span>Wraps the name row on 375px; repeated down a list it becomes gold noise and out-shouts the name.</span></div>
+          </div>
+        </div>
+
+        <!-- B · PICK -->
+        <div class="opt pick">
+          <div class="ol"><span class="ok">b</span><span class="ot">Icon-only seal + tap-tooltip</span><span class="pickstamp"><i class="ph ph-seal-check" style="font-size:11px;"></i>pick · cards</span></div>
+          <div class="demo" style="gap:16px;flex-wrap:wrap;">
+            <div class="pcard" style="width:210px;">
+              <div class="ph"></div>
+              <div class="bd">
+                <div class="ce">חלב וגבינות</div>
+                <div class="nr"><span class="pn">גבינות עין ורד</span>
+                  <span class="mk-seal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                </div>
+                <div class="mt">עין ורד · <span class="num">4.6</span> ק״מ</div>
+              </div>
+            </div>
+          </div>
+          <div class="pc">
+            <div class="row"><span class="g">+</span><span><b>Name stays the hero.</b> One gold seal reads as a quiet mark of trust, never wraps, scales calmly down a list.</span></div>
+            <div class="row"><span class="g">+</span><span>Tap/long-press reveals the same tooltip as the full chip — interaction specced in §03. Full label kept for screen readers.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict"><b>Pick — hybrid.</b> <b>Icon-only seal</b> on the producer card (list density wins). <b>Full chip</b> on the map popup and the business hero — both are single, focused, one-at-a-time surfaces with room for the word <span class="he">מאומת</span>. The seal glyph is identical across all three; only word-vs-no-word changes with surface density. Declared businesses show <em>nothing</em> on card and map — no icon, no placeholder — which is the only treatment that can't read as lesser.</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       §01 · ANATOMY
+       ══════════════════════════════════════════════════════════ -->
+  <section class="dsec">
+    <div class="dsec-head">
+      <span class="si">01</span>
+      <h2>Anatomy <span class="he">— הצ'יפ</span></h2>
+      <span class="tail">Locked S11 · 1× = production scale</span>
+    </div>
+    <p class="lede">The chip itself is locked. This is the measured build sheet: gold seal glyph, the word <b>מאומת</b> in DM Sans, hairline gold border on a 7%-gold fill, full pill radius. <b>Optical padding:</b> trailing edge (word side) is 2px wider than the icon side so the seal sits centered, not crowded.</p>
+
+    <div class="anatomy">
+      <div class="anat-stage">
+        <div class="blowup">
+          <span class="mk-badge" dir="rtl">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            מאומת
+          </span>
+        </div>
+        <div style="font-family:var(--doc-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--doc-mute);margin-top:8px;">shown at 2.4× · production size below</div>
+        <span class="mk-badge" dir="rtl">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          מאומת
+        </span>
+      </div>
+
+      <div>
+        <div class="callouts" style="margin-bottom:30px;">
+          <div class="callout"><span class="lab">height</span><span class="val"><b>≈33px</b> total · seal glyph (17px) sets the line box · 7px block padding · 1px border</span></div>
+          <div class="callout"><span class="lab">padding</span><span class="val"><b>7px</b> block · <b>15px</b> trailing (word) · <b>13px</b> leading (icon)</span></div>
+          <div class="callout"><span class="lab">gap</span><span class="val"><b>7px</b> between seal glyph and word</span></div>
+          <div class="callout"><span class="lab">glyph</span><span class="val"><b>17×17px</b> seal · stroke 1.1 ring / 1.6 check · <code>currentColor</code></span></div>
+          <div class="callout"><span class="lab">label</span><span class="val">DM Sans <b>600</b> · <b>15px</b> · <span class="he">מאומת</span> · never abbreviated</span></div>
+          <div class="callout"><span class="lab">border</span><span class="val"><b>1px</b> solid gold · radius <b>9999px</b> (full pill)</span></div>
+          <div class="callout"><span class="lab">fill</span><span class="val">gold @ <b>7%</b> · <code>rgba(139,105,20,.07)</code></span></div>
+          <div class="callout"><span class="lab">color</span><span class="val">glyph + border + label all <code>--accent</code></span></div>
+        </div>
+
+        <table class="tok-table">
+          <caption>Tokens — no new colors (DS lock)</caption>
+          <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td class="k">--accent</td><td class="v"><span class="swatch" style="background:#8B6914;"></span>#8B6914</td><td>glyph · border · label</td></tr>
+            <tr><td class="k">--accent @7%</td><td class="v"><span class="swatch" style="background:#8B6914;opacity:.5;"></span>rgba(139,105,20,.07)</td><td>chip fill</td></tr>
+            <tr><td class="k">--primary-dark</td><td class="v"><span class="swatch" style="background:#2E4A2E;"></span>#2E4A2E</td><td>tooltip bg · declared line</td></tr>
+            <tr><td class="k">--background</td><td class="v"><span class="swatch" style="background:#F5F0E8;"></span>#F5F0E8</td><td>field behind chip</td></tr>
+            <tr><td class="k">radius-full</td><td class="v">9999px</td><td>pill</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       §02 · THREE STATES
+       ══════════════════════════════════════════════════════════ -->
+  <section class="dsec">
+    <div class="dsec-head">
+      <span class="si">02</span>
+      <h2>Three states <span class="he">— שלושה מצבים</span></h2>
+      <span class="tail">Same chip · two tooltips · one no-chip</span>
+    </div>
+    <p class="lede">States 1 &amp; 2 are the <b>same chip</b> — identical glyph, identical word <b>מאומת</b> — differing only in tooltip copy. State 3 is <b>no chip, ever</b>, and is never a negative marker. Tooltip strings are <b>Sapir-locked (MEH-758)</b>; <code>{date}</code> is the real submission-and-review date in <span class="num">d.m.yyyy</span>.</p>
+
+    <div class="states">
+      <!-- State 1 -->
+      <div class="state">
+        <div class="sh"><span class="sn">1</span><span class="stt">מאומת — רישיון</span><span class="lat">verified · license</span></div>
+        <div class="stage">
+          <span class="mk-badge" dir="rtl">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            מאומת
+          </span>
+          <div class="raw-tip">רישיון הוגש ונבדק בתאריך <span class="num">5.6.2026</span></div>
+        </div>
+        <div class="sb"><b>When.</b> Categories where law requires a license (S11 group A). <b>Tooltip.</b> <span class="he">"רישיון הוגש ונבדק בתאריך {date}"</span> — <span style="color:var(--primary-dark);">LOCKED</span>.</div>
+      </div>
+
+      <!-- State 2 -->
+      <div class="state">
+        <div class="sh"><span class="sn">2</span><span class="stt">מאומת — פטור</span><span class="lat">verified · exemption</span></div>
+        <div class="stage">
+          <span class="mk-badge" dir="rtl">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            מאומת
+          </span>
+          <div class="raw-tip">אישור פטור הוגש ונבדק בתאריך <span class="num">5.6.2026</span></div>
+        </div>
+        <div class="sb"><b>When.</b> Exempt categories where the business <em>chose</em> to file an exemption approval (S11 group B, opt-in). <b>Identical chip</b> to state 1 — only the tooltip differs. <b>Tooltip.</b> <span class="he">"אישור פטור הוגש ונבדק בתאריך {date}"</span> — <span style="color:var(--primary-dark);">LOCKED</span>.</div>
+      </div>
+
+      <!-- State 3 -->
+      <div class="state equal">
+        <div class="sh"><span class="sn">3</span><span class="stt">מוצהר</span><span class="lat">declared · no chip</span></div>
+        <div class="stage">
+          <span class="mk-declared" dir="rtl"><i class="ph ph-note"></i>מוצהר</span>
+          <div class="raw-tip" style="background:rgba(76,176,139,.08);border-color:rgba(76,176,139,.3);color:var(--primary-dark);">אין צ'יפ — וזה תקין.<br>הסבר שקט בבלוק האמון בלבד.</div>
+        </div>
+        <div class="sb"><b>When.</b> Exempt categories, no document filed — the baseline path. <b>No chip. No icon. No placeholder.</b> The only mark is the calm <span class="he">מוצהר</span> line in the shared trust block (§00·Q1·C). Absence of a chip is <b>never</b> rendered as a negative.</div>
+      </div>
+    </div>
+
+    <div class="eqnote">
+      <i class="ph ph-scales"></i>
+      <p><b>The equality test.</b> A <span class="he">מוצהר</span> page must never read as missing or lesser. We pass it by <b>structure, not apology:</b> the chip is an <em>additive</em> mark for an extra document — <span class="he">מסמך נוסף, לא אמון נוסף</span> — so its absence carries no deficit. Forbidden on every surface: "unverified", greyed/ghost chips, lock icons, "pending", any comparative "vs verified" framing.</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       §03 · TOOLTIP INTERACTION (live)
+       ══════════════════════════════════════════════════════════ -->
+  <section class="dsec">
+    <div class="dsec-head">
+      <span class="si">03</span>
+      <h2>Tooltip interaction <span class="he">— הטולטיפ</span></h2>
+      <span class="tail">Tap-first · hover &amp; keyboard parity · live below</span>
+    </div>
+    <p class="lede">The tooltip must be reachable on mobile — <b>tap, not hover-only.</b> One pattern serves all inputs: pointer hover (desktop), keyboard focus, and tap/long-press (touch). The chips below are <b>live</b> — hover, tab to them, or tap.</p>
+
+    <div class="intgrid">
+      <div class="try">
+        <h4>Live · full chip (hero / map)</h4>
+        <p class="hint">Hover · focus with <span class="kbd">Tab</span> · tap to toggle</p>
+        <div class="stagebox">
+          <span class="mk-tip">
+            <button class="mk-badge" dir="rtl" aria-label="בית עסק מאומת. רישיון הוגש ונבדק בתאריך 5.6.2026" aria-expanded="false" data-tip>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              מאומת
+            </button>
+            <span class="bubble" role="tooltip" dir="rtl">רישיון הוגש ונבדק בתאריך <span class="num">5.6.2026</span></span>
+          </span>
+        </div>
+        <p class="nb">role="tooltip" · trigger is a &lt;button&gt; · aria-expanded toggles · aria-label carries full string for SR.</p>
+      </div>
+
+      <div class="try">
+        <h4>Live · icon-only seal (producer card)</h4>
+        <p class="hint">Same bubble, smaller trigger · tap the seal</p>
+        <div class="stagebox">
+          <div style="display:flex;align-items:center;gap:9px;direction:rtl;">
+            <span style="font-family:var(--font-headline);font-weight:700;font-size:22px;color:var(--site-text);">גבינות עין ורד</span>
+            <span class="mk-tip">
+              <button class="mk-seal" aria-label="בית עסק מאומת. אישור פטור הוגש ונבדק בתאריך 5.6.2026" aria-expanded="false" data-tip>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <span class="bubble" role="tooltip" dir="rtl">אישור פטור הוגש ונבדק בתאריך <span class="num">5.6.2026</span></span>
+            </span>
+          </div>
+        </div>
+        <p class="nb">Hit target padded to ≥44px via the card row even though the glyph is 16px. Tapping the seal must not navigate the card.</p>
+      </div>
+    </div>
+
+    <table class="int-table" style="margin-top:30px;">
+      <thead><tr><th style="width:130px;">Input</th><th style="width:150px;">Open trigger</th><th style="width:170px;">Dismiss</th><th>Spec note</th></tr></thead>
+      <tbody>
+        <tr><td class="env">Pointer (desktop)</td><td>hover enter</td><td>hover leave</td><td>150ms fade. No click needed. Bubble above, centered, arrow down.</td></tr>
+        <tr><td class="env">Keyboard</td><td><span class="kbd">Tab</span> to focus</td><td>blur · <span class="kbd">Esc</span></td><td>Trigger is a real <code>&lt;button&gt;</code>; <code>:focus-within</code> shows bubble. Visible focus ring (gold, 2px).</td></tr>
+        <tr><td class="env">Touch</td><td>tap (toggle on)</td><td>tap again · tap outside · scroll</td><td><b>First tap shows, never navigates.</b> Only one bubble open at a time. Long-press also opens. This is the mobile-reachability requirement.</td></tr>
+      </tbody>
+    </table>
+    <p class="capnote"><b>Placement &amp; collision.</b> Bubble sits 9px above the trigger, centered (RTL-mirrored via <code>translateX(50%)</code>). On the map popup the bubble must render <i>inside</i> the popup's stacking context and flip below if it would clip the viewport top. Max-width 240px; wraps to 2 lines at most for the locked strings.</p>
+    <p class="capnote"><b>Port · bidi.</b> <code>{date}</code> renders <span class="num">d.m.yyyy</span> and must be <b>LTR-isolated</b> inside the RTL bubble — wrap it <code>unicode-bidi:isolate; direction:ltr</code> (the <code>.num</code> class) so the date never reorders against the Hebrew. Applies to both tooltip strings.</p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       §04 · PER-SURFACE RULES
+       ══════════════════════════════════════════════════════════ -->
+  <section class="dsec">
+    <div class="dsec-head">
+      <span class="si">04</span>
+      <h2>Per-surface rules <span class="he">— לפי משטח</span></h2>
+      <span class="tail">hero · card · map · mobile + desktop</span>
+    </div>
+    <p class="lede">Three surfaces, one glyph. The chip earns its word where the surface is single and deliberate; it drops to icon-only where the surface is a dense list; the declared business shows the shared trust block on its page and <b>nothing</b> on card/map.</p>
+
+    <div class="surfgrid">
+
+      <!-- SURFACE 1 — business hero -->
+      <div class="surfcol">
+        <div class="cap"><span class="label">A · BUSINESS HERO</span><span class="dims">full chip · beside name</span></div>
+        <div class="vp" style="width:460px;">
+          <div class="surf bp-hero-mock">
+            <div class="eb"><span class="r"></span>חלב וגבינות · משק משפחתי</div>
+            <div class="nrow">
+              <div class="nm">מחלבת<br>בן ארי</div>
+              <div class="chipwrap">
+                <span class="mk-tip">
+                  <button class="mk-badge" dir="rtl" aria-label="בית עסק מאומת. רישיון הוגש ונבדק בתאריך 5.6.2026" aria-expanded="false" data-tip>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    מאומת
+                  </button>
+                  <span class="bubble" role="tooltip" dir="rtl">רישיון הוגש ונבדק בתאריך <span class="num">5.6.2026</span></span>
+                </span>
+              </div>
+            </div>
+            <div class="pl"><i class="ph ph-map-pin"></i>כפר ויתקין · עמק חפר</div>
+          </div>
+        </div>
+        <ul class="srules">
+          <li><b>Verified:</b> full chip, top-aligned to the first name line, <span class="he">16px</span> from the name. Tooltip on tap/hover.</li>
+          <li><b>Declared:</b> no chip by the name. The <span class="he">מוצהר</span> trust block sits lower in the page (below).</li>
+          <li>Chip never larger than the hero size shown — it must not rival the <span class="he">72px</span> name.</li>
+        </ul>
+      </div>
+
+      <!-- SURFACE 1b — declared hero trust block -->
+      <div class="surfcol">
+        <div class="cap"><span class="label">A · DECLARED TRUST BLOCK</span><span class="dims">shared slot · state 3</span></div>
+        <div class="vp" style="width:380px;">
+          <div class="surf bp-hero-mock" style="padding-top:24px;">
+            <div class="eb"><span class="r"></span>ירקות · משק משפחתי</div>
+            <div class="nrow"><div class="nm" style="font-size:44px;">חוות תמר</div></div>
+            <div class="pl"><i class="ph ph-map-pin"></i>כפר ויתקין · עמק חפר</div>
+            <div class="bp-trust">
+              <p class="dtline"><span class="mk-declared"><i class="ph ph-note"></i>מוצהר</span> <span class="dsep">·</span> העסק חתם על הצהרה מחייבת שהוא פועל כדין — ועבר היכרות אישית, כמו כל בית עסק כאן.</p>
+              <a href="#">על תהליך הקבלה<i class="ph ph-arrow-left" style="font-size:13px;"></i></a>
+            </div>
+          </div>
+        </div>
+        <ul class="srules">
+          <li>Same structural slot a verified page fills with chip + verification date — <b>identical position &amp; weight.</b></li>
+          <li>Trust-block line is <b>Sapir-LOCKED</b> (S12). The full explainer now lives on the <span class="he">תהליך הקבלה</span> page (S11) <b>only</b>.</li>
+          <li>Link routes to S11 <span class="he">תהליך הקבלה</span> for full criteria. Affirmative tone, no "why am I missing…".</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="surfgrid" style="margin-top:44px;">
+      <!-- SURFACE 2 — producer card -->
+      <div class="surfcol">
+        <div class="cap"><span class="label">B · PRODUCER CARD (LIST)</span><span class="dims">icon-only seal</span></div>
+        <div style="display:flex;gap:18px;">
+          <div class="pcard">
+            <div class="ph"><span class="cr">עין ורד</span></div>
+            <div class="bd">
+              <div class="ce">חלב וגבינות</div>
+              <div class="nr"><span class="pn">גבינות עין ורד</span>
+                <span class="mk-tip">
+                  <button class="mk-seal" aria-label="בית עסק מאומת. רישיון הוגש ונבדק בתאריך 5.6.2026" aria-expanded="false" data-tip>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </button>
+                  <span class="bubble" role="tooltip" dir="rtl">רישיון הוגש ונבדק בתאריך <span class="num">5.6.2026</span></span>
+                </span>
+              </div>
+              <div class="mt">עין ורד · <span class="num">4.6</span> ק״מ</div>
+              <div class="hr"><i class="ph ph-clock"></i>פתוח · <span class="num">09:00–17:00</span></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <div class="ph" style="background:linear-gradient(135deg,#bcd0a8,#a8c190);"><span class="cr">כפר ויתקין</span></div>
+            <div class="bd">
+              <div class="ce">ירקות</div>
+              <div class="nr"><span class="pn">חוות תמר</span></div>
+              <div class="mt">כפר ויתקין · <span class="num">6.2</span> ק״מ</div>
+              <div class="hr"><i class="ph ph-clock"></i>פתוח · <span class="num">08:00–18:00</span></div>
+            </div>
+          </div>
+        </div>
+        <ul class="srules">
+          <li><b>Verified:</b> 16px gold seal, immediately after the name (<span class="he">7px</span> gap). Tap reveals tooltip; tap does <b>not</b> open the card.</li>
+          <li><b>Declared</b> (right card): name only — <b>no seal, no gap, no placeholder.</b> Cards read as peers.</li>
+          <li>Seal vertical-centers to the name's cap height; never pushes the name to wrap.</li>
+        </ul>
+      </div>
+
+      <!-- SURFACE 3 — map popup -->
+      <div class="surfcol">
+        <div class="cap"><span class="label">C · MAP POPUP</span><span class="dims">full chip · single focus</span></div>
+        <div class="mapbg">
+          <i class="ph ph-map-pin mappin"></i>
+          <div class="mappop">
+            <div class="nr"><span class="pn">מחלבת בן ארי</span>
+              <span class="mk-tip">
+                <button class="mk-badge" dir="rtl" style="font-size:12px;padding:5px 11px 5px 9px;" aria-label="בית עסק מאומת. רישיון הוגש ונבדק בתאריך 5.6.2026" aria-expanded="false" data-tip>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2.6l2.1 1.5 2.6-.2 1 2.4 2.3 1.2-.5 2.5 1.5 2.1-1.5 2.1.5 2.5-2.3 1.2-1 2.4-2.6-.2L12 21.4l-2.1-1.5-2.6.2-1-2.4-2.3-1.2.5-2.5L3 11.8l1.5-2.1L4 7.2l2.3-1.2 1-2.4 2.6.2L12 2.6z" fill="rgba(139,105,20,0.1)" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M8.4 12.2l2.4 2.4 4.6-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  מאומת
+                </button>
+                <span class="bubble" role="tooltip" dir="rtl" style="max-width:200px;">רישיון הוגש ונבדק בתאריך <span class="num">5.6.2026</span></span>
+              </span>
+            </div>
+            <div class="mt">כפר ויתקין · עמק חפר · <span class="num">4.6</span> ק״מ</div>
+            <span class="wa"><i class="ph ph-whatsapp-logo"></i>לכתוב בוואטסאפ</span>
+          </div>
+        </div>
+        <ul class="srules">
+          <li><b>Verified:</b> compact full chip (12px label) after the name. Single focused surface — the word earns its space.</li>
+          <li><b>Declared:</b> name only in the popup. No chip.</li>
+          <li>Tooltip flips <b>below</b> the chip near the viewport top; renders within the popup layer, above the map tiles.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ DOC FOOTER — patterns / anti-patterns ░░ -->
+  <div class="doc-foot">
+    <div>
+      <h4>3 rules this spec commits to</h4>
+      <ol>
+        <li><span class="n">1</span><b>One glyph, surface-scaled.</b> The locked seal is identical everywhere; only word-vs-icon changes with surface density (chip on single surfaces, seal on lists). Recognition stays constant; noise doesn't.</li>
+        <li><span class="n">2</span><b>The badge is additive.</b> <span class="he">מסמך נוסף — לא אמון נוסף.</span> It marks an extra filed document, not extra trustworthiness. This framing is what lets absence be neutral.</li>
+        <li><span class="n">3</span><b>Equality by structure.</b> The trust slot exists on every page; verified fills it with a chip, declared with a calm locked line. No page is built to display a lack.</li>
+      </ol>
+    </div>
+    <div>
+      <h4>Anti-patterns — forbidden on every surface</h4>
+      <ul>
+        <li><span class="x">✕</span><b>No negative marker for <span class="he">מוצהר</span>.</b> No "unverified", no greyed/ghost chip, no lock icon, no "pending", no comparative "vs מאומת". Declared shows no chip — full stop.</li>
+        <li><span class="x">✕</span><b>No hover-only tooltip.</b> Touch must reach it by tap/long-press. And no AI-slop: Phosphor regular only, no emoji, no new colors, no second accent — gold is the only badge color.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ░░ COPY TABLE ADDENDUM — MEH-758 ░░ -->
+  <div class="copytable">
+    <h4>Copy table addendum · MEH-758</h4>
+    <p class="note">All strings <b>Sapir-LOCKED at S12 FINAL — port verbatim, no PENDING rows remain.</b> The full declared explainer now lives on the תהליך הקבלה page (S11) only; the business-page trust block uses the shorter locked line. Tier words are מאומת / מוצהר only — never מורשה. "בית עסק", never יצרן. CTA copy uses the infinitive (לכתוב), not "כתבי" (ADR-014). <span class="num">{date}</span> renders d.m.yyyy, tabular, LTR-isolated.</p>
+    <table>
+      <thead><tr><th style="width:230px;">Key</th><th>String (he)</th><th style="width:130px;">Status</th><th style="width:200px;">Note</th></tr></thead>
+      <tbody>
+        <tr class="grp"><td colspan="4">Verified — tooltips (locked)</td></tr>
+        <tr><td class="k">badge.tooltip.license</td><td class="he">רישיון הוגש ונבדק בתאריך {date}</td><td class="st lock">LOCKED</td><td>state 1 · MEH-758 verbatim</td></tr>
+        <tr><td class="k">badge.tooltip.exemption</td><td class="he">אישור פטור הוגש ונבדק בתאריך {date}</td><td class="st lock">LOCKED</td><td>state 2 · MEH-758 verbatim</td></tr>
+        <tr><td class="k">badge.label</td><td class="he">מאומת</td><td class="st lock">LOCKED</td><td>chip word · never abbreviated</td></tr>
+        <tr class="grp"><td colspan="4">Declared — process-page explainer (locked)</td></tr>
+        <tr><td class="k">badge.declared.explainer</td><td class="he">אין תג "מאומת"? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.</td><td class="st lock">LOCKED</td><td>תהליך הקבלה page (S11) <b style="color:#8B2E2E;">ONLY</b> — dropped from business page · MEH-758</td></tr>
+        <tr class="grp"><td colspan="4">Declared trust block + a11y — locked (S12 FINAL)</td></tr>
+        <tr><td class="k">badge.declared.tierline</td><td class="he">מוצהר</td><td class="st lock">LOCKED</td><td>trust-block lead marker · business page · rendered "מוצהר · {body}"</td></tr>
+        <tr><td class="k">badge.declared.body</td><td class="he">העסק חתם על הצהרה מחייבת שהוא פועל כדין — ועבר היכרות אישית, כמו כל בית עסק כאן.</td><td class="st lock">LOCKED</td><td>trust-block line · business page · shorter than process-page explainer</td></tr>
+        <tr><td class="k">badge.declared.link</td><td class="he">על תהליך הקבלה</td><td class="st lock">LOCKED</td><td>routes to S11 process page · affirmative</td></tr>
+        <tr><td class="k">badge.aria.verified</td><td class="he">בית עסק מאומת. {tooltip}</td><td class="st lock">LOCKED</td><td>SR label on chip + seal · appends locked tooltip string</td></tr>
+        <tr><td class="k">badge.aria.declared</td><td class="he">בית עסק מוצהר</td><td class="st lock">LOCKED</td><td>SR label for tier-line · never "לא מאומת"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+/* ── tooltip: tap-to-toggle on touch, one-open-at-a-time, dismiss on outside/scroll/Esc ── */
+(function(){
+  var triggers = Array.prototype.slice.call(document.querySelectorAll('[data-tip]'));
+  function closeAll(except){
+    triggers.forEach(function(t){
+      var tip = t.closest('.mk-tip');
+      if (tip && tip !== except){ tip.classList.remove('is-open'); t.setAttribute('aria-expanded','false'); }
+    });
+  }
+  triggers.forEach(function(t){
+    var tip = t.closest('.mk-tip');
+    t.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      var open = tip.classList.contains('is-open');
+      closeAll(tip);
+      if (open){ tip.classList.remove('is-open'); t.setAttribute('aria-expanded','false'); }
+      else { tip.classList.add('is-open'); t.setAttribute('aria-expanded','true'); }
+    });
+    t.addEventListener('keydown', function(e){
+      if (e.key === 'Escape'){ tip.classList.remove('is-open'); t.setAttribute('aria-expanded','false'); t.blur(); }
+    });
+  });
+  document.addEventListener('click', function(){ closeAll(null); });
+  window.addEventListener('scroll', function(){ closeAll(null); }, true);
+})();
+</script>
+
+</body>
+</html>

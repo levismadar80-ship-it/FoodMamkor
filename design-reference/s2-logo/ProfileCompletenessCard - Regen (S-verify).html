@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfileCompletenessCard — regenerated (MEH-288)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Heebo:wght@400;500;600&display=swap">
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  /* ---- tokens (verbatim from tailwind.tokens.json) ---------------- */
+  :root {
+    --background:            #f5f0e8;   /* warm cream — NEVER pure white */
+    --background-alt:        #ede4d2;
+    --text:                  #1c1a17;
+    --fg-muted:              #5c584f;
+    --primary:               #2e6853;
+    --action-primary:        #2e6853;
+    --action-primary-hover:  #2e4a2e;
+    --border:                #e5dfd3;
+    --accent:                #8b6914;
+    /* ProgressRing state-stroke — the ONE sanctioned state-color exception
+       (mirrors RING_STROKE in ProfileCompletenessCard.jsx). Not used anywhere
+       else on the surface. */
+    --ring-track:            #e5dfd3;
+    --ring-red:              #B91C1C;
+    --ring-yellow:           #C98600;
+    --ring-green:            #2e6853;
+
+    --font-headline: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+    --font-body:     "DM Sans", "Heebo", sans-serif;
+    --font-english:  "Cormorant Garamond", serif;
+
+    --radius-lg: 16px;
+    --focus-ring: rgba(46,104,83,0.40);
+  }
+
+  * { box-sizing: border-box; }
+  html { direction: rtl; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    display: grid;
+    place-items: start center;
+    padding: 56px 20px;
+  }
+
+  .wrap { width: 100%; max-width: 560px; }
+
+  /* review harness — clearly NOT part of the card */
+  .harness { margin-bottom: 28px; }
+  .harness__eyebrow {
+    font-family: var(--font-body);
+    font-weight: 500; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--fg-muted);
+    margin: 0 0 10px;
+  }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tab {
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    min-height: 36px; padding: 6px 14px;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: 9999px;
+    cursor: pointer; transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+  }
+  .tab:hover { border-color: var(--primary); }
+  .tab[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .tab:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  /* ---- ProfileCompletenessCard (regenerated 1:1) ----------------- */
+  /* default card */
+  .pcc {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);            /* rounded-[16px] */
+    padding: 24px;                              /* p-6 */
+  }
+  @media (min-width: 768px) { .pcc { padding: 32px; } }  /* md:p-8 */
+
+  .pcc__row { display: flex; align-items: flex-start; gap: 16px; }  /* flex items-start gap-4 */
+  .pcc__ring { flex: none; }                                        /* shrink-0 */
+  .pcc__body { flex: 1; min-width: 0; }                             /* flex-1 min-w-0 */
+
+  .pcc__headline {
+    margin: 0;
+    font-family: var(--font-headline);          /* font-headline-lg */
+    font-weight: 700;                            /* font-bold */
+    font-size: 20px;                             /* text-xl */
+    line-height: 1.2;
+    color: var(--primary);                       /* text-primary — every state */
+  }
+  @media (min-width: 768px) { .pcc__headline { font-size: 24px; } }  /* md:text-2xl */
+
+  .pcc__sub {
+    margin: 4px 0 0;                             /* mt-1 */
+    font-size: 14px;                             /* text-sm */
+    line-height: 1.55;
+    color: var(--fg-muted);                      /* text-fg-muted */
+  }
+  @media (min-width: 768px) { .pcc__sub { font-size: 16px; } }  /* md:text-base */
+
+  .pcc__next {
+    margin: 12px 0 0;                            /* mt-3 */
+    font-size: 14px;                             /* text-sm */
+    color: var(--text);                          /* text-text */
+  }
+  .pcc__next b { font-weight: 600; }             /* font-semibold */
+
+  .pcc__cta-wrap { margin-top: 20px; }           /* mt-5 */
+  .pcc__cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;                                    /* gap-2 */
+    min-height: 44px;                            /* min-h-[44px] */
+    padding-inline: 24px;                        /* px-6 */
+    border-radius: 9999px;                       /* rounded-full */
+    font-family: var(--font-body);
+    font-weight: 500;                            /* font-medium */
+    font-size: 15px;
+    background: var(--action-primary);
+    color: #fff;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background-color .42s cubic-bezier(.25,1,.5,1);
+  }
+  .pcc__cta:hover { background: var(--action-primary-hover); }
+  .pcc__cta:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  /* green confirmation line — collapsed state */
+  .pcc--green {
+    display: flex; align-items: center; gap: 12px;   /* flex items-center gap-3 */
+    padding: 16px 24px;                              /* px-6 py-4 */
+  }
+  .pcc--green .check { color: var(--primary); font-size: 18px; font-weight: 700; line-height: 1; }
+  .pcc--green .pcc__headline { font-size: 16px; }    /* font-headline-md text-base */
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab, .pcc__cta { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="root"></div>
+</div>
+
+<script type="text/babel" data-presets="react">
+const { useState } = React;
+
+/* ProgressRing — direction-neutral, regenerated verbatim from source.
+   The colored stroke is the sole sanctioned state-color (ADR-019 exception). */
+function ProgressRing({ percent, priority, label }) {
+  const size = 56, stroke = 5;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (percent / 100) * circ;
+  const STROKE = { red: "var(--ring-red)", yellow: "var(--ring-yellow)", green: "var(--ring-green)" };
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
+         role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}
+         aria-label={label} className="pcc__ring">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--ring-track)" strokeWidth={stroke} />
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+              stroke={STROKE[priority] || STROKE.green} strokeWidth={stroke} strokeLinecap="round"
+              strokeDasharray={`${dash} ${circ}`}
+              transform={`rotate(-90 ${size/2} ${size/2})`} />
+      <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle"
+            fontSize="14" fontWeight="700" fill="var(--text)">{percent}%</text>
+    </svg>
+  );
+}
+
+/* i18n copy — gender-neutral plural / gerund (ADR-014, UI chrome). */
+const STATES = {
+  red: {
+    priority: "red", percent: 20,
+    headline: "כמה פרטים חיוניים עדיין חסרים",
+    sub: "בלעדיהם העסק לא יופיע במפה ולא יקבל פניות.",
+    next: "מיקום על המפה",
+  },
+  yellowLow: {
+    priority: "yellow", percent: 60,
+    headline: "60% מהפרופיל מוכן",
+    sub: "עוד כמה פרטים והעסק יבלוט יותר בתוצאות.",
+    next: "קטגוריה",
+  },
+  yellowHigh: {
+    priority: "yellow", percent: 80,
+    headline: "כמעט שם — 80%",
+    sub: "נשאר עוד פרט אחד להשלמה.",
+    next: "תמונה ראשית",
+  },
+  green: {
+    priority: "green", percent: 100,
+    headline: "הפרופיל שלכם מלא — הכול מעודכן",
+  },
+};
+
+const CTA = "השלימו עכשיו";
+const NEXT_PREFIX = "השלב הבא:";
+
+function ProfileCompletenessCard({ state }) {
+  const s = STATES[state];
+
+  if (s.priority === "green") {
+    return (
+      <div className="pcc pcc--green" role="status">
+        <span className="check" aria-hidden="true">✓</span>
+        <h2 className="pcc__headline">{s.headline}</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pcc">
+      <div className="pcc__row">
+        <ProgressRing percent={s.percent} priority={s.priority}
+                      label={`השלמת פרופיל: ${s.percent} אחוז`} />
+        <div className="pcc__body">
+          <h2 className="pcc__headline" aria-live="polite">{s.headline}</h2>
+          <p className="pcc__sub">{s.sub}</p>
+          <p className="pcc__next"><b>{NEXT_PREFIX}</b> {s.next}</p>
+        </div>
+      </div>
+      <div className="pcc__cta-wrap">
+        <a href="#" className="pcc__cta" aria-label={`${CTA} — מעבר להגדרות`}
+           onClick={(e) => e.preventDefault()}>
+          {CTA}
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
+const TABS = [
+  ["red",        "red"],
+  ["yellowLow",  "yellow ≤70"],
+  ["yellowHigh", "yellow >70"],
+  ["green",      "green"],
+];
+
+function App() {
+  const [state, setState] = useState("yellowHigh");
+  return (
+    <div>
+      <div className="harness">
+        <p className="harness__eyebrow">ProfileCompletenessCard · state preview</p>
+        <div className="tabs" role="group" aria-label="בחירת מצב לתצוגה">
+          {TABS.map(([k, lbl]) => (
+            <button key={k} type="button" className="tab"
+                    aria-pressed={state === k} onClick={() => setState(k)}>{lbl}</button>
+          ))}
+        </div>
+      </div>
+      <ProfileCompletenessCard state={state} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

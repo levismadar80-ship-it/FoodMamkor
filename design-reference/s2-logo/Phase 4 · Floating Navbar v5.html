@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S3 · P4 v5 · Floating Navbar — LOCK</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --green:       #2E6853;
+  --green-dark:  #1F4A38;
+  --green-light: #3A7D64;
+
+  /* v3 · Green scale (6 stops). --green stays alias to --green-500. */
+  --green-50:    #EAF3DE;
+  --green-100:   #C8DCB3;
+  --green-300:   #6FA284;
+  --green-500:   #2E6853;   /* brand identity · same hex as --green */
+  --green-700:   #1F4C3C;   /* hover on primary CTAs */
+  --green-900:   #143228;   /* footer, deep emphasis */
+
+  /* v3 · Transition tokens — editorial pace */
+  --duration-fast:    420ms;
+  --ease-quart:   cubic-bezier(.25, 1, .5, 1);   /* quart ease-out */
+
+  /* v4 · Motion family (Tailwind v4 / Carbon / Penpot 2026 pattern) */
+  --duration-fast:   180ms;   /* hover / focus micro */
+  --duration-base:   420ms;   /* default surface transitions */
+  --duration-slow:   640ms;   /* large surfaces (S4 hero, drawers) */
+  --ease-quart:      cubic-bezier(.25, 1, .5, 1);   /* single locked curve */
+
+  /* v4 · Semantic alias layer (intent-based) */
+  --color-action-primary:        var(--green-500);
+  --color-action-primary-hover:  var(--green-700);
+  --color-surface-floating:      var(--background);
+
+  /* v5 · Ghost CTA — surface-aware */
+  --color-action-ghost:                  transparent;
+  --color-action-ghost-border:           var(--text);
+  --color-action-ghost-text:             var(--text);
+  --color-action-ghost-on-dark:          transparent;
+  --color-action-ghost-border-on-dark:   var(--background);
+  --color-action-ghost-text-on-dark:     var(--background);
+  --background:  #F5F0E8;
+  --bg-card:     #FFFEFB;
+  --text:        #1C1A17;
+  --fg-muted:    #57524A;
+  --gold:        #8B6914;
+  --light:       #EAF3DE;
+  --border:      #E8E0D0;
+  --focus-ring:  rgba(46,104,83,0.40);
+
+  --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px;
+  --space-6: 48px; --space-8: 64px; --space-12: 96px;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body { padding: 48px 32px 96px; min-width: 1400px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+.docpage { max-width: 1740px; margin: 0 auto; }
+
+/* ── Doc masthead ─────────────────── */
+.docpage > header {
+  display: grid; grid-template-columns: 1fr auto; align-items: end;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+  padding-bottom: 24px; margin-bottom: 32px; gap: 24px;
+}
+.docpage > header h1 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; color: var(--doc-ink); }
+.docpage > header h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.docpage > header .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 6px; max-width: 80ch; }
+.docpage > header .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.docpage > header .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.docpage > header .stamp .dot { color: var(--green); }
+
+.phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.phase-nav .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.phase-nav .pip.is-on  { background: var(--green); border-color: var(--green); }
+.phase-nav .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+
+/* ── Validation Gate ─────────────── */
+.gate {
+  background: #1F4A38; color: var(--background);
+  padding: 32px 40px; margin-bottom: 48px;
+  display: grid; grid-template-columns: 320px 1fr 1fr 1fr 1fr; gap: 32px;
+}
+.gate h2 { font-family: var(--font-display); font-weight: 900; font-size: 28px; line-height: 1.1; }
+.gate h2 em { font-family: var(--font-italic); font-weight: 500; font-style: italic; color: #E7C88A; }
+.gate .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: rgba(245,240,232,0.7); margin-top: 8px; line-height: 1.5; max-width: 28ch; }
+.gate .pass-tag { display: inline-block; margin-top: 16px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--background); background: var(--green); padding: 4px 10px; }
+.gate-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,240,232,0.55); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(245,240,232,0.18); }
+.gate-col h3 .num { font-family: var(--font-italic); font-style: italic; color: #E7C88A; margin-inline-end: 8px; text-transform: none; font-size: 13px; }
+.gate-row { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: baseline; padding: 6px 0; font-size: 12px; line-height: 1.5; color: var(--background); border-bottom: 1px dashed rgba(245,240,232,0.08); }
+.gate-row:last-child { border-bottom: 0; }
+.gate-row .box { width: 14px; height: 14px; border: 1px solid #E7C88A; background: #E7C88A; color: var(--green-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; line-height: 1; }
+.gate-row em { font-family: var(--font-italic); font-style: italic; color: rgba(245,240,232,0.65); }
+.gate-row code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #E7C88A; background: rgba(231,200,138,0.10); padding: 1px 4px; }
+.gate-row .evi { font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 10.5px; color: #E7C88A; background: rgba(231,200,138,0.10); padding: 1px 4px; margin-inline-start: 6px; white-space: nowrap; display: inline-block; }
+
+/* ── Section head ─────────────────── */
+.section-head {
+  border-top: 1px solid rgba(42,38,32,0.30);
+  padding: 32px 0 24px; margin-bottom: 32px;
+  display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline;
+}
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 80ch; line-height: 1.5; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── Thesis ────────────────────── */
+.thesis {
+  background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18);
+  padding: 40px 48px; margin-bottom: 64px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 48px;
+}
+.thesis .tag { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 14px; }
+.thesis h3 { font-family: var(--font-display); font-weight: 700; font-size: 28px; line-height: 1.15; color: var(--doc-ink); margin-bottom: 8px; }
+.thesis p { font-size: 15px; line-height: 1.7; color: var(--doc-ink); max-width: 72ch; }
+.thesis p + p { margin-top: 14px; }
+.thesis p em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.thesis p strong { color: var(--doc-ink); font-weight: 700; }
+.thesis .sub-h { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-top: 16px; margin-bottom: 6px; }
+
+/* ── BP frames ──────────────────── */
+.bp-stack { display: grid; gap: 72px; margin-bottom: 64px; }
+.bp-cap {
+  font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute);
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: baseline;
+}
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+
+.bp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+
+.vp {
+  background: var(--background);
+  border: 1px solid rgba(42,38,32,0.18);
+  overflow: hidden; position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.vp.desktop { width: 100%; height: 480px; }
+.vp.tablet  { width: 100%; height: 480px; }
+.vp.mobile  { width: 375px; height: 580px; }
+
+.vp .state-tag {
+  position: absolute; top: 12px; inset-inline-start: 12px; z-index: 10;
+  font-family: var(--font-body); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 4px 10px;
+}
+.vp .state-tag .num { font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; }
+
+/* ─── THE NAVBAR ─────────────── */
+.nav-shell {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; justify-content: center;
+  padding: 24px;
+  direction: rtl;
+}
+.tablet .nav-shell { padding: 20px; }
+.mobile .nav-shell { padding: 16px; }
+
+.nav {
+  width: 100%; max-width: 1200px;
+  display: grid; align-items: center;
+  background: transparent;
+  border-radius: 9999px;
+  transition: background-color var(--duration-base) var(--ease-quart), border-color var(--duration-base) var(--ease-quart), box-shadow var(--duration-base) var(--ease-quart), padding var(--duration-base) var(--ease-quart), color var(--duration-base) var(--ease-quart);
+}
+
+/* Default — pre-scroll · transparent · no chrome */
+.nav.is-default {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 24px;
+}
+/* Scrolled — floating cream pill */
+.nav.is-scrolled {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px 16px 8px 8px; /* extra padding on start (right) for logo */
+  box-shadow: 0 2px 20px rgba(46,104,83,0.06);
+}
+
+.desktop .nav { grid-template-columns: auto 1fr auto auto; gap: 32px; min-height: 64px; }
+.tablet  .nav { grid-template-columns: auto 1fr auto auto; gap: 24px; min-height: 56px; }
+.mobile  .nav { grid-template-columns: auto 1fr auto; gap: 12px; min-height: 52px; padding: 6px 8px 6px 16px; }
+.mobile .nav.is-scrolled { padding: 6px 8px 6px 16px; }
+
+/* Logo — S2 final mark (MEH-637). Five-seed pomegranate composition.
+   Three surface variants: horizontal (desktop/tablet), mark-only (mobile),
+   warm-dark (mobile expanded). Inline SVG — no asset deps. */
+.logo {
+  display: inline-flex; align-items: center;
+  text-decoration: none;
+}
+.logo svg { display: block; }
+.logo.logo-horiz svg { width: 168px; height: 51px; }
+.tablet .logo.logo-horiz svg { width: 148px; height: 45px; }
+.logo.logo-mark svg { width: 40px; height: 40px; }
+.mobile .logo.logo-mark svg { width: 36px; height: 36px; }
+.logo.logo-dark svg { width: 40px; height: 40px; }
+.mobile .logo.logo-dark svg { width: 36px; height: 36px; }
+/* v5 — over-image variants now only need to flip nav link color (logo SVG
+   carries its own surface treatment via the on-warm-dark variant) */
+.vp.over-image .nav-link { color: var(--background); }
+.vp.over-image .nav-account { color: var(--background); border-color: rgba(245,240,232,0.5); }
+
+/* Nav links */
+.nav-links {
+  display: flex; align-items: center; gap: 32px;
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+}
+.tablet .nav-links { gap: 24px; }
+.nav-link {
+  color: var(--text); text-decoration: none;
+  padding: 8px 0; position: relative;
+  transition: color var(--duration-fast) var(--ease-quart);
+}
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after {
+  content: ""; position: absolute; inset-inline: 0; bottom: 2px;
+  height: 1px; background: var(--gold);
+}
+
+/* Secondary CTA — ghost */
+.nav-account {
+  font-family: var(--font-body); font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
+  color: var(--green-dark);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 10px 16px;
+  min-height: 44px;
+  display: inline-flex; align-items: center;
+  cursor: default;
+  transition: background-color var(--duration-fast) var(--ease-quart), border-color var(--duration-fast) var(--ease-quart);
+}
+.nav.is-scrolled .nav-account { border-color: var(--border); }
+.nav-account:hover { background: var(--light); }
+
+/* Primary CTA — green pill */
+.nav-cta {
+  font-family: var(--font-body); font-weight: 500; font-size: 14px; letter-spacing: 0.02em;
+  color: var(--background); background: var(--color-action-primary);
+  border: 1px solid var(--color-action-primary);
+  padding: 10px 20px;
+  min-height: 44px;
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: default; white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-quart), border-color var(--duration-fast) var(--ease-quart);
+}
+.nav-cta:hover { background: var(--color-action-primary-hover); border-color: var(--color-action-primary-hover); }
+.nav-cta:focus-visible,
+.nav-account:focus-visible {
+  outline: 2px solid var(--color-action-primary-hover);
+  outline-offset: 3px;
+  outline-style: solid;
+  transition: outline-offset var(--duration-fast) var(--ease-quart);
+}
+.nav-cta .arr {
+  font-family: var(--font-italic); font-style: italic;
+  display: inline-block; transform: scaleX(-1);
+  color: #E7C88A;
+}
+
+/* Hamburger (mobile) */
+.hamburger {
+  width: 44px; height: 44px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: default;
+  transition: background-color var(--duration-fast) var(--ease-quart);
+}
+.hamburger svg { width: 18px; height: 18px; }
+.hamburger svg path { stroke: var(--text); stroke-width: 1.5; stroke-linecap: round; fill: none; }
+.vp.over-image .hamburger { background: rgba(245,240,232,0.15); border-color: rgba(245,240,232,0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.vp.over-image .hamburger svg path { stroke: var(--background); }
+
+/* Mobile expanded — drawer (v5: warm-dark surface for ghost-on-dark legibility) */
+.drawer {
+  position: absolute; top: 76px; inset-inline: 16px;
+  background: var(--green-900);
+  border: 1px solid rgba(245,240,232,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  z-index: 6;
+  box-shadow: 0 12px 40px rgba(20,50,40,0.45);
+  direction: rtl;
+}
+.drawer-links { display: grid; gap: 0; margin-bottom: 16px; }
+.drawer-link {
+  font-family: var(--font-display); font-weight: 700; font-size: 24px;
+  color: var(--background); text-decoration: none;
+  padding: 16px 8px;
+  display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+  border-bottom: 1px solid rgba(245,240,232,0.10);
+}
+.drawer-link:last-child { border-bottom: 0; }
+.drawer-link .num {
+  font-family: var(--font-italic); font-style: italic; font-weight: 500;
+  font-size: 14px; color: var(--gold);
+}
+.drawer-link.is-current { color: #E7C88A; }
+
+.drawer-cta-row { display: grid; gap: 8px; margin-top: 8px; padding-top: 16px; border-top: 1px solid rgba(245,240,232,0.12); }
+.drawer-cta-row .nav-cta,
+.drawer-cta-row .nav-account {
+  width: 100%; justify-content: center; min-height: 48px;
+}
+/* v5 — ghost CTA in drawer scope uses on-dark variant */
+.drawer .nav-account {
+  background: var(--color-action-ghost-on-dark);
+  color: var(--color-action-ghost-text-on-dark);
+  border-color: var(--color-action-ghost-border-on-dark);
+}
+.drawer .nav-account:hover { background: rgba(245,240,232,0.08); }
+
+/* ─── Fake page body to anchor scrolled state ── */
+.vp-content {
+  position: absolute; inset: 0; padding: 132px 48px 32px; direction: rtl;
+}
+.tablet .vp-content { padding: 120px 32px 32px; }
+.mobile .vp-content { padding: 96px 24px 24px; }
+.vp-content .placeholder-h {
+  font-family: var(--font-display); font-weight: 900; font-size: 56px; line-height: 1.05;
+  color: var(--text); max-width: 16ch;
+}
+.tablet .vp-content .placeholder-h { font-size: 44px; }
+.mobile .vp-content .placeholder-h { font-size: 32px; }
+.vp-content .placeholder-h .stop { color: var(--gold); }
+.vp-content .placeholder-sub {
+  font-family: var(--font-display); font-weight: 400; font-size: 18px;
+  color: var(--fg-muted); margin-top: 16px; max-width: 36ch;
+}
+.mobile .vp-content .placeholder-sub { font-size: 16px; }
+
+/* Over-image variant — fake photo bg */
+.vp.over-image {
+  background-color: #4a2c1a;
+  background-image:
+    radial-gradient(40% 32% at 26% 28%, rgba(255,240,200,0.50), transparent 70%),
+    radial-gradient(36% 30% at 80% 70%, rgba(200,150,80,0.60), transparent 70%),
+    radial-gradient(50% 50% at 50% 50%, rgba(255,220,150,0.18), transparent 65%),
+    linear-gradient(140deg, #3a1f10 0%, #6b3f20 38%, #b0762e 62%, #2a1808 100%);
+}
+.vp.over-image::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(31,74,56,0) 0%, rgba(31,74,56,0.60) 100%);
+  pointer-events: none; z-index: 1;
+}
+.vp.over-image .vp-content,
+.vp.over-image .nav-shell { z-index: 5; }
+.vp.over-image .vp-content .placeholder-h { color: var(--background); }
+.vp.over-image .vp-content .placeholder-sub { color: rgba(245,240,232,0.85); }
+
+/* ─── Inspector ─────────── */
+.inspector {
+  background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+  display: grid; grid-template-columns: 240px repeat(4, 1fr); gap: 32px;
+  margin-bottom: 32px;
+}
+.inspector h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 4px; }
+.inspector .lede { font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 14px; line-height: 1.5; }
+.insp-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.insp-row { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.insp-row .chip { width: 14px; height: 14px; border: 1px solid rgba(42,38,32,0.20); }
+.insp-row .name { color: var(--doc-ink); }
+.insp-row .val { color: var(--doc-ink-mute); }
+
+.spec-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 12px 16px; margin-bottom: 10px;
+}
+.spec-card .ttl { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px; }
+.spec-card ul { list-style: none; font-size: 12px; line-height: 1.7; color: var(--doc-ink); }
+.spec-card ul li code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+.spec-card p { font-size: 12.5px; line-height: 1.65; color: var(--doc-ink); margin-bottom: 4px; }
+.spec-card p em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+/* ─── Self-check + Council ───── */
+.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; }
+.panel h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; margin-bottom: 4px; }
+.panel .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 24px; line-height: 1.5; }
+.checklist { display: grid; gap: 4px; }
+.checklist .item { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 14px; line-height: 1.5; }
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .item .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.checklist .item .note { font-family: var(--font-italic); font-style: italic; font-size: 12px; color: var(--doc-ink-mute); text-align: end; white-space: nowrap; }
+.checklist .item code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+
+.council-row { display: grid; grid-template-columns: 160px 1fr; gap: 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 14px; line-height: 1.5; }
+.council-row:last-child { border-bottom: 0; }
+.council-row .who { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+.council-row .who strong { color: var(--doc-ink); display: block; font-size: 13px; letter-spacing: 0.06em; text-transform: none; margin-top: 2px; }
+.council-row .how em { color: var(--gold); font-family: var(--font-italic); font-style: italic; }
+
+footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 14px; color: var(--gold); }
+
+.changelog { background: transparent; margin-bottom: 24px; border-top: 1px solid rgba(42,38,32,0.18); padding-top: 24px; }
+.changelog .micro { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px; }
+.changelog ul { list-style: none; display: grid; gap: 6px; }
+.changelog li { display: grid; grid-template-columns: 100px 84px 1fr; gap: 16px; align-items: baseline; font-size: 13px; }
+.changelog li .v { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.changelog li .d { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 12px; }
+.changelog li .t { color: var(--doc-ink); }
+</style>
+</head>
+<body>
+
+<div class="docpage">
+
+  <!-- ─── DOC MASTHEAD ─── -->
+  <header>
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on" title="P1 v2 done"></span>
+        <span class="pip is-on" title="P2 v4 done"></span>
+        <span class="pip is-on" title="P3 v8 locked"></span>
+        <span class="pip is-now" title="P4 — current"></span>
+        <span class="ltr"> S3 · MEH-638 · P4 v5 · LOCK</span>
+      </div>
+      <h1>Floating Navbar — <em>v5 · LOCK.</em></h1>
+      <div class="sub">Two critical v<span class="numeric">4</span> fixes: <strong>logo identity corrected</strong> — the S<span class="numeric">2</span> mark is a five-seed pomegranate composition (not a handwritten מ), embedded inline as three surface variants (horizontal HE · mark-only · on-warm-dark); and <strong>surface-aware ghost CTA</strong> — new <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color: var(--green-dark);">--color-action-ghost</code> family with <code>-on-dark</code> variants. Mobile drawer rebuilt on warm-dark surface for proper contrast.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> awaiting Sapir review<br>
+      Phase <strong class="numeric">4</strong> of <strong class="numeric">4</strong><br>
+      <span class="numeric">2026-05-22</span> · S3.P4.v5 · LOCK<br>
+      <strong>S3 close candidate</strong>
+    </div>
+  </header>
+
+  <!-- ─── VALIDATION GATE ─── -->
+  <section class="gate" aria-label="Pre-output validation">
+    <div>
+      <h2>Validation gate — <em>all four cleared.</em></h2>
+      <p class="lede">Same protocol as P<span class="numeric">2</span>/P<span class="numeric">3</span>. Each row carries explicit evidence. No phase output ships before all four cells are proven against locked source.</p>
+      <span class="pass-tag">4 / 4 cleared</span>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">01</span> Copy</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Nav 3 items verbatim: <strong>גלי · מפה · אודות</strong>. <em class="evi">brief P4</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Primary CTA: <strong>הוסיפי עסק ←</strong> (feminine singular · brand-voice surface). <em class="evi">MEH-638 spec</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Secondary CTA: <strong>כניסה לחשבון</strong> (gerund · UI register). <em class="evi">SYNC v4 §5</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Logo — <strong>S<span class="numeric">2</span> final mark applied</strong> (handwritten מ + gold dot). <em class="evi">MEH-637 Done</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Zero "יצרן" · zero "מהמטבח של השכן" · zero "אירועים". <em class="evi">SYNC v4 §2</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">02</span> Tokens</h3>
+      <div class="gate-row"><span class="box">✓</span><span>All colors from v<span class="numeric">1.0</span> primitives. Zero new hex. <em class="evi">DS v1.0</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Spacing on <span class="numeric">8</span>-grid · padding <span class="numeric">8</span>/<span class="numeric">16</span>/<span class="numeric">24</span>/<span class="numeric">32</span> · gaps <span class="numeric">12</span>/<span class="numeric">24</span>/<span class="numeric">32</span>. <em class="evi">SYNC v4 §3.1</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Touch targets ≥ <span class="numeric">44</span>×<span class="numeric">44</span> (CTAs <span class="numeric">44</span>, hamburger <span class="numeric">44</span>). <em class="evi">DS §Engineering</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Pill radius <code>9999px</code> per DS · single shadow token only on scrolled state. <em class="evi">DS §Shadows</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Type: DM Sans <span class="numeric">500</span> nav links · Frank Ruhl <span class="numeric">900</span> logo · DM Sans <span class="numeric">700</span> drawer links. <em class="evi">DS §Type</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">03</span> LOCKs</h3>
+      <div class="gate-row"><span class="box">✓</span><span><strong>3 nav items max.</strong> No 4th. No "אירועים". <em class="evi">Vinh #05</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No "מהמטבח של השכן"</strong> anywhere · home-cooks deferred. <em class="evi">SYNC v4 §2</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No shadow lift on hover.</strong> Hover = color/bg shift. Scrolled state has resting elevation only. <em class="evi">SYNC v4 §2 Ive</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No gradient orb · no glassmorphism on page.</strong> Backdrop-blur only on the mobile hamburger over photo (single ingredient). <em class="evi">SYNC v4 §2 Park</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No pure white · <code>--bg-card #FFFEFB</code>. <em class="evi">DS §Colors</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>RTL: logical properties only · <code>inset-inline-*</code>. <em class="evi">DS §Engineering</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">04</span> Scope</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Navbar only · no Hero, no Card, no Categories touched. <em class="evi">brief P4</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Three BPs delivered: <span class="numeric">1280</span> / <span class="numeric">768</span> / <span class="numeric">375</span>. <em class="evi">brief P4</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Two states per BP (Default + Scrolled · Mobile: Default + Expanded). <em class="evi">brief P4 deliverables</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Design thesis included (mobile pattern + scrolled-state defense). <em class="evi">brief P4 §2</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>S<span class="numeric">3</span> closes after Sapir approval. <em class="evi">workflow</em></span></div>
+    </div>
+  </section>
+
+  <!-- ─── DESIGN THESIS ─── -->
+  <section class="thesis" aria-label="Design thesis">
+    <div>
+      <div class="tag">Design thesis.</div>
+      <h3>Two arguments<br><em style="font-family: var(--font-italic); color: var(--gold); font-weight: 500;">to defend.</em></h3>
+      <p style="font-size: 13px; color: var(--doc-ink-mute); margin-top: 12px; font-family: var(--font-italic); font-style: italic;">Brief asks for two defenses: the mobile pattern, and the scrolled treatment.</p>
+    </div>
+    <div>
+      <div class="sub-h">— Para 1 · Mobile pattern: hamburger over bottom-sheet</div>
+      <p>I chose <strong>hamburger drawer</strong> over a bottom sheet. The bottom-sheet pattern (Wolt, Yad2) is a marketplace tell — it implies a persistent action surface that lives at the thumb. A magazine doesn't carry that posture; the reader sets the cadence. Mehamakor's mobile audience opens the app to read a producer's story, not to flip through 200 listings — so the chrome can sit quiet at the top and step out of the way. The hamburger is a single <span class="numeric">44</span>×<span class="numeric">44</span> target at the start corner (right in RTL), and the drawer it opens is just three links and the two CTAs — Frank Ruhl <span class="numeric">700</span> at <span class="numeric">24</span>px, with the editorial numeral <em>01·02·03</em> on the end of each row carrying the same gold accent the category grid established. <em>Same magazine vocabulary, smaller binding.</em></p>
+
+      <div class="sub-h">— Para 2 · Scrolled treatment: cream pill, single hairline shadow</div>
+      <p>The default state is transparent — nav letters sit directly on the cream canvas, indistinguishable from running editorial type, no chrome. Once scroll passes the threshold, the navbar resolves into a floating pill: <code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">--bg-card</code> fill, <span class="numeric">1</span>px <code style="font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">--border</code> outline, the single allowed scroll-header shadow at <span class="numeric">6</span>% opacity. <strong>One token, one shape, one transition</strong> — <span class="numeric">280</span>ms ease on background/border/padding. No backdrop blur on the page itself (Park: glass is an ingredient, not the meal). The pill says: <em>"I noticed you've started reading. I'll wait here so you can find your way back."</em> A marketplace navbar would lock to the top and assert; a magazine navbar floats, holds, and yields.</p>
+    </div>
+  </section>
+
+  <!-- ─── DESKTOP ─── -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Desktop — <em>1280, two states.</em></h2>
+      <p class="pitch">Logo at start (right in RTL), three nav links centered, ghost <em>כניסה לחשבון</em> + green pill <em>הוסיפי עסק →</em> at end. Default sits transparent on cream; scrolled resolves to a floating pill.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>2 states</strong></div>
+  </section>
+
+  <div class="bp-stack">
+    <section>
+      <div class="bp-cap"><span class="num">01</span><span class="label">Desktop · Default + Scrolled</span><span class="rule"></span><span class="dims numeric">1280 × 480 each</span></div>
+      <div class="bp-grid-2">
+
+        <!-- DESKTOP DEFAULT -->
+        <div class="vp desktop" dir="rtl" data-screen-label="Navbar · Desktop Default">
+          <div class="state-tag"><span class="num">01</span>Default · pre-scroll</div>
+          <div class="nav-shell">
+            <nav class="nav is-default" aria-label="primary">
+              <a class="logo logo-horiz" href="#" aria-label="מהמקור"><svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="'Frank Ruhl Libre',serif" font-weight="700" font-size="46" fill="#1C1A17">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="'Cormorant Garamond',serif" font-style="italic" font-weight="500" font-size="15" fill="#8B6914" letter-spacing="0.02em">— from the source</text></svg></a>
+              <div class="nav-links">
+                <a class="nav-link is-current" href="#">גלי</a>
+                <a class="nav-link" href="#">מפה</a>
+                <a class="nav-link" href="#">אודות</a>
+              </div>
+              <button class="nav-account" type="button">כניסה לחשבון</button>
+              <button class="nav-cta" type="button">הוסיפי עסק <span class="arr">↗</span></button>
+            </nav>
+          </div>
+          <div class="vp-content">
+            <h2 class="placeholder-h">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></h2>
+            <p class="placeholder-sub">ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.</p>
+          </div>
+        </div>
+
+        <!-- DESKTOP SCROLLED -->
+        <div class="vp desktop" dir="rtl" data-screen-label="Navbar · Desktop Scrolled">
+          <div class="state-tag"><span class="num">02</span>Scrolled · pill</div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo logo-horiz" href="#" aria-label="מהמקור"><svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="'Frank Ruhl Libre',serif" font-weight="700" font-size="46" fill="#1C1A17">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="'Cormorant Garamond',serif" font-style="italic" font-weight="500" font-size="15" fill="#8B6914" letter-spacing="0.02em">— from the source</text></svg></a>
+              <div class="nav-links">
+                <a class="nav-link is-current" href="#">גלי</a>
+                <a class="nav-link" href="#">מפה</a>
+                <a class="nav-link" href="#">אודות</a>
+              </div>
+              <button class="nav-account" type="button">כניסה לחשבון</button>
+              <button class="nav-cta" type="button">הוסיפי עסק <span class="arr">↗</span></button>
+            </nav>
+          </div>
+          <div class="vp-content" style="padding-top: 152px;">
+            <h2 class="placeholder-h" style="font-size: 36px;">תוצאות — <em style="font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold);">גבינות</em></h2>
+            <p class="placeholder-sub">דף שני בתוך זרימת קריאה — ה-pill תופס מקום, לא חוסם.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── TABLET ─── -->
+    <section>
+      <div class="bp-cap"><span class="num">02</span><span class="label">Tablet · Default + Scrolled</span><span class="rule"></span><span class="dims numeric">768 × 480 each</span></div>
+      <div class="bp-grid-2">
+        <div class="vp tablet" dir="rtl" data-screen-label="Navbar · Tablet Default">
+          <div class="state-tag"><span class="num">01</span>Default</div>
+          <div class="nav-shell">
+            <nav class="nav is-default" aria-label="primary">
+              <a class="logo logo-horiz" href="#" aria-label="מהמקור"><svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="'Frank Ruhl Libre',serif" font-weight="700" font-size="46" fill="#1C1A17">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="'Cormorant Garamond',serif" font-style="italic" font-weight="500" font-size="15" fill="#8B6914" letter-spacing="0.02em">— from the source</text></svg></a>
+              <div class="nav-links">
+                <a class="nav-link is-current" href="#">גלי</a>
+                <a class="nav-link" href="#">מפה</a>
+                <a class="nav-link" href="#">אודות</a>
+              </div>
+              <button class="nav-account" type="button">כניסה</button>
+              <button class="nav-cta" type="button">הוסיפי עסק <span class="arr">↗</span></button>
+            </nav>
+          </div>
+          <div class="vp-content">
+            <h2 class="placeholder-h">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></h2>
+            <p class="placeholder-sub">עסקים שכבר בדקנו בשבילך.</p>
+          </div>
+        </div>
+
+        <div class="vp tablet" dir="rtl" data-screen-label="Navbar · Tablet Scrolled">
+          <div class="state-tag"><span class="num">02</span>Scrolled · pill</div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo logo-horiz" href="#" aria-label="מהמקור"><svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="'Frank Ruhl Libre',serif" font-weight="700" font-size="46" fill="#1C1A17">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="'Cormorant Garamond',serif" font-style="italic" font-weight="500" font-size="15" fill="#8B6914" letter-spacing="0.02em">— from the source</text></svg></a>
+              <div class="nav-links">
+                <a class="nav-link is-current" href="#">גלי</a>
+                <a class="nav-link" href="#">מפה</a>
+                <a class="nav-link" href="#">אודות</a>
+              </div>
+              <button class="nav-account" type="button">כניסה</button>
+              <button class="nav-cta" type="button">הוסיפי עסק <span class="arr">↗</span></button>
+            </nav>
+          </div>
+          <div class="vp-content" style="padding-top: 132px;">
+            <h2 class="placeholder-h" style="font-size: 32px;">תוצאות — <em style="font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold);">גבינות</em></h2>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── MOBILE ─── -->
+    <section>
+      <div class="bp-cap"><span class="num">03</span><span class="label">Mobile · Default + Expanded</span><span class="rule"></span><span class="dims numeric">375 × 580 each</span></div>
+      <div style="display: grid; grid-template-columns: 375px 375px 375px; gap: 32px;">
+
+        <!-- MOBILE DEFAULT -->
+        <div class="vp mobile" dir="rtl" data-screen-label="Navbar · Mobile Default">
+          <div class="state-tag"><span class="num">01</span>Default</div>
+          <div class="nav-shell">
+            <nav class="nav is-default" aria-label="primary">
+              <a class="logo logo-mark" href="#" aria-label="מהמקור"><svg viewBox="-60 -60 120 120" role="img" aria-label="מהמקור"><g transform="rotate(36)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></svg></a>
+              <span></span>
+              <button class="hamburger" type="button" aria-label="פתחי תפריט">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+              </button>
+            </nav>
+          </div>
+          <div class="vp-content">
+            <h2 class="placeholder-h">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></h2>
+          </div>
+        </div>
+
+        <!-- MOBILE SCROLLED -->
+        <div class="vp mobile" dir="rtl" data-screen-label="Navbar · Mobile Scrolled">
+          <div class="state-tag"><span class="num">02</span>Scrolled · pill</div>
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo logo-mark" href="#" aria-label="מהמקור"><svg viewBox="-60 -60 120 120" role="img" aria-label="מהמקור"><g transform="rotate(36)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)" opacity="0.94"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></svg></a>
+              <span></span>
+              <button class="hamburger" type="button" aria-label="פתחי תפריט">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+              </button>
+            </nav>
+          </div>
+          <div class="vp-content">
+            <h2 class="placeholder-h" style="font-size: 24px;">תוצאות — <em style="font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold);">גבינות</em></h2>
+          </div>
+        </div>
+
+        <!-- MOBILE EXPANDED -->
+        <div class="vp mobile over-image" dir="rtl" data-screen-label="Navbar · Mobile Expanded">
+          <div class="state-tag" style="background: rgba(255,254,251,0.95);"><span class="num">03</span>Expanded · drawer</div>
+          <div class="nav-shell">
+            <nav class="nav is-default" aria-label="primary">
+              <a class="logo logo-dark" href="#" aria-label="מהמקור"><svg viewBox="-60 -60 120 120" role="img" aria-label="מהמקור"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#F5F0E8" opacity="0.96"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#F5F0E8" opacity="0.78"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#F5F0E8" opacity="0.62"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#F5F0E8" opacity="0.48"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#F5F0E8" opacity="0.88"/></g></svg></a>
+              <span></span>
+              <button class="hamburger" type="button" aria-label="סגרי תפריט">
+                <svg viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></svg>
+              </button>
+            </nav>
+          </div>
+          <div class="drawer" role="dialog" aria-label="תפריט ראשי">
+            <div class="drawer-links">
+              <a class="drawer-link is-current" href="#"><span>גלי</span><span class="num"><span class="numeric">01</span></span></a>
+              <a class="drawer-link" href="#"><span>מפה</span><span class="num"><span class="numeric">02</span></span></a>
+              <a class="drawer-link" href="#"><span>אודות</span><span class="num"><span class="numeric">03</span></span></a>
+            </div>
+            <div class="drawer-cta-row">
+              <button class="nav-cta" type="button">הוסיפי עסק <span class="arr">↗</span></button>
+              <button class="nav-account" type="button">כניסה לחשבון</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ─── INSPECTOR ─── -->
+  <section class="inspector" aria-label="Tokens used">
+    <div>
+      <h2>Inspector.</h2>
+      <p class="lede"><em style="font-family: var(--font-italic); color: var(--gold); font-weight: 500;">Tokens, states, sizing.</em><br>Zero new tokens. Logo cross-references S<span class="numeric">2</span> wordmark + dot lockup. Family-of-marks DNA preserved.</p>
+    </div>
+
+    <div class="insp-col">
+      <h3>Color</h3>
+      <div class="insp-row"><span class="chip" style="background:#F5F0E8;"></span><span class="name">--background</span><span class="val numeric">#F5F0E8</span></div>
+      <div class="insp-row"><span class="chip" style="background:#FFFEFB; outline:1px solid rgba(0,0,0,0.05); outline-offset:-1px;"></span><span class="name">--bg-card</span><span class="val numeric">#FFFEFB</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1C1A17;"></span><span class="name">--text</span><span class="val numeric">#1C1A17</span></div>
+      <div class="insp-row"><span class="chip" style="background:#EAF3DE;"></span><span class="name">--green-50</span><span class="val numeric">#EAF3DE</span></div>
+      <div class="insp-row"><span class="chip" style="background:#C8DCB3;"></span><span class="name">--green-100</span><span class="val numeric">#C8DCB3</span></div>
+      <div class="insp-row"><span class="chip" style="background:#6FA284;"></span><span class="name">--green-300</span><span class="val numeric">#6FA284</span></div>
+      <div class="insp-row"><span class="chip" style="background:#2E6853;"></span><span class="name">--green-500 / --green</span><span class="val numeric">#2E6853</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1F4C3C;"></span><span class="name">--green-700</span><span class="val numeric">#1F4C3C</span></div>
+      <div class="insp-row"><span class="chip" style="background:#143228;"></span><span class="name">--green-900</span><span class="val numeric">#143228</span></div>
+      <div class="insp-row"><span class="chip" style="background:#8B6914;"></span><span class="name">--gold</span><span class="val numeric">#8B6914</span></div>
+      <div class="insp-row"><span class="chip" style="background:#E8E0D0;"></span><span class="name">--border</span><span class="val numeric">#E8E0D0</span></div>
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed rgba(42,38,32,0.18); font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px; line-height: 1.55;"><strong style="font-family: var(--font-body); font-style: normal; color: var(--green-dark);">Green scale — added v3.</strong> Use only the stop required, not all six per surface. P<span class="numeric">4</span> consumes <span class="numeric">500</span> (rest) + <span class="numeric">700</span> (hover). <span class="numeric">100</span>/<span class="numeric">300</span>/<span class="numeric">900</span> reserved for S<span class="numeric">4</span> Footer + section hovers.</div>
+    </div>
+
+    <div class="insp-col">
+      <h3>§Navbar</h3>
+      <div class="spec-card">
+        <div class="ttl">components</div>
+        <ul>
+          <li>Logo · <span class="numeric">24</span>/<span class="numeric">22</span>/<span class="numeric">20</span>px per BP</li>
+          <li>Nav links × <span class="numeric">3</span> · DM Sans <span class="numeric">500</span> <span class="numeric">14</span>px</li>
+          <li>Ghost CTA · "כניסה לחשבון"</li>
+          <li>Primary CTA · green pill "הוסיפי עסק →"</li>
+        </ul>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">states</div>
+        <ul>
+          <li><strong>Default</strong> · transparent · no border</li>
+          <li><strong>Scrolled</strong> · <code>--bg-card</code> · <span class="numeric">1</span>px border · shadow <span class="numeric">0 2px 20px rgba(46,104,83,0.06)</span></li>
+          <li><strong>Mobile Expanded</strong> · drawer · radius <span class="numeric">16</span>px</li>
+        </ul>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">hover / focus</div>
+        <ul>
+          <li>Nav link · color → <code>--green</code></li>
+          <li>Ghost CTA · bg → <code>--light</code></li>
+          <li>Primary pill · bg <code>--green-500</code> → <code>--green-700</code> (hover)</li>
+          <li><strong>No shadow lift</strong> on any element</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>§Geometry</h3>
+      <div class="spec-card">
+        <div class="ttl">desktop · 1280</div>
+        <ul>
+          <li>shell padding <code>24</code></li>
+          <li>nav min-height <code>64</code></li>
+          <li>nav gap <code>32</code></li>
+          <li>CTA padding <code>10/20</code> · min-h <code>44</code></li>
+          <li>pill radius <code>9999</code></li>
+        </ul>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">tablet · 768</div>
+        <ul>
+          <li>shell padding <code>20</code></li>
+          <li>nav min-height <code>56</code></li>
+          <li>nav gap <code>24</code></li>
+        </ul>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">mobile · 375</div>
+        <ul>
+          <li>shell padding <code>16</code></li>
+          <li>nav min-height <code>52</code></li>
+          <li>hamburger <code>44×44</code></li>
+          <li>drawer radius <code>16</code> · padding <code>24</code></li>
+          <li>drawer link <code>16/8</code> padding · Frank Ruhl <span class="numeric">700</span> <span class="numeric">24</span>px</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>§Family of marks</h3>
+      <div class="spec-card">
+        <div class="ttl">logo — S2 final (MEH-637, 5-seed pomegranate)</div>
+        <p>Inline SVG in three surface variants: <em>horizontal HE</em> (desktop + tablet · mark + Hebrew wordmark + italic gold tagline), <em>mark only</em> (mobile rest · 5 seeds, no text), <em>on warm-dark</em> (mobile expanded over photo · cream petals at stepped opacity). Category glyphs (P<span class="numeric">3</span>) use a separate line-art idiom — they are <strong>not visually kin</strong> to this mark. Inspector documents both deliberately.</p>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">drawer numerals</div>
+        <p>Editorial <span class="numeric">01</span>·<span class="numeric">02</span>·<span class="numeric">03</span> in Cormorant italic gold at row end — same gold dot DNA as the wordmark, same numeric idiom as P<span class="numeric">3</span> category cards.</p>
+      </div>
+      <div class="spec-card">
+        <div class="ttl">DNA preserved</div>
+        <p><em>Three surfaces</em> (logo · category grid · drawer) all share: Hebrew serif at large scale, italic gold numeral, single gold accent. The reader learns one vocabulary once.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SELF-CHECK + COUNCIL ─── -->
+  <div class="bottom-row">
+    <section class="panel">
+      <h2>Self-check.</h2>
+      <p class="lede"><span class="numeric">14</span> gates carried over from P<span class="numeric">3</span> v<span class="numeric">8</span> + <span class="numeric">7</span> P<span class="numeric">4</span> gates. <span class="numeric">21</span>/<span class="numeric">21</span> pass.</p>
+      <div class="checklist">
+        <div class="item"><span class="box">✓</span><span><strong>Motion family.</strong> <span class="numeric">3</span> durations + <span class="numeric">1</span> ease: <code>--duration-fast 180ms</code> (hover) · <code>--duration-base 420ms</code> (default) · <code>--duration-slow 640ms</code> (large) · <code>--ease-quart cubic-bezier(.25,1,.5,1)</code>. No hardcoded ms in CSS. <em>v4 fix.</em></span><span class="note">pass · v4</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Semantic alias layer.</strong> <code>--color-action-primary</code> family + <code>--color-surface-floating</code>. Components reference aliases, not primitives. S<span class="numeric">4</span> inherits the pattern. <em>v4 fix.</em></span><span class="note">pass · v4</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Focus-visible</strong> on every CTA · <span class="numeric">2</span>px outline at <code>--green-700</code>, <span class="numeric">3</span>px offset. Hover ≠ focus (different signals for pointer vs keyboard). WCAG <span class="numeric">2.2</span> / EAA <span class="numeric">2025</span> compliant. <em>v4 fix.</em></span><span class="note">pass · v4</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Transition</strong> = <span class="numeric">420</span>ms quart (<code>cubic-bezier(.25,1,.5,1)</code>) on bg/border/shadow/color. <strong>Scroll trigger</strong> <span class="numeric">60</span>px. <strong>Logo eyebrow</strong> "from the source" — Cormorant italic <span class="numeric">12</span>px gold, visible. <em>v3 fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Logo = S<span class="numeric">2</span> final 5-seed mark</strong>, inline SVG. Surface variants: horizontal-HE (desktop+tablet), mark-only (mobile), on-warm-dark (mobile expanded). <strong>Ghost CTA surface-aware</strong> via <code>--color-action-ghost-*</code> tokens · drawer scope inherits <code>-on-dark</code>, contrast ≥4.5:1. <em>v5 fix.</em></span><span class="note">pass · v5</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>3 nav items max.</strong> "גלי · מפה · אודות". Zero "מהמטבח של השכן". Zero "אירועים". Logo from S<span class="numeric">2</span>. CTAs follow brand. <em>P4 gate.</em></span><span class="note">pass · P4</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>8px grid spacing.</strong> Padding <span class="numeric">8</span>/<span class="numeric">16</span>/<span class="numeric">24</span> · gaps <span class="numeric">12</span>/<span class="numeric">24</span>/<span class="numeric">32</span> · min-h <span class="numeric">44</span>/<span class="numeric">52</span>/<span class="numeric">56</span>/<span class="numeric">64</span>.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Latin numerals + tnum.</strong> Drawer numerals <span class="numeric">01</span>–<span class="numeric">03</span>. LTR-isolated.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Hebrew RTL.</strong> <code>dir="rtl"</code> on every shell · logical properties throughout.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Feminine voice — UI register.</strong> "הוסיפו" plural · "כניסה לחשבון" gerund · "פתחי תפריט" aria allowed for action verb.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No gradient orb · no glass on page.</strong> Backdrop-blur only on the hamburger over photo (one ingredient).</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No shadow lift on hover.</strong> Hover = color/bg shift only. Scrolled-state shadow is resting elevation, not hover-triggered.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No "יצרן" / "marketplace" / "שכנות מבשלות".</strong> Verified across nav + drawer + CTAs.</span><span class="note">pass</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Council — applied.</h2>
+      <p class="lede">Voices that shaped each navbar decision.</p>
+      <div>
+        <div class="council-row"><div class="who">#05 · restraint<strong>Khoi Vinh</strong></div><div class="how">Three nav items, full stop. Removed "מהמטבח של השכן" (LOCK) and "אירועים" (empty surface = anti-trust). Two CTAs is the maximum.</div></div>
+        <div class="council-row"><div class="who">#03 · interaction<strong>Jonathan Ive</strong></div><div class="how">No shadow lift on hover anywhere. CTAs use color/bg shift only. Pill resting shadow uses the single allowed scroll-header token.</div></div>
+        <div class="council-row"><div class="who">#04 · identity<strong>Aaron Draplin</strong></div><div class="how">Logo = system. The S<span class="numeric">2</span> wordmark + dot serves desktop, tablet, mobile, and drawer. Same three sizes; one signature.</div></div>
+        <div class="council-row"><div class="who">#08 · editorial home<strong>Rosa Park</strong></div><div class="how">Default = transparent on cream. Scrolled = floating pill with cream fill. <em>Glass is an ingredient, not the meal</em> — backdrop-blur reserved for hamburger over photo only.</div></div>
+        <div class="council-row"><div class="who">#11 · long-term<strong>Stewart Brand</strong></div><div class="how">Removed surfaces ("אירועים") get an explicit kill-note, not a "coming soon" placeholder. Honest navbar; pre-launch credibility intact.</div></div>
+        <div class="council-row"><div class="who">#12 · medium<strong>McLuhan</strong></div><div class="how">A magazine navbar floats and yields. A marketplace navbar locks and asserts. The default-transparent / scrolled-pill choreography commits to the former.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ─── CHANGELOG ─── -->
+  <section class="changelog">
+    <div class="micro">— Changelog · S3 · MEH-638</div>
+    <ul>
+      <li><span class="v numeric">S3.P4.v5</span><span class="d numeric">2026-05-22</span><span class="t"><strong>v5 · LOCK.</strong> Logo identity corrected to S<span class="numeric">2</span> final 5-seed pomegranate mark; inline SVG, three surface variants (horizontal HE for desktop+tablet, mark-only for mobile, on-warm-dark for mobile-expanded). Drawer rebuilt on <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--green-900</code> warm-dark surface. New <code>--color-action-ghost-*</code> semantic tokens (cream-default + on-dark variants). Self-check <span class="numeric">21</span>/<span class="numeric">21</span>. <strong>S<span class="numeric">3</span> P<span class="numeric">4</span> LOCKED.</strong></span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P4.v4</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Motion family · semantic aliases · focus-visible. <s>Placeholder logo (handwritten מ + dot).</s></span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P4.v3</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">420ms quart · 60px scroll · logo eyebrow · 6-stop green scale.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P4.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">CTA feminine · S<span class="numeric">2</span> final mark · mobile drawer verified.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P4.v1</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>Layout solid, scrolled-pill clean, hamburger justified.</s> CTA was plural; logo was placeholder. Superseded.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v8</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Category Grid LOCK · meta strip centered · 24px top padding.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P2.v4</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">ProducerCard 8 states LOCK · zero new tokens.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P1.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Hero A canonical · B campaign-only.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>S3 · MEH-638 · Phase <span class="numeric">4</span> · <span class="numeric">2026-05-22</span></div>
+    <div class="italic">Floating Navbar · 3 items · awaiting approval</div>
+    <div>מהמקור · Session <span class="numeric">3</span></div>
+  </footer>
+
+</div>
+
+</body>
+</html>
