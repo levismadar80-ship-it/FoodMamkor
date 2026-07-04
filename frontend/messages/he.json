@@ -1122,6 +1122,13 @@
         "analytics": "אנליטיקס",
         "settings": "הגדרות",
         "help": "עזרה"
+      },
+      "nav_sections": {
+        "overview": "סקירה",
+        "core": "ליבה",
+        "content": "תוכן",
+        "queues": "ממתין לטיפול",
+        "system": "מערכת"
       }
     },
     "dashboard": {
