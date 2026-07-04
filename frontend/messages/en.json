@@ -1429,6 +1429,7 @@
         "promote": "Promote to admin",
         "demote": "Remove permissions",
         "protected_title": "Cannot remove permissions from the primary admin",
+        "menu_aria": "More actions",
         "unblock": "🚫 Unblock",
         "block": "Block"
       },
