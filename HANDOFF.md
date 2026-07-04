@@ -66,6 +66,7 @@ Re-anchored Phase 0 (@6c46b434) proved `producers.delivery_cities` was a LIVE dr
 - **Done:** `COMPLETENESS_FIELDS += short_desc`; yellow-tier check (red untouched); `TOTAL_FIELDS` 5→6 + 6-row checklist in ProfileCompletenessCard; `fields.short_desc` he+en; heuristic node suite +5 cases (16✓), card vitest re-percentaged (83/67) + new case. Full vitest 696✓, build exit 0, 0 eslint errors. CHANGELOG + MANUAL_TESTING updated.
 - **Flagged in PR body:** (a) admin producers list (shared heuristic) now yellow-dots producers with no description — accepted per issue; (b) owner edit hub has NO `short_description` input yet (only AI-bio panel → `description`) — OR semantics keep the item self-serve-completable; tagline input belongs to the MEH-964 skin.
 - **Sapir pending:** review + merge #1452 (Rule 23 — CC doesn't merge); mobile glance — the card % shifts visually (missing-image-only profile now 83%, not 80%).
+- **Status 04/07 (MEH-1006):** #1452 merged to staging (squash `3b58658c`) — the pending one-line update flagged in that session's report.
 
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
@@ -124,7 +125,7 @@ Required-check names untouched (this job is `Adversarial review (calibration)`, 
 - MEH-987 EmptyState 4-emoji sweep (#1416) · MEH-990 emoji residue (#1419 + #1424)
 - MEH-992 group-buy form clarity (#1431)
 
-**Linear state (all closed manually — staging merges don't auto-close):**
+**Linear state (all closed manually — [correction MEH-1006: the parenthetical claim "staging merges don't auto-close" was WRONG — `Closes MEH-XX` DOES auto-close on staging merges (default_branch=staging), proven live when MEH-1004 was auto-closed by GitHub on #1451's merge, 03/07 09:28. These issues were simply closed by hand.]):**
 - **Done:** 975, 976, 977, 978, 979, 980, 982, 987, 990, 992, 948
 - **Canceled:** 983 (Next.js catch-all one-off, not reproducible)
 - **948 closed WITHOUT fix** — `/map` default centering verified correct geometrically; reopen trigger documented in its comment (a real user seeing an off-Israel map on a **clean** load → the iOS-`dvh`/zoom-race fix, central `MapComponent`, chunked + `/adversarial-review`).
