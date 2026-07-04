@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1029: Map bottom-sheet fidelity — MAP-11 chrome DRAFT PR, MAP-16 skeleton STOPPED (needs Sapir decision)
+
+- **Branch:** `feature/meh-1029-map-sheet-fidelity` off `origin/staging` (clean cut, divergence 0). MapBottomSheet = non-central. Batch item 2 of 2 (MEH-991 YELLOW pair). `Refs MEH-1029` (MAP-16 stays open).
+- **MAP-11 shipped (all in `MapBottomSheet.jsx`):** radius `rounded-t-lg`→`rounded-t-3xl` (24px — the borderRadius `extend` keeps Tailwind's default 3xl=24px; the tokens file's `3xl:48px` is `spacing`, not radius); handle `w-8 h-1`→`w-11 h-[5px]` (44×5); count `text-text`→`text-accent` (gold #896714, styling only). Handle `#D4C5A9` kept literal (tokenization = separate issue). 0 physical RTL classes; no i18n change.
+- **MAP-16 STOPPED — declared STOP condition:** `useProducersFeed` has no loading flag; its only consumer is `MapClient.jsx` (central/RED). Sheet gets `count`+`children`; first-load `count=0` == empty-result, so the sheet can't self-detect loading. Wiring a flag requires editing `MapClient.jsx:488` — forbidden ("NEVER touch MapClient/MapComponent"). **Sapir decision needed:** authorize a narrow MapClient prop-wire (a `loading` prop from an additive `useProducersFeed` flag), or file MAP-16 as its own ticket. No MapClient/hook touched this session.
+- **Verify:** `npm run build` exit 0 · `en-parity-guard` 2✓ · 0 physical RTL. `npm install` run first (fresh container).
+- **Scope held:** `MapBottomSheet.jsx` + CHANGELOG + HANDOFF only. useProducersFeed / MapClient / MapComponent untouched.
+
+## 2026-07-04 — MEH-1028: ProducerCard mobile density variant (CARD-27) — DRAFT PR (WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1028-producercard-mobile-density` off `origin/staging` → PR #1488 (draft). ProducerCard = CENTRAL. Batch item 1 of 2. `Closes MEH-1028`. Preview: `food-mamkor-git-feature-m-68b96e-…vercel.app` (Ready). Automated claude[bot] review: no Must-Fix/Should-Consider; 2 Minor (34px<44px touch floor already documented; card-body-tap test targets now-hidden description — test tweak applied).
+
 ## 2026-07-04 — MEH-1023 Chunk A: admin users role actions → overflow menu — DRAFT PR (WAIT for Sapir QA before Chunk B)
 
 - **Branch:** `feature/meh-1023-admin-role-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK (central admin surface), chunk-by-chunk. `Refs MEH-1023` (Chunk B closes). Harness allowed the `feature/*` push — no `claude/*` fallback needed.
