@@ -37,6 +37,11 @@ const NEAR_ME_DEFAULT_ZOOM = 8;
 // measurement on mount (see the measurement effect in MapPage).
 const DESKTOP_HEADER_OFFSET_PX = 64;
 
+// MEH-1019: same SSR/first-paint fallback for the MOBILE shell — it hardcoded
+// the identical 64 before this fix. Corrected by a live measurement on mount
+// (mobile mirror of the desktop reservation).
+const MOBILE_HEADER_OFFSET_PX = 64;
+
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
  * + 6 components + a small set of cross-hook handlers/effects that
@@ -113,6 +118,40 @@ export default function MapPage() {
     window.addEventListener("resize", measure);
     // VerifyBanner is a direct child of <main id="main-content"> (layout.js:221)
     // — its mount/unmount is a childList mutation there.
+    const main = document.getElementById("main-content");
+    const bannerObserver = main ? new MutationObserver(measure) : null;
+    bannerObserver?.observe(main, { childList: true });
+    return () => {
+      window.removeEventListener("resize", measure);
+      bannerObserver?.disconnect();
+    };
+  }, []);
+
+  // MEH-1019: MOBILE mirror of the MEH-1009 desktop reservation above. The
+  // mobile shell (lg:hidden) hardcoded height: calc(100dvh - 64px) — the same
+  // 64 that overflowed the desktop shell when an in-flow TOP banner
+  // (VerifyBanner, layout.js:221) pushes the map down. Reproduced (Playwright
+  // 375px, injected 41px banner): the shell bottom spilled from 822/812 (the
+  // pre-existing ~10px MEH-933 drift) to 863/812 = 51px below the fold, and the
+  // page became scrollable. Measure the mobile shell's real document-top offset
+  // and subtract THAT instead of 64. Same trigger set as the desktop effect
+  // (window resize + <main> childList mutations — late banner mount fires no
+  // resize event). Kept as a SEPARATE effect so the MEH-1009 desktop effect is
+  // byte-identical; the two shells never coexist (display flips at lg), so the
+  // hidden shell's ref measures 0 and keeps its 64 fallback.
+  const mobileShellRef = useRef(null);
+  const [mobileTopOffset, setMobileTopOffset] = useState(MOBILE_HEADER_OFFSET_PX);
+  useEffect(() => {
+    const measure = () => {
+      const el = mobileShellRef.current;
+      if (!el) return;
+      // display:none (desktop viewport, lg:hidden off) → rect 0×0 at top 0;
+      // keep the fallback. ceil for the same under-subtraction guard as desktop.
+      const top = Math.ceil(el.getBoundingClientRect().top + window.scrollY);
+      setMobileTopOffset(top > 0 ? top : MOBILE_HEADER_OFFSET_PX);
+    };
+    measure();
+    window.addEventListener("resize", measure);
     const main = document.getElementById("main-content");
     const bannerObserver = main ? new MutationObserver(measure) : null;
     bannerObserver?.observe(main, { childList: true });
@@ -403,10 +442,11 @@ export default function MapPage() {
       </div>
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
-      <div className="lg:hidden" style={{ height: "calc(100dvh - 64px)", position: "relative" }}>
+      <div ref={mobileShellRef} className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
         {/* Sticky filter bar — MEH-933: offset below the global sticky header
-            band (~64px; mirrors the `calc(100dvh - 64px)` container height above)
-            so the city-search pill clears the logo/search header instead of
+            band (~64px; mirrors the `calc(100dvh - ${mobileTopOffset}px)` container
+            height above — MEH-1019 now measures the real top offset, ~64px with no
+            banner) so the city-search pill clears the logo/search header instead of
             colliding with it. top-16 = 64px; the map pt below is bumped by the
             same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
         <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
