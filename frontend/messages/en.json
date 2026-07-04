@@ -1105,6 +1105,7 @@
       "nav": {
         "dashboard": "Dashboard",
         "producers": "Businesses",
+        "group_buys": "Group buys",
         "outreach": "Outreach",
         "experiences": "Experiences",
         "recipes": "Recipes",
@@ -1134,7 +1135,6 @@
         "total_producers": "Total businesses",
         "pending_approval": "Awaiting approval",
         "registered_users": "Registered users",
-        "home_products": "Home products",
         "group_buys": "Group buys",
         "group_buys_tooltip": "Manage user group buys. Not active currently.",
         "group_buys_tooltip_label": "Group buys info"
@@ -1143,9 +1143,7 @@
         "producers_waiting": "{count} businesses awaiting approval",
         "click_to_handle": "Click to handle",
         "open_reports": "{count} open reports",
-        "needs_review": "Needs review",
-        "hidden_home_products": "{count} hidden home products",
-        "for_review": "For review"
+        "needs_review": "Needs review"
       },
       "chart": {
         "new_producers_6_months": "New businesses — last 6 months"
@@ -1782,7 +1780,6 @@
       "title": "Content",
       "tabs": {
         "categories": "Categories",
-        "home_products": "Home products",
         "about": "Vision page",
         "terms": "Terms of service"
       },
@@ -1794,13 +1791,6 @@
         "save": "Save",
         "delete": "Delete",
         "confirm_delete": "Delete category?"
-      },
-      "home_products": {
-        "heading": "Hidden home products",
-        "empty": "No hidden products",
-        "restore": "Restore",
-        "delete": "Delete",
-        "confirm_delete": "Delete this product?"
       },
       "page_editor": {
         "title_placeholder": "Title",

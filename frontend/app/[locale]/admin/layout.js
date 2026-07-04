@@ -25,6 +25,7 @@ import {
   Tag,
   ChatCircleSlash,
   Bread,
+  Package,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -63,6 +64,9 @@ const NAV_SECTIONS = [
       { href: "/admin/producers", key: "producers", Icon: Storefront },
       { href: "/admin/outreach", key: "outreach", Icon: Megaphone },
       { href: "/admin/users", key: "users", Icon: Users },
+      // MEH-1021: group-buys page existed but was orphaned (reachable only
+      // via a dashboard stat card). Surface it in the sidebar.
+      { href: "/admin/group-buys", key: "group_buys", Icon: Package },
     ],
   },
   {
