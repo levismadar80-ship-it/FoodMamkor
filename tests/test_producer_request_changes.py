@@ -18,6 +18,7 @@ email/WhatsApp side-effects fail-open in the test config; we monkeypatch
 _send_notification_email to assert it fires with the producer's own address.
 """
 import app.routers.admin as admin_module
+from app.config import settings
 from conftest import auth_header, make_producer, make_user
 
 TEST_IMAGE = "https://res.cloudinary.com/demo/image/upload/v1/test.jpg"
@@ -166,7 +167,8 @@ def test_request_changes_sends_email_to_producer(client, db, monkeypatch):
     assert to == "owner@example.com"
     assert producer.name in subject
     assert FEEDBACK in mail_body
-    assert "https://mehamakor.online/producer/dashboard" in mail_body
+    # env-aware dashboard link (mirrors auth_emails.py) — not a hardcoded host
+    assert f"{settings.frontend_url}/producer/dashboard" in mail_body
 
 
 # --- approve clears the request-changes trail -------------------------------

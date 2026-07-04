@@ -561,11 +561,7 @@ def reject_producer(
 # MEH-1011: producer request-changes — non-terminal "please complete" path.
 # Unlike reject_producer (terminal → status="rejected"), this KEEPS the
 # producer pending and records the admin's feedback so the business can fix
-# the gap (missing photo / license) and be approved. dashboard_link is a
-# constant — the producer self-serve dashboard is a single fixed route.
-_DASHBOARD_LINK = "https://mehamakor.online/producer/dashboard"
-
-
+# the gap (missing photo / license) and be approved.
 @router.post("/producers/{producer_id}/request-changes")
 def request_producer_changes(
     producer_id: UUID,
@@ -604,6 +600,9 @@ def request_producer_changes(
     db.commit()
 
     p_name = producer.name
+    # Env-aware link (mirrors auth_emails.py:159) — staging emails must point
+    # at staging, not production. On prod frontend_url == mehamakor.online.
+    dashboard_link = f"{settings.frontend_url}/producer/dashboard"
 
     producer_user = db.query(User).filter(User.producer_id == producer.id).first()
     if producer_user:
@@ -614,7 +613,7 @@ def request_producer_changes(
             f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
             f"בית העסק, נשאר להשלים:\n\n"
             f"{feedback}\n\n"
-            f"אפשר להשלים את הפרטים בלוח הבקרה: {_DASHBOARD_LINK}\n"
+            f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
             f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
             f"בברכה,\nצוות מהמקור",
         )
