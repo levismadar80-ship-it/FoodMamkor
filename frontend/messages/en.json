@@ -1118,6 +1118,13 @@
         "analytics": "Analytics",
         "settings": "Settings",
         "help": "Help"
+      },
+      "nav_sections": {
+        "overview": "Overview",
+        "core": "Core",
+        "content": "Content",
+        "queues": "Pending",
+        "system": "System"
       }
     },
     "dashboard": {
