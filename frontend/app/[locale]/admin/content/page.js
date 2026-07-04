@@ -43,7 +43,6 @@ function CategoriesEditor() {
   const t = useTranslations("admin");
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState("");
 
   useEffect(() => { load(); }, []);
   const load = () => api.get("/admin/categories").then((r) => setItems(r.data));
@@ -51,13 +50,12 @@ function CategoriesEditor() {
   const create = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await api.post("/admin/categories", { name, emoji });
+    await api.post("/admin/categories", { name });
     setName("");
-    setEmoji("");
     load();
   };
-  const update = async (id, name, emoji) => {
-    await api.put(`/admin/categories/${id}`, { name, emoji });
+  const update = async (id, name) => {
+    await api.put(`/admin/categories/${id}`, { name });
     load();
   };
   const remove = async (id) => {
@@ -69,12 +67,6 @@ function CategoriesEditor() {
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
-        <input
-          placeholder={t("content.categories.emoji_placeholder")}
-          value={emoji}
-          onChange={(e) => setEmoji(e.target.value)}
-          className="border border-border rounded-[12px] px-3 py-2 w-20 text-center"
-        />
         <input
           placeholder={t("content.categories.name_placeholder")}
           value={name}
@@ -102,15 +94,13 @@ function CategoriesEditor() {
 function CategoryRow({ cat, onSave, onDelete }) {
   const t = useTranslations("admin");
   const [name, setName] = useState(cat.name);
-  const [emoji, setEmoji] = useState(cat.emoji || "");
-  const dirty = name !== cat.name || emoji !== (cat.emoji || "");
+  const dirty = name !== cat.name;
 
   return (
     <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
-      <input value={emoji} onChange={(e) => setEmoji(e.target.value)} className="border border-border rounded-lg px-2 py-1 w-16 text-center" />
       <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
       <button
-        onClick={() => onSave(cat.id, name, emoji)}
+        onClick={() => onSave(cat.id, name)}
         disabled={!dirty}
         className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
       >
