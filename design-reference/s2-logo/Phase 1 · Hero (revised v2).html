@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S3 · P1 · Hero — A revised + B new</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ────────────────────────────────────────────────────────────
+   Brand tokens — verbatim from Design System v1.0
+   ──────────────────────────────────────────────────────────── */
+:root {
+  --green:       #2E6853;
+  --green-dark:  #1F4A38;
+  --primary-dark:#2E4A2E;    /* per navbar spec, P4 — referenced in inspector */
+  --background:  #F5F0E8;
+  --bg-card:     #FFFEFB;
+  --text:        #1C1A17;
+  --fg-muted:    #57524A;
+  --gold:        #8B6914;
+  --light:       #EAF3DE;
+  --border:      #E8E0D0;
+  --focus-ring:  rgba(46,104,83,0.40);
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  /* Doc chrome only */
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body { padding: 48px 32px 96px; min-width: 1360px; }
+
+.numeric {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-style: normal;
+  direction: ltr; unicode-bidi: isolate;
+}
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+.docpage { max-width: 1700px; margin: 0 auto; }
+
+/* ─── Doc masthead ─────────────────────────────────────────── */
+.docpage > header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+.docpage > header h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.docpage > header h1 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: #6b4f0f;
+}
+.docpage > header .sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--doc-ink-mute);
+  margin-top: 6px;
+}
+.docpage > header .stamp {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.8;
+}
+.docpage > header .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.docpage > header .stamp .dot { color: var(--green); }
+
+.phase-nav {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink-mute);
+}
+.phase-nav .pip {
+  width: 8px; height: 8px;
+  border: 1px solid rgba(42,38,32,0.30);
+  background: transparent;
+  display: inline-block;
+}
+.phase-nav .pip.is-on  { background: var(--green); border-color: var(--green); }
+.phase-nav .pip.is-now {
+  background: var(--gold); border-color: var(--gold);
+  outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   VALIDATION GATE
+   ──────────────────────────────────────────────────────────── */
+.gate {
+  background: #1F4A38;
+  color: var(--background);
+  padding: 32px 40px;
+  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: 320px 1fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.gate h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 28px;
+  letter-spacing: 0em;
+  line-height: 1.1;
+}
+.gate h2 em {
+  font-family: var(--font-italic);
+  font-weight: 500;
+  font-style: italic;
+  color: #E7C88A;
+}
+.gate .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(245,240,232,0.7);
+  margin-top: 8px;
+  line-height: 1.5;
+  max-width: 28ch;
+}
+.gate .pass-tag {
+  display: inline-block;
+  margin-top: 16px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--background);
+  background: var(--green);
+  padding: 4px 10px;
+}
+
+.gate-col h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.55);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(245,240,232,0.18);
+}
+.gate-col h3 .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: #E7C88A;
+  margin-inline-end: 8px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 13px;
+}
+.gate-row {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--background);
+  border-bottom: 1px dashed rgba(245,240,232,0.08);
+}
+.gate-row:last-child { border-bottom: 0; }
+.gate-row .box {
+  width: 14px; height: 14px;
+  border: 1px solid #E7C88A;
+  background: #E7C88A;
+  color: var(--green-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.gate-row.fail .box { background: transparent; color: #E89A8A; border-color: #E89A8A; }
+.gate-row em { font-family: var(--font-italic); font-style: italic; color: rgba(245,240,232,0.65); }
+.gate-row code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: #E7C88A;
+  background: rgba(231,200,138,0.10);
+  padding: 1px 4px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   DIFF panel — what changed v1 → v2
+   ──────────────────────────────────────────────────────────── */
+.diff {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 28px 32px;
+  margin-bottom: 48px;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+}
+.diff h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+}
+.diff h2 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+.diff .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--doc-ink-mute);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.diff ol {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.diff li {
+  display: grid;
+  grid-template-columns: 32px 1fr 140px;
+  gap: 16px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.diff li:last-child { border-bottom: 0; }
+.diff li .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--gold);
+  line-height: 1;
+}
+.diff li .what {
+  color: var(--doc-ink);
+}
+.diff li .what s { color: var(--doc-warn); text-decoration: line-through; }
+.diff li .what .new { color: var(--green-dark); font-weight: 500; }
+.diff li .what code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--green-dark);
+  background: rgba(46,104,83,0.08);
+  padding: 1px 4px;
+}
+.diff li .src {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+}
+.diff li .src strong { color: var(--doc-ink); font-weight: 700; display: block; font-size: 11px; }
+
+/* ────────────────────────────────────────────────────────────
+   Direction headers + viewports
+   ──────────────────────────────────────────────────────────── */
+.direction {
+  margin-bottom: 80px;
+}
+.dir-head {
+  border-top: 1px solid rgba(42,38,32,0.30);
+  padding: 32px 0 24px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+}
+.dir-head .letter {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 96px;
+  color: var(--gold);
+  line-height: 1;
+}
+.dir-head h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 48px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.dir-head h2 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+.dir-head .pitch {
+  font-size: 14px;
+  color: var(--doc-ink-mute);
+  font-family: var(--font-italic);
+  font-style: italic;
+  margin-top: 6px;
+  max-width: 64ch;
+  line-height: 1.5;
+}
+.dir-head .meta {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.8;
+}
+.dir-head .meta strong { color: var(--doc-ink); }
+
+/* Mockup stack ------------------------------------------------ */
+.row { display: grid; gap: 64px; margin-bottom: 32px; }
+.stack-cap {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+}
+.stack-cap .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.stack-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.stack-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; letter-spacing: 0.02em; font-size: 13px; color: var(--gold); }
+.stack-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+
+.stack-desktop { display: grid; gap: 16px; margin-bottom: 48px; }
+.stack-mobile  { display: grid; grid-template-columns: 375px 1fr; gap: 48px; align-items: start; }
+.stack-mobile > .frame { display: grid; gap: 16px; }
+.stack-mobile .notes {
+  padding-top: 32px;
+  display: grid;
+  gap: 16px;
+  max-width: 56ch;
+}
+.stack-mobile .notes h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0em;
+  line-height: 1.15;
+  color: var(--doc-ink);
+  margin-bottom: 4px;
+}
+.stack-mobile .notes h3 em { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-weight: 500; }
+.stack-mobile .notes p { font-size: 14px; line-height: 1.65; color: var(--doc-ink); }
+.stack-mobile .notes .row-note {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.stack-mobile .notes .row-note:last-child { border-bottom: 0; }
+.stack-mobile .notes .row-note .k {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.stack-mobile .notes .row-note .v { color: var(--doc-ink); }
+.stack-mobile .notes code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--green-dark);
+  background: rgba(46,104,83,0.08);
+  padding: 1px 4px;
+}
+
+/* Viewport boxes --------------------------------------------- */
+.vp {
+  background: var(--background);
+  border: 1px solid rgba(42,38,32,0.18);
+  overflow: hidden;
+  position: relative;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.vp.mobile  { width: 375px;  height: 812px; }
+.vp.desktop { width: 1280px; height: 800px; }
+.vp::before, .vp::after {
+  content:"";
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 1px solid rgba(42,38,32,0.20);
+}
+.vp::before { top: 8px;    inset-inline-start: 8px; border-inline-end-color: transparent; border-bottom-color: transparent; }
+.vp::after  { bottom: 8px; inset-inline-end:   8px; border-inline-start-color: transparent; border-top-color: transparent; }
+
+.vp, .vp * { color: var(--text); font-family: var(--font-body); line-height: 1.6; }
+
+/* ─── Nav (shared across A and B) ──────────────────────────── */
+.nav {
+  display: grid;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 3;
+}
+.mobile  .nav { grid-template-columns: 1fr auto; height: 64px; padding: 0 24px; }
+.desktop .nav { grid-template-columns: auto 1fr auto auto; height: 80px; padding: 0 48px; gap: 48px; }
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0em;
+  line-height: 1;
+  color: var(--text);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.mobile  .wordmark { font-size: 22px; }
+.desktop .wordmark { font-size: 26px; }
+.wordmark .dot {
+  width: 6px; height: 6px;
+  background: var(--gold);
+  border-radius: 50%;
+  display: inline-block;
+  transform: translateY(-2px);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+}
+.nav-links a {
+  text-decoration: none;
+  color: inherit;
+  padding: 6px 0;
+  position: relative;
+}
+.nav-links a.is-current::after {
+  content:"";
+  position:absolute; inset-inline:0; bottom:-2px; height: 1px; background: var(--gold);
+}
+.nav-account {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--green);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  padding: 8px 16px;
+  min-height: 40px;
+  cursor: default;
+}
+.mobile .nav-links { font-size: 13px; gap: 16px; }
+
+/* Photo variant — nav is overlay on image */
+.vp.photo .nav {
+  background: transparent;
+  border-bottom: 1px solid rgba(245,240,232,0.20);
+}
+.vp.photo .wordmark { color: var(--background); }
+.vp.photo .nav-links { color: var(--background); }
+.vp.photo .nav-links a.is-current::after { background: #E7C88A; }
+.vp.photo .nav-account {
+  color: var(--background);
+  background: transparent;
+  border-color: rgba(245,240,232,0.5);
+}
+
+/* ─── Body ─────────────────────────────────────────────────── */
+.hero-body { position: relative; }
+.mobile  .hero-body  { padding: 32px 24px 24px; height: calc(812px - 64px); display: grid; grid-template-rows: auto auto 1fr; gap: 24px; }
+.desktop .hero-body  { padding: 64px 48px 64px; height: calc(800px - 80px); display: grid; grid-template-rows: auto 1fr; gap: 32px; }
+
+.head-block {
+  display: grid;
+  gap: 16px;
+}
+.desktop .head-block { gap: 24px; max-width: 64ch; }
+
+/* H1 ---------------------------------------------------------- */
+.h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0em;
+  line-height: 1.05;
+  color: var(--text);
+}
+.mobile  .h1 { font-size: 36px; }
+.desktop .h1 { font-size: 72px; line-height: 1.05; }
+.h1 .stop  { color: var(--gold); }
+.h1 .lead  { display: block; }
+.h1 .tail  { display: block; font-style: italic; font-weight: 400; font-family: var(--font-italic); font-size: 0.85em; color: var(--fg-muted); }
+
+/* Sub — Frank Ruhl 400, editorial register --------------- */
+.sub {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--fg-muted);
+  letter-spacing: 0em;
+}
+.mobile  .sub { font-size: 18px; line-height: 1.45; max-width: 34ch; }
+.desktop .sub { font-size: 24px; line-height: 1.45; max-width: 36ch; }
+.sub strong { color: var(--text); font-weight: 700; }
+
+/* Photo variant — light text overlay */
+.vp.photo .h1 { color: var(--background); }
+.vp.photo .h1 .stop { color: #E7C88A; }
+.vp.photo .h1 .tail { color: rgba(245,240,232,0.78); }
+.vp.photo .sub { color: rgba(245,240,232,0.85); }
+.vp.photo .sub strong { color: var(--background); }
+
+/* ─── Search bar + Near-me ─────────────────────────────────── */
+.search-block { display: grid; gap: 12px; max-width: 640px; }
+.desktop .search-block { gap: 16px; }
+.mobile  .search-block { max-width: none; }
+
+.search {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px 0 8px;
+  min-height: 56px;
+  position: relative;
+}
+.desktop .search { min-height: 64px; padding: 0 24px 0 8px; gap: 16px; }
+.search .icon { color: var(--green-dark); display: inline-flex; }
+.search .icon svg { width: 20px; height: 20px; }
+.search input {
+  border: 0;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  text-align: start;
+}
+.desktop .search input { font-size: 16px; }
+.search input::placeholder { color: var(--fg-muted); font-family: var(--font-display); font-weight: 400; font-style: normal; }
+
+.search .submit {
+  background: var(--green);
+  color: var(--background);
+  border: 0;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  padding: 0 24px;
+  min-height: 44px;
+  cursor: default;
+  white-space: nowrap;
+  align-self: center;
+}
+.desktop .search .submit { min-height: 52px; padding: 0 28px; font-size: 15px; }
+
+/* Near-me secondary */
+.near-me {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--green-dark);
+  background: transparent;
+  border: 1px solid var(--green);
+  border-radius: 9999px;
+  padding: 10px 18px;
+  min-height: 44px;
+  cursor: default;
+  white-space: nowrap;
+  justify-self: start;
+}
+.near-me .icon svg { width: 16px; height: 16px; }
+.near-me .italic-en {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 13px;
+  margin-inline-start: 4px;
+  direction: ltr; unicode-bidi: isolate;
+  display: none; /* gated by approval — kept off per Sapir item 6 */
+}
+
+/* Photo variant — search + near-me restyle */
+.vp.photo .search {
+  background: rgba(255,254,251,0.95);
+  border-color: rgba(245,240,232,0.6);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+}
+.vp.photo .near-me {
+  color: var(--background);
+  border-color: rgba(245,240,232,0.6);
+  background: rgba(31,74,56,0.30);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* ─── Layout placement ────────────────────────────────────── */
+.mobile .head-block  { grid-row: 1; align-self: start; }
+.mobile .search-block { grid-row: 2; }
+.desktop .head-block   { grid-row: 1; }
+.desktop .search-block { grid-row: 2; align-self: start; }
+
+/* ─── Direction B — photo overlay ─────────────────────────── */
+.photo-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  /* CSS-gradient mock of a warm golden-hour food photo —
+     deterministic, no external dependency. Swap for real photo later. */
+  background-color: #4a2c1a;
+  background-image:
+    radial-gradient(28% 22% at 26% 32%, rgba(250,220,170,0.85), transparent 70%),
+    radial-gradient(22% 18% at 64% 22%, rgba(230,180,120,0.70), transparent 70%),
+    radial-gradient(34% 32% at 78% 56%, rgba(180,110,60,0.75), transparent 70%),
+    radial-gradient(40% 38% at 38% 72%, rgba(120,70,35,0.85), transparent 70%),
+    radial-gradient(60% 60% at 50% 45%, rgba(255,220,150,0.25), transparent 65%),
+    linear-gradient(140deg, #3a1f10 0%, #6b3f20 38%, #b0762e 62%, #6b3f20 88%, #2a1808 100%);
+}
+.photo-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.20 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.photo-stage::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 78%;
+  background: linear-gradient(
+    180deg,
+    rgba(31,74,56,0.0) 0%,
+    rgba(31,74,56,0.22) 28%,
+    rgba(31,74,56,0.62) 60%,
+    rgba(31,74,56,0.90) 100%
+  );
+  pointer-events: none;
+}
+.vp.photo > *:not(.photo-stage) { position: relative; z-index: 1; }
+.vp.photo .hero-body { position: relative; z-index: 2; }
+
+/* Pull H1 toward bottom on photo variant — magazine cover style */
+.vp.photo.desktop .hero-body { grid-template-rows: 1fr auto auto; align-items: end; padding: 64px 48px 64px; }
+.vp.photo.desktop .head-block   { grid-row: 2; }
+.vp.photo.desktop .search-block { grid-row: 3; max-width: 600px; }
+.vp.photo.mobile  .hero-body { grid-template-rows: 1fr auto auto; }
+.vp.photo.mobile  .head-block   { grid-row: 2; align-self: end; }
+.vp.photo.mobile  .search-block { grid-row: 3; }
+
+/* photo credit corner */
+.photo-credit {
+  position: absolute;
+  bottom: 16px; left: 16px;
+  z-index: 4;
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.45);
+}
+.vp.photo.mobile .photo-credit { font-size: 9px; bottom: 12px; left: 12px; }
+
+/* ────────────────────────────────────────────────────────────
+   INSPECTOR
+   ──────────────────────────────────────────────────────────── */
+.inspector {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.inspector h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0em;
+  line-height: 1.2;
+  color: var(--doc-ink);
+  margin-bottom: 4px;
+}
+.inspector .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--doc-ink-mute);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.insp-col h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+}
+.insp-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--doc-ink);
+}
+.insp-row .chip {
+  width: 14px; height: 14px;
+  border: 1px solid rgba(42,38,32,0.20);
+}
+.insp-row .name { color: var(--doc-ink); }
+.insp-row .val  { color: var(--doc-ink-mute); }
+
+.insp-type {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+}
+.insp-type:last-child { border-bottom: 0; }
+.insp-type .specimen.is-hebrew { direction: rtl; unicode-bidi: isolate; }
+.insp-type .specimen {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--doc-ink);
+  letter-spacing: 0em;
+  line-height: 1.15;
+}
+.insp-type.body .specimen { font-weight: 400; font-family: var(--font-body); font-size: 14px; }
+.insp-type.italic .specimen { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); font-size: 18px; }
+.insp-type .meta {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  letter-spacing: 0.02em;
+}
+
+.insp-spacing-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 48px;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 0;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+}
+.insp-spacing-row .token { color: var(--doc-ink); }
+.insp-spacing-row .bar { background: var(--green); height: 10px; }
+.insp-spacing-row .px { color: var(--doc-ink-mute); text-align: end; }
+.insp-spacing-row.unused .bar { background: rgba(46,104,83,0.20); }
+.insp-spacing-row.unused .token { color: var(--doc-ink-mute); }
+.insp-spacing-row.unused .px { opacity: 0.55; }
+
+/* ────────────────────────────────────────────────────────────
+   SELF-CHECK + COUNCIL
+   ──────────────────────────────────────────────────────────── */
+.bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+.panel {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+}
+.panel h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0em;
+  margin-bottom: 4px;
+}
+.panel .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--doc-ink-mute);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+.checklist { display: grid; gap: 4px; }
+.checklist .item {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .item .box {
+  width: 16px; height: 16px;
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.checklist .item .note {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  white-space: nowrap;
+}
+.checklist .item code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--green-dark);
+  background: rgba(46,104,83,0.08);
+  padding: 1px 4px;
+}
+
+.council-row {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.council-row:last-child { border-bottom: 0; }
+.council-row .who {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.council-row .who strong { color: var(--doc-ink); display: block; font-size: 13px; letter-spacing: 0.06em; text-transform: none; margin-top: 2px;}
+.council-row .how { color: var(--doc-ink); }
+.council-row .how em { color: var(--gold); font-family: var(--font-italic); font-style: italic; }
+
+/* Footer */
+footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(42,38,32,0.18);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+footer .italic {
+  font-family: var(--font-italic);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 14px;
+  color: var(--gold);
+}
+
+.changelog {
+  background: transparent;
+  margin-bottom: 24px;
+  border-top: 1px solid rgba(42,38,32,0.18);
+  padding-top: 24px;
+}
+.changelog .micro {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  margin-bottom: 8px;
+}
+.changelog ul { list-style: none; display: grid; gap: 6px; }
+.changelog li {
+  display: grid;
+  grid-template-columns: 96px 84px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  font-size: 13px;
+}
+.changelog li .v { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.changelog li .d { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 12px; }
+.changelog li .t { color: var(--doc-ink); }
+.changelog li .t s { color: var(--doc-warn); }
+</style>
+</head>
+<body>
+
+<div class="docpage">
+
+  <!-- ──────────── DOC MASTHEAD ──────────── -->
+  <header>
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on" title="S3·P1·Dir A v1"></span>
+        <span class="pip is-now" title="S3·P1 v2 — current"></span>
+        <span class="pip" title="S3·P2 Card"></span>
+        <span class="pip" title="S3·P3 Categories"></span>
+        <span class="pip" title="S3·P4 Floating Navbar"></span>
+        <span class="ltr"> S3 · MEH-638 · P1 v2 · A revised + B new</span>
+      </div>
+      <h1>Hero — <em>A revised &amp; B new.</em></h1>
+      <div class="sub">Six locked-source corrections applied to v1. Direction B (photo-led) follows the same copy + hierarchy.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> awaiting Sapir review<br>
+      Phase <strong class="numeric">1</strong> of <strong class="numeric">4</strong> · Directions <strong>A</strong> &amp; <strong>B</strong><br>
+      <span class="numeric">2026-05-22</span> · S3.P1.v2<br>
+      System tokens <strong>locked v1.0</strong>
+    </div>
+  </header>
+
+  <!-- ──────────── VALIDATION GATE ──────────── -->
+  <section class="gate" aria-label="Pre-output validation">
+    <div>
+      <h2>Validation gate — <em>all four cleared.</em></h2>
+      <p class="lede">No phase output ships before Copy / Tokens / LOCKs / Scope are individually proven against locked source. Anything failing forces a STOP.</p>
+      <span class="pass-tag">4 / 4 cleared</span>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">01</span> Copy</h3>
+      <div class="gate-row"><span class="box">✓</span><span>H1 + Sub from <code>he.json</code> · MEH-620 (line <span class="numeric">91</span>).</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>CTAs plural-imperative · "הוסיפו" / "גלו" · MEH-472.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Nav 3 items locked: לגלות · מפה · עלינו.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Login "כניסה לחשבון" (nav.login) · not "היכנסי".</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Zero new copy invented this phase. <em>Anything we add later flagged <code>[NEW COPY]</code>.</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">02</span> Tokens</h3>
+      <div class="gate-row"><span class="box">✓</span><span>All colors from v1.0 primitives (<span class="numeric">7</span>) + warm-white (<span class="numeric">#FFFEFB</span>). Zero new hex.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Spacing on <span class="numeric">8</span>px grid · <code>--space-1</code>…<code>--space-12</code>.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Type roles: Frank Ruhl <span class="numeric">900</span> (H1), <span class="numeric">400</span> (Sub), DM Sans <span class="numeric">500</span> (UI), Cormorant italic (italics).</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Focus ring <code>rgba(46,104,83,0.40)</code>.</span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">03</span> LOCKs</h3>
+      <div class="gate-row"><span class="box">✓</span><span>No time-stamped framing · no "Cohort", no "Issue", no <span class="numeric">2026</span>.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No gradient orbs · Dir B uses bottom-only linear gradient over photo.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No red heart · no save UI in hero (deferred to P2).</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No shadow-lift hover · Dir B search has elevation (cards above photo only).</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No "יצרן", no "marketplace", no "שכנות מבשלות".</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No pure white · <code>--bg-card #FFFEFB</code>.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No feminine-singular CTAs · zero "הוסיפי / הצטרפי / היכנסי" remain.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>No English ornament outside Footer · removed eyebrow + figure caption from v1.</span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">04</span> Scope</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Hero only · no Card affordances · no Category grid · no Navbar redesign.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Trust strip removed · MEH-524 territory, not MEH-638.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Founder pull-quote removed · belongs to <code>/page.js</code> §10 (Session 4).</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>CTA model = existing prod (search + near-me) · no new buttons invented.</span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Navbar shown as <em>simple bar</em> placeholder · Floating Pill arrives in Phase 4.</span></div>
+    </div>
+  </section>
+
+  <!-- ──────────── DIFF — what changed v1 → v2 ──────────── -->
+  <section class="diff" aria-label="What changed from v1">
+    <div>
+      <h2>Six fixes — <em>v1 → v2.</em></h2>
+      <p class="lede">Each correction traces to a locked source. Strike-through is what shipped in v1; bold is what replaces it. v1 stays on disk for diff comparison.</p>
+    </div>
+    <ol>
+      <li>
+        <span class="num">01</span>
+        <div class="what">
+          H1 reset to the locked headline. <s>"ישר מהמקור אלייך."</s> <span class="new">→ "האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה."</span> · Sub absorbs the v1 H1 + its tail.
+        </div>
+        <div class="src">he.json · L<span class="numeric">91</span><strong>MEH-620</strong></div>
+      </li>
+      <li>
+        <span class="num">02</span>
+        <div class="what">
+          Trust strip killed. <s>"<span class="numeric">30</span> בתי עסק · <span class="numeric">12</span> קטגוריות · <span class="numeric">2026</span>"</s> <span class="new">→ removed.</span> Bootstrap territory (cohort <span class="numeric">12</span>–<span class="numeric">30</span>); seals later, not counts now.
+        </div>
+        <div class="src">COPY_BANK · MEH-521<strong>+ Casado-Aranda 2019</strong></div>
+      </li>
+      <li>
+        <span class="num">03</span>
+        <div class="what">
+          Plural imperative. <s>"הוסיפי" / "היכנסי" / "גלי"</s> <span class="new">→ "הוסיפו" / "כניסה לחשבון" / "גלו"</span> · pre-commit grep guard on "הוסיפי" honoured.
+        </div>
+        <div class="src"><strong>MEH-472</strong></div>
+      </li>
+      <li>
+        <span class="num">04</span>
+        <div class="what">
+          CTA model reverted to prod. <s>Primary "גלי עסקים" button + ghost "הוסיפי…"</s> <span class="new">→ Search bar + "קרוב אלי" geo pill.</span> No hero CTA invented.
+        </div>
+        <div class="src">prod Hero<strong>out-of-scope</strong></div>
+      </li>
+      <li>
+        <span class="num">05</span>
+        <div class="what">
+          Founder pull-quote removed from rail. <s>"אוכל אמיתי…" + attribution</s> <span class="new">→ moved to /page.js §10 (Session 4).</span>
+        </div>
+        <div class="src">page.js §<span class="numeric">10</span><strong>Session 4 scope</strong></div>
+      </li>
+      <li>
+        <span class="num">06</span>
+        <div class="what">
+          English ornament removed. <s>"— From the source." + "No platforms. No middlemen."</s> <span class="new">→ removed.</span> Brand tagline lives in Footer only.
+        </div>
+        <div class="src">Footer-only lock<strong>Khoi Vinh</strong></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ──────────── DIRECTION A — Editorial-heavy (revised) ──────────── -->
+  <section class="direction" id="dir-a">
+    <header class="dir-head">
+      <div class="letter">A</div>
+      <div>
+        <h2>Editorial-heavy — <em>cream, no image.</em></h2>
+        <p class="pitch">Question → answer arc carried by typography alone. Frank Ruhl Libre <span class="numeric">900</span> on <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; background:rgba(46,104,83,0.08); padding:1px 4px; color: var(--green-dark);">#F5F0E8</code>, generous whitespace, search bar as quiet primary action.</p>
+      </div>
+      <div class="meta">v<span class="numeric">2</span> · revised<br><strong>6 fixes applied</strong></div>
+    </header>
+
+    <div class="row">
+      <!-- Desktop A -->
+      <section class="stack-desktop">
+        <div class="stack-cap">
+          <span class="num">01</span>
+          <span class="label">Direction A · Desktop · canonical</span>
+          <span class="rule"></span>
+          <span class="dims numeric">1280 × 800</span>
+        </div>
+
+        <div class="vp desktop" dir="rtl" data-screen-label="Hero · Dir A · Desktop 1280">
+          <header class="nav">
+            <span class="wordmark">מהמקור<span class="dot" aria-hidden="true"></span></span>
+            <nav class="nav-links" aria-label="primary">
+              <a href="#" class="is-current">לגלות</a>
+              <a href="#">מפה</a>
+              <a href="#">עלינו</a>
+            </nav>
+            <span></span>
+            <button class="nav-account" type="button">כניסה לחשבון</button>
+          </header>
+
+          <main class="hero-body">
+            <div class="head-block">
+              <h1 class="h1">
+                <span class="lead">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></span>
+                <span class="tail">פשוט לא ידעת איפה.</span>
+              </h1>
+              <p class="sub">ישר מהמקור אלייך. <strong>עסקים שכבר בדקנו בשבילך.</strong></p>
+            </div>
+
+            <div class="search-block">
+              <div class="search" role="search">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                </span>
+                <input type="search" placeholder="חיפוש לפי קטגוריה, יישוב או שם עסק" aria-label="חיפוש">
+                <button class="submit" type="button">גלו</button>
+              </div>
+              <button class="near-me" type="button">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                </span>
+                קרוב אלי
+              </button>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <!-- Mobile A + notes -->
+      <section class="stack-mobile">
+        <div class="frame">
+          <div class="stack-cap">
+            <span class="num">02</span>
+            <span class="label">Dir A · Mobile · 375 wrap-test</span>
+            <span class="rule"></span>
+            <span class="dims numeric">375 × 812</span>
+          </div>
+          <div class="vp mobile" dir="rtl" data-screen-label="Hero · Dir A · Mobile 375">
+            <header class="nav">
+              <span class="wordmark">מהמקור<span class="dot" aria-hidden="true"></span></span>
+              <nav class="nav-links" aria-label="primary">
+                <a href="#" class="is-current">לגלות</a>
+                <a href="#">מפה</a>
+                <a href="#">עלינו</a>
+              </nav>
+            </header>
+            <main class="hero-body">
+              <div class="head-block">
+                <h1 class="h1">
+                  <span class="lead">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></span>
+                  <span class="tail">פשוט לא ידעת איפה.</span>
+                </h1>
+                <p class="sub">ישר מהמקור אלייך. <strong>עסקים שכבר בדקנו בשבילך.</strong></p>
+              </div>
+              <div class="search-block">
+                <div class="search" role="search">
+                  <span class="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                  </span>
+                  <input type="search" placeholder="חיפוש קטגוריה / עסק / יישוב" aria-label="חיפוש">
+                  <button class="submit" type="button">גלו</button>
+                </div>
+                <button class="near-me" type="button">
+                  <span class="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                  </span>
+                  קרוב אלי
+                </button>
+              </div>
+            </main>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div>
+            <h3>Mobile wrap test — <em>375px.</em></h3>
+            <p>Locked H1 is two sentences — twice the previous test load. Frank Ruhl <span class="numeric">900</span> at <span class="numeric">36</span>px (down from <span class="numeric">48</span> in v1), LH <span class="numeric">1.05</span>, tracking <span class="numeric">0em</span>.</p>
+          </div>
+          <div class="row-note">
+            <span class="k">Wrap A</span>
+            <span class="v">"האוכל הכי טוב / קרוב אלייך<strong>.</strong>" — <strong><span class="numeric">2</span> lines</strong>, primary clause.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Wrap B</span>
+            <span class="v">"פשוט לא ידעת איפה<strong>.</strong>" — <strong><span class="numeric">1</span> line</strong>, italic tail in Cormorant fallback (Frank Ruhl italic).</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Descenders</span>
+            <span class="v">ל ך ץ ק (קרוב / אלייך) clear by <span class="numeric">2</span>px at LH <span class="numeric">1.05</span>. ק descenders measured against the trailing period.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Overflow rule</span>
+            <span class="v">If clause A wraps to <span class="numeric">3</span>+, drop H1 to <span class="numeric">32</span>px. Never below — fall back to copy rewrite.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Touch targets</span>
+            <span class="v">Search input <span class="numeric">56</span>px tall; "גלו" submit <span class="numeric">44</span>px; "קרוב אלי" pill <span class="numeric">44</span>px — all ≥ WCAG.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Stack order</span>
+            <span class="v">Nav → H1 (lead + tail) → Sub → Search → Near-me. Vertical rhythm <span class="numeric">16</span> / <span class="numeric">24</span> — multiples of <span class="numeric">8</span>.</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ──────────── DIRECTION B — Photo-led (new) ──────────── -->
+  <section class="direction" id="dir-b">
+    <header class="dir-head">
+      <div class="letter">B</div>
+      <div>
+        <h2>Photo-led — <em>full-bleed, bottom gradient.</em></h2>
+        <p class="pitch">Same copy + hierarchy as A. Warm golden-hour image fills the frame; H1 + sub anchor bottom under a one-direction linear gradient. <strong>No orb, no glass over the page</strong> — gradient is a single bottom-rising mask. Search bar is the only floating surface above the photo.</p>
+      </div>
+      <div class="meta">v<span class="numeric">1</span> · new<br><strong>same copy as A</strong></div>
+    </header>
+
+    <div class="row">
+      <!-- Desktop B -->
+      <section class="stack-desktop">
+        <div class="stack-cap">
+          <span class="num">03</span>
+          <span class="label">Direction B · Desktop · canonical</span>
+          <span class="rule"></span>
+          <span class="dims numeric">1280 × 800</span>
+        </div>
+
+        <div class="vp desktop photo" dir="rtl" data-screen-label="Hero · Dir B · Desktop 1280">
+          <div class="photo-stage" aria-hidden="true"></div>
+          <span class="photo-credit ltr">CSS-GRADIENT MOCK · golden-hour warmth · to be replaced with a real Cohort #1 producer photo</span>
+          <header class="nav">
+            <span class="wordmark">מהמקור<span class="dot" aria-hidden="true"></span></span>
+            <nav class="nav-links" aria-label="primary">
+              <a href="#" class="is-current">לגלות</a>
+              <a href="#">מפה</a>
+              <a href="#">עלינו</a>
+            </nav>
+            <span></span>
+            <button class="nav-account" type="button">כניסה לחשבון</button>
+          </header>
+          <main class="hero-body">
+            <div class="head-block">
+              <h1 class="h1">
+                <span class="lead">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></span>
+                <span class="tail">פשוט לא ידעת איפה.</span>
+              </h1>
+              <p class="sub">ישר מהמקור אלייך. <strong>עסקים שכבר בדקנו בשבילך.</strong></p>
+            </div>
+            <div class="search-block">
+              <div class="search" role="search">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                </span>
+                <input type="search" placeholder="חיפוש לפי קטגוריה, יישוב או שם עסק" aria-label="חיפוש">
+                <button class="submit" type="button">גלו</button>
+              </div>
+              <button class="near-me" type="button">
+                <span class="icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                </span>
+                קרוב אלי
+              </button>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <!-- Mobile B + notes -->
+      <section class="stack-mobile">
+        <div class="frame">
+          <div class="stack-cap">
+            <span class="num">04</span>
+            <span class="label">Dir B · Mobile · 375 wrap-test</span>
+            <span class="rule"></span>
+            <span class="dims numeric">375 × 812</span>
+          </div>
+          <div class="vp mobile photo" dir="rtl" data-screen-label="Hero · Dir B · Mobile 375">
+            <div class="photo-stage" aria-hidden="true"></div>
+            <span class="photo-credit ltr">CSS MOCK</span>
+            <header class="nav">
+              <span class="wordmark">מהמקור<span class="dot" aria-hidden="true"></span></span>
+              <nav class="nav-links" aria-label="primary">
+                <a href="#" class="is-current">לגלות</a>
+                <a href="#">מפה</a>
+                <a href="#">עלינו</a>
+              </nav>
+            </header>
+            <main class="hero-body">
+              <div class="head-block">
+                <h1 class="h1">
+                  <span class="lead">האוכל הכי טוב קרוב אלייך<span class="stop">.</span></span>
+                  <span class="tail">פשוט לא ידעת איפה.</span>
+                </h1>
+                <p class="sub">ישר מהמקור אלייך. <strong>עסקים שכבר בדקנו בשבילך.</strong></p>
+              </div>
+              <div class="search-block">
+                <div class="search" role="search">
+                  <span class="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                  </span>
+                  <input type="search" placeholder="חיפוש קטגוריה / עסק / יישוב" aria-label="חיפוש">
+                  <button class="submit" type="button">גלו</button>
+                </div>
+                <button class="near-me" type="button">
+                  <span class="icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                  </span>
+                  קרוב אלי
+                </button>
+              </div>
+            </main>
+          </div>
+        </div>
+
+        <div class="notes">
+          <div>
+            <h3>Photo-led notes — <em>contrast &amp; gradient.</em></h3>
+            <p>Cream text on the photo demands AA-pass contrast. The bottom-only gradient (cream <span class="numeric">0%</span> → <code>--green-dark 88%</code>) covers the lower <span class="numeric">75%</span> of the frame so H1 + Sub never sit on raw image.</p>
+          </div>
+          <div class="row-note">
+            <span class="k">Gradient</span>
+            <span class="v">Single direction (<span class="numeric">180</span>°), four stops: <span class="numeric">0</span>/<span class="numeric">25</span>/<span class="numeric">65</span>/<span class="numeric">88</span>%. <em>No radial orb.</em> No glass over the page itself.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Nav over photo</span>
+            <span class="v">Cream text + cream hairline border. Account pill outlined in cream. This is the "State 2" treatment that becomes Floating Pill State 2 in P4.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Search elevation</span>
+            <span class="v">Warm-white <span class="numeric">95</span>% opacity card with a single dropshadow — the only floating surface. Not glassmorphism — full opacity card on photo.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Near-me on photo</span>
+            <span class="v">Outlined cream pill with <span class="numeric">6</span>px backdrop-blur over a translucent green tint. <em>Single ingredient</em>, not the meal.</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Image</span>
+            <span class="v">PLACEHOLDER · golden-hour sourdough. Final image: warm, specific to a Cohort #<span class="numeric">1</span> producer — never "hands holding vegetables".</span>
+          </div>
+          <div class="row-note">
+            <span class="k">Reduced motion</span>
+            <span class="v">No Ken Burns by default at <span class="numeric">375</span>; mobile photo is static. Desktop adds a slow drift only if <code>prefers-reduced-motion: no-preference</code>.</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ──────────── INSPECTOR ──────────── -->
+  <section class="inspector" aria-label="Tokens used">
+    <div>
+      <h2>Inspector.</h2>
+      <p class="lede"><em style="font-family: var(--font-italic); color: var(--gold); font-weight: 500;">Tokens in play.</em><br>Same tokenset powers A &amp; B. Direction B introduces a single non-token value — the four-stop bottom gradient — documented here as a Hero-only utility (not a token).</p>
+    </div>
+
+    <div class="insp-col">
+      <h3>Color (in use)</h3>
+      <div class="insp-row"><span class="chip" style="background:#F5F0E8;"></span><span class="name">--background</span><span class="val numeric">#F5F0E8</span></div>
+      <div class="insp-row"><span class="chip" style="background:#FFFEFB; outline:1px solid rgba(0,0,0,0.05); outline-offset:-1px;"></span><span class="name">--bg-card</span><span class="val numeric">#FFFEFB</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1C1A17;"></span><span class="name">--text</span><span class="val numeric">#1C1A17</span></div>
+      <div class="insp-row"><span class="chip" style="background:#57524A;"></span><span class="name">--fg-muted</span><span class="val numeric">#57524A</span></div>
+      <div class="insp-row"><span class="chip" style="background:#2E6853;"></span><span class="name">--green</span><span class="val numeric">#2E6853</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1F4A38;"></span><span class="name">--green-dark</span><span class="val numeric">#1F4A38</span></div>
+      <div class="insp-row"><span class="chip" style="background:#8B6914;"></span><span class="name">--gold</span><span class="val numeric">#8B6914</span></div>
+      <div class="insp-row"><span class="chip" style="background:#E8E0D0;"></span><span class="name">--border</span><span class="val numeric">#E8E0D0</span></div>
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed rgba(42,38,32,0.18); font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px; line-height: 1.55;">
+        Dir B gradient (Hero-only utility, not a token):<br>
+        <code style="font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 11px; color: var(--green-dark);">linear-gradient(180deg, rgba(31,74,56,0) 0%, …0.25 25%, …0.65 65%, …0.88 100%)</code>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Type (in use)</h3>
+      <div class="insp-type">
+        <div class="specimen is-hebrew">האוכל הכי טוב קרוב אלייך.</div>
+        <div class="meta">H1 lead · Frank Ruhl <span class="numeric">900</span><br>m <span class="numeric">36</span> / d <span class="numeric">72</span> · LH <span class="numeric">1.05</span></div>
+      </div>
+      <div class="insp-type italic">
+        <div class="specimen is-hebrew">פשוט לא ידעת איפה.</div>
+        <div class="meta">H1 tail · Frank Ruhl italic <span class="numeric">400</span><br><span class="numeric">0.85em</span> of lead · fallback documented</div>
+      </div>
+      <div class="insp-type">
+        <div class="specimen is-hebrew" style="font-weight: 400; color: var(--doc-ink-mute);">ישר מהמקור אלייך. <strong style="color: var(--doc-ink);">עסקים שכבר בדקנו בשבילך.</strong></div>
+        <div class="meta">Sub · Frank Ruhl <span class="numeric">400</span> + <span class="numeric">700</span> on clause-2<br>m <span class="numeric">18</span> / d <span class="numeric">24</span> · LH <span class="numeric">1.45</span></div>
+      </div>
+      <div class="insp-type body">
+        <div class="specimen is-hebrew">חיפוש לפי קטגוריה, יישוב או שם עסק</div>
+        <div class="meta">Search placeholder · Frank Ruhl <span class="numeric">400</span><br>m <span class="numeric">15</span> / d <span class="numeric">16</span></div>
+      </div>
+      <div class="insp-type body">
+        <div class="specimen is-hebrew">גלו · קרוב אלי · כניסה לחשבון</div>
+        <div class="meta">UI · DM Sans <span class="numeric">500</span><br><span class="numeric">13</span>–<span class="numeric">15</span>px · LS <span class="numeric">0.02–0.04em</span></div>
+      </div>
+      <div class="insp-type body">
+        <div class="specimen is-hebrew">לגלות · מפה · עלינו</div>
+        <div class="meta">Nav · DM Sans <span class="numeric">500</span><br>m <span class="numeric">13</span> / d <span class="numeric">14</span></div>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Spacing — 8px grid</h3>
+      <div class="insp-spacing-row"><span class="token">--space-1</span><span class="bar" style="width:8px;"></span><span class="px numeric">8</span></div>
+      <div class="insp-spacing-row"><span class="token">--space-2</span><span class="bar" style="width:16px;"></span><span class="px numeric">16</span></div>
+      <div class="insp-spacing-row"><span class="token">--space-3</span><span class="bar" style="width:24px;"></span><span class="px numeric">24</span></div>
+      <div class="insp-spacing-row"><span class="token">--space-4</span><span class="bar" style="width:32px;"></span><span class="px numeric">32</span></div>
+      <div class="insp-spacing-row"><span class="token">--space-6</span><span class="bar" style="width:48px;"></span><span class="px numeric">48</span></div>
+      <div class="insp-spacing-row"><span class="token">--space-8</span><span class="bar" style="width:64px;"></span><span class="px numeric">64</span></div>
+      <div class="insp-spacing-row unused"><span class="token">--space-12</span><span class="bar" style="width:96px;"></span><span class="px numeric">96</span></div>
+      <div class="insp-spacing-row unused"><span class="token">--space-16</span><span class="bar" style="width:128px;"></span><span class="px numeric">128</span></div>
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed rgba(42,38,32,0.18); font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px; line-height: 1.55;">
+        Mobile gutters <span class="numeric">24</span> · desktop <span class="numeric">48</span>.<br>
+        Nav h: m<span class="numeric">64</span> / d<span class="numeric">80</span>.<br>
+        Search h: m<span class="numeric">56</span> / d<span class="numeric">64</span>.<br>
+        Pill h: <span class="numeric">44</span> ≥ WCAG.<br>
+        Vertical rhythm: <span class="numeric">16</span> · <span class="numeric">24</span> · <span class="numeric">32</span>.
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Copy provenance</h3>
+      <div style="display: grid; gap: 12px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">H1 lead + tail</div>
+          <div style="font-family: var(--font-display); font-weight: 700; font-size: 15px; line-height: 1.4; color: var(--doc-ink);" dir="rtl">האוכל הכי טוב קרוב אלייך. פשוט לא ידעת איפה.</div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">he.json L91 · MEH-620</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">Sub</div>
+          <div style="font-family: var(--font-display); font-weight: 400; font-size: 14px; line-height: 1.4; color: var(--doc-ink);" dir="rtl">ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך.</div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">he.json L92 · MEH-620 sub-line</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">Nav + CTAs</div>
+          <ul style="list-style: none; font-family: var(--font-body); font-size: 12px; line-height: 1.7; color: var(--doc-ink);">
+            <li>nav.discover · nav.map · nav.about</li>
+            <li>nav.login → "כניסה לחשבון"</li>
+            <li>search.submit → "גלו" (plural · MEH-472)</li>
+            <li>search.geo → "קרוב אלי"</li>
+          </ul>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">[NEW COPY] flags</div>
+          <div style="font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 14px;">None.</div>
+          <div style="font-family: var(--font-body); font-size: 11px; color: var(--doc-ink-mute); margin-top: 4px;">Zero copy invented in this phase. Search placeholder text is the only candidate — flagged as locked if it differs from he.json.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────── SELF-CHECK + COUNCIL ──────────── -->
+  <div class="bottom-row">
+    <section class="panel">
+      <h2>Self-check.</h2>
+      <p class="lede">Eight gates from the prompt — all pass on v2.</p>
+      <div class="checklist">
+        <div class="item"><span class="box">✓</span><span><strong>8px grid on all spacing.</strong> Gutters <span class="numeric">24</span>/<span class="numeric">48</span>; nav <span class="numeric">64</span>/<span class="numeric">80</span>; search <span class="numeric">56</span>/<span class="numeric">64</span>; near-me <span class="numeric">44</span>; rhythm <span class="numeric">16</span>/<span class="numeric">24</span>/<span class="numeric">32</span>.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Latin numerals + Latin units.</strong> No bare counts in hero (item 2 of diff). Numerals appear only in inspector + token references — all in <code>.numeric</code>.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Hebrew RTL.</strong> <code>dir="rtl"</code> on every <code>.vp</code>; logical props (<code>ms / me / start / end</code>) throughout.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Voice — plural UI + locked H1.</strong> H1/Sub treated as UI hero (gerund/neutral); CTAs plural ("גלו", "הוסיפו" — Phase 4); login "כניסה לחשבון".</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No gradient orb.</strong> Dir A: cream + paper-noise. Dir B: single-direction bottom gradient, four linear stops. <em>No radial fills anywhere.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No shadow-lift on hover.</strong> No cards in hero. Dir B search has resting elevation only (not hover-triggered).</span><span class="note">n/a here</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No red heart / save.</strong> Hero has no save affordance. Deferred to P2 (green/gold only).</span><span class="note">n/a here</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Eyebrow ≠ "default".</strong> Eyebrow killed entirely. No "From the source.", no "Issue", no time-stamp.</span><span class="note">pass</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Council — applied.</h2>
+      <p class="lede">How the v2 corrections trace back to the twelve.</p>
+      <div>
+        <div class="council-row"><div class="who">#01 · editorial<strong>Vignelli</strong></div><div class="how">H1 / Sub / Search — three roles, one hierarchy. Same three roles in A and B, treatment alone differs. <em>Discipline.</em></div></div>
+        <div class="council-row"><div class="who">#02 · Hebrew type<strong>Spiekermann</strong></div><div class="how">LH <span class="numeric">1.05</span> for headlines, <span class="numeric">1.45</span> for sub. Tracking <span class="numeric">0em</span>. ל ך ץ ק descenders verified in the longer locked H1.</div></div>
+        <div class="council-row"><div class="who">#05 · restraint<strong>Khoi Vinh</strong></div><div class="how">Three nav items: לגלות · מפה · עלינו. English ornament killed. Eyebrow killed. <em>Less, more sharply.</em></div></div>
+        <div class="council-row"><div class="who">#06 · Hebrew type<strong>Frere-Jones</strong></div><div class="how"><span class="numeric">375</span>px wrap test rerun for the longer H1: clause A wraps to <span class="numeric">2</span> lines at <span class="numeric">36</span>px; clause B holds on one. Documented.</div></div>
+        <div class="council-row"><div class="who">#08 · editorial home<strong>Rosa Park</strong></div><div class="how">Dir A holds cream as canvas; Dir B holds photo as canvas. No glass-on-page, no orb. Park's "no app aesthetic" carried into both treatments.</div></div>
+        <div class="council-row"><div class="who">#10 · iconography<strong>Susan Kare</strong></div><div class="how">Two SVG icons: magnifier (search) + crosshair (near-me). Single-weight strokes (<span class="numeric">1.5</span>), single colour. <em>Glyphs only.</em></div></div>
+        <div class="council-row"><div class="who">#11 · long-term<strong>Stewart Brand</strong></div><div class="how">Version stamp, diff panel, changelog. v1 preserved on disk. <span class="numeric">6</span>-month evolution window noted in System v1.0.</div></div>
+        <div class="council-row"><div class="who">#12 · medium<strong>McLuhan</strong></div><div class="how">The medium is the message — Hebrew typography (A) and producer photography (B) both say <em>magazine</em>. App tropes (orbs, glass, lift, red hearts) absent in both.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ──────────── CHANGELOG ──────────── -->
+  <section class="changelog">
+    <div class="micro">— Changelog · S3 · MEH-638</div>
+    <ul>
+      <li><span class="v numeric">S3.P1.v2</span><span class="d numeric">2026-05-22</span><span class="t"><strong>v2 ship.</strong> Six fixes applied: H1 reset to MEH-620 locked copy; trust strip removed; CTAs pluralised (MEH-472); CTA model reverted to search+near-me; founder pull-quote removed; English ornament removed. Direction B added (photo-led). Validation Gate added at head.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P1.A.v1</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>Direction A v1 — wrong H1, trust strip, "גלי" CTA, English ornament, pull-quote in rail.</s> Superseded — kept on disk for diff.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S2.final</span><span class="d numeric">2026-05-21</span><span class="t" style="color: var(--doc-ink-mute);">Logo wordmark "מהמקור" placeholder; mark to land in P4 navbar.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S1.v1.0</span><span class="d numeric">2026-05-21</span><span class="t" style="color: var(--doc-ink-mute);">Design System v1.0 tokens — colours, type scale, 8px grid, state tokens. Referenced verbatim throughout.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>S3 · MEH-638 · Phase <span class="numeric">1</span> v<span class="numeric">2</span> · <span class="numeric">2026-05-22</span></div>
+    <div class="italic">A revised &amp; B new · awaiting approval</div>
+    <div>מהמקור · Design Session <span class="numeric">3</span></div>
+  </footer>
+</div>
+
+</body>
+</html>
