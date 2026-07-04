@@ -301,7 +301,6 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                     onSelect={() => navigate({ kind: "category", data: c })}
                     onHover={() => setHighlightIdx(i)}
                   >
-                    <span>{c.emoji ? `${c.emoji} ` : ""}</span>
                     {highlightMatch(c.name, trimmed)}
                   </Row>
                 );
