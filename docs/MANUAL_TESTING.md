@@ -475,6 +475,13 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
+
+### MEH-1011 Chunk 2 — בקשת השלמה (admin UI)
+- [ ] כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד "✓ אשר"; **תוצאה מצופה:** לחיצה פותחת מודל "בקשת השלמה מבית העסק" עם textarea + 2 צ'יפים מהירים.
+- [ ] שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast הצלחה, המודל נסגר, ובשורה מופיע badge "ממתין להשלמה" + תאריך (התאריך מיושר LTR, לא נשבר ב-RTL). מייל נשלח לבעלת העסק (לוג/Resend).
+- [ ] 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בקשת השלמה עם "חסרה תמונה — יש להעלות לפחות תמונה אחת" ממולא מראש + toast מידע "לא ניתן לאשר עדיין…". עסק בקטגוריית רישיון ללא מספר → prefill "חסר מספר רישיון יצרן".
+- [ ] ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (approve מנקה `requested_changes`).
+- [ ] feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה לא נשלחת.
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
 - [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
@@ -1271,6 +1278,11 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] "קרוב אלי" clickable with sheet open
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
+
+### Mobile top-banner height reservation (MEH-1019)
+_(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
+- [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
+- [ ] Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
 
 ---
 

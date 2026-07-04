@@ -25,6 +25,14 @@
 
 **Sapir pending:** merge order **#1468 → #1472**; QA + merge the 5 sweep PRs + #1474/#1450; close #1473; approve/reject copy-gated strings; **go** for MEH-1001 Chunk 1; decide fate of the remaining G5 items + the #1410 `.agents/skills/` scope-bleed (flagged on #1464). Hourly self check-in armed across all PRs.
 
+## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
+
+- **Branch:** `feature/meh-1019-mobile-map-banner-reservation` off `origin/staging`. YELLOW (central /map), diagnosis-first → confirmed → end-to-end. `Closes MEH-1019`.
+- **Fix:** the mobile shell (`MapClient.jsx:406`) hardcoded `calc(100dvh - 64px)` — same `64` MEH-1009 fixed on desktop. Reproduced 51px below-fold spill with a 41px top banner (Playwright 375px). Added `mobileShellRef` + `mobileTopOffset` + a SEPARATE measurement effect (resize + `<main>` MutationObserver) mirroring the desktop reservation; desktop effect byte-identical. Post-fix: 812/812 with+without banner; desktop 900/900 unchanged. Build ✓, vitest 702✓.
+- **Investigation A (chips sliver): WORKS-AS-DESIGNED.** Overflow → partial chip under the 32px inline-end fade = intended affordance. P3 nuance: `fadeBg="#ffffff"` ≈ page `#FFFEFB` ≈ white chips → near-zero fade contrast, reads as a clip. Fix candidate (separate ticket, not done): pass `fadeBg` = real container bg.
+- **Investigation B (blank cards): NOT a bug.** `MapProducerCard` renders `next/image` with correct cloudinary src when image present (DOM-confirmed); photo-less → intended Leaf fallback in 88px box. "Blank areas" = photo-less producers (data/P3). Real staging pixels not fetchable from sandbox (MEH-360) → on-device confirm if a photo'd producer blanks.
+- **Sapir pending:** review + merge; mobile QA on the preview (esp. WITH an unverified login to see the email banner); decide whether A (chips fadeBg) + B (photo density) warrant follow-up tickets.
+
 ## 2026-07-03 — MEH-1014: BottomNav minimize-on-scroll — DRAFT PR
 
 - **Branch:** `claude/bottomnav-minimize-scroll-n6fb75` off `origin/staging` (divergence 0 — clean cut). ⚠️ **Branch-naming flag:** the issue spec asked for `feature/meh-1014-bottomnav-minimize-on-scroll`, but this remote session is harness-locked to the `claude/*` branch and can't push elsewhere — same constraint as PR #1464 flag #1 / MEH-997. Repo's no-`claude/*` rule (workflow rule 3) couldn't be honored from here; flagged in the PR body for Sapir.
@@ -86,6 +94,7 @@ Re-anchored Phase 0 (@6c46b434) proved `producers.delivery_cities` was a LIVE dr
 - **Done:** `COMPLETENESS_FIELDS += short_desc`; yellow-tier check (red untouched); `TOTAL_FIELDS` 5→6 + 6-row checklist in ProfileCompletenessCard; `fields.short_desc` he+en; heuristic node suite +5 cases (16✓), card vitest re-percentaged (83/67) + new case. Full vitest 696✓, build exit 0, 0 eslint errors. CHANGELOG + MANUAL_TESTING updated.
 - **Flagged in PR body:** (a) admin producers list (shared heuristic) now yellow-dots producers with no description — accepted per issue; (b) owner edit hub has NO `short_description` input yet (only AI-bio panel → `description`) — OR semantics keep the item self-serve-completable; tagline input belongs to the MEH-964 skin.
 - **Sapir pending:** review + merge #1452 (Rule 23 — CC doesn't merge); mobile glance — the card % shifts visually (missing-image-only profile now 83%, not 80%).
+- **Status 04/07 (MEH-1006):** #1452 merged to staging (squash `3b58658c`) — the pending one-line update flagged in that session's report.
 
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
@@ -144,7 +153,7 @@ Required-check names untouched (this job is `Adversarial review (calibration)`, 
 - MEH-987 EmptyState 4-emoji sweep (#1416) · MEH-990 emoji residue (#1419 + #1424)
 - MEH-992 group-buy form clarity (#1431)
 
-**Linear state (all closed manually — staging merges don't auto-close):**
+**Linear state (all closed manually — [correction MEH-1006: the parenthetical claim "staging merges don't auto-close" was WRONG — `Closes MEH-XX` DOES auto-close on staging merges (default_branch=staging), proven live when MEH-1004 was auto-closed by GitHub on #1451's merge, 03/07 09:28. These issues were simply closed by hand.]):**
 - **Done:** 975, 976, 977, 978, 979, 980, 982, 987, 990, 992, 948
 - **Canceled:** 983 (Next.js catch-all one-off, not reproducible)
 - **948 closed WITHOUT fix** — `/map` default centering verified correct geometrically; reopen trigger documented in its comment (a real user seeing an off-Israel map on a **clean** load → the iOS-`dvh`/zoom-race fix, central `MapComponent`, chunked + `/adversarial-review`).

@@ -90,14 +90,21 @@ export default function Footer() {
               <h3>s nest cleanly (no h2→h3 skip) and every column is titled. */}
           <div>
             <h2 className="sr-only">{BRAND_NAME}</h2>
-            <Link href="/" aria-label={t("nav.footer.brand_aria")}>
+            {/* MEH-991 (NAV-18): the css-invert on logo-footer.png flattened the
+                5-color petal mark to flat white. Use the purpose-built graded-cream
+                dark-surface mark (logo-on-warm-dark.svg — square mark, no lockup
+                asset exists) + wordmark text, per the P6 light-lockup treatment. */}
+            <Link href="/" aria-label={t("nav.footer.brand_aria")} className="mb-4 inline-flex items-center gap-3">
               <Image
-                src="/logo-footer.png"
-                alt={BRAND_NAME}
-                width={140}
-                height={52}
-                className="mb-4 brightness-0 invert"
+                src="/logo-on-warm-dark.svg"
+                alt=""
+                width={48}
+                height={48}
+                aria-hidden="true"
               />
+              <span className="font-headline-md font-bold text-xl text-background">
+                {BRAND_NAME}
+              </span>
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
