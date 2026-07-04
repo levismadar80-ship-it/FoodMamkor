@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S9 · MEH-211 · /login · כניסה למהמקור — desktop + mobile + states</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0 (S2→S8 lineage).
+   Identical to S7. No new tokens introduced (engineering rule).
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --green:        #2E6853;
+  --green-dark:   #1F4A38;
+  --green-light:  #3A7D64;
+  --primary:      #2E6853;
+  --primary-light:#3A7D64;
+  --primary-dark: #2E4A2E;
+  --secondary:    #4CB08B;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --gold-soft:    #E7C88A;
+  --accent-warm:  #E8823A;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+  --focus-ring:   rgba(46,104,83,0.40);
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --duration-fast: 180ms;
+  --duration-base: 420ms;
+  --ease-quart:    cubic-bezier(.25, 1, .5, 1);
+
+  --shadow-card:   0 8px 32px rgba(46,104,83,0.12);
+  --shadow-header: 0 2px 20px rgba(46,104,83,0.06);
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg); color: var(--doc-ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+body { padding: 48px 40px 96px; min-width: 1460px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+.docpage { max-width: 1380px; margin: 0 auto; }
+
+/* ── DOC MASTHEAD ─────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(42,38,32,0.18); padding-bottom: 24px; margin-bottom: 32px; gap: 24px; }
+.masthead .phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.masthead .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.masthead .pip.is-on  { background: var(--green); border-color: var(--green); }
+.masthead .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+.masthead h1 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; color: var(--doc-ink); }
+.masthead h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.masthead .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 8px; max-width: 92ch; line-height: 1.5; }
+.masthead .sub code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); }
+.masthead .sub b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); }
+.masthead .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.85; }
+.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.masthead .stamp .dot { color: var(--gold); }
+
+/* draft-copy banner */
+.draft-band { display: flex; align-items: center; gap: 12px; margin: 0 0 30px; padding: 11px 18px; background: color-mix(in oklab, var(--gold) 9%, var(--doc-bg)); border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--border)); border-radius: 4px; font-family: var(--font-body); font-size: 12px; letter-spacing: 0.04em; color: #6b4f0f; }
+.draft-band b { font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-size: 10.5px; }
+.draft-band .he { font-family: var(--font-body); }
+
+/* ── SECTION HEAD ─────────────────── */
+.section-head { border-top: 1px solid rgba(42,38,32,0.30); padding: 36px 0 24px; margin-bottom: 28px; display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline; }
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 88ch; line-height: 1.55; }
+.section-head .pitch code { font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 12px; color: var(--green-dark); }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── FRAME CAPTION + VIEWPORT ─────── */
+.bp-cap { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: baseline; margin: 40px 0 16px; }
+.bp-cap:first-of-type { margin-top: 0; }
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); align-self: center; }
+.cap-note { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin: 14px 0 0; max-width: 74ch; line-height: 1.55; }
+.cap-note b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); font-size: 12px; }
+.cap-note code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+
+.frame-row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+
+.vp { background: var(--background); border: 1px solid rgba(42,38,32,0.18); overflow: hidden; position: relative; }
+.vp.desktop { width: 1280px; }
+.vp.desktop.fixed-h { height: 880px; }
+.vp.mobile  { width: 375px; }
+.vp.fixed-h.mobile { height: 812px; }
+
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR SURFACE  (identical foundations to S7)
+   ══════════════════════════════════════════════════════════════ */
+.mh { direction: rtl; font-family: var(--font-body); color: var(--text); background: var(--background); position: relative; min-height: 100%; display: flex; flex-direction: column; height: 100%; }
+.paper::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+
+/* ─── FloatingNavbar v5 LOCKED — embedded as-is from S7 ─── */
+.nav-shell { display: flex; justify-content: center; padding: 24px; direction: rtl; z-index: 30; position: relative; }
+.mobile .nav-shell { padding: 14px 14px 0; }
+.nav { width: 100%; max-width: 1200px; display: grid; align-items: center; border-radius: 9999px; }
+.nav.is-scrolled { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-header); }
+.desktop .nav { grid-template-columns: auto 1fr auto; gap: 32px; min-height: 64px; padding: 8px 16px 8px 8px; }
+.mobile  .nav { grid-template-columns: auto 1fr auto auto; gap: 10px; min-height: 52px; padding: 6px 8px 6px 16px; }
+
+.logo { display: inline-flex; align-items: center; text-decoration: none; }
+.wordmark { font-family: var(--font-display); font-weight: 700; color: var(--green-dark); line-height: 1; letter-spacing: 0.01em; }
+.desktop .wordmark { font-size: 30px; }
+.mobile  .wordmark { font-size: 23px; }
+
+.nav-links { display: flex; align-items: center; justify-content: center; gap: 32px; font-family: var(--font-body); font-weight: 500; font-size: 14px; }
+.nav-link { color: var(--text); text-decoration: none; padding: 8px 0; position: relative; }
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after { content: ""; position: absolute; inset-inline: 0; bottom: 2px; height: 1px; background: var(--gold); }
+.nav-end { display: inline-flex; align-items: center; gap: 8px; }
+.btn-text { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); background: transparent; border: 1px solid transparent; padding: 10px 14px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; border-radius: 9999px; }
+.btn-text:hover { background: var(--light); }
+.btn-outline { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px solid var(--green); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-outline:hover { background: var(--green); color: var(--background); }
+.btn-outline.is-current { background: var(--green); color: var(--background); }
+.btn-outline .arr { font-family: var(--font-italic); font-style: italic; display: inline-block; transform: scaleX(-1); }
+.btn-search { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-search:hover { background: var(--primary-light); }
+.btn-search svg, .btn-outline svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn { width: 44px; height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; cursor: default; flex: none; }
+.icon-btn.filled { background: var(--primary); border: 1px solid var(--primary); color: var(--background); }
+.icon-btn.ghost  { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+.icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* shared button primitives — verbatim from S7 */
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--font-body); font-weight: 600; font-size: 16px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); border-radius: 9999px; padding: 15px 26px; min-height: 54px; cursor: default; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-primary svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.btn-primary .arr { font-family: var(--font-italic); font-style: italic; transform: scaleX(-1); display: inline-block; font-size: 18px; }
+/* loading variant (S9 new — submit only) */
+.btn-primary.is-loading { background: var(--primary-light); color: color-mix(in oklab, #fff 78%, var(--primary)); pointer-events: none; }
+.btn-primary .spin { width: 18px; height: 18px; border-radius: 9999px; border: 2px solid color-mix(in oklab, #fff 42%, transparent); border-top-color: #fff; animation: s9spin 0.72s linear infinite; }
+@keyframes s9spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn-primary .spin { animation-duration: 2.4s; } }
+
+/* ─── SOCIAL AUTH (S9) — Google widget + Apple, full-width on cream ─── */
+.or-div { display: flex; align-items: center; gap: 14px; margin: 4px 0; font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.or-div::before, .or-div::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.login-social { display: grid; gap: 10px; }
+/* Google — GIS-rendered widget. Mock draws its fixed white/outline theme; do NOT restyle in code. */
+.btn-google { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 11px; width: 100%; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--text); background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 14px 20px; min-height: 54px; cursor: default; }
+.btn-google:hover { border-color: var(--green); }
+.btn-google svg { width: 19px; height: 19px; }
+.gis-tag { position: absolute; inset-inline-end: 12px; top: 50%; transform: translateY(-50%); font-family: var(--font-body); font-weight: 600; font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: color-mix(in oklab, var(--fg-muted) 70%, transparent); }
+/* Apple — Apple-styled black, fixed. Treated as a vendor primitive. */
+.btn-apple { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: -apple-system, "DM Sans", BlinkMacSystemFont, sans-serif; font-weight: 600; font-size: 15px; color: #fff; background: #000; border: 1px solid #000; border-radius: 9999px; padding: 14px 20px; min-height: 54px; cursor: default; }
+.btn-apple svg { width: 17px; height: 17px; fill: currentColor; }
+
+/* fields — labels ABOVE (S7 pattern) */
+.field { display: grid; gap: 9px; margin-bottom: 18px; }
+.field > .lab { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; color: var(--text); display: flex; align-items: baseline; gap: 8px; }
+.input, textarea.input { width: 100%; min-height: 54px; padding: 15px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 15.5px; color: var(--text); line-height: 1.4; }
+.input::placeholder { color: color-mix(in oklab, var(--fg-muted) 62%, transparent); }
+.input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--focus-ring); outline: none; }
+.field.is-focused .input { border-color: var(--green); box-shadow: 0 0 0 3px var(--focus-ring); }
+.field .hint { font-family: var(--font-body); font-size: 12.5px; line-height: 1.5; color: var(--fg-muted); margin-top: -1px; }
+
+.input-wrap { position: relative; display: block; }
+.input-wrap .adorn { position: absolute; inset-inline-start: 15px; top: 27px; transform: translateY(-50%); color: var(--green-dark); display: inline-flex; pointer-events: none; }
+.input-wrap .adorn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.input-wrap .input { padding-inline-start: 46px; }
+
+/* password label-row with adjacent forgot link */
+.lab-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.forgot-link { font-family: var(--font-body); font-weight: 500; font-size: 12.5px; color: var(--green-dark); text-decoration: none; white-space: nowrap; }
+.forgot-link:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+/* eye toggle — DOCUMENTED RTL EXCEPTION (visual trailing edge, inset-inline-end) */
+.pass-wrap { position: relative; display: block; }
+.pass-wrap .input { padding-inline-start: 46px; padding-inline-end: 48px; }
+.eye-toggle { position: absolute; inset-inline-end: 9px; top: 27px; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 9999px; background: transparent; border: 0; display: grid; place-items: center; color: var(--fg-muted); cursor: default; }
+.eye-toggle:hover { color: var(--green-dark); }
+.eye-toggle svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* error — editorial, warm; never red shouting (S7 pattern) */
+.field.has-error .input { border-color: color-mix(in oklab, var(--accent-warm) 60%, var(--border)); background: color-mix(in oklab, var(--accent-warm) 5%, var(--bg-card)); }
+.field .err { display: flex; align-items: flex-start; gap: 9px; margin-top: 2px; }
+.field .err .mk { flex: none; color: var(--accent-warm); margin-top: 3px; display: inline-flex; }
+.field .err .mk svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.field .err .et { font-family: var(--font-italic); font-style: italic; font-size: 15px; line-height: 1.45; color: color-mix(in oklab, var(--accent-warm) 68%, var(--text)); }
+.field .err .et a { color: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.field .err .et a:hover { text-decoration-thickness: 2px; }
+
+/* ─── LOGIN COLUMN (the door) — sibling of S7 .rg-consumer ─── */
+.lg-wrap { position: relative; z-index: 1; flex: 1 1 auto; display: flex; flex-direction: column; }
+.desktop .lg-wrap { justify-content: center; }
+.lg-col { width: 100%; max-width: 416px; margin: 0 auto; display: grid; gap: 22px; }
+.desktop .lg-col { padding: 8px 0 64px; }
+.mobile  .lg-col { padding: 18px 22px 40px; }
+
+.lg-head { display: grid; gap: 12px; }
+.lg-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); display: inline-flex; align-items: center; gap: 12px; }
+.lg-eyebrow .rule { width: 28px; height: 1px; background: var(--gold); display: inline-block; }
+.lg-head h2 { font-family: var(--font-display); font-weight: 900; line-height: 0.98; letter-spacing: -0.01em; color: var(--text); }
+.desktop .lg-head h2 { font-size: 52px; }
+.mobile  .lg-head h2 { font-size: 40px; }
+.lg-head .dek { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 19px; line-height: 1.45; color: var(--green-dark); max-width: 32ch; }
+
+.lg-form { display: grid; gap: 4px; margin-top: 2px; }
+.lg-form .btn-primary { width: 100%; margin-top: 10px; }
+
+/* cross-link door panel in --light — text-link only, NO btn-primary (S7 .rgc-cross) */
+.lg-cross { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; margin-top: 6px; padding: 18px; background: var(--light); border: 1px solid var(--border); border-radius: 16px; text-decoration: none; }
+.lg-cross .xc-ic { width: 40px; height: 40px; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border); display: grid; place-items: center; color: var(--green-dark); flex: none; }
+.lg-cross .xc-ic svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.lg-cross .xc-body { display: grid; gap: 3px; }
+.lg-cross .xc-t { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--text); line-height: 1.15; }
+.lg-cross .xc-s { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); line-height: 1.4; }
+.lg-cross .xc-arr { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--green-dark); transform: scaleX(-1); }
+
+/* greeked navbar placeholder — navbar is OUT OF S9 SCOPE (MEH-732) */
+.nav-greek { width: 100%; max-width: 1200px; display: grid; grid-template-columns: auto 1fr auto; gap: 32px; align-items: center; min-height: 64px; padding: 8px 22px; border-radius: 9999px; background: repeating-linear-gradient(135deg, color-mix(in oklab, var(--doc-ink) 7%, var(--bg-card)) 0 9px, color-mix(in oklab, var(--doc-ink) 12%, var(--bg-card)) 9px 18px); border: 1px dashed color-mix(in oklab, var(--doc-ink) 32%, var(--border)); }
+.nav-greek .ng-blk { height: 13px; border-radius: 9999px; background: color-mix(in oklab, var(--doc-ink) 22%, transparent); }
+.nav-greek .ng-logo { width: 96px; height: 22px; border-radius: 6px; background: color-mix(in oklab, var(--doc-ink) 26%, transparent); }
+.nav-greek .ng-mid { display: flex; gap: 26px; justify-content: center; }
+.nav-greek .ng-mid .ng-blk { width: 64px; }
+.nav-greek .ng-end { display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
+.nav-greek .ng-end .ng-pill { width: 104px; height: 40px; border-radius: 9999px; background: color-mix(in oklab, var(--doc-ink) 18%, transparent); }
+.nav-greek .ng-label { position: absolute; inset-inline-start: 50%; transform: translateX(-50%); top: -11px; font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--doc-ink-mute); background: var(--background); padding: 1px 10px; border: 1px solid color-mix(in oklab, var(--doc-ink) 24%, var(--border)); border-radius: 9999px; white-space: nowrap; }
+
+/* state pill on a frame caption */
+.state-pill { font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); background: color-mix(in oklab, var(--gold) 10%, var(--bg-card)); border: 1px solid color-mix(in oklab, var(--gold) 28%, var(--border)); padding: 3px 9px; border-radius: 9999px; text-transform: none; letter-spacing: 0.04em; }
+
+/* ── PANELS (lock self-check) — from S7 ── */
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; margin-top: 12px; }
+.panel > h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--doc-ink); margin-bottom: 4px; }
+.panel > h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.panel > .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 22px; line-height: 1.5; max-width: 92ch; }
+.lock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.lock-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.lock-row { display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 13.5px; line-height: 1.5; color: var(--doc-ink); }
+.lock-row:last-child { border-bottom: 0; }
+.lock-row .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; flex: none; }
+.lock-row .box.x { background: transparent; border-color: var(--doc-warn); color: var(--doc-warn); }
+.lock-row code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+.lock-row .he { font-family: var(--font-body); }
+.lock-row em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.lock-row b { font-weight: 600; }
+
+footer.docfoot { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer.docfoot .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 14px; color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="docpage">
+
+  <!-- ─── MASTHEAD ─── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-now"></span>
+        <span class="ltr"> S9 · MEH-211 · /login · noindex</span>
+      </div>
+      <h1>The login page — <em>כניסה למהמקור.</em></h1>
+      <div class="sub">The other door of the same house. A returning reader coming home — not a SaaS gate. Built as a sibling of <b>S7 step-00</b>: same FloatingNavbar v5, same gold eyebrow rule, same <code>.btn-primary</code> green pill, same warm Cormorant-italic errors, and the now-shared <b>social-first</b> auth order (Google → Apple → <span class="he" dir="rtl">או</span> → email + password). Direction C — <b>Two Doors</b>: open fields on cream, then a demoted cross-link panel in <code>--light</code> that opens the register door. Mobile 375 is canon; desktop grows from it.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> design only · visual layer<br>
+      Surface <strong>/login</strong> · Dir. C<br>
+      <span class="numeric">2026-06-05</span><br>
+      <strong style="color: var(--green-dark);">S9 · FOR REVIEW</strong><br>
+      <span style="font-size: 10px; color: var(--gold);">social-first · two doors · states</span>
+    </div>
+  </header>
+
+  <div class="draft-band">
+    <b>Draft copy</b><span>— Hebrew strings shown are placeholders. <b style="letter-spacing:0;text-transform:none;font-size:12px;">Code is canonical</b>; final copy locks at i18n extraction review. Gender-neutral per ADR-014 HYBRID (precedent <span class="he" dir="rtl">הוסיפו/גלו</span>); display headings carry no terminal period.</span>
+  </div>
+
+  <!-- ════════════════ A · MOBILE 375 — THE CANON ════════════════ -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Login — <em>375, the canon.</em></h2>
+      <p class="pitch">Mobile-first, where trust is decided in three seconds. Top to bottom: FloatingNavbar v5, the gold eyebrow rule under a Frank Ruhl 900 welcome-back headline, then the <b>social-first</b> block — Google's GIS widget, then Apple's black button — the <span class="numeric" style="font-style:italic;font-family:var(--font-italic)">או</span> divider, email + password with an eye toggle and an adjacent <span class="he" dir="rtl">שכחת סיסמה?</span>, the green <code>.btn-primary</code> <span class="he" dir="rtl">כניסה</span>, and last, demoted, the door panel in <code>--light</code> to <span class="he" dir="rtl">/register</span>. Four states across the row: default, focus, error, loading.</p>
+    </div>
+    <div class="meta">375 × 812<br><strong>4 states</strong></div>
+  </section>
+
+  <div class="frame-row">
+
+    <!-- 01 · DEFAULT -->
+    <div>
+      <div class="bp-cap"><span class="num">01</span><span class="label">Default</span><span class="rule"></span><span class="dims">375 × 812</span></div>
+      <div class="vp mobile fixed-h">
+        <div class="mh paper">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn ghost" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="lg-wrap">
+            <div class="lg-col">
+              <div class="lg-head">
+                <div class="lg-eyebrow"><span class="rule"></span>כניסה</div>
+                <h2>טוב לראות אותך שוב</h2>
+                <p class="dek">כל מה שאהבת מחכה לך כאן.</p>
+              </div>
+              <div class="login-social">
+                <button class="btn-google" type="button">__ICO_GOOGLE__ המשך עם Google<span class="gis-tag">GIS</span></button>
+                <button class="btn-apple" type="button">__ICO_APPLE__ המשך עם Apple</button>
+              </div>
+              <div class="or-div">או</div>
+              <div class="lg-form">
+                <div class="field">
+                  <label class="lab" for="m1-mail">אימייל</label>
+                  <div class="input-wrap"><span class="adorn">__ICO_MAIL__</span><input class="input ltr" id="m1-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il"></div>
+                </div>
+                <div class="field">
+                  <div class="lab-row"><label class="lab" for="m1-pass">סיסמה</label><a class="forgot-link" href="#">שכחת סיסמה?</a></div>
+                  <div class="pass-wrap"><span class="adorn" style="position:absolute;inset-inline-start:15px;top:27px;transform:translateY(-50%);color:var(--green-dark);display:inline-flex;pointer-events:none;">__ICO_LOCK__</span><input class="input" id="m1-pass" type="password" value="benari2026"><button class="eye-toggle" type="button" aria-label="הצג סיסמה">__ICO_EYE__</button></div>
+                </div>
+                <button class="btn-primary" type="button">כניסה <span class="arr">←</span></button>
+              </div>
+              <a class="lg-cross" href="#">
+                <span class="xc-ic">__ICO_LEAF__</span>
+                <span class="xc-body"><span class="xc-t">עדיין אין לך חשבון?</span><span class="xc-s">הצטרפו — שמרו עסקים, כתבו ביקורות, קבלו עדכונים.</span></span>
+                <span class="xc-arr">←</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 · FOCUS -->
+    <div>
+      <div class="bp-cap"><span class="num">02</span><span class="label">Focus</span><span class="rule"></span><span class="dims">email active</span></div>
+      <div class="vp mobile fixed-h">
+        <div class="mh paper">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn ghost" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="lg-wrap">
+            <div class="lg-col">
+              <div class="lg-head">
+                <div class="lg-eyebrow"><span class="rule"></span>כניסה</div>
+                <h2>טוב לראות אותך שוב</h2>
+                <p class="dek">כל מה שאהבת מחכה לך כאן.</p>
+              </div>
+              <div class="login-social">
+                <button class="btn-google" type="button">__ICO_GOOGLE__ המשך עם Google<span class="gis-tag">GIS</span></button>
+                <button class="btn-apple" type="button">__ICO_APPLE__ המשך עם Apple</button>
+              </div>
+              <div class="or-div">או</div>
+              <div class="lg-form">
+                <div class="field is-focused">
+                  <label class="lab" for="m2-mail">אימייל</label>
+                  <div class="input-wrap"><span class="adorn">__ICO_MAIL__</span><input class="input ltr" id="m2-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il"></div>
+                </div>
+                <div class="field">
+                  <div class="lab-row"><label class="lab" for="m2-pass">סיסמה</label><a class="forgot-link" href="#">שכחת סיסמה?</a></div>
+                  <div class="pass-wrap"><span class="adorn" style="position:absolute;inset-inline-start:15px;top:27px;transform:translateY(-50%);color:var(--green-dark);display:inline-flex;pointer-events:none;">__ICO_LOCK__</span><input class="input" id="m2-pass" type="password" value="benari2026"><button class="eye-toggle" type="button" aria-label="הצג סיסמה">__ICO_EYE__</button></div>
+                </div>
+                <button class="btn-primary" type="button">כניסה <span class="arr">←</span></button>
+              </div>
+              <a class="lg-cross" href="#">
+                <span class="xc-ic">__ICO_LEAF__</span>
+                <span class="xc-body"><span class="xc-t">עדיין אין לך חשבון?</span><span class="xc-s">הצטרפו — שמרו עסקים, כתבו ביקורות, קבלו עדכונים.</span></span>
+                <span class="xc-arr">←</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 · ERROR -->
+    <div>
+      <div class="bp-cap"><span class="num">03</span><span class="label">Error</span><span class="rule"></span><span class="dims">warm italic</span></div>
+      <div class="vp mobile fixed-h">
+        <div class="mh paper">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn ghost" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="lg-wrap">
+            <div class="lg-col">
+              <div class="lg-head">
+                <div class="lg-eyebrow"><span class="rule"></span>כניסה</div>
+                <h2>טוב לראות אותך שוב</h2>
+                <p class="dek">כל מה שאהבת מחכה לך כאן.</p>
+              </div>
+              <div class="login-social">
+                <button class="btn-google" type="button">__ICO_GOOGLE__ המשך עם Google<span class="gis-tag">GIS</span></button>
+                <button class="btn-apple" type="button">__ICO_APPLE__ המשך עם Apple</button>
+              </div>
+              <div class="or-div">או</div>
+              <div class="lg-form">
+                <div class="field has-error">
+                  <label class="lab" for="m3-mail">אימייל</label>
+                  <div class="input-wrap"><span class="adorn">__ICO_MAIL__</span><input class="input ltr" id="m3-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il" aria-invalid="true" aria-describedby="m3-err"></div>
+                </div>
+                <div class="field has-error">
+                  <div class="lab-row"><label class="lab" for="m3-pass">סיסמה</label><a class="forgot-link" href="#">שכחת סיסמה?</a></div>
+                  <div class="pass-wrap"><span class="adorn" style="position:absolute;inset-inline-start:15px;top:27px;transform:translateY(-50%);color:var(--green-dark);display:inline-flex;pointer-events:none;">__ICO_LOCK__</span><input class="input" id="m3-pass" type="password" value="benari202" aria-invalid="true" aria-describedby="m3-err"><button class="eye-toggle" type="button" aria-label="הצג סיסמה">__ICO_EYE__</button></div>
+                  <div class="err" id="m3-err"><span class="mk">__ICO_ALERT__</span><span class="et">האימייל או הסיסמה לא תואמים. נסו שוב, או <a href="#" data-route="/forgot-password">אפסו את הסיסמה</a>.</span></div>
+                </div>
+                <button class="btn-primary" type="button">כניסה <span class="arr">←</span></button>
+              </div>
+              <a class="lg-cross" href="#">
+                <span class="xc-ic">__ICO_LEAF__</span>
+                <span class="xc-body"><span class="xc-t">עדיין אין לך חשבון?</span><span class="xc-s">הצטרפו — שמרו עסקים, כתבו ביקורות, קבלו עדכונים.</span></span>
+                <span class="xc-arr">←</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 · LOADING -->
+    <div>
+      <div class="bp-cap"><span class="num">04</span><span class="label">Loading</span><span class="rule"></span><span class="dims">submitting</span></div>
+      <div class="vp mobile fixed-h">
+        <div class="mh paper">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn ghost" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="lg-wrap">
+            <div class="lg-col">
+              <div class="lg-head">
+                <div class="lg-eyebrow"><span class="rule"></span>כניסה</div>
+                <h2>טוב לראות אותך שוב</h2>
+                <p class="dek">כל מה שאהבת מחכה לך כאן.</p>
+              </div>
+              <div class="login-social">
+                <button class="btn-google" type="button">__ICO_GOOGLE__ המשך עם Google<span class="gis-tag">GIS</span></button>
+                <button class="btn-apple" type="button">__ICO_APPLE__ המשך עם Apple</button>
+              </div>
+              <div class="or-div">או</div>
+              <div class="lg-form">
+                <div class="field">
+                  <label class="lab" for="m4-mail">אימייל</label>
+                  <div class="input-wrap"><span class="adorn">__ICO_MAIL__</span><input class="input ltr" id="m4-mail" type="email" value="nurit@benari.co.il"></div>
+                </div>
+                <div class="field">
+                  <div class="lab-row"><label class="lab" for="m4-pass">סיסמה</label><a class="forgot-link" href="#">שכחת סיסמה?</a></div>
+                  <div class="pass-wrap"><span class="adorn" style="position:absolute;inset-inline-start:15px;top:27px;transform:translateY(-50%);color:var(--green-dark);display:inline-flex;pointer-events:none;">__ICO_LOCK__</span><input class="input" id="m4-pass" type="password" value="benari2026"><button class="eye-toggle" type="button" aria-label="הצג סיסמה">__ICO_EYE__</button></div>
+                </div>
+                <button class="btn-primary is-loading" type="button" aria-busy="true"><span class="spin"></span> רגע, נכנסים…</button>
+              </div>
+              <a class="lg-cross" href="#">
+                <span class="xc-ic">__ICO_LEAF__</span>
+                <span class="xc-body"><span class="xc-t">עדיין אין לך חשבון?</span><span class="xc-s">הצטרפו — שמרו עסקים, כתבו ביקורות, קבלו עדכונים.</span></span>
+                <span class="xc-arr">←</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="cap-note"><b>STATES</b> All four are designed in-system, never browser defaults. <b>Focus</b> (02): the single S7 ring — <code>border-color: --green</code> + <code>0 0 0 3px --focus-ring</code>. <b>Error</b> (03): warm Cormorant italic on <code>--accent-warm</code>, the field tinted 5% — <em>never red</em>. <b>Port note:</b> <code>aria-invalid="true"</code> + <code>aria-describedby</code> carry the semantics; color is never the sole signal. <b>Loading</b> (04): the submit fills to <code>--primary-light</code> with a spinner and <span class="he" dir="rtl">רגע, נכנסים…</span> (slowed under <code>prefers-reduced-motion</code>). No password-strength bar — that lives on register only.</p>
+
+  <!-- ════════════════ B · DESKTOP 1280 ════════════════ -->
+  <section class="section-head">
+    <div class="letter">B</div>
+    <div>
+      <h2>Login — <em>1280, grown from mobile.</em></h2>
+      <p class="pitch">Desktop keeps the exact same single editorial column, centered in the cream canvas with generous negative space on both sides — the brand's "60% empty" gesture. Nothing new appears at the larger breakpoint; the headline simply scales to Frank Ruhl 900 at 52px and the column floats at a comfortable reading measure. The door panel stays demoted at the bottom, secondary to the green <span class="he" dir="rtl">כניסה</span>.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>centered column</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">05</span><span class="label">Default · Desktop</span><span class="rule"></span><span class="dims">1280 × 880</span></div>
+  <div class="frame-row">
+    <div class="vp desktop fixed-h">
+      <div class="mh paper">
+        <div class="nav-shell">
+          <div class="nav-greek" role="presentation" style="position:relative;" aria-hidden="true">
+            <span class="ng-label">navbar — reference only, out of S9 scope (MEH-732)</span>
+            <div class="ng-logo"></div>
+            <div class="ng-mid"><span class="ng-blk"></span><span class="ng-blk"></span><span class="ng-blk"></span></div>
+            <div class="ng-end"><span class="ng-pill"></span><span class="ng-pill"></span></div>
+          </div>
+        </div>
+        <div class="lg-wrap">
+          <div class="lg-col">
+            <div class="lg-head">
+              <div class="lg-eyebrow"><span class="rule"></span>כניסה</div>
+              <h2>טוב לראות אותך שוב</h2>
+              <p class="dek">כל מה שאהבת מחכה לך כאן.</p>
+            </div>
+            <div class="login-social">
+              <button class="btn-google" type="button">__ICO_GOOGLE__ המשך עם Google<span class="gis-tag">GIS</span></button>
+              <button class="btn-apple" type="button">__ICO_APPLE__ המשך עם Apple</button>
+            </div>
+            <div class="or-div">או</div>
+            <div class="lg-form">
+              <div class="field">
+                <label class="lab" for="d-mail">אימייל</label>
+                <div class="input-wrap"><span class="adorn">__ICO_MAIL__</span><input class="input ltr" id="d-mail" type="email" placeholder="name@example.com" value="nurit@benari.co.il"></div>
+              </div>
+              <div class="field">
+                <div class="lab-row"><label class="lab" for="d-pass">סיסמה</label><a class="forgot-link" href="#">שכחת סיסמה?</a></div>
+                <div class="pass-wrap"><span class="adorn" style="position:absolute;inset-inline-start:15px;top:27px;transform:translateY(-50%);color:var(--green-dark);display:inline-flex;pointer-events:none;">__ICO_LOCK__</span><input class="input" id="d-pass" type="password" value="benari2026"><button class="eye-toggle" type="button" aria-label="הצג סיסמה">__ICO_EYE__</button></div>
+              </div>
+              <button class="btn-primary" type="button">כניסה <span class="arr">←</span></button>
+            </div>
+            <a class="lg-cross" href="#">
+              <span class="xc-ic">__ICO_LEAF__</span>
+              <span class="xc-body"><span class="xc-t">עדיין אין לך חשבון?</span><span class="xc-s">הצטרפו — שמרו עסקים, כתבו ביקורות, קבלו עדכונים.</span></span>
+              <span class="xc-arr">←</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note"><b>GOOGLE + APPLE ON CREAM</b> The Google button is the <b>GIS-rendered widget</b> (white / outline theme) — designed <em>around</em>, never restyled; the <code>GIS</code> tag marks where Google paints its own pixels. <b>Port note:</b> button text is GIS-controlled (<code>continue_with</code>, locale <code>he</code>) — never hardcode the Hebrew label. Apple's button is the fixed Apple-styled black primitive. Both sit full-width directly on cream, matched to the 54px field rhythm so the social-first stack reads as one calm group above the <span class="he" dir="rtl">או</span> divider. <b>Navbar is out of S9 scope</b> (MEH-732) — shown greeked.</p>
+
+  <!-- ════════════════ PATTERNS + LOCK SELF-CHECK ════════════════ -->
+  <section class="section-head">
+    <div class="letter">C</div>
+    <div>
+      <h2>Patterns &amp; <em>anti-patterns.</em></h2>
+      <p class="pitch">What S9 carries in from S1–S8, the two traps it deliberately sidesteps, and the locked decisions returned for review.</p>
+    </div>
+    <div class="meta">self-check<br><strong>for Sapir</strong></div>
+  </section>
+
+  <div class="panel">
+    <h2>Lock <em>self-check.</em></h2>
+    <p class="lede">S9 introduces no new tokens and no new primitives — it reassembles S7's vocabulary into the second door. Three reused patterns (with precedent), two anti-patterns avoided, and the open items.</p>
+    <div class="lock-grid">
+      <div class="lock-col">
+        <h3>Patterns used — cited</h3>
+        <div class="lock-row"><span class="box">✓</span><span><b>Social-first auth order</b> — <span class="he" dir="rtl">Google → Apple → או → email + password</span>. Precedent: <em>S7 step-00</em> account gate (re-synced to social-first 2026-06-05). Two doors, one order.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><b>Warm editorial error</b> — Cormorant italic on <code>--accent-warm</code>, field tinted 5%, never red. Precedent: <em>S7 state-a</em> field errors.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><b>Cross-link door panel</b> — <code>--light</code> tile, circle glyph, text-link only, demoted below the CTA. Precedent: <em>S7 <code>.rgc-cross</code></em> producer↔consumer link.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><b>Carried chrome</b> — FloatingNavbar v5, gold eyebrow rule, labels-above 54px fields, green <code>.btn-primary</code> with the <span class="he" dir="rtl">←</span> arrow. Precedent: <em>S5/S6/S7</em>.</span></div>
+      </div>
+      <div class="lock-col">
+        <h3>Anti-patterns avoided</h3>
+        <div class="lock-row"><span class="box x">✕</span><span><b>"Another app" card-on-cream</b> — no floating white auth card, no default-shadcn shell. Open fields sit on the cream paper like the rest of the brand.</span></div>
+        <div class="lock-row"><span class="box x">✕</span><span><b>Red browser-default validation</b> — no shouting <code>:invalid</code> red, no native error bubbles. Semantics via <code>aria-invalid</code>; tone via warm italic.</span></div>
+        <h3 style="margin-top: 22px;">Resolved this round</h3>
+        <div class="lock-row"><span class="box">✓</span><span><b>Headline locked</b> — <span class="he" dir="rtl">טוב לראות אותך שוב</span>. <span class="he" dir="rtl">ברוכה השבה</span> rejected — gendered, fails ADR-014.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><b>Combined release</b> — S9 + S7-v4.1 both gated by <code>MEH-742</code>; the two doors flip to social-first together in one approval pass.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="docfoot">
+    <span>Mehamakor · S9 · /login · design only</span>
+    <span class="italic">מהמקור — ישר מהמקור אלייך.</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var ICO_SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  var ICO_BURGER = '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+  var ICO_CHECK  = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  var ICO_MAIL   = '<svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M4 7.5l8 5.5 8-5.5"/></svg>';
+  var ICO_LOCK   = '<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  var ICO_EYE    = '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var ICO_ALERT  = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.4v.2"/></svg>';
+  var ICO_LEAF   = '<svg viewBox="0 0 24 24"><path d="M20 4C10 4 4 10 4 20c0 0 10 1 16-5 4.5-4 0-11 0-11z"/><path d="M9 15c2-3 5-5 9-6.5"/></svg>';
+  var ICO_GOOGLE = '<svg viewBox="0 0 24 24" stroke="none"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4"/><path d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853"/><path d="M6.4 14a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9z" fill="#FBBC05"/><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.6 9.4 5.9 12 5.9z" fill="#EA4335"/></svg>';
+  var ICO_APPLE  = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.05 12.55c-.03-2.5 2.04-3.7 2.13-3.76-1.16-1.7-2.97-1.93-3.61-1.96-1.54-.16-3 .9-3.78.9-.78 0-1.97-.88-3.24-.86-1.67.03-3.21.97-4.07 2.46-1.74 3.02-.44 7.48 1.24 9.93.82 1.2 1.8 2.54 3.08 2.49 1.24-.05 1.71-.8 3.21-.8 1.49 0 1.92.8 3.23.78 1.33-.03 2.18-1.22 3-2.42.94-1.38 1.33-2.72 1.35-2.79-.03-.01-2.59-.99-2.62-3.95z"/><path d="M14.86 5.31c.68-.83 1.14-1.98 1.01-3.13-.98.04-2.17.65-2.88 1.48-.63.73-1.19 1.9-1.04 3.02 1.1.09 2.22-.56 2.91-1.37z"/></svg>';
+
+  var map = {
+    '__ICO_SEARCH__': ICO_SEARCH, '__ICO_BURGER__': ICO_BURGER, '__ICO_CHECK__': ICO_CHECK,
+    '__ICO_MAIL__': ICO_MAIL, '__ICO_LOCK__': ICO_LOCK, '__ICO_EYE__': ICO_EYE,
+    '__ICO_ALERT__': ICO_ALERT, '__ICO_LEAF__': ICO_LEAF,
+    '__ICO_GOOGLE__': ICO_GOOGLE, '__ICO_APPLE__': ICO_APPLE
+  };
+
+  function walk(node){
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var c = node.childNodes[i];
+      if (c.nodeType === 3) {
+        var t = c.nodeValue;
+        if (t.indexOf('__') !== -1 && /__[A-Z_]+__/.test(t)) {
+          var html = t.replace(/__[A-Z_]+__/g, function(m){ return map[m] || m; });
+          if (html !== t) {
+            var span = document.createElement('span');
+            span.style.display = 'contents';
+            span.innerHTML = html;
+            c.parentNode.replaceChild(span, c);
+          }
+        }
+      } else if (c.nodeType === 1 && c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') {
+        walk(c);
+      }
+    }
+  }
+  walk(document.body);
+})();
+</script>
+</body>
+</html>

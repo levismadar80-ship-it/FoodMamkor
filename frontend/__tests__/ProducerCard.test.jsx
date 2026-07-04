@@ -500,3 +500,32 @@ describe("ProducerCard — heart (Phase C)", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 });
+
+// MEH-991 (CARD-09): v4 LOCK — a third+ badge collapses to a "+N" overflow chip.
+describe("ProducerCard — badge overflow chip (MEH-991)", () => {
+  it("renders +N when the producer earns more than 2 badges", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...minimalProducer,
+          organic_certified: true,
+          grass_fed: true,
+          has_gluten_free_products: true,
+          has_delivery: true,
+        }}
+      />,
+    );
+    const chip = screen.getByTestId("badge-overflow");
+    expect(chip).toHaveTextContent("+2");
+    expect(chip).toHaveAttribute("dir", "ltr");
+  });
+
+  it("renders no overflow chip at 2 badges or fewer", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
+      />,
+    );
+    expect(screen.queryByTestId("badge-overflow")).not.toBeInTheDocument();
+  });
+});
