@@ -1109,6 +1109,7 @@
       "nav": {
         "dashboard": "לוח מחוונים",
         "producers": "בתי עסק",
+        "group_buys": "קבוצות רכש",
         "outreach": "גיוס",
         "experiences": "חוויות",
         "recipes": "מתכונים",
@@ -1138,7 +1139,6 @@
         "total_producers": "סה״כ בתי עסק",
         "pending_approval": "ממתינים לאישור",
         "registered_users": "משתמשים רשומים",
-        "home_products": "מוצרים ביתיים",
         "group_buys": "קבוצות רכש",
         "group_buys_tooltip": "ניהול קבוצות רכש של משתמשות. לא פעיל כרגע.",
         "group_buys_tooltip_label": "מידע על קבוצות רכש"
@@ -1147,9 +1147,7 @@
         "producers_waiting": "{count} בתי עסק ממתינים לאישור",
         "click_to_handle": "לחצו לטיפול",
         "open_reports": "{count} דיווחים פתוחים",
-        "needs_review": "דורש בדיקה",
-        "hidden_home_products": "{count} מוצרים ביתיים מוסתרים",
-        "for_review": "לבדיקה"
+        "needs_review": "דורש בדיקה"
       },
       "chart": {
         "new_producers_6_months": "בתי עסק חדשים — 6 חודשים אחרונים"
@@ -1786,7 +1784,6 @@
       "title": "תוכן",
       "tabs": {
         "categories": "קטגוריות",
-        "home_products": "מוצרים ביתיים",
         "about": "עמוד חזון",
         "terms": "תנאי שימוש"
       },
@@ -1798,13 +1795,6 @@
         "save": "שמרו",
         "delete": "מחקו",
         "confirm_delete": "למחוק קטגוריה?"
-      },
-      "home_products": {
-        "heading": "מוצרים ביתיים מוסתרים",
-        "empty": "אין מוצרים מוסתרים",
-        "restore": "שחזר",
-        "delete": "מחקו",
-        "confirm_delete": "למחוק את המוצר?"
       },
       "page_editor": {
         "title_placeholder": "כותרת",
