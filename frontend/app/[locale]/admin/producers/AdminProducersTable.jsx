@@ -225,16 +225,16 @@ function TableHead() {
   return (
     <thead className="bg-gray-50">
       <tr>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
       </tr>
     </thead>
   );
