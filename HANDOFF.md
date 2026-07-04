@@ -12,6 +12,27 @@
 - **Discovered in:** PR #1475 (MEH-1019) auto-review — MapClient's /map work ran that whole session with no pre-edit guard (Sapir's human relay was the only guard). Registry-only file, CC-writable (deny covers only settings.json + hooks/**).
 - **Sapir pending:** review + merge (config-only, no mobile QA). **Related open finding:** worth a sweep of OTHER guard registries for the same `[locale]` drift class (MEH-668 fixed rtl-allowlist, this fixes central-components — are there more?).
 
+## 2026-07-04 — MEH-991 Design Parity: Chunk 1 approved + Chunk 2 GREEN sweep (5 PRs) · 4-task batch
+
+**MEH-991 (the big one).** Chunk 1 gap-matrix (**#1464**, draft) approved by Sapir with the accent-token amendment (token exists — `tailwind.tokens.json:13`). Ran Chunk 2 GREEN sweep, one PR per group, all draft, all build+vitest green, none self-merged:
+- **G1 #1468** `parity-tokens-residue` — 11 stale-hex→token sites. **Merge FIRST** (G2 is stacked on it — shared Skeleton/.ds-sync lines).
+- **G2 #1472** `parity-producer-card` (central; adversarial-review found + fixed 1 REAL focus-ring clip) — stacked on G1.
+- **G3 #1476** `parity-home` — 10 items, 7 files.
+- **G4 #1477** `parity-nav-footer` (both central; reviewed **inline** — the Fable-5 limit killed the review agent, session switched to Opus 4.8 mid-sweep; caught a real truncate bug in review).
+- **G5 first pass #1479** `parity-static-pages` — BIZ-15 + LOGIN-04 only; **remaining G5 deferred** (ABOUT/PROC/EVENT/BADGE/COMPL + producer-detail biz family — staging drifted since the audit, needs per-item re-verification; several copy-gated). This is the main open sweep follow-up.
+- Reference-doc fixes + all reviewer points (ZIP-blob/squash, linguist-vendored, README provenance) landed on #1464.
+- **Copy-gated strings NOT shipped** (rule 22 — surfaced in PR bodies for approval): HOME-04 Friday subtitle, PROC-08 caveat link, ABOUT-09/BIZ-20/COMPL-06.
+- **Chunk 3 (VRT baselines) pending** sweep completion.
+
+**4-task batch (same session):**
+- **MEH-1005 #1473 → RECOMMEND CLOSE** — duplicate of MEH-1008 (already on staging with preferable "לבית עסק" wording). Flagged on PR.
+- **MEH-1006 #1474** (draft, docs) — auto-close claim corrected; convention-a already fixed by MEH-1012.
+- **MEH-1000 #1450** — already implemented by a prior session; resynced vs staging, verified both review items already fixed, documented take-over. Ready for Sapir.
+- **MEH-1001 — Phase 0 ONLY (HIGH-RISK), STOP at WAIT gate.** Cross-owner 403-leak matrix posted to Linear: events PUT `:189` (no admin override), events DELETE `:215-219`, experiences PUT `:287-289` (no admin override), experiences DELETE `:342-346`, home_products `:278-282`/`:324-327`, reviews `:319-323` all leak 403; recipes = 404 ✅. **Awaiting Sapir "go" for Chunk 1.**
+
+**Sapir pending:** merge order **#1468 → #1472**; QA + merge the 5 sweep PRs + #1474/#1450; close #1473; approve/reject copy-gated strings; **go** for MEH-1001 Chunk 1; decide fate of the remaining G5 items + the #1410 `.agents/skills/` scope-bleed (flagged on #1464). Hourly self check-in armed across all PRs.
+>>>>>>> origin/staging
+
 ## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
 
 - **Branch:** `feature/meh-1019-mobile-map-banner-reservation` off `origin/staging`. YELLOW (central /map), diagnosis-first → confirmed → end-to-end. `Closes MEH-1019`.
