@@ -332,7 +332,13 @@ export default function BottomNav() {
                 />
               )}
               <span className={labelWrapCls}>
-                <span className={labelCls}>{t("nav.account")}</span>
+                {/* MEH-991 (NAV-14): P6 spec — logged-in label is the user's name
+                    (first word, ellipsized to the tab width); guests keep "חשבון".
+                    block+truncate so it clips inside the flex-1 tab (an inline
+                    span ignores max-width/overflow). */}
+                <span className={`${labelCls} block truncate`}>
+                  {user?.name ? user.name.split(" ")[0] : t("nav.account")}
+                </span>
               </span>
             </button>
           </div>
