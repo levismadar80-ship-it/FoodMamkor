@@ -1805,7 +1805,8 @@
         "empty": "No data to display",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete category?"
+        "confirm_delete": "Delete the category '{name}'?",
+        "deleting": "Deleting…"
       },
       "page_editor": {
         "title_placeholder": "Title",
