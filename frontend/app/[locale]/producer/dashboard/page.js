@@ -86,6 +86,11 @@ export default function ProducerDashboardPage() {
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
   const [vacationUntil, setVacationUntil] = useState("");
+  // MEH-999: reveal the return-date field the moment vacation is *selected*
+  // (before the POST), breaking the chicken-and-egg where the field only
+  // rendered once the server already carried state === "on_vacation".
+  const [vacationSelected, setVacationSelected] = useState(false);
+  const [vacationDateError, setVacationDateError] = useState("");
 
   const AVAILABILITY_TOOLTIP = (
     <>
@@ -122,6 +127,14 @@ export default function ProducerDashboardPage() {
   // dual-writes to the legacy is_available_today + availability_status
   // columns during the 7-day overlap; Phase 4 drops them.
   const setAvailabilityState = async (state) => {
+    // MEH-999: client guard — on_vacation must carry a return date. Block the
+    // POST here and surface an inline message instead of a 422 round-trip
+    // (mirrors availability_validation.resolve_vacation_until:85-86 intent).
+    if (state === "on_vacation" && !vacationUntil) {
+      setVacationDateError(t("availability.vacation_date_required"));
+      return;
+    }
+    setVacationDateError("");
     // Optimistic update so the radio lights up immediately on click.
     setData((prev) =>
       prev
@@ -320,14 +333,30 @@ export default function ProducerDashboardPage() {
             { value: "full_this_week",   color: "#f97316" },
             { value: "on_vacation",      color: "#9ca3af" },
           ].map((opt) => {
-            const active = (producer.availability_state || "accepting_orders") === opt.value;
+            const savedState = producer.availability_state || "accepting_orders";
+            const isVacation = opt.value === "on_vacation";
+            // MEH-999: while vacation is selected-but-not-yet-confirmed, only the
+            // vacation radio reads active so the group never lights up two.
+            const active = isVacation
+              ? vacationSelected || savedState === "on_vacation"
+              : !vacationSelected && savedState === opt.value;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => setAvailabilityState(opt.value)}
+                onClick={() => {
+                  if (isVacation) {
+                    // Reveal the date field first; defer the POST to the
+                    // combined mini-form below so it always carries a date.
+                    setVacationSelected(true);
+                    setVacationDateError("");
+                  } else {
+                    setVacationSelected(false);
+                    setAvailabilityState(opt.value);
+                  }
+                }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   active
                     ? "bg-primary text-white border-primary"
@@ -350,30 +379,48 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
-        {(producer.availability_state || "accepting_orders") === "on_vacation" && (
-          <div className="mt-4 flex items-center gap-3">
-            <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
-              {t("availability.vacation_return_label")}
-            </label>
-            <input
-              id="vacation-until"
-              type="date"
-              value={vacationUntil}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setVacationUntil(e.target.value)}
-              onBlur={() => { if (vacationUntil) setAvailabilityState("on_vacation"); }}
-              className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-              dir="ltr"
-            />
-            {vacationUntil && (
+        {/* MEH-999: reachable as soon as vacation is selected — not gated on the
+            server already being on_vacation — so the return date can be picked
+            and submitted together (combined mini-form). */}
+        {(vacationSelected || (producer.availability_state || "accepting_orders") === "on_vacation") && (
+          <div className="mt-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
+                {t("availability.vacation_return_label")}
+              </label>
+              <input
+                id="vacation-until"
+                type="date"
+                value={vacationUntil}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
+                className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                dir="ltr"
+                aria-invalid={vacationDateError ? "true" : undefined}
+                aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
+              />
+              {vacationUntil && (
+                <button
+                  type="button"
+                  onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
+                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  aria-label={t("availability.remove_vacation_date_aria")}
+                >
+                  <X size={14} weight="bold" aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
-                className="text-fg-muted hover:text-red-600 transition inline-flex"
-                aria-label={t("availability.remove_vacation_date_aria")}
+                onClick={() => setAvailabilityState("on_vacation")}
+                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <X size={14} weight="bold" aria-hidden="true" />
+                {t("availability.vacation_confirm")}
               </button>
+            </div>
+            {vacationDateError && (
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+                {vacationDateError}
+              </p>
             )}
           </div>
         )}
