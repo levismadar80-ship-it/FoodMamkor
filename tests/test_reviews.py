@@ -285,3 +285,21 @@ def test_delete_review_owner_succeeds(client, db):
     r = client.delete(f"/reviews/{review.id}", headers=auth_header(owner))
     assert r.status_code == 200, r.text
     assert db.query(ProducerReview).filter_by(id=review.id).count() == 0
+
+
+def test_delete_review_admin_succeeds(client, db):
+    """MEH-1001 — the preserved owner-OR-admin override still lets an admin
+    delete any review (parallel to experiences test_admin_can_delete_any)."""
+    owner = make_user(db, email="owner3@example.com")
+    admin = make_user(db, role="admin", email="admin@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=2, body="לא משהו"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 0

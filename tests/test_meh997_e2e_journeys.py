@@ -679,11 +679,9 @@ class TestJourney10AuthorizationMatrix:
         assert db.query(ProducerRecipe).filter_by(id=recipe_id).count() == 1
 
     def test_cross_producer_event_update_returns_404(self, client, db):
-        """MEH-1001 — cross-producer update/delete returns 404 (not the old
-        403 "Not the owner"), aligned to the recipes anti-existence-leak
-        convention (producer_recipes.py:206): a foreign producer must not be
-        able to confirm an event id exists. (Was the MEH-997 journey-10 probe
-        pinning the 403 divergence; flipped when the fix landed.)"""
+        """MEH-1001 — cross-producer update/delete returns 404, aligned to the
+        recipes anti-existence-leak convention (producer_recipes.py:206): a
+        foreign producer must not be able to confirm an event id exists."""
         _, owner_a = _make_producer_user(db)
         _, owner_b = _make_producer_user(db)
 
