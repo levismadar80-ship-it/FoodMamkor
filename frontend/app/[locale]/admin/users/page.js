@@ -7,6 +7,7 @@ import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
+import AdminRowMenu from "@/components/admin/AdminRowMenu";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -147,25 +148,7 @@ export default function AdminUsersPage() {
                           </span>
                         )}
 
-                        {/* Promote button — show when not already admin */}
-                        {u.role !== "admin" && (
-                          <button
-                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "promote" })}
-                            className="text-xs px-2 py-0.5 rounded-lg border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
-                          >
-                            {t("users.actions.promote")}
-                          </button>
-                        )}
-
-                        {/* Demote button — hidden for super-admin and self */}
-                        {u.role === "admin" && !isSuperAdmin(u) && !isMe(u) && (
-                          <button
-                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "demote" })}
-                            className="text-xs px-2 py-0.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
-                          >
-                            {t("users.actions.demote")}
-                          </button>
-                        )}
+                        {/* Promote/demote moved to the actions-cell overflow menu (MEH-1023). */}
 
                         {/* Tooltip for protected super-admin row */}
                         {isSuperAdmin(u) && (
@@ -185,17 +168,42 @@ export default function AdminUsersPage() {
                       {formatEventDate(u.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleBlock(u.id)}
-                        disabled={isBusy(`block:${u.id}`)}
-                        className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                          u.is_blocked
-                            ? "bg-red-100 text-red-700"
-                            : "text-muted hover:text-red-600"
-                        }`}
-                      >
-                        {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Routine action stays inline */}
+                        <button
+                          onClick={() => toggleBlock(u.id)}
+                          disabled={isBusy(`block:${u.id}`)}
+                          className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                            u.is_blocked
+                              ? "bg-red-100 text-red-700"
+                              : "text-muted hover:text-red-600"
+                          }`}
+                        >
+                          {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
+                        </button>
+                        {/* Privilege-escalation actions in the overflow menu (MEH-1023).
+                            Guards reuse isSuperAdmin/isMe — same conditions as before. */}
+                        <AdminRowMenu
+                          ariaLabel={t("users.actions.menu_aria")}
+                          items={[
+                            ...(u.role !== "admin"
+                              ? [{
+                                  key: "promote",
+                                  label: t("users.actions.promote"),
+                                  onSelect: () => setConfirm({ userId: u.id, userName: u.name, action: "promote" }),
+                                }]
+                              : []),
+                            ...(u.role === "admin" && !isSuperAdmin(u) && !isMe(u)
+                              ? [{
+                                  key: "demote",
+                                  label: t("users.actions.demote"),
+                                  tone: "danger",
+                                  onSelect: () => setConfirm({ userId: u.id, userName: u.name, action: "demote" }),
+                                }]
+                              : []),
+                          ]}
+                        />
+                      </div>
                     </td>
                   </tr>
                   {expanded === u.id && favorites[u.id] && (

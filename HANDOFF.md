@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1023 Chunk A: admin users role actions → overflow menu — DRAFT PR (WAIT for Sapir QA before Chunk B)
+
+- **Branch:** `feature/meh-1023-admin-role-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK (central admin surface), chunk-by-chunk. `Refs MEH-1023` (Chunk B closes). Harness allowed the `feature/*` push — no `claude/*` fallback needed.
+- **What shipped (Chunk A only):** privilege-escalation ("העלי לאדמין"/"הסירי הרשאות") moved OUT of inline-on-every-row into a per-row kebab menu; "חסום/בטל חסימה" stays inline. NEW `frontend/components/admin/AdminRowMenu.jsx` — Phosphor `DotsThreeVertical`, `role="menu"`/`menuitem`, `aria-haspopup`+`aria-expanded`, outside-`mousedown`+`Escape` dismissal (Escape refocuses trigger), `end-0` anchor (opens toward start in RTL). Dismissal idiom REUSES `Popover.jsx:56-73`. `users/page.js`: promote/demote removed from the ROLE cell (`:150-168`), kebab added to the ACTIONS cell beside block; items built from the SAME `isSuperAdmin`/`isMe` guards (not reimplemented); each opens the existing `setConfirm` dialog. `applyRole`/`toggleBlock`/confirm modal untouched. Empty menu (super-admin+self) → renders null. Super-admin `Lock` tooltip stays in role cell. i18n `admin.users.actions.menu_aria` he+en.
+- **Verify:** `npm run build` exit 0 · vitest **726 passed** / 41 skipped (new `AdminRowMenu.test.jsx` 6✓) · 0 eslint errors · 0 physical RTL classes · `grep -c DotsThreeVertical` = 2. `npm install` run first (fresh container); regenerated `package-lock.json` reverted to keep scope clean.
+- **Sapir pending:** QA the preview on staging + mobile (kebab open/close, Escape + outside-click, promote/demote fire the confirm dialog, super-admin shows lock-not-menu, self can't self-demote). **Chunk B (category-delete confirm dialog) is NOT started — waits for explicit Sapir approval of Chunk A per the chunk-by-chunk gate.**
+- **Scope held:** only `AdminRowMenu.jsx` (new) + `users/page.js` + `he.json`/`en.json` + `AdminRowMenu.test.jsx` (new) + CHANGELOG/MANUAL_TESTING/HANDOFF. No backend, no `applyRole`, no other admin pages.
+
 ## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
 
 - **Branch:** `feature/meh-1019-mobile-map-banner-reservation` off `origin/staging`. YELLOW (central /map), diagnosis-first → confirmed → end-to-end. `Closes MEH-1019`.
