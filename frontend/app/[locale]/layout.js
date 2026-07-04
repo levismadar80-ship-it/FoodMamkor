@@ -191,7 +191,7 @@ export default async function LocaleLayout({ children, params }) {
         <link rel="preconnect" href="https://b.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://c.tile.openstreetmap.org" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
       </head>

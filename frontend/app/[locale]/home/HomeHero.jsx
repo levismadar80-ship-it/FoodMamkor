@@ -94,7 +94,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
               initial={{ y: 40 }}
               animate={{ y: 0 }}
               transition={{ duration: 0.64, ease: EASE_QUART }}
-              className="font-headline-display font-bold leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
+              className="font-headline-display font-black leading-tight text-[clamp(28px,8vw,52px)] md:text-[clamp(40px,4.5vw,60px)] max-w-[18ch] mx-auto md:mx-0"
               style={{ lineHeight: 1.12 }}
             >
               {t("home.hero.title")}
@@ -120,14 +120,18 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         transition={{ duration: 0.42, delay: 0.2, ease: EASE_QUART }}
         role="search"
         aria-label={t("home.hero.search_area_label")}
-        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-surface-card shadow-lg px-6 py-3.5"
-        style={{ borderRadius: "50px", width: "min(580px, calc(100% - 2rem))" }}
+        // MEH-991 (HOME-05): S14 seam-search — cream card (radius 16) with a white
+        // inner field, replacing the single white pill.
+        className="relative z-10 mx-auto -mt-8 md:-mt-10 bg-background border border-border shadow-lg rounded-2xl p-2"
+        style={{ width: "min(580px, calc(100% - 2rem))" }}
       >
-        <HeroSearch
-          placeholder={t("home.search.placeholder")}
-          srLabel={t("home.search.sr_label")}
-          className="w-full"
-        />
+        <div className="bg-surface rounded-xl border border-border px-4 py-1.5">
+          <HeroSearch
+            placeholder={t("home.search.placeholder")}
+            srLabel={t("home.search.sr_label")}
+            className="w-full"
+          />
+        </div>
       </motion.div>
 
       {/* Actions — on cream (re-coloured from the on-photo treatment): primary
@@ -136,7 +140,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         initial={{ y: 12 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center gap-3"
+        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center md:justify-start md:max-w-7xl md:mx-auto gap-3"
       >
         <button
           type="button"
@@ -150,7 +154,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           type="button"
           onClick={onNearMe}
           disabled={geoLoading}
-          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-border px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
+          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
