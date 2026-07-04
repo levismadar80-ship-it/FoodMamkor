@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sparkle, X } from "@phosphor-icons/react";
+import { Eye, Sparkle, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -72,7 +72,8 @@ function VanityLinkCard({ slug }) {
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           insights/page.js (deep analytics); backend producer_me.py:489.
  * History:  MEH-57 (analytics); MEH-288 (completeness); MEH-291 (availability);
- *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split).
+ *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split);
+ *           MEH-964 1C (anonymous activity pulse, §5 final spec).
  */
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
@@ -394,6 +395,11 @@ export default function ProducerDashboardPage() {
         <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
       )}
 
+      {/* MEH-964 1C: anonymous activity pulse (§5 final spec) — renders only
+          once analytics resolved (no separate loading line; the strip above
+          already narrates the in-flight state). */}
+      {analytics && <ActivityPulse analytics={analytics} />}
+
       {/* MEH-964 1A: quick-links grid relocated to the tools tab
           (dashboard/tools); the bio / custom-questions / contact-channels
           edit forms relocated to the edit tab (dashboard/edit). 1B swapped the
@@ -415,6 +421,89 @@ export default function ProducerDashboardPage() {
 // (FLAG-1 — never duplicated in insights/). The eligibility badge is kept
 // here (status/recognition signal, belongs on the at-a-glance Overview).
 // ============================================================
+
+// ============================================================
+// MEH-964 1C: anonymous activity pulse (§5 FINAL SPEC, design round-4).
+// Aggregate counts from /producers/me/analytics ONLY — no names, no message
+// text, no per-row city, no per-row CTA/handled state (the conversation lives
+// off-platform in WhatsApp; a named inbox has no data source).
+// Rulings (Sapir, 03/07):
+//   - Reviews row DROPPED — the payload has only lifetime total_reviews (no
+//     windowed count), so a "new review" row would be a false recency claim
+//     (§5 honesty clause) and a lifetime row duplicates the rating KPI
+//     (FLAG-1). Returns with MEH-966 (per-event feed).
+//   - Rows = 2 event types in fixed locked order (whatsapp -> view), each
+//     gated on its own last_7d > 0. NO per-row relative times (never
+//     rendered) — the payload has no per-event timestamps. Uniform 7-day frame.
+//   - Hero binds to whatsapp_clicks.last_7d, NOT .total — the "new" claim
+//     must be truthful. last_7d == 0 -> no hero; both metrics 0 -> zero-state.
+// Card sizes to rows.length (0/1/2 collapse — no fixed-count padding). ONE
+// section-level CTA -> wa.me (gated with the hero on whatsapp last_7d > 0:
+// a reply CTA with zero inquiries would be the same false claim).
+// ============================================================
+
+function ActivityPulse({ analytics }) {
+  const t = useTranslations("dashboard.producer.pulse");
+  const waCount = analytics.whatsapp_clicks?.last_7d ?? 0;
+  const viewCount = analytics.profile_views?.last_7d ?? 0;
+
+  // Fixed locked order: whatsapp -> view. Each row is an anonymous event-TYPE
+  // presence signal, not a count — counts live in the KPI strip (FLAG-1).
+  const rows = [
+    { key: "whatsapp", count: waCount, Icon: WhatsappLogo },
+    { key: "view", count: viewCount, Icon: Eye },
+  ].filter((row) => row.count > 0);
+
+  return (
+    <section
+      data-testid="activity-pulse"
+      aria-label={t("section_aria")}
+      className="bg-white border border-border rounded-[16px] p-6"
+    >
+      {rows.length === 0 ? (
+        <p data-testid="activity-pulse-empty" className="text-sm text-fg-muted">
+          {t("zero_state")}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {waCount > 0 && (
+            <p
+              data-testid="activity-pulse-hero"
+              className="font-headline-md text-lg font-bold text-text"
+            >
+              {t("hero", { count: waCount })}
+            </p>
+          )}
+          <ul className="space-y-2">
+            {rows.map(({ key, Icon }) => (
+              <li
+                key={key}
+                data-testid={`activity-pulse-row-${key}`}
+                className="flex items-center gap-3 text-sm text-text"
+              >
+                <Icon size={18} className="text-primary shrink-0" aria-hidden="true" />
+                {t(`rows.${key}`)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-fg-muted">{t("window_7d")}</p>
+          {waCount > 0 && (
+            <a
+              href="https://wa.me/"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="activity-pulse-cta"
+              className="btn-whatsapp inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full text-sm font-medium"
+            >
+              <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
+              {t("cta")}
+            </a>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function OverviewStatsHero({ analytics }) {
   const t = useTranslations("dashboard.producer.analytics");

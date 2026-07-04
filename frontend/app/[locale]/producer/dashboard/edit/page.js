@@ -4,7 +4,9 @@
  * Module:   producer/dashboard/edit/page
  * Purpose:  עריכה tab of the producer dashboard hub (MEH-964 Phase 1, chunk
  *           1A). Hosts the owner-facing edit forms relocated VERBATIM off the
- *           Overview: AI bio, custom WhatsApp questions, contact channels.
+ *           Overview: AI bio, custom WhatsApp questions, contact channels; plus
+ *           the self-service editors added later: categories, gallery images,
+ *           and map location (gated on has_physical_location).
  * Touches:  GET /producers/me (read); PUT /producers/me + POST
  *           /producers/me/bio/generate (writes, inside the cards).
  * Does NOT: consolidate with /settings — that is Phase 2. The card bodies
@@ -14,7 +16,10 @@
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (סקירה — prior home of
  *           these cards, MEH-56 / MEH-210 / MEH-296).
- * History:  MEH-964 (relocation, chunk 1A).
+ * History:  MEH-964 (relocation, chunk 1A); edit-tab editor series —
+ *           categories (chunk A), gallery images (chunk B), gated map location
+ *           via AddressSearch (chunk C); polish + test backfill (fetch-error on
+ *           GET /categories, cloudinary thumbnails, component tests).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -26,6 +31,7 @@ import { useTranslations } from "next-intl";
 import { PencilSimple, Warning, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
@@ -335,7 +341,10 @@ function ContactChannelsCard({ profile, onSave }) {
 // checkbox grid + toggle), producer-self version.
 // ============================================================
 
-function CategoriesCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabCategoriesCard.test.jsx). Mounting the
+// whole page under jsdom hangs the vitest runner, so the cards are tested
+// directly — the default page export is unchanged.
+export function CategoriesCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.categories");
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
@@ -343,21 +352,35 @@ function CategoriesCard({ profile, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     api
       .get("/categories")
       .then((r) => {
-        if (!cancelled) setAllCategories(r.data || []);
+        if (!cancelled) {
+          setAllCategories(r.data || []);
+          setFetchError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setAllCategories([]);
+      .catch((err) => {
+        // Surface a load failure instead of a silently-empty grid (a producer
+        // would otherwise see a blank card with no way to know it failed).
+        if (!cancelled) {
+          setAllCategories([]);
+          setFetchError(detailToMessage(err?.response?.data?.detail) || t("fetch_error"));
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+    // `t` (next-intl translator) has a stable identity per locale/namespace,
+    // so listing it re-runs the fetch only on a real locale change — never a
+    // per-render loop. (The earlier loop came from an ad-hoc test mock that
+    // returned a fresh `t` each render; tests now use the real
+    // NextIntlClientProvider, so the honest dependency is safe.)
+  }, [t]);
 
   // Dirty when the selection differs from the seeded set (order-independent).
   const dirty =
@@ -396,19 +419,26 @@ function CategoriesCard({ profile, onSave }) {
       <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {allCategories.map((c) => (
-          <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selected.includes(c.id)}
-              onChange={() => toggle(c.id)}
-              className="w-4 h-4 accent-primary"
-            />
-            <span>{c.name}</span>
-          </label>
-        ))}
-      </div>
+      {fetchError ? (
+        <p className="flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {fetchError}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {allCategories.map((c) => (
+            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected.includes(c.id)}
+                onChange={() => toggle(c.id)}
+                className="w-4 h-4 accent-primary"
+              />
+              <span>{c.name}</span>
+            </label>
+          ))}
+        </div>
+      )}
 
       {errorMsg && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
@@ -438,7 +468,8 @@ function CategoriesCard({ profile, onSave }) {
 // REUSES: components/admin/ProducerForm.jsx:219-243,630-662.
 // ============================================================
 
-function ImagesCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
+export function ImagesCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.images");
   const seed = profile?.images || [];
   const [images, setImages] = useState(seed);
@@ -523,7 +554,7 @@ function ImagesCard({ profile, onSave }) {
             <div key={`${url}-${i}`} className="relative group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={url}
+                src={optimizeCloudinary(url)}
                 alt=""
                 className="w-full h-24 object-cover rounded-[8px] border border-border"
               />
@@ -570,7 +601,8 @@ function ImagesCard({ profile, onSave }) {
 // REUSES: components/AddressSearch.jsx (onSelect {street,neighborhood,city,lat,lng}).
 // ============================================================
 
-function LocationCard({ profile, onSave }) {
+// Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
+export function LocationCard({ profile, onSave }) {
   const t = useTranslations("dashboard.producer.location");
   const seedLat = profile?.lat ?? null;
   const seedLng = profile?.lng ?? null;

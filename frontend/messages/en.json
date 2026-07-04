@@ -208,7 +208,7 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "10 minutes. No commissions. The customer comes straight to you",
         "preflight": {
           "title": "Before you start",
           "prepare_title": "Good to have ready",
@@ -216,7 +216,7 @@
           "item_story": "A short story about your business",
           "item_photos": "2–3 photos of your business or products",
           "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
-          "duration": "The whole process takes about 5 minutes",
+          "duration": "The whole process takes about 10 minutes",
           "after_title": "What happens next",
           "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
           "after_link": "How the acceptance process works",
@@ -3442,6 +3442,17 @@
           "sub": "Publish and manage recipes that promote your products"
         }
       },
+      "pulse": {
+        "section_aria": "Recent activity",
+        "window_7d": "Last 7 days",
+        "hero": "{count, plural, one {1 new WhatsApp inquiry — open to reply} other {# new WhatsApp inquiries — open to reply}}",
+        "rows": {
+          "whatsapp": "WhatsApp inquiry",
+          "view": "Profile view"
+        },
+        "cta": "Open WhatsApp to reply",
+        "zero_state": "No activity yet — share your page to get started"
+      },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
         "kpi": {
@@ -3557,7 +3568,8 @@
         "save_cta": "Save categories",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_error": "Save failed. Please try again.",
+        "fetch_error": "Couldn't load categories. Refresh the page and try again."
       },
       "images": {
         "heading": "Images",

@@ -78,6 +78,7 @@
 - [ ] **a11y** — קורא-מסך מכריז על אחוז ההשלמה (role=progressbar) ועל ה-CTA ("השלימי את הפרופיל שלך")
 - [ ] **/en** — אותו כרטיס באנגלית (Your profile is X% ready / Complete profile) — אין מחרוזות עבריות גולמיות
 - [ ] **Regression** — קלפי ה-analytics, חוזק פרופיל, וכל שאר ה-dashboard נשארים מתחת לכרטיס ללא שינוי
+- [ ] **MEH-964 1C — activity pulse בסקירה** — עסק עם פניות וואטסאפ ב-7 הימים האחרונים → מתחת ל-KPI strip כרטיס פעילות: שורת hero ("N פניות חדשות בוואטסאפ — פתחי כדי לענות"), עד 2 שורות אירועים אנונימיות (פנייה בוואטסאפ · צפייה בפרופיל — בלי שמות, בלי עיר, בלי זמן יחסי), כפתור אחד "פתחי וואטסאפ לענות" → wa.me. אפס וואטסאפ אבל יש צפיות → רק שורת צפייה, בלי hero ובלי CTA. אפס הכל → "עוד אין פעילות — שתפי את העמוד כדי להתחיל". אין שורת ביקורות (נדחה ל-MEH-966).
 - [ ] **MEH-1002 — שדה "תיאור קצר" (שישי)** — עסק מלא בלי תיאור (גם tagline וגם סיפור ריקים) → הכרטיס מציג "כמעט שם — 83% מוכן" והצ'קליסט (6 שורות) מסמן "תיאור קצר" כחסר; מילוי אחד מהשניים (tagline או ביו) → הכרטיס מתכווץ ל"הפרופיל מלא". חסר תיאור לבדו אף פעם לא הופך את הכרטיס לאדום. באדמין: העסק מקבל נקודה צהובה עם "תיאור קצר" ב-tooltip.
 
 ## MEH-773 Chunk B — DB integrity constraints (backend)
@@ -989,7 +990,7 @@ The fix applies to **4 distinct UI surfaces** — verify each:
 
 - [ ] **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL
 - [ ] **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct wa.me URL
-- [ ] **`/map` popup** → click a producer marker → popup has a WhatsApp link → opens wa.me with correct number
+- [ ] **`/map` mobile sheet card** → tap a producer marker (mobile) → pinned sheet card has a WhatsApp link → opens wa.me with correct number. (MEH-1010: the desktop mini-popup was retired — on desktop, marker click scrolls+highlights the sidebar card; WhatsApp CTA lives on the card.)
 - [ ] **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct wa.me URL
 
 ### Empty-input guards still work
@@ -1252,13 +1253,24 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
 - [ ] Mobile: X close button stays at top-left during scroll → tap → closes
 - [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
-- [ ] Desktop: legend visible at bottom-right (z-800)
+- [ ] Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
 
 ### Regression
 - [ ] "חפשי באזור זה" button works (z-1000)
 - [ ] "קרוב אלי" clickable with sheet open
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
+
+---
+
+## /map desktop — marker click = card-sync (MEH-1010)
+
+- [ ] Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
+- [ ] Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
+- [ ] Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+highlight. תוצאה מצופה: זהה למרקר בודד.
+- [ ] Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
+- [ ] Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
+- [ ] Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
 
 ---
 
