@@ -12,6 +12,13 @@ import {
   Lifebuoy,
   LinkSimple,
   ArrowUpRight,
+  Megaphone,
+  Package,
+  Bread,
+  Seal,
+  Tag,
+  ChatCircleSlash,
+  ChartLineUp,
 } from "@phosphor-icons/react";
 
 /**
@@ -60,6 +67,13 @@ export default function AdminHelpPage() {
             <a href="#reviews" className="hover:text-primary transition">{t("toc.reviews")}</a>
             <a href="#reports" className="hover:text-primary transition">{t("toc.reports")}</a>
             <a href="#experiences" className="hover:text-primary transition">{t("toc.experiences")}</a>
+            <a href="#outreach" className="hover:text-primary transition">{t("toc.outreach")}</a>
+            <a href="#group_buys" className="hover:text-primary transition">{t("toc.group_buys")}</a>
+            <a href="#recipes" className="hover:text-primary transition">{t("toc.recipes")}</a>
+            <a href="#kashrut" className="hover:text-primary transition">{t("toc.kashrut")}</a>
+            <a href="#category_requests" className="hover:text-primary transition">{t("toc.category_requests")}</a>
+            <a href="#whatsapp_failures" className="hover:text-primary transition">{t("toc.whatsapp_failures")}</a>
+            <a href="#analytics" className="hover:text-primary transition">{t("toc.analytics")}</a>
             <a href="#emergency" className="hover:text-primary transition">{t("toc.emergency")}</a>
             <a href="#urls" className="hover:text-primary transition">{t("toc.urls")}</a>
           </nav>
@@ -135,6 +149,69 @@ export default function AdminHelpPage() {
             <ul className="list-disc ps-5 space-y-1.5 mt-2">
               <li>{t.rich("sections.experiences.li1", richComponents)}</li>
               <li>{t.rich("sections.experiences.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Outreach ===== */}
+          <Section id="outreach" icon={Megaphone} title={t("sections.outreach.title")}>
+            <p>{t.rich("sections.outreach.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.outreach.li1", richComponents)}</li>
+              <li>{t.rich("sections.outreach.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Group buys ===== */}
+          <Section id="group_buys" icon={Package} title={t("sections.group_buys.title")}>
+            <p>{t.rich("sections.group_buys.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.group_buys.li1", richComponents)}</li>
+              <li>{t.rich("sections.group_buys.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Recipes ===== */}
+          <Section id="recipes" icon={Bread} title={t("sections.recipes.title")}>
+            <p>{t.rich("sections.recipes.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.recipes.li1", richComponents)}</li>
+              <li>{t.rich("sections.recipes.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Kashrut ===== */}
+          <Section id="kashrut" icon={Seal} title={t("sections.kashrut.title")}>
+            <p>{t.rich("sections.kashrut.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.kashrut.li1", richComponents)}</li>
+              <li>{t.rich("sections.kashrut.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Category requests ===== */}
+          <Section id="category_requests" icon={Tag} title={t("sections.category_requests.title")}>
+            <p>{t.rich("sections.category_requests.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.category_requests.li1", richComponents)}</li>
+              <li>{t.rich("sections.category_requests.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== WhatsApp failures ===== */}
+          <Section id="whatsapp_failures" icon={ChatCircleSlash} title={t("sections.whatsapp_failures.title")}>
+            <p>{t.rich("sections.whatsapp_failures.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.whatsapp_failures.li1", richComponents)}</li>
+              <li>{t.rich("sections.whatsapp_failures.li2", richComponents)}</li>
+            </ul>
+          </Section>
+
+          {/* ===== Analytics ===== */}
+          <Section id="analytics" icon={ChartLineUp} title={t("sections.analytics.title")}>
+            <p>{t.rich("sections.analytics.p1", richComponents)}</p>
+            <ul className="list-disc ps-5 space-y-1.5 mt-2">
+              <li>{t.rich("sections.analytics.li1", richComponents)}</li>
+              <li>{t.rich("sections.analytics.li2", richComponents)}</li>
             </ul>
           </Section>
 
