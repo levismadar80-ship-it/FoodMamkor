@@ -375,7 +375,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (
-            <span className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]">
+            // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
+            // so it can't flip inside RTL — mirrors the :345 distance-pill
+            // and :320 rating idiom (the only prior unwrapped numeric span).
+            <span
+              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]"
+              dir="ltr"
+            >
               {priceLabel}
             </span>
           ) : (
