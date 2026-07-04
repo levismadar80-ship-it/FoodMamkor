@@ -1,11 +1,11 @@
 {
   "description": "Central components — run /adversarial-review even if build fails (Rule 20). Logic risk > syntax risk.",
   "components": [
-    "frontend/app/map/MapClient.jsx",
+    "frontend/app/[locale]/map/MapClient.jsx",
     "frontend/components/MapComponent.jsx",
-    "frontend/app/producers/page.jsx",
-    "frontend/app/page.js",
-    "frontend/app/layout.js",
+    "frontend/app/[locale]/producers/page.jsx",
+    "frontend/app/[locale]/page.js",
+    "frontend/app/[locale]/layout.js",
     "frontend/lib/language-context.js",
     "frontend/components/ProducerCard.jsx",
     "frontend/components/Header.jsx",
