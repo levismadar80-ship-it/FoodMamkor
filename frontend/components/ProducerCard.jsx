@@ -240,7 +240,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       ].join(" ")}
     >
       <div className="relative">
-        <Link href={producerHref} className="block focus-ring">
+        {/* MEH-991 (CARD-23): inset ring — the card's overflow-hidden clips the
+            outward .focus-ring box-shadow on this edge-flush link (ImageGallery.jsx:100 idiom). */}
+        <Link
+          href={producerHref}
+          className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+        >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
             {imgSrc ? (
               <Image
