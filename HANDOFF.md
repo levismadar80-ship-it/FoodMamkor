@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
+
+- **Branch:** `feature/meh-1019-mobile-map-banner-reservation` off `origin/staging`. YELLOW (central /map), diagnosis-first → confirmed → end-to-end. `Closes MEH-1019`.
+- **Fix:** the mobile shell (`MapClient.jsx:406`) hardcoded `calc(100dvh - 64px)` — same `64` MEH-1009 fixed on desktop. Reproduced 51px below-fold spill with a 41px top banner (Playwright 375px). Added `mobileShellRef` + `mobileTopOffset` + a SEPARATE measurement effect (resize + `<main>` MutationObserver) mirroring the desktop reservation; desktop effect byte-identical. Post-fix: 812/812 with+without banner; desktop 900/900 unchanged. Build ✓, vitest 702✓.
+- **Investigation A (chips sliver): WORKS-AS-DESIGNED.** Overflow → partial chip under the 32px inline-end fade = intended affordance. P3 nuance: `fadeBg="#ffffff"` ≈ page `#FFFEFB` ≈ white chips → near-zero fade contrast, reads as a clip. Fix candidate (separate ticket, not done): pass `fadeBg` = real container bg.
+- **Investigation B (blank cards): NOT a bug.** `MapProducerCard` renders `next/image` with correct cloudinary src when image present (DOM-confirmed); photo-less → intended Leaf fallback in 88px box. "Blank areas" = photo-less producers (data/P3). Real staging pixels not fetchable from sandbox (MEH-360) → on-device confirm if a photo'd producer blanks.
+- **Sapir pending:** review + merge; mobile QA on the preview (esp. WITH an unverified login to see the email banner); decide whether A (chips fadeBg) + B (photo density) warrant follow-up tickets.
+
 ## 2026-07-03 — MEH-1014: BottomNav minimize-on-scroll — DRAFT PR
 
 - **Branch:** `claude/bottomnav-minimize-scroll-n6fb75` off `origin/staging` (divergence 0 — clean cut). ⚠️ **Branch-naming flag:** the issue spec asked for `feature/meh-1014-bottomnav-minimize-on-scroll`, but this remote session is harness-locked to the `claude/*` branch and can't push elsewhere — same constraint as PR #1464 flag #1 / MEH-997. Repo's no-`claude/*` rule (workflow rule 3) couldn't be honored from here; flagged in the PR body for Sapir.

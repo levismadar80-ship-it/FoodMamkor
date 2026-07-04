@@ -96,7 +96,7 @@ export default function ProducerHeader({
         {primaryCategory && (
           <>
             <span className="mx-1">·</span>
-            {primaryCategory.emoji} {primaryCategory.name}
+            {primaryCategory.name}
           </>
         )}
       </p>

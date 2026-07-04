@@ -1,0 +1,546 @@
+{
+  "plugins": [
+    "react",
+    "import"
+  ],
+  "rules": {
+    "react/forbid-elements": [
+      "warn",
+      {
+        "forbid": []
+      }
+    ],
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "components/admin/ProducerForm/**",
+              "components/general/AccountSheet/**",
+              "components/general/AddressSearch/**",
+              "components/general/AlertPrefsPanel/**",
+              "components/general/AppleAuthButton/**",
+              "components/general/AvailabilityBadge/**",
+              "components/general/Badge/**",
+              "components/general/BadgeRow/**",
+              "components/general/BottomNav/**",
+              "components/general/Breadcrumb/**",
+              "components/general/Button/**",
+              "components/general/ButtonSpinner/**",
+              "components/general/CalendarView/**",
+              "components/general/Card/**",
+              "components/general/CategoryRequestModal/**",
+              "components/general/CategorySelector/**",
+              "components/general/CategoryTag/**",
+              "components/general/ChatWidget/**",
+              "components/general/ChatWidgetLazy/**",
+              "components/general/ChipScrollRow/**",
+              "components/general/CitiesAutocomplete/**",
+              "components/general/CitySearch/**",
+              "components/general/ClarityScript/**",
+              "components/general/CookieBanner/**",
+              "components/general/CustomCursor/**",
+              "components/general/DeliveryBlock/**",
+              "components/general/DirectoryDisclaimer/**",
+              "components/general/EmptyState/**",
+              "components/general/ExperienceCard/**",
+              "components/general/FadeInSection/**",
+              "components/general/FavoriteButton/**",
+              "components/general/FollowButton/**",
+              "components/general/Footer/**",
+              "components/general/FooterSlot/**",
+              "components/general/FridayDeliveryStrip/**",
+              "components/general/GoogleAuthButton/**",
+              "components/general/GuideArticle/**",
+              "components/general/Header/**",
+              "components/general/Heading/**",
+              "components/general/HeroSearch/**",
+              "components/general/HolidayBanner/**",
+              "components/general/HomepageMiniMapSkeleton/**",
+              "components/general/ImageGallery/**",
+              "components/general/ImageWithFallback/**",
+              "components/general/InfoTooltip/**",
+              "components/general/Input/**",
+              "components/general/InstallPrompt/**",
+              "components/general/KashrutBadgeStrip/**",
+              "components/general/LanguageToggle/**",
+              "components/general/Lightbox/**",
+              "components/general/Link/**",
+              "components/general/LocationBanner/**",
+              "components/general/LocationModal/**",
+              "components/general/LoginPromptModal/**",
+              "components/general/MapBottomSheet/**",
+              "components/general/MapProducerCard/**",
+              "components/general/OnboardingTip/**",
+              "components/general/OpeningHours/**",
+              "components/general/Pagination/**",
+              "components/general/ParallaxQuote/**",
+              "components/general/PasswordInput/**",
+              "components/general/PasswordStrength/**",
+              "components/general/PhoneVerifyCard/**",
+              "components/general/Popover/**",
+              "components/general/PrimaryContactButton/**",
+              "components/general/ProducerCard/**",
+              "components/general/ProducerOAuthButtons/**",
+              "components/general/ProducersClient/**",
+              "components/general/ProfileCompletenessCard/**",
+              "components/general/RecipeForm/**",
+              "components/general/RecipeStatusBadge/**",
+              "components/general/ReportButton/**",
+              "components/general/ReviewsSection/**",
+              "components/general/ShareButton/**",
+              "components/general/SkeletonCard/**",
+              "components/general/SkeletonLine/**",
+              "components/general/SkeletonProducerGrid/**",
+              "components/general/SmoothScrollProvider/**",
+              "components/general/StarRating/**",
+              "components/general/StarSelector/**",
+              "components/general/StoryCardCanvas/**",
+              "components/general/Toaster/**",
+              "components/general/Tooltip/**",
+              "components/general/TrustBadge/**",
+              "components/general/VerifyBanner/**",
+              "components/general/WhatsAppButton/**",
+              "components/general/WhatsAppQuestionChips/**",
+              "components/general/WhatsAppShareButton/**",
+              "components/public/RecipeCard/**",
+              "components/public/RecipeDetail/**",
+              "components/public/RecipeJsonLd/**",
+              "dashboard/**"
+            ],
+            "message": "Import design-system components from 'index.js', not component internals."
+          }
+        ]
+      }
+    ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "Literal[value=/font-family\\s*:\\s*(?!['\\\"]?(?:Frank Ruhl Libre|Cormorant Garamond|DM Sans|Heebo))/i]",
+        "message": "Font not provided by the design system. Available: Frank Ruhl Libre, Cormorant Garamond, DM Sans, Heebo."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/index.js"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ],
+  "x-omelette": {
+    "components": {
+      "AccountSheet": {
+        "replaces": []
+      },
+      "AddressSearch": {
+        "replaces": []
+      },
+      "AlertPrefsPanel": {
+        "replaces": []
+      },
+      "AppleAuthButton": {
+        "replaces": []
+      },
+      "AvailabilityBadge": {
+        "replaces": []
+      },
+      "Badge": {
+        "replaces": []
+      },
+      "BadgeRow": {
+        "replaces": []
+      },
+      "BottomNav": {
+        "replaces": []
+      },
+      "Breadcrumb": {
+        "replaces": []
+      },
+      "Button": {
+        "replaces": []
+      },
+      "ButtonSpinner": {
+        "replaces": []
+      },
+      "CalendarView": {
+        "replaces": []
+      },
+      "Card": {
+        "replaces": []
+      },
+      "CategoryRequestModal": {
+        "replaces": []
+      },
+      "CategorySelector": {
+        "replaces": []
+      },
+      "CategoryTag": {
+        "replaces": []
+      },
+      "ChatWidget": {
+        "replaces": []
+      },
+      "ChatWidgetLazy": {
+        "replaces": []
+      },
+      "ChipScrollRow": {
+        "replaces": []
+      },
+      "CitiesAutocomplete": {
+        "replaces": []
+      },
+      "CitySearch": {
+        "replaces": []
+      },
+      "ClarityScript": {
+        "replaces": []
+      },
+      "CookieBanner": {
+        "replaces": []
+      },
+      "CustomCursor": {
+        "replaces": []
+      },
+      "DeliveryBlock": {
+        "replaces": []
+      },
+      "DirectoryDisclaimer": {
+        "replaces": []
+      },
+      "EmptyState": {
+        "replaces": []
+      },
+      "ExperienceCard": {
+        "replaces": []
+      },
+      "FadeInSection": {
+        "replaces": []
+      },
+      "FavoriteButton": {
+        "replaces": []
+      },
+      "FollowButton": {
+        "replaces": []
+      },
+      "Footer": {
+        "replaces": []
+      },
+      "FooterSlot": {
+        "replaces": []
+      },
+      "FridayDeliveryStrip": {
+        "replaces": []
+      },
+      "GoogleAuthButton": {
+        "replaces": []
+      },
+      "GuideArticle": {
+        "replaces": []
+      },
+      "Header": {
+        "replaces": []
+      },
+      "Heading": {
+        "replaces": []
+      },
+      "HeroSearch": {
+        "replaces": []
+      },
+      "HolidayBanner": {
+        "replaces": []
+      },
+      "HomepageMiniMapSkeleton": {
+        "replaces": []
+      },
+      "ImageGallery": {
+        "replaces": []
+      },
+      "ImageWithFallback": {
+        "replaces": []
+      },
+      "InfoTooltip": {
+        "replaces": []
+      },
+      "Input": {
+        "replaces": []
+      },
+      "InstallPrompt": {
+        "replaces": []
+      },
+      "KashrutBadgeStrip": {
+        "replaces": []
+      },
+      "LanguageToggle": {
+        "replaces": []
+      },
+      "Lightbox": {
+        "replaces": []
+      },
+      "Link": {
+        "replaces": []
+      },
+      "LocationBanner": {
+        "replaces": []
+      },
+      "LocationModal": {
+        "replaces": []
+      },
+      "LoginPromptModal": {
+        "replaces": []
+      },
+      "MapBottomSheet": {
+        "replaces": []
+      },
+      "MapProducerCard": {
+        "replaces": []
+      },
+      "OnboardingTip": {
+        "replaces": []
+      },
+      "OpeningHours": {
+        "replaces": []
+      },
+      "Pagination": {
+        "replaces": []
+      },
+      "ParallaxQuote": {
+        "replaces": []
+      },
+      "PasswordInput": {
+        "replaces": []
+      },
+      "PasswordStrength": {
+        "replaces": []
+      },
+      "PhoneVerifyCard": {
+        "replaces": []
+      },
+      "Popover": {
+        "replaces": []
+      },
+      "PrimaryContactButton": {
+        "replaces": []
+      },
+      "ProducerCard": {
+        "replaces": []
+      },
+      "ProducerForm": {
+        "replaces": []
+      },
+      "ProducerOAuthButtons": {
+        "replaces": []
+      },
+      "ProducersClient": {
+        "replaces": []
+      },
+      "ProfileCompletenessCard": {
+        "replaces": []
+      },
+      "RecipeCard": {
+        "replaces": []
+      },
+      "RecipeDetail": {
+        "replaces": []
+      },
+      "RecipeForm": {
+        "replaces": []
+      },
+      "RecipeJsonLd": {
+        "replaces": []
+      },
+      "RecipeStatusBadge": {
+        "replaces": []
+      },
+      "ReportButton": {
+        "replaces": []
+      },
+      "ReviewsSection": {
+        "replaces": []
+      },
+      "ShareButton": {
+        "replaces": []
+      },
+      "SkeletonCard": {
+        "replaces": []
+      },
+      "SkeletonLine": {
+        "replaces": []
+      },
+      "SkeletonProducerGrid": {
+        "replaces": []
+      },
+      "SmoothScrollProvider": {
+        "replaces": []
+      },
+      "StarRating": {
+        "replaces": []
+      },
+      "StarSelector": {
+        "replaces": []
+      },
+      "StoryCardCanvas": {
+        "replaces": []
+      },
+      "Toaster": {
+        "replaces": []
+      },
+      "Tooltip": {
+        "replaces": []
+      },
+      "TrustBadge": {
+        "replaces": []
+      },
+      "VerifyBanner": {
+        "replaces": []
+      },
+      "WhatsAppButton": {
+        "replaces": []
+      },
+      "WhatsAppQuestionChips": {
+        "replaces": []
+      },
+      "WhatsAppShareButton": {
+        "replaces": []
+      }
+    },
+    "tokens": [
+      "--tw-backdrop-blur",
+      "--tw-backdrop-brightness",
+      "--tw-backdrop-contrast",
+      "--tw-backdrop-grayscale",
+      "--tw-backdrop-hue-rotate",
+      "--tw-backdrop-invert",
+      "--tw-backdrop-opacity",
+      "--tw-backdrop-saturate",
+      "--tw-backdrop-sepia",
+      "--tw-bg-opacity",
+      "--tw-blur",
+      "--tw-border-opacity",
+      "--tw-border-spacing-x",
+      "--tw-border-spacing-y",
+      "--tw-brightness",
+      "--tw-contain-layout",
+      "--tw-contain-paint",
+      "--tw-contain-size",
+      "--tw-contain-style",
+      "--tw-content",
+      "--tw-contrast",
+      "--tw-divide-opacity",
+      "--tw-divide-y-reverse",
+      "--tw-drop-shadow",
+      "--tw-gradient-from",
+      "--tw-gradient-from-position",
+      "--tw-gradient-stops",
+      "--tw-gradient-to",
+      "--tw-gradient-to-position",
+      "--tw-gradient-via-position",
+      "--tw-grayscale",
+      "--tw-hue-rotate",
+      "--tw-invert",
+      "--tw-numeric-figure",
+      "--tw-numeric-fraction",
+      "--tw-numeric-spacing",
+      "--tw-ordinal",
+      "--tw-pan-x",
+      "--tw-pan-y",
+      "--tw-pinch-zoom",
+      "--tw-ring-color",
+      "--tw-ring-inset",
+      "--tw-ring-offset-color",
+      "--tw-ring-offset-shadow",
+      "--tw-ring-offset-width",
+      "--tw-ring-opacity",
+      "--tw-ring-shadow",
+      "--tw-rotate",
+      "--tw-saturate",
+      "--tw-scale-x",
+      "--tw-scale-y",
+      "--tw-scroll-snap-strictness",
+      "--tw-sepia",
+      "--tw-shadow",
+      "--tw-shadow-colored",
+      "--tw-skew-x",
+      "--tw-skew-y",
+      "--tw-slashed-zero",
+      "--tw-space-y-reverse",
+      "--tw-text-opacity",
+      "--tw-translate-x",
+      "--tw-translate-y"
+    ],
+    "tokenKinds": {
+      "--tw-border-spacing-x": "other",
+      "--tw-border-spacing-y": "other",
+      "--tw-translate-x": "other",
+      "--tw-translate-y": "other",
+      "--tw-rotate": "other",
+      "--tw-skew-x": "other",
+      "--tw-skew-y": "other",
+      "--tw-scale-x": "other",
+      "--tw-scale-y": "other",
+      "--tw-pan-x": "other",
+      "--tw-pan-y": "other",
+      "--tw-pinch-zoom": "other",
+      "--tw-scroll-snap-strictness": "other",
+      "--tw-gradient-from-position": "other",
+      "--tw-gradient-via-position": "other",
+      "--tw-gradient-to-position": "other",
+      "--tw-ordinal": "other",
+      "--tw-slashed-zero": "other",
+      "--tw-numeric-figure": "other",
+      "--tw-numeric-spacing": "other",
+      "--tw-numeric-fraction": "other",
+      "--tw-ring-inset": "other",
+      "--tw-ring-offset-width": "other",
+      "--tw-ring-offset-color": "other",
+      "--tw-ring-color": "other",
+      "--tw-ring-offset-shadow": "other",
+      "--tw-ring-shadow": "other",
+      "--tw-shadow": "other",
+      "--tw-shadow-colored": "other",
+      "--tw-blur": "other",
+      "--tw-brightness": "other",
+      "--tw-contrast": "other",
+      "--tw-grayscale": "other",
+      "--tw-hue-rotate": "other",
+      "--tw-invert": "other",
+      "--tw-saturate": "other",
+      "--tw-sepia": "other",
+      "--tw-drop-shadow": "other",
+      "--tw-backdrop-blur": "other",
+      "--tw-backdrop-brightness": "other",
+      "--tw-backdrop-contrast": "other",
+      "--tw-backdrop-grayscale": "other",
+      "--tw-backdrop-hue-rotate": "other",
+      "--tw-backdrop-invert": "other",
+      "--tw-backdrop-opacity": "other",
+      "--tw-backdrop-saturate": "other",
+      "--tw-backdrop-sepia": "other",
+      "--tw-contain-size": "other",
+      "--tw-contain-layout": "other",
+      "--tw-contain-paint": "other",
+      "--tw-contain-style": "other",
+      "--tw-content": "other",
+      "--tw-space-y-reverse": "other",
+      "--tw-divide-y-reverse": "other",
+      "--tw-divide-opacity": "other",
+      "--tw-border-opacity": "other",
+      "--tw-bg-opacity": "other",
+      "--tw-gradient-from": "other",
+      "--tw-gradient-to": "other",
+      "--tw-gradient-stops": "other",
+      "--tw-text-opacity": "other",
+      "--tw-ring-opacity": "other"
+    },
+    "fontFamilies": [
+      "Cormorant Garamond",
+      "DM Sans",
+      "Frank Ruhl Libre",
+      "Heebo"
+    ]
+  }
+}
