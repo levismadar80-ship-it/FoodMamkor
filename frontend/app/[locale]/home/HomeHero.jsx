@@ -63,7 +63,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         aria-label={t("home.hero.main_label")}
       >
         {/* Ken Burns layer — decorative produce photo. inset -5% gives the
-            ≤1.08 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
+            ≤1.06 zoom drift room. REUSES: components/ParallaxQuote.jsx:36 */}
         <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           <div
             className="kenburns-right absolute"
@@ -140,7 +140,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         initial={{ y: 12 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center md:justify-start md:max-w-7xl md:mx-auto gap-3"
+        className="mt-5 px-4 md:px-12 pb-6 md:pb-8 flex flex-wrap items-center justify-center md:justify-start gap-3"
       >
         <button
           type="button"

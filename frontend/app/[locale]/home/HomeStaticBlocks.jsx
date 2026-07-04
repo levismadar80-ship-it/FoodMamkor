@@ -93,7 +93,7 @@ export function HomeFeaturedProducer({ featured }) {
   return (
     <section className="max-w-6xl mx-auto px-4 md:px-12 section-y">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-10 items-center">
-        {/* photo — leading/start column (Direction A: image leads, 5:6) */}
+        {/* photo — leading/start column (Direction A: image leads, 4:5) */}
         <FadeInSection className="md:col-span-5">
           {/* MEH-991 (HOME-23): FREEZE §10 — framed 4:5, radius 16, --light loading
               fill, SOLID caption chip bottom/inline-start (blur dropped per FREEZE §10.4). */}
