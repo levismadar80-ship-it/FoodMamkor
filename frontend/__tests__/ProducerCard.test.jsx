@@ -231,6 +231,14 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(price.className).toMatch(/max-w-/);
   });
 
+  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
+  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
+  it("bidi-isolates the price label with dir=ltr", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const price = screen.getByText("₪40-80");
+    expect(price).toHaveAttribute("dir", "ltr");
+  });
+
   it("hides price when both price_range and starting_price_label are null", () => {
     render(<ProducerCard producer={minimalProducer} />);
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
