@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-03 — MEH-1014: BottomNav minimize-on-scroll — DRAFT PR
+
+- **Branch:** `claude/bottomnav-minimize-scroll-n6fb75` off `origin/staging` (divergence 0 — clean cut). ⚠️ **Branch-naming flag:** the issue spec asked for `feature/meh-1014-bottomnav-minimize-on-scroll`, but this remote session is harness-locked to the `claude/*` branch and can't push elsewhere — same constraint as PR #1464 flag #1 / MEH-997. Repo's no-`claude/*` rule (workflow rule 3) couldn't be honored from here; flagged in the PR body for Sapir.
+- **What shipped (single file: `frontend/components/BottomNav.jsx`):** hide-on-scroll → minimize-on-scroll. `hidden`→`compact` state; `translate-y-[120%]` toggle deleted (no vertical slide left). rAF listener now clamps `y` to the real scroll range (kills iOS rubber-band phantom deltas) + asymmetric hysteresis (down 24px → compact, up 8px → expand, direction-change resets opposite acc, `y<60` → expand+reset). Compact: nav `h-14→h-12`, `p-1.5→p-1`; labels collapse via `opacity-0 max-h-0` wrapper (icons stay 22); `tabCls` min-h `44→40`. Height/opacity/max-height transitions only — backdrop-filter never animated. `isCompact = compact && !sheetOpen` (sheet-open renders expanded); `onFocusCapture` focus guard mirrors MEH-734. Thresholds are tunable module constants.
+- **MEH-852 indicator:** verified re-measures on toggle — `ResizeObserver` on `<nav>` (`BottomNav.jsx:166`) fires when `h-14↔h-12` changes the nav box; horizontal left/width barely move so no jump.
+- **Verify:** `npm run build` exit 0 (113/113 SSG) · vitest **702 passed / 41 skipped** · BottomNav suite 7✓ · `grep translate-y-[120%]` = 0. Node deps were absent in the fresh container → `npm install` run before the suite.
+- **Sapir pending:** mobile QA on the preview (scroll-flicker gone, labels collapse smoothly, sheet-open expands with no jump, focus expands); mark ready-for-review; merge. Rule 23 — DRAFT only, not merged.
+- **Out of scope (untouched):** Header.jsx (hide detached in MEH-884), shared-hook extraction (inline-copy note stands), i18n. No velocity detection / IntersectionObserver / new deps.
+
 ## 2026-07-03 — MEH-1012: correct stale "docs-only → direct commit" rule — DRAFT PR
 
 - **Branch:** `feature/meh-1012-fix-docs-only-rule` off `origin/staging`. LOW-RISK docs-only, end-to-end authority. `Closes MEH-1012`.
