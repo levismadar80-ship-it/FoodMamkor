@@ -678,13 +678,12 @@ class TestJourney10AuthorizationMatrix:
         # And the recipe is untouched
         assert db.query(ProducerRecipe).filter_by(id=recipe_id).count() == 1
 
-    def test_cross_producer_event_update_current_behavior(self, client, db):
-        """MEH-997 EXECUTED PROBE — events.py returns 403 ("Not the owner")
-        on cross-producer update/delete, DIVERGING from the recipes
-        404-not-403 existence-leak convention (producer_recipes.py:203-206).
-        A foreign producer can confirm an event id exists. Report-only
-        (permissions logic = HIGH-RISK); this test pins CURRENT behavior —
-        if a fix lands, flip these to 404."""
+    def test_cross_producer_event_update_returns_404(self, client, db):
+        """MEH-1001 — cross-producer update/delete returns 404 (not the old
+        403 "Not the owner"), aligned to the recipes anti-existence-leak
+        convention (producer_recipes.py:206): a foreign producer must not be
+        able to confirm an event id exists. (Was the MEH-997 journey-10 probe
+        pinning the 403 divergence; flipped when the fix landed.)"""
         _, owner_a = _make_producer_user(db)
         _, owner_b = _make_producer_user(db)
 
@@ -696,8 +695,8 @@ class TestJourney10AuthorizationMatrix:
 
         assert client.put(
             f"/events/{event_id}", json={"title": "פריצה"}, headers=h_b
-        ).status_code == 403
-        assert client.delete(f"/events/{event_id}", headers=h_b).status_code == 403
+        ).status_code == 404
+        assert client.delete(f"/events/{event_id}", headers=h_b).status_code == 404
 
     # ---- admin override ----
 
