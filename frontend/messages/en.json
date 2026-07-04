@@ -1880,6 +1880,13 @@
         "reviews": "Reviews",
         "reports": "Reports",
         "experiences": "Experiences",
+        "outreach": "Business outreach",
+        "group_buys": "Group buys",
+        "recipes": "Recipes",
+        "kashrut": "Kashrut requests",
+        "category_requests": "Category requests",
+        "whatsapp_failures": "Undelivered messages",
+        "analytics": "Analytics",
         "emergency": "Emergencies",
         "urls": "Important URLs"
       },
@@ -1930,6 +1937,48 @@
           "p1": "<strong>/admin/experiences</strong> — 5 tabs: pending / changes required / approved / rejected / all.",
           "li1": "On click: approve / reject / request changes. The host receives an email.",
           "li2": "Haiku pre-check runs before an experience reaches the \"pending\" tab — the \"changes required\" tab is when the AI flagged a warning but did not block."
+        },
+        "outreach": {
+          "title": "Business outreach",
+          "p1": "<strong>/admin/outreach</strong> — centralizes leads for potential businesses: contacting, status tracking, and conversion into a registered business.",
+          "li1": "Track each lead's status — contacted / pending / converted / rejected.",
+          "li2": "Clicking a lead opens its contact details and lets you mark progress."
+        },
+        "group_buys": {
+          "title": "Group buys",
+          "p1": "<strong>/admin/group-buys</strong> — manage users' group buys. The feature is not active right now; the screen is ready for future activation.",
+          "li1": "Once active, open groups and the number of members each has will appear here.",
+          "li2": "Until activation the screen is view-only with no actions."
+        },
+        "recipes": {
+          "title": "Recipes",
+          "p1": "<strong>/admin/recipes</strong> — the approval queue for recipes uploaded by users and businesses. Approve, reject, or edit before publishing.",
+          "li1": "A pending recipe shows its title, author, and image — check community fit before approving.",
+          "li2": "Rejecting removes the recipe from the queue; you can leave a note with the reason."
+        },
+        "kashrut": {
+          "title": "Kashrut requests",
+          "p1": "<strong>/admin/kashrut</strong> — businesses submit requests for a kashrut tag. Approve only after verifying the attached certificate.",
+          "li1": "A pill on \"Kashrut\" in the sidebar indicates kashrut requests awaiting handling.",
+          "li2": "Approval adds the kashrut tag to the business's public profile."
+        },
+        "category_requests": {
+          "title": "Category requests",
+          "p1": "<strong>/admin/category-requests</strong> — businesses request new categories that don't exist yet. Approve to add them to the list, or reject.",
+          "li1": "Approval creates a new category available to all businesses.",
+          "li2": "Check for duplicates against existing categories before approving."
+        },
+        "whatsapp_failures": {
+          "title": "Undelivered messages",
+          "p1": "<strong>/admin/whatsapp-failures</strong> — a list of outbound WhatsApp messages that failed to deliver: notifications that never reached businesses.",
+          "li1": "Check the failure reason (wrong number / block) and reach the business through another channel.",
+          "li2": "The screen is read-only — no automatic resend from here."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "p1": "<strong>/admin/analytics</strong> — aggregate usage data: active users, top cities, and a breakdown by category.",
+          "li1": "Use the charts to track growth trends over time.",
+          "li2": "Data updates automatically; no manual action needed."
         },
         "emergency": {
           "title": "Emergencies",
