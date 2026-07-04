@@ -321,15 +321,15 @@ body.sheet-open .cookie-banner {
    drift in lock-step. Disabled for prefers-reduced-motion. */
 @keyframes kenburns-right {
   0%   { transform: scale(1) translate(0%, 0%); }
-  100% { transform: scale(1.08) translate(-2%, -1%); }
+  100% { transform: scale(1.06) translate(-2%, -1%); }
 }
 @keyframes kenburns-left {
   0%   { transform: scale(1) translate(0%, 0%); }
-  100% { transform: scale(1.08) translate(2%, -1%); }
+  100% { transform: scale(1.06) translate(2%, -1%); }
 }
 
 .kenburns-right {
-  animation: kenburns-right 20s ease-in-out infinite alternate;
+  animation: kenburns-right 22s ease-in-out infinite alternate;
   will-change: transform;
 }
 .kenburns-left {
