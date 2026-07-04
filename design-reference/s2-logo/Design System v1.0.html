@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mehamakor — Design System v1.0</title>
+
+<!--
+  /* Mehamakor Design System v1.0 — locked 2026-05-21 */
+  /* Council corrections: Hebrew typography (LH 1.05, tracking 0em),
+     state tokens added, time-eyebrow removed, font fallbacks documented,
+     8px grid locked, Latin numerals locked */
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   TOKENS — v1.0 (locked 2026-05-21)
+   ───────────────────────────────────────────────────────────── */
+:root {
+  /* ── Primitives (locked, do not change) ── */
+  --green:       #2E6853;   /* primary forest green                    */
+  --green-dark:  #1F4A38;   /* overlays, footer, reverse               */
+  --background:  #F5F0E8;   /* warm cream — NEVER pure white           */
+  --text:        #1C1A17;   /* warm black                              */
+  --gold:        #8B6914;   /* accents only (prices, italic numerals)  */
+  --light:       #EAF3DE;   /* pale green — badges                     */
+  --border:      #E8E0D0;   /* dividers                                */
+
+  /* Removed v1.0 (dev exploration only — DO NOT REINTRODUCE):
+       --secondary       #4cb08b
+       --secondary-light #6dc4a3
+       --accent-warm     #E8823A
+       --accent-warm-light #f0a060                                     */
+
+  /* ── Semantic aliases ── */
+  --fg:          var(--text);
+  --fg-muted:    #57524A;            /* desaturated warm — 7.9:1 on cream */
+  --fg-inverse:  var(--background);
+  --bg:          var(--background);
+  --bg-card:     #FFFEFB;            /* warm white — NEVER #ffffff       */
+  --bg-inverse:  var(--green-dark);
+  --link:        var(--green);
+  --link-hover:  var(--green-dark);
+  --success:     var(--green);
+  --focus-ring:  rgba(46,104,83,0.40);   /* --green @ 40%                */
+
+  /* ── Spacing — 8px soft baseline grid (locked) ── */
+  --space-1:  8px;
+  --space-2:  16px;
+  --space-3:  24px;
+  --space-4:  32px;
+  --space-6:  48px;
+  --space-8:  64px;
+  --space-12: 96px;
+  --space-16: 128px;
+
+  /* ── Type scale ── */
+  --font-display: "Frank Ruhl Libre", "David Libre", "Times New Roman", serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* NOTE: Cormorant Garamond has NO Hebrew glyphs. Hebrew text inside
+     a .italic span falls back to Frank Ruhl Libre italic automatically
+     via the font-family stack below. Document this in all components. */
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  /* ── State precedence (composability documented in §5) ── */
+  --state-hover-scale:  1.02;
+  --state-active-scale: 0.98;
+  --state-disabled-op:  0.5;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BASE
+   ───────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  padding: var(--space-8) 0 var(--space-12);
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+/* RTL — use start/end, never left/right */
+*[dir="ltr"] { direction: ltr; }
+
+/* ─────────────────────────────────────────────────────────────
+   TYPE — Hebrew-corrected (Spiekermann + Frere-Jones)
+   ───────────────────────────────────────────────────────────── */
+.h-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(40px, 7vw, 88px);
+  line-height: 1.05;              /* CORRECTED from 0.95 — Hebrew descenders */
+  letter-spacing: 0em;            /* CORRECTED from -0.02em — Hebrew doesn't tighten */
+}
+.h-section {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.15;
+  letter-spacing: 0em;
+}
+.h-card {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(20px, 2.2vw, 24px);
+  line-height: 1.25;
+  letter-spacing: 0em;
+}
+.body { font-size: 16px; line-height: 1.7; }
+.small { font-size: 13px; line-height: 1.5; color: var(--fg-muted); }
+.micro {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.italic {
+  font-family: var(--font-italic);
+  font-style: italic;
+}
+
+/* Tabular + lining numerals — for prices, distances, weights */
+.numeric {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-style: normal;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Bidi isolation for Latin-leading annotations in RTL containers */
+.ltr,
+.type-spec .label .v,
+.state-cell .meta-note,
+.precedence li,
+.changelog ul li,
+.preflight li > span:nth-child(2),
+.spacing-row .token-name,
+.spacing-row .px {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PAGE HEADER
+   ───────────────────────────────────────────────────────────── */
+.masthead {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-8);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+.masthead h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: 0em;
+}
+.masthead .sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--fg-muted);
+  margin-top: var(--space-1);
+}
+.stamp {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  text-align: end;
+  line-height: 1.6;
+}
+.stamp strong {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION LAYOUT
+   ───────────────────────────────────────────────────────────── */
+section {
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-3);
+}
+section + section {
+  border-top: 1px solid var(--border);
+}
+
+.sec-head {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  margin-bottom: var(--space-4);
+}
+.sec-no {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 32px;
+  color: var(--gold);
+}
+.sec-no .numeric { color: var(--gold); }
+.sec-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(24px, 3vw, 36px);
+  line-height: 1.15;
+}
+.sec-desc {
+  max-width: 62ch;
+  color: var(--fg-muted);
+  margin-top: var(--space-1);
+  font-size: 15px;
+  text-wrap: pretty;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   COLOR SWATCHES
+   ───────────────────────────────────────────────────────────── */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-2);
+}
+.swatch {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.swatch .chip {
+  height: 128px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.swatch .chip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(28,26,23,0.04);
+}
+.swatch .meta {
+  padding: var(--space-2);
+  display: grid;
+  gap: var(--space-1);
+}
+.swatch .role {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.swatch .hex {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg-muted);
+  letter-spacing: 0.04em;
+}
+.swatch .alias {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--green-dark);
+  letter-spacing: 0.04em;
+}
+.swatch .ratio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed var(--border);
+  padding-top: var(--space-1);
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+.swatch .ratio .numeric { color: var(--fg); font-weight: 500; }
+.swatch .badge {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+}
+.badge--aaa { color: var(--green-dark); }
+.badge--aa  { color: var(--green); }
+.badge--bg  { color: var(--green-dark); }  /* darkened v1.0-fix: AA 4.5:1 on warm-white card */
+
+/* Aliases table */
+.alias-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.alias-table th, .alias-table td {
+  text-align: start;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.alias-table th {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.alias-table td code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: var(--green-dark);
+}
+.alias-table tr:last-child td { border-bottom: 0; }
+.alias-dot {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 1px solid rgba(28,26,23,0.15);
+  vertical-align: -3px;
+  margin-inline-end: 6px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TYPE SPECIMENS
+   ───────────────────────────────────────────────────────────── */
+.type-spec {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+.type-spec:last-child { border-bottom: 0; }
+.type-spec .label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+.type-spec .label .key { color: var(--fg); font-weight: 500; }
+.type-spec .label .v { display: block; }
+.type-spec .sample-he { direction: rtl; }
+.type-spec .sample-en { direction: ltr; font-family: var(--font-body); color: var(--fg-muted); margin-top: var(--space-1); font-size: 14px; }
+
+/* ─────────────────────────────────────────────────────────────
+   SPACING SCALE VISUAL
+   ───────────────────────────────────────────────────────────── */
+.spacing-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 7px,
+      rgba(46,104,83,0.06) 7px,
+      rgba(46,104,83,0.06) 8px
+    );
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+}
+.spacing-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 80px;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+.spacing-row .token-name {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  color: var(--green-dark);
+}
+.spacing-row .bar {
+  background: var(--green);
+  height: 16px;
+}
+.spacing-row .px {
+  text-align: end;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.spacing-row .px .numeric { color: var(--fg); font-weight: 500; }
+
+/* 8px baseline visual reference */
+.baseline-demo {
+  margin-top: var(--space-3);
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 7px,
+    rgba(139,105,20,0.18) 7px,
+    rgba(139,105,20,0.18) 8px
+  );
+  padding: 24px var(--space-3);
+}
+.baseline-demo p {
+  font-size: 16px;
+  line-height: 24px;          /* 3× 8 */
+  margin: 0;
+  padding: 0;
+}
+.baseline-demo p + p { margin-top: 16px; }   /* 2× 8 */
+.baseline-demo .baseline-caption {
+  margin-top: 24px;
+  color: var(--fg-muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   STATE CHIPS
+   ───────────────────────────────────────────────────────────── */
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2);
+}
+.state-cell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-2);
+  display: grid;
+  gap: var(--space-1);
+}
+.state-cell .state-label {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.state-cell .state-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+.state-cell .chip-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+/* The example chip — 80×40 button-like */
+.chip-ex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--fg);
+  cursor: default;
+  transition: transform 120ms ease, opacity 120ms ease;
+  position: relative;
+}
+.chip-ex.is-hover    { transform: scale(1.02); }
+.chip-ex.is-hover::after {
+  content: "";
+  position: absolute;
+  inset-inline: 14px;
+  bottom: 6px;
+  height: 1px;
+  background: var(--green);
+}
+.chip-ex.is-active   { transform: scale(0.98); opacity: 0.95; }
+.chip-ex.is-selected { border: 2px solid var(--green); color: var(--green-dark); }
+.chip-ex.is-visited  { filter: saturate(0.6); color: var(--fg-muted); }
+.chip-ex.is-disabled { opacity: 0.5; cursor: not-allowed; color: var(--fg-muted); }
+.chip-ex.is-focus    {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.state-cell .meta-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  margin-top: var(--space-1);
+}
+.state-cell .visited-cap {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--gold);
+  margin-top: 4px;
+}
+
+/* Precedence table */
+.precedence {
+  margin-top: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+}
+.precedence ol {
+  padding-inline-start: var(--space-3);
+}
+.precedence li {
+  padding: 4px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.precedence li code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  color: var(--green-dark);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   VOICE + RTL — DO / DON'T TABLES
+   ───────────────────────────────────────────────────────────── */
+.do-dont {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.dd-col {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+}
+.dd-col h4 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-1);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+.dd-col.do h4   { color: var(--green); }
+.dd-col.dont h4 { color: #8B2E2E; }    /* used ONLY for "dont" indicator — not a token */
+.dd-col ul { list-style: none; }
+.dd-col li {
+  padding: 8px 0;
+  font-size: 15px;
+  line-height: 1.6;
+  border-bottom: 1px dashed var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.dd-col li:last-child { border-bottom: 0; }
+.dd-col .mark {
+  flex-shrink: 0;
+  width: 14px;
+  display: inline-block;
+}
+.dd-col.do   .mark { color: var(--green); }
+.dd-col.dont .mark { color: #8B2E2E; }
+.dd-col li small {
+  display: block;
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
+
+/* Lock rules — bordered list */
+.locks {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}
+.locks-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green-dark);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-2);
+}
+.locks ul { list-style: none; }
+.locks li {
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+.locks li .x { color: #8B2E2E; font-weight: 700; }
+.locks li code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  background: var(--light);
+  padding: 1px 4px;
+  color: var(--green-dark);
+}
+
+/* Numerals demo card */
+.num-demo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.num-demo .card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-2) var(--space-3);
+}
+.num-demo .card .micro { margin-bottom: 6px; }
+.num-demo .card .val {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 28px;
+  color: var(--gold);
+  line-height: 1.1;
+}
+.num-demo .card .val .numeric {
+  color: var(--gold);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CHANGELOG
+   ───────────────────────────────────────────────────────────── */
+.changelog {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+}
+.changelog h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+.changelog .date {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 14px;
+  margin-bottom: var(--space-2);
+}
+.changelog ul {
+  padding-inline-start: var(--space-3);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.changelog ul li { padding: 2px 0; }
+.changelog ul li code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  color: var(--green-dark);
+}
+.changelog .next {
+  font-size: 13px;
+  color: var(--fg-muted);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--border);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRE-FLIGHT CHECKLIST
+   ───────────────────────────────────────────────────────────── */
+.preflight {
+  background: var(--bg-inverse);
+  color: var(--fg-inverse);
+  padding: var(--space-4) var(--space-4);
+  margin-top: var(--space-6);
+}
+.preflight h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  margin-bottom: var(--space-1);
+}
+.preflight .pf-sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(245,240,232,0.7);
+  margin-bottom: var(--space-3);
+}
+.preflight ul { list-style: none; }
+.preflight li {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(245,240,232,0.12);
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: var(--space-1);
+  align-items: baseline;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.preflight li .box {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 1px solid rgba(245,240,232,0.6);
+  vertical-align: middle;
+}
+.preflight li .ses {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(245,240,232,0.55);
+}
+.preflight li:last-child { border-bottom: 0; }
+
+/* ─────────────────────────────────────────────────────────────
+   FOOTER
+   ───────────────────────────────────────────────────────────── */
+footer {
+  margin-top: var(--space-8);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+footer .italic { text-transform: none; letter-spacing: 0; font-size: 14px; }
+
+/* Small screens */
+@media (max-width: 720px) {
+  .masthead { grid-template-columns: 1fr; }
+  .stamp { text-align: start; }
+  .sec-head { grid-template-columns: 1fr; gap: 8px; }
+  .sec-no { font-size: 22px; }
+  .type-spec { grid-template-columns: 1fr; }
+  .do-dont { grid-template-columns: 1fr; }
+  .spacing-row { grid-template-columns: 96px 1fr 56px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ────────────── MASTHEAD ────────────── -->
+  <header class="masthead">
+    <div>
+      <div class="micro" style="margin-bottom: 8px;">מהמקור · Design System</div>
+      <h1>הבסיס.<br><span class="italic" style="font-weight:400;">Foundation, locked.</span></h1>
+      <div class="sub">Tokens, type, voice — invisible when right, catastrophic when skipped.</div>
+    </div>
+    <div class="stamp">
+      Version <strong class="numeric">v1.0</strong><br>
+      Locked <span class="numeric">2026-05-21</span><br>
+      Session <span class="numeric">S1</span> · MEH-636<br>
+      <span style="color: var(--green);">● foundation reset</span>
+    </div>
+  </header>
+
+  <!-- ────────────── §1 COLOR ────────────── -->
+  <section id="color">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">01</span></div>
+      <div>
+        <h2 class="sec-title">Color — primitives &amp; semantic aliases</h2>
+        <p class="sec-desc">Seven primitives, locked. The cream background is the canvas of the magazine; never substitute <code style="font-family:ui-monospace,monospace;">#ffffff</code>. WCAG ratios are measured against <code style="font-family:ui-monospace,monospace;">--background</code> unless noted.</p>
+      </div>
+    </div>
+
+    <h3 class="micro" style="margin-bottom: 16px;">— Primitives</h3>
+    <div class="swatch-grid">
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--green);"></div>
+        <div class="meta">
+          <div class="role">Forest Green</div>
+          <div class="hex"><span class="numeric">#2E6853</span></div>
+          <div class="alias">--green · primary</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">5.75</span>:1 <span class="badge badge--aa">AA</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--green-dark);"></div>
+        <div class="meta">
+          <div class="role">Green Dark</div>
+          <div class="hex"><span class="numeric">#1F4A38</span></div>
+          <div class="alias">--green-dark · inverse</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">8.84</span>:1 <span class="badge badge--aaa">AAA</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--background); border-bottom: 1px solid var(--border);"></div>
+        <div class="meta">
+          <div class="role">Cream</div>
+          <div class="hex"><span class="numeric">#F5F0E8</span></div>
+          <div class="alias">--background · canvas</div>
+          <div class="ratio"><span>page bg</span><span><span class="badge badge--bg">CANVAS</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--text);"></div>
+        <div class="meta">
+          <div class="role">Warm Black</div>
+          <div class="hex"><span class="numeric">#1C1A17</span></div>
+          <div class="alias">--text · fg</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">15.3</span>:1 <span class="badge badge--aaa">AAA</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--gold);"></div>
+        <div class="meta">
+          <div class="role">Gold</div>
+          <div class="hex"><span class="numeric">#8B6914</span></div>
+          <div class="alias">--gold · italic accents</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">4.47</span>:1 <span class="badge badge--aa">AA</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--light);"></div>
+        <div class="meta">
+          <div class="role">Pale Green</div>
+          <div class="hex"><span class="numeric">#EAF3DE</span></div>
+          <div class="alias">--light · badge bg</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">1.01</span>:1 <span class="badge badge--bg">BG ONLY</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--border);"></div>
+        <div class="meta">
+          <div class="role">Border</div>
+          <div class="hex"><span class="numeric">#E8E0D0</span></div>
+          <div class="alias">--border · dividers</div>
+          <div class="ratio"><span>vs cream</span><span><span class="numeric">1.14</span>:1 <span class="badge badge--bg">DECORATIVE</span></span></div>
+        </div>
+      </div>
+
+      <div class="swatch">
+        <div class="chip" style="background: var(--bg-card); border-bottom: 1px solid var(--border);"></div>
+        <div class="meta">
+          <div class="role">Warm White</div>
+          <div class="hex"><span class="numeric">#FFFEFB</span></div>
+          <div class="alias">--bg-card · card surface</div>
+          <div class="ratio"><span>text on card</span><span><span class="numeric">17.2</span>:1 <span class="badge badge--aaa">AAA</span></span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <h3 class="micro" style="margin: 32px 0 8px;">— Semantic aliases</h3>
+    <table class="alias-table">
+      <thead>
+        <tr><th>Alias</th><th>Maps to</th><th>Use</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--fg);"></span><code>--fg</code></td>
+          <td><code>--text</code> <span class="numeric small">#1C1A17</span></td>
+          <td>Body text, headlines on cream / warm-white</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--fg-muted);"></span><code>--fg-muted</code></td>
+          <td><span class="numeric small">#57524A</span> (warm desaturated)</td>
+          <td>Captions, meta, secondary text — <span class="numeric">7.9</span>:1 on cream</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--fg-inverse);"></span><code>--fg-inverse</code></td>
+          <td><code>--background</code></td>
+          <td>Text on dark surfaces (footer, modal overlays)</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--bg);"></span><code>--bg</code></td>
+          <td><code>--background</code></td>
+          <td>Page canvas</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--bg-card);"></span><code>--bg-card</code></td>
+          <td><span class="numeric small">#FFFEFB</span> (warm white)</td>
+          <td>Cards, modals — <strong>NEVER</strong> <code>#ffffff</code></td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--bg-inverse);"></span><code>--bg-inverse</code></td>
+          <td><code>--green-dark</code></td>
+          <td>Footer, reverse sections, image overlays</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--link);"></span><code>--link</code></td>
+          <td><code>--green</code></td>
+          <td>Inline links, primary actions</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--link-hover);"></span><code>--link-hover</code></td>
+          <td><code>--green-dark</code></td>
+          <td>Link hover</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--success);"></span><code>--success</code></td>
+          <td><code>--green</code></td>
+          <td>Confirmation, saved-state, success toasts</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: rgba(46,104,83,0.40); border-style:dashed;"></span><code>--focus-ring</code></td>
+          <td><code>rgba(46,104,83,0.40)</code></td>
+          <td><code>--green</code> at 40 % — 2 px outline, 2 px offset</td>
+        </tr>
+        <tr>
+          <td><span class="alias-dot" style="background: var(--border);"></span><code>--border</code></td>
+          <td><code>--border</code> primitive</td>
+          <td>Dividers, card outlines, table rows</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="small" style="margin-top: 16px;">
+      <strong>Removed in v1.0</strong> (dev exploration only — do not reintroduce):
+      <code style="font-family:ui-monospace,monospace;">--secondary</code>,
+      <code style="font-family:ui-monospace,monospace;">--secondary-light</code>,
+      <code style="font-family:ui-monospace,monospace;">--accent-warm</code>,
+      <code style="font-family:ui-monospace,monospace;">--accent-warm-light</code>.
+      <code style="font-family:ui-monospace,monospace;">--bg-card</code> migrated from
+      <code style="font-family:ui-monospace,monospace;">#ffffff</code> →
+      <code style="font-family:ui-monospace,monospace;">#FFFEFB</code>.
+    </p>
+  </section>
+
+  <!-- ────────────── §2 TYPE ────────────── -->
+  <section id="type">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">02</span></div>
+      <div>
+        <h2 class="sec-title">Type — Hebrew-corrected scale</h2>
+        <p class="sec-desc">Per Spiekermann + Frere-Jones: Hebrew descenders (ל ך ץ) need clearance — line-heights start at 1.05, never lower. Hebrew does not tighten — tracking is 0em or positive, never negative. Cormorant Garamond has no Hebrew glyphs; the italic family falls back to Frank Ruhl Libre italic — documented in <code style="font-family:ui-monospace,monospace;">--font-italic</code>.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">H1 · Hero</span>
+          <span class="v">Frank Ruhl Libre <span class="numeric">900</span></span>
+          <span class="v"><span class="numeric">clamp(40,&nbsp;7vw,&nbsp;88)</span></span>
+          <span class="v">LH <span class="numeric">1.05</span> · tracking <span class="numeric">0em</span></span>
+        </div>
+        <div>
+          <div class="sample-he h-display">כותרת ראשית, כשהיא נדרשת.</div>
+          <div class="sample-en h-display" dir="ltr">Headline, when required.</div>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">H2 · Section</span>
+          <span class="v">Frank Ruhl Libre <span class="numeric">700</span></span>
+          <span class="v"><span class="numeric">clamp(28,&nbsp;4vw,&nbsp;48)</span></span>
+          <span class="v">LH <span class="numeric">1.15</span> · tracking <span class="numeric">0em</span></span>
+        </div>
+        <div>
+          <div class="sample-he h-section">תת־כותרת לסעיף.</div>
+          <div class="sample-en h-section" dir="ltr">Section heading.</div>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">H3 · Card title</span>
+          <span class="v">Frank Ruhl Libre <span class="numeric">700</span></span>
+          <span class="v"><span class="numeric">20–24</span>px</span>
+          <span class="v">LH <span class="numeric">1.25</span></span>
+        </div>
+        <div>
+          <div class="sample-he h-card">שם הכרטיס.</div>
+          <div class="sample-en h-card" dir="ltr">Card title sample.</div>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">Body</span>
+          <span class="v">DM Sans <span class="numeric">400</span></span>
+          <span class="v"><span class="numeric">16</span>px</span>
+          <span class="v">LH <span class="numeric">1.7</span></span>
+        </div>
+        <div>
+          <p class="body">פסקת גוף לטקסט רץ — שילוב עברית ולטינית בשורה אחת נשמר רק כשהוא מכוון. סוגריים ו(פיסוק) רנדרינג נבדק ב-Safari ו-Chrome.</p>
+          <p class="body" style="margin-top: 4px;" dir="ltr">A body paragraph for running text — Hebrew and Latin on one line is allowed only when intentional.</p>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">Small</span>
+          <span class="v">DM Sans <span class="numeric">400</span></span>
+          <span class="v"><span class="numeric">13</span>px · LH <span class="numeric">1.5</span></span>
+        </div>
+        <div>
+          <p class="small">שורת עזר — לכיתובים, הערות שוליים, מטא־דאטה של כרטיסים.</p>
+          <p class="small" dir="ltr">Auxiliary text — captions, meta, fine print.</p>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">Micro · Eyebrow</span>
+          <span class="v">DM Sans Medium UPPERCASE</span>
+          <span class="v"><span class="numeric">11–12</span>px · LS <span class="numeric">0.15em</span></span>
+        </div>
+        <div>
+          <div class="micro">קטגוריה · גבינות</div>
+          <div class="micro" dir="ltr" style="margin-top: 4px;">CATEGORY · CHEESEMAKERS</div>
+        </div>
+      </div>
+
+      <div class="type-spec">
+        <div class="label">
+          <span class="key">Italic accent</span>
+          <span class="v">Cormorant Garamond italic</span>
+          <span class="v">fallback: Frank Ruhl italic</span>
+          <span class="v">+ <code style="font-family:ui-monospace,monospace;">.numeric</code> · tnum lnum</span>
+        </div>
+        <div>
+          <div class="italic" style="font-size: 28px; color: var(--gold);">— ספיר, מייסדת מהמקור</div>
+          <div class="italic" style="font-size: 28px; color: var(--gold); margin-top: 4px;" dir="ltr">— attribution falls back to Frank Ruhl</div>
+          <div class="italic" style="font-size: 28px; color: var(--gold); margin-top: 8px;"><span class="numeric">₪78</span> · <span class="numeric">1.8 km</span> · <span class="numeric">500g</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile wrap test -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 24px; margin-top: 24px;">
+      <div class="micro" style="margin-bottom: 16px;"><span class="ltr">— Mobile H1 wrap test · viewport <span class="numeric">375</span>px</span></div>
+      <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+        <div style="flex-shrink: 0;">
+          <div class="micro" style="margin-bottom: 8px; color: var(--fg-muted);"><span class="ltr"><span class="numeric">375</span>px viewport · <span class="numeric">327</span>px usable</span></div>
+          <div style="width: 327px; max-width: 100%; border: 1px dashed var(--border); padding: 16px; position: relative; background: var(--bg);">
+            <div style="font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; letter-spacing: 0em;">אוכל מקומי. במקום אחד.</div>
+            <!-- 2-line guide marks -->
+            <div style="position: absolute; inset-block: 16px; inset-inline-end: 4px; width: 2px; background: var(--gold); opacity: 0.6;"></div>
+            <div style="position: absolute; top: 16px; inset-inline-end: 8px; font-family: var(--font-italic); font-style: italic; font-size: 11px; color: var(--gold); writing-mode: vertical-rl;">2 lines</div>
+          </div>
+          <div class="micro" style="margin-top: 8px; color: var(--green-dark);"><span class="ltr">✓ wraps to <span class="numeric">2</span> lines · no descender clip (ל ך ץ)</span></div>
+        </div>
+        <div style="flex: 1; min-width: 240px;">
+          <p class="small ltr">
+            <strong>Test copy:</strong> <span dir="rtl">"אוכל מקומי. במקום אחד."</span>
+          </p>
+          <p class="small ltr" style="margin-top: 12px;">
+            <strong>Behavior:</strong> at <span class="numeric">375</span>px viewport (≈<span class="numeric">327</span>px usable inside <span class="numeric">24</span>px gutter), Frank Ruhl Libre <span class="numeric">900</span> at <span class="numeric">40</span>px wraps to <strong><span class="numeric">2</span> lines</strong> for the tagline. Line-height <span class="numeric">1.05</span> gives descenders (ל ך ץ) <span class="numeric">2</span>px of clearance — verified at <span class="numeric">375</span>×<span class="numeric">812</span> (iPhone 11/12/13 mini).
+          </p>
+          <p class="small ltr" style="margin-top: 12px;">
+            <strong>Overflow rule:</strong> if H1 copy ever wraps to <span class="numeric">3</span>+ lines, drop the lower clamp to <span class="numeric">36</span>px before adding an explicit <code style="font-family:ui-monospace,monospace;">&lt;br&gt;</code>. Never <span class="numeric">4</span>+ lines — rewrite the copy.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ────────────── §3 SPACING ────────────── -->
+  <section id="spacing">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">03</span></div>
+      <div>
+        <h2 class="sec-title">Spacing — 8px soft baseline grid</h2>
+        <p class="sec-desc">Locked 21 May 2026. Eight, sixteen, twenty-four — never twelve, never twenty. Vignelli's editorial discipline meets Tailwind's defaults; Hebrew line-heights at <span class="numeric">24</span>/<span class="numeric">32</span>px land cleanly on the grid. Soft means elements need not snap; values must.</p>
+      </div>
+    </div>
+
+    <div class="spacing-grid">
+      <div class="spacing-row">
+        <span class="token-name">--space-1</span>
+        <span class="bar" style="width: 8px;"></span>
+        <span class="px"><span class="numeric">8</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-2</span>
+        <span class="bar" style="width: 16px;"></span>
+        <span class="px"><span class="numeric">16</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-3</span>
+        <span class="bar" style="width: 24px;"></span>
+        <span class="px"><span class="numeric">24</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-4</span>
+        <span class="bar" style="width: 32px;"></span>
+        <span class="px"><span class="numeric">32</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-6</span>
+        <span class="bar" style="width: 48px;"></span>
+        <span class="px"><span class="numeric">48</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-8</span>
+        <span class="bar" style="width: 64px;"></span>
+        <span class="px"><span class="numeric">64</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-12</span>
+        <span class="bar" style="width: 96px;"></span>
+        <span class="px"><span class="numeric">96</span>px</span>
+      </div>
+      <div class="spacing-row">
+        <span class="token-name">--space-16</span>
+        <span class="bar" style="width: 128px;"></span>
+        <span class="px"><span class="numeric">128</span>px</span>
+      </div>
+    </div>
+
+    <div class="baseline-demo">
+      <div class="micro" style="margin-bottom: 16px;">— Baseline demonstration · gold lines at every <span class="numeric">8</span>px</div>
+      <p>שורת גוף בגודל <span class="numeric">16</span>px ובגובה שורה של <span class="numeric">24</span>px — שלוש יחידות גריד.</p>
+      <p>שורה שנייה. הריווח בין הפסקאות הוא <span class="numeric">16</span>px (שתי יחידות).</p>
+      <p>שלישית. הקווים הזהובים ברקע מסמנים את הגריד; הטקסט יושב בתוך הריתמוס.</p>
+      <p class="baseline-caption">Section whitespace — mobile <span class="numeric">64</span>px (--space-8) min · desktop <span class="numeric">96</span>px (--space-12) min.</p>
+    </div>
+
+    <p class="small" style="margin-top: 24px;">
+      <strong>No arbitrary values.</strong> If a layout feels like it wants <span class="numeric">12</span>px or <span class="numeric">20</span>px — round to <span class="numeric">8</span> / <span class="numeric">16</span> or <span class="numeric">16</span> / <span class="numeric">24</span>. Constraint is consistency. The grid will reward you over years.
+    </p>
+  </section>
+
+  <!-- ────────────── §4 STATES ────────────── -->
+  <section id="states">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">04</span></div>
+      <div>
+        <h2 class="sec-title">State tokens — seven, no overlap</h2>
+        <p class="sec-desc">New in v1.0 (Brad Frost). Each interactive element resolves exactly one state per pointer phase. Save / like never uses red — green or gold only (Ive). Hover never lifts via shadow — that is a SaaS pattern, not a magazine.</p>
+      </div>
+    </div>
+
+    <div class="state-grid">
+
+      <div class="state-cell">
+        <span class="state-label">--state-default</span>
+        <span class="state-name">Default</span>
+        <div class="chip-row"><span class="chip-ex">שמרי</span></div>
+        <p class="meta-note">Base. No transform, full opacity, <code style="font-family:ui-monospace,monospace;">--border</code> outline.</p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-hover</span>
+        <span class="state-name">Hover</span>
+        <div class="chip-row"><span class="chip-ex is-hover">שמרי</span></div>
+        <p class="meta-note">Image scale <span class="numeric">1.02</span> <em>or</em> caption underline (<span class="numeric">1</span>px <code style="font-family:ui-monospace,monospace;">--green</code>). <strong>No shadow lift.</strong></p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-active</span>
+        <span class="state-name">Active</span>
+        <div class="chip-row"><span class="chip-ex is-active">שמרי</span></div>
+        <p class="meta-note">Opacity <span class="numeric">0.95</span> <em>or</em> scale <span class="numeric">0.98</span>. Mobile press feedback.</p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-selected</span>
+        <span class="state-name">Selected</span>
+        <div class="chip-row"><span class="chip-ex is-selected">שמרי</span></div>
+        <p class="meta-note"><span class="numeric">2</span>px solid <code style="font-family:ui-monospace,monospace;">--green</code>. Loud — use sparingly (filter, pinned item).</p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-visited</span>
+        <span class="state-name">Visited</span>
+        <div class="chip-row">
+          <div style="text-align: center;">
+            <span class="chip-ex is-visited">שמרי</span>
+            <div class="visited-cap italic">ראית</div>
+          </div>
+        </div>
+        <p class="meta-note">Desaturate <span class="numeric">20</span> % + small italic caption "ראית". <strong>Never purple.</strong></p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-disabled</span>
+        <span class="state-name">Disabled</span>
+        <div class="chip-row"><span class="chip-ex is-disabled">שמרי</span></div>
+        <p class="meta-note">Opacity <span class="numeric">0.5</span> · <code style="font-family:ui-monospace,monospace;">cursor: not-allowed</code>. No pointer events.</p>
+      </div>
+
+      <div class="state-cell">
+        <span class="state-label">--state-focus</span>
+        <span class="state-name">Focus</span>
+        <div class="chip-row"><span class="chip-ex is-focus">שמרי</span></div>
+        <p class="meta-note"><span class="numeric">2</span>px ring <code style="font-family:ui-monospace,monospace;">--focus-ring</code> · offset <span class="numeric">2</span>px. Keyboard-only via <code style="font-family:ui-monospace,monospace;">:focus-visible</code>.</p>
+      </div>
+
+    </div>
+
+    <div class="precedence">
+      <div class="micro" style="margin-bottom: 8px;">— Composition &amp; precedence</div>
+      <ol>
+        <li><code>disabled</code> wins always. If disabled, no other state applies — no hover, no focus.</li>
+        <li><code>active</code> &gt; <code>hover</code>. Pressing supersedes pointing; same element cannot show both transforms.</li>
+        <li><code>focus</code> composes with all non-disabled states. The ring is keyboard accessibility — it must coexist with hover and selected.</li>
+        <li><code>selected</code> composes with <code>hover</code> via additive border thickening only — never two simultaneous transforms.</li>
+        <li><code>visited</code> is a content state, not a pointer state. It composes with any pointer state below it.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ────────────── §5 VOICE ────────────── -->
+  <section id="voice">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">05</span></div>
+      <div>
+        <h2 class="sec-title">Voice — Hybrid (Brand Hub v1.1)</h2>
+        <p class="sec-desc">UI strings are gerund or plural — neutral by default. Brand narrative (founder story, /about, editorial) is feminine — singular "גלי, צרי" allowed. The Hero is treated as UI, not narrative.</p>
+      </div>
+    </div>
+
+    <div class="do-dont">
+      <div class="dd-col do">
+        <h4>Do — UI surfaces</h4>
+        <ul>
+          <li><span class="mark">●</span><span>טוענת עסקים טריים…<small>Loading — gerund</small></span></li>
+          <li><span class="mark">●</span><span>גלי עסקים<small>CTA — plural-imperative, OK in UI</small></span></li>
+          <li><span class="mark">●</span><span>הוסיפי עסק<small>Action button — plural OK</small></span></li>
+          <li><span class="mark">●</span><span>לא מצאנו עסקים שתואמים — נסי קטגוריה אחרת<small dir="ltr">Empty state — specific guidance, no emoji (Kare)</small></span></li>
+          <li><span class="mark">●</span><span>משהו השתבש, נסי שוב<small>Error — feminine plural</small></span></li>
+        </ul>
+      </div>
+      <div class="dd-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li><span class="mark">✕</span><span>טוענ/ת…<small>Slash form is clunky and reads as draft copy</small></span></li>
+          <li><span class="mark">✕</span><span>המשתמש שלך<small>Masculine-only — excludes audience</small></span></li>
+          <li><span class="mark">✕</span><span>פלטפורמת מסחר<small>"Marketplace" framing — LOCK violation</small></span></li>
+          <li><span class="mark">✕</span><span>ISSUE 01 · SPRING 2026<small>Time-stamped framing — we don't publish issues</small></span></li>
+          <li><span class="mark">✕</span><span>100+ עסקים <span class="italic" style="color:var(--gold);">(actual: 30)</span><small>Overpromise — magazine credibility lost</small></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="locks">
+      <div class="locks-title">— Lock rules · non-negotiable</div>
+      <ul>
+        <li><span class="x">✕</span><span>"שכנות מבשלות מהבית" / "מהמטבח של השכן" / "אוכל ביתי" — illegal in IL without licensing.</span></li>
+        <li><span class="x">✕</span><span>"יצרן" / "יצרנית" — always <code>בית עסק</code> / <code>בעלת עסק</code>.</span></li>
+        <li><span class="x">✕</span><span>"marketplace" / "פלטפורמת מסחר" anywhere in UI or marketing.</span></li>
+        <li><span class="x">✕</span><span>The word "מגזין" in UI surfaces — only in <code>/about</code> narrative.</span></li>
+        <li><span class="x">✕</span><span>Time-stamped framing ("ISSUE 01", "SPRING 2026") — we don't publish issues.</span></li>
+        <li><span class="x">✕</span><span>Partial category lists; overpromise on counts; "אמיתי" as Healthy Halo buzzword (contextual only).</span></li>
+        <li><span class="x">✕</span><span>Red heart fill on save / like — green or gold only.</span></li>
+        <li><span class="x">✕</span><span>Gradient orbs, blurred backgrounds, glassmorphism — app aesthetic, not magazine.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ────────────── §6 RTL ────────────── -->
+  <section id="rtl">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">06</span></div>
+      <div>
+        <h2 class="sec-title">RTL &amp; numerals</h2>
+        <p class="sec-desc">Hebrew is the default direction. Latin numerals are universal — kilometres, grams, shekel. The <code style="font-family:ui-monospace,monospace;">.numeric</code> class isolates LTR runs and applies tabular + lining figures so prices and distances align in card grids.</p>
+      </div>
+    </div>
+
+    <div class="do-dont">
+      <div class="dd-col do">
+        <h4>Do</h4>
+        <ul>
+          <li><span class="mark">●</span><span><span class="numeric">1.8 km</span><small>Latin numerals + Latin unit · scannable</small></span></li>
+          <li><span class="mark">●</span><span><span class="numeric">500g</span><small>Grams, lowercase, no space</small></span></li>
+          <li><span class="mark">●</span><span><span class="numeric">₪78</span><small>ISO 4217 sign · before digits</small></span></li>
+          <li><span class="mark">●</span><span><span class="numeric">+972 50 123 4567</span><small>E.164 in display contexts</small></span></li>
+          <li><span class="mark">●</span><span>ms-* · me-* · start-* · end-*<small>Logical properties only — never ml/mr</small></span></li>
+          <li><span class="mark">●</span><span>ישראל&nbsp;—&nbsp;ישר<small>NBSP + em-dash + space</small></span></li>
+        </ul>
+      </div>
+      <div class="dd-col dont">
+        <h4>Don't</h4>
+        <ul>
+          <li><span class="mark">✕</span><span>1.8 ק"מ<small>Hebrew abbreviation — bidi switch, slower scan</small></span></li>
+          <li><span class="mark">✕</span><span>500 גרם<small>Spelled-out unit — magazine ≠ poster</small></span></li>
+          <li><span class="mark">✕</span><span>78 ש"ח<small>Use ₪ — the sign exists for a reason</small></span></li>
+          <li><span class="mark">✕</span><span>letter-spacing: -0.02em on Hebrew<small>Hebrew doesn't tighten — only loosens</small></span></li>
+          <li><span class="mark">✕</span><span>line-height: 0.95 on Hebrew<small>Descenders ל ך ץ collide — broken</small></span></li>
+          <li><span class="mark">✕</span><span>ml-4 / mr-4 / left: 0 / right: 0<small>Direction-breaking — use logical props</small></span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="num-demo">
+      <div class="card">
+        <div class="micro">מחיר</div>
+        <div class="val"><span class="numeric">₪78</span></div>
+      </div>
+      <div class="card">
+        <div class="micro">מרחק</div>
+        <div class="val"><span class="numeric">1.8 km</span></div>
+      </div>
+      <div class="card">
+        <div class="micro">משקל</div>
+        <div class="val"><span class="numeric">500g</span></div>
+      </div>
+      <div class="card">
+        <div class="micro">טלפון</div>
+        <div class="val" style="font-size: 20px;"><span class="numeric">+972 50 123 4567</span></div>
+      </div>
+    </div>
+
+    <p class="small" style="margin-top: 16px;">
+      <strong>Exception:</strong> if a business name itself contains a Hebrew abbreviation
+      (<span class="italic" style="font-size:16px;">"ק"ק מימן"</span>), keep it as-is — only auto-generated metrics follow the Latin rule.
+    </p>
+    <p class="small" style="margin-top: 8px;">
+      <strong>Icon / emoji rule (Kare):</strong> Phosphor for UI; emoji <em>or</em> label on content badges, never both. Map pins — one metaphor (all circles OR all eyedrops); maximum four hues for color-blind safety.
+    </p>
+  </section>
+
+  <!-- ────────────── §7 CHANGELOG ────────────── -->
+  <section id="changelog">
+    <div class="sec-head">
+      <div class="sec-no"><span class="numeric">07</span></div>
+      <div>
+        <h2 class="sec-title">Changelog</h2>
+        <p class="sec-desc">Stewart Brand: long-term design needs version and history. v1.0 is the foundation reset — every removal, correction, and lock recorded here. Next revision (v1.1) follows MEH-636 sign-off.</p>
+      </div>
+    </div>
+
+    <div class="changelog">
+      <h3>v<span class="numeric">1.0</span> — foundation reset</h3>
+      <div class="date">2026-05-21</div>
+      <ul>
+        <li>Removed <code>--secondary</code>, <code>--secondary-light</code>, <code>--accent-warm</code>, <code>--accent-warm-light</code> (dev exploration; never approved).</li>
+        <li>Updated <code>--bg-card</code> from <code>#ffffff</code> → <code>#FFFEFB</code> (warm white). No pure white in the system.</li>
+        <li>Hebrew typography corrections: line-height <span class="numeric">0.95</span> → <span class="numeric">1.05</span> on H1; letter-spacing <span class="numeric">-0.02</span>em → <span class="numeric">0</span>em across all Hebrew specs.</li>
+        <li>Added state token system: <code>--state-default</code>, <code>--state-hover</code>, <code>--state-active</code>, <code>--state-selected</code>, <code>--state-visited</code>, <code>--state-disabled</code>, <code>--state-focus</code>.</li>
+        <li>Removed time-based eyebrow from Hero spec (no "ISSUE 01" / "SPRING 2026").</li>
+        <li>Documented Cormorant Garamond Hebrew fallback → Frank Ruhl Libre italic in <code>--font-italic</code> stack.</li>
+        <li>Locked <span class="numeric">8</span>px soft baseline grid (Vignelli + Tailwind alignment). Scale: <span class="numeric">8 / 16 / 24 / 32 / 48 / 64 / 96 / 128</span>.</li>
+        <li>Locked Latin numerals + Latin units (km, g, ₪) site-wide. <code>.numeric</code> utility class with <code>tnum</code> + <code>lnum</code> defined.</li>
+        <li>Added semantic alias <code>--fg-muted</code> = <code>#57524A</code> (warm desaturated, <span class="numeric">7.9</span>:1 on cream).</li>
+        <li>Documented state composition &amp; precedence (disabled wins; active &gt; hover; focus composes; visited is content-state).</li>
+      </ul>
+      <p class="next">
+        <strong>Next:</strong> v1.1 will lock final token values post-MEH-636 sign-off · v2.0 unlocks at <span class="numeric">+6</span> months for evolution (Brand permission window).
+      </p>
+    </div>
+  </section>
+
+  <!-- ────────────── PRE-FLIGHT ────────────── -->
+  <div class="preflight">
+    <h3>Pre-flight — Sessions 2 → 4</h3>
+    <p class="pf-sub">Inheritable contract. If any of these is unchecked at the start of S2, stop and rewind.</p>
+    <ul>
+      <li><span class="box"></span><span>All three brand fonts loading — Frank Ruhl Libre, DM Sans, Cormorant Garamond. No "Missing brand fonts" warning in console.</span><span class="ses">S2 · S3 · S4</span></li>
+      <li><span class="box"></span><span>All color tokens present in <code style="font-family:ui-monospace,monospace;">colors_and_type.css</code> — 7 primitives + 11 semantic aliases. No <code style="font-family:ui-monospace,monospace;">--secondary</code> / <code style="font-family:ui-monospace,monospace;">--accent-warm</code> remnants.</span><span class="ses">S2</span></li>
+      <li><span class="box"></span><span>All state tokens defined — default, hover, active, selected, visited, disabled, focus.</span><span class="ses">S3</span></li>
+      <li><span class="box"></span><span>Version stamp visible in System root — <code style="font-family:ui-monospace,monospace;">/* Mehamakor Design System v1.0 — locked 2026-05-21 */</code>.</span><span class="ses">S2</span></li>
+      <li><span class="box"></span><span>Changelog entry for v1.0 present and dated. New entries append, never overwrite.</span><span class="ses">S2 · S3 · S4</span></li>
+      <li><span class="box"></span><span>8px grid documented with examples; spacing tokens <code style="font-family:ui-monospace,monospace;">--space-1</code>..<code style="font-family:ui-monospace,monospace;">--space-16</code> wired into Tailwind config.</span><span class="ses">S3 · S4</span></li>
+      <li><span class="box"></span><span><code style="font-family:ui-monospace,monospace;">.numeric</code> class defined with <code style="font-family:ui-monospace,monospace;">tnum</code> + <code style="font-family:ui-monospace,monospace;">lnum</code>; example usage in at least one component.</span><span class="ses">S3</span></li>
+      <li><span class="box"></span><span>Cormorant → Frank Ruhl italic fallback documented in CSS comment on <code style="font-family:ui-monospace,monospace;">--font-italic</code>.</span><span class="ses">S3</span></li>
+      <li><span class="box"></span><span>Mobile H1 wrap test passes at <span class="numeric">375</span>px (≤ 2 lines for tagline copy).</span><span class="ses">S3 · S4</span></li>
+      <li><span class="box"></span><span>No <code style="font-family:ui-monospace,monospace;">#ffffff</code> string anywhere in stylesheets — only <code style="font-family:ui-monospace,monospace;">--bg-card</code> / <code style="font-family:ui-monospace,monospace;">#FFFEFB</code>.</span><span class="ses">S2 · S3 · S4</span></li>
+      <li><span class="box"></span><span>Voice LOCK rules pinned in <code style="font-family:ui-monospace,monospace;">copy.md</code> or equivalent (no "marketplace" / "יצרן" / "מגזין" in UI / time-eyebrow).</span><span class="ses">S3 · S4</span></li>
+    </ul>
+  </div>
+
+  <footer>
+    <span>Mehamakor · Design System · v<span class="numeric">1.0</span></span>
+    <span class="italic">— foundation, not finish.</span>
+    <span>MEH-<span class="numeric">636</span> · S<span class="numeric">1</span></span>
+  </footer>
+
+</div>
+
+</body>
+</html>

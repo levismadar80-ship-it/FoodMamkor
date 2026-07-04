@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מהמקור — עוגנים (שלב 1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:wght@400;500;600&family=Heebo:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#2e6853; --green-dark:#2E4A2E; --gold:#8b6914;
+    --bg:#F5F0E8; --surface:#FFFDF8; --ink:#1C1A17; --muted:#6b6b6b; --line:#e6ddcd;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'DM Sans','Heebo',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  #root{max-width:1040px;margin:0 auto;padding:56px 40px 96px;}
+  .serif{font-family:'Frank Ruhl Libre',serif;}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ── KEYLINE SYSTEM ──────────────────────────────────────────────
+   viewBox 0 0 120 120 · stroke 2 · currentColor · round caps/joins
+   6px trim area (live area 6–114) · every glyph seats on ONE base:
+     ○ circle  Ø85  (cx60 cy60 r42.5)
+     ▭ landscape rect  84×56
+     ▯ portrait rect   52×84
+   → identical optical weight across the family.
+─────────────────────────────────────────────────────────────────*/
+function Keyline({ shape }){
+  const c = "currentColor";
+  return (
+    <g stroke={c} strokeWidth="1" fill="none" opacity="0.18"
+       strokeDasharray="3 3" strokeLinecap="round">
+      <rect x="6" y="6" width="108" height="108" rx="4"/>
+      <line x1="60" y1="6" x2="60" y2="114"/>
+      <line x1="6" y1="60" x2="114" y2="60"/>
+      {shape==="circle"   && <circle cx="60" cy="60" r="42.5"/>}
+      {shape==="landscape"&& <rect x="18" y="32" width="84" height="56" rx="3"/>}
+      {shape==="portrait" && <rect x="34" y="18" width="52" height="84" rx="3"/>}
+    </g>
+  );
+}
+
+function Svg({ size = 80, keyline, base, children, ...props }) {
+  return (
+    <svg viewBox="0 0 120 120" width={size} height={size} fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+      strokeLinejoin="round" {...props}>
+      {keyline && <Keyline shape={base}/>}
+      {children}
+    </svg>
+  );
+}
+
+/* ── ANCHOR 1 · לחמים ואפייה — loaf [landscape rect] ── */
+function BreadIcon({keyline, ...p}){return(<Svg base="landscape" keyline={keyline} {...p}>
+  <path d="M30,80 C28,52 92,52 90,80 Z"/>
+  <path d="M30,80 L90,80"/>
+  <path d="M45,62 L52,73"/>
+  <path d="M59,59 L66,71"/>
+  <path d="M73,62 L80,73"/>
+</Svg>)}
+
+/* ── ANCHOR 2 · פירות — apple + leaf [circle] ── */
+function FruitsIcon({keyline, ...p}){return(<Svg base="circle" keyline={keyline} {...p}>
+  <path d="M60,48 C52,40 38,43 38,62 C38,82 51,93 60,93 C69,93 82,82 82,62 C82,43 68,40 60,48 Z"/>
+  <path d="M60,48 L61,33"/>
+  <path d="M61,37 C68,30 77,34 73,43 C66,46 62,43 61,37 Z"/>
+</Svg>)}
+
+/* ── ANCHOR 3 · יין, בירה ומשקאות — wine glass [portrait rect] ── */
+function DrinksIcon({keyline, ...p}){return(<Svg base="portrait" keyline={keyline} {...p}>
+  <path d="M44,32 L76,32 C76,57 65,63 60,63 C55,63 44,57 44,32 Z"/>
+  <path d="M47,44 C56,50 64,50 73,44"/>
+  <path d="M60,63 L60,88"/>
+  <path d="M46,90 C53,85 67,85 74,90"/>
+</Svg>)}
+
+const ANCHORS = [
+  { Icon: BreadIcon,  he: "לחמים ואפייה", en: "bread",  base: "מלבן רוחבי" },
+  { Icon: FruitsIcon, he: "פירות",        en: "fruits", base: "עיגול Ø85" },
+  { Icon: DrinksIcon, he: "יין ומשקאות",  en: "drinks", base: "מלבן אורכי" },
+];
+
+function AnchorCard({ entry, keyline, tint }){
+  const { Icon, he, en, base } = entry;
+  return (
+    <div style={{
+      background:"var(--surface)", border:"1px solid var(--line)",
+      borderRadius:"16px", padding:"28px 24px 22px",
+      display:"flex", flexDirection:"column", alignItems:"center", gap:"18px",
+      boxShadow:"0 1px 2px rgba(28,26,23,.04)",
+    }}>
+      <div style={{color:tint}}><Icon size={120} keyline={keyline}/></div>
+      <div style={{display:"flex",alignItems:"center",gap:"18px",color:tint}}>
+        <Icon size={28}/><Icon size={20}/>
+      </div>
+      <div style={{textAlign:"center"}}>
+        <div className="serif" style={{fontSize:"19px",color:"var(--ink)",marginBottom:"3px"}}>{he}</div>
+        <div style={{font:"400 12px 'DM Sans'",letterSpacing:".06em",textTransform:"uppercase",color:"var(--muted)"}}>{en} · {base}</div>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [keyline, setKeyline] = useState(true);
+  const [tint, setTint] = useState("var(--green)");
+  return (
+    <React.Fragment>
+      <header style={{marginBottom:"36px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"16px"}}>
+          <span style={{width:"10px",height:"10px",borderRadius:"3px",background:"var(--green)"}}></span>
+          <span style={{width:"10px",height:"10px",borderRadius:"3px",background:"var(--gold)"}}></span>
+          <span style={{font:"500 13px 'DM Sans'",letterSpacing:".04em",color:"var(--muted)"}}>מהמקור · אייקוני קטגוריות · שלב 1</span>
+        </div>
+        <h1 className="serif" style={{margin:"0 0 12px",fontSize:"44px",fontWeight:700,color:"var(--ink)",lineHeight:1.15}}>
+          שלושה עוגנים מגדירים את היד
+        </h1>
+        <p style={{margin:0,maxWidth:"660px",color:"var(--muted)",fontSize:"17px",lineHeight:1.65}}>
+          לחם · תפוח · כוס יין — שלוש המטאפורות הקנוניות ביותר. כל אחת יושבת על צורת-בסיס אחת
+          מתוך מערכת ה-keyline (עיגול · מלבן רוחבי · מלבן אורכי) כדי שהמשקל הוויזואלי יהיה זהה לכל המשפחה.
+          אַשרי את היד הזו — ואצייר עליה את 15 הנותרות.
+        </p>
+      </header>
+
+      <div style={{display:"flex",flexWrap:"wrap",gap:"10px",marginBottom:"32px",alignItems:"center"}}>
+        <button onClick={()=>setKeyline(k=>!k)} style={{
+          font:"500 14px 'DM Sans'",cursor:"pointer",padding:"9px 18px",borderRadius:"8px",
+          border:"1px solid",borderColor: keyline?"var(--green)":"var(--line)",
+          background: keyline?"var(--green)":"transparent", color: keyline?"#fff":"var(--muted)",
+          transition:"all .18s ease-in-out",
+        }}>{keyline ? "הסתרת keyline" : "הצגת keyline"}</button>
+        <span style={{width:"1px",height:"22px",background:"var(--line)",margin:"0 6px"}}></span>
+        <span style={{font:"400 13px 'DM Sans'",color:"var(--muted)"}}>צבע:</span>
+        {[["ירוק","var(--green)"],["זהב","var(--gold)"],["דיו","var(--ink)"]].map(([n,c])=>(
+          <button key={c} onClick={()=>setTint(c)} style={{
+            cursor:"pointer",font:"400 13px 'DM Sans'",padding:"5px 12px",borderRadius:"8px",
+            border:"1px solid var(--line)",background: tint===c?"var(--ink)":"transparent",
+            color: tint===c?"#fff":"var(--muted)",
+          }}>{n}</button>
+        ))}
+      </div>
+
+      <div style={{
+        display:"grid", gap:"22px",
+        gridTemplateColumns:"repeat(3, 1fr)",
+      }}>
+        {ANCHORS.map((e,i)=><AnchorCard key={i} entry={e} keyline={keyline} tint={tint}/>)}
+      </div>
+
+      <div style={{
+        marginTop:"40px", padding:"20px 24px", borderRadius:"12px",
+        background:"rgba(46,104,83,.06)", border:"1px solid var(--line)",
+        font:"400 15px 'DM Sans'", color:"var(--ink)", lineHeight:1.6, maxWidth:"720px",
+      }}>
+        <strong className="serif" style={{fontWeight:500}}>היד:</strong> קו יחיד 2px, currentColor, קצוות וחיבורים מעוגלים;
+        עקומות אורגניות מעט א-סימטריות (לא עיגול מושלם, לא קו-סרגל). כל גליף ממורכז בתוך אזור 6px trim
+        ומיושר לאחת משלוש צורות-הבסיס → משקל אופטי אחיד. <strong>ממתינה לאישורך לפני שאר 15.</strong>
+      </div>
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

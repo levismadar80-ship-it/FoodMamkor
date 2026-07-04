@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>Location Onboarding — 4 Patterns</title>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+:root{
+  --green:#2E6853; --green-d:#22503F; --green-50:#EAF1ED;
+  --cream:#F5F0E8; --paper:#FFFEFB; --white:#fff;
+  --gold:#8B6914;
+  --ink:#1C1A17; --muted:#736B5E; --faint:#9A9183;
+  --line:#E7DECC; --line-2:#D8CDB8;
+  --meat:#C04040; --veg:#2E6853; --dairy:#4A90D9; --bread:#8B6914; --honey:#C8821E;
+  --sans:'DM Sans','Heebo',sans-serif;
+  --serif:'Frank Ruhl Libre','David Libre',Georgia,serif;
+  --accent:'Cormorant Garamond',Georgia,serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;}
+
+/* ---------- canvas frames ---------- */
+.frame-label{
+  font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:#8B8378;margin:0 2px 10px;cursor:grab;user-select:none;
+  display:flex;align-items:baseline;gap:8px;
+}
+.frame-label b{font-family:var(--accent);font-style:italic;font-weight:600;font-size:17px;letter-spacing:0;color:var(--gold);text-transform:none;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 1px 0 rgba(0,0,0,.02),0 24px 48px -32px rgba(40,30,15,.28);}
+
+/* ---------- intro / footer ---------- */
+.slab{padding:30px 34px;}
+.eyebrow{font-family:var(--sans);font-size:11.5px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:0 0 14px;}
+.h-display{font-family:var(--serif);font-weight:900;color:var(--ink);line-height:1.04;margin:0;letter-spacing:-.01em;}
+.thesis{font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.5;color:#3A352D;margin:0;}
+.thesis em{font-family:var(--accent);font-style:italic;color:var(--green);}
+.legend{display:flex;flex-wrap:wrap;gap:7px 18px;align-items:center;}
+.legc{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;}
+
+/* ---------- option header ---------- */
+.opt-num{font-family:var(--accent);font-style:italic;font-weight:600;font-size:34px;color:var(--gold);line-height:1;}
+.opt-title{font-family:var(--serif);font-weight:900;font-size:25px;line-height:1.1;margin:0;color:var(--ink);}
+.opt-one{font-size:14px;line-height:1.55;color:#46413A;margin:10px 0 0;}
+.meta{display:flex;gap:0;margin-top:16px;border-top:1px solid var(--line);}
+.meta>div{flex:1;padding:12px 14px 0;}
+.meta>div+div{border-inline-start:1px solid var(--line);}
+.meta .k{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 5px;display:flex;align-items:center;gap:5px;}
+.meta .v{font-size:12.5px;line-height:1.5;color:#403B33;margin:0;}
+.meta .opt-good i{color:var(--green);}
+.meta .opt-bad i{color:#B0682E;}
+
+/* ---------- phone ---------- */
+.phone{width:340px;height:716px;margin:22px auto 4px;border-radius:42px;background:#15130F;
+  padding:9px;box-shadow:0 30px 60px -28px rgba(30,22,10,.5),0 2px 6px rgba(0,0,0,.18);position:relative;}
+.screen{position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:var(--cream);
+  display:flex;flex-direction:column;}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:118px;height:26px;background:#15130F;
+  border-bottom-left-radius:14px;border-bottom-right-radius:14px;z-index:40;}
+.statusbar{height:30px;flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:0 22px 0 18px;font-size:12px;font-weight:600;color:var(--ink);z-index:30;}
+.statusbar .sb-r{display:flex;gap:6px;align-items:center;font-size:13px;}
+
+/* top bar */
+.topbar{flex:none;padding:6px 16px 12px;display:flex;align-items:center;gap:10px;background:var(--cream);z-index:30;}
+.wordmark{font-family:var(--serif);font-weight:900;font-size:21px;color:var(--green);letter-spacing:-.01em;white-space:nowrap;}
+.searchpill{flex:1;height:40px;background:var(--white);border:1px solid var(--line-2);border-radius:999px;
+  display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--faint);font-size:13.5px;}
+.iconbtn{width:40px;height:40px;flex:none;border-radius:50%;background:var(--white);border:1px solid var(--line-2);
+  display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px;}
+
+/* map */
+.map{position:relative;flex:1;overflow:hidden;
+  background:radial-gradient(130% 90% at 64% 8%, #EFE9DB 0%, #E8E1D1 52%, #E2DAC7 100%);}
+.map .sea{position:absolute;top:0;bottom:0;left:0;width:21%;
+  background:linear-gradient(90deg,#D4E0DE 0%,#DCE5E1 70%,rgba(220,229,225,0) 100%);}
+.map .geo{position:absolute;inset:0;width:100%;height:100%;opacity:.5;}
+.pin{position:absolute;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;
+  border:2px solid #FFFDF7;box-shadow:0 1px 3px rgba(40,30,10,.3);z-index:2;}
+.pin.lg{width:19px;height:19px;border-width:2.5px;z-index:3;}
+.pin.lg::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1.5px solid currentColor;opacity:.35;}
+.rlabel{position:absolute;transform:translate(-50%,-50%);font-family:var(--serif);font-weight:700;
+  font-size:13px;color:#8A7E66;letter-spacing:.04em;white-space:nowrap;opacity:.85;z-index:1;pointer-events:none;}
+.rlabel.sm{font-size:11px;font-weight:500;color:#A99C82;}
+
+/* bottom nav */
+.bnav{flex:none;height:62px;background:var(--white);border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-around;padding-bottom:4px;z-index:30;}
+.bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--faint);font-size:10.5px;font-weight:500;text-decoration:none;}
+.bnav a i{font-size:22px;}
+.bnav a.on{color:var(--green);}
+
+/* shared control bits */
+.btn-geo{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;
+  background:var(--green);color:#fff;border:none;border-radius:999px;font-family:var(--sans);font-weight:600;font-size:15px;
+  box-shadow:0 8px 18px -8px rgba(46,104,83,.7);}
+.btn-geo i{font-size:18px;}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 13px;border-radius:999px;
+  background:#fff;border:1px solid var(--line-2);font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;}
+.chip .ct{font-family:var(--accent);font-style:italic;font-size:14px;color:var(--gold);}
+.chiprow{display:flex;gap:8px;overflow:hidden;-webkit-mask:linear-gradient(90deg,#000 86%,transparent);mask:linear-gradient(90deg,#000 86%,transparent);}
+.trust{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);line-height:1.4;}
+.trust i{font-size:14px;color:var(--green);flex:none;}
+.skip{background:none;border:none;font-family:var(--sans);font-size:13.5px;color:var(--muted);font-weight:500;padding:8px;}
+
+/* scrims */
+.scrim{position:absolute;inset:0;z-index:4;}
+.scrim.soft{background:rgba(28,24,18,.16);backdrop-filter:blur(1.5px);}
+.scrim.hard{background:rgba(28,24,18,.42);backdrop-filter:blur(3px);}
+
+/* opt1 floating control */
+.float-ctl{position:absolute;left:50%;transform:translateX(-50%);bottom:54px;z-index:6;display:flex;gap:8px;}
+.float-ctl .pill{display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 17px;border-radius:999px;
+  background:#fff;box-shadow:0 8px 22px -6px rgba(30,22,10,.42);font-size:14px;font-weight:600;color:var(--ink);}
+.float-ctl .pill.primary{background:var(--green);color:#fff;}
+.float-ctl .pill i{font-size:17px;}
+.float-ctl .pill.primary i{color:#fff;}
+.peek{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--cream);border-top:1px solid var(--line);
+  border-radius:16px 16px 0 0;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 -8px 20px -16px rgba(30,22,10,.4);}
+.peek .grab{position:absolute;top:6px;left:50%;transform:translateX(-50%);width:34px;height:4px;border-radius:9px;background:#D4C5A9;}
+.peek .pk-t{font-size:13px;font-weight:600;color:var(--ink);margin-top:5px;}
+.peek .pk-t b{font-family:var(--accent);font-style:italic;color:var(--gold);font-weight:600;}
+.peek .pk-a{font-size:12.5px;color:var(--green);font-weight:600;margin-top:5px;}
+
+/* bottom sheet (opt2) */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-radius:22px 22px 0 0;
+  border-top:1px solid var(--line);box-shadow:0 -14px 40px -18px rgba(30,22,10,.45);padding:8px 18px 16px;}
+.sheet .grab{width:38px;height:4px;border-radius:9px;background:#D4C5A9;margin:4px auto 12px;}
+.sheet .sx{position:absolute;top:12px;inset-inline-end:14px;width:30px;height:30px;border-radius:50%;background:var(--cream);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;}
+.sh-title{font-family:var(--serif);font-weight:900;font-size:22px;color:var(--ink);margin:0;line-height:1.1;}
+.sh-sub{font-size:13px;color:var(--muted);margin:5px 0 0;line-height:1.5;}
+
+/* centered card (opt3) + modal (opt4) */
+.center-wrap{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;padding:20px;}
+.dialog{width:100%;background:var(--paper);border-radius:20px;box-shadow:0 24px 60px -20px rgba(30,22,10,.5);
+  padding:22px 20px 18px;position:relative;border:1px solid var(--line);}
+.dialog .dx{position:absolute;top:14px;inset-inline-start:14px;width:32px;height:32px;border-radius:50%;background:var(--cream);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;}
+.d-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold);}
+.d-title{font-family:var(--serif);font-weight:900;font-size:24px;color:var(--ink);margin:8px 0 0;line-height:1.08;}
+.d-sub{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.5;}
+.modal-input{height:44px;border-radius:12px;background:#fff;border:1px solid var(--line-2);display:flex;align-items:center;
+  gap:9px;padding:0 14px;color:var(--faint);font-size:13.5px;}
+.once{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;letter-spacing:.04em;color:var(--faint);
+  background:var(--cream);border-radius:999px;padding:4px 10px;}
+
+/* footer chips/citations */
+.f-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:34px;}
+.f-h{font-family:var(--serif);font-weight:900;font-size:19px;margin:0 0 10px;color:var(--ink);}
+.f-p{font-size:13.5px;line-height:1.65;color:#403B33;margin:0;}
+.f-p b{color:var(--green);}
+.cite{display:flex;flex-direction:column;gap:11px;}
+.cite .row{display:flex;gap:11px;align-items:flex-start;font-size:13px;line-height:1.45;color:#403B33;}
+.cite .row i{font-size:17px;margin-top:1px;flex:none;}
+.cite .ok i{color:var(--green);}
+.cite .no i{color:#B0682E;}
+.cite .row b{font-weight:700;color:var(--ink);}
+.areachips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+</style>
+</head>
+<body>
+
+<!-- ============ INTRO ============ -->
+<div style="position:absolute;left:40px;top:40px;width:1816px;">
+  <div class="frame-label" data-drags-parent="1"><b>בריף</b> /map · location onboarding</div>
+  <div class="card slab" style="display:flex;align-items:flex-end;justify-content:space-between;gap:48px;">
+    <div style="max-width:760px;">
+      <p class="eyebrow">mehamakor · מגזין, לא marketplace</p>
+      <h1 class="h-display" style="font-size:40px;">מאיפה נתחיל?<span style="font-family:var(--accent);font-style:italic;font-weight:600;color:var(--gold);font-size:30px;">  — ארבעה דפוסי אינטראקציה</span></h1>
+      <p class="thesis" style="margin-top:14px;">המפה היא משטח הגילוי העריכותי. <em>המיקום הוא עדשה, לא שער.</em> קודם מראים את המוצר — אחר כך מבקשים. גאו־לוקיישן רק במחווה מפורשת.</p>
+    </div>
+    <div style="flex:none;border-inline-start:1px solid var(--line);padding-inline-start:32px;">
+      <p class="meta-k" style="font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin:0 0 12px;">מקרא — בתי עסק על המפה</p>
+      <div class="legend" style="max-width:260px;">
+        <span class="legc"><span class="dot" style="background:var(--veg)"></span>ירקות ופירות</span>
+        <span class="legc"><span class="dot" style="background:var(--bread)"></span>לחמים ואפייה</span>
+        <span class="legc"><span class="dot" style="background:var(--dairy)"></span>חלב וגבינות</span>
+        <span class="legc"><span class="dot" style="background:var(--meat)"></span>בשר ודגים</span>
+        <span class="legc"><span class="dot" style="background:var(--honey)"></span>דבש</span>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.5;margin:14px 0 0;max-width:260px;">תצוגת ברירת המחדל ממוקדת בגליל / צפון — שם בתי העסק באמת מרוכזים (MEH-932).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ OPTION 1 ============ -->
+<div style="position:absolute;left:40px;top:300px;width:400px;">
+  <div class="frame-label" data-drags-parent="1"><b>01</b> ללא שער · no gate</div>
+  <div class="card" style="padding:22px 22px 14px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span class="opt-num">01</span>
+      <div><h3 class="opt-title">ללא שער</h3></div>
+    </div>
+    <p class="opt-one">המפה נטענת מיד על תצוגת ברירת המחדל. שליטת מיקום צפה ודקה יושבת <em style="font-family:var(--accent);font-style:italic;color:var(--green)">על</em> המפה — המיקום הוא שיפור, לא תנאי.</p>
+    <div class="meta">
+      <div class="opt-good"><p class="k"><i class="ph-bold ph-arrow-up"></i>ממקסם</p><p class="v">זמן עד תוכן — רואים את המוצר תוך שנייה.</p></div>
+      <div class="opt-bad"><p class="k"><i class="ph-bold ph-arrow-down"></i>מחיר</p><p class="v">המיקום פחות בולט; חלק לא יבחינו בו.</p></div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span class="sb-r"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+      <div class="topbar">
+        <span class="wordmark">מהמקור</span>
+        <span class="searchpill"><i class="ph ph-magnifying-glass"></i>חיפוש בתי עסק</span>
+        <span class="iconbtn"><i class="ph ph-sliders-horizontal"></i></span>
+      </div>
+      <div class="map pmap" data-base="1">
+        <div class="sea"></div>
+        <div class="float-ctl">
+          <span class="pill primary"><i class="ph-bold ph-crosshair"></i>קרוב אליי</span>
+          <span class="pill"><i class="ph ph-map-pin"></i>אזור<i class="ph-bold ph-caret-down" style="font-size:13px;margin-inline-start:-2px"></i></span>
+        </div>
+        <div class="peek">
+          <div class="grab"></div>
+          <span class="pk-t"><b>48</b> בתי עסק באזור</span>
+          <span class="pk-a">הצג רשימה</span>
+        </div>
+      </div>
+      <div class="bnav">
+        <a href="#" class="on"><i class="ph-fill ph-map-trifold"></i>מפה</a>
+        <a href="#"><i class="ph ph-house"></i>בית</a>
+        <a href="#"><i class="ph ph-heart"></i>שמורים</a>
+        <a href="#"><i class="ph ph-user"></i>פרופיל</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ OPTION 2 ============ -->
+<div style="position:absolute;left:512px;top:300px;width:400px;">
+  <div class="frame-label" data-drags-parent="1"><b>02</b> הנעה רכה · soft prompt</div>
+  <div class="card" style="padding:22px 22px 14px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span class="opt-num">02</span>
+      <div><h3 class="opt-title">הנעה רכה</h3></div>
+    </div>
+    <p class="opt-one">המפה נטענת. גיליון תחתון נשלף בעדינות ומציע מיקום — <em style="font-family:var(--accent);font-style:italic;color:var(--green)">לעולם</em> לא מכסה את המפה. ניתן לפטור בנגיעה.</p>
+    <div class="meta">
+      <div class="opt-good"><p class="k"><i class="ph-bold ph-arrow-up"></i>ממקסם</p><p class="v">גילוי המיקום בלי לחסום; קל לפטור.</p></div>
+      <div class="opt-bad"><p class="k"><i class="ph-bold ph-arrow-down"></i>מחיר</p><p class="v">תופס שטח בתחתית; אפשר להתעלם.</p></div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span class="sb-r"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+      <div class="topbar">
+        <span class="wordmark">מהמקור</span>
+        <span class="searchpill"><i class="ph ph-magnifying-glass"></i>חיפוש בתי עסק</span>
+        <span class="iconbtn"><i class="ph ph-sliders-horizontal"></i></span>
+      </div>
+      <div class="map pmap" data-base="1">
+        <div class="sea"></div>
+        <div class="sheet">
+          <div class="grab"></div>
+          <button class="sx"><i class="ph ph-x"></i></button>
+          <h3 class="sh-title">מאיפה נתחיל?</h3>
+          <p class="sh-sub">נכוון אותך לבתי עסק שקרובים אליך.</p>
+          <button class="btn-geo" style="width:100%;margin-top:14px;"><i class="ph-bold ph-crosshair"></i>קרוב אליי</button>
+          <div class="chiprow" style="margin-top:12px;">
+            <span class="chip">גליל <span class="ct">48</span></span>
+            <span class="chip">כרמל <span class="ct">31</span></span>
+            <span class="chip">עמק יזרעאל <span class="ct">22</span></span>
+            <span class="chip">שרון <span class="ct">19</span></span>
+          </div>
+          <div class="trust" style="margin-top:13px;"><i class="ph-fill ph-lock-simple"></i>המיקום נשאר על המכשיר שלך — לא שומרים אותו.</div>
+        </div>
+      </div>
+      <div class="bnav">
+        <a href="#" class="on"><i class="ph-fill ph-map-trifold"></i>מפה</a>
+        <a href="#"><i class="ph ph-house"></i>בית</a>
+        <a href="#"><i class="ph ph-heart"></i>שמורים</a>
+        <a href="#"><i class="ph ph-user"></i>פרופיל</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ OPTION 3 ============ -->
+<div style="position:absolute;left:984px;top:300px;width:400px;">
+  <div class="frame-label" data-drags-parent="1"><b>03</b> שער עדין · first-visit only</div>
+  <div class="card" style="padding:22px 22px 14px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span class="opt-num">03</span>
+      <div><h3 class="opt-title">שער עדין · ביקור ראשון</h3></div>
+    </div>
+    <p class="opt-one">פעם אחת בלבד: כרטיס עדין מעל מפה מעומעמת קלות — <em style="font-family:var(--accent);font-style:italic;color:var(--green)">נזכר</em>. מבקרות חוזרות עוברות ישר למפה.</p>
+    <div class="meta">
+      <div class="opt-good"><p class="k"><i class="ph-bold ph-arrow-up"></i>ממקסם</p><p class="v">כיוון רך פעם אחת, בלי לחזור על עצמו.</p></div>
+      <div class="opt-bad"><p class="k"><i class="ph-bold ph-arrow-down"></i>מחיר</p><p class="v">עדיין רגע אחד לפני המפה בביקור ראשון.</p></div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span class="sb-r"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+      <div class="topbar">
+        <span class="wordmark">מהמקור</span>
+        <span class="searchpill"><i class="ph ph-magnifying-glass"></i>חיפוש בתי עסק</span>
+        <span class="iconbtn"><i class="ph ph-sliders-horizontal"></i></span>
+      </div>
+      <div class="map pmap" data-base="1">
+        <div class="sea"></div>
+        <div class="scrim soft"></div>
+        <div class="center-wrap">
+          <div class="dialog">
+            <span class="once"><i class="ph-fill ph-sparkle"></i>פעם אחת בלבד</span>
+            <h3 class="d-title" style="margin-top:12px;">מאיפה נתחיל?</h3>
+            <p class="d-sub">נכוון אותך לבתי עסק שקרובים אליך. המפה כבר מוכנה ברקע.</p>
+            <button class="btn-geo" style="width:100%;margin-top:15px;"><i class="ph-bold ph-crosshair"></i>קרוב אליי</button>
+            <div class="chiprow" style="margin-top:11px;">
+              <span class="chip">גליל <span class="ct">48</span></span>
+              <span class="chip">כרמל <span class="ct">31</span></span>
+              <span class="chip">עמק יזרעאל <span class="ct">22</span></span>
+            </div>
+            <div class="trust" style="margin-top:13px;"><i class="ph-fill ph-lock-simple"></i>לא שומרים את המיקום.</div>
+            <div style="text-align:center;margin-top:6px;"><button class="skip">המשך למפה ←</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="bnav">
+        <a href="#" class="on"><i class="ph-fill ph-map-trifold"></i>מפה</a>
+        <a href="#"><i class="ph ph-house"></i>בית</a>
+        <a href="#"><i class="ph ph-heart"></i>שמורים</a>
+        <a href="#"><i class="ph ph-user"></i>פרופיל</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ OPTION 4 ============ -->
+<div style="position:absolute;left:1456px;top:300px;width:400px;">
+  <div class="frame-label" data-drags-parent="1"><b>04</b> שער משופר · baseline</div>
+  <div class="card" style="padding:22px 22px 14px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;">
+      <span class="opt-num">04</span>
+      <div><h3 class="opt-title">שער משופר · להשוואה</h3></div>
+    </div>
+    <p class="opt-one">נשמר מודאל חוסם — אך עם צ'יפים <em style="font-family:var(--accent);font-style:italic;color:var(--green)">מבוססי-נתונים</em>, מיקרו-קופי של אמון וקול חמים. בסיס מינימלי להשוואה.</p>
+    <div class="meta">
+      <div class="opt-good"><p class="k"><i class="ph-bold ph-arrow-up"></i>ממקסם</p><p class="v">המרת מיקום; כוונה חד-משמעית.</p></div>
+      <div class="opt-bad"><p class="k"><i class="ph-bold ph-arrow-down"></i>מחיר</p><p class="v">חוסם את המפה — חיכוך, נקרא כשער.</p></div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span class="sb-r"><i class="ph-fill ph-cell-signal-full"></i><i class="ph-fill ph-wifi-high"></i><i class="ph-fill ph-battery-high"></i></span></div>
+      <div class="topbar">
+        <span class="wordmark">מהמקור</span>
+        <span class="searchpill"><i class="ph ph-magnifying-glass"></i>חיפוש בתי עסק</span>
+        <span class="iconbtn"><i class="ph ph-sliders-horizontal"></i></span>
+      </div>
+      <div class="map pmap" data-base="1">
+        <div class="sea"></div>
+        <div class="scrim hard"></div>
+        <div class="center-wrap">
+          <div class="dialog">
+            <button class="dx"><i class="ph ph-x"></i></button>
+            <span class="d-eyebrow"><i class="ph-fill ph-map-pin"></i>אזור</span>
+            <h3 class="d-title">מאיפה נתחיל?</h3>
+            <p class="d-sub">נמצא בתי עסק מקומיים קרובים אליך.</p>
+            <div class="modal-input" style="margin-top:14px;"><i class="ph ph-magnifying-glass"></i>חיפוש עיר או אזור…</div>
+            <div class="areachips">
+              <span class="chip">גליל <span class="ct">48</span></span>
+              <span class="chip">כרמל <span class="ct">31</span></span>
+              <span class="chip">עמק יזרעאל <span class="ct">22</span></span>
+              <span class="chip">שרון <span class="ct">19</span></span>
+              <span class="chip">ירושלים והרים <span class="ct">14</span></span>
+            </div>
+            <button class="btn-geo" style="width:100%;margin-top:15px;"><i class="ph-bold ph-crosshair"></i>קרוב אליי</button>
+            <div class="trust" style="margin-top:12px;justify-content:center;"><i class="ph-fill ph-lock-simple"></i>המיקום משמש רק להצגת התוצאות — לא נשמר.</div>
+            <div style="text-align:center;margin-top:8px;"><button class="skip">דלגו לעכשיו</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="bnav">
+        <a href="#" class="on"><i class="ph-fill ph-map-trifold"></i>מפה</a>
+        <a href="#"><i class="ph ph-house"></i>בית</a>
+        <a href="#"><i class="ph ph-heart"></i>שמורים</a>
+        <a href="#"><i class="ph ph-user"></i>פרופיל</a>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ FOOTER: chip logic + citations ============ -->
+<div style="position:absolute;left:40px;top:1320px;width:1816px;">
+  <div class="frame-label" data-drags-parent="1"><b>הנמקה</b> לוגיקת צ'יפים · מקורות</div>
+  <div class="card slab">
+    <div class="f-grid">
+      <div>
+        <h4 class="f-h">לוגיקת צ'יפים מבוססת-נתונים</h4>
+        <p class="f-p">הצ'יפים נגזרים מ<b>אזורים שבהם קיימים בתי עסק בפועל</b> — מדורגים לפי צפיפות יצרנים, לא לפי גודל אוכלוסייה. כך תל אביב / באר שבע (ענקיות אוכלוסין, מעט יצרנים) מוחלפות ב<b>גליל · כרמל · עמק יזרעאל</b>, שם הספקים מרוכזים. אזור ללא ספקים לעולם לא מוצג — אף נגיעה לא נוחתת על מפה ריקה. הספירה שליד כל אזור (<span style="font-family:var(--accent);font-style:italic;color:var(--gold)">48</span>) היא מספר בתי העסק הפעילים בו.</p>
+        <div class="areachips" style="margin-top:16px;">
+          <span class="chip" style="border-color:var(--green);background:var(--green-50)">גליל <span class="ct">48</span></span>
+          <span class="chip">כרמל <span class="ct">31</span></span>
+          <span class="chip">עמק יזרעאל <span class="ct">22</span></span>
+          <span class="chip">שרון <span class="ct">19</span></span>
+          <span class="chip">ירושלים והרים <span class="ct">14</span></span>
+          <span class="chip" style="opacity:.4;text-decoration:line-through;border-style:dashed;">באר שבע <span class="ct">0</span></span>
+        </div>
+      </div>
+      <div>
+        <h4 class="f-h">מקורות ואנטי-דפוסים</h4>
+        <div class="cite">
+          <div class="row ok"><i class="ph-fill ph-check-circle"></i><span><b>Airbnb (2023+)</b> — מיקום כפקד על המפה עצמה, לא כחומה.</span></div>
+          <div class="row ok"><i class="ph-fill ph-check-circle"></i><span><b>Natoora</b> — איפוק עריכותי, פחות זה יותר.</span></div>
+          <div class="row ok"><i class="ph-fill ph-check-circle"></i><span><b>Kinfolk</b> — טיפוגרפיה ושטח לבן נדיב.</span></div>
+          <div class="row no" style="margin-top:6px;"><i class="ph-fill ph-x-circle"></i><span><b>פופ-אפ שער-מיקום בסגנון Wolt</b> — נמנע.</span></div>
+          <div class="row no"><i class="ph-fill ph-x-circle"></i><span><b>אינטרסטישל פרסומי / גאו אוטומטי</b> — נמנע (פריימר לפני בקשת ה-OS).</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var pins=[
+    // Galilee cluster (north, top)
+    {x:48,y:13,c:'veg',lg:1},{x:55,y:10,c:'bread'},{x:61,y:16,c:'dairy'},
+    {x:41,y:18,c:'meat'},{x:51,y:21,c:'honey'},{x:65,y:23,c:'veg'},
+    {x:44,y:27,c:'bread'},{x:58,y:28,c:'veg'},{x:37,y:30,c:'dairy'},
+    {x:67,y:31,c:'meat'},
+    // Carmel / Haifa (upper-left)
+    {x:31,y:36,c:'bread',lg:1},{x:34,y:43,c:'veg'},{x:28,y:40,c:'honey'},
+    // Jezreel (center)
+    {x:53,y:40,c:'honey'},{x:61,y:44,c:'veg'},{x:47,y:47,c:'meat'},{x:57,y:51,c:'dairy'},
+    // sparse center/south
+    {x:50,y:62,c:'veg'},{x:55,y:73,c:'bread'},{x:46,y:84,c:'dairy'}
+  ];
+  var labels=[
+    {x:53,y:20,t:'גליל'},{x:30,y:50,t:'כרמל',sm:1},
+    {x:56,y:46,t:'עמק יזרעאל',sm:1},{x:52,y:70,t:'מרכז',sm:1}
+  ];
+  var colors={veg:'#2E6853',bread:'#8B6914',dairy:'#4A90D9',meat:'#C04040',honey:'#C8821E'};
+  var svgGeo='<svg class="geo" viewBox="0 0 100 160" preserveAspectRatio="none">'
+    +'<path d="M21 0 C 25 30, 18 55, 23 85 C 27 115, 20 140, 26 160" fill="none" stroke="#BFCFC9" stroke-width="0.8"/>'
+    +'<path d="M21 0 C 25 30, 18 55, 23 85 C 27 115, 20 140, 26 160 L 100 160 L 100 0 Z" fill="rgba(255,253,247,0.0)"/>'
+    +'<path d="M40 8 C 55 30, 60 60, 52 95 C 47 120, 55 145, 50 160" fill="none" stroke="#D8CDB8" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.7"/>'
+    +'<path d="M60 18 C 50 45, 70 70, 62 110" fill="none" stroke="#D8CDB8" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.6"/>'
+    +'</svg>';
+  document.querySelectorAll('.pmap[data-base]').forEach(function(map){
+    var frag=document.createElement('div');
+    frag.innerHTML=svgGeo;
+    map.insertBefore(frag.firstChild, map.firstChild.nextSibling); // after .sea
+    labels.forEach(function(l){
+      var s=document.createElement('span');
+      s.className='rlabel'+(l.sm?' sm':'');
+      s.style.left=l.x+'%';s.style.top=l.y+'%';s.textContent=l.t;
+      map.appendChild(s);
+    });
+    pins.forEach(function(p){
+      var s=document.createElement('span');
+      s.className='pin'+(p.lg?' lg':'');
+      s.style.left=p.x+'%';s.style.top=p.y+'%';
+      s.style.background=colors[p.c];s.style.color=colors[p.c];
+      map.appendChild(s);
+    });
+  });
+  // keep pins/labels behind scrims & overlays: they were appended, so re-append overlays
+  document.querySelectorAll('.pmap[data-base]').forEach(function(map){
+    map.querySelectorAll('.scrim,.center-wrap,.sheet,.float-ctl,.peek').forEach(function(o){map.appendChild(o);});
+  });
+})();
+</script>
+</body>
+</html>

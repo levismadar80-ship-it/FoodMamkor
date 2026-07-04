@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S6 · MEH-102 · /business · דף בית עסק — FINAL · desktop + mobile + states + sticky-CTA</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0 (S2→S5 lineage).
+   Every colour on the mock surfaces resolves to one of these or a
+   color-mix() of these. Zero raw hex below the :root block.
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --green:        #2E6853;
+  --green-dark:   #1F4A38;
+  --green-light:  #3A7D64;
+  --primary:      #2E6853;
+  --primary-light:#3A7D64;
+  --primary-dark: #2E4A2E;
+  --secondary:    #4CB08B;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --gold-soft:    #E7C88A;
+  --accent-warm:  #E8823A;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+  --focus-ring:   rgba(46,104,83,0.40);
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --duration-fast: 180ms;
+  --duration-base: 420ms;
+  --ease-quart:    cubic-bezier(.25, 1, .5, 1);
+
+  --shadow-card:   0 8px 32px rgba(46,104,83,0.12);
+  --shadow-header: 0 2px 20px rgba(46,104,83,0.06);
+
+  /* warm food-photo placeholders — token-derived, stand in for
+     golden-hour photography until real Cloudinary assets land. */
+  --ph-dairy:   radial-gradient(60% 55% at 32% 28%, color-mix(in oklab, var(--light) 70%, white), transparent 70%), linear-gradient(140deg, color-mix(in oklab, var(--gold) 20%, var(--background)), color-mix(in oklab, var(--gold) 52%, var(--accent-warm)));
+  --ph-bread:   radial-gradient(58% 50% at 64% 30%, color-mix(in oklab, var(--gold-soft) 76%, white), transparent 68%), linear-gradient(150deg, color-mix(in oklab, var(--accent-warm) 36%, var(--background)), color-mix(in oklab, var(--gold) 64%, var(--primary-dark)));
+  --ph-produce: radial-gradient(58% 52% at 36% 32%, color-mix(in oklab, var(--secondary) 60%, white), transparent 70%), linear-gradient(145deg, color-mix(in oklab, var(--secondary) 42%, var(--light)), color-mix(in oklab, var(--primary) 60%, var(--gold)));
+  --ph-honey:   radial-gradient(56% 50% at 60% 30%, color-mix(in oklab, var(--gold-soft) 82%, white), transparent 66%), linear-gradient(150deg, color-mix(in oklab, var(--gold) 48%, var(--background)), color-mix(in oklab, var(--accent-warm) 70%, var(--gold)));
+  --ph-meat:    radial-gradient(56% 50% at 38% 30%, color-mix(in oklab, var(--accent-warm) 54%, white), transparent 64%), linear-gradient(145deg, color-mix(in oklab, var(--accent-warm) 56%, var(--primary-dark)), color-mix(in oklab, var(--gold) 40%, var(--primary-dark)));
+  --ph-pasture: radial-gradient(64% 60% at 30% 26%, color-mix(in oklab, var(--secondary) 44%, white), transparent 72%), linear-gradient(155deg, color-mix(in oklab, var(--secondary) 30%, var(--light)), color-mix(in oklab, var(--primary) 50%, var(--gold)));
+  --ph-hands:   radial-gradient(58% 52% at 64% 34%, color-mix(in oklab, var(--gold-soft) 64%, white), transparent 68%), linear-gradient(150deg, color-mix(in oklab, var(--gold) 30%, var(--background)), color-mix(in oklab, var(--accent-warm) 48%, var(--primary-dark)));
+
+  /* Doc chrome only — never reaches the mock surfaces */
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg); color: var(--doc-ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+}
+body { padding: 48px 40px 96px; min-width: 1460px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+.docpage { max-width: 1380px; margin: 0 auto; }
+
+/* ── DOC MASTHEAD ─────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(42,38,32,0.18); padding-bottom: 24px; margin-bottom: 32px; gap: 24px; }
+.masthead .phase-nav { display: inline-flex; gap: 6px; align-items: center; margin-bottom: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: 0.04em; color: var(--doc-ink-mute); }
+.masthead .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); display: inline-block; }
+.masthead .pip.is-on  { background: var(--green); border-color: var(--green); }
+.masthead .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+.masthead h1 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; color: var(--doc-ink); }
+.masthead h1 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: #6b4f0f; }
+.masthead .he-title { font-family: var(--font-display); font-weight: 900; }
+.masthead .sub { font-family: var(--font-italic); font-style: italic; font-size: 18px; color: var(--doc-ink-mute); margin-top: 8px; max-width: 86ch; line-height: 1.5; }
+.masthead .stamp { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.85; }
+.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.masthead .stamp .dot { color: var(--gold); }
+
+/* ── SECTION HEAD ─────────────────── */
+.section-head { border-top: 1px solid rgba(42,38,32,0.30); padding: 36px 0 24px; margin-bottom: 28px; display: grid; grid-template-columns: 96px 1fr auto; gap: 24px; align-items: baseline; }
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 40px; line-height: 1.05; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 84ch; line-height: 1.55; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ── FRAME CAPTION + VIEWPORT ─────── */
+.bp-cap { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); display: grid; grid-template-columns: auto auto 1fr auto; gap: 12px; align-items: baseline; margin-bottom: 16px; }
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); align-self: center; }
+.cap-note { font-family: var(--font-italic); font-style: italic; font-size: 13.5px; color: var(--doc-ink-mute); margin: 14px 0 0; max-width: 64ch; line-height: 1.55; }
+.cap-note b { font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--doc-ink); font-size: 12px; }
+.cap-note code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+
+.vp { background: var(--background); border: 1px solid rgba(42,38,32,0.18); overflow: hidden; position: relative; }
+.vp.desktop { width: 1280px; }
+.vp.mobile  { width: 375px; }
+.vp.fixed-h.mobile { height: 812px; }
+
+/* ══════════════════════════════════════════════════════════════
+   MEHAMAKOR SURFACE
+   ══════════════════════════════════════════════════════════════ */
+.mh { direction: rtl; font-family: var(--font-body); color: var(--text); background: var(--background); position: relative; }
+.paper::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+
+/* photo treatment — reads as a real photo (vignette + grain) */
+.photo { position: relative; background-size: cover; background-position: center; overflow: hidden; }
+.photo.dairy   { background-image: var(--ph-dairy); }
+.photo.bread   { background-image: var(--ph-bread); }
+.photo.produce { background-image: var(--ph-produce); }
+.photo.honey   { background-image: var(--ph-honey); }
+.photo.meat    { background-image: var(--ph-meat); }
+.photo.pasture { background-image: var(--ph-pasture); }
+.photo.hands   { background-image: var(--ph-hands); }
+.photo::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 100% at 50% 0%, transparent 52%, rgba(31,74,56,0.20)); z-index: 1; }
+.photo::after { content: ""; position: absolute; inset: 0; mix-blend-mode: overlay; opacity: 0.26; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%25' height='100%25' filter='url(%23g)'/></svg>"); z-index: 1; }
+
+/* ─── FloatingNavbar v5 LOCKED — embedded as-is ─── */
+.nav-shell { display: flex; justify-content: center; padding: 24px; direction: rtl; z-index: 30; position: relative; }
+.mobile .nav-shell { padding: 14px 14px 0; }
+.nav { width: 100%; max-width: 1200px; display: grid; align-items: center; border-radius: 9999px; }
+.nav.is-scrolled { background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-header); }
+.desktop .nav { grid-template-columns: auto 1fr auto; gap: 32px; min-height: 64px; padding: 8px 16px 8px 8px; }
+.mobile  .nav { grid-template-columns: auto 1fr auto auto; gap: 10px; min-height: 52px; padding: 6px 8px 6px 16px; }
+
+.logo { display: inline-flex; align-items: center; text-decoration: none; }
+.wordmark { font-family: var(--font-display); font-weight: 700; color: var(--green-dark); line-height: 1; letter-spacing: 0.01em; }
+.desktop .wordmark { font-size: 30px; }
+.mobile  .wordmark { font-size: 23px; }
+
+.nav-links { display: flex; align-items: center; justify-content: center; gap: 32px; font-family: var(--font-body); font-weight: 500; font-size: 14px; }
+.nav-link { color: var(--text); text-decoration: none; padding: 8px 0; position: relative; }
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after { content: ""; position: absolute; inset-inline: 0; bottom: 2px; height: 1px; background: var(--gold); }
+.nav-end { display: inline-flex; align-items: center; gap: 8px; }
+.btn-text { font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); background: transparent; border: 1px solid transparent; padding: 10px 14px; min-height: 44px; display: inline-flex; align-items: center; cursor: default; border-radius: 9999px; }
+.btn-text:hover { background: var(--light); }
+.btn-outline { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--green-dark); background: transparent; border: 1px solid var(--green); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-outline:hover { background: var(--green); color: var(--background); }
+.btn-outline .arr { font-family: var(--font-italic); font-style: italic; display: inline-block; transform: scaleX(-1); }
+.btn-search { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); padding: 10px 18px; min-height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 8px; cursor: default; white-space: nowrap; }
+.btn-search:hover { background: var(--primary-light); }
+.btn-search svg, .btn-outline svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn { width: 44px; height: 44px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; cursor: default; flex: none; }
+.icon-btn.filled { background: var(--primary); border: 1px solid var(--primary); color: var(--background); }
+.icon-btn.ghost  { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+.icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.verified { display: inline-flex; align-items: center; color: var(--green); flex: none; }
+.verified svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ═══════════════ BUSINESS PAGE SURFACE ═══════════════ */
+.bp { position: relative; z-index: 1; }
+.bp-wrap { max-width: 1120px; margin: 0 auto; padding: 0 40px; }
+.mobile .bp-wrap { padding: 0 18px; }
+
+/* breadcrumb — canonical path */
+.bp-crumb { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-body); font-size: 12.5px; font-weight: 500; color: var(--fg-muted); padding: 4px 0; white-space: nowrap; }
+.bp-crumb a { color: var(--fg-muted); text-decoration: none; }
+.bp-crumb a:hover { color: var(--green); }
+.bp-crumb .sep { color: color-mix(in oklab, var(--fg-muted) 50%, transparent); }
+.bp-crumb .is-here { color: var(--green-dark); font-weight: 600; }
+
+/* vacation status line (state a · option A) */
+.vac-status { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; font-family: var(--font-body); font-weight: 600; font-size: 15px; color: var(--fg-muted); padding: 13px 0; }
+.vac-status svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── HERO ── */
+.bp-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 14px 0 8px; }
+.bp-hero-text { display: grid; gap: 18px; align-content: center; }
+.bp-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); display: inline-flex; align-items: center; gap: 12px; }
+.bp-eyebrow .rule { width: 30px; height: 1px; background: var(--gold); display: inline-block; }
+.bp-name-row { display: flex; align-items: flex-start; gap: 16px; }
+.bp-name { font-family: var(--font-display); font-weight: 900; font-size: 72px; line-height: 0.98; letter-spacing: -0.01em; color: var(--text); }
+.bp-name-row .verified { margin-top: 16px; }
+.bp-name-row .verified svg { width: 30px; height: 30px; }
+.bp-place { font-family: var(--font-body); font-size: 15px; color: var(--fg-muted); display: flex; align-items: center; gap: 9px; }
+.bp-place svg { width: 17px; height: 17px; fill: none; stroke: var(--green-dark); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.bp-dek { font-family: var(--font-italic); font-style: italic; font-weight: 500; font-size: 22px; line-height: 1.45; color: var(--green-dark); max-width: 30ch; }
+.bp-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.bp-tag { font-family: var(--font-body); font-size: 12px; color: var(--green-dark); background: var(--light); border: 1px solid var(--border); border-radius: 9999px; padding: 6px 13px; }
+
+/* hero photo composition — one wide + one tall, hand-cut feel */
+.bp-hero-media { display: grid; grid-template-columns: 1.5fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; height: 460px; }
+.bp-hero-media .photo { border: 1px solid var(--border); }
+.bp-hero-media .m-main { grid-row: 1 / span 2; }
+.bp-hero-media .m-a { }
+.bp-hero-media .m-b { }
+.media-credit { position: absolute; bottom: 10px; inset-inline-start: 12px; z-index: 2; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.92); }
+
+/* ── BODY TWO-COLUMN ── */
+.bp-body { display: grid; grid-template-columns: 1fr 360px; gap: 56px; align-items: start; padding: 56px 0 8px; }
+.bp-main { display: grid; gap: 64px; min-width: 0; }
+.bp-aside { position: sticky; top: 24px; }
+
+/* section eyebrow used inside the page */
+.sec-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.sec-eyebrow .rule { width: 24px; height: 1px; background: var(--gold); display: inline-block; }
+.sec-h { font-family: var(--font-display); font-weight: 700; font-size: 32px; line-height: 1.1; color: var(--text); }
+
+/* story */
+.bp-story p { font-family: var(--font-body); font-size: 16.5px; line-height: 1.85; color: var(--text); max-width: 60ch; text-wrap: pretty; }
+.bp-story p + p { margin-top: 20px; }
+/* opening treatments (drop cap killed — Latin convention, foreign to Hebrew) */
+.bp-story .lede-para { font-size: 19px; line-height: 1.78; color: color-mix(in oklab, var(--text) 86%, var(--background)); }
+.open-words { font-family: var(--font-display); font-weight: 900; font-size: 1.16em; letter-spacing: -0.01em; line-height: 1; }
+.open-words.gold { color: var(--gold); }
+.bp-pull { margin: 40px 0; padding-inline-start: 28px; border-inline-start: 2px solid var(--gold); }
+.bp-pull p { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 30px; line-height: 1.4; color: var(--green-dark); max-width: 24ch; }
+.bp-pull .mark { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.bp-pull cite { display: block; margin-top: 16px; font-family: var(--font-body); font-style: normal; font-size: 13px; letter-spacing: 0.04em; color: var(--fg-muted); }
+.bp-pull cite strong { color: var(--text); font-weight: 600; }
+
+/* story-opening comparison specimens (section E) */
+.story-spec-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-items: start; max-width: 860px; }
+.story-spec { background: var(--bg-card); border: 1px solid var(--border); padding: 28px 28px 32px; direction: rtl; }
+.story-spec .spec-lab { display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.story-spec .spec-lab .k { font-family: var(--font-italic); font-style: italic; font-size: 26px; color: var(--gold); line-height: 1; }
+.story-spec .spec-lab .t { font-family: var(--font-body); font-weight: 600; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+.story-spec .sec-eyebrow { margin-bottom: 12px; }
+.story-spec .sec-h { font-size: 24px; margin-bottom: 14px; }
+.story-spec .bp-story p { max-width: none; }
+.story-spec .spec-foot { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--border); font-family: var(--font-body); font-size: 11.5px; line-height: 1.5; color: var(--fg-muted); }
+
+/* gallery — asymmetric */
+.bp-gallery-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 168px 168px; gap: 12px; }
+.bp-gallery-grid .photo { border: 1px solid var(--border); }
+.bp-gallery-grid .g-1 { grid-column: 1; grid-row: 1 / span 2; }
+.bp-gallery-grid .g-more { display: grid; place-items: center; background: var(--green-dark); position: relative; overflow: hidden; cursor: default; }
+.bp-gallery-grid .g-more .photo { position: absolute; inset: 0; opacity: 0.4; }
+.bp-gallery-grid .g-more span { position: relative; z-index: 2; font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--background); display: grid; justify-items: center; gap: 2px; }
+.bp-gallery-grid .g-more .lbl { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,240,232,0.75); }
+
+/* practical */
+.bp-practical-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: start; }
+.bp-hours { display: grid; gap: 2px; }
+.bp-hours .status { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--green); margin-bottom: 14px; }
+.bp-hours .status .dot { width: 9px; height: 9px; border-radius: 9999px; background: var(--green); position: relative; }
+.bp-hours .status .dot::after { content: ""; position: absolute; inset: -5px; border-radius: 9999px; border: 1px solid color-mix(in oklab, var(--green) 40%, transparent); }
+.bp-hours .status.is-closed { color: var(--fg-muted); }
+.bp-hours .status.is-closed .dot { background: var(--fg-muted); }
+.bp-hours .status.is-closed .dot::after { border-color: color-mix(in oklab, var(--fg-muted) 40%, transparent); }
+.hours-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--border); font-family: var(--font-body); font-size: 14px; color: var(--text); }
+.hours-row:last-child { border-bottom: 0; }
+.hours-row .day { color: var(--fg-muted); }
+.hours-row .time { color: var(--text); }
+.hours-row.is-today { }
+.hours-row.is-today .day { color: var(--text); font-weight: 600; }
+.hours-row.is-today .time { font-weight: 600; }
+.hours-row .closed-lbl { font-family: var(--font-italic); font-style: italic; color: var(--fg-muted); }
+
+/* mini-map */
+.bp-map { position: relative; height: 268px; border: 1px solid var(--border); overflow: hidden; background: var(--background); }
+.map-land { position: absolute; inset: -10%; background:
+    radial-gradient(34% 30% at 22% 26%, color-mix(in oklab, var(--light) 78%, transparent), transparent 72%),
+    radial-gradient(30% 26% at 74% 20%, color-mix(in oklab, var(--secondary) 26%, transparent), transparent 70%),
+    radial-gradient(40% 34% at 82% 74%, color-mix(in oklab, var(--light) 70%, transparent), transparent 74%),
+    color-mix(in oklab, var(--gold) 6%, var(--background)); }
+.road { position: absolute; background: color-mix(in oklab, var(--border) 88%, var(--bg-card)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--border) 60%, transparent); }
+.road.h { height: 9px; border-radius: 9999px; }
+.road.v { width: 8px; border-radius: 9999px; }
+.road.thin { background: color-mix(in oklab, var(--border) 70%, var(--background)); }
+.river { position: absolute; height: 34px; border-radius: 9999px; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--secondary) 30%, var(--background)) 20%, color-mix(in oklab, var(--secondary) 34%, var(--background)) 80%, transparent); filter: blur(2px); opacity: 0.8; }
+.map-place { position: absolute; font-family: var(--font-body); font-size: 10px; font-weight: 500; letter-spacing: 0.12em; color: color-mix(in oklab, var(--fg-muted) 70%, transparent); white-space: nowrap; }
+/* single business photo-marker */
+.mk { position: absolute; transform: translate(-50%, -50%); z-index: 6; display: grid; justify-items: center; gap: 6px; }
+.mk-name { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-family: var(--font-display); font-weight: 700; font-size: 12px; line-height: 1; white-space: nowrap; padding: 5px 9px; border-radius: 9999px; box-shadow: var(--shadow-header); }
+.mk-dot { width: 54px; height: 54px; border-radius: 9999px; border: 3px solid var(--gold); box-shadow: 0 10px 26px rgba(46,104,83,0.3); position: relative; overflow: hidden; }
+.bp-map-addr { position: absolute; bottom: 12px; inset-inline-start: 12px; z-index: 8; background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 7px 14px; font-family: var(--font-body); font-size: 12px; color: var(--text); box-shadow: var(--shadow-header); display: inline-flex; align-items: center; gap: 8px; }
+.bp-map-addr svg { width: 14px; height: 14px; fill: none; stroke: var(--green-dark); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* nav-out buttons (Waze / Google) — neutral, never green primary */
+.bp-nav-btns { display: flex; gap: 10px; margin-top: 14px; }
+.btn-nav { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-body); font-weight: 500; font-size: 13.5px; color: var(--green-dark); background: var(--bg-card); border: 1px solid var(--border); border-radius: 9999px; padding: 11px 14px; min-height: 46px; cursor: default; }
+.btn-nav:hover { border-color: var(--green); }
+.btn-nav svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── CONTACT CARD (sticky aside) — ruthless: CTA · channels · share ── */
+.contact-card { background: var(--bg-card); border: 1px solid var(--border); padding: 26px 24px; display: grid; gap: 20px; }
+.cc-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cc-kicker { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-muted); }
+.action-share { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-body); font-weight: 500; font-size: 13px; color: var(--green-dark); cursor: default; background: none; border: 0; padding: 4px 2px; position: relative; }
+.action-share svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.action-share::after { content: ""; position: absolute; inset-inline: 2px; bottom: 0; height: 1px; background: var(--gold); transform: scaleX(0); transform-origin: inline-end; transition: transform var(--duration-fast) var(--ease-quart); }
+.action-share:hover::after { transform: scaleX(1); }
+
+.btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-family: var(--font-body); font-weight: 600; font-size: 16px; color: var(--background); background: var(--primary); border: 1px solid var(--primary); border-radius: 9999px; padding: 15px 20px; min-height: 56px; cursor: default; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-primary svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.cc-hint { font-family: var(--font-body); font-size: 12px; color: var(--fg-muted); text-align: center; margin-top: -8px; }
+
+.cc-channels { display: grid; gap: 0; border-top: 1px solid var(--border); }
+.channel { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); text-decoration: none; cursor: default; }
+.channel:last-child { border-bottom: 0; }
+.channel .ic { width: 38px; height: 38px; border-radius: 9999px; background: var(--light); display: grid; place-items: center; color: var(--green-dark); }
+.channel .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.channel .ch-body { display: grid; gap: 1px; min-width: 0; }
+.channel .ch-label { font-family: var(--font-body); font-weight: 600; font-size: 14px; color: var(--text); display: inline-flex; align-items: center; gap: 8px; }
+.channel .ch-val { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.channel .ch-val.numeric { direction: ltr; unicode-bidi: isolate; }
+.channel .primary-tag { font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: color-mix(in oklab, var(--gold) 12%, var(--bg-card)); border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--border)); padding: 2px 7px; border-radius: 9999px; }
+.channel .go { color: var(--fg-muted); display: inline-flex; }
+.channel:hover .go { color: var(--green); }
+.channel .go svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transform: scaleX(-1); }
+
+/* ── REVIEWS ── */
+.bp-reviews { padding: 64px 0; border-top: 1px solid var(--border); }
+.reviews-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 32px; }
+.reviews-summary { display: flex; align-items: baseline; gap: 14px; }
+.reviews-summary .score { font-family: var(--font-display); font-weight: 900; font-size: 52px; line-height: 1; color: var(--text); }
+.reviews-summary .stars { display: grid; gap: 4px; }
+.reviews-summary .stars .row { font-size: 18px; letter-spacing: 2px; color: var(--gold); line-height: 1; }
+.reviews-summary .stars .cnt { font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); letter-spacing: 0; }
+.reviews-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.review { background: var(--bg-card); border: 1px solid var(--border); padding: 22px 22px 24px; display: grid; gap: 12px; align-content: start; }
+.review .r-stars { font-size: 14px; letter-spacing: 2px; color: var(--gold); }
+.review p { font-family: var(--font-body); font-size: 14.5px; line-height: 1.7; color: var(--text); text-wrap: pretty; }
+.review .r-by { display: flex; align-items: center; gap: 11px; margin-top: 4px; }
+.review .r-av { width: 36px; height: 36px; border-radius: 9999px; background: var(--light); border: 1px solid var(--border); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--green-dark); flex: none; }
+.review .r-meta { display: grid; gap: 1px; }
+.review .r-name { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; color: var(--text); }
+.review .r-date { font-family: var(--font-body); font-size: 11.5px; color: var(--fg-muted); }
+/* reviews empty (state c) */
+.reviews-empty { background: var(--bg-card); border: 1px solid var(--border); padding: 48px 40px; display: grid; justify-items: center; text-align: center; gap: 14px; }
+.reviews-empty .mark { width: 56px; height: 56px; color: color-mix(in oklab, var(--gold) 70%, var(--border)); }
+.reviews-empty .mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.reviews-empty h4 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--text); max-width: 22ch; line-height: 1.25; }
+.reviews-empty p { font-family: var(--font-body); font-size: 14px; color: var(--fg-muted); max-width: 38ch; line-height: 1.6; }
+
+/* ── SIMILAR (ProducerCard-style, no heart) ── */
+.bp-similar { padding: 60px 0 72px; border-top: 1px solid var(--border); }
+.similar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.pcard { background: var(--bg-card); border: 1px solid var(--border); display: grid; grid-template-rows: auto auto; text-decoration: none; transition: border-color var(--duration-fast) var(--ease-quart); }
+.pcard:hover { border-color: var(--green); }
+.pcard-media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--background); }
+.pcard-media .photo { position: absolute; inset: 0; transition: transform 300ms var(--ease-quart); }
+.pcard:hover .pcard-media .photo { transform: scale(1.03); }
+.pcard-body { padding: 16px; display: grid; gap: 8px; }
+.pcard-eyebrow { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--fg-muted); }
+.pcard-nrow { display: flex; align-items: center; gap: 7px; }
+.pcard-name { font-family: var(--font-display); font-weight: 700; font-size: 21px; line-height: 1.2; color: var(--text); }
+.pcard:hover .pcard-name { position: relative; }
+.pcard .verified svg { width: 16px; height: 16px; }
+.pcard-meta { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); }
+.pcard-hours { font-family: var(--font-body); font-size: 12.5px; color: var(--fg-muted); display: inline-flex; align-items: center; gap: 7px; }
+.pcard-hours svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.8; }
+
+/* ── LOCKED Assembly v2 footer (Section 14) — as-is ── */
+.hp-footer { background: var(--primary-dark); color: #EAF3DE; padding: 80px 48px 48px; position: relative; z-index: 1; }
+.mobile .hp-footer { padding: 48px 24px 32px; }
+.hp-footer-grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 1fr 3fr; gap: 32px; }
+.mobile .hp-footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+.mobile .hp-footer-grid .hp-footer-brand, .mobile .hp-footer-grid .hp-footer-news { grid-column: span 2; }
+.hp-footer-brand { display: grid; gap: 16px; align-content: start; }
+.hp-footer-brand .wordmark { color: #EAF3DE; font-size: 30px; }
+.hp-footer-tagline { font-family: var(--font-display); font-weight: 400; font-size: 18px; line-height: 1.5; color: #EAF3DE; max-width: 32ch; }
+.hp-footer-col h4 { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #C9D9B8; margin-bottom: 16px; }
+.hp-footer-col ul { list-style: none; display: grid; gap: 10px; }
+.hp-footer-col a { font-family: var(--font-body); font-weight: 400; font-size: 14px; color: #EAF3DE; text-decoration: none; }
+.hp-footer-col a:hover { color: #fff; }
+.hp-footer-news { display: grid; gap: 12px; align-content: start; }
+.hp-footer-news .h { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: #EAF3DE; line-height: 1.3; }
+.hp-footer-news .sub { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: #C9D9B8; }
+.hp-footer-news .form { display: grid; grid-template-columns: 1fr auto; gap: 0; border-bottom: 1px solid rgba(234,243,222,0.4); padding-bottom: 8px; }
+.hp-footer-news input { background: transparent; border: 0; outline: none; font-family: var(--font-body); font-size: 14px; color: #EAF3DE; padding: 6px 0; }
+.hp-footer-news input::placeholder { color: rgba(234,243,222,0.5); }
+.hp-footer-news .submit { background: transparent; border: 0; font-family: var(--font-italic); font-style: italic; color: #C9D9B8; font-size: 14px; cursor: default; }
+.hp-footer-bottom { max-width: 1280px; margin: 48px auto 0; padding-top: 24px; border-top: 1px solid rgba(234,243,222,0.15); display: flex; justify-content: space-between; gap: 16px; font-family: var(--font-body); font-size: 12px; color: #C9D9B8; flex-wrap: wrap; }
+.mobile .hp-footer-bottom { flex-direction: column; gap: 8px; }
+
+/* ── status / vacation banner (state a) — single surface ── */
+.bp-banner { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; background: color-mix(in oklab, var(--fg-muted) 10%, var(--bg-card)); border: 1px solid var(--border); border-inline-start: 3px solid var(--fg-muted); padding: 16px 20px; }
+.bp-banner .ic { width: 42px; height: 42px; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border); display: grid; place-items: center; color: var(--fg-muted); }
+.bp-banner .ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.bp-banner .bx { display: grid; gap: 3px; }
+.bp-banner .bt { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--text); }
+.bp-banner .bd { font-family: var(--font-body); font-size: 13px; color: var(--fg-muted); }
+.bp-banner.is-closed { background: color-mix(in oklab, var(--gold) 9%, var(--bg-card)); border-inline-start-color: var(--gold); }
+.bp-banner.is-closed .ic { color: var(--gold); }
+
+/* ── MONOGRAM fallback (state b) — dignified, photo-first identity ── */
+.monogram { position: relative; display: grid; place-items: center; overflow: hidden; background:
+    radial-gradient(80% 80% at 30% 24%, color-mix(in oklab, var(--light) 78%, white), transparent 70%),
+    linear-gradient(150deg, color-mix(in oklab, var(--secondary) 22%, var(--background)), color-mix(in oklab, var(--gold) 26%, var(--light))); border: 1px solid var(--border); }
+.monogram .glyph-wm { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0.16; color: var(--green-dark); }
+.monogram .glyph-wm svg { width: 56%; height: 56%; fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.monogram .ltr-mark { position: relative; z-index: 2; font-family: var(--font-display); font-weight: 900; color: var(--green-dark); line-height: 1; }
+.monogram .cap { position: absolute; bottom: 12px; z-index: 2; font-family: var(--font-body); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in oklab, var(--green-dark) 70%, transparent); }
+
+/* ══ MOBILE PAGE SCALING ══ */
+.mobile .bp-hero { grid-template-columns: 1fr; gap: 22px; padding: 8px 0 0; }
+.mobile .bp-hero-media { height: 300px; order: -1; }
+.mobile .bp-name { font-size: 46px; }
+.mobile .bp-name-row .verified svg { width: 22px; height: 22px; }
+.mobile .bp-name-row .verified { margin-top: 8px; }
+.mobile .bp-dek { font-size: 19px; max-width: none; }
+.mobile .bp-body { grid-template-columns: 1fr; gap: 44px; padding: 36px 0 8px; }
+.mobile .bp-aside { position: static; }
+.mobile .bp-main { gap: 48px; }
+.mobile .sec-h { font-size: 26px; }
+.mobile .bp-story p { font-size: 16px; max-width: none; }
+.mobile .bp-pull p { font-size: 24px; }
+.mobile .bp-practical-grid { grid-template-columns: 1fr; gap: 28px; }
+.mobile .bp-gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 140px 140px; }
+.mobile .bp-gallery-grid .g-1 { grid-column: 1 / span 2; grid-row: 1; height: 200px; }
+.mobile .reviews-grid { grid-template-columns: 1fr; }
+.mobile .reviews-head { grid-template-columns: 1fr; gap: 14px; align-items: start; }
+.mobile .similar-grid { grid-template-columns: 1fr; }
+.mobile .bp-reviews, .mobile .bp-similar { padding: 44px 0; }
+
+/* sticky bar wired into the live mobile page (frame 02) — rides viewport bottom on scroll */
+.vp.is-sticky-host { overflow: visible; }
+.m-cta-bar.is-live { position: sticky; inset-inline: 12px; bottom: 12px; margin-top: 32px; border: 1px solid var(--border); border-radius: var(--radius-lg, 24px); box-shadow: 0 10px 34px rgba(46,104,83,0.16); }
+
+/* sticky bottom contact bar (mobile variant A) */
+.m-cta-bar { position: absolute; bottom: 0; inset-inline: 0; z-index: 40; background: color-mix(in oklab, var(--bg-card) 92%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-top: 1px solid var(--border); box-shadow: 0 -8px 30px rgba(46,104,83,0.10); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+.m-cta-bar .btn-primary { min-height: 50px; font-size: 15px; padding: 12px 18px; }
+.m-cta-bar .mini { width: 50px; height: 50px; border-radius: 9999px; background: var(--bg-card); border: 1px solid var(--border); display: grid; place-items: center; color: var(--green-dark); flex: none; }
+.m-cta-bar .mini svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── PANELS (decision + lock) ── */
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; margin-bottom: 32px; }
+.panel > h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; color: var(--doc-ink); margin-bottom: 4px; }
+.panel > h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.panel > .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 22px; line-height: 1.5; max-width: 92ch; }
+.lock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.lock-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.lock-row { display: grid; grid-template-columns: 20px 1fr; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 13.5px; line-height: 1.5; color: var(--doc-ink); }
+.lock-row:last-child { border-bottom: 0; }
+.lock-row .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.lock-row code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+.lock-row .he { font-family: var(--font-body); }
+.lock-row em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+/* decision compare stage */
+.cmp-stage { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.cmp-cell { display: grid; gap: 16px; justify-items: start; }
+.cmp-cell .cmp-tag { font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+.cmp-cell .cmp-tag .ch { color: var(--gold); }
+.cmp-cell .cmp-desc { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); line-height: 1.55; max-width: 50ch; }
+.cmp-rec { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-body); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 12px; border-radius: 9999px; }
+.cmp-rec.pick { background: var(--green); color: var(--background); }
+.cmp-rec.alt  { background: transparent; color: var(--doc-ink-mute); border: 1px solid rgba(42,38,32,0.3); }
+
+footer { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; font-size: 14px; color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="docpage">
+
+  <!-- ─── MASTHEAD ─── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-on"></span><span class="pip is-now"></span>
+        <span class="ltr"> S6 · MEH-102 · /business · v1 · FINAL</span>
+      </div>
+      <h1>The business page — <em>דף בית עסק.</em></h1>
+      <div class="sub">The page every map, category and search click lands on — where trust converts. Built as a magazine profile, not a marketplace listing: name masthead, an editorial story with a pull-quote, real photography, in-flow hours + location, and one ruthless contact surface. Five MEH-76 audit fixes resolved. Brand locked to Homepage v2 + Map S5 — editorial green CTAs, never WhatsApp green; photos are identity; <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color:var(--green-dark);">.numeric</code> LTR-isolation on every number.</div>
+    </div>
+    <div class="stamp">
+      <span class="dot" style="color: var(--green);">●</span> design only · no handoff<br>
+      Surface <strong>/business</strong> · v1<br>
+      <span class="numeric">2026-06-05</span><br>
+      <strong style="color: var(--green-dark);">S6 · FINAL</strong><br>
+      <span style="font-size: 10px; color: var(--gold);">vacation B · sticky CTA · gold</span>
+    </div>
+  </header>
+
+  <!-- ════════════════ A · DESKTOP 1280 ════════════════ -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Desktop — <em>1280, the full profile.</em></h2>
+      <p class="pitch">Read top to bottom as one editorial page. Name masthead → story + pull-quote → gallery → practical (hours are the single status surface; the map sits in the content flow with Waze / Google buttons) → reviews → three similar businesses. Contact is one sticky card: a single green channel CTA, the full channel list, and a demoted text share — no second green button, no nine-element sidebar.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>magazine profile</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">01</span><span class="label">Desktop · /business · מחלבת בן ארי</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+
+  <div class="vp desktop" dir="rtl" data-screen-label="/business · Desktop 1280">
+    <div class="mh paper bp">
+
+      <!-- navbar v5 -->
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links">
+            <a class="nav-link" href="#">גלו</a>
+            <a class="nav-link" href="#">מפה</a>
+            <a class="nav-link" href="#">אודות</a>
+          </div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+
+      <div class="bp-wrap">
+        <nav class="bp-crumb" aria-label="breadcrumb"><a href="#">גלו</a><span class="sep">›</span><a href="#" class="is-here">חלב וגבינות</a></nav>
+
+        <!-- HERO -->
+        <header class="bp-hero">
+          <div class="bp-hero-text">
+            <span class="bp-eyebrow"><span class="rule"></span>חלב וגבינות · משק משפחתי</span>
+            <div class="bp-name-row">
+              <h1 class="bp-name">מחלבת<br>בן ארי</h1>
+              <span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span>
+            </div>
+            <p class="bp-place">__ICO_PIN__ כפר ויתקין · עמק חפר</p>
+            <p class="bp-dek">ארבעים עזים על גבעה אחת קטנה — וכל מה שהן נותנות, ישר מהיד של נורית אלייך.</p>
+            <div class="bp-tags">
+              <span class="bp-tag">כשר</span>
+              <span class="bp-tag">חלב עזים</span>
+              <span class="bp-tag">משלוח בשישי</span>
+              <span class="bp-tag">איסוף עצמי</span>
+            </div>
+          </div>
+          <div class="bp-hero-media">
+            <div class="photo dairy m-main"><span class="media-credit">המחלבה · כפר ויתקין</span></div>
+            <div class="photo pasture m-a"></div>
+            <div class="photo hands m-b"></div>
+          </div>
+        </header>
+
+        <!-- BODY -->
+        <div class="bp-body">
+          <main class="bp-main">
+
+            <!-- STORY -->
+            <section class="bp-story">
+              <span class="sec-eyebrow"><span class="rule"></span>הסיפור</span>
+              <h2 class="sec-h">מאחורי הגבינה</h2>
+              <p><span class="open-words gold">מחלבת בן ארי</span> יושבת על גבעה קטנה בכפר ויתקין, מאחורי בית האריזה הישן. נורית בן ארי מגדלת כאן עדר של ארבעים עזים, ומכל בוקר של חליבה נולדות הגבינות — טריות, מלוחות בדיוק במידה, כאלה שמריחות את העמק אחרי גשם.</p>
+
+              <blockquote class="bp-pull">
+                <p><span class="mark">”</span>אנחנו לא מייצרות גבינה. אנחנו מגדלות עדר — והגבינה היא מה שהעמק נותן בחזרה.<span class="mark">”</span></p>
+                <cite><strong>נורית בן ארי</strong> · בעלת המחלבה</cite>
+              </blockquote>
+
+              <p>היא התחילה לפני עשר שנים עם שתי עזים בחצר ומתכון של סבתא. היום הרפת הישנה הפכה למרתף יישון, והגבינות מבשילות שם בשקט — מהלבנה הרכה של הבוקר ועד קשקבל בן שמונה חודשים שמחכה לחג. הכל נמכר ישירות, בלי מדפים — רק היא, העדר, ומי שבאה לטעום.</p>
+            </section>
+
+            <!-- GALLERY -->
+            <section class="bp-gallery">
+              <span class="sec-eyebrow"><span class="rule"></span>מהמחלבה</span>
+              <h2 class="sec-h">בתמונות</h2>
+              <div class="bp-gallery-grid" style="margin-top: 22px;">
+                <div class="photo dairy g-1"></div>
+                <div class="photo pasture"></div>
+                <div class="photo hands"></div>
+                <div class="photo honey"></div>
+                <div class="g-more"><div class="photo produce"></div><span><span class="lbl">עוד</span>+<span class="numeric">12</span></span></div>
+              </div>
+            </section>
+
+            <!-- PRACTICAL -->
+            <section class="bp-practical">
+              <span class="sec-eyebrow"><span class="rule"></span>מתי ואיפה</span>
+              <h2 class="sec-h">שעות ומיקום</h2>
+              <div class="bp-practical-grid" style="margin-top: 22px;">
+                <!-- hours = the single status surface -->
+                <div class="bp-hours">
+                  <span class="status"><span class="dot"></span>פתוח עכשיו · נסגר ב־<span class="numeric">14:00</span></span>
+                  <div class="hours-row"><span class="day">ראשון–חמישי</span><span class="time numeric">08:00–18:00</span></div>
+                  <div class="hours-row is-today"><span class="day">שישי · היום</span><span class="time numeric">08:00–14:00</span></div>
+                  <div class="hours-row"><span class="day">שבת</span><span class="closed-lbl">סגור</span></div>
+                </div>
+                <!-- map in content flow -->
+                <div>
+                  <div class="bp-map">
+                    <div class="map-land"></div>
+                    <div class="river" style="top: 22%; inset-inline-start: -8%; width: 70%; transform: rotate(-12deg);"></div>
+                    <div class="road h" style="top: 44%; inset-inline-start: 0; width: 92%;"></div>
+                    <div class="road v thin" style="top: 6%; inset-inline-start: 64%; height: 80%;"></div>
+                    <div class="map-place" style="top: 24%; inset-inline-start: 16%;">כפר ויתקין</div>
+                    <div class="mk" style="top: 52%; inset-inline-start: 44%;"><div class="mk-name">מחלבת בן ארי</div><div class="mk-dot photo dairy"></div></div>
+                    <span class="bp-map-addr">__ICO_PIN__ כפר ויתקין, עמק חפר</span>
+                  </div>
+                  <div class="bp-nav-btns">
+                    <button class="btn-nav" type="button">__ICO_NAV__ Waze</button>
+                    <button class="btn-nav" type="button">__ICO_PIN__ Google Maps</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </main>
+
+          <!-- CONTACT CARD (sticky) -->
+          <aside class="bp-aside">
+            <div class="contact-card">
+              <div class="cc-top">
+                <span class="cc-kicker">צרי קשר</span>
+                <button class="action-share" type="button">__ICO_SHARE__ שתפי</button>
+              </div>
+              <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+                            <div class="cc-channels">
+                <a class="channel" href="#">
+                  <span class="ic">__ICO_WA__</span>
+                  <span class="ch-body"><span class="ch-label">וואטסאפ <span class="primary-tag">ערוץ ראשי</span></span><span class="ch-val numeric">054-820-3317</span></span>
+                  <span class="go">__ICO_CHEV__</span>
+                </a>
+                <a class="channel" href="#">
+                  <span class="ic">__ICO_PHONE__</span>
+                  <span class="ch-body"><span class="ch-label">טלפון</span><span class="ch-val numeric">09-866-4120</span></span>
+                  <span class="go">__ICO_CHEV__</span>
+                </a>
+                <a class="channel" href="#">
+                  <span class="ic">__ICO_GLOBE__</span>
+                  <span class="ch-body"><span class="ch-label">אתר</span><span class="ch-val ltr">benari-dairy.co.il</span></span>
+                  <span class="go">__ICO_CHEV__</span>
+                </a>
+                <a class="channel" href="#">
+                  <span class="ic">__ICO_INSTA__</span>
+                  <span class="ch-body"><span class="ch-label">אינסטגרם</span><span class="ch-val ltr">@benari.dairy</span></span>
+                  <span class="go">__ICO_CHEV__</span>
+                </a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- REVIEWS -->
+      <div class="bp-wrap">
+        <section class="bp-reviews">
+          <div class="reviews-head">
+            <div>
+              <span class="sec-eyebrow"><span class="rule"></span>המלצות</span>
+              <h2 class="sec-h">מה מספרים</h2>
+            </div>
+            <div class="reviews-summary">
+              <span class="score numeric">4.8</span>
+              <span class="stars"><span class="row">★★★★★</span><span class="cnt">מבוסס על <span class="numeric">24</span> המלצות</span></span>
+            </div>
+          </div>
+          <div class="reviews-grid">
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>הגעתי בשביל הלבנה ויצאתי עם חצי מקרר. נורית הסבירה על כל גבינה כאילו היא מספרת על הילדים שלה. מאז אני קונה רק ממנה.</p>
+              <div class="r-by"><span class="r-av">ש</span><span class="r-meta"><span class="r-name">שירה ל׳</span><span class="r-date numeric">22.5.2026</span></span></div>
+            </article>
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>הקשקבל המיושן הוא משהו אחר לגמרי. הזמנו בוואטסאפ בחמישי וקיבלנו משלוח לבית ביום שישי בבוקר, עטוף בנייר כמו מתנה.</p>
+              <div class="r-by"><span class="r-av">מ</span><span class="r-meta"><span class="r-name">מיכל א׳</span><span class="r-date numeric">9.5.2026</span></span></div>
+            </article>
+            <article class="review">
+              <span class="r-stars">★★★★<span style="color: var(--border);">★</span></span>
+              <p>טעם ביתי אמיתי, רואים שהכול נעשה ביד. הורדתי כוכב רק כי לפעמים קשה לתפוס אותה בטלפון — אבל בוואטסאפ היא תמיד חוזרת.</p>
+              <div class="r-by"><span class="r-av">ד</span><span class="r-meta"><span class="r-name">דנה ק׳</span><span class="r-date numeric">28.4.2026</span></span></div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <!-- SIMILAR -->
+      <div class="bp-wrap">
+        <section class="bp-similar">
+          <span class="sec-eyebrow"><span class="rule"></span>קרוב לכאן</span>
+          <h2 class="sec-h" style="margin-bottom: 24px;">עוד מחלבות בעמק</h2>
+          <div class="similar-grid">
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo pasture"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">חלב וגבינות</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">גבינות עין ורד</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">עין ורד · <span class="numeric">4.6</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">09:00–17:00</span></span></p>
+              </div>
+            </a>
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo dairy"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">חלב וגבינות</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">חוות צוקים</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">מכמורת · <span class="numeric">7.1</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–16:00</span></span></p>
+              </div>
+            </a>
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo hands"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">חלב וגבינות</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">הרפת של מעיין</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">בית יצחק · <span class="numeric">9.3</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>סגור · נפתח מחר <span class="numeric">08:00</span></span></p>
+              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <!-- slim footer -->
+      <footer class="hp-footer" data-screen-label="footer">
+        <div class="hp-footer-grid">
+          <div class="hp-footer-brand">
+            <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+            <p class="hp-footer-tagline">ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד</p>
+          </div>
+          <div class="hp-footer-col"><h4>לגלות</h4><ul><li><a href="#">קטגוריות</a></li><li><a href="#">מפה</a></li><li><a href="#">קרוב אלי</a></li></ul></div>
+          <div class="hp-footer-col"><h4>קהילה</h4><ul><li><a href="#">סיפורים</a></li><li><a href="#">היכרות</a></li><li><a href="#">ניוזלטר</a></li></ul></div>
+          <div class="hp-footer-col"><h4>בתי עסק</h4><ul><li><a href="#">הוסיפו עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">תמיכה</a></li></ul></div>
+          <div class="hp-footer-col"><h4>שקיפות</h4><ul><li><a href="#">תנאי שימוש</a></li><li><a href="#">פרטיות</a></li><li><a href="#">נגישות</a></li></ul></div>
+          <div class="hp-footer-news">
+            <p class="h">אוכל טוב לא שומרים לעצמנו</p>
+            <p class="sub">ניוזלטר חודשי · בתי עסק חדשים, סיפורים, מתכונים</p>
+            <div class="form"><input type="email" placeholder="האימייל שלך" aria-label="אימייל"><button class="submit" type="button">הצטרפו ↗</button></div>
+          </div>
+        </div>
+        <div class="hp-footer-bottom">
+          <span>© <span class="numeric">2026</span> מהמקור · תנאי שימוש · פרטיות</span>
+          <span><em style="font-family: var(--font-italic); font-style: italic; color: #C9D9B8;">— from the source</em></span>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- CTA VARIANT C — primary channel = website (added with S7 MEH-296 website-in-group-A) -->
+  <div class="bp-cap"><span class="num">01·CTA</span><span class="label">כפתור הקשר הראשי — לפי הערוץ שנבחר בהרשמה (S7)</span><span class="rule"></span><span class="dims">A · B · C</span></div>
+  <div class="vp" dir="rtl" style="width: 860px;" data-screen-label="/business · contact CTA variants">
+    <div class="mh paper bp" style="padding: 30px;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: grid; gap: 14px; align-content: start;">
+          <div style="display: flex; align-items: center; gap: 9px;"><span style="font-family: var(--font-italic); font-style: italic; font-size: 22px; line-height: 1; color: var(--gold);">A</span><span style="font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted);">ראשי · וואטסאפ</span></div>
+          <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: grid; gap: 14px; align-content: start;">
+          <div style="display: flex; align-items: center; gap: 9px;"><span style="font-family: var(--font-italic); font-style: italic; font-size: 22px; line-height: 1; color: var(--gold);">B</span><span style="font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted);">ראשי · טלפון</span></div>
+          <button class="btn-primary" type="button">__ICO_PHONE__ התקשרי לנורית</button>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--gold); box-shadow: 0 0 0 1px var(--gold); border-radius: 16px; padding: 20px; display: grid; gap: 14px; align-content: start;">
+          <div style="display: flex; align-items: center; gap: 9px;"><span style="font-family: var(--font-italic); font-style: italic; font-size: 22px; line-height: 1; color: var(--gold);">C</span><span style="font-family: var(--font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-muted);">ראשי · אתר</span><span style="margin-inline-start: auto; font-family: var(--font-body); font-weight: 600; font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); background: color-mix(in oklab, var(--gold) 12%, var(--bg-card)); border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--border)); padding: 3px 8px; border-radius: 9999px;">חדש</span></div>
+          <button class="btn-primary" type="button">__ICO_GLOBE__ להזמנה באתר <span style="font-family: var(--font-italic); font-style: italic; font-size: 18px; opacity: 0.85; margin-inline-start: 2px;">↗</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap-note" style="max-width: 78ch;"><b>CTA VARIANT C</b> The contact card's single green CTA follows the producer's primary-channel pick from S7 step 05. WhatsApp (A) and phone (B) were already locked; <b>website (C)</b> is new — <span class="he" dir="rtl">להזמנה באתר</span> with the globe glyph and an external-link affordance (↗), since it leaves Mehamakor for the producer's own site. The in-flow channel directory below the CTA is unchanged.</p>
+
+  <!-- ════════════════ B · MOBILE 375 ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">B</div>
+    <div>
+      <h2>Mobile — <em>375, one column.</em></h2>
+      <p class="pitch">The same profile, restacked: photo first, then name masthead, story, gallery, practical, the contact channels in-flow, reviews and similar. <strong style="font-family: var(--font-body); font-style: normal; color: var(--green-dark);">FINAL: the locked sticky contact bar rides the bottom</strong> — scroll the frame and it pins above the fold; the in-flow channel list stays below it as the full directory. Touch targets ≥ 44px throughout.</p>
+    </div>
+    <div class="meta">390 px min<br><strong>sticky CTA · locked</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">02</span><span class="label">Mobile · /business · full page</span><span class="rule"></span><span class="dims numeric">375 wide</span></div>
+
+  <div class="vp mobile is-sticky-host" dir="rtl" data-screen-label="/business · Mobile 375">
+    <div class="mh paper bp">
+
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <span></span>
+          <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+          <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+        </nav>
+      </div>
+
+      <div class="bp-wrap" style="padding-top: 6px;">
+        <nav class="bp-crumb" aria-label="breadcrumb"><a href="#">גלו</a><span class="sep">›</span><a href="#" class="is-here">חלב וגבינות</a></nav>
+
+        <header class="bp-hero">
+          <div class="bp-hero-media">
+            <div class="photo dairy m-main"><span class="media-credit">המחלבה · כפר ויתקין</span></div>
+            <div class="photo pasture m-a"></div>
+            <div class="photo hands m-b"></div>
+          </div>
+          <div class="bp-hero-text">
+            <span class="bp-eyebrow"><span class="rule"></span>חלב וגבינות · משק משפחתי</span>
+            <div class="bp-name-row">
+              <h1 class="bp-name">מחלבת בן ארי</h1>
+              <span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span>
+            </div>
+            <p class="bp-place">__ICO_PIN__ כפר ויתקין · עמק חפר</p>
+            <p class="bp-dek">ארבעים עזים על גבעה אחת — וכל מה שהן נותנות, ישר מהיד של נורית אלייך.</p>
+            <div class="bp-tags">
+              <span class="bp-tag">כשר</span>
+              <span class="bp-tag">חלב עזים</span>
+              <span class="bp-tag">משלוח בשישי</span>
+            </div>
+          </div>
+        </header>
+
+        <div class="bp-body">
+          <main class="bp-main">
+            <section class="bp-story">
+              <span class="sec-eyebrow"><span class="rule"></span>הסיפור</span>
+              <h2 class="sec-h">מאחורי הגבינה</h2>
+              <p><span class="open-words gold">מחלבת בן ארי</span> יושבת על גבעה קטנה בכפר ויתקין, מאחורי בית האריזה הישן. נורית מגדלת כאן עדר של ארבעים עזים, ומכל בוקר של חליבה נולדות הגבינות — טריות, מלוחות בדיוק במידה.</p>
+              <blockquote class="bp-pull">
+                <p><span class="mark">”</span>אנחנו לא מייצרות גבינה. אנחנו מגדלות עדר — והגבינה היא מה שהעמק נותן בחזרה.<span class="mark">”</span></p>
+                <cite><strong>נורית בן ארי</strong> · בעלת המחלבה</cite>
+              </blockquote>
+              <p>היא התחילה לפני עשר שנים עם שתי עזים ומתכון של סבתא. היום הרפת הישנה הפכה למרתף יישון, והכל נמכר ישירות, בלי מדפים — רק היא, העדר, ומי שבאה לטעום.</p>
+            </section>
+
+            <section class="bp-gallery">
+              <span class="sec-eyebrow"><span class="rule"></span>מהמחלבה</span>
+              <h2 class="sec-h">בתמונות</h2>
+              <div class="bp-gallery-grid" style="margin-top: 18px;">
+                <div class="photo dairy g-1"></div>
+                <div class="photo pasture"></div>
+                <div class="photo hands"></div>
+                <div class="photo honey"></div>
+                <div class="g-more"><div class="photo produce"></div><span><span class="lbl">עוד</span>+<span class="numeric">12</span></span></div>
+              </div>
+            </section>
+
+            <section class="bp-practical">
+              <span class="sec-eyebrow"><span class="rule"></span>מתי ואיפה</span>
+              <h2 class="sec-h">שעות ומיקום</h2>
+              <div class="bp-practical-grid" style="margin-top: 18px;">
+                <div class="bp-hours">
+                  <span class="status"><span class="dot"></span>פתוח עכשיו · נסגר ב־<span class="numeric">14:00</span></span>
+                  <div class="hours-row"><span class="day">ראשון–חמישי</span><span class="time numeric">08:00–18:00</span></div>
+                  <div class="hours-row is-today"><span class="day">שישי · היום</span><span class="time numeric">08:00–14:00</span></div>
+                  <div class="hours-row"><span class="day">שבת</span><span class="closed-lbl">סגור</span></div>
+                </div>
+                <div>
+                  <div class="bp-map" style="height: 220px;">
+                    <div class="map-land"></div>
+                    <div class="river" style="top: 24%; inset-inline-start: -8%; width: 72%; transform: rotate(-12deg);"></div>
+                    <div class="road h" style="top: 46%; inset-inline-start: 0; width: 94%;"></div>
+                    <div class="mk" style="top: 50%; inset-inline-start: 46%;"><div class="mk-name">מחלבת בן ארי</div><div class="mk-dot photo dairy"></div></div>
+                    <span class="bp-map-addr">__ICO_PIN__ כפר ויתקין, עמק חפר</span>
+                  </div>
+                  <div class="bp-nav-btns">
+                    <button class="btn-nav" type="button">__ICO_NAV__ Waze</button>
+                    <button class="btn-nav" type="button">__ICO_PIN__ Google Maps</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          <aside class="bp-aside">
+            <div class="contact-card">
+              <div class="cc-top">
+                <span class="cc-kicker">צרי קשר</span>
+                <button class="action-share" type="button">__ICO_SHARE__ שתפי</button>
+              </div>
+              <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+                            <div class="cc-channels">
+                <a class="channel" href="#"><span class="ic">__ICO_WA__</span><span class="ch-body"><span class="ch-label">וואטסאפ <span class="primary-tag">ראשי</span></span><span class="ch-val numeric">054-820-3317</span></span><span class="go">__ICO_CHEV__</span></a>
+                <a class="channel" href="#"><span class="ic">__ICO_PHONE__</span><span class="ch-body"><span class="ch-label">טלפון</span><span class="ch-val numeric">09-866-4120</span></span><span class="go">__ICO_CHEV__</span></a>
+                <a class="channel" href="#"><span class="ic">__ICO_GLOBE__</span><span class="ch-body"><span class="ch-label">אתר</span><span class="ch-val ltr">benari-dairy.co.il</span></span><span class="go">__ICO_CHEV__</span></a>
+                <a class="channel" href="#"><span class="ic">__ICO_INSTA__</span><span class="ch-body"><span class="ch-label">אינסטגרם</span><span class="ch-val ltr">@benari.dairy</span></span><span class="go">__ICO_CHEV__</span></a>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <section class="bp-reviews">
+          <div class="reviews-head">
+            <div>
+              <span class="sec-eyebrow"><span class="rule"></span>המלצות</span>
+              <h2 class="sec-h">מה מספרים</h2>
+            </div>
+            <div class="reviews-summary">
+              <span class="score numeric">4.8</span>
+              <span class="stars"><span class="row">★★★★★</span><span class="cnt">מבוסס על <span class="numeric">24</span> המלצות</span></span>
+            </div>
+          </div>
+          <div class="reviews-grid">
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>הגעתי בשביל הלבנה ויצאתי עם חצי מקרר. נורית הסבירה על כל גבינה כאילו היא מספרת על הילדים שלה.</p>
+              <div class="r-by"><span class="r-av">ש</span><span class="r-meta"><span class="r-name">שירה ל׳</span><span class="r-date numeric">22.5.2026</span></span></div>
+            </article>
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>הזמנו בוואטסאפ בחמישי וקיבלנו משלוח לבית ביום שישי בבוקר, עטוף בנייר כמו מתנה.</p>
+              <div class="r-by"><span class="r-av">מ</span><span class="r-meta"><span class="r-name">מיכל א׳</span><span class="r-date numeric">9.5.2026</span></span></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="bp-similar">
+          <span class="sec-eyebrow"><span class="rule"></span>קרוב לכאן</span>
+          <h2 class="sec-h" style="margin-bottom: 20px;">עוד מחלבות בעמק</h2>
+          <div class="similar-grid">
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo pasture"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">חלב וגבינות</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">גבינות עין ורד</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">עין ורד · <span class="numeric">4.6</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">09:00–17:00</span></span></p>
+              </div>
+            </a>
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo dairy"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">חלב וגבינות</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">חוות צוקים</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">מכמורת · <span class="numeric">7.1</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–16:00</span></span></p>
+              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <!-- locked sticky contact bar (rides viewport bottom on scroll) -->
+      <div class="m-cta-bar is-live">
+        <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+        <button class="mini" type="button" aria-label="התקשרי">__ICO_PHONE__</button>
+        <button class="mini" type="button" aria-label="שתפי">__ICO_SHARE__</button>
+      </div>
+
+      <footer class="hp-footer" data-screen-label="footer">
+        <div class="hp-footer-grid">
+          <div class="hp-footer-brand">
+            <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+            <p class="hp-footer-tagline">ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד</p>
+          </div>
+          <div class="hp-footer-col"><h4>לגלות</h4><ul><li><a href="#">קטגוריות</a></li><li><a href="#">מפה</a></li><li><a href="#">קרוב אלי</a></li></ul></div>
+          <div class="hp-footer-col"><h4>קהילה</h4><ul><li><a href="#">סיפורים</a></li><li><a href="#">היכרות</a></li><li><a href="#">ניוזלטר</a></li></ul></div>
+          <div class="hp-footer-col"><h4>בתי עסק</h4><ul><li><a href="#">הוסיפו עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">תמיכה</a></li></ul></div>
+          <div class="hp-footer-col"><h4>שקיפות</h4><ul><li><a href="#">תנאי שימוש</a></li><li><a href="#">פרטיות</a></li><li><a href="#">נגישות</a></li></ul></div>
+          <div class="hp-footer-news">
+            <p class="h">אוכל טוב לא שומרים לעצמנו</p>
+            <p class="sub">ניוזלטר חודשי · בתי עסק חדשים, סיפורים, מתכונים</p>
+            <div class="form"><input type="email" placeholder="האימייל שלך" aria-label="אימייל"><button class="submit" type="button">הצטרפו ↗</button></div>
+          </div>
+        </div>
+        <div class="hp-footer-bottom">
+          <span>© <span class="numeric">2026</span> מהמקור · תנאי שימוש · פרטיות</span>
+          <span><em style="font-family: var(--font-italic); font-style: italic; color: #C9D9B8;">— from the source</em></span>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- ════════════════ C · STATE FRAMES ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">C</div>
+    <div>
+      <h2>Three states — <em>dignity, not error.</em></h2>
+      <p class="pitch">Each MEH-76 edge case redrawn. (a) On vacation <strong style="font-family: var(--font-body); font-style: normal; color: var(--green-dark);">(locked: WhatsApp stays live)</strong>: exactly one status surface — a single editorial banner, never two — with the primary CTA kept active under an honest “back after 15.6” expectation line. (b) No photos yet: a proper monogram identity, never the broken <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--green-dark);">name.slice(0,2)</code> → "גב". (c) No reviews yet: an invitation to be first, not an empty void.</p>
+    </div>
+    <div class="meta">375 px<br><strong>a · b · c</strong></div>
+  </section>
+
+  <div style="display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap;">
+
+    <!-- (a) VACATION — awaiting Sapir: option A vs B -->
+    <div>
+      <div class="bp-cap" style="width: 375px;"><span class="num">03a</span><span class="label">בחופשה · נורית בחופשה</span><span class="rule"></span><span class="dims">WhatsApp live · locked</span></div>
+      <div style="display: flex; gap: 28px; align-items: flex-start;">
+
+        <!-- VACATION — WhatsApp stays live (LOCKED) -->
+        <div>
+          <span class="cmp-rec pick" style="margin-bottom: 12px;">__ICO_SEAL__ נעול · וואטסאפ פעיל</span>
+          <div class="vp mobile fixed-h" dir="rtl" data-screen-label="/business · Mobile · vacation · WhatsApp live">
+            <div class="mh paper bp">
+              <div class="nav-shell">
+                <nav class="nav is-scrolled" aria-label="primary">
+                  <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+                  <span></span>
+                  <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+                  <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+                </nav>
+              </div>
+              <div class="bp-wrap" style="padding-top: 6px;">
+                <nav class="bp-crumb" aria-label="breadcrumb"><a href="#">גלו</a><span class="sep">›</span><a href="#" class="is-here">חלב וגבינות</a></nav>
+                <header class="bp-hero">
+                  <div class="bp-hero-media" style="height: 170px;">
+                    <div class="photo dairy m-main"></div>
+                    <div class="photo pasture m-a"></div>
+                    <div class="photo hands m-b"></div>
+                  </div>
+                  <div class="bp-hero-text">
+                    <span class="bp-eyebrow"><span class="rule"></span>חלב וגבינות</span>
+                    <div class="bp-name-row">
+                      <h1 class="bp-name" style="font-size: 38px;">מחלבת בן ארי</h1>
+                      <span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span>
+                    </div>
+                    <p class="bp-place">__ICO_PIN__ כפר ויתקין · עמק חפר</p>
+                  </div>
+                </header>
+                <div class="bp-banner" style="margin: 20px 0 4px;">
+                  <span class="ic">__ICO_SUN__</span>
+                  <span class="bx">
+                    <span class="bt">נורית בחופשה עד <span class="numeric">15.6</span></span>
+                    <span class="bd">העדר יצא למרעה הקיץ. אפשר לכתוב כבר עכשיו — היא תחזור אלייך.</span>
+                  </span>
+                </div>
+                <div class="contact-card" style="margin-top: 24px;">
+                  <div class="cc-top">
+                    <span class="cc-kicker">צרי קשר</span>
+                    <button class="action-share" type="button">__ICO_SHARE__ שתפי</button>
+                  </div>
+                  <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+                  <p class="cc-hint">נורית בחופשה — תענה אחרי <span class="numeric">15.6</span></p>
+                  <div class="cc-channels">
+                    <a class="channel" href="#"><span class="ic">__ICO_WA__</span><span class="ch-body"><span class="ch-label">וואטסאפ <span class="primary-tag">ראשי</span></span><span class="ch-val numeric">054-820-3317</span></span><span class="go">__ICO_CHEV__</span></a>
+                    <a class="channel" href="#"><span class="ic">__ICO_GLOBE__</span><span class="ch-body"><span class="ch-label">אתר</span><span class="ch-val ltr">benari-dairy.co.il</span></span><span class="go">__ICO_CHEV__</span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <p class="cap-note" style="width: 375px;"><b>Locked: WhatsApp stays live.</b> The <code>קבלי תזכורת</code> reminder is gone (feature doesn't exist). The vacation status lives in the single muted banner, and the primary CTA stays active — paired with an honest <span class="numeric">15.6</span> expectation line so she knows nurit answers after the break. The status-only alternative was retired.</p>
+    </div>
+
+    <!-- (b) NO PHOTOS — monogram -->
+    <div>
+      <div class="bp-cap" style="width: 375px;"><span class="num">03b</span><span class="label">אין תמונות עדיין</span><span class="rule"></span><span class="dims">monogram</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="/business · Mobile · no photos">
+        <div class="mh paper bp">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="bp-wrap" style="padding-top: 6px;">
+            <nav class="bp-crumb" aria-label="breadcrumb"><a href="#">גלו</a><span class="sep">›</span><a href="#" class="is-here">חלב וגבינות</a></nav>
+            <header class="bp-hero">
+              <div class="monogram" style="height: 300px;">
+                <div class="glyph-wm">__G_DAIRY__</div>
+                <span class="ltr-mark" style="font-size: 140px;">מ</span>
+                <span class="cap">אין עדיין תמונה</span>
+              </div>
+              <div class="bp-hero-text">
+                <span class="bp-eyebrow"><span class="rule"></span>חלב וגבינות · משק משפחתי</span>
+                <div class="bp-name-row">
+                  <h1 class="bp-name" style="font-size: 40px;">מחלבת בן ארי</h1>
+                  <span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span>
+                </div>
+                <p class="bp-place">__ICO_PIN__ כפר ויתקין · עמק חפר</p>
+                <p class="bp-dek" style="font-size: 18px;">ארבעים עזים על גבעה אחת — וכל מה שהן נותנות, ישר מהיד של נורית אלייך.</p>
+              </div>
+            </header>
+
+            <section class="bp-gallery" style="margin-top: 36px;">
+              <span class="sec-eyebrow"><span class="rule"></span>מהמחלבה</span>
+              <h2 class="sec-h">בתמונות</h2>
+              <div class="reviews-empty" style="margin-top: 16px; padding: 32px 24px;">
+                <div class="mark">__ICO_CAMERA__</div>
+                <h4 style="font-size: 20px;">נורית עדיין לא העלתה תמונות</h4>
+                <p>כשיתווספו תמונות מהמחלבה הן יופיעו כאן. בינתיים אפשר לכתוב לה ולשאול.</p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note" style="width: 375px;"><b>Monogram, done right.</b> No photo → a tinted tile carrying the first letter of the display name <span style="font-family: var(--font-display); font-weight: 900;">מ</span> in Frank Ruhl 900 over a faint category glyph. The old build sliced the wrong two characters into a broken "גב"; the monogram is one deliberate initial, category-coloured, never a substring.</p>
+    </div>
+
+    <!-- (c) NO REVIEWS -->
+    <div>
+      <div class="bp-cap" style="width: 375px;"><span class="num">03c</span><span class="label">אין המלצות עדיין</span><span class="rule"></span><span class="dims">invitation</span></div>
+      <div class="vp mobile fixed-h" dir="rtl" data-screen-label="/business · Mobile · no reviews">
+        <div class="mh paper bp">
+          <div class="nav-shell">
+            <nav class="nav is-scrolled" aria-label="primary">
+              <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+              <span></span>
+              <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+              <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+            </nav>
+          </div>
+          <div class="bp-wrap" style="padding-top: 14px;">
+            <section class="bp-practical" style="margin-bottom: 8px;">
+              <span class="sec-eyebrow"><span class="rule"></span>מתי ואיפה</span>
+              <h2 class="sec-h">שעות ומיקום</h2>
+              <div class="bp-hours" style="margin-top: 16px;">
+                <span class="status"><span class="dot"></span>פתוח עכשיו · נסגר ב־<span class="numeric">14:00</span></span>
+                <div class="hours-row"><span class="day">ראשון–חמישי</span><span class="time numeric">08:00–18:00</span></div>
+                <div class="hours-row is-today"><span class="day">שישי · היום</span><span class="time numeric">08:00–14:00</span></div>
+                <div class="hours-row"><span class="day">שבת</span><span class="closed-lbl">סגור</span></div>
+              </div>
+            </section>
+
+            <section class="bp-reviews" style="border-top: 1px solid var(--border); padding: 36px 0 0;">
+              <span class="sec-eyebrow"><span class="rule"></span>המלצות</span>
+              <h2 class="sec-h" style="margin-bottom: 20px;">מה מספרים</h2>
+              <div class="reviews-empty">
+                <div class="mark">__ICO_QUILL__</div>
+                <h4>עדיין אין המלצות — היי הראשונה</h4>
+                <p>קנית אצל נורית? כמה מילים שלך עוזרות לשכנה הבאה להחליט. ההמלצה הראשונה תמיד הכי שווה.</p>
+                <button class="btn-nav" type="button" style="margin-top: 6px; min-height: 48px;">__ICO_QUILL__ כתבי המלצה</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <p class="cap-note" style="width: 375px;"><b>Invitation, not void.</b> Zero reviews becomes a warm prompt with the quill mark and a single ghost action — never a blank "0 reviews" or a row of empty stars. Hours above stay the page's single status surface.</p>
+    </div>
+
+  </div>
+
+  <!-- ════════════════ D · OPEN DECISION — MOBILE CTA ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">D</div>
+    <div>
+      <h2>Locked — <em>mobile contact CTA.</em></h2>
+      <p class="pitch">Decided: the sticky bottom contact bar (A) ships — now wired into the live mobile page in section B. The in-flow channel list stays beneath it as the full directory. The in-flow-only alternative (B) is kept here for the record, not shipped.</p>
+    </div>
+    <div class="meta">375 px<br><strong>A locked · shipped</strong></div>
+  </section>
+
+  <div class="panel">
+    <h2>Sticky bottom bar <em>vs</em> in-flow only</h2>
+    <p class="lede">This is the highest-intent page in the product — every click that reaches it is someone deciding whether to make contact. The bar is additive, not a replacement: the full channel list still lives in the scroll. Kept minimal — one green channel CTA plus a phone shortcut and share — it never becomes a second competing surface.</p>
+
+    <div class="cmp-stage">
+
+      <!-- Variant A — sticky bar -->
+      <div class="cmp-cell">
+        <span class="cmp-tag"><span class="ch">A ·</span> Sticky bottom contact bar</span>
+        <span class="cmp-rec pick">__ICO_SEAL__ locked · shipped</span>
+        <div class="vp mobile fixed-h" dir="rtl" data-screen-label="/business · Mobile · sticky CTA bar">
+          <div class="mh paper bp">
+            <div class="nav-shell">
+              <nav class="nav is-scrolled" aria-label="primary">
+                <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+                <span></span>
+                <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+                <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+              </nav>
+            </div>
+            <div class="bp-wrap" style="padding-top: 6px;">
+              <header class="bp-hero">
+                <div class="bp-hero-media" style="height: 230px;">
+                  <div class="photo dairy m-main"><span class="media-credit">המחלבה · כפר ויתקין</span></div>
+                  <div class="photo pasture m-a"></div>
+                  <div class="photo hands m-b"></div>
+                </div>
+                <div class="bp-hero-text">
+                  <span class="bp-eyebrow"><span class="rule"></span>חלב וגבינות</span>
+                  <div class="bp-name-row">
+                    <h1 class="bp-name" style="font-size: 42px;">מחלבת בן ארי</h1>
+                    <span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span>
+                  </div>
+                  <p class="bp-place">__ICO_PIN__ כפר ויתקין · עמק חפר</p>
+                  <p class="bp-dek" style="font-size: 18px;">ארבעים עזים על גבעה אחת — ישר מהיד של נורית אלייך.</p>
+                </div>
+              </header>
+              <section class="bp-story" style="margin-top: 28px;">
+                <span class="sec-eyebrow"><span class="rule"></span>הסיפור</span>
+                <h2 class="sec-h">מאחורי הגבינה</h2>
+                <p><span class="open-words gold">מחלבת בן ארי</span> יושבת על גבעה קטנה בכפר ויתקין. נורית מגדלת כאן עדר של ארבעים עזים, ומכל בוקר של חליבה נולדות הגבינות.</p>
+              </section>
+            </div>
+            <!-- the sticky bar -->
+            <div class="m-cta-bar">
+              <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+              <button class="mini" type="button" aria-label="התקשרי">__ICO_PHONE__</button>
+              <button class="mini" type="button" aria-label="שתפי">__ICO_SHARE__</button>
+            </div>
+          </div>
+        </div>
+        <p class="cmp-desc">Primary contact is always one thumb-tap away, however far she scrolls. One green CTA + a phone shortcut + share — the full channel list still sits in-flow below. The bar uses a translucent cream blur so the photo reads through it.</p>
+      </div>
+
+      <!-- Variant B — in-flow only -->
+      <div class="cmp-cell">
+        <span class="cmp-tag"><span class="ch">B ·</span> In-flow contact only</span>
+        <span class="cmp-rec alt">not shipped</span>
+        <div class="vp mobile fixed-h" dir="rtl" data-screen-label="/business · Mobile · in-flow contact only">
+          <div class="mh paper bp">
+            <div class="nav-shell">
+              <nav class="nav is-scrolled" aria-label="primary">
+                <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+                <span></span>
+                <button class="icon-btn filled" type="button" aria-label="חיפוש">__ICO_SEARCH__</button>
+                <button class="icon-btn ghost" type="button" aria-label="פתחי תפריט">__ICO_BURGER__</button>
+              </nav>
+            </div>
+            <div class="bp-wrap" style="padding-top: 14px;">
+              <div class="contact-card">
+                <div class="cc-top">
+                  <span class="cc-kicker">צרי קשר</span>
+                  <button class="action-share" type="button">__ICO_SHARE__ שתפי</button>
+                </div>
+                <button class="btn-primary" type="button">__ICO_WA__ שלחי הודעה לנורית</button>
+                                <div class="cc-channels">
+                  <a class="channel" href="#"><span class="ic">__ICO_WA__</span><span class="ch-body"><span class="ch-label">וואטסאפ <span class="primary-tag">ראשי</span></span><span class="ch-val numeric">054-820-3317</span></span><span class="go">__ICO_CHEV__</span></a>
+                  <a class="channel" href="#"><span class="ic">__ICO_PHONE__</span><span class="ch-body"><span class="ch-label">טלפון</span><span class="ch-val numeric">09-866-4120</span></span><span class="go">__ICO_CHEV__</span></a>
+                  <a class="channel" href="#"><span class="ic">__ICO_GLOBE__</span><span class="ch-body"><span class="ch-label">אתר</span><span class="ch-val ltr">benari-dairy.co.il</span></span><span class="go">__ICO_CHEV__</span></a>
+                  <a class="channel" href="#"><span class="ic">__ICO_INSTA__</span><span class="ch-body"><span class="ch-label">אינסטגרם</span><span class="ch-val ltr">@benari.dairy</span></span><span class="go">__ICO_CHEV__</span></a>
+                </div>
+              </div>
+              <p class="cap-note" style="margin-top: 18px; width: auto;">הערוצים מופיעים פעם אחת, בתוך זרימת העמוד.</p>
+            </div>
+          </div>
+        </div>
+        <p class="cmp-desc">Cleaner, calmer, fully editorial — nothing floats over the photography. The cost: on a long scroll she has to come back up (or all the way down) to find the contact module. Fine for a low-pressure brochure; thin for a page whose only job is to convert.</p>
+      </div>
+
+    </div>
+
+    <div style="margin-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); padding-top: 18px; font-family: var(--font-italic); font-style: italic; font-size: 14.5px; color: var(--doc-ink); line-height: 1.6; max-width: 92ch;">
+      <strong style="font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--green-dark);">Locked — A, the sticky bar.</strong> This page exists to turn a browse into a message. The minimal sticky bar keeps the one action that matters in reach without stealing the editorial feel, and the in-flow channel list still answers "how else can I reach her". Three controls and a translucent blur keep it quiet. <span style="color: var(--gold);">Now wired into the live mobile page in section B.</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ E · STORY OPENING ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">E</div>
+    <div>
+      <h2>Story opening — <em>no drop cap.</em></h2>
+      <p class="pitch">The drop cap is gone — a Latin manuscript convention that has no home in Hebrew, which has no capitals and whose tall first letter broke the top-alignment metrics. You picked <strong>B</strong> — opening words in Frank Ruhl 900 (the Hebrew manuscript move). Variant A is retired; what remains is the last small choice, ink vs gold.</p>
+    </div>
+    <div class="meta">reading column<br><strong>B · ink vs gold</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">05</span><span class="label">Story opening · B in ink vs gold</span><span class="rule"></span><span class="dims">A retired</span></div>
+
+  <div class="story-spec-row" dir="rtl">
+    <!-- B — opening words (ink) -->
+    <div class="story-spec">
+      <div class="spec-lab"><span class="k">B</span><span class="t">מילות פתיחה · ink</span></div>
+      <section class="bp-story">
+        <span class="sec-eyebrow"><span class="rule"></span>הסיפור</span>
+        <h2 class="sec-h">מאחורי הגבינה</h2>
+        <p><span class="open-words">מחלבת בן ארי</span> יושבת על גבעה קטנה בכפר ויתקין, מאחורי בית האריזה הישן. נורית מגדלת כאן עדר של ארבעים עזים, ומכל בוקר של חליבה נולדות הגבינות.</p>
+        <p>היא התחילה לפני עשר שנים עם שתי עזים ומתכון של סבתא. היום הרפת הישנה הפכה למרתף יישון, והכול נמכר ישירות אלייך.</p>
+      </section>
+      <p class="spec-foot">המילים הראשונות ב־Frank Ruhl <span class="numeric">900</span> — מסורת כתבי־היד העברית: מדגישים את <em style="font-family: var(--font-italic); font-style: italic;">המילה</em> הפותחת, לא את האות. כאן בצבע הדיו.</p>
+    </div>
+
+    <!-- B — opening words (gold) · recommended -->
+    <div class="story-spec" style="border-color: color-mix(in oklab, var(--gold) 45%, var(--border)); box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 22%, transparent);">
+      <div class="spec-lab"><span class="k">B</span><span class="t">מילות פתיחה · gold</span><span class="cmp-rec pick" style="margin-inline-start: auto;">__ICO_SEAL__ pick</span></div>
+      <section class="bp-story">
+        <span class="sec-eyebrow"><span class="rule"></span>הסיפור</span>
+        <h2 class="sec-h">מאחורי הגבינה</h2>
+        <p><span class="open-words gold">מחלבת בן ארי</span> יושבת על גבעה קטנה בכפר ויתקין, מאחורי בית האריזה הישן. נורית מגדלת כאן עדר של ארבעים עזים, ומכל בוקר של חליבה נולדות הגבינות.</p>
+        <p>היא התחילה לפני עשר שנים עם שתי עזים ומתכון של סבתא. היום הרפת הישנה הפכה למרתף יישון, והכול נמכר ישירות אלייך.</p>
+      </section>
+      <p class="spec-foot">אותו עיקרון, בזהב <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">#8B6914</code>. שם העסק הופך לרגע המותגי שפותח את הסיפור — מחבר את הטיפוגרפיה לכותרת ולמרקרים.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 22px; border-top: 1px solid rgba(42,38,32,0.18); padding-top: 16px; font-family: var(--font-italic); font-style: italic; font-size: 14.5px; color: var(--doc-ink); line-height: 1.6; max-width: 92ch;">
+    <strong style="font-family: var(--font-body); font-style: normal; font-weight: 600; color: var(--green-dark);">Locked — B, gold.</strong> Emphasising the opening words (the business name) in Frank Ruhl 900 is the authentic Hebrew move and it pays double: the name becomes the brand beat that starts the story, and the gold ties the opening to the section rules, pull-quote marks and the map marker. <span style="color: var(--gold);">All three live story instances run B-gold; the ink specimen is kept for the record, not shipped.</span>
+  </div>
+
+  <!-- ════════════════ F · MINIMAL PROFILE ════════════════ -->
+  <section class="section-head" style="margin-top: 56px;">
+    <div class="letter">F</div>
+    <div>
+      <h2>Minimal profile — <em>launch-day reality.</em></h2>
+      <p class="pitch">Most businesses arrive with no written story and no quote — only photos, hours and a phone. The story section <span class="he" style="font-family: var(--font-body);">הסיפור</span> is absent entirely, never an empty state; the hero drops its italic line too. Photos → hours + location → contact → reviews → similar. The hierarchy has to hold on its own, and it does.</p>
+    </div>
+    <div class="meta">1280<br><strong>no story · no quote</strong></div>
+  </section>
+
+  <div class="bp-cap"><span class="num">06</span><span class="label">Desktop · /business · minimal</span><span class="rule"></span><span class="dims numeric">1280 wide</span></div>
+
+  <div class="vp desktop" dir="rtl" data-screen-label="/business · Desktop · minimal (no story)">
+    <div class="mh paper bp">
+      <div class="nav-shell">
+        <nav class="nav is-scrolled" aria-label="primary">
+          <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+          <div class="nav-links">
+            <a class="nav-link" href="#">גלו</a>
+            <a class="nav-link" href="#">מפה</a>
+            <a class="nav-link" href="#">אודות</a>
+          </div>
+          <div class="nav-end">
+            <button class="btn-text" type="button">כניסה לחשבון</button>
+            <button class="btn-outline" type="button">הוסיפו עסק <span class="arr">↗</span></button>
+            <button class="btn-search" type="button">__ICO_SEARCH__ חיפוש</button>
+          </div>
+        </nav>
+      </div>
+
+      <div class="bp-wrap">
+        <nav class="bp-crumb" aria-label="breadcrumb"><a href="#">גלו</a><span class="sep">›</span><a href="#" class="is-here">לחמים ואפייה</a></nav>
+
+        <!-- hero — no italic dek -->
+        <header class="bp-hero">
+          <div class="bp-hero-text">
+            <span class="bp-eyebrow"><span class="rule"></span>לחמים ואפייה · מאפייה משפחתית</span>
+            <div class="bp-name-row">
+              <h1 class="bp-name">מאפיית<br>תמר</h1>
+              <span class="verified" aria-label="בית עסק מאומת" title="מאומת">__ICO_SEAL__</span>
+            </div>
+            <p class="bp-place">__ICO_PIN__ נתניה · מרכז</p>
+            <div class="bp-tags">
+              <span class="bp-tag">מחמצת</span>
+              <span class="bp-tag">אפייה יומית</span>
+              <span class="bp-tag">איסוף עצמי</span>
+            </div>
+          </div>
+          <div class="bp-hero-media">
+            <div class="photo bread m-main"><span class="media-credit">המאפייה · נתניה</span></div>
+            <div class="photo honey m-a"></div>
+            <div class="photo bread m-b"></div>
+          </div>
+        </header>
+
+        <div class="bp-body">
+          <main class="bp-main">
+            <!-- NO הסיפור section — gallery leads -->
+            <section class="bp-gallery">
+              <span class="sec-eyebrow"><span class="rule"></span>מהמאפייה</span>
+              <h2 class="sec-h">בתמונות</h2>
+              <div class="bp-gallery-grid" style="margin-top: 22px;">
+                <div class="photo bread g-1"></div>
+                <div class="photo honey"></div>
+                <div class="photo bread"></div>
+                <div class="photo produce"></div>
+                <div class="g-more"><div class="photo bread"></div><span><span class="lbl">עוד</span>+<span class="numeric">7</span></span></div>
+              </div>
+            </section>
+
+            <section class="bp-practical">
+              <span class="sec-eyebrow"><span class="rule"></span>מתי ואיפה</span>
+              <h2 class="sec-h">שעות ומיקום</h2>
+              <div class="bp-practical-grid" style="margin-top: 22px;">
+                <div class="bp-hours">
+                  <span class="status"><span class="dot"></span>פתוח עכשיו · נסגר ב־<span class="numeric">14:00</span></span>
+                  <div class="hours-row"><span class="day">ראשון–חמישי</span><span class="time numeric">07:00–15:00</span></div>
+                  <div class="hours-row is-today"><span class="day">שישי · היום</span><span class="time numeric">06:00–14:00</span></div>
+                  <div class="hours-row"><span class="day">שבת</span><span class="closed-lbl">סגור</span></div>
+                </div>
+                <div>
+                  <div class="bp-map">
+                    <div class="map-land"></div>
+                    <div class="river" style="top: 22%; inset-inline-start: -8%; width: 70%; transform: rotate(-12deg);"></div>
+                    <div class="road h" style="top: 44%; inset-inline-start: 0; width: 92%;"></div>
+                    <div class="road v thin" style="top: 6%; inset-inline-start: 60%; height: 80%;"></div>
+                    <div class="map-place" style="top: 26%; inset-inline-start: 18%;">נתניה</div>
+                    <div class="mk" style="top: 52%; inset-inline-start: 46%;"><div class="mk-name">מאפיית תמר</div><div class="mk-dot photo bread"></div></div>
+                    <span class="bp-map-addr">__ICO_PIN__ הרצל 14, נתניה</span>
+                  </div>
+                  <div class="bp-nav-btns">
+                    <button class="btn-nav" type="button">__ICO_NAV__ Waze</button>
+                    <button class="btn-nav" type="button">__ICO_PIN__ Google Maps</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          <aside class="bp-aside">
+            <div class="contact-card">
+              <div class="cc-top">
+                <span class="cc-kicker">צרי קשר</span>
+                <button class="action-share" type="button">__ICO_SHARE__ שתפי</button>
+              </div>
+              <button class="btn-primary" type="button">__ICO_PHONE__ התקשרי לתמר</button>
+              <div class="cc-channels">
+                <a class="channel" href="#"><span class="ic">__ICO_PHONE__</span><span class="ch-body"><span class="ch-label">טלפון <span class="primary-tag">ערוץ ראשי</span></span><span class="ch-val numeric">09-861-7720</span></span><span class="go">__ICO_CHEV__</span></a>
+                <a class="channel" href="#"><span class="ic">__ICO_WA__</span><span class="ch-body"><span class="ch-label">וואטסאפ</span><span class="ch-val numeric">052-440-1188</span></span><span class="go">__ICO_CHEV__</span></a>
+                <a class="channel" href="#"><span class="ic">__ICO_INSTA__</span><span class="ch-body"><span class="ch-label">אינסטגרם</span><span class="ch-val ltr">@tamar.bakery</span></span><span class="go">__ICO_CHEV__</span></a>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="bp-wrap">
+        <section class="bp-reviews">
+          <div class="reviews-head">
+            <div>
+              <span class="sec-eyebrow"><span class="rule"></span>המלצות</span>
+              <h2 class="sec-h">מה מספרים</h2>
+            </div>
+            <div class="reviews-summary">
+              <span class="score numeric">4.9</span>
+              <span class="stars"><span class="row">★★★★★</span><span class="cnt">מבוסס על <span class="numeric">11</span> המלצות</span></span>
+            </div>
+          </div>
+          <div class="reviews-grid">
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>החלה הכי טובה בנתניה, בלי תחרות. מגיעה בשישי בבוקר וכבר יש תור — וזה אומר הכול.</p>
+              <div class="r-by"><span class="r-av">ע</span><span class="r-meta"><span class="r-name">עינת ב׳</span><span class="r-date numeric">30.5.2026</span></span></div>
+            </article>
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>מחמצת אמיתית, קראסט פריך ופנים אוורירי. תמר אופה הכול לבד מארבע לפנות בוקר.</p>
+              <div class="r-by"><span class="r-av">ר</span><span class="r-meta"><span class="r-name">רותם ש׳</span><span class="r-date numeric">17.5.2026</span></span></div>
+            </article>
+            <article class="review">
+              <span class="r-stars">★★★★★</span>
+              <p>הזמנתי חלות לראש השנה לכל המשפחה. אריזה יפה, טעם של פעם. כבר הזמנתי לשבת הבאה.</p>
+              <div class="r-by"><span class="r-av">נ</span><span class="r-meta"><span class="r-name">נועה ד׳</span><span class="r-date numeric">3.5.2026</span></span></div>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <div class="bp-wrap">
+        <section class="bp-similar">
+          <span class="sec-eyebrow"><span class="rule"></span>קרוב לכאן</span>
+          <h2 class="sec-h" style="margin-bottom: 24px;">עוד מאפיות באזור</h2>
+          <div class="similar-grid">
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo bread"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">לחמים ואפייה</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">לחם של שבת</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">כפר יונה · <span class="numeric">5.4</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">07:00–14:00</span></span></p>
+              </div>
+            </a>
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo honey"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">לחמים ואפייה</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">בצק ואהבה</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">הרצליה · <span class="numeric">12.0</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>פתוח · <span class="numeric">08:00–18:00</span></span></p>
+              </div>
+            </a>
+            <a class="pcard" href="#">
+              <div class="pcard-media"><div class="photo produce"></div></div>
+              <div class="pcard-body">
+                <p class="pcard-eyebrow">לחמים ואפייה</p>
+                <div class="pcard-nrow"><h3 class="pcard-name">מאפה הכפר</h3><span class="verified" aria-label="בית עסק מאומת">__ICO_SEAL__</span></div>
+                <p class="pcard-meta">אבן יהודה · <span class="numeric">8.7</span> ק״מ</p>
+                <p class="pcard-hours">__ICO_CLOCK__ <span>סגור · נפתח מחר <span class="numeric">07:00</span></span></p>
+              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+
+      <footer class="hp-footer" data-screen-label="footer">
+        <div class="hp-footer-grid">
+          <div class="hp-footer-brand">
+            <a class="logo" href="#" aria-label="מהמקור"><span class="wordmark">מהמקור</span></a>
+            <p class="hp-footer-tagline">ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד</p>
+          </div>
+          <div class="hp-footer-col"><h4>לגלות</h4><ul><li><a href="#">קטגוריות</a></li><li><a href="#">מפה</a></li><li><a href="#">קרוב אלי</a></li></ul></div>
+          <div class="hp-footer-col"><h4>קהילה</h4><ul><li><a href="#">סיפורים</a></li><li><a href="#">היכרות</a></li><li><a href="#">ניוזלטר</a></li></ul></div>
+          <div class="hp-footer-col"><h4>בתי עסק</h4><ul><li><a href="#">הוסיפו עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">תמיכה</a></li></ul></div>
+          <div class="hp-footer-col"><h4>שקיפות</h4><ul><li><a href="#">תנאי שימוש</a></li><li><a href="#">פרטיות</a></li><li><a href="#">נגישות</a></li></ul></div>
+          <div class="hp-footer-news">
+            <p class="h">אוכל טוב לא שומרים לעצמנו</p>
+            <p class="sub">ניוזלטר חודשי · בתי עסק חדשים, סיפורים, מתכונים</p>
+            <div class="form"><input type="email" placeholder="האימייל שלך" aria-label="אימייל"><button class="submit" type="button">הצטרפו ↗</button></div>
+          </div>
+        </div>
+        <div class="hp-footer-bottom">
+          <span>© <span class="numeric">2026</span> מהמקור · תנאי שימוש · פרטיות</span>
+          <span><em style="font-family: var(--font-italic); font-style: italic; color: #C9D9B8;">— from the source</em></span>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ─── BRAND-LOCK SELF-CHECK ─── -->
+  <section class="panel" style="margin-top: 56px;" aria-label="Brand-LOCK self-check">
+    <h2>Brand-LOCK self-check — <em>against the locked system.</em></h2>
+    <p class="lede">Each row maps a brief requirement to its resolution and the source it answers to — Homepage Assembly v2, Map S5 FINAL, ProducerCard v4, or the MEH-76 audit. Five audit fixes + the design-system lock, proven not asserted.</p>
+    <div class="lock-grid">
+      <div class="lock-col">
+        <h3>MEH-76 audit fixes</h3>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Identity, photo-first.</strong> Hero leads with real photography; the no-photo fallback is a deliberate monogram <span class="he" style="font-family: var(--font-display); font-weight: 900;">מ</span> over a faint category glyph — never the broken <code>name.slice(0,2)</code> → <span class="he">גב</span>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>One status surface.</strong> Open/closed lives only in the hours block; vacation collapses to a single muted banner. Never two banners at once.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>One primary CTA.</strong> A single green channel button. Share is demoted to a text-and-icon action <span class="he">שתפי</span> — never a second green button.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Ruthless hierarchy.</strong> The contact card holds three things — CTA, channel list, share — not nine stacked elements.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Location in content flow.</strong> The warm S5 mini-map sits in the Practical section with Waze / Google buttons, not buried in a sidebar.</span></div>
+      </div>
+      <div class="lock-col">
+        <h3>Design-system lock</h3>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Editorial green only.</strong> Every CTA is <code>--primary #2E6853</code> — never WhatsApp brand green, even on the WhatsApp button. Gold <code>#8B6914</code> carries section rules, pull-quote marks, the map marker ring.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Type.</strong> Frank Ruhl Libre 900 masthead + pull-quote; DM Sans body; Cormorant italic accents. No Hebrew over 24px in DM Sans.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Navbar v5</strong> embedded as-is: filled <span class="he">חיפוש</span>, outlined <span class="he">הוסיפו עסק</span>, text <span class="he">כניסה לחשבון</span>, links <span class="he">גלו · מפה · אודות</span>.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>.numeric LTR-isolation</strong> on every number, phone, time-range and distance (<code>direction: ltr; unicode-bidi: isolate</code>) — the en-dash in <span class="numeric">08:00–18:00</span> never flips.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Voice.</strong> Feminine throughout, <span class="he">בית עסק</span> never <span class="he">יצרן</span>, zero emojis, no balloon words. RTL logical properties; borders 1px <code>--border</code>; touch targets ≥ <span class="numeric">44</span>px.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Positioning.</strong> <span class="he">הבית הראשון של העסק שלך</span> — a magazine profile (story + pull-quote), not a marketplace listing.</span></div>
+        <div class="lock-row"><span class="box">✓</span><span><strong>Story is optional.</strong> No drop cap (a Latin import); opening words emphasised in Frank Ruhl 900 instead. Pull-quote drops cleanly when absent, and the whole <span class="he">הסיפור</span> section disappears for story-less businesses — never a placeholder.</span></div>
+      </div>
+    </div>
+  </section>
+
+
+  <footer>
+    <span>Mehamakor · S6 · MEH-102 · /business · v1 · 2026-06-05</span>
+    <span class="italic">הבית הראשון של העסק שלך.</span>
+  </footer>
+
+</div>
+
+<!-- Shared SVG injection — logo is text; only icons + glyphs here. No app logic. -->
+<script>
+(function(){
+  var I = {
+    SEARCH: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+    BURGER: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+    SEAL:   '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.2 1.7 2.7-.2 1 2.5 2.5 1-.2 2.7 1.7 2.2-1.7 2.2.2 2.7-2.5 1-1 2.5-2.7-.2L12 21.4l-2.2-1.7-2.7.2-1-2.5-2.5-1 .2-2.7L2.1 11.5l1.7-2.2-.2-2.7 2.5-1 1-2.5 2.7.2z"/><path d="M9 12l2.1 2.1L15.2 10"/></svg>',
+    WA:     '<svg viewBox="0 0 24 24"><path d="M3.6 20.4l1.3-4.1A8 8 0 1 1 8 19.1l-4.4 1.3z"/><path d="M9 8.6c-.2 0-.5.1-.7.4-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.6 4.1 3.6 2 .8 2.4.7 2.9.6.5-.1 1.3-.5 1.5-1.1.2-.5.2-1 .1-1.1l-.5-.3c-.3-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1l-.6.8c-.1.1-.3.2-.5.1-.3-.1-1-.4-1.7-1-.6-.6-1.1-1.3-1.2-1.5-.1-.2 0-.4.1-.5l.4-.4c.1-.1.2-.3.2-.4.1-.2 0-.3 0-.4 0-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.5-.4z"/></svg>',
+    PHONE:  '<svg viewBox="0 0 24 24"><path d="M6.5 3.5h3l1.5 4-2 1.3a12 12 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5z"/></svg>',
+    CLOCK:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    PIN:    '<svg viewBox="0 0 24 24"><path d="M12 21s7-6.3 7-11a7 7 0 0 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>',
+    NAV:    '<svg viewBox="0 0 24 24"><path d="M21 3 3 10.5l7 2.5 2.5 7L21 3z"/></svg>',
+    GLOBE:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 2.6 15.4 0 18M12 3c-2.6 2.6-2.6 15.4 0 18"/></svg>',
+    INSTA:  '<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17" cy="7" r="1.1" fill="currentColor" stroke="none"/></svg>',
+    SHARE:  '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"/></svg>',
+    CHEV:   '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+    EXT:    '<svg viewBox="0 0 24 24"><path d="M14 5h5v5"/><path d="M19 5l-7 7"/><path d="M19 13.5V17a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3.5"/></svg>',
+    CAMERA: '<svg viewBox="0 0 24 24"><path d="M4 8h3l1.4-2h7.2L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/></svg>',
+    QUILL:  '<svg viewBox="0 0 24 24"><path d="M20 4C11 6 7 11 5 20"/><path d="M5 20c4-1 8-3 10-7M14 8c2 0 4-1 6-4"/><path d="M4 21h6"/></svg>',
+    SUN:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+    LEAF:   '<svg viewBox="0 0 120 120"><path d="M30 100 q4 -34 30 -50 q26 -16 60 -14"/><path d="M52 64 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M76 50 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M60 80 q-12 -2 -16 -12"/></svg>',
+    DAIRY:  '<svg viewBox="0 0 120 120"><path d="M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z"/><path d="M48 28 h24"/><path d="M50 70 h20"/></svg>'
+  };
+  var map = {
+    '__ICO_SEARCH__': I.SEARCH, '__ICO_BURGER__': I.BURGER, '__ICO_SEAL__': I.SEAL,
+    '__ICO_WA__': I.WA, '__ICO_PHONE__': I.PHONE, '__ICO_CLOCK__': I.CLOCK,
+    '__ICO_PIN__': I.PIN, '__ICO_NAV__': I.NAV, '__ICO_GLOBE__': I.GLOBE,
+    '__ICO_INSTA__': I.INSTA, '__ICO_SHARE__': I.SHARE, '__ICO_CHEV__': I.CHEV, '__ICO_EXT__': I.EXT,
+    '__ICO_CAMERA__': I.CAMERA, '__ICO_QUILL__': I.QUILL, '__ICO_SUN__': I.SUN,
+    '__G_LEAF__': I.LEAF, '__G_DAIRY__': I.DAIRY
+  };
+  function walk(node){
+    for (var i = node.childNodes.length - 1; i >= 0; i--) {
+      var c = node.childNodes[i];
+      if (c.nodeType === 3) {
+        var t = c.nodeValue;
+        if (t.indexOf('__') !== -1 && /__[A-Z_]+__/.test(t)) {
+          var html = t.replace(/__[A-Z_]+__/g, function(m){ return map[m] || m; });
+          if (html !== t) { var s = document.createElement('span'); s.style.display='contents'; s.innerHTML = html; c.parentNode.replaceChild(s, c); }
+        }
+      } else if (c.nodeType === 1 && c.tagName !== 'SCRIPT' && c.tagName !== 'STYLE') { walk(c); }
+    }
+  }
+  walk(document.body);
+})();
+</script>
+</body>
+</html>

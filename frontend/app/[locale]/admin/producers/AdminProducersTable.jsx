@@ -26,6 +26,27 @@ function StatusBadge({ status }) {
   return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
 }
 
+// MEH-1011 Chunk 2: "ממתין להשלמה" trail badge — shown when the admin has sent
+// a request-changes (requested_changes ≠ null). Status stays pending; this
+// flags that the producer owes a fix. The date is wrapped dir="ltr" so the
+// RTL page doesn't flip its segments (bidi-isolate); full feedback in title.
+export function AwaitingCompletionBadge({ producer }) {
+  const t = useTranslations("admin");
+  if (!producer.requested_changes) return null;
+  const date = producer.changes_requested_at
+    ? new Date(producer.changes_requested_at).toLocaleDateString("he-IL")
+    : null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+      title={producer.requested_changes}
+    >
+      {t("producers.table.awaiting_completion")}
+      {date && <span dir="ltr" className="tabular-nums">{date}</span>}
+    </span>
+  );
+}
+
 // MEH-509 PR3: Anthropic-Haiku-backed risk score badge.
 // score=null → grey "אין מידע" (NULL = "not scored yet OR Anthropic call failed").
 // score ≤ 30 → green "סיכון נמוך", 31-70 → yellow "סיכון בינוני", >70 → red "סיכון גבוה".
@@ -119,20 +140,29 @@ function ProducerTags({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
   // may be undefined if a caller doesn't pass it — default to never-busy.
   const busy = isBusy || (() => false);
+  const isPending = ["pending", "pending_whatsapp"].includes(p.status);
   return (
     <div className="flex gap-3 flex-wrap">
       {/* MEH-745: self-registered producers sit in pending_whatsapp; the
           approve endpoint has no status guard, so surface approve for both
-          waiting states (admin fallback alongside the OTP self-serve path). */}
-      {["pending", "pending_whatsapp"].includes(p.status) && (
-        <button onClick={() => onQuickApprove(p.id)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+          waiting states (admin fallback alongside the OTP self-serve path).
+          MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
+          can open request-changes prefilled with the gate-matched chip. */}
+      {isPending && (
+        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.approve_short")}
+        </button>
+      )}
+      {/* MEH-1011 Chunk 2: non-terminal "please complete" request — pending only. */}
+      {isPending && (
+        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+          {t("producers.table.actions.request_changes")}
         </button>
       )}
       <Link href={`/admin/producers/${p.id}/edit`} className="text-primary hover:underline text-xs">
@@ -189,7 +219,12 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
         <td className="px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
-        <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+        <td className="px-4 py-3">
+          <div className="flex flex-col items-start gap-1">
+            <StatusBadge status={p.status} />
+            <AwaitingCompletionBadge producer={p} />
+          </div>
+        </td>
         <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
         <td className="px-4 py-3">
           <ProducerActions producer={p} isStoryOpen={isStoryOpen} {...handlers} />
@@ -225,16 +260,16 @@ function TableHead() {
   return (
     <thead className="bg-gray-50">
       <tr>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.name")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.city")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.categories")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.tags")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">
           {t("producers.table.columns.status")}
           <InfoTooltip content={statusTooltip} label={t("producers.table.status_tooltip_label")} position="bottom" />
         </th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
-        <th className="text-end px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.risk")}</th>
+        <th className="text-start px-4 py-3 font-medium text-muted">{t("producers.table.columns.actions")}</th>
       </tr>
     </thead>
   );
@@ -253,14 +288,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
-  onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (

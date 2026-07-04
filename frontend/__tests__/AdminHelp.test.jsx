@@ -25,6 +25,14 @@ vi.mock("@phosphor-icons/react", () => {
     Lifebuoy: Stub,
     LinkSimple: Stub,
     ArrowUpRight: Stub,
+    // MEH-1022: icons for the 7 admin surfaces added to the help page.
+    Megaphone: Stub,
+    Package: Stub,
+    Bread: Stub,
+    Seal: Stub,
+    Tag: Stub,
+    ChatCircleSlash: Stub,
+    ChartLineUp: Stub,
   };
 });
 
@@ -43,6 +51,13 @@ vi.mock("next-intl", () => {
     "admin.help.toc.reviews": "ביקורות",
     "admin.help.toc.reports": "דיווחים",
     "admin.help.toc.experiences": "חוויות",
+    "admin.help.toc.outreach": "גיוס בתי עסק",
+    "admin.help.toc.group_buys": "קבוצות רכש",
+    "admin.help.toc.recipes": "מתכונים",
+    "admin.help.toc.kashrut": "בקשות כשרות",
+    "admin.help.toc.category_requests": "בקשות קטגוריה",
+    "admin.help.toc.whatsapp_failures": "הודעות שלא נמסרו",
+    "admin.help.toc.analytics": "אנליטיקס",
     "admin.help.toc.emergency": "תקלות חירום",
     "admin.help.toc.urls": "כתובות חשובות",
     "admin.help.sections.dashboard.title": "סקירת לוח המחוונים",
@@ -51,6 +66,13 @@ vi.mock("next-intl", () => {
     "admin.help.sections.reviews.title": "ביקורות",
     "admin.help.sections.reports.title": "דיווחים",
     "admin.help.sections.experiences.title": "חוויות",
+    "admin.help.sections.outreach.title": "גיוס בתי עסק",
+    "admin.help.sections.group_buys.title": "קבוצות רכש",
+    "admin.help.sections.recipes.title": "מתכונים",
+    "admin.help.sections.kashrut.title": "בקשות כשרות",
+    "admin.help.sections.category_requests.title": "בקשות קטגוריה",
+    "admin.help.sections.whatsapp_failures.title": "הודעות שלא נמסרו",
+    "admin.help.sections.analytics.title": "אנליטיקס",
     "admin.help.sections.emergency.title": "תקלות חירום",
     "admin.help.sections.urls.title": "כתובות חשובות",
     "admin.help.sections.emergency.site_down_title": "האתר לא עולה",
@@ -81,7 +103,7 @@ vi.mock("next-intl", () => {
 });
 
 describe("AdminHelp page", () => {
-  it("renders the header + all 8 sections (heading + TOC link for each)", () => {
+  it("renders the header + all 15 sections (heading + TOC link for each)", () => {
     render(<AdminHelpPage />);
     expect(screen.getByText("עזרה לאדמין")).toBeInTheDocument();
     // Each section heading is repeated as the TOC link text — assert
@@ -93,6 +115,14 @@ describe("AdminHelp page", () => {
       "ביקורות",
       "דיווחים",
       "חוויות",
+      // MEH-1022: the 7 admin surfaces added to the help page.
+      "גיוס בתי עסק",
+      "קבוצות רכש",
+      "מתכונים",
+      "בקשות כשרות",
+      "בקשות קטגוריה",
+      "הודעות שלא נמסרו",
+      "אנליטיקס",
       "תקלות חירום",
       "כתובות חשובות",
     ]) {
@@ -109,6 +139,13 @@ describe("AdminHelp page", () => {
       "#reviews",
       "#reports",
       "#experiences",
+      "#outreach",
+      "#group_buys",
+      "#recipes",
+      "#kashrut",
+      "#category_requests",
+      "#whatsapp_failures",
+      "#analytics",
       "#emergency",
       "#urls",
     ];
@@ -130,6 +167,13 @@ describe("AdminHelp page", () => {
       "reviews",
       "reports",
       "experiences",
+      "outreach",
+      "group_buys",
+      "recipes",
+      "kashrut",
+      "category_requests",
+      "whatsapp_failures",
+      "analytics",
       "emergency",
       "urls",
     ];

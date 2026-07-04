@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>ניהול העסק — 3 כיווני ארכיטקטורת מידע</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F5F0E8; --stage:#EBE4D6; --card:#FFFEFB;
+    --ink:#1a1a1a; --muted:#6b6b6b; --line:#E5DFD3;
+    --primary:#2e6853; --primary-dk:#26543F; --primary-soft:rgba(46,104,83,.08);
+    --gold:#8B6914; --gold-soft:rgba(139,105,20,.10);
+    --wire:#D9D1C2; --wire-fill:#EEE8DC;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ font-family:'DM Sans',sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+  .num{ font-family:'Cormorant Garamond',serif; font-weight:600; }
+
+  /* ---- frame scaffolding ---- */
+  .frame{ width:404px; }
+  .frame-label{ font-size:12px; letter-spacing:.06em; color:#7a7468; font-weight:600; margin:0 2px 10px; }
+  .col{ background:#fff; border:1px solid #e6e0d4; border-radius:18px; box-shadow:0 1px 2px rgba(28,26,23,.04),0 18px 44px -28px rgba(28,26,23,.28); overflow:hidden; }
+  .col-head{ padding:22px 22px 18px; border-bottom:1px solid var(--line); background:var(--cream); }
+  .tag{ display:inline-block; font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; font-weight:700; color:var(--gold); margin:0 0 8px; }
+  h2.dir{ font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:23px; line-height:1.18; color:var(--primary); margin:0; }
+  .dir-en{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:15px; color:var(--muted); margin:3px 0 0; }
+
+  /* ---- phone sketch ---- */
+  .phone-wrap{ padding:22px 22px 6px; display:flex; justify-content:center; }
+  .phone{ width:236px; background:var(--stage); border:7px solid #1f1d1a; border-radius:30px; padding:8px; box-shadow:0 10px 30px -16px rgba(28,26,23,.5); }
+  .screen{ background:var(--cream); border-radius:20px; overflow:hidden; position:relative; height:430px; display:flex; flex-direction:column; }
+  .scr-head{ padding:11px 12px 9px; border-bottom:1px solid var(--line); background:var(--card); flex:none; }
+  .scr-head .eyebrow{ font-size:7px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700; }
+  .scr-head .ttl{ font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:14px; color:var(--ink); margin-top:1px; }
+  .scr-body{ padding:10px; display:flex; flex-direction:column; gap:8px; overflow:hidden; flex:1; }
+
+  .blk{ border:1px solid var(--wire); background:var(--card); border-radius:9px; padding:8px 9px; }
+  .blk.fill{ background:var(--wire-fill); }
+  .blk-lab{ font-size:8.5px; color:var(--muted); font-weight:600; letter-spacing:.02em; }
+  .blk-lab b{ color:var(--ink); }
+  .blk.primary{ background:var(--primary); border-color:var(--primary); }
+  .blk.primary .blk-lab{ color:rgba(255,254,251,.95); }
+  .blk.primary .blk-lab b{ color:#fff; }
+  .blk.ghost{ border-style:dashed; background:transparent; }
+  .blk.gold{ background:var(--gold-soft); border-color:rgba(139,105,20,.3); }
+  .blk.gold .blk-lab b{ color:var(--gold); }
+
+  .ringline{ display:flex; align-items:center; gap:8px; }
+  .ring{ width:30px; height:30px; flex:none; }
+  .row-line{ display:flex; align-items:center; gap:6px; }
+  .dot{ width:11px; height:11px; border-radius:50%; border:1.5px solid var(--primary); flex:none; }
+  .dot.done{ background:var(--primary); }
+  .dot.todo{ border-style:dashed; border-color:var(--muted); }
+  .miniline{ height:5px; border-radius:3px; background:var(--wire); }
+
+  /* bottom tab bar sketch */
+  .tabbar{ flex:none; border-top:1px solid var(--line); background:var(--card); display:flex; }
+  .tabbar .tb{ flex:1; padding:7px 0 8px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .tabbar .ic{ width:15px; height:15px; border:1.5px solid var(--muted); border-radius:5px; }
+  .tabbar .tb.on .ic{ border-color:var(--primary); background:var(--primary-soft); }
+  .tabbar .tl{ font-size:7px; color:var(--muted); font-weight:600; }
+  .tabbar .tb.on .tl{ color:var(--primary); }
+
+  /* hub spoke grid */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .spoke{ border:1px solid var(--wire); border-radius:10px; background:var(--card); padding:9px 8px 11px; min-height:62px; display:flex; flex-direction:column; gap:5px; }
+  .spoke .sh{ display:flex; align-items:center; gap:5px; }
+  .spoke .sq{ width:16px; height:16px; border-radius:5px; background:var(--primary-soft); border:1px solid rgba(46,104,83,.25); }
+  .spoke .st{ font-size:9px; font-weight:700; color:var(--ink); }
+  .spoke .sm{ font-size:7.5px; color:var(--muted); line-height:1.3; }
+  .spoke.locked{ background:repeating-linear-gradient(135deg,transparent,transparent 5px,rgba(0,0,0,.018) 5px,rgba(0,0,0,.018) 10px); }
+  .spoke.locked .sq{ background:#eee7d9; border-color:var(--line); }
+
+  .listrow{ display:flex; align-items:center; justify-content:space-between; padding:7px 2px; border-bottom:1px solid var(--line); }
+  .listrow .ll{ font-size:9px; font-weight:600; color:var(--ink); }
+  .listrow .lc{ font-size:9px; color:var(--muted); }
+
+  /* ---- rationale block ---- */
+  .why{ padding:20px 22px 24px; display:flex; flex-direction:column; gap:0; }
+  .why .nav-line{ font-size:13px; font-weight:700; color:var(--ink); padding:0 0 13px; border-bottom:1px solid var(--line); }
+  .why .nav-line span{ color:var(--primary); }
+  .rrow{ padding:12px 0; border-bottom:1px solid var(--line); }
+  .rrow:last-child{ border-bottom:0; padding-bottom:0; }
+  .rk{ font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); font-weight:700; margin:0 0 4px; }
+  .rv{ font-size:13.5px; line-height:1.5; color:#3a3833; margin:0; }
+  .rv b{ color:var(--ink); }
+  .analytics-meter{ display:flex; align-items:center; gap:7px; margin-top:9px; }
+  .am-lab{ font-size:10px; color:var(--muted); font-weight:600; }
+  .am-bar{ flex:1; height:5px; border-radius:3px; background:var(--line); overflow:hidden; }
+  .am-fill{ height:100%; background:var(--gold); border-radius:3px; }
+
+  /* ---- title block ---- */
+  .titleblock{ width:520px; }
+  .titleblock .kick{ font-family:'Cormorant Garamond',serif; font-style:italic; font-size:20px; color:var(--gold); margin:0; }
+  .titleblock h1{ font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:46px; line-height:1.1; color:var(--primary); margin:6px 0 14px; }
+  .titleblock p{ font-size:15.5px; line-height:1.6; color:#3a3833; margin:0 0 10px; }
+  .titleblock .meta{ font-size:12.5px; color:var(--muted); line-height:1.7; border-top:1px solid var(--line); padding-top:14px; margin-top:6px; }
+  .titleblock .meta b{ color:var(--ink); }
+  .swatches{ display:flex; gap:8px; margin-top:14px; }
+  .sw{ width:30px; height:30px; border-radius:8px; border:1px solid rgba(0,0,0,.08); }
+</style>
+</head>
+<body>
+
+  <!-- ===== TITLE ===== -->
+  <div style="position:absolute; left:40px; top:48px;">
+    <div class="titleblock">
+      <p class="kick">ניהול העסק · ארכיטקטורת מידע</p>
+      <h1>שלושה כיוונים<br>למסך הבית</h1>
+      <p>הבעיה היום: גלילה אחת ארוכה ללא היררכיה, וארבעה סוגי-עבודה משולבים זה בזה — הקמה, סטטוס יומי, נתונים ועריכה. ~70% מהמסך הוא אפסים, כי בעלת העסק עדיין לפני השקה.</p>
+      <p>שלושת הכיוונים נבדלים בשני צירים: <b>תבנית הניווט</b> בין ארבעת המדורים (סקירה · עריכה · תובנות · כלים), ו<b>כמה אגרסיבית מוסתרים הנתונים</b> לפני שיש דאטה.</p>
+      <div class="meta">
+        <b>קהל:</b> בעלת עסק, 28–45, ניידת-תחילה, WhatsApp-native, לפני השקה.<br>
+        <b>תזה:</b> מגזין, לא marketplace. מדריך תומך — לא קונסולת אנליטיקס.<br>
+        <b>נעול במותג:</b> ירוק #2e6853 · קרם #F5F0E8 · זהב #8B6914 · Frank Ruhl Libre / DM Sans / Cormorant · RTL · אייקוני Phosphor.
+      </div>
+      <div class="swatches">
+        <div class="sw" style="background:#2e6853"></div>
+        <div class="sw" style="background:#F5F0E8"></div>
+        <div class="sw" style="background:#8B6914"></div>
+        <div class="sw" style="background:#1a1a1a"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION A ===== -->
+  <div style="position:absolute; left:40px; top:430px;" data-drags-parent="1">
+    <p class="frame-label">כיוון א</p>
+    <div class="frame">
+      <div class="col">
+        <div class="col-head">
+          <span class="tag">בר טאבים קבוע</span>
+          <h2 class="dir">אפליקציית טאבים</h2>
+          <p class="dir-en">Persistent tab bar</p>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen">
+            <div class="scr-head"><div class="eyebrow">סקירה</div><div class="ttl">בוקר טוב, מאיה</div></div>
+            <div class="scr-body">
+              <div class="blk">
+                <div class="ringline">
+                  <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E5DFD3" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#C98600" stroke-width="4" stroke-linecap="round" stroke-dasharray="56 94" transform="rotate(-90 18 18)"/></svg>
+                  <div class="blk-lab"><b>השלמת פרופיל 60%</b><br>נשארו 3 שלבים</div>
+                </div>
+              </div>
+              <div class="blk gold"><div class="blk-lab"><b>אימות טלפון</b> · השלב הבא ›</div></div>
+              <div class="blk"><div class="row-line"><div class="blk-lab" style="flex:1"><b>זמינה לפניות</b></div><div style="width:26px;height:14px;border-radius:8px;background:var(--primary)"></div></div></div>
+              <div class="blk ghost"><div class="blk-lab">עוד אין צפיות — רמז קצר, הנתונים המלאים בטאב «תובנות»</div></div>
+            </div>
+            <div class="tabbar">
+              <div class="tb on"><div class="ic"></div><div class="tl">סקירה</div></div>
+              <div class="tb"><div class="ic"></div><div class="tl">עריכה</div></div>
+              <div class="tb"><div class="ic"></div><div class="tl">תובנות</div></div>
+              <div class="tb"><div class="ic"></div><div class="tl">כלים</div></div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="why">
+          <div class="nav-line">ניווט: <span>בר טאבים תחתון קבוע</span> — כל מדור הוא יעד</div>
+          <div class="rrow"><p class="rk">למי זה מתאים</p><p class="rv">בעלת עסק שתחזור <b>יום-יום</b> ורוצה מעבר מהיר בין מדורים. תבנית מוכרת מ-WhatsApp / אפליקציות נייד.</p></div>
+          <div class="rrow"><p class="rk">הסתרת נתונים</p><p class="rv">בינונית. הסקירה לא מציגה אנליטיקס בכלל — רק רמז; הנתונים חיים במדור «תובנות» ונעולים עד שיש דאטה.<span class="analytics-meter"><span class="am-lab">הסתרה</span><span class="am-bar"><span class="am-fill" style="width:55%"></span></span></span></p></div>
+          <div class="rrow"><p class="rk">הפשרה (Tradeoff)</p><p class="rv">4 טאבים יכולים להרגיש «אפליקציה ללמוד». בעלת עסק לפני השקה אולי לעולם לא תקיש «תובנות».</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION B ===== -->
+  <div style="position:absolute; left:484px; top:430px;" data-drags-parent="1">
+    <p class="frame-label">כיוון ב · המומלץ לתזה</p>
+    <div class="frame">
+      <div class="col">
+        <div class="col-head">
+          <span class="tag">בית-מדריך נגלל</span>
+          <h2 class="dir">מדריך אנכי + כניסה לעומק</h2>
+          <p class="dir-en">Guided scroll &amp; drill-in</p>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen">
+            <div class="scr-head"><div class="eyebrow">ניהול העסק</div><div class="ttl">בואי נשלים את הפרופיל</div></div>
+            <div class="scr-body">
+              <div class="blk" style="padding:9px">
+                <div class="ringline">
+                  <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E5DFD3" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#C98600" stroke-width="4" stroke-linecap="round" stroke-dasharray="56 94" transform="rotate(-90 18 18)"/></svg>
+                  <div class="blk-lab"><b>60% מוכן</b></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;margin-top:7px">
+                  <div class="row-line"><span class="dot done"></span><span class="blk-lab">עיר · קטגוריה</span></div>
+                  <div class="row-line"><span class="dot todo"></span><span class="blk-lab">תמונה ראשית</span></div>
+                </div>
+              </div>
+              <div class="blk primary"><div class="blk-lab"><b>השלב הבא › הוסיפי תמונה ראשית</b></div></div>
+              <div class="blk gold"><div class="blk-lab"><b>אמתי טלפון</b> כדי לקבל פניות ›</div></div>
+              <div class="blk ghost" style="padding:11px 9px"><div class="blk-lab">📈 <b>עוד אין צפיות</b><br>ככה משיגים את הראשונות — מצב ריק מעודד, יחיד</div></div>
+              <div class="listrow"><span class="ll">עריכת הפרופיל</span><span class="lc">›</span></div>
+              <div class="listrow"><span class="ll">כלים ושיתוף</span><span class="lc">›</span></div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="why">
+          <div class="nav-line">ניווט: <span>בית נגלל אחד</span> + כניסה לעומק במדורים</div>
+          <div class="rrow"><p class="rk">למי זה מתאים</p><p class="rv">בעלת עסק <b>לפני השקה</b> שצריכה ליווי. «מה השלב הבא» נקרא מלמעלה למטה. הכי נאמן לתזה — מגזין, לא קונסולה.</p></div>
+          <div class="rrow"><p class="rk">הסתרת נתונים</p><p class="rv"><b>אגרסיבית.</b> כל האנליטיקס מתקפלים למצב-ריק מעודד יחיד בתוך הזרימה; מדור «תובנות» נפתח רק כשמופיעה דאטה.<span class="analytics-meter"><span class="am-lab">הסתרה</span><span class="am-bar"><span class="am-fill" style="width:92%"></span></span></span></p></div>
+          <div class="rrow"><p class="rk">הפשרה (Tradeoff)</p><p class="rv">מעבר הלוך-ושוב בין מסכים; פחות יעיל לבעלת עסק במצב LIVE עם הרבה לנהל.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DIRECTION C ===== -->
+  <div style="position:absolute; left:928px; top:430px;" data-drags-parent="1">
+    <p class="frame-label">כיוון ג</p>
+    <div class="frame">
+      <div class="col">
+        <div class="col-head">
+          <span class="tag">כרטיסי מוקד</span>
+          <h2 class="dir">מוקד וזרועות</h2>
+          <p class="dir-en">Hub &amp; spoke cards</p>
+        </div>
+
+        <div class="phone-wrap">
+          <div class="phone"><div class="screen">
+            <div class="scr-head"><div class="eyebrow">ניהול העסק</div><div class="ttl">לוח הבית</div></div>
+            <div class="scr-body">
+              <div class="blk" style="padding:9px">
+                <div class="ringline">
+                  <svg class="ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#E5DFD3" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#C98600" stroke-width="4" stroke-linecap="round" stroke-dasharray="56 94" transform="rotate(-90 18 18)"/></svg>
+                  <div class="blk-lab"><b>60% מוכן</b> · השלב הבא › תמונה ראשית</div>
+                </div>
+              </div>
+              <div class="grid2">
+                <div class="spoke"><div class="sh"><div class="sq"></div><div class="st">עריכה</div></div><div class="sm">פרופיל, קשר, שאלות</div></div>
+                <div class="spoke locked"><div class="sh"><div class="sq"></div><div class="st">תובנות 🔒</div></div><div class="sm">נפתח עם ההשקה</div></div>
+                <div class="spoke"><div class="sh"><div class="sq"></div><div class="st">כלים</div></div><div class="sm">שיתוף, WhatsApp</div></div>
+                <div class="spoke"><div class="sh"><div class="sq"></div><div class="st">זמינות</div></div><div class="sm">זמינה לפניות</div></div>
+              </div>
+            </div>
+          </div></div>
+        </div>
+
+        <div class="why">
+          <div class="nav-line">ניווט: <span>כרטיסי מוקד</span> — הבית הוא משטח שיגור</div>
+          <div class="rrow"><p class="rk">למי זה מתאים</p><p class="rv">בעלת עסק שרוצה <b>מפה של הכול</b> במבט אחד. מתרחב יפה מ-incomplete ל-LIVE — אותו כרטיס פשוט מתמלא ב-KPI.</p></div>
+          <div class="rrow"><p class="rk">הסתרת נתונים</p><p class="rv">קלה. כרטיס «תובנות» נוכח אך רדום — מצב «נעול עד ההשקה». לא קיר אפסים, אך הנתונים גלויים כקטגוריה.<span class="analytics-meter"><span class="am-lab">הסתרה</span><span class="am-bar"><span class="am-fill" style="width:34%"></span></span></span></p></div>
+          <div class="rrow"><p class="rk">הפשרה (Tradeoff)</p><p class="rv">הסטטוס (השלמה + שלב הבא) מתחרה על מבט 3-השניות מול 3 כרטיסים אחרים. סיכון שירגיש כמו תפריט.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
