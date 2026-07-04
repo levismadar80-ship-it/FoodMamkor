@@ -31,7 +31,6 @@
 - **MEH-1001 — Phase 0 ONLY (HIGH-RISK), STOP at WAIT gate.** Cross-owner 403-leak matrix posted to Linear: events PUT `:189` (no admin override), events DELETE `:215-219`, experiences PUT `:287-289` (no admin override), experiences DELETE `:342-346`, home_products `:278-282`/`:324-327`, reviews `:319-323` all leak 403; recipes = 404 ✅. **Awaiting Sapir "go" for Chunk 1.**
 
 **Sapir pending:** merge order **#1468 → #1472**; QA + merge the 5 sweep PRs + #1474/#1450; close #1473; approve/reject copy-gated strings; **go** for MEH-1001 Chunk 1; decide fate of the remaining G5 items + the #1410 `.agents/skills/` scope-bleed (flagged on #1464). Hourly self check-in armed across all PRs.
->>>>>>> origin/staging
 
 ## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
 
