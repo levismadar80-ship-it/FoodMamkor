@@ -65,29 +65,59 @@ files. Central component list: `.claude/central-components.json`.
 
 ## Required status checks + docs-only merge (MEH-716)
 
-**Staging required checks = 6** (confirmed by Sapir 2026-06; all `pull_request`-triggered):
-`Frontend build (Next.js)`, `Backend tests (pytest)`, `Backend lint (ruff)`,
-`Env drift (.env.example)` (`pr-checks.yml`); `Frontend lint (RTL + Next.js rules)`,
-`API contract audit (static)` (`deploy.yml`). env-drift always runs; the other 5 are
-job-level paths-filter gated and **skip** on a docs-only diff. **Under Rulesets a
-skipped required check reports as "Expected" and BLOCKS merge — it does NOT satisfy
-the check.** (That was classic-branch-protection behavior; the repo is on Rulesets
-now, so the old "skipped satisfies" claim was stale — it forced admin-merges on
-2026-06: #910, #913, + a near-miss.) **MEH-736** adds no-op **docs-only twin jobs**
-(identical `name:`, exact-complement `if:`, exit 0) in `pr-checks.yml` + `deploy.yml`
-so docs-only PRs satisfy all 6 with no admin override. Full mechanism:
+**Staging required checks = 2 aggregator gates:** `CI gate` (`pr-checks.yml`) +
+`Deploy gate` (`deploy.yml`). These are the **only** contexts the `protect-staging`
+ruleset (ID 15240090) requires — verified against the ruleset API 2026-07-04. The
+individual named jobs (`Frontend build`, `Backend tests`, `Backend lint`,
+`Env drift`, `Frontend lint (RTL + Next.js rules)`, `API contract audit`, …) are
+**not** individually required: they're job-level paths-filter gated and **skip** on
+a docs-only or config-only diff, which is expected — a skipped job still lets its
+parent aggregate (`CI gate` / `Deploy gate`) report `success`, so both required
+gates go green and the PR merges with **no admin override**. (Exactly how the
+docs/config-only PRs #1012, #1026, #1485 merged: the named jobs showed `skipped`,
+both aggregators showed `success`.) There are **no** "docs-only twin jobs" and none
+are needed — an earlier version of this note claimed MEH-736 added them to satisfy
+"6 required checks"; both the twins and the six-checks framing were wrong (the
+ruleset only ever gated on the 2 aggregators). Full mechanism:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Required checks".
 
 **`Playwright E2E (Vercel preview)` is NOT a required check.** It lives in
 `e2e.yml`, triggered by `deployment_status` (after the Vercel preview deploys),
 and job-skips on docs diffs (`e2e.yml:54-60`). **Docs-only PRs: don't poll E2E.**
-Merge when the **6 `pull_request` required checks** are green.
+Merge when the **2 required aggregator gates** are green.
 
-**Transient "X of 6 expected" right after push** = the required checks are still
-registering (workflow startup), **not** a failure — distinct from the *permanent*
-docs-only skip case above (now fixed by the MEH-736 twins). Let them settle, then
-retry the merge once. (Observed on PR #908 — first merge attempt blocked on
-`expected`, second succeeded with no override.)
+**Transient "waiting for status / expected" right after push** = the required gates
+are still registering (workflow startup), **not** a failure. Let them settle, then
+retry the merge once. (Observed on PR #908 — first merge attempt blocked on a
+not-yet-reported gate, second succeeded with no override.)
+
+---
+
+## Guarded registries — path-drift validator (MEH-1030)
+
+Some guard/config files list **repo file paths** their tooling depends on. When a
+refactor moves or deletes a listed file, the registry silently stops matching and
+its guard disables itself with no error — caught reactively twice (MEH-668
+`rtl-allowlist.txt`, MEH-1026 `central-components.json`, both after the `[locale]`
+migration). `scripts/validate-registry-paths.py` asserts every listed path still
+resolves (exit non-zero + offender list on any miss), wired as a `repo: local`
+pre-commit hook in `.pre-commit-config.yaml` that runs whenever a guarded registry
+or the validator itself changes.
+
+**Currently guarded (2):**
+
+| Registry | Format the validator parses |
+|---|---|
+| `.claude/central-components.json` | JSON — every string in the `components[]` array |
+| `.claude/hooks/rtl-allowlist.txt` | newline list — **only** the `PATH EXCEPTIONS` section (between the two `# ==== … ====` markers); the `CONTENT PATTERNS` markers (`rtl-ok`) are not paths and are skipped |
+
+**Add a registry:** append one entry to the `REGISTRIES` list in
+`scripts/validate-registry-paths.py` — `{"file": "<path>", "parser": <fn>}` — reusing
+`_parse_json_array` / `_parse_rtl_allowlist` or adding a small parser that returns
+`[(lineno, repo_relative_path), …]`. Path-existence only — no schema/owner checks
+(over-engineering guard). Not a CI gate: `.github/workflows/**` is CC-deny (MEH-671)
+and collides with MEH-787 on `pr-checks.yml`; a required-gate form is a separate A2
+follow-up.
 
 ---
 

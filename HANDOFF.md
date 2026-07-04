@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1030: registry-path-drift guard (validator + pre-commit) + sweep + testing.md fix — DRAFT PR
+
+- **Branch:** `feature/meh-1030-registry-path-guard` off `origin/staging`. YELLOW/discovery-gated → Phase 0 approved → end-to-end. `Closes MEH-1030`. Recurrence-prevention for MEH-668 + MEH-1026.
+- **Shipped:** `scripts/validate-registry-paths.py` (stdlib; `REGISTRIES` config → parser per registry; exit≠0 + offender list on any missing path) covering the 2 path registries (`central-components.json` array; `rtl-allowlist.txt` PATH-EXCEPTIONS section only). Wired as `repo: local` pre-commit hook (`pass_filenames:false`, runs on registry/validator changes). `.claude/rules/testing.md` gains a "Guarded registries" doc (2 registries + how-to-add).
+- **⚠️ ONE MANUAL STEP FOR SAPIR (paste-diff in PR body):** the residual sweep = remove `rtl-allowlist.txt:10` (`…/DesktopMiniPopup.jsx`, deleted in MEH-1010). **CC cannot write `.claude/hooks/**` (settings deny — Edit + Bash both blocked).** Validator flags it until applied (exit 1 now → exit 0 after; proven via temp-copy sim). Everything else is CC-applied.
+- **testing.md required-checks correction (MEH-1013 residual, broadened per Sapir):** the "6 required checks + MEH-736 twin jobs" paragraph was wrong on both counts — `protect-staging` (ruleset 15240090, verified via ruleset API 04/07) requires only **2 aggregator gates** (`CI gate` + `Deploy gate`); named jobs skip on docs/config diffs (expected); no twins exist/needed. Rewritten to match how #1012/#1026/#1485 actually merged.
+- **Verify:** validator demonstrated FAIL (real DesktopMiniPopup offender) + PASS (temp-sim post-sweep) + controlled break (bogus path flagged); YAML valid, hook present; build green. `pre-commit run --all-files` NOT run — pre-commit binary absent in sandbox (noted; YAML validated structurally instead).
+- **Sapir pending:** apply the rtl-allowlist paste-diff, review + merge (config/tooling-only, no QA). **A2 follow-up (separate):** a required-CI-gate form of the validator (workflows are CC-deny + MEH-787 collision).
+
 ## 2026-07-04 — MEH-1023 Chunk A: admin users role actions → overflow menu — DRAFT PR (WAIT for Sapir QA before Chunk B)
 
 - **Branch:** `feature/meh-1023-admin-role-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK (central admin surface), chunk-by-chunk. `Refs MEH-1023` (Chunk B closes). Harness allowed the `feature/*` push — no `claude/*` fallback needed.
