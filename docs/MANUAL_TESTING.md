@@ -1261,10 +1261,10 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
 
-### Top-banner height reservation (MEH-1009 desktop / MEH-1019 mobile)
+### Mobile top-banner height reservation (MEH-1019)
+_(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
 - [ ] Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
-- [ ] Desktop WITH top banner — same unverified user at ≥lg → legend toggle + map bottom fully in viewport (MEH-1009). תוצאה מצופה: אין חיתוך.
 
 ---
 
