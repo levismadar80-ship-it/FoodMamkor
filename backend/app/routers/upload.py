@@ -89,7 +89,8 @@ async def upload_image(
         ):
             raise HTTPException(
                 status_code=403,
-                detail="חשבון החינם מוגבל ל-3 תמונות. שדרגי לפרמיום להעלאה ללא הגבלה.",
+                # MEH-1005: neutral cap copy — no tier promise (MEH-617 undecided), plural per ADR-024.
+                detail="אפשר להעלות עד 3 תמונות לפרופיל. כדי להוסיף חדשה — מחקו קודם אחת קיימת.",
             )
 
     if not settings.cloudinary_cloud_name:
