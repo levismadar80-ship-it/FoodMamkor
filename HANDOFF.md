@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-04 — MEH-1026: central-components.json — fix 4 stale pre-[locale] guard paths — DRAFT PR
+
+- **Branch:** `feature/meh-1026-central-components-locale-drift` off `origin/staging`. LOW-RISK registry-only, end-to-end after Phase-0 gate. `Closes MEH-1026`. Precedent: MEH-668 (rtl-allowlist [locale] drift).
+- **Fix:** the MEH-128 pre-edit-guard registry listed MapClient / producers-page / page.js / layout.js at pre-`[locale]` paths → guard (`pre-edit-guard.js:20` `endsWith||includes`) fired on none (the `[locale]/` insertion breaks both). Corrected all 4 to their grep-verified `[locale]` locations; other 9 entries untouched. Guard-match sim confirms all 4 now FIRE. JSON valid, all 13 resolve, build green.
+- **Discovered in:** PR #1475 (MEH-1019) auto-review — MapClient's /map work ran that whole session with no pre-edit guard (Sapir's human relay was the only guard). Registry-only file, CC-writable (deny covers only settings.json + hooks/**).
+- **Sapir pending:** review + merge (config-only, no mobile QA). **Related open finding:** worth a sweep of OTHER guard registries for the same `[locale]` drift class (MEH-668 fixed rtl-allowlist, this fixes central-components — are there more?).
+
 ## 2026-07-04 — MEH-991 Design Parity: Chunk 1 approved + Chunk 2 GREEN sweep (5 PRs) · 4-task batch
 
 **MEH-991 (the big one).** Chunk 1 gap-matrix (**#1464**, draft) approved by Sapir with the accent-token amendment (token exists — `tailwind.tokens.json:13`). Ran Chunk 2 GREEN sweep, one PR per group, all draft, all build+vitest green, none self-merged:
