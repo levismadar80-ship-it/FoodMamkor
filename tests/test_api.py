@@ -1702,8 +1702,12 @@ class TestCloudinaryHebrewErrors:
         )
         assert resp.status_code == 403
         detail = resp.json()["detail"]
-        assert "חינם" in detail or "חינמי" in detail, f"Expected Hebrew, got: {detail}"
+        # MEH-1008: the cap copy dropped "חשבון החינם" (no tier framing while
+        # MEH-617 is undecided) — assert Hebrew via the stable cap phrase instead.
+        assert "עד 3 תמונות" in detail, f"Expected Hebrew cap message, got: {detail}"
         assert "Free plan" not in detail, "English error leaked to user"
+        # MEH-1008: no premium/upgrade promise in the cap error.
+        assert "פרמיום" not in detail and "שדרג" not in detail
 
     def test_oversized_image_returns_hebrew(self, client, db):
         """Files over 5 MB return a Hebrew 400 error."""
