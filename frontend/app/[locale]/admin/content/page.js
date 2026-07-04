@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -66,9 +67,12 @@ function CategoriesEditor() {
     try {
       await api.delete(`/admin/categories/${confirmDelete.id}`);
       load();
+      setConfirmDelete(null); // close only on success
+    } catch {
+      // Keep the dialog open on failure so the admin can retry or cancel.
+      showToast.error(t("content.categories.delete_error"));
     } finally {
       setDeleting(false);
-      setConfirmDelete(null);
     }
   };
 
@@ -115,7 +119,7 @@ function CategoriesEditor() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="category-delete-title"
-            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", { name: confirmDelete.name })}

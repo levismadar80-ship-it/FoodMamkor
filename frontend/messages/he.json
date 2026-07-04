@@ -1810,7 +1810,8 @@
         "save": "שמרו",
         "delete": "מחקו",
         "confirm_delete": "למחוק את הקטגוריה '{name}'?",
-        "deleting": "מוחקים…"
+        "deleting": "מוחקים…",
+        "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב."
       },
       "page_editor": {
         "title_placeholder": "כותרת",

@@ -1806,7 +1806,8 @@
         "save": "Save",
         "delete": "Delete",
         "confirm_delete": "Delete the category '{name}'?",
-        "deleting": "Deleting…"
+        "deleting": "Deleting…",
+        "delete_error": "Failed to delete the category. Please try again."
       },
       "page_editor": {
         "title_placeholder": "Title",

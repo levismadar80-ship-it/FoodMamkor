@@ -20,6 +20,9 @@ const apiMock = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", () => ({ default: apiMock }));
 
+const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
+vi.mock("@/lib/toast", () => ({ showToast: toastMock }));
+
 vi.mock("next-intl", () => {
   const flat = {
     "admin.content.title": "תוכן",
@@ -52,6 +55,8 @@ describe("AdminContentPage — category delete dialog (MEH-1023 Chunk B)", () =>
   beforeEach(() => {
     apiMock.get.mockClear();
     apiMock.delete.mockClear();
+    apiMock.delete.mockImplementation(() => Promise.resolve({}));
+    toastMock.error.mockClear();
   });
 
   const openDialog = async () => {
@@ -90,5 +95,13 @@ describe("AdminContentPage — category delete dialog (MEH-1023 Chunk B)", () =>
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     // load() re-fetches after a successful delete
     expect(apiMock.get.mock.calls.length).toBeGreaterThan(getCallsBefore);
+  });
+
+  it("on DELETE failure shows an error toast and keeps the dialog open", async () => {
+    apiMock.delete.mockImplementationOnce(() => Promise.reject(new Error("500")));
+    const dialog = await openDialog();
+    fireEvent.click(within(dialog).getByText("מחקו"));
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("dialog")).toBeInTheDocument(); // stays open on failure
   });
 });
