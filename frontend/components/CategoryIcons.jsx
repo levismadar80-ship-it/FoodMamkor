@@ -56,11 +56,13 @@ export function MeatIcon(props) {
 export function VegIcon(props) {
   return (
     <Svg {...props}>
-      <path d="M40 60 q0 -20 20 -20 q20 0 20 20 q0 28 -20 38 q-20 -10 -20 -38 z" />
-      <path d="M60 40 q0 -10 -8 -14" />
-      <path d="M60 40 q0 -10 8 -14" />
-      <path d="M52 26 q4 -6 8 -2" />
-      <path d="M68 26 q-4 -6 -8 -2" />
+      {/* MEH-991 (HOME-16): corrected branch+leaf cluster (Assembly v2 Iteration-3, Kare #10) —
+          replaces the older single-leaf card-image variant. */}
+      <path d="M30 100 q4 -34 30 -50 q26 -16 60 -14" />
+      <path d="M52 64 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0" />
+      <path d="M76 50 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0" />
+      <path d="M100 38 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0" />
+      <path d="M60 80 q-12 -2 -16 -12" />
     </Svg>
   );
 }

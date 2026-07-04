@@ -242,7 +242,8 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       <button
         type="button"
         onClick={() => submitRaw()}
-        className="shrink-0 text-primary hover:text-primary-dark transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
+        // MEH-991 (HOME-05): filled green square submit per S14 (was icon-only).
+        className="shrink-0 bg-action-primary hover:bg-action-primary-hover text-white rounded-md transition p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={t("submit_aria")}
         data-testid="hero-search-submit"
       >

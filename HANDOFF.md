@@ -13,6 +13,26 @@
 - **Sapir pending:** QA the preview on staging + mobile (kebab open/close, Escape + outside-click, promote/demote fire the confirm dialog, super-admin shows lock-not-menu, self can't self-demote). **Chunk B (category-delete confirm dialog) is NOT started — waits for explicit Sapir approval of Chunk A per the chunk-by-chunk gate.**
 - **Scope held:** only `AdminRowMenu.jsx` (new) + `users/page.js` + `he.json`/`en.json` + `AdminRowMenu.test.jsx` (new) + CHANGELOG/MANUAL_TESTING/HANDOFF. No backend, no `applyRole`, no other admin pages.
 
+## 2026-07-04 — MEH-991 Design Parity: Chunk 1 approved + Chunk 2 GREEN sweep (5 PRs) · 4-task batch
+
+**MEH-991 (the big one).** Chunk 1 gap-matrix (**#1464**, draft) approved by Sapir with the accent-token amendment (token exists — `tailwind.tokens.json:13`). Ran Chunk 2 GREEN sweep, one PR per group, all draft, all build+vitest green, none self-merged:
+- **G1 #1468** `parity-tokens-residue` — 11 stale-hex→token sites. **Merge FIRST** (G2 is stacked on it — shared Skeleton/.ds-sync lines).
+- **G2 #1472** `parity-producer-card` (central; adversarial-review found + fixed 1 REAL focus-ring clip) — stacked on G1.
+- **G3 #1476** `parity-home` — 10 items, 7 files.
+- **G4 #1477** `parity-nav-footer` (both central; reviewed **inline** — the Fable-5 limit killed the review agent, session switched to Opus 4.8 mid-sweep; caught a real truncate bug in review).
+- **G5 first pass #1479** `parity-static-pages` — BIZ-15 + LOGIN-04 only; **remaining G5 deferred** (ABOUT/PROC/EVENT/BADGE/COMPL + producer-detail biz family — staging drifted since the audit, needs per-item re-verification; several copy-gated). This is the main open sweep follow-up.
+- Reference-doc fixes + all reviewer points (ZIP-blob/squash, linguist-vendored, README provenance) landed on #1464.
+- **Copy-gated strings NOT shipped** (rule 22 — surfaced in PR bodies for approval): HOME-04 Friday subtitle, PROC-08 caveat link, ABOUT-09/BIZ-20/COMPL-06.
+- **Chunk 3 (VRT baselines) pending** sweep completion.
+
+**4-task batch (same session):**
+- **MEH-1005 #1473 → RECOMMEND CLOSE** — duplicate of MEH-1008 (already on staging with preferable "לבית עסק" wording). Flagged on PR.
+- **MEH-1006 #1474** (draft, docs) — auto-close claim corrected; convention-a already fixed by MEH-1012.
+- **MEH-1000 #1450** — already implemented by a prior session; resynced vs staging, verified both review items already fixed, documented take-over. Ready for Sapir.
+- **MEH-1001 — Phase 0 ONLY (HIGH-RISK), STOP at WAIT gate.** Cross-owner 403-leak matrix posted to Linear: events PUT `:189` (no admin override), events DELETE `:215-219`, experiences PUT `:287-289` (no admin override), experiences DELETE `:342-346`, home_products `:278-282`/`:324-327`, reviews `:319-323` all leak 403; recipes = 404 ✅. **Awaiting Sapir "go" for Chunk 1.**
+
+**Sapir pending:** merge order **#1468 → #1472**; QA + merge the 5 sweep PRs + #1474/#1450; close #1473; approve/reject copy-gated strings; **go** for MEH-1001 Chunk 1; decide fate of the remaining G5 items + the #1410 `.agents/skills/` scope-bleed (flagged on #1464). Hourly self check-in armed across all PRs.
+
 ## 2026-07-04 — MEH-1019: /map mobile top-banner reservation (mirror of MEH-1009) + chips/card investigations — DRAFT PR
 
 - **Branch:** `feature/meh-1019-mobile-map-banner-reservation` off `origin/staging`. YELLOW (central /map), diagnosis-first → confirmed → end-to-end. `Closes MEH-1019`.
@@ -82,6 +102,7 @@ Re-anchored Phase 0 (@6c46b434) proved `producers.delivery_cities` was a LIVE dr
 - **Done:** `COMPLETENESS_FIELDS += short_desc`; yellow-tier check (red untouched); `TOTAL_FIELDS` 5→6 + 6-row checklist in ProfileCompletenessCard; `fields.short_desc` he+en; heuristic node suite +5 cases (16✓), card vitest re-percentaged (83/67) + new case. Full vitest 696✓, build exit 0, 0 eslint errors. CHANGELOG + MANUAL_TESTING updated.
 - **Flagged in PR body:** (a) admin producers list (shared heuristic) now yellow-dots producers with no description — accepted per issue; (b) owner edit hub has NO `short_description` input yet (only AI-bio panel → `description`) — OR semantics keep the item self-serve-completable; tagline input belongs to the MEH-964 skin.
 - **Sapir pending:** review + merge #1452 (Rule 23 — CC doesn't merge); mobile glance — the card % shifts visually (missing-image-only profile now 83%, not 80%).
+- **Status 04/07 (MEH-1006):** #1452 merged to staging (squash `3b58658c`) — the pending one-line update flagged in that session's report.
 
 ## 2026-07-02 — MEH-997: functional E2E audit + /admin/recipes seed fix — DRAFT PR
 
@@ -140,7 +161,7 @@ Required-check names untouched (this job is `Adversarial review (calibration)`, 
 - MEH-987 EmptyState 4-emoji sweep (#1416) · MEH-990 emoji residue (#1419 + #1424)
 - MEH-992 group-buy form clarity (#1431)
 
-**Linear state (all closed manually — staging merges don't auto-close):**
+**Linear state (all closed manually — [correction MEH-1006: the parenthetical claim "staging merges don't auto-close" was WRONG — `Closes MEH-XX` DOES auto-close on staging merges (default_branch=staging), proven live when MEH-1004 was auto-closed by GitHub on #1451's merge, 03/07 09:28. These issues were simply closed by hand.]):**
 - **Done:** 975, 976, 977, 978, 979, 980, 982, 987, 990, 992, 948
 - **Canceled:** 983 (Next.js catch-all one-off, not reproducible)
 - **948 closed WITHOUT fix** — `/map` default centering verified correct geometrically; reopen trigger documented in its comment (a real user seeing an off-Israel map on a **clean** load → the iOS-`dvh`/zoom-race fix, central `MapComponent`, chunked + `/adversarial-review`).
