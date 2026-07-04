@@ -185,8 +185,11 @@ def update_event(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
+    # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
+    # confirm another producer's event exists. Stays owner-only — admin
+    # management lives on admin endpoints (REUSES producer_recipes.py:203-206).
     if event.producer_id != user.producer_id:
-        raise HTTPException(status_code=403, detail="Not the owner of this event")
+        raise HTTPException(status_code=404, detail="Event not found")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         if field == "category" and value not in VALID_CATEGORIES:
@@ -215,8 +218,10 @@ def delete_event(
         raise HTTPException(status_code=404, detail="Event not found")
     is_owner = user.producer_id == event.producer_id
     is_admin = getattr(user, "role", None) == "admin"
+    # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
+    # event's existence isn't leaked. Admin-override preserved (admin → 200).
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="אין הרשאה")
+        raise HTTPException(status_code=404, detail="Event not found")
     db.delete(event)
     db.commit()
     return {"detail": "Event deleted"}
