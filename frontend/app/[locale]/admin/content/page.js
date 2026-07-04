@@ -72,6 +72,18 @@ function CategoriesEditor() {
     }
   };
 
+  // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
+  // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
+  // otherwise mirror predates it.
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting]);
+
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
       <form onSubmit={create} className="flex gap-2">
@@ -99,8 +111,13 @@ function CategoriesEditor() {
       {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4">
-            <p className="font-medium text-base">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4"
+          >
+            <p id="category-delete-title" className="font-medium text-base">
               {t("content.categories.confirm_delete", { name: confirmDelete.name })}
             </p>
             <div className="flex gap-3 justify-start">
@@ -112,8 +129,9 @@ function CategoriesEditor() {
                 {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
               </button>
               <button
+                disabled={deleting}
                 onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition"
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
               >
                 {t("common.cancel")}
               </button>
