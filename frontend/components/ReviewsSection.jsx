@@ -31,7 +31,7 @@ function StarRow({ value, size = 16, ariaLabel }) {
           key={n}
           size={size}
           weight={n <= value ? "fill" : "regular"}
-          color={n <= value ? "#8B6914" : "#e8e0d0"}
+          color={n <= value ? "#896714" : "#e5dfd3"}
           aria-hidden="true"
         />
       ))}
@@ -58,7 +58,7 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
             <Star
               size={32}
               weight={filled ? "fill" : "regular"}
-              color={filled ? "#8B6914" : "#e8e0d0"}
+              color={filled ? "#896714" : "#e5dfd3"}
             />
           </button>
         );

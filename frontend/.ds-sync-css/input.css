@@ -9,7 +9,7 @@
    used alone render invisible. Promote it to the shipped stylesheet so every
    skeleton renders the shimmer in real designs too. */
 .skeleton-box {
-  background: linear-gradient(90deg, #e8e0d0 25%, #f5f0e8 50%, #e8e0d0 75%);
+  background: linear-gradient(90deg, #e5dfd3 25%, #f5f0e8 50%, #e5dfd3 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite ease-in-out;
 }
@@ -18,5 +18,5 @@
   100% { background-position: -200% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-box { animation: none; background: #e8e0d0; }
+  .skeleton-box { animation: none; background: #e5dfd3; }
 }

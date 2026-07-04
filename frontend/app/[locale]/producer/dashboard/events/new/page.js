@@ -285,7 +285,7 @@ export default function NewEventPage() {
         .input-base {
           width: 100%;
           background: white;
-          border: 1px solid #e8e0d0;
+          border: 1px solid #e5dfd3;
           border-radius: 8px;
           padding: 12px 16px;
           outline: none;
