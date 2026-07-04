@@ -136,11 +136,17 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
     swallows-and-logs any failure (MEH-977 — observable, never breaks
     the submission).
     """
+    # Producer-controlled free text — flatten newlines so a crafted title
+    # can't inject extra lines (e.g. a fake URL line) into the admin message.
+    safe_title = recipe_title.replace("\n", " ").strip()
+    safe_name = producer_name.replace("\n", " ").strip()
     message = (
-        f"מתכון חדש ממתין לאישור: {recipe_title}\n"
-        f"בית עסק: {producer_name}\n"
+        f"מתכון חדש ממתין לאישור: {safe_title}\n"
+        f"בית עסק: {safe_name}\n"
         f"לאישור: {settings.frontend_url}/admin/recipes"
     )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_producer's independence.
     try:
         # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
         if settings.admin_whatsapp_to:
@@ -151,22 +157,27 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
                 # observability contract: log WITH recipe context.
                 logger.warning(
                     "[WHATSAPP] Recipe-pending notification NOT delivered for "
-                    f"'{recipe_title}' (business '{producer_name}')"
+                    f"'{safe_title}' (business '{safe_name}')"
                 )
         else:
             logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin recipe-pending WhatsApp FAILED for "
+            f"'{safe_title}' (business '{safe_name}'): {e}"
+        )
 
-        # Email
+    try:
         if settings.admin_email:
             send_email(
                 settings.admin_email,
-                f"מהמקור - מתכון חדש ממתין לאישור: {recipe_title}",
+                f"מהמקור - מתכון חדש ממתין לאישור: {safe_title}",
                 message,
             )
     except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
         logger.error(
-            "[NOTIFY] Admin recipe-pending notification FAILED for "
-            f"'{recipe_title}' (business '{producer_name}'): {e}"
+            "[NOTIFY] Admin recipe-pending email FAILED for "
+            f"'{safe_title}' (business '{safe_name}'): {e}"
         )
 
 

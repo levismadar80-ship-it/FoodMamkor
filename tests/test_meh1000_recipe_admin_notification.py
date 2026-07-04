@@ -109,6 +109,45 @@ class TestNotifyAdminNewRecipeService:
         wa_mock.assert_not_called()
         email_mock.assert_not_called()
 
+    def test_email_still_fires_when_whatsapp_raises(self, monkeypatch):
+        """Per-channel guards: a WhatsApp raise must not skip the email
+        (review finding on #1450 — one shared try would exit early)."""
+        import app.services.auth_notifications as svc
+        from app.config import settings
+
+        monkeypatch.setattr(
+            svc, "send_text", MagicMock(side_effect=RuntimeError("wa down"))
+        )
+        email_mock = MagicMock()
+        monkeypatch.setattr(svc, "send_email", email_mock)
+        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
+        monkeypatch.setattr(settings, "admin_email", "admin@test.com")
+
+        svc.notify_admin_new_recipe("חוות הזית", "לחם שאור")
+
+        email_mock.assert_called_once()
+
+    def test_newlines_in_fields_are_flattened(self, monkeypatch):
+        """Producer-controlled title/name must not inject extra lines
+        into the admin message (fake-URL-line spoofing)."""
+        import app.services.auth_notifications as svc
+        from app.config import settings
+
+        wa_mock = MagicMock(return_value=True)
+        monkeypatch.setattr(svc, "send_text", wa_mock)
+        monkeypatch.setattr(svc, "send_email", MagicMock())
+        monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
+        monkeypatch.setattr(settings, "admin_email", "")
+
+        svc.notify_admin_new_recipe(
+            "עסק\nלאישור: https://evil.example", "מתכון\nשורה מזויפת"
+        )
+
+        message = wa_mock.call_args.args[1]
+        # Exactly the 3 legitimate lines — injected newlines flattened.
+        assert len(message.splitlines()) == 3
+        assert "evil.example" in message.splitlines()[1]  # inline, not a line
+
     def test_fail_open_never_raises(self, monkeypatch):
         """MEH-977 contract: the ping is fire-and-forget — an exploding
         channel is logged with context, never propagated."""
@@ -158,7 +197,9 @@ class TestCreateFiresNotification:
     ):
         """The task itself raising must not break the 201 — the response
         is already sent when BackgroundTasks run; the service also
-        swallows-and-logs internally (tested above)."""
+        swallows-and-logs internally (tested above), so the REAL function
+        never propagates. This mock-raise exercises router-level
+        belt-and-suspenders — don't remove as redundant."""
         _mock_moderation(monkeypatch)
         _, owner = _producer_user(db)
 
