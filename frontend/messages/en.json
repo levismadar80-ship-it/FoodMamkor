@@ -3479,7 +3479,9 @@
           "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
-        "remove_vacation_date_aria": "Remove return date"
+        "remove_vacation_date_aria": "Remove return date",
+        "vacation_confirm": "Save",
+        "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
         "settings": {
