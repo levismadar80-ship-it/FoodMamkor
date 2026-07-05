@@ -69,24 +69,19 @@ vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));
 vi.mock("@/components/ProfileCompletenessCard", () => ({ default: () => null }));
 vi.mock("@/lib/holidays", () => ({ getUpcomingHoliday: () => null }));
 
-// Expose the post spy so tests can assert the POST is (not) fired. vi.hoisted
-// so the api mock factory can close over it despite vi.mock hoisting.
-const { postSpy } = vi.hoisted(() => ({ postSpy: vi.fn(() => Promise.resolve({})) }));
+// Expose the post spy + a mutable dashboard payload (so one test can boot the
+// producer already on vacation). vi.hoisted so the api mock factory can close
+// over both despite vi.mock hoisting.
+const { postSpy, dashboardRef } = vi.hoisted(() => ({
+  postSpy: vi.fn(() => Promise.resolve({})),
+  dashboardRef: { current: null },
+}));
 
 vi.mock("@/lib/api", () => ({
   default: {
     get: vi.fn((url) => {
       if (url === "/producers/me/dashboard") {
-        return Promise.resolve({
-          data: {
-            producer: {
-              id: 1,
-              name: "עסק לדוגמה",
-              status: "approved",
-              availability_state: "accepting_orders",
-            },
-          },
-        });
+        return Promise.resolve({ data: dashboardRef.current });
       }
       // analytics + /producers/me → null (KPI hero + completeness stay unmounted).
       return Promise.resolve({ data: null });
@@ -103,6 +98,14 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
   beforeEach(() => {
     postSpy.mockClear();
     mockPush.mockClear();
+    dashboardRef.current = {
+      producer: {
+        id: 1,
+        name: "עסק לדוגמה",
+        status: "approved",
+        availability_state: "accepting_orders",
+      },
+    };
   });
 
   it("selecting vacation reveals the return-date field before any POST", async () => {
@@ -146,6 +149,35 @@ describe("Dashboard vacation date reveal (MEH-999)", () => {
     expect(availabilityPost()[0][1]).toEqual({
       state: "on_vacation",
       vacation_until: "2099-01-01",
+    });
+  });
+
+  it("producer already on_vacation on load: field visible without selecting; confirm POSTs the edited date", async () => {
+    // Boot straight into on_vacation with an existing return date — vacationSelected
+    // stays false, but the saved server state must render the mini-form immediately.
+    dashboardRef.current = {
+      producer: {
+        id: 1,
+        name: "עסק לדוגמה",
+        status: "approved",
+        availability_state: "on_vacation",
+        vacation_until: "2099-01-01",
+      },
+    };
+    render(<ProducerDashboardPage />);
+
+    // Field is present on first paint — no radio click needed.
+    const input = await screen.findByLabelText(/vacation_return_label/);
+    expect(input).toHaveValue("2099-01-01");
+
+    // Edit the date and confirm → POST carries the updated value.
+    fireEvent.change(input, { target: { value: "2099-02-02" } });
+    fireEvent.click(screen.getByRole("button", { name: /vacation_confirm/ }));
+
+    expect(availabilityPost()).toHaveLength(1);
+    expect(availabilityPost()[0][1]).toEqual({
+      state: "on_vacation",
+      vacation_until: "2099-02-02",
     });
   });
 });

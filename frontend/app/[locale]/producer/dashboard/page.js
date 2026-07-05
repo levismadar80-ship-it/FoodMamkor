@@ -148,6 +148,11 @@ export default function ProducerDashboardPage() {
       const body = { state };
       if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
       await api.post("/producers/me/availability-state", body);
+      // MEH-999: the write is committed — drop the "selected-but-unconfirmed"
+      // flag so the mini-form is now driven purely by the saved server state
+      // (on failure we intentionally keep it set below, so the form stays open
+      // for the producer to correct the date rather than vanishing).
+      setVacationSelected(false);
       if (state !== "on_vacation") setVacationUntil("");
     } catch (err) {
       // MEH-989: surface the backend's Hebrew detail (e.g. missing vacation
