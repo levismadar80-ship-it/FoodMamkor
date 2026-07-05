@@ -464,13 +464,18 @@ GET    /events                    public — filter: city, category, from_date, 
 GET    /events/upcoming            public — limit=N next events
 GET    /events/{event_id}          public
 POST   /events                     producer — only approved producers
-PUT    /events/{event_id}          producer — owner only
-DELETE /events/{event_id}          auth    — owner or admin
+PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
+DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
 
 No moderation. Producer publishes, it's live. Designed for the
 "יום קטיף / סיור בחווה" calendar on producer pages. Category enum:
 `סדנה | סיור | שוק | קטיף | טעימות | אחר`.
+
+**MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
+"Event not found"**, not 403 — a foreign producer can't confirm an
+event id exists (matches `producer_recipes.py:203-206`). DELETE keeps
+its admin-override, so an admin still deletes (→ 200).
 
 ### Experiences (community workshops — `app/routers/experiences.py`)
 
