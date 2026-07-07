@@ -3430,6 +3430,12 @@
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
+      "states": {
+        "zero_activity": "No activity yet — share your page to get started",
+        "share_locked": "You'll be able to share soon — let's finish approval and details first",
+        "availability_disabled": "You'll be able to update availability once the business is approved and published",
+        "view_public": "View your page"
+      },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
       "status": {
