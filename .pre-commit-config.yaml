@@ -11,6 +11,19 @@ repos:
         exclude: ^backend/alembic/versions/
   - repo: local
     hooks:
+      # MEH-1030: every path listed in a guard/config registry must resolve to a
+      # real file — else the registry silently disables its guard after a
+      # refactor (MEH-668 rtl-allowlist, MEH-1026 central-components). Runs on
+      # any change to a guarded registry OR the validator itself, and always
+      # validates the FULL registry set (pass_filenames:false) — so a rename
+      # elsewhere that orphans a registry entry is still caught next time a
+      # registry file is touched.
+      - id: validate-registry-paths
+        name: Validate guard/config registry paths exist
+        entry: python3 scripts/validate-registry-paths.py
+        language: system
+        pass_filenames: false
+        files: ^(\.claude/central-components\.json|\.claude/hooks/rtl-allowlist\.txt|scripts/validate-registry-paths\.py)$
       - id: eslint
         name: ESLint (frontend)
         # MEH-616: no --max-warnings=0. Per MEH-443 the frontend lint rules
