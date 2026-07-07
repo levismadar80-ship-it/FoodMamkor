@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-05 — MEH-999 (B10): PUT /producers/me license gate grandfathers held categories — DRAFT PR (WAIT for Sapir review)
+
+- **Branch:** `feature/meh-999-license-pending-grandfather` off `origin/staging` (divergence 0). RED tier (data-quality gate on producer mutation) → Phase 0 → WAIT (Sapir `go WITH 2c`) → implement → STOP for review. Backend-only, no mobile QA. `Refs MEH-999` (Linear issue pending — workspace quota).
+- **The bug (MEH-999 dogfood blocker #3):** `producer_me.py` PUT re-ran `ensure_license_for_categories` on the FULL effective category set every save — a MEH-971 license-pending producer (licensed category + NULL license) 422'd on ANY edit (bio/image/contact). Scoping doc: `docs/audits/producer-blockers-scoping.md` (B10, Option B chosen — verified NO `license_pending` column on Producer; register payload only).
+- **What shipped:** new `_enforce_owner_license_gate` helper in `producer_me.py` (extracted — inline tripped ruff C901 11>10): validates **newly-added `category_ids` only** (`set − persisted`); no-category-change PUTs skip the gate. **2c clearing guard** (Sapir-approved): blanking a previously-set license while license-required categories remain → 422 against the final set; pending producers unaffected (license already NULL). Posture mirrors `auth.py:458` register bypass — licensed-only still enforced by admin approval guard + `status=="approved"` publication gate.
+- **Tests:** `TestOwnerPutGrandfathersLicense` in `tests/test_producer_license.py` — 4 cases (pending+bio→200 · pending+add-licensed-cat→422 · licensed-clears-license→422 · pending+add-unlicensed-cat→200); first `PUT /producers/me` coverage in that file. Rule-5 order held: a+d failed pre-fix, b+c were regression locks.
+- **Verify:** license suite **25 passed** · `pytest tests/test_api.py` **202 passed** (serial — an earlier parallel run false-failed on shared-DB contention) · ruff clean. Docs: DATA.md `:407` + CHANGELOG updated.
+- **Sapir pending:** review draft PR → merge. Remaining MEH-999 blockers: B9 (mount ProductsSection — mount-site decision), B11 (review reply — RED, schema). B8 (vacation) already DRAFT per CHANGELOG.
+
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
 - **Branch:** `feature/meh-1023-category-delete-confirm` off `origin/staging` (includes Chunk A `315d9d8f` + MEH-1026). HIGH-RISK admin surface, frontend-only. `Closes MEH-1023`.
