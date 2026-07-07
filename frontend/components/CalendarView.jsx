@@ -137,7 +137,7 @@ export default function CalendarView({ items, linkPrefix }) {
           const key = dateKey(d);
           const hasEvents = itemsByDate.has(key);
           const isToday = sameDay(d, today);
-          const isPast = dateKey(d) < dateKey(today);
+          const isPast = key < dateKey(today);
           const isSelected = selectedDate && sameDay(d, selectedDate);
 
           return (
