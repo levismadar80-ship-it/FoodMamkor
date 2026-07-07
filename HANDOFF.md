@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1025 Chunk A: expose requested_changes on ProducerOwnerOut — DRAFT PR (backend-only; gates Chunk B)
+
+- **Branch:** `feature/meh-1025-owner-payload-fields` off `origin/staging` (clean cut). Backend Pydantic-only. `Refs MEH-1025` (Chunk B — the dashboard banner — Closes).
+- **Gate cleared:** MEH-964 1D is on staging (`c89e05d3`, verified `overview-zero-state` present), so MEH-1025 is unblocked.
+- **What shipped:** `ProducerOwnerOut` (`schemas.py:950`) += `requested_changes: str|None` + `changes_requested_at: datetime|None`, mirroring the kosher/license/address owner-private precedent (`:954-958`). The owner sees her OWN completion feedback; `risk_score`/`risk_reasoning`/`declared_at` stay admin-only (MEH-767 leak-fix intact). Columns exist since MEH-1011 (`a1b2c3d4e5f6`) → **no migration, no model change, no endpoint change.**
+- **Verify:** `alembic check` = "No new upgrade operations detected" on a FRESH upgraded DB (the pytest-ordering artifact — all-tables-add — is not real drift; my change touches zero SQLAlchemy models). `tests/test_producers_me_schema.py` +2 (present+correct when set · null when unset) → 11✓. `pytest tests/test_api.py` **202 passed**. `--frozen` used (fresh container); no lockfile churn.
+- **Next:** Chunk B (dashboard "נשאר להשלים" banner reading `profile.requested_changes`) after this merges so the field is live on staging for the preview. Micro-follow-up: `docs/DATA.md` MEH-1011 line could mention owner-payload exposure (left untouched per this chunk's file scope).
+
+
 ## 2026-07-05 — MEH-999 (B10): PUT /producers/me license gate grandfathers held categories — MERGED (Sapir "MERGE", PR #1512)
 
 - **Branch:** `feature/meh-999-license-pending-grandfather` off `origin/staging` (divergence 0). RED tier (data-quality gate on producer mutation) → Phase 0 → WAIT (Sapir `go WITH 2c`) → implement → STOP for review. Backend-only, no mobile QA. `Refs MEH-999` (Linear issue pending — workspace quota).

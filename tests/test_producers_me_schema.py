@@ -100,6 +100,40 @@ def test_admin_route_still_exposes_risk_fields(client, db):
     assert "risk_reasoning" in row
 
 
+# --- MEH-1025 Chunk A: owner sees her own request-changes trail ---
+
+
+def test_get_producers_me_exposes_requested_changes_when_set(client, db):
+    """The owner payload carries requested_changes + changes_requested_at so
+    the dashboard banner (Chunk B) has data. Columns exist since MEH-1011."""
+    from datetime import datetime, timezone
+
+    producer = make_producer(db, name="חוות ההשלמה", status="pending")
+    producer.requested_changes = "חסרה תמונה — יש להעלות לפחות תמונה אחת"
+    producer.changes_requested_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(producer)
+    user = make_user(db, email="owner-changes@example.com", role="producer")
+    user.producer_id = producer.id
+    db.commit()
+
+    resp = client.get("/producers/me", headers=auth_header(user))
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["requested_changes"] == "חסרה תמונה — יש להעלות לפחות תמונה אחת"
+    assert body["changes_requested_at"] is not None
+
+
+def test_get_producers_me_requested_changes_null_when_unset(client, db):
+    """No pending request → both fields serialize as null (banner renders 0 DOM)."""
+    _, user = _make_owner(db, email="owner-nochanges@example.com")
+    resp = client.get("/producers/me", headers=auth_header(user))
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["requested_changes"] is None
+    assert body["changes_requested_at"] is None
+
+
 # --- MEH-296: contact-channel columns + boundary validators ---
 
 
