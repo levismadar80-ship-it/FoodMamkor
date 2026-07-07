@@ -111,13 +111,22 @@ or the validator itself changes.
 | `.claude/central-components.json` | JSON — every string in the `components[]` array |
 | `.claude/hooks/rtl-allowlist.txt` | newline list — **only** the `PATH EXCEPTIONS` section (between the two `# ==== … ====` markers); the `CONTENT PATTERNS` markers (`rtl-ok`) are not paths and are skipped |
 
-**Add a registry:** append one entry to the `REGISTRIES` list in
-`scripts/validate-registry-paths.py` — `{"file": "<path>", "parser": <fn>}` — reusing
-`_parse_json_array` / `_parse_rtl_allowlist` or adding a small parser that returns
-`[(lineno, repo_relative_path), …]`. Path-existence only — no schema/owner checks
-(over-engineering guard). Not a CI gate: `.github/workflows/**` is CC-deny (MEH-671)
-and collides with MEH-787 on `pr-checks.yml`; a required-gate form is a separate A2
-follow-up.
+**Add a registry (two steps — both required):**
+1. Append one entry to the `REGISTRIES` list in `scripts/validate-registry-paths.py`
+   — `{"file": "<path>", "parser": <fn>}` — reusing `_parse_json_array` /
+   `_parse_rtl_allowlist` or adding a small parser that returns
+   `[(lineno, repo_relative_path), …]`.
+2. Add the new registry's path to the `files:` trigger regex of the
+   `validate-registry-paths` hook in `.pre-commit-config.yaml` — otherwise edits
+   to the new registry won't re-fire the hook (it only auto-runs when a listed
+   registry or the validator itself changes), a silent coverage gap of exactly
+   the class this guard prevents.
+
+Path-existence only — no schema/owner checks (over-engineering guard). The
+validator emits a stderr `warning: parsed 0 paths …` if a registry's format drifts
+so a parser silently returning nothing can't turn the guard into a no-op. Not a CI
+gate: `.github/workflows/**` is CC-deny (MEH-671) and collides with MEH-787 on
+`pr-checks.yml`; a required-gate form is a separate A2 follow-up.
 
 ---
 

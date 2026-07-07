@@ -28,13 +28,13 @@ REPO = Path(__file__).resolve().parent.parent
 def _parse_json_array(path: Path, key: str) -> list[tuple[int, str]]:
     """Paths live in a top-level JSON array under `key`. Line number is a
     best-effort lookup of the raw string in the file (registries are tiny)."""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    entries = data.get(key, [])
-    raw = path.read_text(encoding="utf-8").splitlines()
+    text = path.read_text(encoding="utf-8")
+    entries = json.loads(text).get(key, [])
+    lines = text.splitlines()
     out: list[tuple[int, str]] = []
     for entry in entries:
         lineno = next(
-            (i + 1 for i, ln in enumerate(raw) if f'"{entry}"' in ln), 0
+            (i + 1 for i, ln in enumerate(lines) if f'"{entry}"' in ln), 0
         )
         out.append((lineno, entry))
     return out
@@ -81,7 +81,18 @@ def main() -> int:
         if not reg_path.exists():
             offenders.append(f"{reg['file']}: registry file itself is missing")
             continue
-        for lineno, rel in reg["parser"](reg_path):
+        entries = reg["parser"](reg_path)
+        if not entries:
+            # A parser yielding nothing means the format drifted out from under
+            # it (renamed section marker, changed JSON key) — the validator
+            # would silently no-op for this registry, the exact failure mode
+            # MEH-1030 exists to prevent. Surface it loudly (stderr, non-fatal
+            # so a genuinely empty registry doesn't hard-fail).
+            sys.stderr.write(
+                f"warning: parsed 0 paths from {reg['file']} — registry format "
+                "may have changed; the validator is no longer covering it.\n"
+            )
+        for lineno, rel in entries:
             checked += 1
             if not (REPO / rel).exists():
                 loc = f"{reg['file']}:{lineno}" if lineno else reg["file"]
