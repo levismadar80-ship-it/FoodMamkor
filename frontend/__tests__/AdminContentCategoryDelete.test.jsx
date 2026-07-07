@@ -10,7 +10,8 @@ import AdminContentPage from "@/app/[locale]/admin/content/page";
 const apiMock = vi.hoisted(() => ({
   get: vi.fn((url) => {
     if (url === "/admin/categories") {
-      return Promise.resolve({ data: [{ id: 7, name: "חלב וגבינות", emoji: null }] });
+      // MEH-1034: producer_count now returned per row by GET /admin/categories.
+      return Promise.resolve({ data: [{ id: 7, name: "חלב וגבינות", emoji: null, producer_count: 3 }] });
     }
     return Promise.resolve({ data: [] });
   }),
@@ -34,7 +35,8 @@ vi.mock("next-intl", () => {
     "admin.content.categories.empty": "אין נתונים להצגה",
     "admin.content.categories.save": "שמרו",
     "admin.content.categories.delete": "מחקו",
-    "admin.content.categories.confirm_delete": "למחוק את הקטגוריה '{name}'?",
+    "admin.content.categories.confirm_delete": "מחיקת '{name}' — {count} בתי עסק משויכים",
+    "admin.content.categories.producer_count": "{count} בתי עסק",
     "admin.content.categories.deleting": "מוחקים…",
     "admin.common.cancel": "ביטול",
   };
@@ -67,9 +69,10 @@ describe("AdminContentPage — category delete dialog (MEH-1023 Chunk B)", () =>
     return screen.getByRole("dialog");
   };
 
-  it("opens the modal with the category name and fires no DELETE yet", async () => {
+  it("opens the modal with the category name + producer count and fires no DELETE yet", async () => {
     const dialog = await openDialog();
-    expect(within(dialog).getByText("למחוק את הקטגוריה 'חלב וגבינות'?")).toBeInTheDocument();
+    // MEH-1034: dialog copy now includes the blast radius (producer_count).
+    expect(within(dialog).getByText("מחיקת 'חלב וגבינות' — 3 בתי עסק משויכים")).toBeInTheDocument();
     expect(apiMock.delete).not.toHaveBeenCalled();
   });
 

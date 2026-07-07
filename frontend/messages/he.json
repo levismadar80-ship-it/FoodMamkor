@@ -1809,7 +1809,8 @@
         "empty": "אין נתונים להצגה",
         "save": "שמרו",
         "delete": "מחקו",
-        "confirm_delete": "למחוק את הקטגוריה '{name}'?",
+        "confirm_delete": "מחיקת '{name}' — {count} בתי עסק משויכים",
+        "producer_count": "{count} בתי עסק",
         "deleting": "מוחקים…",
         "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב."
       },
