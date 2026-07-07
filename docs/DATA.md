@@ -553,7 +553,7 @@ POST   /admin/users/{id}/block                 admin
 GET    /admin/users/{id}/favorites             admin
 
 # Content
-GET    /admin/categories                       admin
+GET    /admin/categories                       admin — rows include producer_count (query-time, MEH-1034)
 POST   /admin/categories                       admin
 PUT    /admin/categories/{id}                  admin
 DELETE /admin/categories/{id}                  admin
