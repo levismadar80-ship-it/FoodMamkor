@@ -49,26 +49,26 @@ describe("formatDistance", () => {
   });
 
   it("rounds sub-kilometer distances to the nearest 50 m", () => {
-    expect(formatDistance(0.45)).toBe("450 מ' ממך");
-    expect(formatDistance(0.475)).toBe("500 מ' ממך"); // rounds up
-    expect(formatDistance(0.999)).toBe("1000 מ' ממך");
+    expect(formatDistance(0.45)).toBe("\u2066450 m\u2069 ממך");
+    expect(formatDistance(0.475)).toBe("\u2066500 m\u2069 ממך"); // rounds up
+    expect(formatDistance(0.999)).toBe("\u20661000 m\u2069 ממך");
   });
 
   it("uses 'less than 50m' label for very close distances", () => {
-    expect(formatDistance(0.01)).toBe("פחות מ-50 מ' ממך");
-    expect(formatDistance(0.02)).toBe("פחות מ-50 מ' ממך");
+    expect(formatDistance(0.01)).toBe("פחות מ-50 \u2066m\u2069 ממך");
+    expect(formatDistance(0.02)).toBe("פחות מ-50 \u2066m\u2069 ממך");
   });
 
   it("uses one decimal for 1–99 km", () => {
-    expect(formatDistance(1)).toBe('1.0 ק"מ ממך');
-    expect(formatDistance(3.24)).toBe('3.2 ק"מ ממך');
-    expect(formatDistance(54.7)).toBe('54.7 ק"מ ממך');
-    expect(formatDistance(99.94)).toBe('99.9 ק"מ ממך');
+    expect(formatDistance(1)).toBe("\u20661.0 km\u2069 ממך");
+    expect(formatDistance(3.24)).toBe("\u20663.2 km\u2069 ממך");
+    expect(formatDistance(54.7)).toBe("\u206654.7 km\u2069 ממך");
+    expect(formatDistance(99.94)).toBe("\u206699.9 km\u2069 ממך");
   });
 
   it("uses no decimal for ≥100 km (avoids false precision)", () => {
-    expect(formatDistance(100)).toBe('100 ק"מ ממך');
-    expect(formatDistance(312.5)).toBe('313 ק"מ ממך');
-    expect(formatDistance(20015)).toBe('20015 ק"מ ממך');
+    expect(formatDistance(100)).toBe("\u2066100 km\u2069 ממך");
+    expect(formatDistance(312.5)).toBe("\u2066313 km\u2069 ממך");
+    expect(formatDistance(20015)).toBe("\u206620015 km\u2069 ממך");
   });
 });
