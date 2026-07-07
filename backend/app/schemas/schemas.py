@@ -295,6 +295,10 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     emoji: str | None = None
+    # MEH-1034: query-time count over producer_categories, populated only by
+    # GET /admin/categories. Optional so public consumers (GET /categories,
+    # ProducerOut.categories) serialize unchanged — NOT a DB column.
+    producer_count: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -956,6 +960,15 @@ class ProducerOwnerOut(ProducerDetailOut):
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
     address: str | None = None
+    # MEH-1025 Chunk A: the owner sees her OWN completion-request trail so the
+    # dashboard can render the "נשאר להשלים" banner (Chunk B). Same owner-private
+    # pattern as kosher/license/address above. Columns exist since MEH-1011
+    # (migration a1b2c3d4e5f6) — Pydantic-only exposure, no migration. Contrast
+    # risk_score/risk_reasoning + declared_at, which stay admin-only on
+    # ProducerAdminOut (the producer must never see her own risk score).
+    # REUSES: schemas.py:913-914 (ProducerAdminOut declarations).
+    requested_changes: str | None = None
+    changes_requested_at: datetime | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
