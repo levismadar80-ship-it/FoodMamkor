@@ -185,7 +185,7 @@ Frames: Phase 1 Hero v2, Phase 3 Category Grid v8, Phase 5 Homepage Assembly v2 
 | HOME-17 | P3 v8/P5 → grid header: eyebrow DM Sans 11px 0.18em + 32×1px gold rule, start-aligned; H2 `גלי לפי קטגוריה` (Q05: keep feminine) | `HomeCategoryGrid.jsx:36-43`: eyebrow as Cormorant-italic gold 18px centered, no rule; H2 = `גלו לפי קטגוריה` | Eyebrow uses numeral treatment; H2 pluralized against recorded Q05 | 2 | S | YELLOW | H2 may be later MEH-472 unification — copy gate before "fixing" back |
 | HOME-18 | P3 v8 → small-card glyph aspect 1:1 (desktop+mobile), 4:3 tablet; mobile hero 16:7 | `HomeCategoryGrid.jsx:71`: 4/3 everywhere; hero mobile 16:9 | Aspect matrix simplified | 1 | S | GREEN | Single component |
 | HOME-19 | P5 cat 05 = `שמנים ודבש` | `lib/home-categories.js:17`: `שמנים` | Deliberate — MEH-743 honey split | 0 | — | — | Post-dates frame |
-| HOME-20 | Category Glyphs 18 Preview v2 (final 18-glyph keyline set) | **NO CODE.** Only 6 grid icons exist; homepage still renders category **emoji** (`HomeProducersGrid.jsx:94`, `HeroSearch.jsx:304`) | 18-glyph system unadopted; emoji contradicts v4.1 no-emoji LOCK | 3 | L | YELLOW | Multi-file; needs 18-slug→DB-category mapping |
+| HOME-20 | Category Glyphs 18 Preview v2 (final 18-glyph keyline set) | **NO CODE.** Only 6 grid icons exist; homepage still renders category **emoji** (`HomeProducersGrid.jsx:94`, `HeroSearch.jsx:304`) | 18-glyph system unadopted; emoji contradicts v4.1 no-emoji LOCK | 3 | L | YELLOW | emoji RESOLVED via MEH-1020 (both render sites 0 emoji, 05/07); 18-glyph remainder -> MEH-683 |
 | HOME-21 | P5 → 08 Featured Producers: separate 3-card editorial row, eyebrow `השבוע` | No separate section; main grid reuses H2 | 08+09 merged; editorial beat missing | 2 | M | YELLOW | IA question; interacts w/ MEH-809 thin-catalog gating |
 | HOME-22 | P5 → 09 main grid + P2 v4 card lock | `HomeProducersGrid.jsx:45-120+`; `ProducerCard.jsx:233-291` | Full parity on locked treatment | 0 | — | — | Kashrut on home cards: COLLISION (MEH-986) |
 | HOME-23 | FREEZE/PORT → 10 Meet a Producer: framed 4:5 image radius 16, `--light` loading fill, solid caption chip bottom+inline-start | `HomeStaticBlocks.jsx:97-113`: mat treatment, 5:6, no chip | Ratio + treatment + chip missing | 2 | S | GREEN | FREEZE §10.4: chip solid (blur dropped) — FREEZE wins over design-pass HTML |
@@ -299,7 +299,7 @@ Route: `app/[locale]/[slug]/page.js` (+ `/p/[slug]` redirect) → `producer/[id]
 | ID | Design element | Code state (file:line) | Gap | Sev | Effort | Tier | Notes |
 |---|---|---|---|---|---|---|---|
 | BIZ-01 | Hero editorial collage (1+2 stacked, 460/300px, media credit) | `ProducerDetail.jsx:105-109` → single-image carousel h-52 | Collage paradigm missing | 3 | L | RED | LCP block in central file |
-| BIZ-02 | Name masthead FRL 900 72/46px + gold eyebrow + Cormorant dek | `ProducerHeader.jsx:41-43,81-85` — 36px/700, no eyebrow, plain dek | Magazine register absent | 3 | M | YELLOW | |
+| BIZ-02 | Name masthead FRL 900 72/46px + gold eyebrow + Cormorant dek | `ProducerHeader.jsx:41-43,81-85` — 36px/700, no eyebrow, plain dek | Magazine register absent | 3 | M | YELLOW | SUPERSEDED by MEH-815 (name-only masthead, eyebrow dropped) + Cormorant-on-Hebrew LOCK; imaged name-scale intentional (photo-led) |
 | BIZ-03 | Verified seal beside name (S6 plain) | BadgeRow → S12 VerifiedTierBadge (newer spec) | S6 stale here | 1 | S | YELLOW | (MEH-742 gate) — don't "fix back" |
 | BIZ-04 | Hero has NO rating | Rating chip in name row + sticky bar | Code-extra surface | 1 | S | YELLOW | Product call |
 | BIZ-05 | Tag pills rounded-full under dek | Highlights strip rounded-xl; text hidden on mobile | Styling delta | 1 | S | GREEN | |
@@ -376,7 +376,7 @@ Best port in the audit — matrix rows all parity or GREEN-small.
 | EVENT-06 | EntryRow full anatomy | :394-458 parity incl. species accents; WA glyph on rows absent (grep 0) | WA glyph | 1 | S | GREEN | start-0 ✓ |
 | EVENT-07 | Near-term bucket "סוף השבוע הקרוב" + feat/compact rows | Absent; uniform rows | Hierarchy missing | 2 | M | YELLOW | Marked "proposed" in frame — approval state uncertain |
 | EVENT-08 | Month divider + event count | :366-376 no count | Count missing | 1 | S | GREEN | |
-| EVENT-09 | Calendar: species dots + legend, gold today, muted past, rail-row day panel | CalendarView.jsx:130-208 single green dot, primary ring, compact list | 5 elements missing | 2 | M | YELLOW | Physical chevron SVGs — verify RTL |
+| EVENT-09 | Calendar: species dots + legend, gold today, muted past, rail-row day panel | CalendarView.jsx:130-208 single green dot, primary ring, compact list | 5 elements missing | 2 | M | YELLOW | PARTIAL shipped MEH-1042 (gold today + muted past); dots/legend/day-panel post-launch (needs frame); chevron RTL verify pending |
 | EVENT-10 | Desktop 1fr/300 sidebar (up-next + calendar-promo); calendar 1fr/320 sticky day panel | Absent — single column max-w-5xl | Entire desktop architecture | 3 | L | YELLOW | Largest S10 gap |
 | EVENT-11 | Empty states: 2 actions (primary + bell notify) | One action | Notify CTA absent both tabs | 1 | M | GREEN | Implies subscription feature |
 | EVENT-12 | Loading skeleton mirrors rail | :506-525 ✓ | None | 0 | — | GREEN | |
@@ -389,7 +389,7 @@ Rule: login **logic** = RED; visual/copy = YELLOW.
 | ID | Design element | Code state | Gap | Sev | Effort | Tier | Notes |
 |---|---|---|---|---|---|---|---|
 | LOGIN-01 | Single centered column ("60% empty") | Split-screen photo+form (MEH-788, documented) | Superseded layout | 1 | — | YELLOW | Form col keeps 416px measure |
-| LOGIN-02 | Head: eyebrow + FRL 52px + Cormorant dek | :161-170 headline 32px (MEH-131), dek absent | Dek missing | 1 | S | YELLOW | Headline copy locked ✓ |
+| LOGIN-02 | Head: eyebrow + FRL 52px + Cormorant dek | :161-170 headline 32px (MEH-131), dek absent | Dek missing | 1 | S | YELLOW | SUPERSEDED: eyebrow already shipped; 32px deliberate (MEH-131); dek = Cormorant-on-Hebrew LOCK |
 | LOGIN-03 | Social-first order Google→Apple→email | :172-198 ✓ | None | 0 | — | RED (reorder = auth flow) | S9+S7 flip gated by MEH-742 |
 | LOGIN-04 | Email: adorn + LTR + placeholder | :202-235 ✓ except placeholder | Placeholder missing | 1 | S | YELLOW | |
 | LOGIN-05 | Password label-row + forgot + eye | :237-292 ✓ | None | 0 | — | RED | rtl.md exception honored |
