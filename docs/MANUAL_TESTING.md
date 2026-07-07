@@ -476,6 +476,13 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
+### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
+- [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
+- [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה:** הטקסט הוא "למחוק את הקטגוריה '<שם הקטגוריה>'?" עם השם האמיתי של הקטגוריה שנבחרה.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
+- [ ] הערה — מספר בתי-העסק המשויכים לא מוצג (ה-payload לא מחזיר count; נדחה ל-follow-up backend-only). מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE) — כדאי לוודא לפני מחיקה.
+
 ### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
 - [ ] Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
 - [ ] פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).

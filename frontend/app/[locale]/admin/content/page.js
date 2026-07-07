@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { showToast } from "@/lib/toast";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -40,6 +41,10 @@ function CategoriesEditor() {
   const t = useTranslations("admin");
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
+  // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
+  // the category name. { id, name } while a delete is pending; null otherwise.
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = () => api.get("/admin/categories").then((r) => setItems(r.data));
@@ -55,11 +60,33 @@ function CategoriesEditor() {
     await api.put(`/admin/categories/${id}`, { name });
     load();
   };
-  const remove = async (id) => {
-    if (!confirm(t("content.categories.confirm_delete"))) return;
-    await api.delete(`/admin/categories/${id}`);
-    load();
+  // Open the confirm dialog; the DELETE call only fires from confirmRemove.
+  const remove = (cat) => setConfirmDelete({ id: cat.id, name: cat.name });
+  const confirmRemove = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/admin/categories/${confirmDelete.id}`);
+      load();
+      setConfirmDelete(null); // close only on success
+    } catch {
+      // Keep the dialog open on failure so the admin can retry or cancel.
+      showToast.error(t("content.categories.delete_error"));
+    } finally {
+      setDeleting(false);
+    }
   };
+
+  // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
+  // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
+  // otherwise mirror predates it.
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting]);
 
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-4">
@@ -84,6 +111,38 @@ function CategoriesEditor() {
           ))
         )}
       </ul>
+
+      {/* Confirmation modal — mirrors users/page.js confirm dialog pattern (MEH-1023 Chunk B) */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="category-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+          >
+            <p id="category-delete-title" className="font-medium text-base">
+              {t("content.categories.confirm_delete", { name: confirmDelete.name })}
+            </p>
+            <div className="flex gap-3 justify-start">
+              <button
+                disabled={deleting}
+                onClick={confirmRemove}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? t("content.categories.deleting") : t("content.categories.delete")}
+              </button>
+              <button
+                disabled={deleting}
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -103,7 +162,7 @@ function CategoryRow({ cat, onSave, onDelete }) {
       >
         {t("content.categories.save")}
       </button>
-      <button onClick={() => onDelete(cat.id)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
+      <button onClick={() => onDelete(cat)} className="text-xs text-red-600">{t("content.categories.delete")}</button>
     </li>
   );
 }

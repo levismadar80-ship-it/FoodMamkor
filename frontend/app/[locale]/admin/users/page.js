@@ -235,7 +235,8 @@ export default function AdminUsersPage() {
       {/* Confirmation modal */}
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4">
+          {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
+          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4">
             <p className="font-medium text-base">
               {confirm.action === "promote"
                 ? t("users.confirm.promote", { name: confirm.userName })
