@@ -577,6 +577,12 @@
       "og_title": "Verify your email",
       "og_description": "Confirming your email finishes setting up your Mehamakor account."
     },
+    "join": {
+      "title": "Join as a business | Mehamakor",
+      "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
+      "og_title": "Your business. A page of its own. | Mehamakor",
+      "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -1805,7 +1811,8 @@
         "empty": "No data to display",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete the category '{name}'?",
+        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "producer_count": "{count} businesses",
         "deleting": "Deleting…",
         "delete_error": "Failed to delete the category. Please try again."
       },
@@ -2853,6 +2860,46 @@
       }
     }
   },
+  "join": {
+    "eyebrow": "For local businesses",
+    "h1": "Your business. A page of its own.",
+    "subhead": "A page with your photos and story, every business hand-picked, and direct contact on WhatsApp — local customers meet your story.",
+    "cta": "Join",
+    "trust_hint": "Free to join",
+    "how": {
+      "eyebrow": "How it works",
+      "heading": "Four steps",
+      "step1_title": "Sign up",
+      "step1_text": "A short form about your business — story, photos, and contact details. About 10 minutes.",
+      "step2_title": "A personal call",
+      "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
+      "step3_title": "Your page goes live",
+      "step3_text": "Usually within a day or two your business appears on the site.",
+      "step4_title": "Customers reach you directly",
+      "step4_text": "The WhatsApp button on your page opens a direct conversation with you. Contact and payment stay between you and your customers.",
+      "process_link": "The full acceptance process"
+    },
+    "prepare": {
+      "title": "Good to have ready",
+      "item_story": "A short story about your business",
+      "item_photos": "2–3 photos of your business or products",
+      "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
+    },
+    "card": {
+      "title": "Every business gets a personal call",
+      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and a conversation. That keeps every page on the site trustworthy and personal."
+    },
+    "testimonial": {
+      "eyebrow": "Coming soon — our first testimonial",
+      "quote": "A real business owner's words will appear here — verbatim, with her approval."
+    },
+    "faq": {
+      "eyebrow": "Common questions",
+      "q_cost": "How much does it cost?",
+      "a_cost": "Free to join and be listed. No transaction fees — ever.",
+      "all_link": "All the questions"
+    }
+  },
   "about_business": {
     "meta_title": "FAQ for businesses — Mehamakor",
     "meta_description": "8 frequently-asked questions from local business owners about Mehamakor: cost, value, time, platform trust, and customer control. Direct, transparent answers.",
@@ -3434,6 +3481,17 @@
         "copy_cta": "Copy link",
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
+      },
+      "states": {
+        "zero_activity": "No activity yet — share your page to get started",
+        "share_locked": "You'll be able to share soon — let's finish approval and details first",
+        "availability_disabled": "You'll be able to update availability once the business is approved and published",
+        "view_public": "View your page"
+      },
+      "changes_requested": {
+        "title": "One detail left to complete",
+        "cta": "Complete the details",
+        "aria": "Completion request from the team"
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",

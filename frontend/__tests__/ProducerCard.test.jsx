@@ -321,7 +321,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    expect(distance.textContent).toMatch(/km\u2069 ממך$/);
     expect(distance).toHaveAttribute("dir", "ltr");
   });
 

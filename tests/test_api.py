@@ -1004,6 +1004,21 @@ class TestAdminFlows:
         )
         assert resp.status_code == 200
 
+    def test_categories_producer_count(self, client, db):
+        # MEH-1034: GET /admin/categories annotates each row with a
+        # query-time producer_count (0 for empty, N for associated).
+        admin = make_user(db, role="admin")
+        with_producers = make_category(db, name="עם עסקים", emoji="🧀")
+        empty = make_category(db, name="בלי עסקים", emoji="🫙")
+        make_producer(db, name="עסק א", category=with_producers)
+        make_producer(db, name="עסק ב", category=with_producers)
+
+        resp = client.get("/admin/categories", headers=auth_header(admin))
+        assert resp.status_code == 200
+        by_id = {c["id"]: c for c in resp.json()}
+        assert by_id[with_producers.id]["producer_count"] == 2
+        assert by_id[empty.id]["producer_count"] == 0
+
     def test_settings_get_and_update(self, client, db):
         admin = make_user(db, role="admin")
         resp = client.get("/admin/settings", headers=auth_header(admin))

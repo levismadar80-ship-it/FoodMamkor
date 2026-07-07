@@ -70,7 +70,7 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     );
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
-    expect(pill.textContent).toMatch(/ק"מ ממך$/);
+    expect(pill.textContent).toMatch(/km\u2069 ממך$/);
     expect(pill).toHaveAttribute("dir", "ltr");
   });
 
