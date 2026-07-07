@@ -3506,6 +3506,11 @@
         "availability_disabled": "תוכלי לעדכן זמינות ברגע שהעסק יאושר ויפורסם",
         "view_public": "לצפייה בעמוד שלך"
       },
+      "changes_requested": {
+        "title": "נשאר להשלים",
+        "cta": "להשלמת הפרטים",
+        "aria": "בקשת השלמה מהצוות"
+      },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
       "status": {

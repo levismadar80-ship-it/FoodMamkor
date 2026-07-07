@@ -14,6 +14,7 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 
 function VanityLinkCard({ slug }) {
@@ -256,7 +257,15 @@ export default function ProducerDashboardPage() {
         </LocaleLink>
       )}
 
-      {producer.status === "pending" && (
+      {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
+          requested_changes is set; the CTA routes to the edit tab. */}
+      <ChangesRequestedBanner profile={profile} />
+
+      {/* MEH-1025 Chunk B: suppress the generic "ממתין לאישור" notice when a
+          request-changes is pending — the specific "נשאר להשלים" banner above
+          IS the message, and "awaiting approval" would contradict it (the ball
+          is in the owner's court). Both otherwise stack on a pending producer. */}
+      {producer.status === "pending" && !profile?.requested_changes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           <p className="text-yellow-700 mb-3">
