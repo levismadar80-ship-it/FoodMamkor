@@ -1809,7 +1809,9 @@
         "empty": "אין נתונים להצגה",
         "save": "שמרו",
         "delete": "מחקו",
-        "confirm_delete": "למחוק קטגוריה?"
+        "confirm_delete": "למחוק את הקטגוריה '{name}'?",
+        "deleting": "מוחקים…",
+        "delete_error": "מחיקת הקטגוריה נכשלה. נסו שוב."
       },
       "page_editor": {
         "title_placeholder": "כותרת",
@@ -3451,6 +3453,12 @@
         "share_cta": "שתפו בוואטסאפ",
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
       },
+      "states": {
+        "zero_activity": "עוד אין פעילות — שתפי את העמוד כדי להתחיל",
+        "share_locked": "עוד מעט תוכלי לשתף — נשלים אישור ומילוי פרטים קודם",
+        "availability_disabled": "תוכלי לעדכן זמינות ברגע שהעסק יאושר ויפורסם",
+        "view_public": "לצפייה בעמוד שלך"
+      },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
       "status": {
@@ -3502,7 +3510,9 @@
           "on_vacation": "בהפסקה"
         },
         "vacation_return_label": "חזרה ב:",
-        "remove_vacation_date_aria": "הסירו תאריך חזרה"
+        "remove_vacation_date_aria": "הסירו תאריך חזרה",
+        "vacation_confirm": "שמרו",
+        "vacation_date_required": "בחרו תאריך חזרה כדי לעבור להפסקה"
       },
       "quick_links": {
         "settings": {

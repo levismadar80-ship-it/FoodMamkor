@@ -476,6 +476,13 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
+### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
+- [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
+- [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה:** הטקסט הוא "למחוק את הקטגוריה '<שם הקטגוריה>'?" עם השם האמיתי של הקטגוריה שנבחרה.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
+- [ ] הערה — מספר בתי-העסק המשויכים לא מוצג (ה-payload לא מחזיר count; נדחה ל-follow-up backend-only). מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE) — כדאי לוודא לפני מחיקה.
+
 ### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
 - [ ] Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
 - [ ] פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).
@@ -603,9 +610,17 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
 - [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
 
+### ProductsSection mount in the edit tab (MEH-999 follow-up)
+
+> The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
+
+- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
-> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים" section → "הוסיפי מוצר".
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
 - [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
 - [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
@@ -1684,8 +1699,9 @@ Added with `feature/session-handoff`.
 - [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
 - [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
 - [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input appears below.
-- [ ] Pick a future date in the vacation input + blur — תוצאה מצופה: state persists; refresh page → still on vacation with the same date.
+- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
 - [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
