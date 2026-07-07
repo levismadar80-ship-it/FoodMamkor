@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1025 Chunk B: producer dashboard "נשאר להשלים" banner — DRAFT PR (closes MEH-1025; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1025-producer-changes-banner` off `origin/staging` (clean cut). Frontend YELLOW; `page.js` Overview is not a central component. `Closes MEH-1025`.
+- **Both gates cleared:** MEH-964 1D on staging + Chunk A (#1518, `857726c6`) exposed `requested_changes`/`changes_requested_at` on `ProducerOwnerOut` — verified on staging (`schemas.py:970-971`).
+- **What shipped:** new co-located `ChangesRequestedBanner.jsx` — renders on the Overview when `profile.requested_changes` ≠ null (0 DOM otherwise); accent-tint card, `ClipboardText` icon, title "נשאר להשלים", DB feedback as-is, `changes_requested_at` `dir="ltr"`, CTA "להשלמת הפרטים" → `/producer/dashboard/edit`. Wired in `page.js` after the view-public link.
+- **Sapir steers applied:** (1) title+body dark `text-text` (accent only on icon/CTA) for WCAG on the pale gold tint; (2) generic "ממתין לאישור" pending banner **suppressed** when `requested_changes` set (`page.js:259` guard) so the two don't stack/contradict.
+- **Verify:** `npm run build` exit 0 · vitest **759 passed** (new `Dashboard1025Banner.test.jsx` 4✓) · 0 physical RTL · JSON valid. i18n `dashboard.producer.changes_requested.*` he+en (MEH-978); body = DB text.
+- **Sapir pending:** mobile QA (pending producer with requested_changes → banner shows, generic pending gone, CTA→edit; upload/approve clears it → banner gone; **confirm accent-tint text contrast at 375px**); mark ready + merge (`Closes MEH-1025`, DRAFT only per Rule 23). **This closes MEH-1025 end-to-end (Ch A backend + Ch B banner).**
+- **Scope held:** `page.js` (1 render + 1 guard) + new banner + `he.json`/`en.json` + new test + CHANGELOG/HANDOFF. No endpoint/schema, no admin side, no 1A–1D internals.
+
 ## 2026-07-07 — MEH-1040: admin reviews delete — native confirm → modal dialog — DRAFT PR
 
 - **Branch:** `feature/meh-1040-review-delete-confirm` off `origin/staging` (clean cut, divergence 0). LOW-RISK frontend-only per batch spec (item 2 of 2, with MEH-1034). `Closes MEH-1040`.
