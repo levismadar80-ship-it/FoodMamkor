@@ -13,6 +13,34 @@
 - **Docs:** DATA.md endpoint note, MANUAL_TESTING new MEH-1034 section + Ch.B stale count-note corrected, CHANGELOG entry.
 - **Sapir pending:** mobile QA on preview (per-row count, dialog count, public /categories unaffected) → ready-for-review + merge.
 
+## 2026-07-07 — MEH-1025 Chunk A: expose requested_changes on ProducerOwnerOut — DRAFT PR (backend-only; gates Chunk B)
+
+- **Branch:** `feature/meh-1025-owner-payload-fields` off `origin/staging` (clean cut). Backend Pydantic-only. `Refs MEH-1025` (Chunk B — the dashboard banner — Closes).
+- **Gate cleared:** MEH-964 1D is on staging (`c89e05d3`, verified `overview-zero-state` present), so MEH-1025 is unblocked.
+- **What shipped:** `ProducerOwnerOut` (`schemas.py:950`) += `requested_changes: str|None` + `changes_requested_at: datetime|None`, mirroring the kosher/license/address owner-private precedent (`:954-958`). The owner sees her OWN completion feedback; `risk_score`/`risk_reasoning`/`declared_at` stay admin-only (MEH-767 leak-fix intact). Columns exist since MEH-1011 (`a1b2c3d4e5f6`) → **no migration, no model change, no endpoint change.**
+- **Verify:** `alembic check` = "No new upgrade operations detected" on a FRESH upgraded DB (the pytest-ordering artifact — all-tables-add — is not real drift; my change touches zero SQLAlchemy models). `tests/test_producers_me_schema.py` +2 (present+correct when set · null when unset) → 11✓. `pytest tests/test_api.py` **202 passed**. `--frozen` used (fresh container); no lockfile churn.
+- **Next:** Chunk B (dashboard "נשאר להשלים" banner reading `profile.requested_changes`) after this merges so the field is live on staging for the preview. Micro-follow-up: `docs/DATA.md` MEH-1011 line could mention owner-payload exposure (left untouched per this chunk's file scope).
+
+## 2026-07-05 — MEH-999 follow-up: mount ProductsSection into the edit tab — DRAFT PR (WAIT for Sapir mobile QA)
+
+- **Branch:** `claude/vacation-date-reveal-bnjbji` restarted off `origin/staging` (prior MEH-999 vacation PR #1497 merged; divergence 0). ⚠️ Harness-locked to `claude/*` (can't push `feature/*` — same constraint as #1497). HIGH-RISK (central `edit/page.js`) → chunk-by-chunk: Phase 0 → Sapir `go` → mount → verify. `Refs MEH-999` (Linear pending — quota).
+- **What shipped:** `ProductsSection` (producer product CRUD vs `/producers/me/products`) was defined at `settings/page.jsx:814` but **never mounted** (0 render sites). Relocated **verbatim** to `frontend/components/ProductsSection.jsx` (export default + §14 header) and mounted `<ProductsSection />` as the last card in `producer/dashboard/edit/page.js`. Deleted the dead copy + 7 orphaned imports from `settings/page.jsx` (532-line pure deletion; `Image` kept). No backend / schema / new copy — `settings.products.*` i18n already exists (he+en).
+- **Phase 0 findings (Sapir approved "Extract + remove dead copy"):** endpoints confirmed (`producer_me.py:879 GET /:887 POST /:923 PUT /:949 DELETE`); ProductsSection self-contained (no props, no settings-local deps); already has card chrome matching MEH-1017 editors.
+- **Verify:** `npm run build` exit 0 (113/113 SSG) · vitest **737 passed** / 41 skipped (new `EditTabProductsSection.test.jsx` 2✓) · eslint **0 errors** (217 warn-only nits verbatim from original) · 0 physical RTL classes · package-lock churn reverted.
+- **Doc flag:** MANUAL_TESTING's old Phase-3 product QA lines said `/settings → מוצרים`, but the section was never mounted there — added a corrected edit-tab QA block + a note; full refresh of the stale `/settings` lines deferred (out of scope).
+- **Sapir pending:** mobile QA on preview (edit tab → "מוצרים" card: empty state, add/edit/delete end-to-end); mark ready + merge (DRAFT-only per HIGH-RISK gate).
+- **Scope held:** `components/ProductsSection.jsx` (new) + `edit/page.js` + `settings/page.jsx` (dead-code removal) + new test + CHANGELOG/MANUAL_TESTING/HANDOFF. ProductsSection internals + product endpoints untouched.
+
+## 2026-07-04 — MEH-964 chunk 1D: state-driven Overview (empty-state + share-gate + availability-disable + view-public) — DRAFT PR (closes Phase 1; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-964-dashboard-1d-states` off `origin/staging` (clean cut, divergence 0). YELLOW final chunk of the MEH-964 dashboard redesign; `page.js` (Overview) is not a central component. `Closes MEH-964`.
+- **Prereq verified this session:** 1A/1B/1C are on staging (layout shell, `OverviewStatsHero`, `ActivityPulse`); 1D consumes the `data-state-*` flags 1A scaffolded (`page.js:200-206` — `isComplete`←`producerCompleteness`, `hasActivity`←analytics totals, `isApproved`←status).
+- **What shipped (all `page.js` + i18n):** (1) KPI strip gated on `hasActivity` → warm zero-state ("עוד אין פעילות — שתפי את העמוד כדי להתחיל") when inactive; (2) `VanityLinkCard` gated on `isComplete && isApproved` → why-locked hint ("עוד מעט תוכלי לשתף…") otherwise (Sapir fork ①: show hint, gate whole card); (3) availability radios `disabled` until approved + `aria-describedby` hint ("תוכלי לעדכן זמינות…"); (4) one-tap view-public `LocaleLink`→`/{slug}` `target=_blank` ("לצפייה בעמוד שלך"). Forks: ② `hasActivity`=views‖whatsapp (no rating); ③ `/{slug}` canonical.
+- **Copy:** Sapir-final (COPY_BANK subject-test MEH-579 + ADR-024, feminine warm voice); `dashboard.producer.states.*` he+en twins (MEH-978).
+- **Verify:** `npm run build` exit 0 · vitest **748 passed** / 41 skipped (new `Dashboard1DStates.test.jsx` 8✓) · 0 physical RTL classes · JSON valid. `DashboardSingleCompletenessWidget.test.jsx` phosphor mock += `Sparkle`/`LockSimple` (MEH-990-class whole-page fix — the new no-activity/locked paths mount those icons).
+- **Sapir pending:** mobile QA the preview (new owner → zero-state + locked hint + disabled availability; approved+complete → share card + enabled availability; view-public opens `/{slug}`); mark ready + merge (`Closes MEH-964`, DRAFT only per Rule 23).
+- **Scope held:** `page.js` + `he.json`/`en.json` + new test + the one necessary test-mock fix + CHANGELOG/HANDOFF. No 1A/1B/1C internals, no `/settings`, no MEH-1025 banner (still blocked on this).
+
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
 - **Branch:** `feature/meh-1023-category-delete-confirm` off `origin/staging` (includes Chunk A `315d9d8f` + MEH-1026). HIGH-RISK admin surface, frontend-only. `Closes MEH-1023`.

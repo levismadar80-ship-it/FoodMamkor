@@ -3454,6 +3454,12 @@
         "share_cta": "שתפו בוואטסאפ",
         "wa_text_template": "הפרופיל שלי במהמקור: {url}"
       },
+      "states": {
+        "zero_activity": "עוד אין פעילות — שתפי את העמוד כדי להתחיל",
+        "share_locked": "עוד מעט תוכלי לשתף — נשלים אישור ומילוי פרטים קודם",
+        "availability_disabled": "תוכלי לעדכן זמינות ברגע שהעסק יאושר ויפורסם",
+        "view_public": "לצפייה בעמוד שלך"
+      },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
       "status": {
