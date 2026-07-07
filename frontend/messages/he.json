@@ -3504,7 +3504,9 @@
           "on_vacation": "בהפסקה"
         },
         "vacation_return_label": "חזרה ב:",
-        "remove_vacation_date_aria": "הסירו תאריך חזרה"
+        "remove_vacation_date_aria": "הסירו תאריך חזרה",
+        "vacation_confirm": "שמרו",
+        "vacation_date_required": "בחרו תאריך חזרה כדי לעבור להפסקה"
       },
       "quick_links": {
         "settings": {

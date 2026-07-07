@@ -231,6 +231,14 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(price.className).toMatch(/max-w-/);
   });
 
+  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
+  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
+  it("bidi-isolates the price label with dir=ltr", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const price = screen.getByText("₪40-80");
+    expect(price).toHaveAttribute("dir", "ltr");
+  });
+
   it("hides price when both price_range and starting_price_label are null", () => {
     render(<ProducerCard producer={minimalProducer} />);
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
@@ -403,8 +411,11 @@ describe("ProducerCard — Phase B anatomy", () => {
   it("calls onClick when the card body is tapped outside interactive children", () => {
     const onClick = vi.fn();
     render(<ProducerCard producer={fullProducer} onClick={onClick} active={false} />);
-    const desc = screen.getByTestId("card-description");
-    desc.click();
+    // MEH-1028: tap the location line — a non-interactive body element that stays
+    // visible on mobile (the description is now `hidden sm:block`, so it's not a
+    // representative mobile tap target).
+    const body = screen.getByTestId("location-line");
+    body.click();
     expect(onClick).toHaveBeenCalledWith(fullProducer);
   });
 

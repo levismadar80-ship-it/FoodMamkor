@@ -1691,8 +1691,9 @@ Added with `feature/session-handoff`.
 - [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
 - [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
 - [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input appears below.
-- [ ] Pick a future date in the vacation input + blur — תוצאה מצופה: state persists; refresh page → still on vacation with the same date.
+- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
 - [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot

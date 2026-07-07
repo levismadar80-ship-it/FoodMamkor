@@ -154,7 +154,10 @@ function CardHeart({ producer, onCountChange }) {
   };
 
   // MEH-643/MEH-472: single gerund aria "שמירה" (matches the "טעינה" pattern).
-  // MEH-991 (CARD-05): cream circle per Populated frame; 44px box kept (touch-target floor >= design 40px).
+  // MEH-991 (CARD-05): cream circle per Populated frame.
+  // MEH-1028 (CARD-27): mobile density variant — 34px box + 8px inset on <640px;
+  // desktop keeps the 44px touch-target box + 12px inset (sm: up). The mobile 34px
+  // is below the 44px WCAG touch floor per the v4 design lock (deliberate trade-off).
   return (
     <button
       type="button"
@@ -163,7 +166,7 @@ function CardHeart({ producer, onCountChange }) {
       aria-pressed={filled}
       title={t("producer.card.favorites.aria")}
       data-testid="card-heart"
-      className="absolute top-3 start-3 z-10 w-11 h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
+      className="absolute top-2 start-2 sm:top-3 sm:start-3 z-10 w-[34px] h-[34px] sm:w-11 sm:h-11 bg-background/90 hover:bg-background rounded-full flex items-center justify-center transition-colors duration-base ease-quart focus-ring"
     >
       {/* Green ink, never red (MEH-636): outline default, green fill when saved. */}
       <HeartStraight
@@ -308,7 +311,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-baseline">
           <Link href={producerHref} className="block min-w-0 focus-ring">
-            <h3 className="font-headline-md font-bold text-[20px] text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
+            {/* MEH-1028 (CARD-27): mobile density — 16px name on <640px, 20px sm: up. */}
+            <h3 className="font-headline-md font-bold text-[16px] sm:text-[20px] text-text group-hover:text-primary transition-colors duration-base ease-quart leading-snug line-clamp-2">
               {highlightQuery
                 ? highlightMatch(producer.name, highlightQuery)
                 : producer.name}
@@ -351,8 +355,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         </p>
 
         {descriptionText && (
+          // MEH-1028 (CARD-27): one-line description hidden on mobile (<640px),
+          // visible sm: up — part of the mobile density variant.
           <p
-            className="text-sm text-text/85 line-clamp-1"
+            className="hidden sm:block text-sm text-text/85 line-clamp-1"
             data-testid="card-description"
           >
             {descriptionText}
@@ -375,7 +381,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
           {priceLabel ? (
-            <span className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]">
+            // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
+            // so it can't flip inside RTL — mirrors the ProducerCard.jsx:345
+            // distance-pill and ProducerCard.jsx:320 rating idiom (the only
+            // prior unwrapped numeric span).
+            <span
+              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]"
+              dir="ltr"
+            >
               {priceLabel}
             </span>
           ) : (
