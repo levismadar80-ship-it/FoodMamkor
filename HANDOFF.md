@@ -13,6 +13,15 @@
 - **Verify:** rule-5 order held (8+2 new test cases written failing-first → green): `npm run build` exit 0 · vitest **765 passed** / 41 skipped · 0 eslint errors (30 warn-only) · 0 physical RTL classes · en-parity 2✓ · adversarial review **0 must-fix**. QA notes for preview: (a) non-portal menu can clip at the table's `overflow-hidden` edge — identical accepted trait as `/admin/users` (MEH-1023); (b) ambassador/story hover-`title`s don't carry into menu items (labels unchanged; note only). Delete still fires native `confirm()` — that upgrade IS Chunk B, not a gap.
 - **Sapir pending:** mobile QA on preview (pending row: approve+request-changes+edit inline, menu=delete only; approved row: menu=suspend/ambassador/story/delete; story from menu opens canvas; busy item disabled) → approve Chunk A → only then Chunk B (`feature/meh-1027-producer-delete-confirm`: modal confirm dialog for producer delete, replacing `use-admin-producers.js:151` native confirm).
 - **Scope held:** `AdminProducersTable.jsx` + `AdminRowMenu.jsx` (+its test, approved) + `he/en.json` + `AdminProducersTableActions.test.jsx` + CHANGELOG/MANUAL_TESTING/HANDOFF. No backend, no `use-admin-producers.js`, no handler logic.
+## 2026-07-07 — MEH-1025 Chunk B: producer dashboard "נשאר להשלים" banner — DRAFT PR (closes MEH-1025; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1025-producer-changes-banner` off `origin/staging` (clean cut). Frontend YELLOW; `page.js` Overview is not a central component. `Closes MEH-1025`.
+- **Both gates cleared:** MEH-964 1D on staging + Chunk A (#1518, `857726c6`) exposed `requested_changes`/`changes_requested_at` on `ProducerOwnerOut` — verified on staging (`schemas.py:970-971`).
+- **What shipped:** new co-located `ChangesRequestedBanner.jsx` — renders on the Overview when `profile.requested_changes` ≠ null (0 DOM otherwise); accent-tint card, `ClipboardText` icon, title "נשאר להשלים", DB feedback as-is, `changes_requested_at` `dir="ltr"`, CTA "להשלמת הפרטים" → `/producer/dashboard/edit`. Wired in `page.js` after the view-public link.
+- **Sapir steers applied:** (1) title+body dark `text-text` (accent only on icon/CTA) for WCAG on the pale gold tint; (2) generic "ממתין לאישור" pending banner **suppressed** when `requested_changes` set (`page.js:259` guard) so the two don't stack/contradict.
+- **Verify:** `npm run build` exit 0 · vitest **759 passed** (new `Dashboard1025Banner.test.jsx` 4✓) · 0 physical RTL · JSON valid. i18n `dashboard.producer.changes_requested.*` he+en (MEH-978); body = DB text.
+- **Sapir pending:** mobile QA (pending producer with requested_changes → banner shows, generic pending gone, CTA→edit; upload/approve clears it → banner gone; **confirm accent-tint text contrast at 375px**); mark ready + merge (`Closes MEH-1025`, DRAFT only per Rule 23). **This closes MEH-1025 end-to-end (Ch A backend + Ch B banner).**
+- **Scope held:** `page.js` (1 render + 1 guard) + new banner + `he.json`/`en.json` + new test + CHANGELOG/HANDOFF. No endpoint/schema, no admin side, no 1A–1D internals.
 
 ## 2026-07-04 — MEH-1030: registry-path-drift guard (validator + pre-commit) + sweep + testing.md fix — DRAFT PR
 
