@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1034: CategoryOut.producer_count — blast radius in delete dialog + per-row count — DRAFT PR #1515
+
+- **Branch:** `feature/meh-1034-category-producer-count` off `origin/staging` (clean cut, divergence 0). LOW-RISK end-to-end per batch spec (item 1 of 2, with MEH-1040). `Closes MEH-1034`.
+- **What shipped:** the backend follow-up deferred from MEH-1023 Ch.B — `CategoryOut` (`schemas.py:294`) gains optional `producer_count: int | None` (query-time only, NO column/migration; Phase 0 confirmed both public consumers — `GET /categories` `producers.py:336` + nested `ProducerOut.categories` `schemas.py:757` — serialize `null`, unaffected). `list_categories_admin` (`admin_extra.py:167`) annotates rows in one `outerjoin(ProducerCategory)+func.count+group_by` query (no N+1). Frontend: delete dialog copy → "מחיקת '{name}' — {count} בתי עסק משויכים"; `CategoryRow` shows "{count} בתי עסק" (the editor is a `<ul>`, not a table — per-row element, no refactor). i18n `confirm_delete` updated + new `producer_count` (he+en).
+- **Verify:** pytest `tests/test_api.py` **203 passed** (new `test_categories_producer_count` — 0-for-empty / N-for-associated) · `npm run build` exit 0 · vitest **740 passed** / 41 skipped (`AdminContentCategoryDelete.test.jsx` updated for new copy, 5✓) · ICU parity clean · lockfile churn reverted.
+- **Docs:** DATA.md endpoint note, MANUAL_TESTING new MEH-1034 section + Ch.B stale count-note corrected, CHANGELOG entry.
+- **Sapir pending:** mobile QA on preview (per-row count, dialog count, public /categories unaffected) → ready-for-review + merge.
+
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
 - **Branch:** `feature/meh-1023-category-delete-confirm` off `origin/staging` (includes Chunk A `315d9d8f` + MEH-1026). HIGH-RISK admin surface, frontend-only. `Closes MEH-1023`.
