@@ -16,9 +16,11 @@ import InfoTooltip from "@/components/InfoTooltip";
  *   DELETE /reviews/:id           — reuses owner-or-admin handler
  *
  * Filters: star filter (1–5) + free-text search over producer name,
- * user name, title, body. Delete is confirm-toast gated; after deletion
- * the row is optimistically removed and the producer's avg_rating +
- * reviews_count are recomputed server-side by the existing handler.
+ * user name, title, body. Delete is guarded by a modal confirm dialog
+ * (MEH-1040 — replaced the native browser confirm, mirroring the MEH-1023
+ * pattern); after deletion the row is optimistically removed and the
+ * producer's avg_rating + reviews_count are recomputed server-side by
+ * the existing handler.
  */
 export default function AdminReviewsPage() {
   const t = useTranslations("admin");
@@ -30,6 +32,9 @@ export default function AdminReviewsPage() {
   const [search, setSearch] = useState("");
   const [starFilter, setStarFilter] = useState("all");
   const [deletingId, setDeletingId] = useState(null);
+  // MEH-1040: full review row while a delete awaits confirmation; null otherwise.
+  // Replaces the native browser confirm — the last admin surface with that pattern.
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => {
     load();
@@ -44,28 +49,39 @@ export default function AdminReviewsPage() {
       .finally(() => setLoading(false));
   };
 
-  const handleDelete = async (review) => {
-    if (
-      !window.confirm(
-        t("reviews.confirm_delete", {
-          user: review.user_name || t("reviews.default_user"),
-          producer: review.producer_name || t("reviews.default_producer"),
-        }),
-      )
-    ) {
-      return;
-    }
+  // MEH-1040: open the confirm dialog; the DELETE call only fires from
+  // confirmRemove. REUSES: frontend/app/[locale]/admin/content/page.js:116
+  // (MEH-1023 Ch.B category-delete dialog — same lifecycle + a11y contract).
+  const handleDelete = (review) => setConfirmDelete(review);
+
+  const deleting = confirmDelete !== null && deletingId === confirmDelete.id;
+
+  const confirmRemove = async () => {
+    const review = confirmDelete;
     setDeletingId(review.id);
     try {
       await api.delete(`/reviews/${review.id}`);
       setReviews((prev) => prev.filter((r) => r.id !== review.id));
       showToast.success(t("reviews.deleted_toast"));
+      setConfirmDelete(null); // close only on success
     } catch {
+      // Keep the dialog open on failure so the admin can retry or cancel.
       showToast.error(tError("generic"));
     } finally {
       setDeletingId(null);
     }
   };
+
+  // Escape closes the dialog (unless a delete is mid-flight) — mirrors the
+  // MEH-1023 Ch.B dismissal contract.
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !deleting) setConfirmDelete(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirmDelete, deleting]);
 
   const filtered = reviews.filter((r) => {
     if (starFilter !== "all" && r.stars !== Number(starFilter)) return false;
@@ -201,6 +217,41 @@ export default function AdminReviewsPage() {
           </table>
         </div>
       </div>
+
+      {/* Confirmation modal — mirrors content/page.js category-delete dialog (MEH-1023 Ch.B) */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-delete-title"
+            className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
+          >
+            <p id="review-delete-title" className="font-medium text-base">
+              {t("reviews.confirm_delete", {
+                user: confirmDelete.user_name || t("reviews.default_user"),
+                producer: confirmDelete.producer_name || t("reviews.default_producer"),
+              })}
+            </p>
+            <div className="flex gap-3 justify-start">
+              <button
+                disabled={deleting}
+                onClick={confirmRemove}
+                className="px-4 py-2 rounded-[10px] text-sm font-medium text-white transition bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? t("reviews.deleting") : t("reviews.delete")}
+              </button>
+              <button
+                disabled={deleting}
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 rounded-[10px] text-sm border border-border text-muted hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
