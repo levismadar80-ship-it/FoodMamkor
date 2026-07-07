@@ -5,14 +5,24 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-05 — MEH-999 (B10): PUT /producers/me license gate grandfathers held categories — DRAFT PR (WAIT for Sapir review)
+## 2026-07-05 — MEH-999 (B10): PUT /producers/me license gate grandfathers held categories — MERGED (Sapir "MERGE", PR #1512)
 
 - **Branch:** `feature/meh-999-license-pending-grandfather` off `origin/staging` (divergence 0). RED tier (data-quality gate on producer mutation) → Phase 0 → WAIT (Sapir `go WITH 2c`) → implement → STOP for review. Backend-only, no mobile QA. `Refs MEH-999` (Linear issue pending — workspace quota).
 - **The bug (MEH-999 dogfood blocker #3):** `producer_me.py` PUT re-ran `ensure_license_for_categories` on the FULL effective category set every save — a MEH-971 license-pending producer (licensed category + NULL license) 422'd on ANY edit (bio/image/contact). Scoping doc: `docs/audits/producer-blockers-scoping.md` (B10, Option B chosen — verified NO `license_pending` column on Producer; register payload only).
 - **What shipped:** new `_enforce_owner_license_gate` helper in `producer_me.py` (extracted — inline tripped ruff C901 11>10): validates **newly-added `category_ids` only** (`set − persisted`); no-category-change PUTs skip the gate. **2c clearing guard** (Sapir-approved): blanking a previously-set license while license-required categories remain → 422 against the final set; pending producers unaffected (license already NULL). Posture mirrors `auth.py:458` register bypass — licensed-only still enforced by admin approval guard + `status=="approved"` publication gate.
 - **Tests:** `TestOwnerPutGrandfathersLicense` in `tests/test_producer_license.py` — 4 cases (pending+bio→200 · pending+add-licensed-cat→422 · licensed-clears-license→422 · pending+add-unlicensed-cat→200); first `PUT /producers/me` coverage in that file. Rule-5 order held: a+d failed pre-fix, b+c were regression locks.
 - **Verify:** license suite **25 passed** · `pytest tests/test_api.py` **202 passed** (serial — an earlier parallel run false-failed on shared-DB contention) · ruff clean. Docs: DATA.md `:407` + CHANGELOG updated.
-- **Sapir pending:** review draft PR → merge. Remaining MEH-999 blockers: B9 (mount ProductsSection — mount-site decision), B11 (review reply — RED, schema). B8 (vacation) already DRAFT per CHANGELOG.
+- **Merged 2026-07-07** on Sapir's "MERGE" after backend CI ran green on the ready PR (pytest ✓ ruff ✓ mypy ✓ contract-audit ✓ — draft-mode skips explained by `pr-checks.yml:119` `draft == false` guards). Remaining MEH-999 blockers: B9 (mount ProductsSection — mount-site decision), B11 (review reply — RED, schema). B8 (vacation) already DRAFT per CHANGELOG.
+
+## 2026-07-04 — MEH-964 chunk 1D: state-driven Overview (empty-state + share-gate + availability-disable + view-public) — DRAFT PR (closes Phase 1; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-964-dashboard-1d-states` off `origin/staging` (clean cut, divergence 0). YELLOW final chunk of the MEH-964 dashboard redesign; `page.js` (Overview) is not a central component. `Closes MEH-964`.
+- **Prereq verified this session:** 1A/1B/1C are on staging (layout shell, `OverviewStatsHero`, `ActivityPulse`); 1D consumes the `data-state-*` flags 1A scaffolded (`page.js:200-206` — `isComplete`←`producerCompleteness`, `hasActivity`←analytics totals, `isApproved`←status).
+- **What shipped (all `page.js` + i18n):** (1) KPI strip gated on `hasActivity` → warm zero-state ("עוד אין פעילות — שתפי את העמוד כדי להתחיל") when inactive; (2) `VanityLinkCard` gated on `isComplete && isApproved` → why-locked hint ("עוד מעט תוכלי לשתף…") otherwise (Sapir fork ①: show hint, gate whole card); (3) availability radios `disabled` until approved + `aria-describedby` hint ("תוכלי לעדכן זמינות…"); (4) one-tap view-public `LocaleLink`→`/{slug}` `target=_blank` ("לצפייה בעמוד שלך"). Forks: ② `hasActivity`=views‖whatsapp (no rating); ③ `/{slug}` canonical.
+- **Copy:** Sapir-final (COPY_BANK subject-test MEH-579 + ADR-024, feminine warm voice); `dashboard.producer.states.*` he+en twins (MEH-978).
+- **Verify:** `npm run build` exit 0 · vitest **748 passed** / 41 skipped (new `Dashboard1DStates.test.jsx` 8✓) · 0 physical RTL classes · JSON valid. `DashboardSingleCompletenessWidget.test.jsx` phosphor mock += `Sparkle`/`LockSimple` (MEH-990-class whole-page fix — the new no-activity/locked paths mount those icons).
+- **Sapir pending:** mobile QA the preview (new owner → zero-state + locked hint + disabled availability; approved+complete → share card + enabled availability; view-public opens `/{slug}`); mark ready + merge (`Closes MEH-964`, DRAFT only per Rule 23).
+- **Scope held:** `page.js` + `he.json`/`en.json` + new test + the one necessary test-mock fix + CHANGELOG/HANDOFF. No 1A/1B/1C internals, no `/settings`, no MEH-1025 banner (still blocked on this).
 
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
