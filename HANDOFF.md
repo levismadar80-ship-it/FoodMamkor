@@ -15,6 +15,16 @@
 - **Sapir pending:** mobile QA on preview (edit tab → "מוצרים" card: empty state, add/edit/delete end-to-end); mark ready + merge (DRAFT-only per HIGH-RISK gate).
 - **Scope held:** `components/ProductsSection.jsx` (new) + `edit/page.js` + `settings/page.jsx` (dead-code removal) + new test + CHANGELOG/MANUAL_TESTING/HANDOFF. ProductsSection internals + product endpoints untouched.
 
+## 2026-07-04 — MEH-964 chunk 1D: state-driven Overview (empty-state + share-gate + availability-disable + view-public) — DRAFT PR (closes Phase 1; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-964-dashboard-1d-states` off `origin/staging` (clean cut, divergence 0). YELLOW final chunk of the MEH-964 dashboard redesign; `page.js` (Overview) is not a central component. `Closes MEH-964`.
+- **Prereq verified this session:** 1A/1B/1C are on staging (layout shell, `OverviewStatsHero`, `ActivityPulse`); 1D consumes the `data-state-*` flags 1A scaffolded (`page.js:200-206` — `isComplete`←`producerCompleteness`, `hasActivity`←analytics totals, `isApproved`←status).
+- **What shipped (all `page.js` + i18n):** (1) KPI strip gated on `hasActivity` → warm zero-state ("עוד אין פעילות — שתפי את העמוד כדי להתחיל") when inactive; (2) `VanityLinkCard` gated on `isComplete && isApproved` → why-locked hint ("עוד מעט תוכלי לשתף…") otherwise (Sapir fork ①: show hint, gate whole card); (3) availability radios `disabled` until approved + `aria-describedby` hint ("תוכלי לעדכן זמינות…"); (4) one-tap view-public `LocaleLink`→`/{slug}` `target=_blank` ("לצפייה בעמוד שלך"). Forks: ② `hasActivity`=views‖whatsapp (no rating); ③ `/{slug}` canonical.
+- **Copy:** Sapir-final (COPY_BANK subject-test MEH-579 + ADR-024, feminine warm voice); `dashboard.producer.states.*` he+en twins (MEH-978).
+- **Verify:** `npm run build` exit 0 · vitest **748 passed** / 41 skipped (new `Dashboard1DStates.test.jsx` 8✓) · 0 physical RTL classes · JSON valid. `DashboardSingleCompletenessWidget.test.jsx` phosphor mock += `Sparkle`/`LockSimple` (MEH-990-class whole-page fix — the new no-activity/locked paths mount those icons).
+- **Sapir pending:** mobile QA the preview (new owner → zero-state + locked hint + disabled availability; approved+complete → share card + enabled availability; view-public opens `/{slug}`); mark ready + merge (`Closes MEH-964`, DRAFT only per Rule 23).
+- **Scope held:** `page.js` + `he.json`/`en.json` + new test + the one necessary test-mock fix + CHANGELOG/HANDOFF. No 1A/1B/1C internals, no `/settings`, no MEH-1025 banner (still blocked on this).
+
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
 - **Branch:** `feature/meh-1023-category-delete-confirm` off `origin/staging` (includes Chunk A `315d9d8f` + MEH-1026). HIGH-RISK admin surface, frontend-only. `Closes MEH-1023`.
