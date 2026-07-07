@@ -112,6 +112,46 @@ def _resolve_unique_slug(db: Session, raw_slug: str, producer_id: UUID) -> str:
         counter += 1
 
 
+def _enforce_owner_license_gate(db, producer, payload, category_ids):
+    """MEH-999: grandfather rule — validate NEWLY-ADDED categories only, never
+    the set the producer already holds. The MEH-530 full-set re-check bricked
+    every edit for MEH-971 license-pending producers (licensed category +
+    NULL license → 422 on any PUT). Same posture as the auth.py register
+    bypass: NOT a security relaxation — licensed-only is enforced downstream
+    by the admin approval guard and by publication requiring
+    status=="approved"; a pending producer editing her bio publishes nothing.
+    """
+    effective_license = (
+        payload.get("producer_license_number")
+        if "producer_license_number" in payload
+        else producer.producer_license_number
+    )
+    persisted_category_ids = {c.id for c in producer.categories}
+    added_category_ids = (
+        [cid for cid in category_ids if cid not in persisted_category_ids]
+        if category_ids is not None
+        else []
+    )
+    # Helper short-circuits on an empty list, so this only fires for adds.
+    ensure_license_for_categories(db, added_category_ids, effective_license)
+
+    # MEH-999 (2c): the one hole grandfathering would open — a LICENSED
+    # producer blanking her license while keeping a license-required category.
+    # Re-run the gate against the final category set with the cleared value.
+    # Pending producers are unaffected: their license is already NULL, so
+    # nothing is being cleared.
+    license_cleared = (
+        "producer_license_number" in payload
+        and not (payload.get("producer_license_number") or "").strip()
+        and (producer.producer_license_number or "").strip()
+    )
+    if license_cleared:
+        final_category_ids = (
+            category_ids if category_ids is not None else list(persisted_category_ids)
+        )
+        ensure_license_for_categories(db, final_category_ids, None)
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -161,19 +201,7 @@ def update_my_producer(
     category_ids = payload.pop("category_ids", None)
     delivery_cities = payload.pop("delivery_area_cities", None)
 
-    # MEH-530: effective-state guard, same shape as admin.py PUT. Helper
-    # short-circuits when no license-required category is touched.
-    effective_category_ids = (
-        category_ids
-        if category_ids is not None
-        else [c.id for c in producer.categories]
-    )
-    effective_license = (
-        payload.get("producer_license_number")
-        if "producer_license_number" in payload
-        else producer.producer_license_number
-    )
-    ensure_license_for_categories(db, effective_category_ids, effective_license)
+    _enforce_owner_license_gate(db, producer, payload, category_ids)
 
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:
