@@ -246,3 +246,60 @@ def test_rating_threshold_in_aggregate(db):
     _recompute_producer_rating(producer.id, db)
     db.refresh(producer)
     assert producer.reviews_count == 2  # below the ≥3 frontend threshold
+
+
+# ---------------------------------------------------------------------------
+# DELETE — owner or admin; cross-owner is 404 (MEH-1001 anti-existence-leak)
+# ---------------------------------------------------------------------------
+
+def test_delete_review_cross_owner_returns_404(client, db):
+    """MEH-1001 — a non-owner (non-admin) deleting someone else's review gets
+    404, not 403, so review existence isn't leaked (recipes convention)."""
+    owner = make_user(db, email="owner@example.com")
+    other = make_user(db, email="other@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=4, body="ביקורת טובה"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(other))
+    assert r.status_code == 404, r.text
+    # The review is untouched.
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 1
+
+
+def test_delete_review_owner_succeeds(client, db):
+    """Sanity: the legitimate owner can still delete (no regression)."""
+    owner = make_user(db, email="owner2@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=5, body="מצוין"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(owner))
+    assert r.status_code == 200, r.text
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 0
+
+
+def test_delete_review_admin_succeeds(client, db):
+    """MEH-1001 — the preserved owner-OR-admin override still lets an admin
+    delete any review (parallel to experiences test_admin_can_delete_any)."""
+    owner = make_user(db, email="owner3@example.com")
+    admin = make_user(db, role="admin", email="admin@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=2, body="לא משהו"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 0

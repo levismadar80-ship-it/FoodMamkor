@@ -286,7 +286,10 @@ def update_experience(
     if not ex:
         raise HTTPException(status_code=404, detail="Experience not found")
     if ex.host_user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not your experience")
+        # MEH-1001: 404 (not 403) on cross-owner access so a stranger can't
+        # confirm another host's experience exists. Stays owner-only.
+        # REUSES events.py update_event (producer_recipes.py:203-206).
+        raise HTTPException(status_code=404, detail="Experience not found")
 
     payload = data.model_dump(exclude_unset=True)
     for field, value in payload.items():
@@ -342,8 +345,10 @@ def delete_experience(
         raise HTTPException(status_code=404, detail="Experience not found")
     is_owner = ex.host_user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
+    # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
+    # experience's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="אין הרשאה")
+        raise HTTPException(status_code=404, detail="Experience not found")
     db.delete(ex)
     db.commit()
     return {"detail": "Experience deleted"}

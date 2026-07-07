@@ -319,8 +319,10 @@ def delete_review(
         raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     is_owner = review.user_id == user.id
     is_admin = getattr(user, "role", None) == "admin"
+    # MEH-1001: a stranger (non-owner, non-admin) gets 404 (not 403) so the
+    # review's existence isn't leaked. Admin-override preserved above.
     if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="אין הרשאה")
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
     producer_id = review.producer_id
     db.delete(review)
     db.commit()

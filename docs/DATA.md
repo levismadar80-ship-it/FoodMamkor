@@ -485,9 +485,14 @@ GET    /experiences                    public  — filter: category, city. Only 
 GET    /experiences/mine               auth    — owner's submissions, any status
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
-PUT    /experiences/{id}               auth    — owner only. Any edit resets to status=pending + re-runs Claude.
-DELETE /experiences/{id}               auth    — owner or admin
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). Any edit resets to status=pending + re-runs Claude.
+DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
+
+**MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
+"Experience not found"**, not 403 — a stranger can't confirm an experience
+id exists (matches `producer_recipes.py:203-206` + events). DELETE keeps
+its admin-override (admin → 200).
 
 **Moderation flow:**
 
@@ -623,8 +628,12 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 ```
 GET    /producers/{id}/reviews   public
 POST   /reviews                  auth  — upsert (1 per user per producer)
-DELETE /reviews/{id}             auth  — owner or admin
+DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
 ```
+
+**MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
+"ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override
+preserved (admin → 200).
 
 ### Reports (`app/routers/reports.py`)
 
