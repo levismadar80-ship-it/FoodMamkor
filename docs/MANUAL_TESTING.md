@@ -610,9 +610,17 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
 - [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
 
+### ProductsSection mount in the edit tab (MEH-999 follow-up)
+
+> The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
+
+- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
-> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים" section → "הוסיפי מוצר".
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
 - [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
 - [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.

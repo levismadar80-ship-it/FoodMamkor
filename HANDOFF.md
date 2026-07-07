@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-05 — MEH-999 follow-up: mount ProductsSection into the edit tab — DRAFT PR (WAIT for Sapir mobile QA)
+
+- **Branch:** `claude/vacation-date-reveal-bnjbji` restarted off `origin/staging` (prior MEH-999 vacation PR #1497 merged; divergence 0). ⚠️ Harness-locked to `claude/*` (can't push `feature/*` — same constraint as #1497). HIGH-RISK (central `edit/page.js`) → chunk-by-chunk: Phase 0 → Sapir `go` → mount → verify. `Refs MEH-999` (Linear pending — quota).
+- **What shipped:** `ProductsSection` (producer product CRUD vs `/producers/me/products`) was defined at `settings/page.jsx:814` but **never mounted** (0 render sites). Relocated **verbatim** to `frontend/components/ProductsSection.jsx` (export default + §14 header) and mounted `<ProductsSection />` as the last card in `producer/dashboard/edit/page.js`. Deleted the dead copy + 7 orphaned imports from `settings/page.jsx` (532-line pure deletion; `Image` kept). No backend / schema / new copy — `settings.products.*` i18n already exists (he+en).
+- **Phase 0 findings (Sapir approved "Extract + remove dead copy"):** endpoints confirmed (`producer_me.py:879 GET /:887 POST /:923 PUT /:949 DELETE`); ProductsSection self-contained (no props, no settings-local deps); already has card chrome matching MEH-1017 editors.
+- **Verify:** `npm run build` exit 0 (113/113 SSG) · vitest **737 passed** / 41 skipped (new `EditTabProductsSection.test.jsx` 2✓) · eslint **0 errors** (217 warn-only nits verbatim from original) · 0 physical RTL classes · package-lock churn reverted.
+- **Doc flag:** MANUAL_TESTING's old Phase-3 product QA lines said `/settings → מוצרים`, but the section was never mounted there — added a corrected edit-tab QA block + a note; full refresh of the stale `/settings` lines deferred (out of scope).
+- **Sapir pending:** mobile QA on preview (edit tab → "מוצרים" card: empty state, add/edit/delete end-to-end); mark ready + merge (DRAFT-only per HIGH-RISK gate).
+- **Scope held:** `components/ProductsSection.jsx` (new) + `edit/page.js` + `settings/page.jsx` (dead-code removal) + new test + CHANGELOG/MANUAL_TESTING/HANDOFF. ProductsSection internals + product endpoints untouched.
+
 ## 2026-07-04 — MEH-964 chunk 1D: state-driven Overview (empty-state + share-gate + availability-disable + view-public) — DRAFT PR (closes Phase 1; WAIT for Sapir mobile QA)
 
 - **Branch:** `feature/meh-964-dashboard-1d-states` off `origin/staging` (clean cut, divergence 0). YELLOW final chunk of the MEH-964 dashboard redesign; `page.js` (Overview) is not a central component. `Closes MEH-964`.
