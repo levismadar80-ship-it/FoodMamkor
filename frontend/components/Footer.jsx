@@ -74,7 +74,9 @@ export default function Footer() {
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
     // MEH-721: quiet replacement for the removed global-footer pitch CTA.
-    { href: "/register/producer", label: t("nav.footer.add_business") },
+    // MEH-995: repointed to /join — the canonical recruitment door; the
+    // wizard stays one tap away via /join's single CTA.
+    { href: "/join", label: t("nav.footer.add_business") },
   ];
 
   return (

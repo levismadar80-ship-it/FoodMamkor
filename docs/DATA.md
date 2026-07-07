@@ -404,7 +404,7 @@ GET    /users/me/following                        auth
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
-PUT    /producers/me                              producer
+PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
@@ -553,7 +553,7 @@ POST   /admin/users/{id}/block                 admin
 GET    /admin/users/{id}/favorites             admin
 
 # Content
-GET    /admin/categories                       admin
+GET    /admin/categories                       admin — rows include producer_count (query-time, MEH-1034)
 POST   /admin/categories                       admin
 PUT    /admin/categories/{id}                  admin
 DELETE /admin/categories/{id}                  admin
