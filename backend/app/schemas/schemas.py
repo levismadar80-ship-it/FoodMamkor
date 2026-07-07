@@ -295,6 +295,10 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     emoji: str | None = None
+    # MEH-1034: query-time count over producer_categories, populated only by
+    # GET /admin/categories. Optional so public consumers (GET /categories,
+    # ProducerOut.categories) serialize unchanged — NOT a DB column.
+    producer_count: int | None = None
 
     model_config = {"from_attributes": True}
 

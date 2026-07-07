@@ -61,7 +61,9 @@ function CategoriesEditor() {
     load();
   };
   // Open the confirm dialog; the DELETE call only fires from confirmRemove.
-  const remove = (cat) => setConfirmDelete({ id: cat.id, name: cat.name });
+  // MEH-1034: carry producer_count so the dialog can show the blast radius.
+  const remove = (cat) =>
+    setConfirmDelete({ id: cat.id, name: cat.name, producer_count: cat.producer_count ?? 0 });
   const confirmRemove = async () => {
     setDeleting(true);
     try {
@@ -122,7 +124,10 @@ function CategoriesEditor() {
             className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4"
           >
             <p id="category-delete-title" className="font-medium text-base">
-              {t("content.categories.confirm_delete", { name: confirmDelete.name })}
+              {t("content.categories.confirm_delete", {
+                name: confirmDelete.name,
+                count: confirmDelete.producer_count,
+              })}
             </p>
             <div className="flex gap-3 justify-start">
               <button
@@ -155,6 +160,10 @@ function CategoryRow({ cat, onSave, onDelete }) {
   return (
     <li className="flex gap-2 items-center border border-border rounded-[12px] p-2">
       <input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 border border-border rounded-lg px-2 py-1" />
+      {/* MEH-1034: per-row producer count (the editor is a list, not a table). */}
+      <span className="text-xs text-muted whitespace-nowrap">
+        {t("content.categories.producer_count", { count: cat.producer_count ?? 0 })}
+      </span>
       <button
         onClick={() => onSave(cat.id, name)}
         disabled={!dirty}
