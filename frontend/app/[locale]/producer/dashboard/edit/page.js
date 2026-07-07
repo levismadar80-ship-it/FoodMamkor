@@ -36,6 +36,7 @@ import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import AddressSearch from "@/components/AddressSearch";
+import ProductsSection from "@/components/ProductsSection";
 
 export default function ProducerDashboardEditPage() {
   const router = useRouter();
@@ -101,6 +102,12 @@ export default function ProducerDashboardEditPage() {
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
         />
       )}
+
+      {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
+          fetching (no profile prop): full CRUD against /producers/me/products.
+          Relocated from settings/page.jsx, where it was defined but never
+          mounted. */}
+      <ProductsSection />
     </div>
   );
 }
