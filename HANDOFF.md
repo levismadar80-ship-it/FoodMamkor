@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1046: /admin/users client-side pagination — DRAFT PR
+
+- **Branch:** `feature/meh-1046-admin-users-pagination` off `origin/staging` (clean cut, divergence 0). LOW-RISK frontend-only end-to-end. `Closes MEH-1046`.
+- **What shipped (all `users/page.js` + i18n + test):** default 25 rows/page, 25/50/100 selector, prev/next + "עמוד X מתוך Y" indicator (disabled at bounds), controls hidden on empty set. `currentPage = min(page, totalPages)` clamp so a shrinking reload can't strand past the end. Page resets to 1 on role change (the `[role]` effect) + search submit (`searchUsers()` wraps Enter/button) — deliberately NOT on every `load()`, so block/promote reloads keep the current page. Fetch (`:36`), `applyRole`/`toggleBlock`, AdminRowMenu + MEH-1023 confirm dialog untouched.
+- **Phase-0 correction (meta-patterns §1):** the ticket claimed a client-side filter "applied before :121" — false; search/role are server-side query params (`users/page.js:33-36`), so `users` already IS the filtered set and the slice satisfies the filtered-pagination criterion directly.
+- **Verify:** `npm run build` exit 0 · vitest green incl. new `AdminUsersPagination.test.jsx` (7✓) · ICU parity clean · 0 physical RTL classes (text prev/next in flex flow). One reverted misstep: a `json.dump` re-write of the messages files reformatted unrelated lines — reverted, keys re-added surgically (6-line diffs).
+- **Sapir pending:** mobile QA on preview (25/page, next/prev, filter reset, row actions on page 2, controls wrap on mobile) → merge. Post-launch follow-up (not opened, per ticket): server-side `?page=&limit=`.
+
 ## 2026-07-04 — MEH-1030: registry-path-drift guard (validator + pre-commit) + sweep + testing.md fix — DRAFT PR
 
 - **Branch:** `feature/meh-1030-registry-path-guard` off `origin/staging`. YELLOW/discovery-gated → Phase 0 approved → end-to-end. `Closes MEH-1030`. Recurrence-prevention for MEH-668 + MEH-1026.
