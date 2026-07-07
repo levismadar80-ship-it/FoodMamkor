@@ -476,6 +476,13 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
+### MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews
+- [ ] אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה ב-MEH-1023) — **לא** חלון confirm של הדפדפן.
+- [ ] שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת + toast הצלחה. בזמן המחיקה שני הכפתורים מושבתים ("במחיקה...").
+- [ ] כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח.
+
 ### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
 - [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
 - [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה:** הטקסט הוא "למחוק את הקטגוריה '<שם הקטגוריה>'?" עם השם האמיתי של הקטגוריה שנבחרה.

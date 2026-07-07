@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1040: admin reviews delete — native confirm → modal dialog — DRAFT PR
+
+- **Branch:** `feature/meh-1040-review-delete-confirm` off `origin/staging` (clean cut, divergence 0). LOW-RISK frontend-only per batch spec (item 2 of 2, with MEH-1034). `Closes MEH-1040`.
+- **What shipped:** `reviews/page.jsx` — the last native browser confirm in the admin (`:49`) replaced with the MEH-1023 Ch.B modal pattern. `handleDelete(review)` now only opens `confirmDelete` (full row in state); `confirmRemove` fires the existing `DELETE /reviews/:id` — optimistic removal / `deletingId` / toasts untouched. Dialog: `role="dialog"`+`aria-modal`+`aria-labelledby`, Escape closes unless mid-delete, Cancel disabled while deleting, closes only on success (failure → existing generic error toast, dialog stays open). Copy reuses `reviews.confirm_delete` ({user}+{producer}) — **zero i18n changes** (Phase 0: all dialog keys pre-existed).
+- **Verify:** `npm run build` exit 0 · vitest **745 passed** / 41 skipped — new `AdminReviewDelete.test.jsx` (5 cases mirroring `AdminContentCategoryDelete.test.jsx`) + the 2 delete cases in the pre-existing `AdminReviews.test.jsx` migrated from the `window.confirm` spy to the dialog flow (Phase 0 gap — surfaced by the full-suite run) · `grep -c "window.confirm"` = 0 · lockfile churn reverted.
+- **Sapir pending:** mobile QA on preview (dialog names, cancel/Escape, confirm deletes, mid-delete buttons disabled) → ready-for-review + merge. Producers-surface sibling stays tracked in MEH-1027. ⚠️ **Vercel previews are down: "Account is blocked"** (seen on PR #1515 status) — preview URLs unavailable until the Vercel account issue is resolved.
+
 ## 2026-07-04 — MEH-1023 Chunk B: admin category delete → modal confirm dialog — DRAFT PR (Chunk A already MERGED)
 
 - **Branch:** `feature/meh-1023-category-delete-confirm` off `origin/staging` (includes Chunk A `315d9d8f` + MEH-1026). HIGH-RISK admin surface, frontend-only. `Closes MEH-1023`.
