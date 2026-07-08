@@ -57,6 +57,25 @@ describe("admin/AdminRowMenu", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  // MEH-1027: per-item disabled — mirrors the inline buttons' busy guards
+  // when actions move into the menu (producers table).
+  it("renders a disabled item as disabled; click does not fire onSelect or close", () => {
+    const onSelect = vi.fn();
+    renderMenu([{ key: "delete", label: "מחקו", tone: "danger", disabled: true, onSelect }]);
+    fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+    const item = screen.getByRole("menuitem", { name: "מחקו" });
+    expect(item).toBeDisabled();
+    fireEvent.click(item);
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+
+  it("items without a disabled flag stay enabled", () => {
+    renderMenu([promote(), { ...demote(), disabled: false }]);
+    fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
+    screen.getAllByRole("menuitem").forEach((it) => expect(it).toBeEnabled());
+  });
+
   it("renders both promote and demote items when provided", () => {
     renderMenu([promote(), demote()]);
     fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));

@@ -7,6 +7,7 @@ import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid } from "@phosphor-
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
+import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 
 // Phosphor icon size used in trait tags + the action row.
@@ -173,33 +174,45 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
           {t("common.view")}
         </Link>
       )}
-      {(p.status === "approved" || p.status === "inactive") && (
-        <button onClick={() => onToggleStatus(p.id)} disabled={busy(`status:${p.id}`)} className="text-muted hover:text-primary text-xs disabled:opacity-50 disabled:cursor-not-allowed">
-          {p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate")}
-        </button>
-      )}
-      {p.status === "approved" && (
-        <button
-          onClick={() => onToggleAmbassador(p.id, p.ambassador)}
-          disabled={busy(`ambassador:${p.id}`)}
-          className={`text-xs disabled:opacity-50 disabled:cursor-not-allowed ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-fg-muted hover:text-primary"}`}
-          title={p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
-        >
-          {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
-        </button>
-      )}
-      {p.status === "approved" && p.slug && (
-        <button
-          onClick={() => onToggleStoryCard(p.id)}
-          className="text-primary hover:underline text-xs"
-          title={t("producers.table.actions.story_card_title")}
-        >
-          {t("producers.table.actions.story_card")}
-        </button>
-      )}
-      <button onClick={() => onDeleteProducer(p.id, p.name)} disabled={busy(`delete:${p.id}`)} className="text-red-600 hover:underline text-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
-        {t("common.delete")}
-      </button>
+      {/* MEH-1027 Chunk A: secondary + destructive actions live in the kebab
+          (MEH-1023 pattern) — same guards, same handlers, same busy keys as
+          the inline buttons they replace; only the trigger location moved.
+          Ambassador + story-card behavior is unchanged (reposition only). */}
+      <AdminRowMenu
+        ariaLabel={t("producers.table.actions.menu_aria")}
+        items={[
+          ...(p.status === "approved" || p.status === "inactive"
+            ? [{
+                key: "status",
+                label: p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate"),
+                disabled: busy(`status:${p.id}`),
+                onSelect: () => onToggleStatus(p.id),
+              }]
+            : []),
+          ...(p.status === "approved"
+            ? [{
+                key: "ambassador",
+                label: p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive"),
+                disabled: busy(`ambassador:${p.id}`),
+                onSelect: () => onToggleAmbassador(p.id, p.ambassador),
+              }]
+            : []),
+          ...(p.status === "approved" && p.slug
+            ? [{
+                key: "story",
+                label: t("producers.table.actions.story_card"),
+                onSelect: () => onToggleStoryCard(p.id),
+              }]
+            : []),
+          {
+            key: "delete",
+            label: t("common.delete"),
+            tone: "danger",
+            disabled: busy(`delete:${p.id}`),
+            onSelect: () => onDeleteProducer(p.id, p.name),
+          },
+        ]}
+      />
     </div>
   );
 }

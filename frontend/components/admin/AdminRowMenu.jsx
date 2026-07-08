@@ -15,14 +15,17 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           (positions absolutely inside its own wrapper) or trap focus.
  * Related:  components/ui/Popover.jsx (dismissal idiom mirrored) ·
  *           app/[locale]/admin/users/page.js (first consumer) ·
+ *           app/[locale]/admin/producers/AdminProducersTable.jsx (consumer) ·
  *           __tests__/AdminRowMenu.test.jsx
- * History:  MEH-1023 (creation — admin destructive-action safeguards, Chunk A)
+ * History:  MEH-1023 (creation — admin destructive-action safeguards, Chunk A);
+ *           MEH-1027 (per-item disabled — producers-table busy guards)
  */
 
 /**
  * @param {object} props
- * @param {Array<{key: string, label: string, onSelect: () => void, tone?: "default"|"danger"}>} props.items
+ * @param {Array<{key: string, label: string, onSelect: () => void, tone?: "default"|"danger", disabled?: boolean}>} props.items
  *   Menu entries. Empty array → the whole menu (kebab included) renders nothing.
+ *   `disabled` mirrors an in-flight busy state — the item renders but can't fire.
  * @param {string} props.ariaLabel — accessible name for the kebab trigger.
  */
 export default function AdminRowMenu({ items = [], ariaLabel }) {
@@ -84,11 +87,14 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
               key={it.key}
               type="button"
               role="menuitem"
+              // MEH-1027: busy actions stay visible but inert (menu stays open —
+              // a disabled button fires no click, so setOpen never runs).
+              disabled={it.disabled}
               onClick={() => {
                 setOpen(false);
                 it.onSelect();
               }}
-              className={`block w-full text-start px-3 py-2 text-sm transition hover:bg-gray-50 ${
+              className={`block w-full text-start px-3 py-2 text-sm transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
                 it.tone === "danger" ? "text-red-600 hover:bg-red-50" : "text-text"
               }`}
             >

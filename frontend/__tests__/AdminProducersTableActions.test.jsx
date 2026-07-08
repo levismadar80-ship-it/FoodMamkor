@@ -100,6 +100,105 @@ describe("approveGateReason — 422 detail → chip mapping (MEH-1011)", () => {
   });
 });
 
+// MEH-1027 Chunk A — secondary/destructive actions (status/ambassador/story/
+// delete) live in the AdminRowMenu kebab; approve/request-changes/edit/view
+// stay inline. Same guards + handlers as before — only the trigger moved.
+const MENU_ARIA_KEY = "admin.producers.table.actions.menu_aria";
+const SUSPEND_KEY = "admin.producers.table.actions.suspend";
+const ACTIVATE_KEY = "admin.producers.table.actions.activate";
+const AMBASSADOR_OFF_KEY = "admin.producers.table.actions.ambassador_inactive";
+const STORY_KEY = "admin.producers.table.actions.story_card";
+const DELETE_KEY = "admin.common.delete";
+
+function renderRow(producer, { isBusy } = {}) {
+  const handlers = {
+    onQuickApprove: vi.fn(),
+    onRequestChanges: vi.fn(),
+    onToggleStatus: vi.fn(),
+    onToggleAmbassador: vi.fn(),
+    onDeleteProducer: vi.fn(),
+    onToggleStoryCard: vi.fn(),
+  };
+  render(
+    <ProducerActions producer={producer} isStoryOpen={false} {...handlers} isBusy={isBusy} />
+  );
+  return handlers;
+}
+
+const openMenu = () =>
+  fireEvent.click(screen.getByRole("button", { name: MENU_ARIA_KEY }));
+
+describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
+  it("approved row: status/ambassador/story/delete are NOT inline, all appear in the kebab", () => {
+    renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
+    [SUSPEND_KEY, AMBASSADOR_OFF_KEY, STORY_KEY, DELETE_KEY].forEach((k) =>
+      expect(screen.queryByText(k)).not.toBeInTheDocument()
+    );
+    openMenu();
+    expect(screen.getByRole("menuitem", { name: SUSPEND_KEY })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: STORY_KEY })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: DELETE_KEY })).toBeInTheDocument();
+  });
+
+  it("pending row: menu contains only delete (status/ambassador/story guards hold)", () => {
+    renderRow({ id: "p1", status: "pending", name: "חוה" });
+    openMenu();
+    const items = screen.getAllByRole("menuitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent(DELETE_KEY);
+  });
+
+  it("inactive row: menu shows activate (toggle-status guard unchanged)", () => {
+    renderRow({ id: "p1", status: "inactive", name: "חוה" });
+    openMenu();
+    expect(screen.getByRole("menuitem", { name: ACTIVATE_KEY })).toBeInTheDocument();
+  });
+
+  it("delete item carries danger tone and fires onDeleteProducer(id, name)", () => {
+    const h = renderRow({ id: "p1", status: "approved", slug: "farm", name: "חוה" });
+    openMenu();
+    const del = screen.getByRole("menuitem", { name: DELETE_KEY });
+    expect(del.className).toContain("text-red-600");
+    fireEvent.click(del);
+    expect(h.onDeleteProducer).toHaveBeenCalledWith("p1", "חוה");
+  });
+
+  it("story item fires onToggleStoryCard(id) — canvas wiring unchanged", () => {
+    const h = renderRow({ id: "p1", status: "approved", slug: "farm", name: "חוה" });
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: STORY_KEY }));
+    expect(h.onToggleStoryCard).toHaveBeenCalledWith("p1");
+  });
+
+  it("ambassador item fires onToggleAmbassador(id, current) — behavior unchanged", () => {
+    const h = renderRow({ id: "p1", status: "approved", slug: "farm", ambassador: false, name: "חוה" });
+    openMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: AMBASSADOR_OFF_KEY }));
+    expect(h.onToggleAmbassador).toHaveBeenCalledWith("p1", false);
+  });
+
+  it("busy action disables its menu item and blocks the handler (isBusy keys unchanged)", () => {
+    const h = renderRow(
+      { id: "p1", status: "approved", slug: "farm", name: "חוה" },
+      { isBusy: (k) => k === "delete:p1" }
+    );
+    openMenu();
+    const del = screen.getByRole("menuitem", { name: DELETE_KEY });
+    expect(del).toBeDisabled();
+    fireEvent.click(del);
+    expect(h.onDeleteProducer).not.toHaveBeenCalled();
+  });
+
+  it("pending row keeps approve/request-changes/edit inline alongside the kebab", () => {
+    renderRow({ id: "p1", status: "pending", name: "חוה" });
+    expect(screen.getByText(APPROVE_KEY)).toBeInTheDocument();
+    expect(screen.getByText(REQUEST_CHANGES_KEY)).toBeInTheDocument();
+    expect(screen.getByText("admin.common.edit")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: MENU_ARIA_KEY })).toBeInTheDocument();
+  });
+});
+
 describe("AwaitingCompletionBadge — trail badge (MEH-1011)", () => {
   it("renders 'ממתין להשלמה' + an LTR-wrapped date when requested_changes is set", () => {
     render(

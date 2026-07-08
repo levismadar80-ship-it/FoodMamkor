@@ -1266,7 +1266,8 @@
           "ambassador_inactive": "☆ Ambassador",
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
-          "delete": "Delete"
+          "delete": "Delete",
+          "menu_aria": "More actions"
         },
         "columns": {
           "name": "Name",
