@@ -1452,6 +1452,12 @@
         "demote": "את בטוחה שברצונך להסיר הרשאות אדמין מ{name}?",
         "submitting": "...",
         "confirm": "אישור"
+      },
+      "pagination": {
+        "page_size": "שורות בעמוד",
+        "prev": "הקודם",
+        "next": "הבא",
+        "page_of": "עמוד {page} מתוך {total}"
       }
     },
     "recipes": {
