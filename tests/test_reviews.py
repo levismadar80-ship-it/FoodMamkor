@@ -246,3 +246,159 @@ def test_rating_threshold_in_aggregate(db):
     _recompute_producer_rating(producer.id, db)
     db.refresh(producer)
     assert producer.reviews_count == 2  # below the ≥3 frontend threshold
+
+
+# ---------------------------------------------------------------------------
+# DELETE — owner or admin; cross-owner is 404 (MEH-1001 anti-existence-leak)
+# ---------------------------------------------------------------------------
+
+def test_delete_review_cross_owner_returns_404(client, db):
+    """MEH-1001 — a non-owner (non-admin) deleting someone else's review gets
+    404, not 403, so review existence isn't leaked (recipes convention)."""
+    owner = make_user(db, email="owner@example.com")
+    other = make_user(db, email="other@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=4, body="ביקורת טובה"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(other))
+    assert r.status_code == 404, r.text
+    # The review is untouched.
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 1
+
+
+def test_delete_review_owner_succeeds(client, db):
+    """Sanity: the legitimate owner can still delete (no regression)."""
+    owner = make_user(db, email="owner2@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=5, body="מצוין"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(owner))
+    assert r.status_code == 200, r.text
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 0
+
+
+def test_delete_review_admin_succeeds(client, db):
+    """MEH-1001 — the preserved owner-OR-admin override still lets an admin
+    delete any review (parallel to experiences test_admin_can_delete_any)."""
+    owner = make_user(db, email="owner3@example.com")
+    admin = make_user(db, role="admin", email="admin@example.com")
+    producer = make_producer(db)
+    review = ProducerReview(
+        producer_id=producer.id, user_id=owner.id, stars=2, body="לא משהו"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+
+    r = client.delete(f"/reviews/{review.id}", headers=auth_header(admin))
+    assert r.status_code == 200, r.text
+    assert db.query(ProducerReview).filter_by(id=review.id).count() == 0
+
+
+# ---------------------------------------------------------------------------
+# PUT /reviews/{id}/reply — business-owner only (MEH-1039)
+# ---------------------------------------------------------------------------
+
+def _owned_producer_review(db, owner_email="biz@example.com", cust_email="c@example.com"):
+    """Producer + owning user + a customer's review of that producer."""
+    owner = make_user(db, role="producer", email=owner_email)
+    customer = make_user(db, email=cust_email)
+    producer = make_producer(db)
+    owner.producer_id = producer.id
+    db.commit()
+    review = ProducerReview(
+        producer_id=producer.id, user_id=customer.id, stars=5, body="מוצרים מעולים"
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    return owner, customer, producer, review
+
+
+def test_owner_can_reply(client, db):
+    """MEH-1039 — the reviewed producer's owner sets a reply → 200, reply +
+    reply_at in the payload."""
+    owner, _, _, review = _owned_producer_review(db)
+    r = client.put(
+        f"/reviews/{review.id}/reply",
+        json={"reply": "תודה רבה על המילים החמות, נשמח לראותך שוב"},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["reply"] == "תודה רבה על המילים החמות, נשמח לראותך שוב"
+    assert r.json()["reply_at"] is not None
+
+
+def test_non_owner_cannot_reply_returns_404(client, db):
+    """MEH-1039 — a producer who doesn't own this review's business gets 404
+    (existence not leaked); NO admin override, so even an admin is a stranger."""
+    owner, customer, producer, review = _owned_producer_review(db)
+    other_producer = make_producer(db)
+    stranger = make_user(db, role="producer", email="stranger@example.com")
+    stranger.producer_id = other_producer.id
+    admin = make_user(db, role="admin", email="admin2@example.com")
+    db.commit()
+
+    for actor in (stranger, customer, admin):
+        r = client.put(
+            f"/reviews/{review.id}/reply",
+            json={"reply": "תגובה לא מורשית"},
+            headers=auth_header(actor),
+        )
+        assert r.status_code == 404, r.text
+    db.refresh(review)
+    assert review.reply is None
+
+
+def test_reply_appears_in_get_payload(client, db):
+    """MEH-1039 — after the owner replies, the public GET carries reply/reply_at."""
+    owner, _, producer, review = _owned_producer_review(db)
+    client.put(
+        f"/reviews/{review.id}/reply",
+        json={"reply": "שמחנו לשרת אותך"},
+        headers=auth_header(owner),
+    )
+    r = client.get(f"/producers/{producer.id}/reviews")
+    assert r.status_code == 200, r.text
+    row = next(x for x in r.json()["reviews"] if x["id"] == str(review.id))
+    assert row["reply"] == "שמחנו לשרת אותך"
+    assert row["reply_at"] is not None
+
+
+def test_empty_reply_clears(client, db):
+    """MEH-1039 — an empty/blank reply clears both reply and reply_at."""
+    owner, _, _, review = _owned_producer_review(db)
+    client.put(
+        f"/reviews/{review.id}/reply",
+        json={"reply": "תגובה ראשונית"},
+        headers=auth_header(owner),
+    )
+    r = client.put(
+        f"/reviews/{review.id}/reply",
+        json={"reply": "   "},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["reply"] is None
+    assert r.json()["reply_at"] is None
+
+
+def test_reply_rejects_punctuation_only(client, db):
+    """MEH-1039/MEH-555 — a punctuation-only reply (<3 letters) is 422."""
+    owner, _, _, review = _owned_producer_review(db)
+    r = client.put(
+        f"/reviews/{review.id}/reply",
+        json={"reply": "??"},
+        headers=auth_header(owner),
+    )
+    assert r.status_code == 422, r.text
