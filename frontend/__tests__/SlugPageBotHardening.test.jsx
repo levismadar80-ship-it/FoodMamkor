@@ -93,6 +93,18 @@ describe("ProducerSlugPage fast-404 (no backend fetch on probes)", () => {
     expect(serverFetch).not.toHaveBeenCalled();
   });
 
+  it("generateMetadata still builds producer metadata for a legit slug", async () => {
+    serverFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 1, name: "משק תמר", slug: "meshek-tamar" }),
+    });
+    const meta = await generateMetadata({
+      params: { slug: "meshek-tamar", locale: "he" },
+    });
+    expect(serverFetch).toHaveBeenCalledTimes(1);
+    expect(meta.title.absolute).toContain("משק תמר");
+  });
+
   it("still fetches the backend for a legit slug and renders", async () => {
     serverFetch.mockResolvedValueOnce({
       ok: true,
