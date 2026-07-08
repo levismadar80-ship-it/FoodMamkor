@@ -126,6 +126,22 @@ def test_meta_raise_is_fail_open_endpoint_still_200(client, db, monkeypatch):
     assert producer.requested_changes == "חסרה תמונה"  # commit preceded the send
 
 
+def test_producer_name_is_sanitized_too(client, db, monkeypatch):
+    # Review round 2: the name param obeys the same Meta rules as feedback —
+    # a tab/newline in a name (future import paths) must not 400 at Meta.
+    captured = _install_whatsapp_capture(monkeypatch)
+    admin = make_user(db, role="admin")
+    producer = make_producer(db, name="חוות\tעם	טאב", status="pending")
+    producer.phone = "0501234567"
+    db.commit()
+
+    resp = _request_changes(client, admin, producer, "חסרה תמונה")
+
+    assert resp.status_code == 200
+    params = captured[0]["json"]["template"]["components"][0]["parameters"]
+    assert params[0]["text"] == "חוות עם טאב"
+
+
 def test_feedback_truncated_to_550_chars(client, db, monkeypatch):
     captured = _install_whatsapp_capture(monkeypatch)
     admin = make_user(db, role="admin")

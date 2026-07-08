@@ -45,7 +45,7 @@ def _normalize_il_phone(phone: str) -> str:
 def _producer_wa_preflight(name: str, phone: str | None, kind: str) -> bool:
     """Shared MEH-287 skip-and-log gate for producer-facing WhatsApp.
 
-    `kind` is "welcome" / "approved" — only used in the log line so
+    `kind` is "welcome" / "approved" / "changes_requested" — only used in the log line so
     Railway/Sentry can distinguish which template was suppressed.
     """
     missing = []
@@ -166,7 +166,11 @@ def notify_producer_changes_requested(name: str, phone: str | None, feedback: st
     try:
         ok = send_template(
             normalized,
-            ProducerChangesRequestedV1(producer_name=name, missing_details=sanitized),
+            # Name sanitized too (review round 2) — same Meta param rules apply;
+            # a tab/newline in a name (e.g. future import paths) must not 400.
+            ProducerChangesRequestedV1(
+                producer_name=_sanitize_wa_param(name), missing_details=sanitized
+            ),
         )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
