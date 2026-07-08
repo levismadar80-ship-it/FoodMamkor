@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1044: Edge Requests burn — E2E → local `next start` + dependabot throttle — DRAFT PR (e2e.yml content for Sapir)
+
+- **Branch:** `feature/meh-1044-e2e-local-ci` off `origin/staging` (clean cut, divergence 0). LOW-RISK CI/config, end-to-end authority per batch prompt. `Closes MEH-1044`. Follows the 2026-07-07 discovery report (E2E against live previews ≈ 1–2M edge req/mo → Hobby pause at 319%).
+- **Shipped (CC-editable):** `playwright.config.ts:23` baseURL → `PLAYWRIGHT_BASE_URL || TEST_URL || http://localhost:3000`; `dependabot.yml` — `open-pull-requests-limit` 5→3 (all 3 ecosystems) + npm `groups` (minor+patch → single PR).
+- **Authored, NOT committed (RED tier — Sapir applies manually, full content in PR body):** replacement `.github/workflows/e2e.yml` — trigger `pull_request`+`push:staging` (replaces `deployment_status`), in-runner build + background `next start` + hard readiness gate, `PLAYWRIGHT_BASE_URL=localhost:3000`, `NEXT_PUBLIC_API_URL=https://foodmamkor-staging.up.railway.app` (backend strategy unchanged). Job `name:` fields verbatim (`Paths filter`, `Playwright E2E (Vercel preview)`); preserved: MEH-424/499/675 paths-filter, May-2026 dependabot skip (re-keyed to `github.actor` — `deployment.ref` doesn't exist on the new event), browser cache, chromium-only, 15-min timeout, concurrency cancel, MEH-484 `--fail-on-flaky-tests` + trace upload. MEH-728 preview warm-up → localhost readiness poll.
+- **Also for Sapir (CC blocked by deploy-config protection):** `frontend/vercel.json` — add `"ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in dependabot/*) exit 0 ;; *) exit 1 ;; esac"` (skips preview deploys for dependabot branches). Alternatively the dashboard toggle (Settings → Git → Ignored Build Step).
+- **Verify:** `npm run build` exit 0; full Playwright suite run locally against `next start` — summary in PR body (sandbox caveat: Railway egress blocked in CC → API-dependent specs can't prove out here; MEH-360 pattern, real proof = first CI run after Sapir applies e2e.yml).
+- **Sapir pending:** apply e2e.yml (replace whole file), apply vercel.json ignoreCommand, merge PR. Post-merge DoD: one green E2E run on the runner + 48h Vercel usage showing ~0 preview-driven edge requests.
+- **Next:** MEH-1045 (bot hardening — catch-all static 404, robots.txt, localeDetection) — Stage 2 of the same batch, separate PR.
+
 ## 2026-07-04 — MEH-1030: registry-path-drift guard (validator + pre-commit) + sweep + testing.md fix — DRAFT PR
 
 - **Branch:** `feature/meh-1030-registry-path-guard` off `origin/staging`. YELLOW/discovery-gated → Phase 0 approved → end-to-end. `Closes MEH-1030`. Recurrence-prevention for MEH-668 + MEH-1026.
