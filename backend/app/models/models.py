@@ -829,6 +829,13 @@ class ProducerReview(Base):
     body = Column(Text, nullable=True)
     is_hidden = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # MEH-1039: business-owner reply to a customer review — one per review,
+    # set/edited only by the producer owner (review.producer_id ==
+    # user.producer_id). Both nullable / Expand-only (ADR-007) — existing rows
+    # predate the reply. Naive DateTime to match created_at above and the
+    # utcnow() the endpoint writes (CHUNK B). Alembic revision b8f3d21a9c47.
+    reply = Column(Text, nullable=True)
+    reply_at = Column(DateTime, nullable=True)
 
     producer = relationship("Producer", back_populates="reviews")
     user = relationship("User")
