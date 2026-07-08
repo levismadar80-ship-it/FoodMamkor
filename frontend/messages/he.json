@@ -1452,6 +1452,12 @@
         "demote": "את בטוחה שברצונך להסיר הרשאות אדמין מ{name}?",
         "submitting": "...",
         "confirm": "אישור"
+      },
+      "pagination": {
+        "page_size": "שורות בעמוד",
+        "prev": "הקודם",
+        "next": "הבא",
+        "page_of": "עמוד {page} מתוך {total}"
       }
     },
     "recipes": {
@@ -2613,6 +2619,11 @@
     "submit_update": "עדכנו ביקורת",
     "submit_saving": "בשמירה...",
     "cancel": "ביטול",
+    "reply_heading": "תגובת בית העסק",
+    "reply_add": "הוספת תגובה",
+    "reply_edit": "עריכת תגובה",
+    "reply_placeholder": "כתבו תגובה ללקוח…",
+    "reply_save": "שמירה",
     "error_invalid_stars": "בחרו דירוג בין 1 ל-5 כוכבים",
     "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
     "saved_toast": "הביקורת שלך נשמרה",
@@ -3505,6 +3516,11 @@
         "share_locked": "עוד מעט תוכלי לשתף — נשלים אישור ומילוי פרטים קודם",
         "availability_disabled": "תוכלי לעדכן זמינות ברגע שהעסק יאושר ויפורסם",
         "view_public": "לצפייה בעמוד שלך"
+      },
+      "changes_requested": {
+        "title": "נשאר להשלים",
+        "cta": "להשלמת הפרטים",
+        "aria": "בקשת השלמה מהצוות"
       },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",

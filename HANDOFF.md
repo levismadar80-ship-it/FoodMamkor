@@ -15,6 +15,24 @@
 - **Sapir pending:** apply e2e.yml (replace whole file), apply vercel.json ignoreCommand, merge PR. Post-merge DoD: one green E2E run on the runner + 48h Vercel usage showing ~0 preview-driven edge requests.
 - **Next:** MEH-1045 (bot hardening — catch-all static 404, robots.txt, localeDetection) — Stage 2 of the same batch, separate PR.
 
+## 2026-07-07 — MEH-1046: /admin/users client-side pagination — DRAFT PR
+
+- **Branch:** `feature/meh-1046-admin-users-pagination` off `origin/staging` (clean cut, divergence 0). LOW-RISK frontend-only end-to-end. `Closes MEH-1046`.
+- **What shipped (all `users/page.js` + i18n + test):** default 25 rows/page, 25/50/100 selector, prev/next + "עמוד X מתוך Y" indicator (disabled at bounds), controls hidden on empty set. `currentPage = min(page, totalPages)` clamp so a shrinking reload can't strand past the end. Page resets to 1 on role change (the `[role]` effect) + search submit (`searchUsers()` wraps Enter/button) — deliberately NOT on every `load()`, so block/promote reloads keep the current page. Fetch (`:36`), `applyRole`/`toggleBlock`, AdminRowMenu + MEH-1023 confirm dialog untouched.
+- **Phase-0 correction (meta-patterns §1):** the ticket claimed a client-side filter "applied before :121" — false; search/role are server-side query params (`users/page.js:33-36`), so `users` already IS the filtered set and the slice satisfies the filtered-pagination criterion directly.
+- **Verify:** `npm run build` exit 0 · vitest green incl. new `AdminUsersPagination.test.jsx` (7✓) · ICU parity clean · 0 physical RTL classes (text prev/next in flex flow). One reverted misstep: a `json.dump` re-write of the messages files reformatted unrelated lines — reverted, keys re-added surgically (6-line diffs).
+- **Sapir pending:** mobile QA on preview (25/page, next/prev, filter reset, row actions on page 2, controls wrap on mobile) → merge. Post-launch follow-up (not opened, per ticket): server-side `?page=&limit=`.
+
+## 2026-07-07 — MEH-1025 Chunk B: producer dashboard "נשאר להשלים" banner — DRAFT PR (closes MEH-1025; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1025-producer-changes-banner` off `origin/staging` (clean cut). Frontend YELLOW; `page.js` Overview is not a central component. `Closes MEH-1025`.
+- **Both gates cleared:** MEH-964 1D on staging + Chunk A (#1518, `857726c6`) exposed `requested_changes`/`changes_requested_at` on `ProducerOwnerOut` — verified on staging (`schemas.py:970-971`).
+- **What shipped:** new co-located `ChangesRequestedBanner.jsx` — renders on the Overview when `profile.requested_changes` ≠ null (0 DOM otherwise); accent-tint card, `ClipboardText` icon, title "נשאר להשלים", DB feedback as-is, `changes_requested_at` `dir="ltr"`, CTA "להשלמת הפרטים" → `/producer/dashboard/edit`. Wired in `page.js` after the view-public link.
+- **Sapir steers applied:** (1) title+body dark `text-text` (accent only on icon/CTA) for WCAG on the pale gold tint; (2) generic "ממתין לאישור" pending banner **suppressed** when `requested_changes` set (`page.js:259` guard) so the two don't stack/contradict.
+- **Verify:** `npm run build` exit 0 · vitest **759 passed** (new `Dashboard1025Banner.test.jsx` 4✓) · 0 physical RTL · JSON valid. i18n `dashboard.producer.changes_requested.*` he+en (MEH-978); body = DB text.
+- **Sapir pending:** mobile QA (pending producer with requested_changes → banner shows, generic pending gone, CTA→edit; upload/approve clears it → banner gone; **confirm accent-tint text contrast at 375px**); mark ready + merge (`Closes MEH-1025`, DRAFT only per Rule 23). **This closes MEH-1025 end-to-end (Ch A backend + Ch B banner).**
+- **Scope held:** `page.js` (1 render + 1 guard) + new banner + `he.json`/`en.json` + new test + CHANGELOG/HANDOFF. No endpoint/schema, no admin side, no 1A–1D internals.
+
 ## 2026-07-04 — MEH-1030: registry-path-drift guard (validator + pre-commit) + sweep + testing.md fix — DRAFT PR
 
 - **Branch:** `feature/meh-1030-registry-path-guard` off `origin/staging`. YELLOW/discovery-gated → Phase 0 approved → end-to-end. `Closes MEH-1030`. Recurrence-prevention for MEH-668 + MEH-1026.
