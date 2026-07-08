@@ -13,16 +13,22 @@ swapped the producer-facing welcome from free-text send_text to the
 pre-approved producer_welcome_v1 template and added the symmetric
 producer_approved_v1 hook for admin approval (works outside the 24h
 customer-service window — required since approval can land days after
-signup).
+signup); MEH-1051 added the producer_changes_requested_v1 mirror for the
+MEH-1011 request-changes flow (WhatsApp alongside the existing email).
 """
 
 import logging
+import re
 from uuid import UUID
 
 from app.config import settings
 from app.services.email import send_email
 from app.services.whatsapp import send_template, send_text
-from app.services.whatsapp_templates import ProducerApprovedV1, ProducerWelcomeV1
+from app.services.whatsapp_templates import (
+    ProducerApprovedV1,
+    ProducerChangesRequestedV1,
+    ProducerWelcomeV1,
+)
 from app.utils.pii import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -120,6 +126,59 @@ def notify_producer_approved(
         logger.info("[WHATSAPP] Producer approved template sent")
         return True
     logger.error(f"[WHATSAPP] Producer approved FAILED for {mask_phone(normalized)}")
+    return False
+
+
+# MEH-1051: Meta rejects template params containing newline/tab/4+ consecutive
+# spaces; 550 chars keeps the 2-param body safely under Meta's total limit.
+_WA_PARAM_MAX_LEN = 550
+
+
+def _sanitize_wa_param(text: str) -> str:
+    """Flatten free text into a Meta-safe single-line template parameter.
+
+    Strip \\r, turn \\n and \\t into single spaces, collapse space runs,
+    trim, truncate to _WA_PARAM_MAX_LEN. Precedent:
+    experience_notifications.py notify_host_changes_requested (email-side
+    flattening of the same admin free-text feedback).
+    """
+    flat = text.replace("\r", "").replace("\n", " ").replace("\t", " ")
+    flat = re.sub(r" {2,}", " ", flat).strip()
+    return flat[:_WA_PARAM_MAX_LEN]
+
+
+def notify_producer_changes_requested(name: str, phone: str | None, feedback: str) -> bool:
+    """Send WhatsApp changes-requested template after an admin asks a pending
+    producer to complete details (MEH-1011 flow, MEH-1051 template).
+
+    Fires the Meta-approved ``producer_changes_requested_v1`` template with
+    two positional params: business name + what's missing. Returns True on
+    success, False on skip/failure (MEH-287 contract preserved).
+    """
+    # Template shape is LOCKED to the Meta-approved form: 2 body params, no
+    # button components (MEH-509 precedent: an un-approved URL button → 400).
+    # `or not phone` narrows str | None → str for _normalize_il_phone below;
+    # preflight already returns False on a falsy phone, so this is defensive.
+    if not _producer_wa_preflight(name, phone, "changes_requested") or not phone:
+        return False
+    normalized = _normalize_il_phone(phone)
+    sanitized = _sanitize_wa_param(feedback)
+    try:
+        ok = send_template(
+            normalized,
+            ProducerChangesRequestedV1(producer_name=name, missing_details=sanitized),
+        )
+    except Exception as e:  # belt-and-suspenders; send_template is fail-open
+        logger.warning(
+            f"[WHATSAPP] Producer changes-requested unexpected error for {mask_phone(normalized)}: {e}"
+        )
+        return False
+    if ok:
+        logger.info("[WHATSAPP] Producer changes-requested template sent")
+        return True
+    logger.error(
+        f"[WHATSAPP] Producer changes-requested FAILED for {mask_phone(normalized)}"
+    )
     return False
 
 
