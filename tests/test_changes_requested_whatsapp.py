@@ -131,7 +131,7 @@ def test_producer_name_is_sanitized_too(client, db, monkeypatch):
     # a tab/newline in a name (future import paths) must not 400 at Meta.
     captured = _install_whatsapp_capture(monkeypatch)
     admin = make_user(db, role="admin")
-    producer = make_producer(db, name="חוות\tעם	טאב", status="pending")
+    producer = make_producer(db, name="חוות\tעם\tטאב", status="pending")
     producer.phone = "0501234567"
     db.commit()
 

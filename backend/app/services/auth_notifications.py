@@ -174,14 +174,14 @@ def notify_producer_changes_requested(name: str, phone: str | None, feedback: st
         )
     except Exception as e:  # belt-and-suspenders; send_template is fail-open
         logger.warning(
-            f"[WHATSAPP] Producer changes-requested unexpected error for {mask_phone(normalized)}: {e}"
+            f"[WHATSAPP] Producer changes_requested unexpected error for {mask_phone(normalized)}: {e}"
         )
         return False
     if ok:
-        logger.info("[WHATSAPP] Producer changes-requested template sent")
+        logger.info("[WHATSAPP] Producer changes_requested template sent")
         return True
     logger.error(
-        f"[WHATSAPP] Producer changes-requested FAILED for {mask_phone(normalized)}"
+        f"[WHATSAPP] Producer changes_requested FAILED for {mask_phone(normalized)}"
     )
     return False
 
