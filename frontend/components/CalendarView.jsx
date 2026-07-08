@@ -138,6 +138,8 @@ export default function CalendarView({ items, linkPrefix }) {
           const hasEvents = itemsByDate.has(key);
           const isToday = sameDay(d, today);
           const isSelected = selectedDate && sameDay(d, selectedDate);
+          // MEH-1042 (EVENT-09): strictly before today → muted past-day state.
+          const isPast = dateKey(d) < dateKey(today);
 
           return (
             <button
@@ -150,8 +152,10 @@ export default function CalendarView({ items, linkPrefix }) {
                 isSelected
                   ? "bg-primary text-white"
                   : isToday
-                    ? "ring-2 ring-primary text-text"
-                    : "text-text hover:bg-green-50"
+                    ? "ring-2 ring-accent text-text"
+                    : isPast
+                      ? "text-fg-muted hover:bg-green-50"
+                      : "text-text hover:bg-green-50"
               }`}
             >
               <span>{d.getDate()}</span>
