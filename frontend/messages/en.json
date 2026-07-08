@@ -2596,6 +2596,11 @@
     "submit_update": "Update review",
     "submit_saving": "Saving...",
     "cancel": "Cancel",
+    "reply_heading": "Business reply",
+    "reply_add": "Add reply",
+    "reply_edit": "Edit reply",
+    "reply_placeholder": "Write a reply…",
+    "reply_save": "Save",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
@@ -3488,6 +3493,11 @@
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
+      },
+      "changes_requested": {
+        "title": "One detail left to complete",
+        "cta": "Complete the details",
+        "aria": "Completion request from the team"
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
