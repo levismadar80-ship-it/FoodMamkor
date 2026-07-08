@@ -7,7 +7,7 @@ sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 | דף | URL | תוכן |
 |----|-----|-------|
 | Dashboard | /admin | 4 ראשיים + 4 משניים + התראות + גרף עסקים חדשים 6 חודשים + ערים מובילות + DAU 30 יום + לוח בריאות שרת + פעילות (ראה "אנליטיקס על /admin") |
-| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר + Toggle שגרירה (approved בלבד) |
+| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר inline; השהה/שגריר/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) |
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
@@ -112,7 +112,7 @@ npx playwright test             # E2E
 **Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
 בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
 
-**Ambassador toggle** — זמין ב-`/admin/producers` (כפתור "☆ שגריר") לבתי עסק עם `status = approved` בלבד.
+**Ambassador toggle** — זמין ב-`/admin/producers` (פריט "☆ שגריר" בתפריט ⋮ של השורה — MEH-1027; לפני כן כפתור inline) לבתי עסק עם `status = approved` בלבד.
 `POST /admin/producers/{id}/set-ambassador` מחזיר 400 אם `status != approved`.
 
 **POST /producers/{id}/whatsapp-click** — anonymous, rate-limited 10/min per IP.
