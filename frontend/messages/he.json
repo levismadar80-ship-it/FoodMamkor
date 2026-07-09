@@ -691,6 +691,7 @@
       },
       "header": {
         "review_count": "{count, plural, =0 {אין ביקורות} one {ביקורת אחת} two {שתי ביקורות} other {# ביקורות}}",
+        "review_excerpt_aria": "ציטוט מתוך ביקורת — מעבר לכל הביקורות",
         "premium": "פרמיום",
         "favorites_count": "{count, plural, one {אחת שמרה את העסק הזה} two {שניים שמרו את העסק הזה} other {# שמרו את העסק הזה}}",
         "behind": "מאחורי העסק: {name}",

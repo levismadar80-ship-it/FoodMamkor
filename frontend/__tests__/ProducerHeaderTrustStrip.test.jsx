@@ -11,6 +11,11 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+// ReviewExcerpt (chunk 2) is a child of ProducerHeader — stub its api so the
+// header test stays isolated to the trust-strip anchor (empty reviews → the
+// excerpt renders nothing, leaving the anchor as the sole link).
+vi.mock("@/lib/api", () => ({ default: { get: () => Promise.resolve({ data: { reviews: [] } }) } }));
+
 // Stub the child components + Phosphor icons ProducerHeader composes.
 vi.mock("@/components/AvailabilityBadge", () => ({ default: () => <div data-testid="availability" /> }));
 vi.mock("@/components/BadgeRow", () => ({ default: () => <div data-testid="badge-row" /> }));

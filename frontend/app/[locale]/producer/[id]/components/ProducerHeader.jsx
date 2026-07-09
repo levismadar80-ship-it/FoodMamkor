@@ -6,6 +6,7 @@ import BadgeRow from "@/components/BadgeRow";
 import CategoryTag from "@/components/CategoryTag";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import TrustBadge from "@/components/TrustBadge";
+import ReviewExcerpt from "./ReviewExcerpt";
 
 /**
  * Main-column header block for the producer detail page.
@@ -90,6 +91,11 @@ export default function ProducerHeader({
           {producer.short_description}
         </p>
       )}
+
+      {/* MEH-1048 (chunk 2): one short review quote above the fold. Self-guards
+          on reviews_count (no fetch when zero) and renders nothing if no review
+          has text — so it never adds empty space. */}
+      <ReviewExcerpt producerId={producer.id} reviewsCount={producer.reviews_count} />
 
       {producer.contact_name && (
         <p className="text-[12px] text-fg-muted mt-0.5">
