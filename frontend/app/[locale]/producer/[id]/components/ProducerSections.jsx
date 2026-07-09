@@ -271,8 +271,14 @@ export default function ProducerSections({
       )}
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
-          scrolls within 300px of the viewport (saves ~300ms on 3G) */}
+          scrolls within 300px of the viewport (saves ~300ms on 3G).
+          MEH-1048: id="reviews" is the anchor target for the header trust
+          strip; scroll-mt-24 offsets the landing so the heading isn't
+          flush against the top. The wrapper always renders (it's the IO
+          observation point), so the anchor is valid before reviews mount. */}
       <div
+        id="reviews"
+        className="scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
           reviewsContainerRef.current = el;
