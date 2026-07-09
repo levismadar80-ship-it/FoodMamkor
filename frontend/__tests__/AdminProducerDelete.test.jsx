@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import ProducersPageWrapper from "@/app/[locale]/admin/producers/page";
+import heMessages from "@/messages/he.json";
+import enMessages from "@/messages/en.json";
 
 // MEH-1027 Chunk B: lifecycle tests for the producer-delete confirm dialog
 // that replaced native confirm() (use-admin-producers.js). Mirrors
@@ -143,5 +145,19 @@ describe("Admin producers — delete confirm dialog (MEH-1027 Chunk B)", () => {
     fireEvent.click(within(dialog).getByText("מחקו"));
     await waitFor(() => expect(toastMock.error).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("dialog")).toBeInTheDocument(); // stays open on failure
+  });
+
+  // The next-intl mock above resolves keys from a hardcoded flat map, which
+  // would mask a key missing from the REAL message files (MEH-978 class —
+  // caught live during this chunk: `deleting` initially landed under
+  // .actions while the dialog reads producers.table.deleting). Assert the
+  // real files carry every key the dialog consumes, at the exact path.
+  it("real he/en message files carry the table-level dialog keys", () => {
+    for (const messages of [heMessages, enMessages]) {
+      const table = messages.admin.producers.table;
+      expect(table.confirm_delete).toBeTruthy();
+      expect(table.delete_error).toBeTruthy();
+      expect(table.deleting).toBeTruthy();
+    }
   });
 });
