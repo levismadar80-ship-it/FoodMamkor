@@ -3,6 +3,15 @@
 
 ---
 
+## MEH-995 — /join: דף הצטרפות כבית עסק
+
+- [ ] **הדף חי** — פתחו `/join` (מובייל 375px) — **תוצאה מצופה:** hero עם "העסק שלכם. עמוד משלו.", eyebrow זהב "לבתי עסק מקומיים", כפתור "מצטרפים" יחיד + "חינם להצטרף" מתחתיו; אין אזכור פרימיום/עמלות ב-hero.
+- [ ] **4 צעדים** — גללו ל"איך זה עובד" — **תוצאה מצופה:** ספרות Cormorant ‏01–04 שלמות (ללא חיתוך גם ב-320px), 4 כותרות+טקסט, קישור "לתהליך הקבלה המלא" → `/about/process`.
+- [ ] **FAQ teaser** — סוף הדף — **תוצאה מצופה:** "כמה זה עולה?" עם "חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.", קישור "לכל השאלות" → `/about/for-businesses`.
+- [ ] **CTA → wizard** — לחצו "מצטרפים" — **תוצאה מצופה:** נחיתה ב-`/register/producer` (מסך "לפני שמתחילים" של MEH-994).
+- [ ] **Footer** — בכל עמוד — **תוצאה מצופה:** "הוסיפו את העסק שלך" מוביל עכשיו ל-`/join` (לא ישירות ל-wizard).
+- [ ] **Testimonial placeholder** — **תוצאה מצופה:** משבצת עדות עם טקסט מסביר-עצמו ("כאן תופיע עדות אמיתית…") — לא עדות שנראית אמיתית.
+
 ## MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#1476/#1477/#1479)
 
 בדיקה על מובייל + דסקטופ (Vercel preview לכל קבוצה).
@@ -476,6 +485,43 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
 
+### MEH-1046 — pagination בטבלת /admin/users
+- [ ] ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת, המונה למעלה עדיין מציג את הסך הכולל.
+- [ ] "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת.
+- [ ] בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1.
+- [ ] שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננות.
+- [ ] פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1.
+- [ ] נייד — הפקדים נשברים לשתי שורות (flex-col) בלי גלישה אופקית.
+
+### MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews
+- [ ] אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה ב-MEH-1023) — **לא** חלון confirm של הדפדפן.
+- [ ] שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת + toast הצלחה. בזמן המחיקה שני הכפתורים מושבתים ("במחיקה...").
+- [ ] כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח.
+
+### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
+- [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
+- [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים" עם השם האמיתי והמספר האמיתי של בתי העסק המשויכים.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
+- [ ] הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE).
+
+### MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן")
+- [ ] Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לקטגוריה ריקה).
+- [ ] Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' — N בתי עסק משויכים" עם המספר הנכון.
+- [ ] API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint הציבורי `GET /categories` מחזיר `producer_count: null` (לא נשבר).
+
+### MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/producers
+- [ ] Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
+- [ ] שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
+- [ ] שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
+- [ ] סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
+- [ ] שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
+- [ ] מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** עדיין `confirm()` native בשלב זה — שדרוג ל-dialog מודאלי הוא Chunk B (לא במהדורה זו).
+- [ ] פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
+- [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
+
 ### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
 - [ ] Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
 - [ ] פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).
@@ -491,6 +537,7 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast הצלחה, המודל נסגר, ובשורה מופיע badge "ממתין להשלמה" + תאריך (התאריך מיושר LTR, לא נשבר ב-RTL). מייל נשלח לבעלת העסק (לוג/Resend).
 - [ ] 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בקשת השלמה עם "חסרה תמונה — יש להעלות לפחות תמונה אחת" ממולא מראש + toast מידע "לא ניתן לאשר עדיין…". עסק בקטגוריית רישיון ללא מספר → prefill "חסר מספר רישיון יצרן".
 - [ ] ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (approve מנקה `requested_changes`).
+- [ ] **MEH-1051 WhatsApp לבעלת העסק** — שלחי בקשת השלמה לעסק ממתין **עם טלפון**; **תוצאה מצופה:** בנוסף למייל מגיעה הודעת WhatsApp מתבנית `producer_changes_requested_v1` עם שם העסק + הטקסט שהוזן בשורה אחת (בלי ירידות שורה). עסק **בלי טלפון** → הבקשה עדיין מצליחה (200), רק מייל, ולוג `[WHATSAPP] Producer changes_requested SKIPPED`.
 - [ ] feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה לא נשלחת.
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
@@ -603,9 +650,17 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
 - [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
 
+### ProductsSection mount in the edit tab (MEH-999 follow-up)
+
+> The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
+
+- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
-> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים" section → "הוסיפי מוצר".
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
 - [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
 - [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
@@ -1684,8 +1739,9 @@ Added with `feature/session-handoff`.
 - [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
 - [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
 - [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input appears below.
-- [ ] Pick a future date in the vacation input + blur — תוצאה מצופה: state persists; refresh page → still on vacation with the same date.
+- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
 - [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot

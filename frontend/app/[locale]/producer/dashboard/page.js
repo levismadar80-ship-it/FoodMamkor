@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Eye, Sparkle, WhatsappLogo, X } from "@phosphor-icons/react";
+import { Eye, LockSimple, Sparkle, WhatsappLogo, X } from "@phosphor-icons/react";
 // MEH-956: locale-aware Link for the load-error CTA — preserves the active
 // locale on /contact (bare next/link drops it for `en` under as-needed).
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -14,6 +14,7 @@ import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
+import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 
 function VanityLinkCard({ slug }) {
@@ -86,6 +87,11 @@ export default function ProducerDashboardPage() {
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
   const [vacationUntil, setVacationUntil] = useState("");
+  // MEH-999: reveal the return-date field the moment vacation is *selected*
+  // (before the POST), breaking the chicken-and-egg where the field only
+  // rendered once the server already carried state === "on_vacation".
+  const [vacationSelected, setVacationSelected] = useState(false);
+  const [vacationDateError, setVacationDateError] = useState("");
 
   const AVAILABILITY_TOOLTIP = (
     <>
@@ -122,6 +128,14 @@ export default function ProducerDashboardPage() {
   // dual-writes to the legacy is_available_today + availability_status
   // columns during the 7-day overlap; Phase 4 drops them.
   const setAvailabilityState = async (state) => {
+    // MEH-999: client guard — on_vacation must carry a return date. Block the
+    // POST here and surface an inline message instead of a 422 round-trip
+    // (mirrors availability_validation.resolve_vacation_until:85-86 intent).
+    if (state === "on_vacation" && !vacationUntil) {
+      setVacationDateError(t("availability.vacation_date_required"));
+      return;
+    }
+    setVacationDateError("");
     // Optimistic update so the radio lights up immediately on click.
     setData((prev) =>
       prev
@@ -135,6 +149,11 @@ export default function ProducerDashboardPage() {
       const body = { state };
       if (state === "on_vacation" && vacationUntil) body.vacation_until = vacationUntil;
       await api.post("/producers/me/availability-state", body);
+      // MEH-999: the write is committed — drop the "selected-but-unconfirmed"
+      // flag so the mini-form is now driven purely by the saved server state
+      // (on failure we intentionally keep it set below, so the form stays open
+      // for the producer to correct the date rather than vanishing).
+      setVacationSelected(false);
       if (state !== "on_vacation") setVacationUntil("");
     } catch (err) {
       // MEH-989: surface the backend's Hebrew detail (e.g. missing vacation
@@ -216,13 +235,37 @@ export default function ProducerDashboardPage() {
       <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">
         {t("greeting", { name: user.name })}
       </h1>
-      <p className="text-fg-muted mb-8">
+      <p className="text-fg-muted mb-3">
         {t.rich("welcome_subtitle", {
           business: () => <span className="font-semibold">{producer.name}</span>,
         })}
       </p>
 
-      {producer.status === "pending" && (
+      {/* MEH-964 1D: one-tap view-public. LocaleLink keeps the active locale
+          (MEH-956) on /[slug]; target=_blank so the owner previews the live
+          page without losing the dashboard. */}
+      {producer.slug && (
+        <LocaleLink
+          href={`/${producer.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="view-public-link"
+          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mb-8"
+        >
+          <Eye size={16} aria-hidden="true" />
+          {t("states.view_public")}
+        </LocaleLink>
+      )}
+
+      {/* MEH-1025 Chunk B: admin completion-request banner. Renders only when
+          requested_changes is set; the CTA routes to the edit tab. */}
+      <ChangesRequestedBanner profile={profile} />
+
+      {/* MEH-1025 Chunk B: suppress the generic "ממתין לאישור" notice when a
+          request-changes is pending — the specific "נשאר להשלים" banner above
+          IS the message, and "awaiting approval" would contradict it (the ball
+          is in the owner's court). Both otherwise stack on a pending producer. */}
+      {producer.status === "pending" && !profile?.requested_changes && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-[16px] p-4 mb-6 text-sm" role="status">
           <p className="font-semibold text-yellow-800 mb-1">{t("status.pending.title")}</p>
           <p className="text-yellow-700 mb-3">
@@ -296,10 +339,21 @@ export default function ProducerDashboardPage() {
         );
       })()}
 
-      {/* MEH-53: Vanity URL card */}
-      {producer.slug && (
+      {/* MEH-53: Vanity URL card. MEH-964 1D share-gate: the shareable link
+          surfaces ONLY when the profile is complete AND approved — sharing an
+          unpublished/incomplete page sends visitors to a dead listing. When
+          locked, a warm why-locked hint takes its place (not silent hiding). */}
+      {producer.slug && isComplete && isApproved ? (
         <VanityLinkCard slug={producer.slug} />
-      )}
+      ) : producer.slug ? (
+        <div
+          data-testid="share-locked-hint"
+          className="bg-white border border-border rounded-[16px] p-5 mb-6 flex items-center gap-3"
+        >
+          <LockSimple size={18} className="text-fg-muted shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">{t("states.share_locked")}</p>
+        </div>
+      ) : null}
 
       {/* MEH-291 Phase 3 — unified availability card. Replaces the old
           "זמין היום" hero + "סטטוס זמינות" pill row. 4-value durable
@@ -313,26 +367,51 @@ export default function ProducerDashboardPage() {
         <p className="text-fg-muted text-sm mb-4">
           {t("availability.intro")}
         </p>
-        <div role="radiogroup" aria-label={t("availability.group_aria")} className="flex flex-wrap gap-2">
+        <div
+          role="radiogroup"
+          aria-label={t("availability.group_aria")}
+          aria-describedby={!isApproved ? "availability-disabled-hint" : undefined}
+          className="flex flex-wrap gap-2"
+        >
           {[
             { value: "accepting_orders", color: "#22c55e" },
             { value: "available_today",  color: "#2e6853" },
             { value: "full_this_week",   color: "#f97316" },
             { value: "on_vacation",      color: "#9ca3af" },
           ].map((opt) => {
-            const active = (producer.availability_state || "accepting_orders") === opt.value;
+            const savedState = producer.availability_state || "accepting_orders";
+            const isVacation = opt.value === "on_vacation";
+            // MEH-999: while vacation is selected-but-not-yet-confirmed, only the
+            // vacation radio reads active so the group never lights up two.
+            const active = isVacation
+              ? vacationSelected || savedState === "on_vacation"
+              : !vacationSelected && savedState === opt.value;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => setAvailabilityState(opt.value)}
+                // MEH-964 1D: availability is disabled until the business is
+                // published (approved) — an unpublished listing has no public
+                // surface for the state to affect. Hint below carries the why.
+                disabled={!isApproved}
+                onClick={() => {
+                  if (isVacation) {
+                    // Reveal the date field first; defer the POST to the
+                    // combined mini-form below so it always carries a date.
+                    setVacationSelected(true);
+                    setVacationDateError("");
+                  } else {
+                    setVacationSelected(false);
+                    setAvailabilityState(opt.value);
+                  }
+                }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
                   active
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text border-border hover:bg-green-50"
-                }`}
+                } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <span
                   aria-hidden="true"
@@ -350,30 +429,55 @@ export default function ProducerDashboardPage() {
             );
           })}
         </div>
-        {(producer.availability_state || "accepting_orders") === "on_vacation" && (
-          <div className="mt-4 flex items-center gap-3">
-            <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
-              {t("availability.vacation_return_label")}
-            </label>
-            <input
-              id="vacation-until"
-              type="date"
-              value={vacationUntil}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setVacationUntil(e.target.value)}
-              onBlur={() => { if (vacationUntil) setAvailabilityState("on_vacation"); }}
-              className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-              dir="ltr"
-            />
-            {vacationUntil && (
+        {/* MEH-964 1D: why-locked hint, associated with the radiogroup via
+            aria-describedby so it's announced (not colour/opacity-only). */}
+        {!isApproved && (
+          <p id="availability-disabled-hint" data-testid="availability-disabled-hint" className="text-xs text-fg-muted mt-3">
+            {t("states.availability_disabled")}
+          </p>
+        )}
+        {/* MEH-999: reachable as soon as vacation is selected — not gated on the
+            server already being on_vacation — so the return date can be picked
+            and submitted together (combined mini-form). */}
+        {(vacationSelected || (producer.availability_state || "accepting_orders") === "on_vacation") && (
+          <div className="mt-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <label htmlFor="vacation-until" className="text-sm text-fg-muted whitespace-nowrap">
+                {t("availability.vacation_return_label")}
+              </label>
+              <input
+                id="vacation-until"
+                type="date"
+                value={vacationUntil}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => { setVacationUntil(e.target.value); setVacationDateError(""); }}
+                className="border border-border rounded-[8px] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                dir="ltr"
+                aria-invalid={vacationDateError ? "true" : undefined}
+                aria-describedby={vacationDateError ? "vacation-until-error" : undefined}
+              />
+              {vacationUntil && (
+                <button
+                  type="button"
+                  onClick={() => { setVacationUntil(""); setVacationDateError(""); }}
+                  className="text-fg-muted hover:text-red-600 transition inline-flex"
+                  aria-label={t("availability.remove_vacation_date_aria")}
+                >
+                  <X size={14} weight="bold" aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => { setVacationUntil(""); setAvailabilityState("on_vacation"); }}
-                className="text-fg-muted hover:text-red-600 transition inline-flex"
-                aria-label={t("availability.remove_vacation_date_aria")}
+                onClick={() => setAvailabilityState("on_vacation")}
+                className="px-4 py-1.5 rounded-[10px] text-sm font-medium bg-primary text-white border border-primary hover:bg-primary/90 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <X size={14} weight="bold" aria-hidden="true" />
+                {t("availability.vacation_confirm")}
               </button>
+            </div>
+            {vacationDateError && (
+              <p id="vacation-until-error" role="alert" className="mt-2 text-sm text-red-600">
+                {vacationDateError}
+              </p>
             )}
           </div>
         )}
@@ -388,11 +492,23 @@ export default function ProducerDashboardPage() {
       {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
           Deep analytics (windowed cards + charts) live in the insights tab
           (dashboard/insights); these KPIs render only here (FLAG-1 — never
-          duplicated in insights/). */}
-      {analytics ? (
+          duplicated in insights/).
+          MEH-964 1D: when there's no activity yet (data-state-active=false),
+          a warm zero-state replaces the 2×2 wall-of-zeros so a brand-new owner
+          sees an invitation, not four zeros. hasActivity per the 1A definition
+          (views||whatsapp, rating excluded). */}
+      {!analytics ? (
+        <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+      ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} />
       ) : (
-        <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        <div
+          data-testid="overview-zero-state"
+          className="bg-white border border-border rounded-[16px] p-6 mb-8 flex items-center gap-3"
+        >
+          <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+          <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+        </div>
       )}
 
       {/* MEH-964 1C: anonymous activity pulse (§5 final spec) — renders only

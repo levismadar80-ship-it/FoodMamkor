@@ -577,6 +577,12 @@
       "og_title": "Verify your email",
       "og_description": "Confirming your email finishes setting up your Mehamakor account."
     },
+    "join": {
+      "title": "Join as a business | Mehamakor",
+      "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
+      "og_title": "Your business. A page of its own. | Mehamakor",
+      "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -1260,7 +1266,8 @@
           "ambassador_inactive": "☆ Ambassador",
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
-          "delete": "Delete"
+          "delete": "Delete",
+          "menu_aria": "More actions"
         },
         "columns": {
           "name": "Name",
@@ -1442,6 +1449,12 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm"
+      },
+      "pagination": {
+        "page_size": "Rows per page",
+        "prev": "Previous",
+        "next": "Next",
+        "page_of": "Page {page} of {total}"
       }
     },
     "recipes": {
@@ -1805,7 +1818,10 @@
         "empty": "No data to display",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete category?"
+        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "producer_count": "{count} businesses",
+        "deleting": "Deleting…",
+        "delete_error": "Failed to delete the category. Please try again."
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -2581,6 +2597,11 @@
     "submit_update": "Update review",
     "submit_saving": "Saving...",
     "cancel": "Cancel",
+    "reply_heading": "Business reply",
+    "reply_add": "Add reply",
+    "reply_edit": "Edit reply",
+    "reply_placeholder": "Write a reply…",
+    "reply_save": "Save",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
@@ -2844,6 +2865,46 @@
         "title": "Government accessibility authority",
         "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
       }
+    }
+  },
+  "join": {
+    "eyebrow": "For local businesses",
+    "h1": "Your business. A page of its own.",
+    "subhead": "A page with your photos and story, every business hand-picked, and direct contact on WhatsApp — local customers meet your story.",
+    "cta": "Join",
+    "trust_hint": "Free to join",
+    "how": {
+      "eyebrow": "How it works",
+      "heading": "Four steps",
+      "step1_title": "Sign up",
+      "step1_text": "A short form about your business — story, photos, and contact details. About 10 minutes.",
+      "step2_title": "A personal call",
+      "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
+      "step3_title": "Your page goes live",
+      "step3_text": "Usually within a day or two your business appears on the site.",
+      "step4_title": "Customers reach you directly",
+      "step4_text": "The WhatsApp button on your page opens a direct conversation with you. Contact and payment stay between you and your customers.",
+      "process_link": "The full acceptance process"
+    },
+    "prepare": {
+      "title": "Good to have ready",
+      "item_story": "A short story about your business",
+      "item_photos": "2–3 photos of your business or products",
+      "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
+    },
+    "card": {
+      "title": "Every business gets a personal call",
+      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and a conversation. That keeps every page on the site trustworthy and personal."
+    },
+    "testimonial": {
+      "eyebrow": "Coming soon — our first testimonial",
+      "quote": "A real business owner's words will appear here — verbatim, with her approval."
+    },
+    "faq": {
+      "eyebrow": "Common questions",
+      "q_cost": "How much does it cost?",
+      "a_cost": "Free to join and be listed. No transaction fees — ever.",
+      "all_link": "All the questions"
     }
   },
   "about_business": {
@@ -3428,6 +3489,17 @@
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
+      "states": {
+        "zero_activity": "No activity yet — share your page to get started",
+        "share_locked": "You'll be able to share soon — let's finish approval and details first",
+        "availability_disabled": "You'll be able to update availability once the business is approved and published",
+        "view_public": "View your page"
+      },
+      "changes_requested": {
+        "title": "One detail left to complete",
+        "cta": "Complete the details",
+        "aria": "Completion request from the team"
+      },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
       "status": {
@@ -3479,7 +3551,9 @@
           "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
-        "remove_vacation_date_aria": "Remove return date"
+        "remove_vacation_date_aria": "Remove return date",
+        "vacation_confirm": "Save",
+        "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
         "settings": {

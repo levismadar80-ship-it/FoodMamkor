@@ -23,6 +23,7 @@ from app.models import (
     Favorite,
     HomeProduct,
     Producer,
+    ProducerCategory,
     ProducerPageView,
     Report,
     StaticPage,
@@ -166,7 +167,20 @@ def user_favorites(
 def list_categories_admin(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    return db.query(Category).order_by(Category.id).all()
+    # MEH-1034: annotate each category with its producer count in ONE query
+    # (outerjoin + group_by — no N+1). Query-time only; no DB column.
+    rows = (
+        db.query(Category, func.count(ProducerCategory.producer_id))
+        .outerjoin(ProducerCategory, ProducerCategory.category_id == Category.id)
+        .group_by(Category.id)
+        .order_by(Category.id)
+        .all()
+    )
+    categories = []
+    for cat, producer_count in rows:
+        cat.producer_count = producer_count
+        categories.append(cat)
+    return categories
 
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
