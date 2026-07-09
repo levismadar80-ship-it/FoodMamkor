@@ -118,7 +118,8 @@ export default function EventDetailClient() {
                 glyph leads in this row's accent color — same principle as MapPin
                 leading its row in text-primary at :96. */}
             <Coins size={16} className="text-accent inline align-[-3px]" aria-hidden="true" />
-            {event.price > 0 ? `₪${event.price}` : t("free")}
+            {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
+            {event.price > 0 ? <span dir="ltr">{`₪${event.price}`}</span> : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
