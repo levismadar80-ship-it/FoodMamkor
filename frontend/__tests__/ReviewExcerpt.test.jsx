@@ -55,8 +55,9 @@ describe("ReviewExcerpt (MEH-1048 chunk 2)", () => {
     const long = "א".repeat(200);
     mockGet.mockResolvedValue({ data: { reviews: [review(long, 1)] } });
     render(<ReviewExcerpt producerId="p1" reviewsCount={1} />);
-    const el = await screen.findByTestId("review-excerpt");
-    const text = el.textContent;
+    await screen.findByTestId("review-excerpt");
+    // Assert on the quote span only (the link also holds an sr-only nav suffix).
+    const text = screen.getByTestId("review-excerpt-text").textContent;
     expect(text.endsWith("…")).toBe(true);
     expect(text.length).toBeLessThanOrEqual(121); // 120 chars + ellipsis
   });

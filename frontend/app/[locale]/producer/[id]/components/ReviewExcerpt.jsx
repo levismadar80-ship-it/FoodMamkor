@@ -42,7 +42,15 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
         const body = withText.body.trim();
         setExcerpt(body.length > MAX_LEN ? `${body.slice(0, MAX_LEN).trimEnd()}…` : body);
       })
-      .catch(() => {});
+      .catch((err) => {
+        // Fail-open: no excerpt on error (the header rating pill still shows).
+        // Log in dev so it isn't a silent-except (MEH-325) — this path is
+        // non-critical and never surfaces a 5xx to the user.
+        if (process.env.NODE_ENV !== "production") {
+          // eslint-disable-next-line no-console
+          console.error("ReviewExcerpt: review excerpt fetch failed", err);
+        }
+      });
     return () => {
       alive = false;
     };
@@ -54,11 +62,14 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
     <a
       href="#reviews"
       className="mt-2 flex items-start gap-1.5 rounded text-sm italic text-fg-muted transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40"
-      aria-label={t("producer.detail.header.review_excerpt_aria")}
       data-testid="review-excerpt"
     >
       <Quotes size={15} weight="fill" className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
-      <span className="line-clamp-2">{excerpt}</span>
+      {/* The quote text IS the link's accessible name so AT users hear the
+          actual review; the nav purpose is an sr-only suffix instead of an
+          aria-label (which would override — and hide — the quote). */}
+      <span className="line-clamp-2" data-testid="review-excerpt-text">{excerpt}</span>
+      <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
     </a>
   );
 }
