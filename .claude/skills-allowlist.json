@@ -221,7 +221,7 @@
       "author_verified": false,
       "last_audit_date": "2026-07-09",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-1067 (upstream d574778f, skills/productivity/grilling/SKILL.md, SHA256 5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478). Single 821-byte SKILL.md, model-invocable (no disable-model-invocation flag, unlike grill-me). Pure interviewing prose (stress-test a plan/design one question at a time). Full-body scan: zero network/exec/secret/prompt-injection/file-write patterns; one benign typographic em-dash (U+2014) in prose. No further chained skill reference — the grill-me->grilling chain TERMINATES here, no third dead pointer. Resolves the MEH-1053 grill-me dead-pointer finding; /grill-me now functional.",
+      "notes": "Audited MEH-1067 (upstream d574778f, skills/productivity/grilling/SKILL.md, SHA256 5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478). Single 821-byte SKILL.md, model-invocable (no disable-model-invocation flag, unlike grill-me). Pure interviewing prose (stress-test a plan/design one question at a time). Full-body scan: zero network/exec/secret/prompt-injection/file-write patterns; one benign typographic em-dash (U+2014) in prose. No further chained skill reference — the grill-me->grilling chain TERMINATES here, no third dead pointer. Resolves the MEH-1053 grill-me dead-pointer finding; /grill-me now functional. (SHA is raw-file provenance, not the lock's computedHash; canonical lock deferred to MEH-1055 batch.)",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": null
     },
