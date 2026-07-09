@@ -61,7 +61,8 @@ export function UpcomingEventsPreview() {
                 {ev.producer_name} · {ev.city}
               </p>
               <p className="text-sm text-accent font-semibold">
-                {ev.price > 0 ? `₪${ev.price}` : t("home.events.free")}
+                {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
+                {ev.price > 0 ? <span dir="ltr">{`₪${ev.price}`}</span> : t("home.events.free")}
               </p>
             </div>
           </Link>
