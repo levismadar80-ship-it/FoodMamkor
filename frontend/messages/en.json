@@ -1267,7 +1267,8 @@
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
           "delete": "Delete",
-          "menu_aria": "More actions"
+          "menu_aria": "More actions",
+          "deleting": "Deleting…"
         },
         "columns": {
           "name": "Name",

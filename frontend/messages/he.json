@@ -1271,7 +1271,8 @@
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "📸 סטורי",
           "delete": "מחקו",
-          "menu_aria": "פעולות נוספות"
+          "menu_aria": "פעולות נוספות",
+          "deleting": "מוחקים…"
         },
         "columns": {
           "name": "שם",

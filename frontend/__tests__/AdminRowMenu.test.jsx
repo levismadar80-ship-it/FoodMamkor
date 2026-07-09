@@ -58,22 +58,28 @@ describe("admin/AdminRowMenu", () => {
   });
 
   // MEH-1027: per-item disabled — mirrors the inline buttons' busy guards
-  // when actions move into the menu (producers table).
-  it("renders a disabled item as disabled; click does not fire onSelect or close", () => {
+  // when actions move into the menu (producers table). Ch.B: aria-disabled +
+  // click-guard instead of native disabled so busy items stay focusable (APG).
+  it("renders a disabled item as aria-disabled, still focusable; click does not fire onSelect or close", () => {
     const onSelect = vi.fn();
     renderMenu([{ key: "delete", label: "מחקו", tone: "danger", disabled: true, onSelect }]);
     fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
     const item = screen.getByRole("menuitem", { name: "מחקו" });
-    expect(item).toBeDisabled();
+    expect(item).toHaveAttribute("aria-disabled", "true");
+    item.focus();
+    expect(document.activeElement).toBe(item); // keyboard users can reach it (APG)
     fireEvent.click(item);
     expect(onSelect).not.toHaveBeenCalled();
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
 
-  it("items without a disabled flag stay enabled", () => {
+  it("items without a disabled flag carry no aria-disabled (users-page consumer unchanged)", () => {
     renderMenu([promote(), { ...demote(), disabled: false }]);
     fireEvent.click(screen.getByRole("button", { name: "פעולות נוספות" }));
-    screen.getAllByRole("menuitem").forEach((it) => expect(it).toBeEnabled());
+    screen.getAllByRole("menuitem").forEach((it) => {
+      expect(it).not.toHaveAttribute("aria-disabled");
+      expect(it).toBeEnabled();
+    });
   });
 
   it("renders both promote and demote items when provided", () => {
