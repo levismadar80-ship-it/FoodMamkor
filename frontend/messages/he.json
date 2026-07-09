@@ -710,9 +710,7 @@
         "aria": {
           "show_on_map": "פתח את המיקום של העסק במפה"
         },
-        "show_on_map": "הצג במפה",
-        "referral_msg": "גיליתי את מהמקור — בתי עסק מקומיים מדהימים 🌿\nהצטרפי עם קישור שלי וקבלי 10% הנחה: https://mehamakor.co.il/ref/{code}",
-        "referral_cta": "שתפו וקבלו 10%"
+        "show_on_map": "הצג במפה"
       },
       "contact_sidebar": {
         "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"

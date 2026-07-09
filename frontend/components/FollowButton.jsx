@@ -61,10 +61,13 @@ export default function FollowButton({ producerId }) {
       type="button"
       onClick={toggle}
       disabled={loading}
+      // MEH-1049: demoted to secondary weight so WhatsApp is the sole filled
+      // primary in the contact card. Following = subtle primary-token tint
+      // (not a green fill); not-following = neutral ghost.
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-[10px] border text-sm font-medium transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
         following
-          ? "bg-primary text-white border-primary hover:bg-primary-dark"
-          : "bg-white text-primary border-primary hover:bg-green-50"
+          ? "bg-primary/10 text-primary border-primary/40 hover:bg-primary/15"
+          : "bg-white text-fg-muted border-border hover:bg-background"
       }`}
       aria-pressed={following}
     >

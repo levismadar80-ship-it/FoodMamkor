@@ -151,7 +151,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           />
           <ActionRow
             producer={producer}
-            user={user}
             inlineCTARef={inlineCTARef}
             shareUrl={shareUrl}
             onShowOnMap={handleShowOnMap}
