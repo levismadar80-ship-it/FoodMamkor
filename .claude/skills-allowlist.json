@@ -207,6 +207,15 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-402. Full body + 7 reference/*.md files (808 lines total) scanned — all clean. Chain root: instructs MUST-run of teach-impeccable when no design context exists. Author: Paul Bakaus. Chain root for 17 of 21 pbakaus/impeccable skills. Integrity of this skill protects all chained skills — manually re-audit periodically (lock file drift detection closed by MEH-420)."
     },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "author_verified": false,
+      "last_audit_date": "2026-07-09",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-1053 (upstream d574778f, skills/productivity/grill-me, SHA256 6189dfce...eba54). Single 147-byte SKILL.md, disable-model-invocation: true. Zero network/exec/secret/injection/write patterns. FINDING: body is one chained reference — 'Run a /grilling session' — and the grilling skill is NOT installed; dead pointer, inert today. Any future skill named 'grilling' re-activates it and MUST be audited before install (MEH-422 Class A dead-pointer class).",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
     "harden": {
       "source": "pbakaus/impeccable",
       "author_verified": false,
