@@ -44,7 +44,9 @@ Loop-primitive authority maps onto ADR-016 tiers as follows.
   ends only after `bash .claude/skills/mehamakor-dod/check.sh` exits 0. "Done"
   without a green DoD check is not done.
 - **Scope:** docs, copy, i18n sweeps, single-file dependency bumps, tests,
-  non-behavioral CI/config, non-central single-file fixes.
+  non-behavioral config, non-central single-file fixes. **Excludes
+  `.github/workflows/**`** — any workflow YAML edit is RED regardless of
+  whether it looks "non-behavioral" (MEH-671 makes it CC-deny).
 
 ### YELLOW — medium risk
 

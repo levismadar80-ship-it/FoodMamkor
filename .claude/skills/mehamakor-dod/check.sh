@@ -102,22 +102,30 @@ else
   printf '%s\n' "$LUCIDE" | sed 's/^/        /' >&2
 fi
 
-# ── 6. No forbidden "יצרן"/"יצרנית" in frontend UI strings ──────────────────
-# Brand rule (docs/BRAND.md, ADR-024): businesses are "בית עסק" / "בעלי עסקים",
-# never "יצרן". The legal compound "רישיון יצרן" (Ministry-of-Health producer
-# LICENSE) is a distinct regulated term and is explicitly excluded.
-section "6/7 forbidden term 'יצרן' in UI strings"
-IATZRAN=$(grep -rInoP '(?<!רישיון )יצרן|יצרנית' \
-  "$ROOT/frontend/messages" "$ROOT/frontend/app" \
-  "$ROOT/frontend/components" "$ROOT/frontend/lib" \
-  --include='*.json' --include='*.js' --include='*.jsx' 2>/dev/null \
-  | grep -v '/node_modules/' | grep -v '/.next/' \
-  | grep -v '/__tests__/' | grep -v '\.test\.' || true)
-if [ -z "$IATZRAN" ]; then
-  pass "no forbidden 'יצרן' in UI strings"
+# ── 6. No forbidden vendor term in frontend UI strings ─────────────────────
+# Brand rule (docs/BRAND.md, ADR-024): the vendor noun is banned in UI copy;
+# use the business term instead. The regex targets that noun but excludes the
+# Ministry-of-Health producer-LICENSE compound (a distinct regulated term) via
+# a negative lookbehind. Full bilingual rationale: SKILL.md check-6 row.
+section "6/7 forbidden term in UI strings"
+# Fail-closed: the exclusion relies on a PCRE lookbehind. If this grep lacks
+# -P (non-GNU grep), the pattern would error to empty and silently PASS — so
+# treat missing PCRE as a hard failure, never a green.
+if ! printf 'x' | grep -qP 'x' 2>/dev/null; then
+  fail "'יצרן' check — grep -P (PCRE) unavailable; cannot run (would false-pass)"
 else
-  fail "'יצרן'/'יצרנית' in UI strings (use 'בית עסק'):"
-  printf '%s\n' "$IATZRAN" | sed 's/^/        /' >&2
+  IATZRAN=$(grep -rInoP '(?<!רישיון )יצרן|יצרנית' \
+    "$ROOT/frontend/messages" "$ROOT/frontend/app" \
+    "$ROOT/frontend/components" "$ROOT/frontend/lib" \
+    --include='*.json' --include='*.js' --include='*.jsx' 2>/dev/null \
+    | grep -v '/node_modules/' | grep -v '/.next/' \
+    | grep -v '/__tests__/' | grep -v '\.test\.' || true)
+  if [ -z "$IATZRAN" ]; then
+    pass "no forbidden 'יצרן' in UI strings"
+  else
+    fail "'יצרן'/'יצרנית' in UI strings (use 'בית עסק'):"
+    printf '%s\n' "$IATZRAN" | sed 's/^/        /' >&2
+  fi
 fi
 
 # ── 7. en.json key parity (reuse MEH-978 en-parity-guard) ──────────────────
