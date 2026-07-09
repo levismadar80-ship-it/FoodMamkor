@@ -34,6 +34,7 @@ vi.mock("@/lib/env", () => ({
 vi.mock("next/image", () => ({ default: () => null }));
 vi.mock("next/link", () => ({ default: ({ children }) => children }));
 vi.mock("@phosphor-icons/react", () => ({
+  ArrowRight: () => null,
   EnvelopeSimple: () => null,
   Eye: () => null,
   EyeSlash: () => null,
