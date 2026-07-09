@@ -31,7 +31,11 @@ describe("ReviewExcerpt (MEH-1048 chunk 2)", () => {
     const el = await screen.findByTestId("review-excerpt");
     expect(el).toHaveTextContent("הדבש מדהים, שירות מצוין");
     expect(el).toHaveAttribute("href", "#reviews");
-    expect(mockGet).toHaveBeenCalledWith("/producers/p1/reviews", { params: { page: 1 } });
+    // objectContaining tolerates the AbortController `signal` (a11y-followup).
+    expect(mockGet).toHaveBeenCalledWith(
+      "/producers/p1/reviews",
+      expect.objectContaining({ params: { page: 1 } }),
+    );
   });
 
   it("falls through a rating-only newest review to the most-recent one with text", async () => {
