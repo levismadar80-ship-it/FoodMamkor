@@ -20,6 +20,7 @@ import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildRecipeBreadcrumbJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 
 async function getJson(path) {
   try {
@@ -84,6 +85,14 @@ export async function generateMetadata(props) {
       type: "article",
       locale: OG_LOCALE[locale],
     },
+    // MEH-1062 (SEO-05): entity-specific Twitter/X card reusing the recipe's
+    // own image + title instead of the layout's generic site card.
+    twitter: {
+      card: "summary_large_image",
+      title: `${recipe.title} | ${producer.name}`,
+      description: truncate(recipe.description, 160),
+      images: recipe.image_url ? [recipe.image_url] : undefined,
+    },
     alternates,
   };
 }
@@ -106,6 +115,15 @@ export default async function PublicRecipePage(props) {
 
   const canonicalUrl = `/${params.slug}/recipes/${recipe.id}`;
 
+  // MEH-1062 (SEO-02): add the missing BreadcrumbList as a second server-
+  // rendered script. RecipeJsonLd.jsx (the Recipe entity) stays untouched.
+  const breadcrumbLd = buildRecipeBreadcrumbJsonLd(
+    producer,
+    recipe,
+    canonicalUrl,
+    params.locale,
+  );
+
   return (
     <>
       <RecipeJsonLd
@@ -113,6 +131,12 @@ export default async function PublicRecipePage(props) {
         producerName={producer.name}
         canonicalUrl={canonicalUrl}
       />
+      {breadcrumbLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        />
+      )}
       <RecipeDetail
         recipe={recipe}
         producer={producer}
