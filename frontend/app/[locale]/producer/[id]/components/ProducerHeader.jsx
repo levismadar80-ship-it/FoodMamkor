@@ -63,6 +63,8 @@ export default function ProducerHeader({
             <span className="numeric" dir="ltr">{Number(producer.avg_rating).toFixed(1)}</span>
             <span aria-hidden="true">·</span>
             <span>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</span>
+            {/* MEH-1048 a11y: sr-only nav hint so AT users hear the link scrolls to reviews */}
+            <span className="sr-only">{t("producer.detail.header.review_excerpt_aria")}</span>
           </a>
         )}
         {producer.plan === "premium" && (
