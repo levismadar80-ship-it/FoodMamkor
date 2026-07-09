@@ -21,7 +21,7 @@ import { HomeProducersGrid } from "@/app/[locale]/home/HomeProducersGrid";
 import { Sparkle } from "@phosphor-icons/react";
 import { useLocale, useTranslations } from "next-intl";
 import { useHomePage } from "@/lib/use-home-page";
-import { buildHomeJsonLd } from "@/lib/seo";
+import { buildHomeJsonLd, serializeJsonLd } from "@/lib/seo";
 
 // MEH-538 + MEH-604: lazy-load Leaflet + the mini-map preview. SSR-disabled
 // because Leaflet touches `window`. MEH-604 added the `loading` skeleton so
@@ -72,7 +72,7 @@ export default function HomePage() {
       {/* MEH-804: homepage Organization + WebSite (SearchAction) JSON-LD. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildHomeJsonLd(locale)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildHomeJsonLd(locale)) }}
       />
       <HomeHero
         fridayMode={fridayMode}

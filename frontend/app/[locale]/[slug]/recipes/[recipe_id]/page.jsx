@@ -20,7 +20,7 @@ import RecipeJsonLd from "@/components/public/RecipeJsonLd";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
-import { buildRecipeBreadcrumbJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
+import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
 
 async function getJson(path) {
   try {
@@ -134,7 +134,7 @@ export default async function PublicRecipePage(props) {
       {breadcrumbLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
         />
       )}
       <RecipeDetail
