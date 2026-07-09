@@ -205,7 +205,7 @@ Frames: Phase 4 v5 → MEH-732 refinement → v6 Single Voice → **Phase 6 Sign
 
 | ID | Design element (frame → section) | Code state (file:line) | Gap | Sev | Effort | Tier | Notes |
 |---|---|---|---|---|---|---|---|
-| NAV-01 | Desktop pill geometry (P6 centered bar max-w 1040px; MEH-732 lock 940px/top 32px) | `Header.jsx:234,266` — content-hug `max-w-[92vw]`, state-dependent padding | Content-hug vs fixed max-width | 1 | S | YELLOW | Deliberate MEH-890/899 supersession — not drift |
+| NAV-01 | Desktop pill geometry (P6 centered bar max-w 1040px; MEH-732 lock 940px/top 32px) | `Header.jsx:234,266` — content-hug `max-w-[92vw]`, state-dependent padding | Content-hug vs fixed max-width | 1 | S | YELLOW | Deliberate MEH-890/899 supersession — not drift. MEH-1072: resolved 09/07 — fixed compact geometry (Sapir); MEH-899 width switching retired |
 | NAV-02 | Scrolled glass LOCKED MEH-732: rgba(245,240,232,.85) + blur 12 + #E8E0D0 border; trigger scrollY>60 | `Header.jsx:258-260` at-rest /85, scrolled /60, inner pages solid (MEH-947); threshold+shadow+border parity | Scrolled opacity 60 vs locked 85; three-way surface | 1 | S | YELLOW | MEH-896 deliberate lightening |
 | NAV-03 | Over-image dark veil state (v6/P6 `is-over` rgba(22,38,30,.30-.34) + cream ink/logo flip, gold-on-dark) | NO CODE — no `is-over` equivalent (MEH-890: hero scrim removed, dark ink) | Entire over-image state absent | 2 | L | RED | Reinstating restructures Header surface/ink theming |
 | NAV-04 | Desktop active link = gold 1.5px underline | `Header.jsx:376-384` — tint chip `bg-text/[0.07] text-primary` | Underline → chip | 1 | S | YELLOW | MEH-896 explicitly replaced it |

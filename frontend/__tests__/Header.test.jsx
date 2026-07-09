@@ -336,3 +336,52 @@ describe.skip("Header", () => {
     });
   });
 });
+
+// MEH-1072: pill geometry is FIXED (gap-8 px-4 end-cap, gap-9 lead-group) at
+// every scroll position — the MEH-899 rest-wide→compact width switching
+// (gap-14/px-11/gap-11 at rest) is retired. This block is NOT skipped: unlike
+// the flux nav-labels above, the geometry assertions target stable className
+// state, not the moving link structure. Rendered on /about (non-homepage) so
+// the homepage trust strip (SealCheck, un-mocked) never mounts.
+describe("Header fixed pill geometry (MEH-1072)", () => {
+  const setScrollY = (y) =>
+    Object.defineProperty(window, "scrollY", { value: y, writable: true, configurable: true });
+
+  beforeEach(() => {
+    userRef.current = null;
+    pathnameRef.current = "/about";
+    setScrollY(0);
+  });
+
+  it("renders compact geometry (gap-8 px-4) on the nav pill at scrollY=0", () => {
+    const { container } = render(<Header />);
+    const nav = container.querySelector("nav");
+    expect(nav.className).toMatch(/gap-8/);
+    expect(nav.className).toMatch(/px-4/);
+    // The retired MEH-899 rest-wide classes must NOT appear.
+    expect(nav.className).not.toMatch(/gap-14/);
+    expect(nav.className).not.toMatch(/px-11/);
+  });
+
+  it("keeps gap-8 px-4 after scrolling past 60px (geometry is scroll-independent)", () => {
+    const { container } = render(<Header />);
+    setScrollY(120);
+    fireEvent.scroll(window);
+    const nav = container.querySelector("nav");
+    expect(nav.className).toMatch(/gap-8/);
+    expect(nav.className).toMatch(/px-4/);
+    expect(nav.className).not.toMatch(/gap-14/);
+    expect(nav.className).not.toMatch(/px-11/);
+  });
+
+  it("uses the fixed lead-group gap-9 (never the rest-wide gap-11) at rest and scrolled", () => {
+    const { container } = render(<Header />);
+    const nav = container.querySelector("nav");
+    expect(nav.innerHTML).toMatch(/gap-9/);
+    expect(nav.innerHTML).not.toMatch(/gap-11/);
+    setScrollY(120);
+    fireEvent.scroll(window);
+    expect(nav.innerHTML).toMatch(/gap-9/);
+    expect(nav.innerHTML).not.toMatch(/gap-11/);
+  });
+});

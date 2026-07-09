@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-09 — MEH-1070 + MEH-1071 + MEH-1072 batch (design-parity sweep, Sapir FULL authority 09/07) — 3 PRs, self-merged on green CI
+
+- **Batch outcome:** three independent GREEN design-parity fixes, each its own `feature/*` branch off `staging`, PR, CI-green, self-merged (squash + branch delete). Sequential order held because tasks 1 + 3 both touch `docs/DESIGN-GAP-MATRIX.md` (HOME-06 vs NAV-01 rows — no collision, but merged in order). One consolidated Sapir mobile pass pending on the staging preview (`/he`).
+- **MEH-1070 (PR #1547, merged `688d8368`) — hero CTA row recenter:** `HomeHero.jsx` CTA row dropped `md:justify-start` + `md:px-12` (the #1476 start-geometry) → `justify-center` at every breakpoint; `border-primary` on the near-me button retained. DESIGN-GAP-MATRIX HOME-06 Notes appended. `Refs MEH-991` · `Closes MEH-1070`.
+- **MEH-1071 (PR #1548) — VerifyBanner brand restyle + per-session dismiss:** off-token amber surface → `bg-background-alt` + `border-border`, `text-text`, gold `text-accent` envelope; added a Phosphor-`X` per-session dismiss (end side, 44px, `aria-label="סגירת הודעת אימות"`, `sessionStorage["verify-banner-dismissed"]`, SSR-safe via `typeof window`). New `__tests__/VerifyBanner.test.jsx` (4). `Closes MEH-1071`.
+- **MEH-1072 (PR #1550) — Header pill fixed geometry:** the two `!scrolled ? …` WIDTH ternaries (`Header.jsx:266`, `:276`) → static `gap-8 px-4` / `gap-9`; MEH-947 three-way SURFACE ternary + MEH-732 transition-allowlist guardrail untouched (`gap`/`px` still un-animated). MEH-899 width comments updated to record the supersession; MEH-890/896/947 surface history kept. New non-skipped `Header.test.jsx` block (3 — scroll-independent geometry). DESIGN-GAP-MATRIX NAV-01 appended. `Refs MEH-991` · `Closes MEH-1072`.
+- **Decisions (this session):** (1) hero CTA row is **centered** at all breakpoints (HOME-06 alignment superseded, border-primary kept); (2) VerifyBanner is **on-brand + per-session dismissible** (returns in a fresh session); (3) Header pill is **fixed compact geometry** (MEH-899 width switching retired, surface still scroll-varying).
+- **Pending:** Sapir consolidated mobile QA on the staging `/he` preview once all three land. No backend, no central-component logic, no new tokens (ADR-019), no new env vars.
+
 ## 2026-07-09 — MEH-1048: Producer trust strip — rating + review count + excerpt next to h1 — PR #1542 (closes MEH-1048)
 
 - **Branch:** `feature/meh-1048-producer-trust-strip` off fresh `origin/staging` (`46780dd`, after MEH-1047 + MEH-1049 merged). Frontend YELLOW, chunk-by-chunk with WAIT gates. **PR #1542.** `Closes MEH-1048`.
