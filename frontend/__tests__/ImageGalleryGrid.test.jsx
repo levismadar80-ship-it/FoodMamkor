@@ -65,7 +65,7 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     const grid = screen.getByTestId("gallery-grid");
     expect(grid.className).toMatch(/grid-rows-2/);
     expect(screen.getByTestId("gallery-grid-hero").className).toMatch(/row-span-2/);
-    expect(screen.getByTestId("gallery-grid-cell")).toBeInTheDocument(); // images[1]
+    expect(screen.getAllByTestId("gallery-grid-cell")).toHaveLength(1); // images[1]
     expect(screen.getByTestId("gallery-grid-pill-cell")).toBeInTheDocument(); // images[2]
     expect(screen.getByTestId("gallery-all-pill")).toHaveTextContent("כל התמונות (3)");
   });
