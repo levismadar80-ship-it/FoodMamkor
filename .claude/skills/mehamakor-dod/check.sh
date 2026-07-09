@@ -25,8 +25,9 @@
 # History: MEH-1052 (2026-07-09).
 set -uo pipefail
 
-ROOT="$(git rev-parse --show-toplevel)"
-cd "$ROOT"
+ROOT="$(git rev-parse --show-toplevel)" || { echo "error: not inside a git repo" >&2; exit 1; }
+[ -n "$ROOT" ] || { echo "error: could not resolve repo root" >&2; exit 1; }
+cd "$ROOT" || { echo "error: cannot cd to repo root '$ROOT'" >&2; exit 1; }
 
 FAILURES=()
 pass() { printf '  PASS  %s\n' "$1"; }
