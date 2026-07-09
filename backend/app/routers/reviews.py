@@ -16,6 +16,7 @@ MEH-458: Pydantic schemas live in app.schemas.schemas per ADR-006 R1.
 import json
 import logging
 import math
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -31,6 +32,7 @@ from app.schemas.schemas import (
     AdminReviewOut,
     ReviewCreateNested,
     ReviewOut,
+    ReviewReplyUpdate,
     ReviewsPage,
 )
 
@@ -133,6 +135,9 @@ def _serialize(review: ProducerReview) -> ReviewOut:
         stars=review.stars,
         body=review.body,
         created_at=review.created_at.isoformat() if review.created_at else "",
+        # MEH-1039: business-owner reply surfaced in the public GET payload.
+        reply=review.reply,
+        reply_at=review.reply_at.isoformat() if review.reply_at else None,
     )
 
 
@@ -328,6 +333,48 @@ def delete_review(
     db.commit()
     _recompute_producer_rating(producer_id, db)
     return {"detail": "Review deleted"}
+
+
+# ---------------------------------------------------------------------------
+# PUT reply — business-owner only (MEH-1039)
+# ---------------------------------------------------------------------------
+
+
+@router.put("/reviews/{review_id}/reply", response_model=ReviewOut)
+def set_review_reply(
+    review_id: UUID,
+    data: ReviewReplyUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Set/edit the business-owner's reply to a review. Owner-only — only the
+    reviewed producer's owner (review.producer_id == user.producer_id) may
+    reply; anyone else gets 404 so the review's existence isn't leaked
+    (MEH-1001 convention). NO admin override — a reply is the business's own
+    voice. An empty/blank reply clears it.
+    """
+    review = db.query(ProducerReview).filter(ProducerReview.id == review_id).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+    # Owner = the producer the review is about. NO admin override (MEH-1039).
+    if user.producer_id is None or str(review.producer_id) != str(user.producer_id):
+        raise HTTPException(status_code=404, detail="ביקורת לא נמצאה")
+
+    if data.reply:
+        review.reply = data.reply
+        review.reply_at = datetime.utcnow()
+    else:
+        review.reply = None  # empty/blank → clear
+        review.reply_at = None
+    db.commit()
+
+    review = (
+        db.query(ProducerReview)
+        .options(joinedload(ProducerReview.user))
+        .filter(ProducerReview.id == review.id)
+        .first()
+    )
+    return _serialize(review)
 
 
 # ---------------------------------------------------------------------------

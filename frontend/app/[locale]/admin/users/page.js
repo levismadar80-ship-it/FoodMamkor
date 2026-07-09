@@ -23,8 +23,15 @@ export default function AdminUsersPage() {
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, action: "promote"|"demote" }
   const [busy, setBusy] = useState(false);
+  // MEH-1046: client-side pagination — slice the already-fetched array. The
+  // search/role filters are SERVER-side (load() query params), so `users` is
+  // already the filtered result set. Page resets on filter change only, not
+  // on every reload (block/promote must not yank the admin back to page 1).
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
+    setPage(1); // role filter changed (or first mount — already 1)
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
@@ -68,6 +75,23 @@ export default function AdminUsersPage() {
   const isSuperAdmin = (u) => u.email === SUPER_ADMIN_EMAIL;
   const isMe = (u) => me && u.id === me.id;
 
+  // MEH-1046: search submit (Enter / button) resets to page 1.
+  const searchUsers = () => {
+    setPage(1);
+    load();
+  };
+
+  // Clamp so a shrinking result set (e.g. after a reload) never strands the
+  // admin on a page past the end. Pure slice — no memoization needed at 500 rows.
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = users.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const changePageSize = (size) => {
+    setPageSize(size);
+    setPage(1);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -80,7 +104,7 @@ export default function AdminUsersPage() {
           placeholder={t("users.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && load()}
+          onKeyDown={(e) => e.key === "Enter" && searchUsers()}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
         <select
@@ -93,7 +117,7 @@ export default function AdminUsersPage() {
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={load} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
           {t("common.search")}
         </button>
       </div>
@@ -118,7 +142,7 @@ export default function AdminUsersPage() {
                   <td colSpan={7} className="text-center py-8 text-muted">{t("users.empty")}</td>
                 </tr>
               )}
-              {users.map((u) => (
+              {pagedUsers.map((u) => (
                 <>
                   <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
@@ -231,6 +255,44 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {/* MEH-1046: pagination controls. Prev/next are text buttons in flex flow —
+          direction-neutral, no physical positioning (rtl.md logical-props rule). */}
+      {users.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+          <label className="flex items-center gap-2 text-muted">
+            {t("users.pagination.page_size")}
+            <select
+              value={pageSize}
+              onChange={(e) => changePageSize(Number(e.target.value))}
+              className="border border-border rounded-[12px] px-2 py-1 bg-white"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+            >
+              {t("users.pagination.prev")}
+            </button>
+            <span className="text-muted">
+              {t("users.pagination.page_of", { page: currentPage, total: totalPages })}
+            </span>
+            <button
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+            >
+              {t("users.pagination.next")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation modal */}
       {confirm && (

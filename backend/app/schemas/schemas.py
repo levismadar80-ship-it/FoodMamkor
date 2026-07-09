@@ -1788,6 +1788,26 @@ class ReviewCreateNested(BaseModel):
         return sanitize_text(v, max_length=500)
 
 
+class ReviewReplyUpdate(BaseModel):
+    """MEH-1039: business-owner reply to a customer review. An empty/blank
+    `reply` clears the existing reply; a non-empty reply is 2-1000 chars with
+    ≥3 letters (MEH-555) after sanitize."""
+
+    reply: str = Field(..., max_length=1000)
+
+    @field_validator("reply")
+    @classmethod
+    def _validate_reply(cls, v):
+        v = sanitize_text(v, max_length=1000)
+        stripped = (v or "").strip()
+        if not stripped:
+            return ""  # empty → clear the reply
+        if len(stripped) < 2:
+            raise ValueError("התגובה חייבת להכיל לפחות 2 תווים")
+        # MEH-555: reject punctuation-only ("???") — require ≥3 letters.
+        return _min_letters_validator(stripped, min_count=3)
+
+
 class ReviewOut(BaseModel):
     id: UUID
     producer_id: UUID
@@ -1796,6 +1816,9 @@ class ReviewOut(BaseModel):
     stars: int
     body: str | None = None
     created_at: str
+    # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
+    reply: str | None = None
+    reply_at: str | None = None
 
     model_config = {"from_attributes": True}
 

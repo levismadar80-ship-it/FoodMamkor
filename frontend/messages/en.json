@@ -1264,7 +1264,8 @@
           "ambassador_inactive": "☆ Ambassador",
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
-          "delete": "Delete"
+          "delete": "Delete",
+          "menu_aria": "More actions"
         },
         "columns": {
           "name": "Name",
@@ -1446,6 +1447,12 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm"
+      },
+      "pagination": {
+        "page_size": "Rows per page",
+        "prev": "Previous",
+        "next": "Next",
+        "page_of": "Page {page} of {total}"
       }
     },
     "recipes": {
@@ -2588,6 +2595,11 @@
     "submit_update": "Update review",
     "submit_saving": "Saving...",
     "cancel": "Cancel",
+    "reply_heading": "Business reply",
+    "reply_add": "Add reply",
+    "reply_edit": "Edit reply",
+    "reply_placeholder": "Write a reply…",
+    "reply_save": "Save",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
