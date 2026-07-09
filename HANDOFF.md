@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-08 — MEH-1051: producer_changes_requested_v1 WhatsApp on request-changes — DRAFT PR
+
+- **Branch:** `feature/meh-1051-changes-requested-whatsapp` off `origin/staging` (clean cut, divergence 0). LOW-RISK additive backend end-to-end. `Closes MEH-1051`.
+- **What shipped:** `ProducerChangesRequestedV1` (`whatsapp_templates.py`, after ProducerApprovedV1 — first 2-param template, base builder verified N-param-safe at `:68-76`); `notify_producer_changes_requested` + `_sanitize_wa_param` (`auth_notifications.py`, mirrors `notify_producer_approved`; sanitize = strip `\r`, `\n`/`\t`→space, collapse spaces, trim, 550-char cap); one call in `admin.py:627` after the producer email — post-commit, fail-open. Template shape LOCKED to Meta-approved (2 params, no buttons). No schema/env/frontend changes.
+- **Verify:** new `tests/test_changes_requested_whatsapp.py` **5✓** (params-in-order+single-body-no-button · sanitize · no-phone-skip · raise-fail-open+commit-preserved · truncate-550) · `test_meh_509_pr1_hooks`+`test_whatsapp_notify` **12✓** · template/OTP/admin-whatsapp suites + full `test_api.py` run this session · endpoint calls the notify exactly once post-commit (grep `admin.py:627`).
+- **Sapir pending:** merge call; live-send smoke (real Meta template send) deferred to Sapir — sandbox can't reach Meta/Railway.
+
 ## 2026-07-07 — MEH-1027 Chunk A: producers row secondary/destructive actions → AdminRowMenu kebab — DRAFT PR (STOP; WAIT for Sapir before Chunk B)
 
 - **Branch:** `feature/meh-1027-producers-row-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK admin surface → chunk-by-chunk; plan approved with 2 defaults + 1 scope extension (see below). `Refs MEH-1027` (Chunk B closes).

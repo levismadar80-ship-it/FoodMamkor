@@ -19,6 +19,7 @@ and field order verified against the call sites in Phase 0):
 
     producer_welcome_v1    he  1 param  (producer_name)
     producer_approved_v1   he  1 param  (producer_name)
+    producer_changes_requested_v1 he 2 params (producer_name, missing_details)
     after_hours_response_he he 0 params
     vacation_response_he_v2 he 1 param  (return_date, ISO date string)
     producer_otp_v1        he  1 param  (code) — AUTHENTICATION category,
@@ -32,7 +33,8 @@ Meta AUTHENTICATION templates need the code in BOTH the body parameter
 AND the copy-code URL-button component — a body-only payload 400s.
 
 History:  MEH-672 (creation, chunk 1); MEH-754 (OtpCodeV1 — OTP via
-          authentication template, copy-code button).
+          authentication template, copy-code button); MEH-1051
+          (ProducerChangesRequestedV1 — first 2-param template).
 """
 
 from __future__ import annotations
@@ -88,6 +90,19 @@ class ProducerApprovedV1(WhatsAppTemplate):
 
     name: ClassVar[str] = "producer_approved_v1"
     producer_name: str
+
+
+class ProducerChangesRequestedV1(WhatsAppTemplate):
+    """Sent when an admin requests completion details (MEH-1011 flow).
+
+    Two params in {{n}} placeholder order: business name, what's missing.
+    UTILITY category, no buttons — the first 2-param template; the base
+    `to_components()` emits both body parameters in declaration order.
+    """
+
+    name: ClassVar[str] = "producer_changes_requested_v1"
+    producer_name: str
+    missing_details: str
 
 
 class AfterHoursResponseHe(WhatsAppTemplate):

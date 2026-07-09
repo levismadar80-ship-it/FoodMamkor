@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
-from app.services.auth_notifications import notify_producer_approved
+from app.services.auth_notifications import (
+    notify_producer_approved,
+    notify_producer_changes_requested,
+)
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -617,6 +620,11 @@ def request_producer_changes(
             f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
             f"בברכה,\nצוות מהמקור",
         )
+
+    # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
+    # Meta-approved). Post-commit + fail-open — a Meta outage or missing phone
+    # must never affect the 200; the function handles skip/raise internally.
+    notify_producer_changes_requested(p_name, producer.phone, feedback)
 
     # Notify admin via WhatsApp
     if settings.admin_whatsapp_to:
