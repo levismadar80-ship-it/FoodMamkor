@@ -31,8 +31,11 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
     // Guard: zero reviews → no fetch at all (Sapir condition a).
     if (!producerId || reviewsCount <= 0) return undefined;
     let alive = true;
+    // MEH-1048 a11y-followup: abort the in-flight request on unmount /
+    // param change so it doesn't run to completion after the component is gone.
+    const controller = new AbortController();
     api
-      .get(`/producers/${producerId}/reviews`, { params: { page: 1 } })
+      .get(`/producers/${producerId}/reviews`, { params: { page: 1 }, signal: controller.signal })
       .then((r) => {
         if (!alive) return;
         const reviews = r.data?.reviews ?? [];
@@ -44,13 +47,16 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
         setExcerpt(body.length > MAX_LEN ? `${body.slice(0, MAX_LEN).trimEnd()}…` : body);
       })
       .catch((err) => {
+        // Swallow aborts (unmount / param change) — only report real failures.
         // Fail-open: no excerpt on error (the header rating pill still shows).
-        // Report to Sentry so this non-critical path stays observable in prod
-        // (not a silent-except, MEH-325) without surfacing a 5xx to the user.
+        // Sentry keeps the non-critical path observable (not a silent-except,
+        // MEH-325) without surfacing a 5xx to the user.
+        if (controller.signal.aborted) return;
         Sentry.captureException(err);
       });
     return () => {
       alive = false;
+      controller.abort();
     };
   }, [producerId, reviewsCount]);
 
