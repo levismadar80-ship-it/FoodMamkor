@@ -215,40 +215,37 @@ class TestJourney1RecipePipeline:
         public = client.get(f"/producers/{producer.slug}/recipes")
         assert recipe_id in [r["id"] for r in public.json()]
 
-    def test_recipe_submit_fires_no_admin_notification(
+    def test_recipe_submit_fires_admin_notification(
         self, client, db, monkeypatch
     ):
-        """MEH-997 journey-1 notification hop — EXECUTED PROBE.
+        """MEH-997 journey-1 notification hop — PASS since MEH-1000.
 
-        Documents current behavior: recipe submission fires NO admin
-        notification (email or WhatsApp); admins learn about new recipes
-        only by opening the pending queue. Contrast with producer
-        registration (auth.py:534-535) which notifies fire-and-forget.
-        If this test starts failing because a notification was added,
-        the MEH-997 report-only gap is closed — update/remove this probe.
+        History: the original MEH-997 probe documented that recipe
+        submission fired NO admin notification (poll-only queue).
+        MEH-1000 closed the gap — create_my_recipe now schedules
+        notify_admin_new_recipe fire-and-forget, mirroring the
+        registration flow (auth.py:534-535). Mock-captures the hop with
+        the expected recipient args (business name + recipe title).
         """
         _mock_recipe_moderation(monkeypatch)
-        _, owner = _make_producer_user(db)
+        producer, owner = _make_producer_user(db)
 
-        import app.services.email as email_svc
-        import app.services.whatsapp as wa_svc
+        import app.routers.producer_recipes as recipes_router
 
-        email_mock = MagicMock()
-        wa_text_mock = MagicMock()
-        wa_template_mock = MagicMock()
-        monkeypatch.setattr(email_svc, "send_email", email_mock)
-        monkeypatch.setattr(wa_svc, "send_text", wa_text_mock)
-        monkeypatch.setattr(wa_svc, "send_template", wa_template_mock)
+        notify_mock = MagicMock()
+        monkeypatch.setattr(
+            recipes_router, "notify_admin_new_recipe", notify_mock
+        )
 
+        payload = _recipe_payload()
         resp = client.post(
             "/producers/me/recipes",
-            json=_recipe_payload(),
+            json=payload,
             headers=auth_header(owner),
         )
         assert resp.status_code == 201
-        email_mock.assert_not_called()
-        wa_text_mock.assert_not_called()
-        wa_template_mock.assert_not_called()
+        # TestClient runs BackgroundTasks synchronously after the response.
+        notify_mock.assert_called_once_with(producer.name, payload["title"])
 
 
 # ============================================================
