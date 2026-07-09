@@ -7,6 +7,7 @@ import { InstagramLogo, ArrowRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -38,6 +39,9 @@ import { BRAND_NAME } from "@/lib/constants";
  * History:
  *   - MEH-721: producer-CTA pitch panel moved out of global footer →
  *     /about/for-businesses + footer nav-link.
+ *   - MEH-976: newsletter input switched to unicode-bidi:plaintext (+ pe-11)
+ *     so the Hebrew placeholder no longer collides with the submit arrow;
+ *     replaces the MEH-968 dir="ltr" + ps-11 attempt.
  */
 export default function Footer() {
   const t = useTranslations();
@@ -58,7 +62,7 @@ export default function Footer() {
       setEmail("");
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.detail || t("error.generic"));
+      setMessage(detailToMessage(err.response?.data?.detail) || t("error.generic"));
     }
   };
 
@@ -70,7 +74,9 @@ export default function Footer() {
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
     // MEH-721: quiet replacement for the removed global-footer pitch CTA.
-    { href: "/register/producer", label: t("nav.footer.add_business") },
+    // MEH-995: repointed to /join — the canonical recruitment door; the
+    // wizard stays one tap away via /join's single CTA.
+    { href: "/join", label: t("nav.footer.add_business") },
   ];
 
   return (
@@ -86,14 +92,21 @@ export default function Footer() {
               <h3>s nest cleanly (no h2→h3 skip) and every column is titled. */}
           <div>
             <h2 className="sr-only">{BRAND_NAME}</h2>
-            <Link href="/" aria-label={t("nav.footer.brand_aria")}>
+            {/* MEH-991 (NAV-18): the css-invert on logo-footer.png flattened the
+                5-color petal mark to flat white. Use the purpose-built graded-cream
+                dark-surface mark (logo-on-warm-dark.svg — square mark, no lockup
+                asset exists) + wordmark text, per the P6 light-lockup treatment. */}
+            <Link href="/" aria-label={t("nav.footer.brand_aria")} className="mb-4 inline-flex items-center gap-3">
               <Image
-                src="/logo-footer.png"
-                alt={BRAND_NAME}
-                width={140}
-                height={52}
-                className="mb-4 brightness-0 invert"
+                src="/logo-on-warm-dark.svg"
+                alt=""
+                width={48}
+                height={48}
+                aria-hidden="true"
               />
+              <span className="font-headline-md font-bold text-xl text-background">
+                {BRAND_NAME}
+              </span>
             </Link>
             <p className="text-sm leading-relaxed max-w-xs mb-4 text-green-50">
               {t("nav.footer.brand_tagline")}
@@ -149,13 +162,12 @@ export default function Footer() {
                 id="footer-newsletter-email"
                 type="email"
                 required
-                dir="ltr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t("nav.footer.newsletter_placeholder")}
-                /* MEH-968: input is dir="ltr" (emails) so pe-* resolved opposite the submit button, which sits at the RTL form's end-0 — placeholder slipped under the arrow. ps-11 reserves the 44px on the same side as the button to clear it. */
-                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 ps-11 min-h-[44px]"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)" }}
+                /* MEH-976: unicode-bidi:plaintext → Hebrew placeholder resolves RTL (opposite the end-0 arrow → clear gap), typed Latin email resolves LTR; pe-11 reserves the 44px on the arrow side for the LTR value. Replaces MEH-968 dir="ltr"+ps-11. */
+                className="w-full bg-transparent text-white placeholder:text-white/40 outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm py-2 pe-11 min-h-[44px]"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.35)", unicodeBidi: "plaintext" }}
               />
               <button
                 type="submit"

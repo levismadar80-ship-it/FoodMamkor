@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { Check, ArrowRight } from "@phosphor-icons/react";
 import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-completeness";
 
 /**
@@ -27,10 +28,11 @@ import { producerCompleteness, COMPLETENESS_FIELDS } from "@/lib/producer-comple
  */
 
 // Total fields the heuristic can flag. city + (coords XOR delivery-areas) +
-// contact + category + image = 5 max for any producer shape (the coords /
-// delivery-areas pair is mutually exclusive on isDeliveryOnly). Kept here as a
-// named constant per exec §10.
-const TOTAL_FIELDS = 5;
+// contact + category + image + short-description = 6 max for any producer
+// shape (the coords / delivery-areas pair is mutually exclusive on
+// isDeliveryOnly). Kept here as a named constant per exec §10.
+// MEH-1002: 5 → 6 with the short_desc field (MEH-964 checklist parity).
+const TOTAL_FIELDS = 6;
 
 // Map a raw Hebrew missing-field string (returned verbatim by the heuristic)
 // to a stable i18n key for the "next step" label, so the dashboard stays fully
@@ -122,7 +124,7 @@ export default function ProfileCompletenessCard({ producer }) {
         className="bg-background border border-border rounded-[16px] px-6 py-4 mb-8 flex items-center gap-3"
         role="status"
       >
-        <span className="text-primary text-lg font-bold" aria-hidden="true">✓</span>
+        <Check size={20} weight="bold" className="text-primary shrink-0" aria-hidden="true" />
         <p className="font-headline-md text-base font-bold text-primary">
           {t("green_headline")}
         </p>
@@ -130,9 +132,9 @@ export default function ProfileCompletenessCard({ producer }) {
     );
   }
 
-  // Headline + sub per state. percent never lands exactly on 70 for the 5-field
-  // model (steps of 20%), so >70 cleanly separates "almost there" from the
-  // lower yellow band.
+  // Headline + sub per state. percent never lands exactly on 70 for the 6-field
+  // model (steps of ~16.7%: 0/17/33/50/67/83/100), so >70 cleanly separates
+  // "almost there" from the lower yellow band.
   let headline;
   let sub;
   if (priority === "red") {
@@ -152,12 +154,16 @@ export default function ProfileCompletenessCard({ producer }) {
   // silently mislabelling the next step (e.g. always showing "תמונה ראשית").
   const nextKey = FIELD_KEY[missing[0]];
   const nextStepLabel = nextKey ? t(`fields.${nextKey}`) : missing[0];
+  // Route the CTA to where the top-missing field is actually editable: city
+  // lives in account /settings; every other (business) field — and undefined —
+  // is managed on the canonical profile hub /producer/dashboard/edit.
+  const ctaHref = nextKey === "city" ? "/settings" : "/producer/dashboard/edit";
 
   // MEH-897: yellow >70 ("almost there") swaps the single next-step line for a
-  // 5-row checklist (completed + remaining). Build the applicable-field list
+  // 6-row checklist (completed + remaining). Build the applicable-field list
   // here, mirroring the coords XOR delivery split the heuristic itself makes
   // per producer shape (lib/producer-completeness.js:25 isDeliveryOnly) — never
-  // both apply, so the list is always exactly 5. Each row reuses the existing
+  // both apply, so the list is always exactly 6. Each row reuses the existing
   // fields.* key; membership in `missing` (raw HE labels) marks remaining.
   // he-only until MEH-472 sweeps the English strings: the checklist's a11y
   // keys (checklist_*) live in he.json only, so an /en visit would surface raw
@@ -173,6 +179,8 @@ export default function ProfileCompletenessCard({ producer }) {
     "contact",
     "category",
     "image",
+    // MEH-1002: 6th field (short_description OR description satisfies it).
+    "short_desc",
   ];
   const missingLabels = new Set(missing);
 
@@ -194,7 +202,7 @@ export default function ProfileCompletenessCard({ producer }) {
           <p className="text-sm md:text-base text-fg-muted mt-1">{sub}</p>
           {isYellowHigh ? (
             <>
-              {/* 5-row checklist: completed → text-primary ✓ + label;
+              {/* 6-row checklist: completed → text-primary ✓ + label;
                   remaining → text-fg-muted label, no marker (per locked design). */}
               <ul className="mt-4 space-y-2" aria-label={t("checklist_aria")}>
                 {checklistSlugs.map((slug) => {
@@ -202,10 +210,10 @@ export default function ProfileCompletenessCard({ producer }) {
                   return (
                     <li key={slug} className="flex items-center gap-2 text-sm">
                       <span
-                        className="inline-flex w-4 justify-center text-primary font-bold"
+                        className="inline-flex w-4 justify-center text-primary"
                         aria-hidden="true"
                       >
-                        {done ? "✓" : ""}
+                        {done ? <Check size={14} weight="bold" /> : null}
                       </span>
                       <span className={done ? "text-text" : "text-fg-muted"}>
                         {t(`fields.${slug}`)}
@@ -236,12 +244,13 @@ export default function ProfileCompletenessCard({ producer }) {
       </div>
       <div className="mt-5">
         <Link
-          href="/settings"
+          href={ctaHref}
           aria-label={t("cta_aria")}
           className="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 rounded-full font-medium bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
         >
           {t("cta")}
-          <span aria-hidden="true">→</span>
+          {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+          <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
         </Link>
       </div>
     </div>

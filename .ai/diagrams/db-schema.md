@@ -66,6 +66,8 @@ erDiagram
         string declaration_version "nullable — MEH-759, VARCHAR(10); declaration text version (e.g. 2026-06-v1)"
         timestamp verified_at "nullable — MEH-762, tz-aware; admin tier-1 document-check timestamp (public at date granularity)"
         string verification_doc_type "nullable — MEH-762, VARCHAR(20); license|exemption|cosmetics (S12 badge source)"
+        text requested_changes "nullable — MEH-1011, admin completion-request feedback (non-terminal, status stays pending; cleared on approve)"
+        timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at
     }
 
@@ -233,6 +235,17 @@ erDiagram
 > `kashrut_badge_requests` carry `ON DELETE CASCADE` producer FKs with ORM
 > `passive_deletes=True`, so deleting a producer cascades children at the DB
 > layer instead of the ORM nullifying a NOT-NULL column.
+
+> **MEH-272 producer CHECK constraints (migration `f9a2c7d41b83` + ORM
+> `__table_args__`):** `producers` carries two CHECK constraints — a producer
+> must be reachable (`producer_location_mode`: `has_physical_location OR
+> offers_delivery`) and nationwide-delivery excludes an explicit city list
+> (`delivery_nationwide_xor_cities`: `NOT (delivery_nationwide AND
+> array_length(delivery_cities, 1) > 0)`). Both already lived on prod/staging
+> from the removed `_migrate_columns` (MEH-267) but were absent from the ORM +
+> baseline, so fresh DBs lacked them; MEH-272 declares them in the model and
+> re-adds them idempotently (`IF NOT EXISTS`). Pydantic `model_validator`
+> guards the API layer; these protect direct-SQL paths (seeds, imports, psql).
 
 ## 4. Analytics + marketing
 

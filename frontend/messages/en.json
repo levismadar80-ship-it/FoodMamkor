@@ -208,7 +208,20 @@
       },
       "producer": {
         "heading": "Give your business a home",
-        "subtitle": "5 minutes. No commissions. The customer comes straight to you",
+        "subtitle": "10 minutes. No commissions. The customer comes straight to you",
+        "preflight": {
+          "title": "Before you start",
+          "prepare_title": "Good to have ready",
+          "item_account": "An email address for your account (or Google sign-in)",
+          "item_story": "A short story about your business",
+          "item_photos": "2–3 photos of your business or products",
+          "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later",
+          "duration": "The whole process takes about 10 minutes",
+          "after_title": "What happens next",
+          "after_body": "Every business gets a personal intro — our team reviews the details, reaches out for a short call, and the business usually goes live within a day or two.",
+          "after_link": "How the acceptance process works",
+          "cta": "Start"
+        },
         "loading": "Loading...",
         "loading_form": "Loading registration form...",
         "default_description": "Local business. More details coming soon.",
@@ -564,6 +577,12 @@
       "og_title": "Verify your email",
       "og_description": "Confirming your email finishes setting up your Mehamakor account."
     },
+    "join": {
+      "title": "Join as a business | Mehamakor",
+      "description": "A page of your own with photos and a story, every business hand-picked, and direct WhatsApp contact. Free to join.",
+      "og_title": "Your business. A page of its own. | Mehamakor",
+      "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -695,9 +714,7 @@
         "aria": {
           "show_on_map": "Open the business location on the map"
         },
-        "show_on_map": "Show on map",
-        "referral_msg": "I discovered Mehamakor — amazing local food businesses 🌿\nJoin with my link and get 10% off: https://mehamakor.co.il/ref/{code}",
-        "referral_cta": "Share and get 10%"
+        "show_on_map": "Show on map"
       },
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
@@ -1017,9 +1034,7 @@
     },
     "sheet": {
       "badge": {
-        "verified": "✓ Verified",
-        "organic": "🌿 Organic",
-        "kosher": "✡️ Kosher"
+        "verified": "✓ Verified"
       }
     },
     "page": {
@@ -1054,7 +1069,7 @@
       "open_in_google": "Open in"
     },
     "bottom_sheet": {
-      "title": "Local businesses in this area",
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
       "show_map": "Show map"
     },
     "chip_scroll": {
@@ -1094,17 +1109,27 @@
       "nav": {
         "dashboard": "Dashboard",
         "producers": "Businesses",
+        "group_buys": "Group buys",
         "outreach": "Outreach",
         "experiences": "Experiences",
+        "recipes": "Recipes",
         "users": "Users",
         "content": "Content",
         "reviews": "Reviews",
         "kashrut": "Kashrut",
         "reports": "Reports",
         "category_requests": "Category requests",
+        "whatsapp_failures": "Undelivered messages",
         "analytics": "Analytics",
         "settings": "Settings",
         "help": "Help"
+      },
+      "nav_sections": {
+        "overview": "Overview",
+        "core": "Core",
+        "content": "Content",
+        "queues": "Pending",
+        "system": "System"
       }
     },
     "dashboard": {
@@ -1114,7 +1139,6 @@
         "total_producers": "Total businesses",
         "pending_approval": "Awaiting approval",
         "registered_users": "Registered users",
-        "home_products": "Home products",
         "group_buys": "Group buys",
         "group_buys_tooltip": "Manage user group buys. Not active currently.",
         "group_buys_tooltip_label": "Group buys info"
@@ -1123,9 +1147,7 @@
         "producers_waiting": "{count} businesses awaiting approval",
         "click_to_handle": "Click to handle",
         "open_reports": "{count} open reports",
-        "needs_review": "Needs review",
-        "hidden_home_products": "{count} hidden home products",
-        "for_review": "For review"
+        "needs_review": "Needs review"
       },
       "chart": {
         "new_producers_6_months": "New businesses — last 6 months"
@@ -1225,10 +1247,13 @@
           "organic_certified": "Certified organic",
           "grass_fed": "Grass-fed",
           "delivery": "Delivery",
-          "pickup_points": "Pickup points"
+          "pickup_points": "Pickup points",
+          "license_pending": "License pending",
+          "license_pending_title": "In a license-required category with no license number — verify before approving."
         },
         "actions": {
           "approve_short": "✓ Approve",
+          "request_changes": "Request completion",
           "edit": "Edit",
           "view": "View",
           "suspend": "Suspend",
@@ -1239,7 +1264,8 @@
           "ambassador_inactive": "☆ Ambassador",
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
-          "delete": "Delete"
+          "delete": "Delete",
+          "menu_aria": "More actions"
         },
         "columns": {
           "name": "Name",
@@ -1259,11 +1285,26 @@
         },
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
+        "awaiting_completion": "Awaiting completion",
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
-        "delete_error": "Deleting the business failed. Please try again."
+        "delete_error": "Deleting the business failed. Please try again.",
+        "deleting": "Deleting…"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."
+      },
+      "request_changes": {
+        "modal_title": "Request completion from the business",
+        "modal_label": "What's missing?",
+        "modal_placeholder": "Describe what needs to be completed…",
+        "submit": "Send request",
+        "validate": "Please describe what needs to be completed.",
+        "invalid_state": "A completion request can only be sent to a business awaiting approval.",
+        "approve_blocked_info": "Can't approve yet — we opened a completion request with the missing detail. You can edit and send it.",
+        "chips": {
+          "photo": "Missing photo — at least one image must be uploaded",
+          "license": "Missing producer license number"
+        }
       },
       "new": {
         "title": "Add new business",
@@ -1394,6 +1435,7 @@
         "promote": "Promote to admin",
         "demote": "Remove permissions",
         "protected_title": "Cannot remove permissions from the primary admin",
+        "menu_aria": "More actions",
         "unblock": "🚫 Unblock",
         "block": "Block"
       },
@@ -1406,7 +1448,64 @@
         "demote": "Are you sure you want to remove admin permissions from {name}?",
         "submitting": "...",
         "confirm": "Confirm"
+      },
+      "pagination": {
+        "page_size": "Rows per page",
+        "prev": "Previous",
+        "next": "Next",
+        "page_of": "Page {page} of {total}"
       }
+    },
+    "recipes": {
+      "title": "Business recipes",
+      "subtitle": "Moderation for business-submitted recipes",
+      "tabs": {
+        "pending": "Pending",
+        "needs_revision": "Needs revision",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "error_loading": "Error loading recipes",
+      "empty": "No recipes in this status",
+      "columns": {
+        "title": "Title",
+        "created": "Submitted",
+        "published": "Published",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "published_yes": "Published",
+      "published_no": "Not published",
+      "status_labels": {
+        "pending": "Pending",
+        "needs_revision": "Needs revision",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "actions": {
+        "approve": "Approve",
+        "changes": "Changes",
+        "reject": "Reject"
+      },
+      "approve_toast": "Recipe approved and published",
+      "approve_error": "Approval error",
+      "validate_feedback": "Please fill in a note",
+      "changes_toast": "Change request sent",
+      "reject_toast": "Recipe rejected",
+      "submit_error": "Submission error",
+      "modal": {
+        "changes_title": "Request changes",
+        "reject_title": "Reject recipe",
+        "changes_label": "Notes for editing",
+        "reject_label": "Reason for rejection",
+        "changes_placeholder": "e.g.: Exact quantities missing from the ingredients...",
+        "reject_placeholder": "e.g.: Content not relevant to the platform",
+        "submit": "Confirm"
+      },
+      "ingredients_label": "Ingredients:",
+      "instructions_label": "Instructions:",
+      "notes_label": "Moderation notes"
     },
     "experiences": {
       "title": "Community experiences",
@@ -1709,25 +1808,19 @@
       "title": "Content",
       "tabs": {
         "categories": "Categories",
-        "home_products": "Home products",
         "about": "Vision page",
         "terms": "Terms of service"
       },
       "categories": {
-        "emoji_placeholder": "Emoji",
         "name_placeholder": "Category name",
         "add": "+ Add",
         "empty": "No data to display",
         "save": "Save",
         "delete": "Delete",
-        "confirm_delete": "Delete category?"
-      },
-      "home_products": {
-        "heading": "Hidden home products",
-        "empty": "No hidden products",
-        "restore": "Restore",
-        "delete": "Delete",
-        "confirm_delete": "Delete this product?"
+        "confirm_delete": "Delete '{name}' — {count} associated businesses",
+        "producer_count": "{count} businesses",
+        "deleting": "Deleting…",
+        "delete_error": "Failed to delete the category. Please try again."
       },
       "page_editor": {
         "title_placeholder": "Title",
@@ -1807,6 +1900,13 @@
         "reviews": "Reviews",
         "reports": "Reports",
         "experiences": "Experiences",
+        "outreach": "Business outreach",
+        "group_buys": "Group buys",
+        "recipes": "Recipes",
+        "kashrut": "Kashrut requests",
+        "category_requests": "Category requests",
+        "whatsapp_failures": "Undelivered messages",
+        "analytics": "Analytics",
         "emergency": "Emergencies",
         "urls": "Important URLs"
       },
@@ -1857,6 +1957,48 @@
           "p1": "<strong>/admin/experiences</strong> — 5 tabs: pending / changes required / approved / rejected / all.",
           "li1": "On click: approve / reject / request changes. The host receives an email.",
           "li2": "Haiku pre-check runs before an experience reaches the \"pending\" tab — the \"changes required\" tab is when the AI flagged a warning but did not block."
+        },
+        "outreach": {
+          "title": "Business outreach",
+          "p1": "<strong>/admin/outreach</strong> — centralizes leads for potential businesses: contacting, status tracking, and conversion into a registered business.",
+          "li1": "Track each lead's status — contacted / pending / converted / rejected.",
+          "li2": "Clicking a lead opens its contact details and lets you mark progress."
+        },
+        "group_buys": {
+          "title": "Group buys",
+          "p1": "<strong>/admin/group-buys</strong> — manage users' group buys. The feature is not active right now; the screen is ready for future activation.",
+          "li1": "Once active, open groups and the number of members each has will appear here.",
+          "li2": "Until activation the screen is view-only with no actions."
+        },
+        "recipes": {
+          "title": "Recipes",
+          "p1": "<strong>/admin/recipes</strong> — the approval queue for recipes uploaded by users and businesses. Approve, reject, or edit before publishing.",
+          "li1": "A pending recipe shows its title, author, and image — check community fit before approving.",
+          "li2": "Rejecting removes the recipe from the queue; you can leave a note with the reason."
+        },
+        "kashrut": {
+          "title": "Kashrut requests",
+          "p1": "<strong>/admin/kashrut</strong> — businesses submit requests for a kashrut tag. Approve only after verifying the attached certificate.",
+          "li1": "A pill on \"Kashrut\" in the sidebar indicates kashrut requests awaiting handling.",
+          "li2": "Approval adds the kashrut tag to the business's public profile."
+        },
+        "category_requests": {
+          "title": "Category requests",
+          "p1": "<strong>/admin/category-requests</strong> — businesses request new categories that don't exist yet. Approve to add them to the list, or reject.",
+          "li1": "Approval creates a new category available to all businesses.",
+          "li2": "Check for duplicates against existing categories before approving."
+        },
+        "whatsapp_failures": {
+          "title": "Undelivered messages",
+          "p1": "<strong>/admin/whatsapp-failures</strong> — a list of outbound WhatsApp messages that failed to deliver: notifications that never reached businesses.",
+          "li1": "Check the failure reason (wrong number / block) and reach the business through another channel.",
+          "li2": "The screen is read-only — no automatic resend from here."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "p1": "<strong>/admin/analytics</strong> — aggregate usage data: active users, top cities, and a breakdown by category.",
+          "li1": "Use the charts to track growth trends over time.",
+          "li2": "Data updates automatically; no manual action needed."
         },
         "emergency": {
           "title": "Emergencies",
@@ -2295,7 +2437,7 @@
       },
       "artisan_dairy": {
         "label": "Farm dairy",
-        "tooltip": "Milk and dairy directly from the farm, kosher"
+        "tooltip": "Milk and dairy directly from the farm"
       }
     },
     "expiry": {
@@ -2363,7 +2505,7 @@
       "popular_descs": {
         "dairy": "Cheeses, yogurt, butter",
         "bread": "Baked goods, challah, cakes",
-        "meat": "Fresh, kosher, from the farm",
+        "meat": "Fresh, local, quality",
         "oil": "Olive oil, select oils",
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"
@@ -2454,6 +2596,11 @@
     "submit_update": "Update review",
     "submit_saving": "Saving...",
     "cancel": "Cancel",
+    "reply_heading": "Business reply",
+    "reply_add": "Add reply",
+    "reply_edit": "Edit reply",
+    "reply_placeholder": "Write a reply…",
+    "reply_save": "Save",
     "error_invalid_stars": "Pick a rating between 1 and 5 stars",
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
@@ -2626,7 +2773,8 @@
     "image_alt": "Image {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
-    "thumb_aria": "Go to image {n}"
+    "thumb_aria": "Go to image {n}",
+    "view_all": "All photos ({n})"
   },
   "whatsapp": {
     "button": {
@@ -2717,6 +2865,46 @@
         "title": "Government accessibility authority",
         "body": "For more information about online accessibility rights, you can reach the <link>government accessibility site</link>."
       }
+    }
+  },
+  "join": {
+    "eyebrow": "For local businesses",
+    "h1": "Your business. A page of its own.",
+    "subhead": "A page with your photos and story, every business hand-picked, and direct contact on WhatsApp — local customers meet your story.",
+    "cta": "Join",
+    "trust_hint": "Free to join",
+    "how": {
+      "eyebrow": "How it works",
+      "heading": "Four steps",
+      "step1_title": "Sign up",
+      "step1_text": "A short form about your business — story, photos, and contact details. About 10 minutes.",
+      "step2_title": "A personal call",
+      "step2_text": "Our team reaches out for a short call — getting to know the business and the story.",
+      "step3_title": "Your page goes live",
+      "step3_text": "Usually within a day or two your business appears on the site.",
+      "step4_title": "Customers reach you directly",
+      "step4_text": "The WhatsApp button on your page opens a direct conversation with you. Contact and payment stay between you and your customers.",
+      "process_link": "The full acceptance process"
+    },
+    "prepare": {
+      "title": "Good to have ready",
+      "item_story": "A short story about your business",
+      "item_photos": "2–3 photos of your business or products",
+      "item_license": "Producer license number, if your category requires one. Don't have it yet? You can add it later"
+    },
+    "card": {
+      "title": "Every business gets a personal call",
+      "body": "Every business on Mehamakor goes through a personal intro — identity, story, and a conversation. That keeps every page on the site trustworthy and personal."
+    },
+    "testimonial": {
+      "eyebrow": "Coming soon — our first testimonial",
+      "quote": "A real business owner's words will appear here — verbatim, with her approval."
+    },
+    "faq": {
+      "eyebrow": "Common questions",
+      "q_cost": "How much does it cost?",
+      "a_cost": "Free to join and be listed. No transaction fees — ever.",
+      "all_link": "All the questions"
     }
   },
   "about_business": {
@@ -3301,6 +3489,17 @@
         "share_cta": "Share on WhatsApp",
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
+      "states": {
+        "zero_activity": "No activity yet — share your page to get started",
+        "share_locked": "You'll be able to share soon — let's finish approval and details first",
+        "availability_disabled": "You'll be able to update availability once the business is approved and published",
+        "view_public": "View your page"
+      },
+      "changes_requested": {
+        "title": "One detail left to complete",
+        "cta": "Complete the details",
+        "aria": "Completion request from the team"
+      },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
       "status": {
@@ -3352,7 +3551,9 @@
           "on_vacation": "On a break"
         },
         "vacation_return_label": "Returning on:",
-        "remove_vacation_date_aria": "Remove return date"
+        "remove_vacation_date_aria": "Remove return date",
+        "vacation_confirm": "Save",
+        "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
         "settings": {
@@ -3375,6 +3576,17 @@
           "title": "Recipes",
           "sub": "Publish and manage recipes that promote your products"
         }
+      },
+      "pulse": {
+        "section_aria": "Recent activity",
+        "window_7d": "Last 7 days",
+        "hero": "{count, plural, one {1 new WhatsApp inquiry — open to reply} other {# new WhatsApp inquiries — open to reply}}",
+        "rows": {
+          "whatsapp": "WhatsApp inquiry",
+          "view": "Profile view"
+        },
+        "cta": "Open WhatsApp to reply",
+        "zero_state": "No activity yet — share your page to get started"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
@@ -3441,7 +3653,8 @@
           "delivery": "Delivery areas",
           "contact": "Contact details (phone/Instagram)",
           "category": "Category",
-          "image": "Main photo"
+          "image": "Main photo",
+          "short_desc": "Short description"
         }
       },
       "strength": {
@@ -3480,6 +3693,36 @@
         "hint_empty": "Fill in this field to use it as your primary channel",
         "error_summary": "To set a primary channel, fill in its field",
         "save_cta": "Save contact channels",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "categories": {
+        "heading": "Categories",
+        "subtitle": "Choose the categories that describe your business — they determine where you appear in search and on the map.",
+        "save_cta": "Save categories",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again.",
+        "fetch_error": "Couldn't load categories. Refresh the page and try again."
+      },
+      "images": {
+        "heading": "Images",
+        "subtitle": "Upload photos of your business and products — they appear in the gallery on your business page.",
+        "add_cta": "Add images · JPG / PNG / WebP",
+        "uploading": "Uploading image…",
+        "remove_aria": "Remove image",
+        "save_cta": "Save images",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "upload_error": "Image upload failed. Please try again.",
+        "save_error": "Save failed. Please try again."
+      },
+      "location": {
+        "heading": "Map location",
+        "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
+        "current_prefix": "Current location:",
+        "save_cta": "Save location",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
@@ -3570,8 +3813,12 @@
       "field_price_hint": "0 = free",
       "field_max_participants_label": "Max participants",
       "field_max_participants_hint": "Blank = no limit",
-      "field_image_label": "Image URL (Cloudinary)",
-      "field_image_placeholder": "https://res.cloudinary.com/…",
+      "image_label": "Event image",
+      "image_upload_hint": "Drag here or click to upload · JPG / PNG / WebP",
+      "image_uploading": "Uploading image…",
+      "image_remove": "Remove image",
+      "image_remove_aria": "Remove image",
+      "image_upload_error": "Image upload failed. Please try again.",
       "field_registration_url_label": "External registration link (optional)",
       "field_registration_url_placeholder": "https://…",
       "submit_publishing": "Publishing…",

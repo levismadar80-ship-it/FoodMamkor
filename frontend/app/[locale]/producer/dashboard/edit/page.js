@@ -4,7 +4,9 @@
  * Module:   producer/dashboard/edit/page
  * Purpose:  עריכה tab of the producer dashboard hub (MEH-964 Phase 1, chunk
  *           1A). Hosts the owner-facing edit forms relocated VERBATIM off the
- *           Overview: AI bio, custom WhatsApp questions, contact channels.
+ *           Overview: AI bio, custom WhatsApp questions, contact channels; plus
+ *           the self-service editors added later: categories, gallery images,
+ *           and map location (gated on has_physical_location).
  * Touches:  GET /producers/me (read); PUT /producers/me + POST
  *           /producers/me/bio/generate (writes, inside the cards).
  * Does NOT: consolidate with /settings — that is Phase 2. The card bodies
@@ -14,7 +16,10 @@
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (סקירה — prior home of
  *           these cards, MEH-56 / MEH-210 / MEH-296).
- * History:  MEH-964 (relocation, chunk 1A).
+ * History:  MEH-964 (relocation, chunk 1A); edit-tab editor series —
+ *           categories (chunk A), gallery images (chunk B), gated map location
+ *           via AddressSearch (chunk C); polish + test backfill (fetch-error on
+ *           GET /categories, cloudinary thumbnails, component tests).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -23,11 +28,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PencilSimple, Warning } from "@phosphor-icons/react";
+import { PencilSimple, Warning, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
+import AddressSearch from "@/components/AddressSearch";
+import ProductsSection from "@/components/ProductsSection";
 
 export default function ProducerDashboardEditPage() {
   const router = useRouter();
@@ -70,6 +79,35 @@ export default function ProducerDashboardEditPage() {
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
       />
+
+      {/* Edit-tab chunk A — producer-facing categories editor */}
+      <CategoriesCard
+        profile={profile}
+        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+      />
+
+      {/* Edit-tab chunk B — producer-facing gallery images editor */}
+      <ImagesCard
+        profile={profile}
+        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+      />
+
+      {/* Edit-tab chunk C — producer-facing location/coords editor.
+          MEH-213: only physical-location producers have a map pin; delivery-only
+          businesses intentionally have no lat/lng, so the card is hidden for
+          them (has_physical_location === false). */}
+      {profile.has_physical_location !== false && (
+        <LocationCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+        />
+      )}
+
+      {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
+          fetching (no profile prop): full CRUD against /producers/me/products.
+          Relocated from settings/page.jsx, where it was defined but never
+          mounted. */}
+      <ProductsSection />
     </div>
   );
 }
@@ -294,6 +332,368 @@ function ContactChannelsCard({ profile, onSave }) {
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// Edit-tab chunk A: producer-facing categories editor.
+// Mirrors ContactChannelsCard — local selection seeded from
+// profile.categories, saves category_ids via PUT /producers/me. A
+// license-required category chosen with no license number triggers a backend
+// 422 (ensure_license_for_categories, producer_me.py); the Hebrew detail is
+// surfaced inline via detailToMessage (lib/errors.js), never the generic copy.
+// REUSES: components/admin/ProducerForm.jsx:207-217,433-451 (GET /categories
+// checkbox grid + toggle), producer-self version.
+// ============================================================
+
+// Exported for isolation tests (EditTabCategoriesCard.test.jsx). Mounting the
+// whole page under jsdom hangs the vitest runner, so the cards are tested
+// directly — the default page export is unchanged.
+export function CategoriesCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.categories");
+  const [allCategories, setAllCategories] = useState([]);
+  const seedIds = (profile?.categories || []).map((c) => c.id);
+  const [selected, setSelected] = useState(seedIds);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/categories")
+      .then((r) => {
+        if (!cancelled) {
+          setAllCategories(r.data || []);
+          setFetchError(null);
+        }
+      })
+      .catch((err) => {
+        // Surface a load failure instead of a silently-empty grid (a producer
+        // would otherwise see a blank card with no way to know it failed).
+        if (!cancelled) {
+          setAllCategories([]);
+          setFetchError(detailToMessage(err?.response?.data?.detail) || t("fetch_error"));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `t` (next-intl translator) has a stable identity per locale/namespace,
+    // so listing it re-runs the fetch only on a real locale change — never a
+    // per-render loop. (The earlier loop came from an ad-hoc test mock that
+    // returned a fresh `t` each render; tests now use the real
+    // NextIntlClientProvider, so the honest dependency is safe.)
+  }, [t]);
+
+  // Dirty when the selection differs from the seeded set (order-independent).
+  const dirty =
+    seedIds.length !== selected.length ||
+    seedIds.some((id) => !selected.includes(id));
+
+  const toggle = (id) => {
+    setSaved(false);
+    setErrorMsg(null);
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      await api.put("/producers/me", { category_ids: selected });
+      // Keep the parent profile in sync so a re-render reseeds correctly.
+      onSave({ categories: allCategories.filter((c) => selected.includes(c.id)) });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      // Surface the backend Hebrew detail (e.g. license-required 422) inline;
+      // detailToMessage normalises the FastAPI 422 detail-array (MEH-989).
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      {fetchError ? (
+        <p className="flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {fetchError}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {allCategories.map((c) => (
+            <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected.includes(c.id)}
+                onChange={() => toggle(c.id)}
+                className="w-4 h-4 accent-primary"
+              />
+              <span>{c.name}</span>
+            </label>
+          ))}
+        </div>
+      )}
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// Edit-tab chunk B: producer-facing gallery images editor.
+// Mirrors ContactChannelsCard (card/save/dirty pattern) + the admin
+// ProducerForm image grid (upload loop + remove + hover-grid, producer-self
+// version). Multi-file upload via POST /upload/image; saves images[] via PUT
+// /producers/me (backend runs Cloudinary cleanup for removed URLs). Upload
+// errors are surfaced inline via detailToMessage (lib/errors.js).
+// REUSES: components/admin/ProducerForm.jsx:219-243,630-662.
+// ============================================================
+
+// Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
+export function ImagesCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.images");
+  const seed = profile?.images || [];
+  const [images, setImages] = useState(seed);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  // Dirty when the list differs from the seeded set (order-sensitive: a reorder
+  // would count as dirty, but this editor has no reorder — add/remove only).
+  const dirty =
+    seed.length !== images.length || seed.some((url, i) => url !== images[i]);
+
+  const handleUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setSaved(false);
+    setErrorMsg(null);
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const r = await api.post("/upload/image", fd);
+        uploaded.push(r.data.url);
+      }
+      setImages((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  // Remove by index (not by URL value): if images[] ever holds a duplicate
+  // URL (backend drift / bad prior save), a value-filter would drop every
+  // copy at once. Index-based removal deletes exactly the clicked thumbnail.
+  const removeImage = (index) => {
+    setSaved(false);
+    setErrorMsg(null);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      await api.put("/producers/me", { images });
+      onSave({ images });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 transition">
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          disabled={uploading}
+          onChange={handleUpload}
+        />
+        {uploading ? t("uploading") : t("add_cta")}
+      </label>
+
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
+          {images.map((url, i) => (
+            <div key={`${url}-${i}`} className="relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={optimizeCloudinary(url)}
+                alt=""
+                className="w-full h-24 object-cover rounded-[8px] border border-border"
+              />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                aria-label={t("remove_aria")}
+              >
+                <X size={14} weight="bold" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || uploading || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// Edit-tab chunk C: producer-facing location/coords editor (gated).
+// Mirrors ContactChannelsCard (card/save/dirty/inline-error). The owner types
+// an address into AddressSearch (Nominatim geocode, no Leaflet); onSelect
+// returns {lat,lng,city}; Save persists them via PUT /producers/me. Rendered
+// only for physical-location producers (gated at the mount, MEH-213) — no map,
+// no pin-drag, no radius.
+// REUSES: components/AddressSearch.jsx (onSelect {street,neighborhood,city,lat,lng}).
+// ============================================================
+
+// Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
+export function LocationCard({ profile, onSave }) {
+  const t = useTranslations("dashboard.producer.location");
+  const seedLat = profile?.lat ?? null;
+  const seedLng = profile?.lng ?? null;
+  const seedCity = profile?.city ?? "";
+  const [coords, setCoords] = useState({ lat: seedLat, lng: seedLng, city: seedCity });
+  const [addressText, setAddressText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty =
+    coords.lat !== seedLat || coords.lng !== seedLng || coords.city !== seedCity;
+
+  const handleSelect = (picked) => {
+    setSaved(false);
+    setErrorMsg(null);
+    // Keep the seeded city if Nominatim doesn't resolve one (never clobber).
+    setCoords({
+      lat: picked.lat,
+      lng: picked.lng,
+      city: picked.city || coords.city,
+    });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      await api.put("/producers/me", {
+        lat: coords.lat,
+        lng: coords.lng,
+        city: coords.city || null,
+      });
+      onSave({ lat: coords.lat, lng: coords.lng, city: coords.city });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasCoords = coords.lat != null && coords.lng != null;
+
+  return (
+    <div className="bg-white border border-border rounded-[16px] p-5">
+      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      {hasCoords && (
+        <p className="text-xs text-fg-muted mb-3">
+          {t("current_prefix")}{" "}
+          <span className="text-text">
+            {coords.city ? `${coords.city} · ` : ""}
+            <span dir="ltr">{coords.lat}, {coords.lng}</span>
+          </span>
+        </p>
+      )}
+
+      <AddressSearch
+        id="producer-location-address"
+        label={t("heading")}
+        value={addressText}
+        onChange={setAddressText}
+        onSelect={handleSelect}
+      />
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
       </button>
     </div>
   );

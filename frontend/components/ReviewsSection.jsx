@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { formatEventDate } from "@/lib/format-date";
@@ -30,7 +31,7 @@ function StarRow({ value, size = 16, ariaLabel }) {
           key={n}
           size={size}
           weight={n <= value ? "fill" : "regular"}
-          color={n <= value ? "#8B6914" : "#e8e0d0"}
+          color={n <= value ? "#896714" : "#e5dfd3"}
           aria-hidden="true"
         />
       ))}
@@ -57,12 +58,118 @@ function StarPicker({ value, onChange, ariaLabelFn }) {
             <Star
               size={32}
               weight={filled ? "fill" : "regular"}
-              color={filled ? "#8B6914" : "#e8e0d0"}
+              color={filled ? "#896714" : "#e5dfd3"}
             />
           </button>
         );
       })}
     </div>
+  );
+}
+
+/**
+ * MEH-1039: business-owner reply to a single customer review.
+ *
+ * Display + owner edit. Renders the reply block only when review.reply is
+ * present (empty reply → nothing). The producer owner (isOwner) additionally
+ * gets an add/edit affordance that PUTs to /reviews/{id}/reply.
+ *
+ * NOTE (CHUNK B pending): the PUT endpoint + the reply/reply_at fields in the
+ * GET payload land in reviews.py, which is blocked on MEH-1001. Until that
+ * merges, review.reply is undefined (so nothing renders for viewers) and the
+ * owner's save call 404s — this UI is display-ready and degrades gracefully.
+ * Length rules (2-1000 chars, ≥3 letters, MEH-555) are enforced server-side;
+ * the client only gates the trivial <2-char case on the Save button.
+ */
+function ReviewReply({ review, isOwner, onSaved }) {
+  const t = useTranslations("reviews");
+  const tError = useTranslations("error");
+  const locale = useLocale();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(review.reply || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const reply = review.reply;
+
+  const save = async () => {
+    setError("");
+    setSaving(true);
+    try {
+      const r = await api.put(`/reviews/${review.id}/reply`, { reply: draft.trim() });
+      onSaved(r.data);
+      setEditing(false);
+    } catch (err) {
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="mt-3">
+        <label htmlFor={`reply-${review.id}`} className="block text-[13px] font-semibold text-primary-dark mb-1">
+          {t("reply_heading")}
+        </label>
+        <textarea
+          id={`reply-${review.id}`}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          rows={2}
+          maxLength={1000}
+          placeholder={t("reply_placeholder")}
+          className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
+        />
+        {error && (
+          <p className="text-sm text-red-600 mt-1" role="alert">{error}</p>
+        )}
+        <div className="flex items-center gap-4 mt-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || draft.trim().length < 2}
+            className="bg-primary-dark text-white px-5 py-1.5 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+          >
+            {saving ? t("submit_saving") : t("reply_save")}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setDraft(reply || ""); setEditing(false); setError(""); }}
+            className="text-sm text-fg-muted hover:text-text transition"
+          >
+            {t("cancel")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {reply && (
+        <div className="mt-3 bg-green-50 rounded-[8px] p-3">
+          <p className="text-[13px] font-semibold text-primary-dark">{t("reply_heading")}</p>
+          <p className="text-[14px] text-text/85 leading-relaxed whitespace-pre-line mt-0.5">
+            {reply}
+          </p>
+          {review.reply_at && formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS) && (
+            <p className="text-[12px] text-fg-muted mt-1" dir="ltr">
+              {formatEventDate(review.reply_at, locale, REVIEW_DATE_OPTIONS)}
+            </p>
+          )}
+        </div>
+      )}
+      {isOwner && (
+        <button
+          type="button"
+          onClick={() => { setDraft(reply || ""); setEditing(true); }}
+          className="mt-2 text-[13px] text-primary hover:underline"
+        >
+          {reply ? t("reply_edit") : t("reply_add")}
+        </button>
+      )}
+    </>
   );
 }
 
@@ -176,10 +283,15 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       setShowForm(false);
       showToast.success(t("saved_toast"), { icon: <Star size={18} weight="fill" /> });
     } catch (err) {
-      setError(err.response?.data?.detail || tError("generic"));
+      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // MEH-1039: replace a single review in place after its owner reply saves.
+  const handleReplySaved = (updated) => {
+    setReviews((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   };
 
   const showSummary = total >= 3 && avgRating > 0;
@@ -298,7 +410,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
       ) : reviews.length === 0 ? (
         isOwner ? (
           <EmptyState
-            emoji="⭐"
+            icon={Star}
             title={t("owner_empty_title")}
             description={t("owner_empty_description")}
             ctaLabel={t("owner_empty_cta")}
@@ -337,6 +449,13 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                     {review.body}
                   </p>
                 )}
+                {/* MEH-1039: business reply (display + owner edit). Endpoint
+                    lands in CHUNK B (reviews.py, blocked on MEH-1001). */}
+                <ReviewReply
+                  review={review}
+                  isOwner={isOwner}
+                  onSaved={handleReplySaved}
+                />
               </div>
             ))}
           </div>

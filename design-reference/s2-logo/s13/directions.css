@@ -1,0 +1,121 @@
+/* ══════════════════════════════════════════════════════════════
+   S13 — DIRECTION-SPECIFIC LAYOUT (A / B / C)
+   Mobile 375 surfaces only; desktop lives in the notes column.
+   ══════════════════════════════════════════════════════════════ */
+
+/* shared hero/story shells (/about) */
+.heroAb2{padding:80px 22px 8px;}
+.heroAb2 .subm{margin-top:14px; font-size:17px; max-width:40ch;}
+.storyB{padding:36px 22px 8px;}
+
+/* byline variant set on photography (cream on scrim) */
+.byline-photo .eb{font-weight:600; font-size:11px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--light); margin-bottom:8px;}
+.byline-photo p{font-family:var(--font-english); font-style:italic; font-weight:500;
+  font-size:16.5px; line-height:1.45; color:var(--background); margin-bottom:6px;}
+.byline-photo p:last-child{margin-bottom:0;}
+
+/* ──────────────────────────────────────────────────────────────
+   A · FULL IMMERSION — photo-forward (Natoora)
+   ────────────────────────────────────────────────────────────── */
+.dA .heroA{position:relative;}
+.dA .heroA .slot{width:100%;}
+.dA .heroA .copy{position:absolute; inset-inline:0; bottom:0; z-index:4; padding:0 22px 78px;}
+.dA .heroA h1{font-family:var(--font-headline); font-weight:900; font-size:44px;
+  line-height:1.05; letter-spacing:-.02em; color:var(--background); max-width:11ch;}
+.dA .heroA .sub{font-family:var(--font-headline); font-weight:400; font-size:18px;
+  line-height:1.45; color:rgba(245,240,232,.92); margin-top:10px; max-width:30ch;}
+
+/* search card overlaps the photo seam — depth by overlap, not shadow */
+.dA .search-wrap{padding:0 18px; margin-top:-56px; position:relative; z-index:5;}
+.dA .srch-card{background:var(--background); border:1px solid var(--border);
+  border-radius:16px; padding:12px; display:grid; gap:12px;}
+.dA .acts-row{padding:16px 22px 44px;}
+
+/* feature band — full-bleed, caption ON the scrim */
+.dA .bandA{position:relative;}
+.dA .bandA .slot{width:100%;}
+.dA .bandA .bandcap{position:absolute; inset-inline:0; bottom:0; z-index:4; padding:0 22px 24px;}
+.dA .bandA .bq{font-family:var(--font-headline); font-style:italic; font-weight:500;
+  font-size:24px; line-height:1.2; letter-spacing:-.01em; color:var(--background);
+  max-width:15ch; margin-bottom:14px;}
+.dA .bandA .bq::before{content:""; display:block; width:42px; height:1px;
+  background:var(--background); opacity:.7; margin-bottom:14px;}
+
+/* /about — full-bleed founder standfirst */
+.dA .heroAb{padding:80px 22px 26px;}
+.dA .heroAb .subm{margin-top:14px; font-size:17px; max-width:40ch;}
+.dA .standA{position:relative;}
+.dA .standA .slot{width:100%;}
+.dA .standA .ovl{position:absolute; inset-inline:0; bottom:0; z-index:4; padding:0 22px 20px;}
+.dA .storyA{padding:44px 22px 8px;}
+
+/* ──────────────────────────────────────────────────────────────
+   B · THE FRAMED PLATE — typography-forward (Kinfolk)
+   ────────────────────────────────────────────────────────────── */
+.dB .heroB{padding:88px 22px 0;}
+.dB .heroB .h1m{margin-bottom:14px;}
+.dB .heroB .srch{margin-top:22px;}
+.dB .heroB .acts{margin-top:14px;}
+
+/* framed plate: warm-white mat + hairline, tonal panel offset behind */
+.plate-wrap{position:relative; margin-top:38px;}
+.plate-bg{position:absolute; top:26px; bottom:-26px; inset-inline-end:0; inset-inline-start:22px;
+  background:var(--background-alt); z-index:0;}
+.plate{position:relative; z-index:1; background:#fff; border:1px solid var(--border);
+  padding:10px 10px 0; margin:0;}
+.plate .slot{display:block;}
+.plate .plate-cap{padding:11px 4px 13px; display:grid; gap:8px;}
+
+.dB .heroB .plate-wrap{margin-inline-end:-22px;}
+.dB .heroB .plate{width:76%; margin-inline-start:auto; margin-inline-end:22px;}
+.dB .heroB-after{height:56px;}
+
+/* feature band — whole band steps to background-alt; quote leads, plate follows */
+.dB .bandB-quote{padding:48px 22px 26px;}
+.dB .bandB-quote .bq{font-family:var(--font-headline); font-style:italic; font-weight:500;
+  font-size:26px; line-height:1.2; letter-spacing:-.01em; color:var(--primary-dark);
+  max-width:15ch; border-inline-start:2px solid var(--accent); padding-inline-start:18px; margin:0;}
+.dB .bandB{padding:0 22px 52px;}
+.dB .bandB .plate{width:100%;}
+.dB .bandB .plate-bg{display:none;}
+
+/* /about portrait — framed side-by-side (S8 D kept), tonal panel added */
+.dB .aboutB-portrait{position:relative; padding:8px 22px 0; margin-top:30px;}
+.dB .aboutB-portrait .plate-bg{top:30px; bottom:-30px; inset-inline-start:0; inset-inline-end:64px;}
+.dB .aboutB-portrait .plate{width:74%;}
+.dB .aboutB-portrait .byline{margin-top:24px; position:relative; z-index:1;}
+.dB .aboutB-after{height:60px;}
+
+/* ──────────────────────────────────────────────────────────────
+   C · THE SEAM — duo rhythm, balanced
+   ────────────────────────────────────────────────────────────── */
+.dC .heroC{padding:88px 22px 0;}
+.dC .heroC .h1m{margin-bottom:14px;}
+.dC .heroC .srch{margin-top:22px;}
+.dC .heroC .acts{margin-top:14px;}
+
+/* duo straddles the cream → background-alt seam */
+.dC .seam{background:linear-gradient(to bottom, var(--background) 0 34%, var(--background-alt) 34% 100%);
+  margin-top:38px; padding:0 22px 28px; position:relative;}
+.dC .duo{position:relative; padding-bottom:60px;}
+.dC .duo .duo-a{width:70%;}
+.dC .duo .duo-b{width:46%; position:absolute; inset-inline-end:0; top:52%; z-index:2;
+  border:6px solid var(--background);}    /* cream key-line where they overlap */
+.dC .duo-credit{margin-top:-40px; position:relative; z-index:3;}
+
+/* feature band — single full-bleed + caption BELOW on cream (gold rule) */
+.dC .bandC .slot{width:100%;}
+.dC .bandC .bandcap{padding:20px 22px 48px; display:grid; gap:14px;}
+.dC .bandC .bq{font-family:var(--font-headline); font-style:italic; font-weight:500;
+  font-size:26px; line-height:1.2; letter-spacing:-.01em; color:var(--primary-dark);
+  max-width:15ch; border-inline-start:2px solid var(--accent); padding-inline-start:18px; margin:0;}
+
+/* /about — portrait straddling an in-story tonal step */
+.dC .seam2{background:linear-gradient(to bottom, var(--background) 0 30%, var(--background-alt) 30% 100%);
+  padding:0 22px 44px; margin-top:30px;}
+.dC .seam2 .duo2{position:relative; padding-bottom:36px;}
+.dC .seam2 .duo2 .slot.r34{width:74%;}
+.dC .seam2 .duo2 .det{width:42%; position:absolute; inset-inline-end:0; bottom:0; z-index:2;
+  border:6px solid var(--background);}
+.dC .seam2 .byline{margin-top:26px;}

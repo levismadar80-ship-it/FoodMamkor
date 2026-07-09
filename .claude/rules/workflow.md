@@ -248,6 +248,17 @@ and MEH-374 (62 commits)._
     on a "failing" signal you cannot read logs for. Wait for budget
     resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
     test bug was masked by budget exhaustion and shipped in PR #337.)
+    - **Superseded-run false-failure.** A `CI gate (required)` failure
+      webhook can be a *cancelled* run, not a real one: flipping a PR
+      draft→ready (or a rapid second push) starts a new `pr-checks` run
+      that concurrency-cancels the in-flight one, and the gate's bash
+      aggregator maps its `cancelled` deps to FAIL (`R_BUILD: cancelled`
+      → `exit 1`). Before diagnosing a gate failure, list runs for the
+      head SHA — if a newer run is `in_progress`, the older
+      `conclusion: cancelled` gate is stale; wait for the newer run
+      rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
+      emitted "CI gate failed" from superseded run #2279 while #2280 ran
+      green and auto-merged.)
 
 ---
 
@@ -272,9 +283,15 @@ and MEH-374 (62 commits)._
    parameter precedes the auth dep in the function signature. Use
    `valid_*_payload()` fixtures from `tests/conftest.py`; schema
    changes must not silently invalidate security tests.
-7. **Docs-only files → direct commit to staging, no PR.**
+7. **Docs-only files still go through a feature branch + PR.**
    `HANDOFF.md` / `CHANGELOG.md` / `ROADMAP.md` / `MANUAL_TESTING.md`
-   do not need a PR.
+   are no exception — the `protect-staging` ruleset blocks *all* direct
+   pushes to `staging` (`push declined due to repository rule
+   violations`), docs or not. Branch off `staging`, open a PR, let the
+   docs-only twin checks (MEH-736) satisfy the required gates; merge
+   stays Sapir-only. (This rule previously claimed docs could be
+   committed straight to `staging` — factually wrong since the ruleset
+   landed; corrected in MEH-1012 after a rejected push on 2026-07-03.)
 8. **Never add new env vars without listing them explicitly**
    **and waiting for confirmation.**
 
@@ -440,7 +457,10 @@ REFEREE verdicts fixed.
 | Hotfix | Only the broken thing | Minimal |
 
 Docs-only commits (`HANDOFF.md`, `CHANGELOG.md`, `ROADMAP.md`,
-`MANUAL_TESTING.md`): commit directly to `staging` — no PR needed.
+`MANUAL_TESTING.md`): still branch + PR — direct pushes to `staging`
+are blocked by the `protect-staging` ruleset. The docs-only twin checks
+(MEH-736) satisfy the required gates so no admin override is needed;
+merge stays Sapir-only. (See Regression rule 7 above.)
 
 ---
 
@@ -565,6 +585,8 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+**Loop-primitive tiers + DoD self-check (MEH-1052):** `/goal` · `/loop` · `/schedule` authority by GREEN/YELLOW/RED — and the `mehamakor-dod` skill (`bash .claude/skills/mehamakor-dod/check.sh`; exit 0 = mechanical DoD met, required before any GREEN `/goal` declares itself done) — are defined in [ADR-025](../../docs/decisions/ADR-025-loop-tiers.md).
 
 ---
 

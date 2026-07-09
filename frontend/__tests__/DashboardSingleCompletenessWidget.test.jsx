@@ -66,6 +66,17 @@ vi.mock("@phosphor-icons/react", () => ({
   PencilSimple: (p) => <span {...p} />,
   Warning: (p) => <span {...p} />,
   Leaf: (p) => <span {...p} />,
+  // MEH-990: real ProfileCompletenessCard now renders Check (checklist) + ArrowRight (CTA)
+  Check: (p) => <span {...p} />,
+  ArrowRight: (p) => <span {...p} />,
+  // MEH-964 1C: ActivityPulse references WhatsappLogo + Eye in its rows array
+  // on every render (the count gate only hides them from the DOM).
+  WhatsappLogo: (p) => <span {...p} />,
+  Eye: (p) => <span {...p} />,
+  // MEH-964 1D: page.js now imports Sparkle (KPI zero-state) + LockSimple
+  // (share-locked hint); both mount on the no-activity / locked paths.
+  Sparkle: (p) => <span {...p} />,
+  LockSimple: (p) => <span {...p} />,
 }));
 vi.mock("@/components/InfoTooltip", () => ({ default: () => null }));
 vi.mock("@/components/PhoneVerifyCard", () => ({ default: () => null }));

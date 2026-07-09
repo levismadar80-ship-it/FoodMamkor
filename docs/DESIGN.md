@@ -304,6 +304,26 @@ front matter for the normative token bindings.
 - **Price tags / premium accents:** `accent` gold, used sparingly with
   `label-md`. The save/like ("heart") affordance is **green or gold, never a red
   fill** (BRAND.md §3; the brand has no red token — see Do's and Don'ts).
+- **Map near-me pill (`NearMePill`, MEH-970):** quiet floating pill on mobile
+  `/map` — `Crosshair` glyph (`primary`) + "קרוב אליי" label, `surface` on a
+  pill (rounded-full) with hairline `border` + `shadow-md`. It is the **single**
+  mobile near-me control (the old icon-only crosshair was removed). Sits at the
+  `z-[1000]` map-controls tier, below the cookie banner (`z-[1100]`) and chat FAB
+  (`z-[9999]`); positioned `bottom-[16vh]` to clear the `PEEK=14vh` bottom sheet.
+  RTL logical props only (`start-4`).
+- **Producer hero gallery (`ImageGallery`, MEH-1047 — imaged state):** editorial
+  grid adaptation of the Airbnb listing pattern. **Desktop (md+):** hero cell at
+  **inline-start** (~62%) + a tall stacked secondary column, `gap-2` (8px),
+  `rounded-xl` (12px), `border-accent/30` gold hairline, `max-h ~460px`. Densities:
+  **4+** = hero + `images[1]`/`images[2]` with a single **"כל התמונות (N)"** gold
+  (`accent`) pill on the bottom stacked cell (N = total, `Images` Phosphor glyph);
+  **3** = same grid; **2** = hero + one tall companion (no pill); **1** = the
+  full-width banner (unchanged). **Mobile (375px):** single swipeable image +
+  counter chip (1/N, `.numeric`-isolated, top-end) + a thin **gold progress bar**
+  (`accent` fill, replaces dots); tap opens the lightbox. **FavoriteButton** stays
+  pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
+  First image is eager (`priority`); the rest are lazy. Imageless state = the
+  Tinted Masthead (MEH-815, unchanged). RTL logical props only.
 
 ## Do's and Don'ts
 

@@ -38,7 +38,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.deployment.sha }}
           fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
@@ -81,7 +81,7 @@ jobs:
       !startsWith(github.event.deployment.ref, 'dependabot/')
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # deployment.sha is the commit Vercel deployed. Fall back to
           # github.sha (same value for deployment_status events) in case
@@ -98,7 +98,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-chromium-${{ hashFiles('frontend/package-lock.json') }}

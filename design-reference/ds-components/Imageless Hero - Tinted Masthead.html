@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imageless Hero — Tinted Masthead</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&family=Cormorant:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  :root{
+    --cream:#F5F0E8;
+    --ink:#1C1A17;
+    --primary:#2e6853;
+    --gold:#8B6914;
+    --muted:#6b6b6b;
+    --canvas:#E4E1DA;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--canvas);
+    font-family:'DM Sans',sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .wrap{
+    width:max-content;
+    min-width:100%;
+    min-height:100vh;
+    padding:48px;
+    box-sizing:border-box;
+  }
+  .deckhead{max-width:760px;margin-block-end:36px;}
+  .deckhead .kick{
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold);font-weight:500;margin:0 0 10px;
+  }
+  .deckhead h1{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;
+    font-size:34px;line-height:1.15;margin:0 0 12px;color:var(--ink);
+  }
+  .deckhead p{font-size:15px;line-height:1.6;color:var(--muted);margin:0;max-width:60ch;}
+  .controls{
+    display:flex;gap:24px;align-items:center;flex-wrap:wrap;
+    background:#fff;border:1px solid #d8d4cc;border-radius:12px;
+    padding:14px 20px;margin-block-end:40px;max-width:760px;
+  }
+  .controls .grp{display:flex;align-items:center;gap:10px;}
+  .controls label{font-size:13px;color:var(--muted);font-weight:500;}
+  .controls .val{font-family:'Cormorant',serif;font-style:italic;font-size:20px;color:var(--primary);min-width:42px;}
+  .controls input[type=range]{accent-color:var(--primary);}
+  .controls .ratio{
+    font-size:13px;color:var(--ink);
+  }
+  .controls .ratio b{font-family:'Cormorant',serif;font-style:italic;font-size:19px;color:var(--primary);}
+
+  .frames{display:flex;gap:64px;align-items:flex-start;}
+  .frame{flex:none;}
+  .frame .flabel{
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#8a857c;
+    margin:0 0 12px;font-weight:500;
+  }
+  .card{
+    background:var(--cream);
+    border-radius:3px;
+    box-shadow:0 1px 2px rgba(0,0,0,.06),0 18px 40px -20px rgba(0,0,0,.28);
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* ---- page chrome (minimal, to ground the hero in a real page) ---- */
+  .pagebar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-block:14px;padding-inline:16px;
+    color:var(--ink);
+  }
+  .pagebar .back{
+    width:40px;height:40px;display:grid;place-items:center;
+    font-size:22px;color:var(--ink);background:transparent;border:none;cursor:pointer;
+  }
+  .pagebar .acts{display:flex;gap:6px;}
+  .pagebar .acts button{
+    width:40px;height:40px;display:grid;place-items:center;
+    font-size:20px;color:var(--ink);background:transparent;border:none;cursor:pointer;border-radius:8px;
+    transition:background .15s ease;
+  }
+  .pagebar .acts button:hover{background:rgba(46,104,83,.08);}
+
+  /* ---- the imageless hero ---- */
+  .hero{
+    position:relative;
+    display:flex;flex-direction:column;justify-content:flex-end;
+    overflow:hidden;
+  }
+  .hero .tint{position:absolute;inset:0;background:var(--primary);pointer-events:none;}
+  .hero .mono{
+    position:absolute;inset-block-start:20px;inset-inline-start:20px;
+    font-family:'Frank Ruhl Libre',serif;font-weight:700;
+    font-size:15px;letter-spacing:.04em;color:var(--gold);
+    opacity:.85;
+  }
+  .hero .inner{position:relative;}
+  .hero .eyebrow{
+    font-size:12.5px;letter-spacing:.14em;font-weight:500;color:var(--gold);
+    margin:0 0 18px;
+    display:flex;align-items:center;gap:7px;
+  }
+  .hero .eyebrow .pin{font-size:14px;opacity:.9;}
+  .hero .name{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;color:var(--ink);
+    margin:0;line-height:1.04;letter-spacing:-.005em;
+  }
+  .hero .rule{
+    height:2px;background:var(--gold);border:none;margin:22px 0 0;border-radius:2px;
+  }
+  .hero .story{
+    color:var(--muted);margin:18px 0 0;line-height:1.6;font-weight:400;
+  }
+
+  /* entrance animation */
+  .reveal{opacity:0;transform:translateY(14px);}
+  .play .reveal{
+    animation:rise .7s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  .play .reveal.d1{animation-delay:.05s;}
+  .play .reveal.d2{animation-delay:.16s;}
+  .play .reveal.d3{animation-delay:.30s;}
+  .play .reveal.d4{animation-delay:.44s;}
+  .play .mono.reveal{animation-delay:.6s;}
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1!important;transform:none!important;animation:none!important;}
+  }
+
+  /* below-fold peek (proves the hero is SHORTER, sits low, no full-bleed) */
+  .peek{padding:24px 16px 28px;}
+  .peek .ph-row{display:flex;gap:8px;margin-block-end:16px;}
+  .peek .chip{
+    font-size:13px;color:var(--ink);background:rgba(46,104,83,.08);
+    padding:7px 14px;border-radius:999px;font-weight:500;
+  }
+  .peek .ln{height:11px;background:rgba(28,26,23,.07);border-radius:3px;margin-block-end:10px;}
+  .notes{
+    margin-block-start:48px;max-width:760px;background:#fff;border:1px solid #d8d4cc;
+    border-radius:14px;padding:28px 30px;
+  }
+  .notes h2{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:21px;margin:0 0 6px;}
+  .notes h2 .he{}
+  .notes .sub{font-size:13px;color:var(--muted);margin:0 0 22px;}
+  .notes .cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:720px){.notes .cols{grid-template-columns:1fr;}}
+  .notes h3{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;font-weight:600;}
+  .notes ul{margin:0;padding-inline-start:18px;}
+  .notes li{font-size:14px;line-height:1.55;color:var(--ink);margin-block-end:11px;}
+  .notes li b{font-weight:600;}
+  .notes li .src{color:var(--muted);font-style:italic;font-family:'Cormorant',serif;font-size:15px;}
+  .notes .ratiobig{
+    margin-block-start:22px;padding-block-start:20px;border-block-start:1px solid #e7e3da;
+    font-size:14px;color:var(--ink);
+  }
+  .notes .ratiobig b{font-family:'Cormorant',serif;font-style:italic;font-size:24px;color:var(--primary);font-weight:500;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+function Hero({mode, tint}){
+  const isM = mode==='mobile';
+  const ref = useRef(null);
+  const [play,setPlay] = useState(false);
+  useEffect(()=>{ const t=setTimeout(()=>setPlay(true),120); return ()=>clearTimeout(t); },[]);
+
+  const heroStyle = {
+    minHeight: isM ? 372 : 460,
+    paddingInline: isM ? 24 : 80,
+    paddingBlockEnd: isM ? 34 : 64,
+    paddingBlockStart: isM ? 56 : 96,
+  };
+  const innerStyle = { maxWidth: isM ? '100%' : 760 };
+  const nameStyle = { fontSize: isM ? 52 : 104 };
+  const eyebrowStyle = { fontSize: isM ? 12.5 : 14 };
+  const storyStyle = { fontSize: isM ? 16 : 19, maxWidth: isM ? '30ch':'34ch' };
+  const ruleStyle = { width: isM ? 56 : 76, marginBlockStart: isM ? 22 : 30 };
+
+  return (
+    <div className={"card "+(play?'play':'')} style={{width:isM?375:1180}}>
+      <div className="pagebar">
+        <button className="back" aria-label="חזרה"><i className="ph ph-caret-right"></i></button>
+        <div className="acts">
+          <button aria-label="שמירה"><i className="ph ph-bookmark-simple"></i></button>
+          <button aria-label="שיתוף"><i className="ph ph-share-network"></i></button>
+        </div>
+      </div>
+
+      <div className="hero" style={heroStyle}>
+        <div className="tint" style={{opacity: tint/100}}></div>
+        <div className="mono reveal">מ·ה</div>
+        <div className="inner" style={innerStyle}>
+          <div className="eyebrow reveal d1" style={eyebrowStyle}>
+            <span>מאפים</span>
+            <span style={{opacity:.5}}>·</span>
+            <i className="ph ph-map-pin pin"></i>
+            <span>מזכרת בתיה</span>
+          </div>
+          <h1 className="name reveal d2" style={nameStyle}>מאפיית רותם</h1>
+          <hr className="rule reveal d3" style={ruleStyle}/>
+          <p className="story reveal d4" style={storyStyle}>לחם מחמצת בתנור אבן, אפייה יומית קטנה.</p>
+        </div>
+      </div>
+
+      <div className="peek">
+        <div className="ph-row">
+          <span className="chip">פרטי קשר</span>
+          <span className="chip">שעות פתיחה</span>
+          <span className="chip">משלוחים</span>
+        </div>
+        <div className="ln" style={{width:'92%'}}></div>
+        <div className="ln" style={{width:'78%'}}></div>
+        <div className="ln" style={{width:'85%'}}></div>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [tint,setTint] = useState(6);
+  // measured contrast of #1C1A17 ink on the actual tinted surface
+  const ratios = {6:'14.1', 7:'13.7'};
+  return (
+    <div className="wrap">
+      <div className="deckhead">
+        <p className="kick">/producer/[id] · imageless state</p>
+        <h1>Tinted Masthead</h1>
+        <p>היבריד מסטהד (A) על משטח tint ירוק־על־קרם ≤7% (B). השם נושא את המסגרת; המונוגרמה מ·ה היא corner-mark רסיסיבית בלבד. גובה קצר ממצב־עם־תמונה, יושב נמוך, בלי full-bleed.</p>
+      </div>
+
+      <div className="controls">
+        <div className="grp">
+          <label htmlFor="t">tint opacity</label>
+          <input id="t" type="range" min="6" max="7" step="1" value={tint} onChange={e=>setTint(+e.target.value)}/>
+          <span className="val">{tint}%</span>
+        </div>
+        <div className="ratio">קונטרסט שם בפועל ·&nbsp;<b>{ratios[tint]}:1</b>&nbsp;<span style={{color:'#6b6b6b'}}>(AAA)</span></div>
+      </div>
+
+      <div className="frames">
+        <div className="frame">
+          <p className="flabel">Mobile · 375px</p>
+          <Hero mode="mobile" tint={tint}/>
+        </div>
+        <div className="frame">
+          <p className="flabel">Desktop · 1180px</p>
+          <Hero mode="desktop" tint={tint}/>
+        </div>
+      </div>
+
+      <div className="notes">
+        <h2>הערות עיצוב</h2>
+        <p className="sub">3 patterns (עם מקורות) · 2 anti-patterns שנמנעו · יחס קונטרסט בפועל</p>
+        <div className="cols">
+          <div>
+            <h3>Patterns בשימוש</h3>
+            <ul>
+              <li><b>Masthead typographic</b> — השם ב־FRL 900 ענק, start-aligned, אוויר נדיב מעל, hairline זהב מפריד שם מ־story. <span className="src">— Kinfolk masthead</span></li>
+              <li><b>Tonal surface, not empty slot</b> — משטח ירוק־על־קרם ב־6% קורא כמשטח מכוון במקום תיבה ריקה. <span className="src">— Natoora restraint</span></li>
+              <li><b>Recessive no-photo handling</b> — בלי placeholder אפור/שבור; השם הוא ההירו, הגובה קצר ויושב נמוך. <span className="src">— Airbnb listing 2023+</span></li>
+            </ul>
+          </div>
+          <div>
+            <h3>Anti-patterns שנמנעו</h3>
+            <ul>
+              <li><b>תיבת מדיה full-bleed ריקה</b> עם מונוגרמה ענקית במרכז — הוחלפה בהירו טקסטואלי קצר.</li>
+              <li><b>"no image" אפור / AI-slop</b> (Inter, גרדיאנט סגול, glassmorphism) — נמנע; קרם + FRL + tint בלבד.</li>
+            </ul>
+            <div className="ratiobig">
+              קונטרסט שם בפועל מול המשטח (#1C1A17 על קרם+ירוק):<br/>
+              ב־6% → <b>14.1:1</b> · ב־7% → <b>13.7:1</b> — הרבה מעל 4.5:1. ה־scale הוא הקריאוּת, לא tint כהה.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Star } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
@@ -28,7 +29,7 @@ export default function UpgradeClient() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16">
       <div className="bg-background border border-border rounded-[16px] p-8 text-center">
-        <div className="text-5xl mb-4" aria-hidden="true">⭐</div>
+        <Star size={56} weight="fill" className="mx-auto mb-4 text-yellow-500" aria-hidden="true" />
         <h1 className="font-headline-lg text-3xl font-bold text-text mb-2">{t("title")}</h1>
         <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 

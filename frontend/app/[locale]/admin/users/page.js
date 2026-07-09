@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Heart } from "@phosphor-icons/react";
+import { Heart, Lock } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useAdminAction } from "@/lib/use-admin-action";
+import AdminRowMenu from "@/components/admin/AdminRowMenu";
 
 const SUPER_ADMIN_EMAIL = "levismadar80@gmail.com";
 
@@ -22,8 +23,15 @@ export default function AdminUsersPage() {
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, action: "promote"|"demote" }
   const [busy, setBusy] = useState(false);
+  // MEH-1046: client-side pagination — slice the already-fetched array. The
+  // search/role filters are SERVER-side (load() query params), so `users` is
+  // already the filtered result set. Page resets on filter change only, not
+  // on every reload (block/promote must not yank the admin back to page 1).
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
+    setPage(1); // role filter changed (or first mount — already 1)
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
@@ -67,6 +75,23 @@ export default function AdminUsersPage() {
   const isSuperAdmin = (u) => u.email === SUPER_ADMIN_EMAIL;
   const isMe = (u) => me && u.id === me.id;
 
+  // MEH-1046: search submit (Enter / button) resets to page 1.
+  const searchUsers = () => {
+    setPage(1);
+    load();
+  };
+
+  // Clamp so a shrinking result set (e.g. after a reload) never strands the
+  // admin on a page past the end. Pure slice — no memoization needed at 500 rows.
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = users.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const changePageSize = (size) => {
+    setPageSize(size);
+    setPage(1);
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -79,7 +104,7 @@ export default function AdminUsersPage() {
           placeholder={t("users.search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && load()}
+          onKeyDown={(e) => e.key === "Enter" && searchUsers()}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
         <select
@@ -92,7 +117,7 @@ export default function AdminUsersPage() {
           <option value="producer">{t("users.role_filter.producer")}</option>
           <option value="admin">{t("users.role_filter.admin")}</option>
         </select>
-        <button onClick={load} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button onClick={searchUsers} className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
           {t("common.search")}
         </button>
       </div>
@@ -117,7 +142,7 @@ export default function AdminUsersPage() {
                   <td colSpan={7} className="text-center py-8 text-muted">{t("users.empty")}</td>
                 </tr>
               )}
-              {users.map((u) => (
+              {pagedUsers.map((u) => (
                 <>
                   <tr key={u.id} className={`border-t ${u.is_blocked ? "bg-red-50" : ""}`}>
                     <td className="px-4 py-3 font-medium">{u.name}</td>
@@ -132,7 +157,7 @@ export default function AdminUsersPage() {
                               <span className="text-xs px-2 py-0.5 rounded-full bg-[#EAF3DE] text-[#2e6853] font-medium">
                                 {t("users.roles.admin")}
                               </span>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#8B6914] font-medium">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEF3C7] text-accent font-medium">
                                 {t("users.roles.admin_protected")}
                               </span>
                             </>
@@ -147,54 +172,62 @@ export default function AdminUsersPage() {
                           </span>
                         )}
 
-                        {/* Promote button — show when not already admin */}
-                        {u.role !== "admin" && (
-                          <button
-                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "promote" })}
-                            className="text-xs px-2 py-0.5 rounded-lg border border-[#2e6853] text-[#2e6853] hover:bg-[#EAF3DE] transition"
-                          >
-                            {t("users.actions.promote")}
-                          </button>
-                        )}
-
-                        {/* Demote button — hidden for super-admin and self */}
-                        {u.role === "admin" && !isSuperAdmin(u) && !isMe(u) && (
-                          <button
-                            onClick={() => setConfirm({ userId: u.id, userName: u.name, action: "demote" })}
-                            className="text-xs px-2 py-0.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition"
-                          >
-                            {t("users.actions.demote")}
-                          </button>
-                        )}
+                        {/* Promote/demote moved to the actions-cell overflow menu (MEH-1023). */}
 
                         {/* Tooltip for protected super-admin row */}
                         {isSuperAdmin(u) && (
-                          <span className="text-xs text-muted" title={t("users.actions.protected_title")}>
-                            🔒
+                          <span className="text-muted inline-flex" title={t("users.actions.protected_title")}>
+                            <Lock size={14} weight="fill" aria-hidden="true" />
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
-                      <button onClick={() => toggleExpand(u)} className="hover:text-primary hover:underline">
-                        {u.favorites_count} ❤️
+                      <button onClick={() => toggleExpand(u)} className="inline-flex items-center gap-1 hover:text-primary hover:underline">
+                        {u.favorites_count}
+                        <Heart size={14} weight="fill" className="text-red-500" aria-hidden="true" />
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted text-xs">
                       {formatEventDate(u.created_at, locale, { day: "numeric", month: "numeric", year: "numeric" })}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => toggleBlock(u.id)}
-                        disabled={isBusy(`block:${u.id}`)}
-                        className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                          u.is_blocked
-                            ? "bg-red-100 text-red-700"
-                            : "text-muted hover:text-red-600"
-                        }`}
-                      >
-                        {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {/* Routine action stays inline */}
+                        <button
+                          onClick={() => toggleBlock(u.id)}
+                          disabled={isBusy(`block:${u.id}`)}
+                          className={`text-xs px-2 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                            u.is_blocked
+                              ? "bg-red-100 text-red-700"
+                              : "text-muted hover:text-red-600"
+                          }`}
+                        >
+                          {u.is_blocked ? t("users.actions.unblock") : t("users.actions.block")}
+                        </button>
+                        {/* Privilege-escalation actions in the overflow menu (MEH-1023).
+                            Guards reuse isSuperAdmin/isMe — same conditions as before. */}
+                        <AdminRowMenu
+                          ariaLabel={t("users.actions.menu_aria")}
+                          items={[
+                            ...(u.role !== "admin"
+                              ? [{
+                                  key: "promote",
+                                  label: t("users.actions.promote"),
+                                  onSelect: () => setConfirm({ userId: u.id, userName: u.name, action: "promote" }),
+                                }]
+                              : []),
+                            ...(u.role === "admin" && !isSuperAdmin(u) && !isMe(u)
+                              ? [{
+                                  key: "demote",
+                                  label: t("users.actions.demote"),
+                                  tone: "danger",
+                                  onSelect: () => setConfirm({ userId: u.id, userName: u.name, action: "demote" }),
+                                }]
+                              : []),
+                          ]}
+                        />
+                      </div>
                     </td>
                   </tr>
                   {expanded === u.id && favorites[u.id] && (
@@ -223,10 +256,49 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* MEH-1046: pagination controls. Prev/next are text buttons in flex flow —
+          direction-neutral, no physical positioning (rtl.md logical-props rule). */}
+      {users.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+          <label className="flex items-center gap-2 text-muted">
+            {t("users.pagination.page_size")}
+            <select
+              value={pageSize}
+              onChange={(e) => changePageSize(Number(e.target.value))}
+              className="border border-border rounded-[12px] px-2 py-1 bg-white"
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+            >
+              {t("users.pagination.prev")}
+            </button>
+            <span className="text-muted">
+              {t("users.pagination.page_of", { page: currentPage, total: totalPages })}
+            </span>
+            <button
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-[12px] border border-border disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+            >
+              {t("users.pagination.next")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation modal */}
       {confirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-end space-y-4">
+          {/* MEH-1023: text-start aligns the Hebrew dialog copy to the start edge in RTL */}
+          <div className="bg-white rounded-[16px] shadow-xl p-6 max-w-sm w-full mx-4 text-start space-y-4">
             <p className="font-medium text-base">
               {confirm.action === "promote"
                 ? t("users.confirm.promote", { name: confirm.userName })

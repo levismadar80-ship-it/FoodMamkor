@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Envelope } from "@phosphor-icons/react/ssr";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -161,7 +162,7 @@ function renderBody(id, t) {
         <>
           {t("sections.contact.intro")}
           <br />
-          📧 <MailLink email={CONTACT_EMAIL} />
+          <Envelope size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> <MailLink email={CONTACT_EMAIL} />
         </>
       );
     default:

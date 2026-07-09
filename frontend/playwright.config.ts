@@ -20,7 +20,13 @@ export default defineConfig({
     timeout: 20_000,
   },
   use: {
-    baseURL: process.env.TEST_URL || "http://localhost:3000",
+    // MEH-1044 — CI runs E2E against a local `next start` (zero Vercel edge
+    // requests). PLAYWRIGHT_BASE_URL is the explicit override; TEST_URL is
+    // kept for manual runs against staging/preview URLs (testing.md TLS note).
+    baseURL:
+      process.env.PLAYWRIGHT_BASE_URL ||
+      process.env.TEST_URL ||
+      "http://localhost:3000",
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
     actionTimeout: 20_000, // MEH-728: 10s→20s for preview cold-start headroom

@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { MapPin, Heart, Star, Truck } from "@phosphor-icons/react";
+import { MapPin, Heart, Star, Truck, StarOfDavid } from "@phosphor-icons/react";
 
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
@@ -38,7 +38,10 @@ export default function ProducerHeader({
             Tinted Masthead hero (the page <h1>), so this h1 is omitted to keep
             the producer name appearing exactly once. Badges/meta stay. */}
         {hasImages && (
-          <h1 className="font-headline-lg text-4xl font-bold text-text">
+          // MEH-1031 (A3): me-3 gives the badge row breathing room from the
+          // H1 (margin-inline-end, RTL-safe) without touching the container
+          // gap-2 that sets inter-badge spacing.
+          <h1 className="font-headline-lg text-4xl font-bold text-text me-3">
             {producer.name}
           </h1>
         )}
@@ -96,7 +99,7 @@ export default function ProducerHeader({
         {primaryCategory && (
           <>
             <span className="mx-1">·</span>
-            {primaryCategory.emoji} {primaryCategory.name}
+            {primaryCategory.name}
           </>
         )}
       </p>
@@ -125,7 +128,7 @@ export default function ProducerHeader({
       )}
 
       {/* Highlights strip — grass_fed / organic / delivery / kosher */}
-      {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || producer.kosher) && (
+      {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || !!producer.kashrut_verified_at) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
@@ -142,9 +145,12 @@ export default function ProducerHeader({
               <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
           )}
-          {producer.kosher && (
+          {/* MEH-986 ch3a (P0 legal — חוק איסור הונאה בכשרות): chip renders ONLY for
+              admin-verified kashrut, never from free-text producer.kosher. Mirrors
+              badges.js:167 (`!!producer.kashrut_verified_at`). */}
+          {!!producer.kashrut_verified_at && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              ✡️<span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
+              <StarOfDavid size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.kosher")}</span>
             </span>
           )}
         </div>

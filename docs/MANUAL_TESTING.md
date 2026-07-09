@@ -3,6 +3,59 @@
 
 ---
 
+## MEH-1047 — עמוד עסק: גלריית hero חדשה (grid, מצב עם תמונות)
+
+עסק **עם תמונות** ב-`/producer/[id]`. בדקי מובייל 375px + דסקטופ. (מצב **ללא** תמונות = Tinted Masthead של MEH-815, ללא שינוי.)
+
+- [ ] **דסקטופ 4+ תמונות** — עסק עם 4+ תמונות (דסקטופ) — **תוצאה מצופה:** grid — תמונת hero בצד inline-start (~62%) + עמודת 2 תמונות מוערמות בצד; מסגרת זהב דקה, פינות מעוגלות (12px), גובה ~460px. צ'יפ "כל התמונות (N)" זהב על התא התחתון (N = מספר התמונות הכולל).
+- [ ] **דסקטופ 3 תמונות** — עסק עם 3 תמונות — **תוצאה מצופה:** אותו grid (hero + 2 מוערמות), צ'יפ "כל התמונות (3)".
+- [ ] **דסקטופ 2 תמונות** — עסק עם 2 תמונות — **תוצאה מצופה:** hero + תמונת ליווי יחידה גבוהה, **בלי** צ'יפ.
+- [ ] **תמונה אחת** — עסק עם תמונה יחידה — **תוצאה מצופה:** באנר מלא-רוחב כמו קודם (בלי grid, בלי צ'יפ, בלי מונה).
+- [ ] **"כל התמונות" פותח lightbox** — לחצי על הצ'יפ או על כל תא — **תוצאה מצופה:** נפתח ה-lightbox הקיים בתמונה המתאימה.
+- [ ] **מובייל 375 — מונה + פס התקדמות** — עסק עם 2+ תמונות (מובייל) — **תוצאה מצופה:** תמונה יחידה בהחלקה (swipe); צ'יפ מונה "1/N" בפינה עליונה (צד end); פס התקדמות זהב דק בתחתית — **בלי** נקודות/חצים. החלקה מחליפה תמונה, הקשה פותחת lightbox.
+- [ ] **כפתור מועדפים בדסקטופ** — עסק עם 2+ תמונות (דסקטופ) — **תוצאה מצופה:** הלב מופיע ב-top-start מעל ה-hero (regression MEH-1047: לפני התיקון נעלם בדסקטופ). מופיע פעם אחת, לא מתנגש עם הצ'יפ/מונה.
+
+## MEH-1045 — bot hardening: fast-404 ל-catch-all + robots.txt + localeDetection:false
+
+- [ ] **עמוד עסק אמיתי נטען** — פתחו עמוד slug של עסק קיים (מובייל) — **תוצאה מצופה:** העמוד נטען רגיל, ללא שינוי.
+- [ ] **נתיב סורק לא מגיע ל-backend** — פתחו `/wp-admin` — **תוצאה מצופה:** עמוד "לא נמצא" מיידי (הערה: הסטטוס הוא 200 soft-404 עם `noindex` — התנהגות streaming קיימת מראש; נתיבים עם נקודה כמו `/.env` מחזירים 404 אמיתי). ב-Network אין קריאת `/api/producers/by-slug/...`.
+- [ ] **localeDetection כבוי** — דפדפן באנגלית (Accept-Language: en) פותח `/` — **תוצאה מצופה:** נחיתה על העברית (ברירת המחדל) בלי redirect ל-`/en`; מעבר ידני ל-`/en` עדיין עובד.
+- [ ] **robots.txt** — פתחו `/robots.txt` — **תוצאה מצופה:** שורת Sitemap מצביעה על `https://mehamakor.online/sitemap.xml`; חסימות GPTBot/CCBot/וכו' מופיעות; `User-agent: *` עדיין Allow.
+
+## MEH-995 — /join: דף הצטרפות כבית עסק
+
+- [ ] **הדף חי** — פתחו `/join` (מובייל 375px) — **תוצאה מצופה:** hero עם "העסק שלכם. עמוד משלו.", eyebrow זהב "לבתי עסק מקומיים", כפתור "מצטרפים" יחיד + "חינם להצטרף" מתחתיו; אין אזכור פרימיום/עמלות ב-hero.
+- [ ] **4 צעדים** — גללו ל"איך זה עובד" — **תוצאה מצופה:** ספרות Cormorant ‏01–04 שלמות (ללא חיתוך גם ב-320px), 4 כותרות+טקסט, קישור "לתהליך הקבלה המלא" → `/about/process`.
+- [ ] **FAQ teaser** — סוף הדף — **תוצאה מצופה:** "כמה זה עולה?" עם "חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.", קישור "לכל השאלות" → `/about/for-businesses`.
+- [ ] **CTA → wizard** — לחצו "מצטרפים" — **תוצאה מצופה:** נחיתה ב-`/register/producer` (מסך "לפני שמתחילים" של MEH-994).
+- [ ] **Footer** — בכל עמוד — **תוצאה מצופה:** "הוסיפו את העסק שלך" מוביל עכשיו ל-`/join` (לא ישירות ל-wizard).
+- [ ] **Testimonial placeholder** — **תוצאה מצופה:** משבצת עדות עם טקסט מסביר-עצמו ("כאן תופיע עדות אמיתית…") — לא עדות שנראית אמיתית.
+
+## MEH-991 — design-parity sweep (Chunk 2, PRs #1468/#1472/#1476/#1477/#1479)
+
+בדיקה על מובייל + דסקטופ (Vercel preview לכל קבוצה).
+
+- [ ] **G2 ProducerCard (#1472)** — כרטיס עסק עם 3+ תגי אמון → התג השלישי מתקפל ל-"+N" · שלד טעינה (skeleton) פינות חדות עם פעימת opacity עדינה (לא shimmer) · לב שמור = מעגל קרם · Tab במקלדת → טבעת focus על תמונת הכרטיס + על השם — `כרטיס עסק ברשת /producers`
+- [ ] **G3 בית (#1476)** — כותרת ה-hero כבדה יותר (900) · חיפוש = כרטיס קרם עם שדה לבן + כפתור ריבוע ירוק · אריח קטגוריה לא מתקרב (zoom) ב-hover, השם מקבל קו תחתון זהב · אריח "ירקות" = ענף+עלים (לא עלה בודד) · בלוק "היכרות" §10 = תמונה 4:5 עם צ'יפ כיתוב על התמונה + eyebrow זהב · מספרי הזהב (קטגוריות/how-it-works) באות נטויה אמיתית — `/` (דף הבית)
+- [ ] **G4 ניווט (#1477)** — סרגל תחתון מחובר: לשונית חשבון מציגה את השם הפרטי שלך (מקוצר עם … אם ארוך), "חשבון" כשמנותקים · לוגו בפוטר = חותם קרם-מדורג (לא כתם לבן שטוח) על רקע ירוק כהה — כל עמוד
+- [ ] **G5 (#1479)** — עסק שסגור עכשיו: נקודת סטטוס + "סגור" באפור (fg-muted), לא אדום — `/[slug]` (עמוד עסק, שעות פתיחה) · שדה אימייל בהתחברות מציג `name@example.com` — `/login`
+
+---
+
+## MEH-994 — /register/producer: מסך "לפני שמתחילים" (pre-flight)
+
+- [ ] **מסך פתיחה לפני הטופס** — פתחו `/register/producer` (לא מחוברות) — **תוצאה מצופה:** במקום טופס החשבון מופיע מסך "לפני שמתחילים": כותרת העמוד + subtitle נשארים, ואז צ'קליסט "מה כדאי להכין" (אימייל, סיפור קצר, 2–3 תמונות, רישיון יצרן אם נדרש), שורת משך "בערך 10 דקות", בלוק "מה קורה אחרי" עם קישור ל-`/about/process`, וכפתור "מתחילים" אחד.
+- [ ] **CTA → פריים 01** — לחצו "מתחילים" — **תוצאה מצופה:** נכנסים לפריים ACCOUNT הרגיל (stepper 01–04 ללא שינוי; ה-pre-flight לא נספר כצעד).
+- [ ] **מסלול upgrade** — משתמשת מחוברת פותחת `/register/producer` — **תוצאה מצופה:** ה-pre-flight מוצג גם כן, אבל **בלי** שורת "כתובת אימייל ליצירת חשבון"; "מתחילים" מוביל ישר ל-DETAILS.
+- [ ] **קישור התהליך** — לחיצה על "איך תהליך הקבלה עובד" — **תוצאה מצופה:** ניווט ל-`/about/process`.
+- [ ] **ללא זכירת מצב** — רעננו את העמוד אחרי "מתחילים" — **תוצאה מצופה:** ה-pre-flight מופיע שוב (אין localStorage flag — by design).
+
+## MEH-970 chunk 2-lite — /map near-me pill + empty-near-me guard (mobile)
+- [ ] **כפתור "קרוב אליי" יחיד** — פתחו `/map` במובייל — תוצאה: גלולת "קרוב אליי" צפה אחת על המפה (פינה ימנית-תחתונה, מעל ה-bottom sheet); **אין** כפתור צלב (crosshair) נוסף בשורת חיפוש העיר; חיפוש העיר תופס את כל הרוחב.
+- [ ] **קרוב אליי — יש עסקים בקרבת מקום** — לחצו על הגלולה ואשרו גישה למיקום — תוצאה: המפה עפה למיקומכם (זום 13) עם סמן מיקום; אין toast.
+- [ ] **empty-near-me (אין עסקים ברדיוס 25ק"מ)** — לחצו על הגלולה ממיקום ללא עסקים בקרבת מקום — תוצאה: toast "אין עדיין עסקים באזורך — הנה הקרובים" + המפה מתרחקת לתצוגת ברירת המחדל (`[32.4,34.95]` זום 8) ומציגה את **כל** העסקים (לעולם לא מפה ריקה).
+- [ ] **דחיית גישה למיקום** — לחצו על הגלולה ודחו את בקשת המיקום — תוצאה: נפתח חלון חיפוש העיר (LocationModal), לא toast מת.
+
 ## MEH-815 — עמוד עסק: Tinted Masthead למצב ללא תמונות
 
 עסק **ללא תמונות גלריה** (`producer.images` ריק). פתחי את עמוד העסק (375px מובייל).
@@ -12,7 +65,7 @@
 - [ ] **מונוגרם מ·ה** — פינה עליונה (צד end, נגדי לכפתור המועדפים) — **תוצאה מצופה:** סימן מותג מ·ה קטן בזהב, עמום, לא דומיננטי, ללא התנגשות עם הלב.
 - [ ] **כפתור מועדפים** — פינה עליונה start — **תוצאה מצופה:** כפתור הלב נשאר ופועל (top-start), נפרד מהמונוגרם.
 - [ ] **גובה קצר מהגלריה** — השוו לעסק עם תמונות — **תוצאה מצופה:** ה-masthead נמוך יותר מקרוסלת התמונות (h-52).
-- [ ] **Regression: מצב עם תמונות** — עסק עם תמונה אחת+ — **תוצאה מצופה:** הגלריה/קרוסלה זהה לחלוטין למצב הקודם (אפס שינוי, שם h1 בכותרת כרגיל).
+- [ ] **Regression: מצב עם תמונה אחת** — עסק עם תמונה יחידה — **תוצאה מצופה:** באנר מלא-רוחב כמו קודם (אפס שינוי), שם h1 בכותרת כרגיל. **(2+ תמונות → הגלריה עוצבה מחדש ב-MEH-1047, ראו הסעיף בראש הקובץ.)**
 
 ---
 
@@ -64,6 +117,8 @@
 - [ ] **a11y** — קורא-מסך מכריז על אחוז ההשלמה (role=progressbar) ועל ה-CTA ("השלימי את הפרופיל שלך")
 - [ ] **/en** — אותו כרטיס באנגלית (Your profile is X% ready / Complete profile) — אין מחרוזות עבריות גולמיות
 - [ ] **Regression** — קלפי ה-analytics, חוזק פרופיל, וכל שאר ה-dashboard נשארים מתחת לכרטיס ללא שינוי
+- [ ] **MEH-964 1C — activity pulse בסקירה** — עסק עם פניות וואטסאפ ב-7 הימים האחרונים → מתחת ל-KPI strip כרטיס פעילות: שורת hero ("N פניות חדשות בוואטסאפ — פתחי כדי לענות"), עד 2 שורות אירועים אנונימיות (פנייה בוואטסאפ · צפייה בפרופיל — בלי שמות, בלי עיר, בלי זמן יחסי), כפתור אחד "פתחי וואטסאפ לענות" → wa.me. אפס וואטסאפ אבל יש צפיות → רק שורת צפייה, בלי hero ובלי CTA. אפס הכל → "עוד אין פעילות — שתפי את העמוד כדי להתחיל". אין שורת ביקורות (נדחה ל-MEH-966).
+- [ ] **MEH-1002 — שדה "תיאור קצר" (שישי)** — עסק מלא בלי תיאור (גם tagline וגם סיפור ריקים) → הכרטיס מציג "כמעט שם — 83% מוכן" והצ'קליסט (6 שורות) מסמן "תיאור קצר" כחסר; מילוי אחד מהשניים (tagline או ביו) → הכרטיס מתכווץ ל"הפרופיל מלא". חסר תיאור לבדו אף פעם לא הופך את הכרטיס לאדום. באדמין: העסק מקבל נקודה צהובה עם "תיאור קצר" ב-tooltip.
 
 ## MEH-773 Chunk B — DB integrity constraints (backend)
 
@@ -448,6 +503,69 @@ Conditional-required field on `/register/producer` Step 2 + admin `ProducerForm`
 - [ ] Admin edit existing producer — `/admin/producers/[id]/edit` של יצרן עם רישיון → השדה אוטומטית פתוח עם הערך הנוכחי (לא toggle).
 - [ ] Admin pending queue — `GET /admin/producers/pending` (DevTools Network tab) → JSON כולל `producer_license_number` (זה ה-`ProducerAdminOut` החדש).
 - [ ] Public detail page (privacy guard) — `/[slug]` של יצרן עם רישיון → JSON מ-`GET /producers/{id}` כולל `has_producer_license: true` אבל **לא** את המספר עצמו.
+
+### MEH-1046 — pagination בטבלת /admin/users
+- [ ] ברירת מחדל 25 — `/admin/users` (500+ משתמשים); **תוצאה מצופה:** 25 שורות בלבד, "עמוד 1 מתוך N", "הקודם" מושבת, המונה למעלה עדיין מציג את הסך הכולל.
+- [ ] "הבא" מתקדם — לחצי "הבא"; **תוצאה מצופה:** 25 השורות הבאות; בעמוד האחרון "הבא" מושבת.
+- [ ] בורר גודל עמוד — שני ל-50/100; **תוצאה מצופה:** מספר השורות משתנה וחוזרים לעמוד 1.
+- [ ] שינוי פילטר מאפס — עברי לעמוד 2 ואז שני role או הריצי חיפוש; **תוצאה מצופה:** חוזרים לעמוד 1 עם התוצאות המסוננות.
+- [ ] פעולות שורה בעמוד 2 — חסימה / תפריט ⋮ / דיאלוג אישור; **תוצאה מצופה:** עובדים כרגיל, והחסימה לא מחזירה לעמוד 1.
+- [ ] נייד — הפקדים נשברים לשתי שורות (flex-col) בלי גלישה אופקית.
+
+### MEH-1040 — dialog מודאלי למחיקת ביקורת ב-/admin/reviews
+- [ ] אין confirm() native — `/admin/reviews` → לחצי "מחקי" על ביקורת; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה ב-MEH-1023) — **לא** חלון confirm של הדפדפן.
+- [ ] שמות בדיאלוג — **תוצאה מצופה:** הטקסט "למחוק את הביקורת של <משתמשת> על <עסק>?" עם השמות האמיתיים מהשורה.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול" (או Escape); **תוצאה מצופה:** הדיאלוג נסגר, הביקורת נשארת, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקי" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /reviews/{id}`, הדיאלוג נסגר, השורה נעלמת + toast הצלחה. בזמן המחיקה שני הכפתורים מושבתים ("במחיקה...").
+- [ ] כשל מחיקה — (סימולציה: ניתוק רשת) **תוצאה מצופה:** toast שגיאה, הדיאלוג נשאר פתוח.
+
+### MEH-1023 Chunk B — dialog מודאלי למחיקת קטגוריה ב-/admin (טאב "תוכן")
+- [ ] אין confirm() native — `/admin` → טאב "תוכן" → "קטגוריות" → לחצי "מחקו" על קטגוריה; **תוצאה מצופה:** נפתח dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו דיאלוג האישור ב-/admin/users) — **לא** חלון confirm של הדפדפן.
+- [ ] שם הקטגוריה בדיאלוג — **תוצאה מצופה (עודכן ב-MEH-1034):** הטקסט הוא "מחיקת '<שם הקטגוריה>' — N בתי עסק משויכים" עם השם האמיתי והמספר האמיתי של בתי העסק המשויכים.
+- [ ] ביטול = אין מחיקה — לחצי "ביטול"; **תוצאה מצופה:** הדיאלוג נסגר, הקטגוריה נשארת ברשימה, לא נשלח DELETE.
+- [ ] אישור = מחיקה — לחצי "מחקו" בדיאלוג; **תוצאה מצופה:** נשלח `DELETE /admin/categories/{id}`, הדיאלוג נסגר, הרשימה מתרעננת בלי הקטגוריה. בזמן המחיקה הכפתור מציג "מוחקים…" ומושבת.
+- [ ] הערה — ~~מספר בתי-העסק המשויכים לא מוצג~~ **טופל ב-MEH-1034:** הדיאלוג מציג את ה-count. מחיקת קטגוריה עדיין מנתקת אותה מכל בתי-העסק המשויכים (FK CASCADE).
+
+### MEH-1034 — producer_count לקטגוריות ב-/admin (טאב "תוכן")
+- [ ] Count בכל שורה — `/admin` → טאב "תוכן" → "קטגוריות"; **תוצאה מצופה:** בכל שורת קטגוריה מופיע "N בתי עסק" (0 לקטגוריה ריקה).
+- [ ] Count בדיאלוג המחיקה — לחצי "מחקו" על קטגוריה עם בתי עסק משויכים; **תוצאה מצופה:** הדיאלוג מציג "מחיקת '<שם>' — N בתי עסק משויכים" עם המספר הנכון.
+- [ ] API — DevTools Network → `GET /admin/categories`; **תוצאה מצופה:** כל שורה כוללת `producer_count`. ה-endpoint הציבורי `GET /categories` מחזיר `producer_count: null` (לא נשבר).
+
+### MEH-1027 Chunk B — dialog מודאלי למחיקת בית עסק ב-/admin/producers
+- [ ] פתיחה — `/admin/producers` → ⋮ בשורה → "מחקו"; **תוצאה מצופה:** dialog מודאלי (overlay כהה + כרטיס לבן, אותו visual כמו מחיקת קטגוריה/ביקורת) עם 'למחוק את "<שם בית העסק>"? פעולה זו אינה הפיכה.' — **לא** confirm של הדפדפן, ועדיין אין DELETE.
+- [ ] ביטול — "ביטול" סוגר בלי מחיקה; Escape סוגר גם כן (אך לא באמצע מחיקה).
+- [ ] אישור — "מחקו" בדיאלוג מוחק (הכפתור מציג "מוחקים…" בזמן הקריאה, שני הכפתורים נעולים), הדיאלוג נסגר והרשימה מתרעננת. התנהגות MEH-747 (FK מנותק) ללא שינוי.
+- [ ] כשל מחיקה — אם ה-DELETE נכשל: toast שגיאה והדיאלוג נשאר פתוח לניסיון חוזר/ביטול.
+- [ ] a11y kebab (fold-in) — פריט תפריט busy נשאר נגיש במקלדת (focusable, `aria-disabled`) אך לחיצה לא מפעילה; **רגרסיה ב-/admin/users:** אין — פריטי התפריט שם מתנהגים בדיוק כמו קודם (אין להם מצב busy).
+- [ ] נייד (iOS Safari + Chrome) — הדיאלוג ממורכז, כפתורים נגישים בטאץ'.
+
+### MEH-1027 Chunk A — תפריט פעולות (overflow menu) ב-/admin/producers
+- [ ] Kebab במקום inline — `/admin/producers` — איך לבדוק: בעמודת "פעולות" יש ⋮ בכל שורה; **תוצאה מצופה:** "השהה/הפעל", "שגריר", "סטורי" ו"מחקו" כבר לא inline — רק בתוך התפריט. "עריכה" (+"צפה" כשיש slug) נשארים inline.
+- [ ] שורה ממתינה (pending) — סנני `pending`; **תוצאה מצופה:** "✓ אשר" + "בקשת השלמה" + "עריכה" inline ליד ⋮; בתפריט רק "מחקו" (אין השהה/שגריר/סטורי לעסק לא-מאושר).
+- [ ] שורה מאושרת — **תוצאה מצופה:** בתפריט: השהה · שגריר (☆/⭐) · 📸 סטורי · מחקו (אדום, danger).
+- [ ] סטורי מהתפריט — ⋮ → "📸 סטורי"; **תוצאה מצופה:** ה-StoryCardCanvas נפתח מתחת לשורה בדיוק כמו קודם (התנהגות ללא שינוי — רק המיקום זז).
+- [ ] שגריר מהתפריט — ⋮ → "☆ שגריר" על עסק מאושר; **תוצאה מצופה:** trust tier מתעדכן כמו קודם (toggle זהה, רק מהתפריט).
+- [ ] מחיקה מהתפריט — ⋮ → "מחקו"; **תוצאה מצופה:** נפתח dialog מודאלי עם שם בית העסק (Chunk B, MEH-1027) — לא חלון confirm של הדפדפן.
+- [ ] פתיחה/סגירה — לחיצה שנייה על ⋮ / לחיצה בחוץ / Escape סוגרים (Escape מחזיר פוקוס ל-⋮); בשולי הטבלה התפריט עשוי להיחתך ע"י מסגרת הטבלה (תכונה מוכרת של התפריט, זהה ל-/admin/users).
+- [ ] נייד (iOS Safari + Chrome) — ⋮ נפתח ונסגר בטאץ'; הפעולות עובדות מהתפריט.
+
+### MEH-1023 Chunk A — תפריט פעולות תפקיד (overflow menu) ב-/admin/users
+- [ ] Kebab במקום inline — `/admin/users` — איך לבדוק: בעמודת "פעולות" של כל שורה יש כפתור "חסום" inline + כפתור שלוש-נקודות (⋮); **תוצאה מצופה:** "העלי לאדמין"/"הסירי הרשאות" כבר לא כפתורים inline — הם רק בתוך התפריט הנפתח.
+- [ ] פתיחה/סגירה — לחצי על ⋮; **תוצאה מצופה:** תפריט נפתח לכיוון ההתחלה (ימין ב-RTL). לחיצה שנייה על ⋮ / לחיצה מחוץ לתפריט / מקש Escape → נסגר (Escape מחזיר פוקוס ל-⋮).
+- [ ] Promote דרך התפריט — על משתמש שאינו אדמין פתחי ⋮ → "העלי לאדמין"; **תוצאה מצופה:** נפתח **אותו** דיאלוג אישור קיים; אישור → המשתמש הופך לאדמין (ללא שינוי בזרימה).
+- [ ] Demote דרך התפריט — על אדמין רגיל (לא ראשי, לא את עצמך) פתחי ⋮ → "הסירי הרשאות" (אדום); **תוצאה מצופה:** דיאלוג אישור, אישור → הורדה מאדמין.
+- [ ] אדמין ראשי (super-admin) — בשורת `levismadar80@gmail.com`; **תוצאה מצופה:** אין תפריט ⋮ (או ריק) — אין מה להציג; ה-tooltip של המנעול (🔒) עדיין מופיע בעמודת "תפקיד".
+- [ ] השורה של עצמך (אדמין) — **תוצאה מצופה:** אין "הסירי הרשאות" בתפריט (isMe guard) — לא ניתן להוריד את עצמך.
+- [ ] נגישות מקלדת — Tab ל-⋮ → Enter/Space פותח → פריטי התפריט נגישים ב-Tab, `aria-expanded` מתחלף.
+- [ ] נייד (iOS Safari + Chrome) — התפריט נפתח מעל/מתחת לשורה בלי לגלוש מהמסך; טאץ' מחוץ לתפריט סוגר.
+
+### MEH-1011 Chunk 2 — בקשת השלמה (admin UI)
+- [ ] כפתור בקשת השלמה — `/admin/producers` (סנני `pending`) — איך לבדוק: בשורת עסק ממתין יש כפתור "בקשת השלמה" ליד "✓ אשר"; **תוצאה מצופה:** לחיצה פותחת מודל "בקשת השלמה מבית העסק" עם textarea + 2 צ'יפים מהירים.
+- [ ] שליחת בקשה — במודל, לחצי צ'יפ "חסרה תמונה…" → הטקסט ממלא את ה-textarea → "שלחו בקשה"; **תוצאה מצופה:** toast הצלחה, המודל נסגר, ובשורה מופיע badge "ממתין להשלמה" + תאריך (התאריך מיושר LTR, לא נשבר ב-RTL). מייל נשלח לבעלת העסק (לוג/Resend).
+- [ ] 422 auto-open — עסק ממתין **ללא תמונה** → לחצי "✓ אשר"; **תוצאה מצופה:** במקום toast שגיאה סתמי — נפתח מודל בקשת השלמה עם "חסרה תמונה — יש להעלות לפחות תמונה אחת" ממולא מראש + toast מידע "לא ניתן לאשר עדיין…". עסק בקטגוריית רישיון ללא מספר → prefill "חסר מספר רישיון יצרן".
+- [ ] ניקוי trail — לאחר שהעסק העלה תמונה → "✓ אשר" מצליח (200); **תוצאה מצופה:** ה-badge "ממתין להשלמה" נעלם (approve מנקה `requested_changes`).
+- [ ] **MEH-1051 WhatsApp לבעלת העסק** — שלחי בקשת השלמה לעסק ממתין **עם טלפון**; **תוצאה מצופה:** בנוסף למייל מגיעה הודעת WhatsApp מתבנית `producer_changes_requested_v1` עם שם העסק + הטקסט שהוזן בשורה אחת (בלי ירידות שורה). עסק **בלי טלפון** → הבקשה עדיין מצליחה (200), רק מייל, ולוג `[WHATSAPP] Producer changes_requested SKIPPED`.
+- [ ] feedback ריק — במודל השאירי ריק → "שלחו בקשה"; **תוצאה מצופה:** toast שגיאה "יש לפרט מה נדרש להשלים." והבקשה לא נשלחת.
 - [ ] Owner self-fetch — login כיצרן עם רישיון → `GET /producers/me` (DevTools) → המספר מופיע (`ProducerAdminOut` swap).
 - [ ] Owner self-edit (renewal) — `PUT /producers/me` עם `producer_license_number: "9999999"` → 200 + המספר התעדכן.
 - [ ] RTL mobile — פתחי את `/register/producer` במובייל אמיתי → label בעברית, input dir="ltr" (ספרות), warning inline ימינה, toggle "יש לי רישיון יצרן ↓" עם חץ נכון.
@@ -559,9 +677,17 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] PUT preserves legacy `price_range` — איך לבדוק: pick a row with non-null `price_range` (e.g. `"₪45/ק״ג"`); `PUT /producers/me/products/:id` with body `{"name":"שם חדש"}` only; **תוצאה מצופה:** 200; `price_range` value unchanged in DB.
 - [ ] Staging schema sanity — איך לבדוק (after Railway redeploy): `psql $DATABASE_URL_STAGING -c "\d products"`; **תוצאה מצופה:** columns `price_min numeric(10,2)` + `price_max numeric(10,2)` both present and nullable; `price_range varchar(50)` still present (legacy fallback).
 
+### ProductsSection mount in the edit tab (MEH-999 follow-up)
+
+> The product-catalog editor (`ProductsSection`) was defined but never mounted (0 render sites). It is now a card in the producer **edit tab**. NOTE: the Phase-3 QA lines below say `/settings` → "מוצרים" — that path never actually rendered the section; use the edit-tab path (`/producer/dashboard/edit`) instead until those lines are refreshed.
+
+- [ ] Section visible — איך לבדוק: התחברי כיוצרת → `/producer/dashboard/edit`; **תוצאה מצופה:** בתחתית העמוד, מתחת לכרטיסי הקטגוריות/תמונות/מיקום, מופיע כרטיס "מוצרים" עם כפתור "הוסיפו מוצר".
+- [ ] Empty state — איך לבדוק: יוצרת ללא מוצרים; **תוצאה מצופה:** מופיע empty-state "מוצר ראשון = בית עסק חי" עם CTA "+ הוסיפו מוצר ראשון".
+- [ ] Add/edit/delete end-to-end — איך לבדוק: הוסיפי מוצר (שם + מחיר), ערכי אותו, מחקי אותו; **תוצאה מצופה:** כל פעולה נשמרת מול `/producers/me/products` ומתעדכנת ברשימה מיידית (POST/PUT/DELETE).
+
 ### Phase 3 — frontend form + display (MEH-295 Phase 3)
 
-> Manual QA on Vercel preview at mobile width 375px. Login as producer → `/settings` → "מוצרים" section → "הוסיפי מוצר".
+> Manual QA on Vercel preview at mobile width 375px. Login as producer → the edit tab (`/producer/dashboard/edit`) → "מוצרים" section → "הוסיפו מוצר". (Historically read `/settings`; the section was never mounted there.)
 
 - [ ] Add range — איך לבדוק: open form, name="טסט-טווח", price_min=50, price_max=80, submit; **תוצאה מצופה:** card נוסף לרשימה עם "₪50–₪80" ב-`text-accent`. Producer detail page shows same range with `font-medium`.
 - [ ] Add single price — איך לבדוק: name="טסט-יחיד", price_min=45, price_max ריק, submit; **תוצאה מצופה:** card עם "₪45" בלבד.
@@ -974,7 +1100,7 @@ The fix applies to **4 distinct UI surfaces** — verify each:
 
 - [ ] **Homepage producer grid** → click the WhatsApp icon on a `ProducerCard` → correct wa.me URL
 - [ ] **`/producer/:id` detail page** → click the big green WhatsApp button in the sticky contact sidebar → correct wa.me URL
-- [ ] **`/map` popup** → click a producer marker → popup has a WhatsApp link → opens wa.me with correct number
+- [ ] **`/map` mobile sheet card** → tap a producer marker (mobile) → pinned sheet card has a WhatsApp link → opens wa.me with correct number. (MEH-1010: the desktop mini-popup was retired — on desktop, marker click scrolls+highlights the sidebar card; WhatsApp CTA lives on the card.)
 - [ ] **`/neighbor` home-product cards** → click the green WhatsApp CTA (the `WhatsAppButton` component) → correct wa.me URL
 
 ### Empty-input guards still work
@@ -1237,13 +1363,29 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] Mobile: sheet content scrolls fully, "מידע נוסף" visible with padding
 - [ ] Mobile: X close button stays at top-left during scroll → tap → closes
 - [ ] Mobile: category legend NOT visible (hidden, filter chips serve this role)
-- [ ] Desktop: legend visible at bottom-right (z-800)
+- [ ] Desktop: legend visible at the map's bottom-LEFT (physical `bottom-4 left-4`, z-800 — geographic map overlay, rtl-ok; was misdocumented as "bottom-right" since #136, corrected in MEH-1009). With a top banner (email verification) the toggle must still be fully inside the viewport.
 
 ### Regression
 - [ ] "חפשי באזור זה" button works (z-1000)
 - [ ] "קרוב אלי" clickable with sheet open
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
+
+### Mobile top-banner height reservation (MEH-1019)
+_(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
+- [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
+- [ ] Mobile WITHOUT banner — verified user / logged out → `/he/map` layout unchanged (no double reservation, no gap). תוצאה מצופה: זהה לקודם.
+
+---
+
+## /map desktop — marker click = card-sync (MEH-1010)
+
+- [ ] Marker click scrolls the matching card — `/he/map` desktop → click a producer marker → the sidebar scrolls the matching card into view (smooth) with a primary ring+border highlight. תוצאה מצופה: הכרטיס הנכון נגלל ומודגש; אין popup צף בתחתית המפה.
+- [ ] Highlight survives zoom/pan — after selecting a marker, zoom out / pan → the card highlight stays until another selection. תוצאה מצופה: ההדגשה נשמרת; קליק על רקע המפה מנקה אותה.
+- [ ] Cluster child — click a cluster (green circle+count) → it expands/zooms → click a child marker → same scroll+highlight. תוצאה מצופה: זהה למרקר בודד.
+- [ ] Keyboard — Tab to a marker (focus ring) → Enter → same scroll+highlight flow. תוצאה מצופה: Enter שקול לקליק (MEH-765).
+- [ ] Legend rows clickable — open the legend (squares button, bottom-left of map) → click a category row → the filter applies AND the panel stays open; click the map canvas → panel closes. תוצאה מצופה: אין "בליעת" קליקים.
+- [ ] Mobile unchanged — 375px: marker tap still opens the bottom sheet with the pinned card; no legend visible. תוצאה מצופה: התנהגות זהה לקודם.
 
 ---
 
@@ -1624,8 +1766,9 @@ Added with `feature/session-handoff`.
 - [ ] Click "פתוח להזמנות" — תוצאה מצופה: pill highlights, no vacation date input shown.
 - [ ] Click "זמינה היום 🟢" — תוצאה מצופה: pill highlights, no vacation date input.
 - [ ] Click "עמוסה השבוע 🟠" — תוצאה מצופה: pill highlights, no vacation date input.
-- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input appears below.
-- [ ] Pick a future date in the vacation input + blur — תוצאה מצופה: state persists; refresh page → still on vacation with the same date.
+- [ ] Click "בהפסקה ⏸" — תוצאה מצופה: pill highlights, vacation date input + "שמרו" button appear below — BEFORE any save (MEH-999 reveal). No network request fired yet.
+- [ ] Click "שמרו" with the date empty — תוצאה מצופה: inline red error "בחרו תאריך חזרה כדי לעבור להפסקה"; no POST to `/producers/me/availability-state` (client-side guard, no 422 round-trip).
+- [ ] Pick a future date + click "שמרו" — תוצאה מצופה: POST `{state:"on_vacation", vacation_until:...}` succeeds; refresh page → still on vacation with the same date.
 - [ ] Switch back to "פתוח להזמנות" — תוצאה מצופה: vacation date cleared.
 
 ### ProducerCard badge dot
@@ -1883,3 +2026,25 @@ One-time pre-launch baseline via k6. NOT in CI. Script: `scripts/load-test.js`. 
 - [ ] **subhead** — בחרי עיר (או GPS פעיל) → מתחת לשורת הספירה מופיע "קרוב אליך · {שם העיר}" — תוצאה מצופה: subhead מוצג רק כשיש עיר/region; אין עיר → ה-subhead נעלם (בלי "·" תלוי)
 - [ ] **h1 נשאר** — ה-h1 "מפת בתי עסק" עדיין בראש ה-pane (לא הוסר) — תוצאה מצופה: אין כותרת כפולה גלויה "בתי עסק" מוערמת
 - [ ] **/en** — `/en/map` → "{N} local businesses in your area" + "Near you · {city}"
+
+## MEH-992 — group-buy dashboard form clarity
+
+טופס יצירת קבוצת רכש (`/he/producer/dashboard/group-buys` → "+ קבוצת רכש חדשה"). Copy חדש ב-he.json בלבד (functional/neutral, ADR-024); en.json לא נגעו.
+
+- [ ] **₪ בשדות מחיר** — פתחי את הטופס → בשני שדות המחיר (רגיל + קבוצתי) מופיע ₪ בצד ימין של השדה, המספר מיושר לצדו — תוצאה מצופה: הסמל לא חופף לספרות; RTL תקין במובייל 375px
+- [ ] **helper מחיר לפני שליחה** — הזיני מחיר קבוצתי ≥ מחיר רגיל (למשל 25 מול 20) → הטקסט "המחיר הקבוצתי חייב להיות נמוך מהמחיר הרגיל." הופך אדום וכפתור "צרו קבוצת רכש" מושבת — תוצאה מצופה: לא מגיעים ל-400 גולמי מהשרת; מחיר תקין (קבוצתי < רגיל) → ה-helper מהוסה והכפתור פעיל
+- [ ] **helper מועד אחרון** — מתחת לשדה המועד האחרון מופיע "המועד האחרון להצטרפות, לפי שעון ישראל." — תוצאה מצופה: מבהיר מה המשמעות של התאריך + אזור הזמן
+- [ ] **intro מושג** — מתחת לכותרת "קבוצת רכש חדשה" מופיעה שורה אחת שמסבירה מה זו קבוצת רכש (מספיק לקוחות → מחיר סיטונאי)
+
+## MEH-997 — עמוד מודרציית מתכונים חדש (/admin/recipes)
+
+ה-backend של מודרציית מתכונים (MEH-589) חי מאז האפיק של המתכונים, אבל עמוד האדמין מעולם לא נבנה — מתכון שהוגש ישב ב-pending בלי שום מסך שמציג אותו. העמוד החדש משקף 1:1 את `/admin/experiences`.
+
+- [ ] **קישור בסיידבר** — התחברי כמנהלת → בסיידבר של האדמין מופיע "מתכונים" (אייקון לחם) בין "חוויות" ל"משתמשים" — תוצאה מצופה: לחיצה מובילה ל-`/admin/recipes`
+- [ ] **תור ממתינים** — צרי מתכון כבעלת עסק (`/producer/dashboard/recipes`) → פתחי `/admin/recipes` כמנהלת → תוצאה מצופה: המתכון מופיע בטאב "ממתינים" עם סטטוס "ממתין" ו"לא פורסם"
+- [ ] **badge בסיידבר** — כשיש מתכון ממתין → תוצאה מצופה: המונה ליד "לוח מחוונים" בסיידבר כולל אותו (pending_moderation_count)
+- [ ] **אישור** — לחצי "אשרי" → תוצאה מצופה: toast "המתכון אושר ופורסם"; המתכון עובר לטאב "מאושרים"; מופיע בעמוד הציבורי של בית העסק
+- [ ] **בקשת שינויים** — "שינויים" בלי הערה → נחסם ("יש למלא הערה"); עם הערה → המתכון עובר ל"דרוש תיקון" ובעלת העסק רואה את ההערה בדשבורד שלה
+- [ ] **דחייה** — "דחי" עם סיבה → המתכון עובר ל"נדחו" ולא מופיע בעמוד הציבורי
+- [ ] **טאבים** — מעבר בין 5 הטאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) — תוצאה מצופה: כל טאב מסנן לפי הסטטוס שלו; טאב ריק מציג "אין מתכונים בסטטוס הזה"
+- [ ] **מובייל 375px** — העמוד נטען, הטבלה נגללת אופקית בתוך הכרטיס, הטאבים נגללים — תוצאה מצופה: אין גלילה אופקית של העמוד כולו

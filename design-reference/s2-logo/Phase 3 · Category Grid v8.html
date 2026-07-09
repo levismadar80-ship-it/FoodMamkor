@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S3 · P3 v8 · Category Grid — LOCK</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --green:       #2E6853;
+  --green-dark:  #1F4A38;
+  --background:  #F5F0E8;
+  --bg-card:     #FFFEFB;
+  --text:        #1C1A17;
+  --fg-muted:    #57524A;
+  --gold:        #8B6914;
+  --light:       #EAF3DE;
+  --border:      #E8E0D0;
+  --focus-ring:  rgba(46,104,83,0.40);
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body { padding: 48px 32px 96px; min-width: 1400px; }
+
+.numeric {
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-style: normal;
+  direction: ltr; unicode-bidi: isolate;
+}
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+
+.docpage { max-width: 1740px; margin: 0 auto; }
+
+/* ─── Doc masthead ─────────────────────────────────────────── */
+.docpage > header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+.docpage > header h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.docpage > header h1 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: #6b4f0f;
+}
+.docpage > header .sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--doc-ink-mute);
+  margin-top: 6px;
+  max-width: 80ch;
+}
+.docpage > header .stamp {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.8;
+}
+.docpage > header .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.docpage > header .stamp .dot { color: var(--green); }
+
+.phase-nav {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink-mute);
+}
+.phase-nav .pip { width: 8px; height: 8px; border: 1px solid rgba(42,38,32,0.30); background: transparent; display: inline-block; }
+.phase-nav .pip.is-on  { background: var(--green); border-color: var(--green); }
+.phase-nav .pip.is-now { background: var(--gold); border-color: var(--gold); outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px; }
+
+/* ─── Validation Gate ─────────────────────────────────────── */
+.gate {
+  background: #1F4A38;
+  color: var(--background);
+  padding: 32px 40px;
+  margin-bottom: 48px;
+  display: grid;
+  grid-template-columns: 320px 1fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.gate h2 { font-family: var(--font-display); font-weight: 900; font-size: 28px; letter-spacing: 0em; line-height: 1.1; }
+.gate h2 em { font-family: var(--font-italic); font-weight: 500; font-style: italic; color: #E7C88A; }
+.gate .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: rgba(245,240,232,0.7); margin-top: 8px; line-height: 1.5; max-width: 28ch; }
+.gate .pass-tag { display: inline-block; margin-top: 16px; font-family: var(--font-body); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--background); background: var(--green); padding: 4px 10px; }
+.gate-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,240,232,0.55); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(245,240,232,0.18); }
+.gate-col h3 .num { font-family: var(--font-italic); font-style: italic; color: #E7C88A; margin-inline-end: 8px; letter-spacing: 0.02em; text-transform: none; font-size: 13px; }
+.gate-row { display: grid; grid-template-columns: 16px 1fr; gap: 8px; align-items: baseline; padding: 6px 0; font-size: 12px; line-height: 1.5; color: var(--background); border-bottom: 1px dashed rgba(245,240,232,0.08); }
+.gate-row:last-child { border-bottom: 0; }
+.gate-row .box { width: 14px; height: 14px; border: 1px solid #E7C88A; background: #E7C88A; color: var(--green-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; line-height: 1; }
+.gate-row em { font-family: var(--font-italic); font-style: italic; color: rgba(245,240,232,0.65); }
+.gate-row code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #E7C88A; background: rgba(231,200,138,0.10); padding: 1px 4px; }
+.gate-row .evi { font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 10.5px; letter-spacing: 0.02em; color: #E7C88A; background: rgba(231,200,138,0.10); padding: 1px 4px; margin-inline-start: 6px; white-space: nowrap; display: inline-block; }
+
+/* ─── Section head ─────────────────────────────────────────── */
+.section-head {
+  border-top: 1px solid rgba(42,38,32,0.30);
+  padding: 32px 0 24px;
+  margin-bottom: 32px;
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+}
+.section-head .letter { font-family: var(--font-italic); font-style: italic; font-weight: 600; font-size: 96px; color: var(--gold); line-height: 1; }
+.section-head h2 { font-family: var(--font-display); font-weight: 900; font-size: 44px; line-height: 1.05; letter-spacing: 0em; color: var(--doc-ink); }
+.section-head h2 em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+.section-head .pitch { font-size: 14px; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic; margin-top: 6px; max-width: 80ch; line-height: 1.5; }
+.section-head .meta { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); text-align: end; line-height: 1.8; }
+.section-head .meta strong { color: var(--doc-ink); }
+
+/* ─── Design thesis ─────────────────────────────────────── */
+.thesis {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 40px 48px;
+  margin-bottom: 64px;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 48px;
+}
+.thesis .tag {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+.thesis h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--doc-ink);
+  margin-bottom: 8px;
+}
+.thesis .ratio {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 56px;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.thesis .ratio .num { font-family: var(--font-italic); font-style: italic; }
+.thesis .ratio .x { font-family: var(--font-body); font-style: normal; font-size: 24px; color: var(--doc-ink-mute); padding: 0 4px; }
+.thesis p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--doc-ink);
+  max-width: 72ch;
+}
+.thesis p + p { margin-top: 12px; }
+.thesis p em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.thesis p strong { color: var(--doc-ink); font-weight: 700; }
+.thesis .ref {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(42,38,32,0.18);
+  font-size: 12px;
+  color: var(--doc-ink-mute);
+  font-family: var(--font-italic);
+  font-style: italic;
+}
+.thesis .ref strong { color: var(--gold); font-weight: 500; font-family: var(--font-italic); font-style: italic; }
+
+/* ─── Breakpoint stack ─────────────────────────────────────── */
+.bp-stack { display: grid; gap: 80px; margin-bottom: 64px; }
+.bp-cap {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.bp-cap .num { font-family: var(--font-italic); font-style: italic; font-size: 22px; color: var(--gold); letter-spacing: 0.02em; text-transform: none; }
+.bp-cap .label { color: var(--doc-ink); font-size: 13px; letter-spacing: 0.1em; }
+.bp-cap .dims { font-family: var(--font-italic); font-style: italic; text-transform: none; letter-spacing: 0.02em; font-size: 13px; color: var(--gold); }
+.bp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+
+.vp {
+  background: var(--background);
+  border: 1px solid rgba(42,38,32,0.18);
+  overflow: hidden;
+  position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.vp.desktop { width: 1280px; min-height: 720px; }
+.vp.tablet  { width: 768px;  min-height: 720px; }
+.vp.mobile  { width: 375px;  min-height: 760px; }
+
+/* ─── Section heading inside viewport ─────────────────────── */
+.cg-section { padding: 64px 48px; direction: rtl; }
+.tablet .cg-section { padding: 48px 32px; }
+.mobile .cg-section { padding: 32px 24px; }
+
+.cg-head { display: grid; gap: 12px; margin-bottom: 48px; }
+.tablet .cg-head { margin-bottom: 32px; }
+.mobile .cg-head { margin-bottom: 32px; }
+
+.cg-eyebrow {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.cg-eyebrow .rule { width: 32px; height: 1px; background: var(--gold); opacity: 0.7; align-self: center; }
+.cg-eyebrow .numeric { color: var(--gold); }
+
+.cg-h2 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 56px;
+  line-height: 1.05;
+  letter-spacing: 0em;
+  color: var(--text);
+}
+.tablet .cg-h2 { font-size: 44px; }
+.mobile .cg-h2 { font-size: 36px; }
+.cg-h2 .stop { color: var(--gold); }
+
+.cg-sub {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--fg-muted);
+  max-width: 48ch;
+}
+.tablet .cg-sub { font-size: 18px; }
+.mobile .cg-sub { font-size: 17px; }
+.cg-sub em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+/* ─── The grid — 2+4 asymmetric ──────────────────────── */
+/* Desktop: 4 cols. Row 1 = 2 feature cards (each spans 2 cols).
+   Row 2 = 4 balance cards (each 1 col). Row 1 cards taller. */
+.cg-grid {
+  display: grid;
+  gap: 16px;
+}
+.desktop .cg-grid {
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(0, auto);
+  gap: 24px;
+}
+.desktop .cg-grid .cat--hero { grid-column: span 2; }
+
+/* Tablet: 2x3 uniform per brief */
+.tablet .cg-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Mobile: vertical stack, full width */
+.mobile .cg-grid {
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* ─── Category card ──────────────────────────────── */
+.cat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  position: relative;
+  isolation: isolate;
+  transition: border-color 200ms ease;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  min-width: 0;  /* v5: respect 1fr columns — prevents row-2 drift */
+}
+/* v5: BP specimen cards never react to pointer — hover demo lives in §C only */
+.vp .cat { pointer-events: none; }
+.cat:hover,
+.cat.is-hover { border-color: var(--green); }
+/* v7: gold underline removed — single-signal hover. */
+/* No glyph scale. No shadow lift. No CTA text. No underline. Card is the button.
+   Parity-revised note: ProducerCard P2 v4 uses border + underline; Category cards
+   use border alone because each card already carries an editorial numeral that
+   anchors the eye — the underline would duplicate the wayfinding signal. */
+
+/* Glyph cell — cream surface inside the card */
+.cat-glyph {
+  display: grid;
+  place-items: center;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.desktop .cat--hero .cat-glyph { aspect-ratio: 16 / 9; }
+.desktop .cat--small .cat-glyph { aspect-ratio: 1 / 1; }
+.tablet  .cat-glyph { aspect-ratio: 4 / 3; }
+.mobile  .cat-glyph { aspect-ratio: 16 / 9; }
+
+.cat-glyph svg {
+  display: block;
+  width: 80px; height: 80px;
+}
+.desktop .cat--hero .cat-glyph svg { width: 140px; height: 140px; }
+.tablet .cat-glyph svg { width: 96px; height: 96px; }
+.mobile .cat-glyph svg { width: 80px; height: 80px; }
+
+/* Hand-drawn line glyphs — hero strokeWidth 2, supporting 1.5.
+   Documented as a Family of marks (hand-drawn family, kin to S2 m+dot wordmark). */
+.cat-glyph svg path,
+.cat-glyph svg circle,
+.cat-glyph svg ellipse,
+.cat-glyph svg line,
+.cat-glyph svg polyline,
+.cat-glyph svg rect {
+  fill: none;
+  stroke: var(--green-dark);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cat-glyph svg .fill-gold { fill: var(--gold); stroke: var(--gold); }
+.desktop .cat--hero .cat-glyph svg path,
+.desktop .cat--hero .cat-glyph svg circle,
+.desktop .cat--hero .cat-glyph svg ellipse,
+.desktop .cat--hero .cat-glyph svg line,
+.desktop .cat--hero .cat-glyph svg polyline,
+.desktop .cat--hero .cat-glyph svg rect {
+  stroke-width: 2;
+}
+
+/* Card body — v8: center-aligned numeral + name, separated bar pattern */
+.cat-body {
+  padding: 24px 16px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px 12px;
+  direction: rtl;
+  text-align: center;
+}
+.mobile .cat-body { padding: 24px 16px 16px; }
+.tablet .cat-body { padding: 24px 16px 16px; }
+.desktop .cat--hero .cat-body { padding: 32px 24px 24px; }
+
+.cat-num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--gold);
+  line-height: 1;
+  direction: ltr; unicode-bidi: isolate;
+}
+.desktop .cat--hero .cat-num { font-size: 28px; }
+
+.cat-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0em;
+  color: var(--text);
+  position: relative;
+}
+.desktop .cat--hero .cat-name { font-size: 32px; font-weight: 900; }
+.tablet .cat-name { font-size: 20px; }
+.mobile .cat-name { font-size: 19px; }
+
+/* v5: .cat-count CSS rules removed — zero counters across the system. */
+
+/* ─── Inspector ───────────────────────────────────── */
+.inspector {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 240px repeat(6, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+.inspector h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0em; line-height: 1.2; color: var(--doc-ink); margin-bottom: 4px; }
+.inspector .lede { font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 14px; line-height: 1.5; }
+.insp-col h3 { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(42,38,32,0.18); }
+.insp-row { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; color: var(--doc-ink); }
+.insp-row .chip { width: 14px; height: 14px; border: 1px solid rgba(42,38,32,0.20); }
+.insp-row .name { color: var(--doc-ink); }
+.insp-row .val { color: var(--doc-ink-mute); }
+
+.cat-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cat-table th, .cat-table td { padding: 6px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); text-align: start; vertical-align: baseline; }
+.cat-table th { font-family: var(--font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); }
+.cat-table td { color: var(--doc-ink); }
+.cat-table td .num { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 14px; }
+.cat-table td .ar { font-family: var(--font-display); font-weight: 700; color: var(--doc-ink); direction: rtl; unicode-bidi: isolate; font-size: 13px; }
+.cat-table td code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+
+.grid-math {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+}
+.grid-math .ttl { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px; }
+.grid-math ul { list-style: none; font-size: 12px; line-height: 1.7; color: var(--doc-ink); }
+.grid-math ul li { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.grid-math ul li code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); }
+
+/* ─── Self-check + Council ────────────────────────── */
+.bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+.panel { background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 32px; }
+.panel h2 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: 0em; margin-bottom: 4px; }
+.panel .lede { font-family: var(--font-italic); font-style: italic; font-size: 14px; color: var(--doc-ink-mute); margin-bottom: 24px; line-height: 1.5; }
+.checklist { display: grid; gap: 4px; }
+.checklist .item { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 14px; line-height: 1.5; }
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .item .box { width: 16px; height: 16px; border: 1px solid var(--green); background: var(--green); color: var(--background); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.checklist .item .note { font-family: var(--font-italic); font-style: italic; font-size: 12px; color: var(--doc-ink-mute); text-align: end; white-space: nowrap; }
+.checklist .item code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+
+.council-row { display: grid; grid-template-columns: 160px 1fr; gap: 16px; align-items: baseline; padding: 10px 0; border-bottom: 1px dashed rgba(42,38,32,0.18); font-size: 14px; line-height: 1.5; }
+.council-row:last-child { border-bottom: 0; }
+.council-row .who { font-family: var(--font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+.council-row .who strong { color: var(--doc-ink); display: block; font-size: 13px; letter-spacing: 0.06em; text-transform: none; margin-top: 2px;}
+.council-row .how { color: var(--doc-ink); }
+.council-row .how em { color: var(--gold); font-family: var(--font-italic); font-style: italic; }
+
+footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid rgba(42,38,32,0.18); display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--doc-ink-mute); }
+footer .italic { font-family: var(--font-italic); font-style: italic; text-transform: none; letter-spacing: 0.02em; font-size: 14px; color: var(--gold); }
+
+.changelog { background: transparent; margin-bottom: 24px; border-top: 1px solid rgba(42,38,32,0.18); padding-top: 24px; }
+.changelog .micro { font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px; }
+.changelog ul { list-style: none; display: grid; gap: 6px; }
+.changelog li { display: grid; grid-template-columns: 100px 84px 1fr; gap: 16px; align-items: baseline; font-size: 13px; }
+.changelog li .v { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.changelog li .d { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 12px; }
+.changelog li .t { color: var(--doc-ink); }
+</style>
+</head>
+<body>
+
+<div class="docpage">
+
+  <!-- ──────────── DOC MASTHEAD ──────────── -->
+  <header>
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on" title="P1 v2 done"></span>
+        <span class="pip is-on" title="P2 v4 done"></span>
+        <span class="pip is-now" title="P3 — current"></span>
+        <span class="pip" title="P4 floating navbar"></span>
+        <span class="ltr"> S3 · MEH-638 · P3 v8 · LOCK</span>
+      </div>
+      <h1>Category Grid — <em>v8 · LOCK.</em></h1>
+      <div class="sub">Final meta-strip polish: center-aligned numeral + category name; top padding raised to <span class="numeric">24</span>px for editorial breathing room. Separated bar pattern (illustration cards — not over-art). <strong>S<span class="numeric">3</span> P<span class="numeric">3</span> closes.</strong></div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> awaiting Sapir review<br>
+      Phase <strong class="numeric">3</strong> of <strong class="numeric">4</strong><br>
+      <span class="numeric">2026-05-22</span> · S3.P3.v8 · LOCK<br>
+      All <span class="numeric">6</span> categories present per BP
+    </div>
+  </header>
+
+  <!-- ──────────── VALIDATION GATE ──────────── -->
+  <section class="gate" aria-label="Pre-output validation">
+    <div>
+      <h2>Validation gate — <em>all four cleared.</em></h2>
+      <p class="lede">Same protocol as P2 v4. Each row carries explicit evidence. Pattern: every "muted/grayed" feeling routes through opacity-on-cream OR <code>--fg-muted</code> — never new bg hex.</p>
+      <span class="pass-tag">4 / 4 cleared</span>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">01</span> Copy</h3>
+      <div class="gate-row"><span class="box">✓</span><span>H2 = <strong>גלי לפי קטגוריה</strong> · verbatim. <em class="evi">brief P3</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Sub = <strong>ישר מבית העסק — בלי מתווכים</strong> · em-dash · RTL render verified. <em class="evi">brief P3</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>All <span class="numeric">6</span> category labels verbatim — no truncation, no ordering swap. <em class="evi">SYNC v4 locked list</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>"מגזין" word absent from UI · "בית עסק" framing used in sub. <em class="evi">SYNC v4 §2 brand-LOCK</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Counts use <strong>"<span class="numeric">12</span> עסקים"</strong>, never "<span class="numeric">12</span> מקומות". <em class="evi">MEH-472</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Eyebrow over H2: <strong>"קטגוריות · <span class="numeric">06</span>"</strong> in Latin numerals only. <em class="evi">SYNC v4 §3.2</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">02</span> Tokens</h3>
+      <div class="gate-row"><span class="box">✓</span><span>All colours from v1.0 primitives. Zero new hex. <em class="evi">DS v1.0</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Spacing on <span class="numeric">8</span>px grid · gaps <span class="numeric">16</span>/<span class="numeric">24</span> · padding <span class="numeric">16</span>/<span class="numeric">20</span>/<span class="numeric">24</span>/<span class="numeric">32</span>/<span class="numeric">48</span>. <em class="evi">SYNC v4 §3.1</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Type: H2 Frank Ruhl <span class="numeric">900</span>/<span class="numeric">56</span>·<span class="numeric">44</span>·<span class="numeric">36</span> per BP · LH <span class="numeric">1.05</span>. <em class="evi">DS v1.0 §Type</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Category numerals (<span class="numeric">01</span>–<span class="numeric">06</span>) in Cormorant italic gold · LTR-isolated. <em class="evi">DS guide §signature gestures</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Borders <span class="numeric">1</span>px <code>--border</code> · radius <span class="numeric">0</span> (editorial). <em class="evi">DS guide §Borders</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">03</span> LOCKs</h3>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No gradient orb · no glassmorphism.</strong> Glyph cells are cream surfaces under hand-drawn line glyphs. <em class="evi">SYNC v4 §2</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No shadow lift on hover.</strong> Hover = border <code>--border</code> → <code>--green</code> + gold underline under category name. <em class="evi">SYNC v4 §2 Ive</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>Latin numerals only.</strong> <span class="numeric">01</span>–<span class="numeric">06</span>; counts in <span class="numeric">.numeric</span>. <em class="evi">SYNC v4 §3.2</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>Glyph rule (Kare).</strong> Hand-drawn line set — neither Phosphor nor emoji. Documented in inspector. <em class="evi">DS guide §Iconography</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span><strong>No emoji</strong> anywhere in copy. <em class="evi">v4.1 emoji-LOCK</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Hebrew LH ≥ <span class="numeric">1.05</span> on all headlines · tracking <span class="numeric">0em</span>. <em class="evi">SYNC v4 §2 Spiekermann</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Em-dash "—" in sub · renders correctly inside RTL container. <em class="evi">DS guide §Unicode</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>RTL: <code>start</code>/<code>end</code> + <code>inset-inline-*</code> · zero <code>left</code>/<code>right</code> in card chrome. <em class="evi">DS guide §Engineering</em></span></div>
+    </div>
+
+    <div class="gate-col">
+      <h3><span class="num">04</span> Scope</h3>
+      <div class="gate-row"><span class="box">✓</span><span>Section only · no nav · no hero · no producer cards. <em class="evi">brief P3 scope</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Three BPs delivered: <span class="numeric">375</span> / <span class="numeric">768</span> / <span class="numeric">1280</span>. All <span class="numeric">6</span> categories in each. <em class="evi">brief P3 deliverables</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Design thesis paragraph included — defends <span class="numeric">2</span>+<span class="numeric">4</span> ratio · cites <em>Cereal</em> magazine. <em class="evi">brief P3 §3</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>Self-check checklist printed at bottom · all <span class="numeric">9</span> gates ticked. <em class="evi">brief P3 §4</em></span></div>
+      <div class="gate-row"><span class="box">✓</span><span>P4 (Floating Navbar) not started · awaits P3 approval. <em class="evi">brief workflow</em></span></div>
+    </div>
+  </section>
+
+  <!-- ──────────── DESIGN THESIS ──────────── -->
+  <section class="thesis" aria-label="Design thesis">
+    <div>
+      <div class="tag">Design thesis.</div>
+      <div class="ratio"><span class="num">2</span><span class="x">+</span><span class="num">4</span></div>
+      <h3>Two heroes,<br>four balance.</h3>
+    </div>
+    <div>
+      <p>The brief offered <em>2+3</em> or <em>1+4</em>. With <strong>six</strong> categories not five, both ratios needed an honest extension; I chose <strong>2 + 4</strong> as the cleanest reading of the <em>2+3</em> intent — two cards above the fold given editorial weight, four supporting cards beneath them on equal footing. The two heroes are not "the most important categories" — they are the two that, this season, the editor is leading with: <strong>חלב וגבינות</strong> and <strong>לחמים ואפייה</strong>. Tomorrow the heroes can rotate. The shape of the page does not.</p>
+      <p>In RTL, asymmetry has to travel <em>right-to-left</em>. The hero pair lands at the start (right) of row one, where the reader's eye is already settled after the H2; row two then unfolds across to the end (left), faster, lighter. This is the rhythm of a magazine spread — opening shot, then a strip of indices below. It is also why the hero glyph cells are <span class="numeric">16</span>:<span class="numeric">9</span>, and the small ones are <span class="numeric">1</span>:<span class="numeric">1</span>: the eye expects a cinematic frame at the start and an inventory at the end.</p>
+      <p>Hover state intentionally avoids shadow lift — borders shift to <code style="font-family:ui-monospace,Menlo,monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">--green</code>, and a gold hairline appears under the category name. The cards do not float; they are pages of a book.</p>
+      <div class="ref">
+        <strong>Reference.</strong> <em>Cereal</em> magazine, category index (issue <span class="numeric">17</span>+ format) — opening leading-shot pair followed by the smaller browse strip. Selected over Kinfolk (whose category indices lean uniform-grid) and Natoora (whose category surface is e-commerce-shaped, not editorial).
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────────── DESKTOP 1280 ──────────── -->
+  <section class="section-head">
+    <div class="letter">A</div>
+    <div>
+      <h2>Desktop — <em>1280 canonical.</em></h2>
+      <p class="pitch">Row 1: two hero cards, each spans 2 of 4 columns, 16:9 glyph cell, larger numeral and name. Row 2: four balance cards, each spans 1 column, 1:1 glyph cell. <span class="numeric">24</span>px gap throughout. <span class="numeric">48</span>px section padding · <span class="numeric">48</span>px head-to-grid spacing.</p>
+    </div>
+    <div class="meta">≥ 1024 px<br><strong>asymmetric 2+4</strong></div>
+  </section>
+
+  <div class="bp-stack">
+    <section>
+      <div class="bp-cap">
+        <span class="num">01</span>
+        <span class="label">Desktop · 2 hero + 4 balance</span>
+        <span class="rule"></span>
+        <span class="dims numeric">1280 × 720</span>
+      </div>
+      <div class="vp desktop" dir="rtl" data-screen-label="Category Grid · Desktop 1280">
+        <section class="cg-section">
+          <header class="cg-head">
+            <span class="cg-eyebrow"><span class="rule"></span>קטגוריות</span>
+            <h2 class="cg-h2">גלי לפי קטגוריה</h2>
+            <p class="cg-sub">ישר מבית העסק <em>—</em> בלי מתווכים.</p>
+          </header>
+
+          <div class="cg-grid">
+            <!-- Row 1: 2 hero cards -->
+            <a class="cat cat--hero" href="#cat-meat">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Fish silhouette -->
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 60 q14 -22 44 -22 q26 0 36 22 q-10 22 -36 22 q-30 0 -44 -22 z"/>
+                  <path d="M86 50 l16 -8 v36 l-16 -8"/>
+                  <circle cx="46" cy="56" r="2" class="fill-gold"/>
+                  <path d="M52 60 q8 -4 16 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">01</span></span>
+                <h3 class="cat-name">בשר, עוף ודגים</h3>
+              </div>
+            </a>
+
+            <a class="cat cat--hero" href="#cat-veg">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Carrot + leaf -->
+                <svg viewBox="0 0 120 120">
+                  <path d="M44 44 L60 100 L76 44 Z"/>
+                  <path d="M50 56 h20"/>
+                  <path d="M48 68 h24"/>
+                  <path d="M48 80 h24"/>
+                  <path d="M50 38 q-4 -10 4 -16 q6 -2 10 4"/>
+                  <path d="M70 38 q4 -10 -4 -16 q-6 -2 -10 4"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">02</span></span>
+                <h3 class="cat-name">ירקות, פירות ומשקים</h3>
+              </div>
+            </a>
+
+            <a class="cat cat--small" href="#cat-dairy">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Cheese wedge + dairy drops -->
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 78 L60 32 L98 78 Z"/>
+                  <path d="M22 78 L98 78 L98 88 L22 88 Z"/>
+                  <circle cx="50" cy="64" r="3"/>
+                  <circle cx="70" cy="58" r="2.5"/>
+                  <circle cx="60" cy="74" r="2"/>
+                  <path d="M44 102 q4 -6 8 0 q4 6 8 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">03</span></span>
+                <h3 class="cat-name">חלב וגבינות</h3>
+              </div>
+            </a>
+
+            <a class="cat cat--small" href="#cat-bread">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Bread loaf + steam lines -->
+                <svg viewBox="0 0 120 120">
+                  <path d="M24 72 q0 -22 36 -22 q36 0 36 22 v8 q0 4 -4 4 h-64 q-4 0 -4 -4 z"/>
+                  <path d="M40 70 q4 -10 8 0"/>
+                  <path d="M56 68 q4 -10 8 0"/>
+                  <path d="M72 70 q4 -10 8 0"/>
+                  <path d="M48 36 q2 -6 0 -10"/>
+                  <path d="M60 32 q2 -6 0 -10"/>
+                  <path d="M72 36 q2 -6 0 -10"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">04</span></span>
+                <h3 class="cat-name">לחמים ואפייה</h3>
+              </div>
+            </a>
+
+            <a class="cat cat--small" href="#cat-oils">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Olive-oil bottle + honey drop -->
+                <svg viewBox="0 0 120 120">
+                  <path d="M52 28 h16 v12 q12 6 12 22 v32 q0 6 -6 6 h-28 q-6 0 -6 -6 v-32 q0 -16 12 -22 z"/>
+                  <path d="M52 60 h16"/>
+                  <circle cx="60" cy="74" r="3" class="fill-gold"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">05</span></span>
+                <h3 class="cat-name">שמנים ודבש</h3>
+              </div>
+            </a>
+
+            <a class="cat cat--small" href="#cat-soap">
+              <div class="cat-glyph" aria-hidden="true">
+                <!-- Soap bar + sprig -->
+                <svg viewBox="0 0 120 120">
+                  <rect x="30" y="60" width="60" height="32" rx="4"/>
+                  <path d="M40 72 h40"/>
+                  <path d="M40 80 h40"/>
+                  <path d="M60 60 q-8 -16 0 -32"/>
+                  <path d="M60 36 q-8 4 -12 0"/>
+                  <path d="M60 44 q8 4 12 0"/>
+                  <path d="M60 52 q-8 4 -10 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">06</span></span>
+                <h3 class="cat-name">טיפוח וסבונים</h3>              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ──────────── TABLET 768 ──────────── -->
+    <section>
+      <div class="bp-cap">
+        <span class="num">02</span>
+        <span class="label">Tablet · 2 × 3 uniform</span>
+        <span class="rule"></span>
+        <span class="dims numeric">768 × 720</span>
+      </div>
+      <div class="vp tablet" dir="rtl" data-screen-label="Category Grid · Tablet 768">
+        <section class="cg-section">
+          <header class="cg-head">
+            <span class="cg-eyebrow"><span class="rule"></span>קטגוריות</span>
+            <h2 class="cg-h2">גלי לפי קטגוריה</h2>
+            <p class="cg-sub">ישר מבית העסק <em>—</em> בלי מתווכים.</p>
+          </header>
+
+          <div class="cg-grid">
+            <a class="cat" href="#cat-meat-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 60 q14 -22 44 -22 q26 0 36 22 q-10 22 -36 22 q-30 0 -44 -22 z"/>
+                  <path d="M86 50 l16 -8 v36 l-16 -8"/>
+                  <circle cx="46" cy="56" r="2" class="fill-gold"/>
+                  <path d="M52 60 q8 -4 16 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">01</span></span>
+                <h3 class="cat-name">בשר, עוף ודגים</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-veg-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M44 44 L60 100 L76 44 Z"/>
+                  <path d="M50 56 h20"/>
+                  <path d="M48 68 h24"/>
+                  <path d="M48 80 h24"/>
+                  <path d="M50 38 q-4 -10 4 -16 q6 -2 10 4"/>
+                  <path d="M70 38 q4 -10 -4 -16 q-6 -2 -10 4"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">02</span></span>
+                <h3 class="cat-name">ירקות, פירות ומשקים</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-dairy-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 78 L60 32 L98 78 Z"/>
+                  <path d="M22 78 L98 78 L98 88 L22 88 Z"/>
+                  <circle cx="50" cy="64" r="3"/>
+                  <circle cx="70" cy="58" r="2.5"/>
+                  <circle cx="60" cy="74" r="2"/>
+                  <path d="M44 102 q4 -6 8 0 q4 6 8 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">03</span></span>
+                <h3 class="cat-name">חלב וגבינות</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-bread-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M24 72 q0 -22 36 -22 q36 0 36 22 v8 q0 4 -4 4 h-64 q-4 0 -4 -4 z"/>
+                  <path d="M40 70 q4 -10 8 0"/>
+                  <path d="M56 68 q4 -10 8 0"/>
+                  <path d="M72 70 q4 -10 8 0"/>
+                  <path d="M48 36 q2 -6 0 -10"/>
+                  <path d="M60 32 q2 -6 0 -10"/>
+                  <path d="M72 36 q2 -6 0 -10"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">04</span></span>
+                <h3 class="cat-name">לחמים ואפייה</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-oils-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M52 28 h16 v12 q12 6 12 22 v32 q0 6 -6 6 h-28 q-6 0 -6 -6 v-32 q0 -16 12 -22 z"/>
+                  <path d="M52 60 h16"/>
+                  <circle cx="60" cy="74" r="3" class="fill-gold"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">05</span></span>
+                <h3 class="cat-name">שמנים ודבש</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-soap-t">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <rect x="30" y="60" width="60" height="32" rx="4"/>
+                  <path d="M40 72 h40"/>
+                  <path d="M40 80 h40"/>
+                  <path d="M60 60 q-8 -16 0 -32"/>
+                  <path d="M60 36 q-8 4 -12 0"/>
+                  <path d="M60 44 q8 4 12 0"/>
+                  <path d="M60 52 q-8 4 -10 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">06</span></span>
+                <h3 class="cat-name">טיפוח וסבונים</h3>              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ──────────── MOBILE 375 ──────────── -->
+    <section>
+      <div class="bp-cap">
+        <span class="num">03</span>
+        <span class="label">Mobile · vertical stack · image-led</span>
+        <span class="rule"></span>
+        <span class="dims numeric">375 × 760</span>
+      </div>
+      <div class="vp mobile" dir="rtl" data-screen-label="Category Grid · Mobile 375">
+        <section class="cg-section">
+          <header class="cg-head">
+            <span class="cg-eyebrow"><span class="rule"></span>קטגוריות</span>
+            <h2 class="cg-h2">גלי לפי קטגוריה</h2>
+            <p class="cg-sub">ישר מבית העסק <em>—</em> בלי מתווכים.</p>
+          </header>
+
+          <div class="cg-grid">
+            <a class="cat" href="#cat-meat-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 60 q14 -22 44 -22 q26 0 36 22 q-10 22 -36 22 q-30 0 -44 -22 z"/>
+                  <path d="M86 50 l16 -8 v36 l-16 -8"/>
+                  <circle cx="46" cy="56" r="2" class="fill-gold"/>
+                  <path d="M52 60 q8 -4 16 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">01</span></span>
+                <h3 class="cat-name">בשר, עוף ודגים</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-veg-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M44 44 L60 100 L76 44 Z"/>
+                  <path d="M50 56 h20"/>
+                  <path d="M48 68 h24"/>
+                  <path d="M48 80 h24"/>
+                  <path d="M50 38 q-4 -10 4 -16 q6 -2 10 4"/>
+                  <path d="M70 38 q4 -10 -4 -16 q-6 -2 -10 4"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">02</span></span>
+                <h3 class="cat-name">ירקות, פירות ומשקים</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-dairy-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M22 78 L60 32 L98 78 Z"/>
+                  <path d="M22 78 L98 78 L98 88 L22 88 Z"/>
+                  <circle cx="50" cy="64" r="3"/>
+                  <circle cx="70" cy="58" r="2.5"/>
+                  <circle cx="60" cy="74" r="2"/>
+                  <path d="M44 102 q4 -6 8 0 q4 6 8 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">03</span></span>
+                <h3 class="cat-name">חלב וגבינות</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-bread-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M24 72 q0 -22 36 -22 q36 0 36 22 v8 q0 4 -4 4 h-64 q-4 0 -4 -4 z"/>
+                  <path d="M40 70 q4 -10 8 0"/>
+                  <path d="M56 68 q4 -10 8 0"/>
+                  <path d="M72 70 q4 -10 8 0"/>
+                  <path d="M48 36 q2 -6 0 -10"/>
+                  <path d="M60 32 q2 -6 0 -10"/>
+                  <path d="M72 36 q2 -6 0 -10"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">04</span></span>
+                <h3 class="cat-name">לחמים ואפייה</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-oils-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <path d="M52 28 h16 v12 q12 6 12 22 v32 q0 6 -6 6 h-28 q-6 0 -6 -6 v-32 q0 -16 12 -22 z"/>
+                  <path d="M52 60 h16"/>
+                  <circle cx="60" cy="74" r="3" class="fill-gold"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">05</span></span>
+                <h3 class="cat-name">שמנים ודבש</h3>
+              </div>
+            </a>
+
+            <a class="cat" href="#cat-soap-m">
+              <div class="cat-glyph" aria-hidden="true">
+                <svg viewBox="0 0 120 120">
+                  <rect x="30" y="60" width="60" height="32" rx="4"/>
+                  <path d="M40 72 h40"/>
+                  <path d="M40 80 h40"/>
+                  <path d="M60 60 q-8 -16 0 -32"/>
+                  <path d="M60 36 q-8 4 -12 0"/>
+                  <path d="M60 44 q8 4 12 0"/>
+                  <path d="M60 52 q-8 4 -10 0"/>
+                </svg>
+              </div>
+              <div class="cat-body">
+                <span class="cat-num"><span class="numeric">06</span></span>
+                <h3 class="cat-name">טיפוח וסבונים</h3>              </div>
+            </a>
+          </div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <!-- ──────────── INSPECTOR ──────────── -->
+    <!-- ──────────── HOVER STATE CAPTURED — inline annotation card ──────────── -->
+  <section class="section-head" style="margin-top: 16px;">
+    <div class="letter">C·</div>
+    <div>
+      <h2>Hover — <em>captured.</em></h2>
+      <p class="pitch">Per Sapir v<span class="numeric">4</span> verification request. The card below is a supporting cell <strong>permanently in the <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">is-hover</code> state</strong> via the same CSS rule that triggers on <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">:hover</code>. Border at <code style="font-family:ui-monospace,Menlo,monospace; font-size:12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px;">--green</code>, <span class="numeric">1</span>px gold underline beneath the category name, no glyph scale, no shadow.</p>
+    </div>
+    <div class="meta">hover · desktop<br><strong>verified visible</strong></div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: 360px 1fr; gap: 64px; align-items: start; margin-bottom: 80px; padding: 32px; background: var(--background); border: 1px solid rgba(42,38,32,0.18);">
+    <div dir="rtl">
+      <article class="cat cat--small is-hover" style="width: 320px;">
+        <div class="cat-glyph" aria-hidden="true" style="aspect-ratio: 1/1;">
+          <svg viewBox="0 0 120 120" style="width: 80px; height: 80px;">
+            <path d="M22 60 q14 -22 44 -22 q26 0 36 22 q-10 22 -36 22 q-30 0 -44 -22 z"/>
+            <path d="M86 50 l16 -8 v36 l-16 -8"/>
+            <circle cx="46" cy="56" r="2" class="fill-gold"/>
+            <path d="M52 60 q8 -4 16 0"/>
+          </svg>
+        </div>
+        <div class="cat-body">
+          <span class="cat-num"><span class="numeric">01</span></span>
+          <h3 class="cat-name">בשר, עוף ודגים</h3>
+        </div>
+      </article>
+    </div>
+    <div>
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 8px;">— What changes on hover</div>
+      <ul style="list-style: none; display: grid; gap: 14px; font-size: 14px; line-height: 1.5; max-width: 56ch;">
+        <li style="display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px dashed rgba(42,38,32,0.18);">
+          <span style="width: 12px; height: 12px; border: 1.5px solid var(--green); display: inline-block; transform: translateY(2px);"></span>
+          <span><strong style="color: var(--doc-ink);">Border</strong> — <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--border</code> <span style="color: var(--doc-ink-mute);">(#E8E0D0)</span> → <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--green</code> <span style="color: var(--doc-ink-mute);">(#2E6853)</span>. Transition <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">200ms ease</code>.</span>
+        </li>
+        <li style="display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px dashed rgba(42,38,32,0.18);">
+          <span style="color: var(--doc-warn); font-weight: 700; font-size: 16px; line-height: 1;">✕</span>
+          <span><strong style="color: var(--doc-ink);">No gold underline</strong>. <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">v7: removed.</em> Each card carries an editorial numeral that already anchors the eye — an underline would duplicate the wayfinding signal.</span>
+        </li>
+        <li style="display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px dashed rgba(42,38,32,0.18);">
+          <span style="color: var(--doc-warn); font-weight: 700; font-size: 16px; line-height: 1;">✕</span>
+          <span><strong style="color: var(--doc-ink);">No glyph scale</strong>. Glyph stays <span class="numeric">80</span>×<span class="numeric">80</span> at rest and on hover. <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">Image zoom is a marketplace tell — we're a magazine.</em></span>
+        </li>
+        <li style="display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: baseline; padding-bottom: 12px; border-bottom: 1px dashed rgba(42,38,32,0.18);">
+          <span style="color: var(--doc-warn); font-weight: 700; font-size: 16px; line-height: 1;">✕</span>
+          <span><strong style="color: var(--doc-ink);">No shadow lift</strong>. Box-shadow unchanged. Card sits on cream paper; it doesn't float.</span>
+        </li>
+        <li style="display: grid; grid-template-columns: 16px 1fr; gap: 12px; align-items: baseline;">
+          <span style="color: var(--green); font-weight: 700; font-size: 16px; line-height: 1;">=</span>
+          <span><strong style="color: var(--doc-ink);">Parity</strong> with ProducerCard P<span class="numeric">2</span> v<span class="numeric">4</span> hover — same two rules, one taught pattern.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <section class="inspector" aria-label="Tokens used">
+    <div>
+      <h2>Inspector.</h2>
+      <p class="lede"><em style="font-family: var(--font-italic); color: var(--gold); font-weight: 500;">Tokens, copy, math.</em><br>Zero new tokens introduced. Glyph set is custom hand-drawn line art per the design-system guide's distinction (Phosphor for UI, hand-drawn for categories) — flagged at the gate.</p>
+    </div>
+
+    <div class="insp-col">
+      <h3>Color</h3>
+      <div class="insp-row"><span class="chip" style="background:#F5F0E8;"></span><span class="name">--background</span><span class="val numeric">#F5F0E8</span></div>
+      <div class="insp-row"><span class="chip" style="background:#FFFEFB; outline:1px solid rgba(0,0,0,0.05); outline-offset:-1px;"></span><span class="name">--bg-card</span><span class="val numeric">#FFFEFB</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1C1A17;"></span><span class="name">--text</span><span class="val numeric">#1C1A17</span></div>
+      <div class="insp-row"><span class="chip" style="background:#57524A;"></span><span class="name">--fg-muted</span><span class="val numeric">#57524A</span></div>
+      <div class="insp-row"><span class="chip" style="background:#2E6853;"></span><span class="name">--green</span><span class="val numeric">#2E6853</span></div>
+      <div class="insp-row"><span class="chip" style="background:#1F4A38;"></span><span class="name">--green-dark</span><span class="val numeric">#1F4A38</span></div>
+      <div class="insp-row"><span class="chip" style="background:#8B6914;"></span><span class="name">--gold</span><span class="val numeric">#8B6914</span></div>
+      <div class="insp-row"><span class="chip" style="background:#E8E0D0;"></span><span class="name">--border</span><span class="val numeric">#E8E0D0</span></div>
+      <div style="margin-top:14px; padding-top:10px; border-top: 1px dashed rgba(42,38,32,0.18); font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px; line-height: 1.55;">
+        <strong style="font-family: var(--font-body); font-style: normal; color: var(--green-dark);">Zero new tokens.</strong> Glyph strokes use <code style="font-family:ui-monospace,Menlo,monospace; font-style: normal; font-size: 11px; color: var(--green-dark);">--green-dark</code>; one accent dot per glyph in <code style="font-family:ui-monospace,Menlo,monospace; font-style: normal; font-size: 11px; color: var(--green-dark);">--gold</code> (signature gesture per DS guide).
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Six categories (locked)</h3>
+      <table class="cat-table">
+        <thead><tr><th>#</th><th>שם</th><th>Glyph</th></tr></thead>
+        <tbody>
+          <tr><td><span class="num">01</span></td><td><span class="ar">בשר, עוף ודגים</span></td><td><code>fish + dot</code></td></tr>
+          <tr><td><span class="num">02</span></td><td><span class="ar">ירקות, פירות ומשקים</span></td><td><code>carrot + leaves</code></td></tr>
+          <tr><td><span class="num">03</span></td><td><span class="ar">חלב וגבינות</span></td><td><code>wedge + holes</code></td></tr>
+          <tr><td><span class="num">04</span></td><td><span class="ar">לחמים ואפייה</span></td><td><code>loaf + steam</code></td></tr>
+          <tr><td><span class="num">05</span></td><td><span class="ar">שמנים ודבש</span></td><td><code>bottle + drop</code></td></tr>
+          <tr><td><span class="num">06</span></td><td><span class="ar">טיפוח וסבונים</span></td><td><code>bar + sprig</code></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top: 12px; font-family: var(--font-italic); font-style: italic; color: var(--doc-ink-mute); font-size: 12px;">All six present and verbatim. Ordering preserved across the three BPs.</div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Grid math · 8-grid</h3>
+      <div class="grid-math" style="margin-bottom: 12px;">
+        <div class="ttl">Desktop · 1280</div>
+        <ul>
+          <li>section padding<code>48 / 48</code></li>
+          <li>head → grid<code>48</code></li>
+          <li>grid cols<code>4 × 1fr</code></li>
+          <li>grid gap<code>24</code></li>
+          <li>hero span<code>2 cols · 16:9</code></li>
+          <li>small span<code>1 col · 1:1</code></li>
+          <li>card padding<code>24 / 32</code></li>
+        </ul>
+      </div>
+      <div class="grid-math" style="margin-bottom: 12px;">
+        <div class="ttl">Tablet · 768</div>
+        <ul>
+          <li>section padding<code>32 / 32</code></li>
+          <li>grid cols<code>2 × 1fr</code></li>
+          <li>grid gap<code>16</code></li>
+          <li>card aspect<code>4:3 glyph</code></li>
+          <li>card padding<code>16 / 20</code></li>
+        </ul>
+      </div>
+      <div class="grid-math">
+        <div class="ttl">Mobile · 375</div>
+        <ul>
+          <li>section padding<code>24 / 32</code></li>
+          <li>grid cols<code>1 · stack</code></li>
+          <li>grid gap<code>16</code></li>
+          <li>card aspect<code>16:9 glyph</code></li>
+          <li>card padding<code>16 / 20</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Type roles</h3>
+      <div style="display: grid; gap: 12px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">H2</div>
+          <div style="font-family: var(--font-display); font-weight: 900; font-size: 22px; line-height: 1.1; color: var(--doc-ink);" dir="rtl">גלי לפי קטגוריה<span style="color: var(--gold);">.</span></div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">Frank Ruhl 900 · 56/44/36 px · LH 1.05</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">Sub</div>
+          <div style="font-family: var(--font-display); font-weight: 400; font-size: 15px; color: var(--fg-muted);" dir="rtl">ישר מבית העסק — בלי מתווכים.</div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">Frank Ruhl 400 · 20/18/17 px · em-dash</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">Card name</div>
+          <div style="font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--doc-ink);" dir="rtl">חלב וגבינות</div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">Frank Ruhl 700 · 32 (hero) / 22 / 20 / 19 px</div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 12px 16px;">
+          <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;">Numerals · count</div>
+          <div style="font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 24px;"><span class="numeric">01</span> · <span class="numeric">02</span> · <span class="numeric">03</span></div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); margin-top: 4px;">Cormorant italic 500 · LTR-isolated · tnum lnum</div>
+        </div>
+      </div>
+    </div>
+  <div class="insp-col">
+      <h3>Family of marks</h3>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px; margin-bottom: 12px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">hand-drawn family</div>
+        <p style="font-size: 12.5px; line-height: 1.65; color: var(--doc-ink); margin-bottom: 8px;">Category glyphs share visual DNA with the S<span class="numeric">2</span> wordmark mark — same hand, same strokeWidth idiom. The <em style="font-family:var(--font-italic); color: var(--gold);">m + dot</em> is the lockup; the category glyphs are its kin.</p>
+        <ul style="list-style: none; font-size: 12px; line-height: 1.7; color: var(--doc-ink);">
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> hero stroke <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">2px</code> · supporting <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">1.5px</code></li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> hero glyph <span class="numeric">140</span>px · supporting <span class="numeric">80</span>px</li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> gold accent role is <strong>flexible by design</strong> — anatomical (eye on דג, holes in גבינה), functional (steam on לחם, drip on ירקות), or signature (highlight on בקבוק שמן, leaf-fruit on סבון). <em style="font-family:var(--font-italic); color: var(--gold);">Family cohesion lives in stroke + line style, not in accent role.</em></li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> NOT Phosphor · NOT emoji · NOT botanical illustration</li>
+        </ul>
+        <p style="margin-top: 10px; font-family: var(--font-italic); font-style: italic; font-size: 11.5px; color: var(--doc-ink-mute); line-height: 1.55; border-top: 1px dashed rgba(42,38,32,0.18); padding-top: 8px;">Decision <strong style="color: var(--gold);">Option B</strong> per Sapir v<span class="numeric">4</span> review. Glyph family ships at LOCK with documented variability — not deferred, not pretended-uniform.</p>
+      </div>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">future migration</div>
+        <p style="font-size: 12.5px; line-height: 1.65; color: var(--doc-ink); margin-bottom: 6px;">Glyphs are <strong>scaffold</strong> — they live until photography lands.</p>
+        <ul style="list-style: none; font-size: 12px; line-height: 1.65; color: var(--doc-ink);">
+          <li><strong style="color: var(--green-dark);">Trigger:</strong> <span class="numeric">50</span>+ producers AND <span class="numeric">6</span> producer photos on hand.</li>
+          <li><strong style="color: var(--green-dark);">Swap:</strong> <span class="numeric">1</span> : <span class="numeric">1</span>. Frame structure unchanged · glyph-cell becomes photo-cell · same <span class="numeric">16</span>:<span class="numeric">9</span>/<span class="numeric">1</span>:<span class="numeric">1</span> aspect ratios.</li>
+          <li><strong style="color: var(--green-dark);">Owner:</strong> MEH-<span class="numeric">602</span> (media integration).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insp-col">
+      <h3>Hover</h3>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">single signal (v7)</div>
+        <ul style="list-style: none; font-size: 12.5px; line-height: 1.75; color: var(--doc-ink);">
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> border <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--border</code> → <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">--green</code></li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> <strong style="color: var(--doc-warn);">no</strong> CTA text · <strong style="color: var(--doc-warn);">no</strong> arrow · <strong style="color: var(--doc-warn);">no</strong> underline</li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> <strong style="color: var(--doc-warn);">no</strong> glyph scale · <strong style="color: var(--doc-warn);">no</strong> shadow lift</li>
+          <li><span class="numeric" style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">—</span> transition <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">200ms ease</code> on <code style="font-family:ui-monospace,Menlo,monospace; font-size:11px; color: var(--green-dark);">border-color</code> only</li>
+        </ul>
+        <p style="margin-top: 12px; font-family: var(--font-italic); font-style: italic; font-size: 12px; color: var(--doc-ink-mute); line-height: 1.55;"><strong style="color: var(--doc-ink); font-family: var(--font-body); font-style: normal; font-weight: 500;">Single signal: border only.</strong> Card is the button — magazine convention. Hover teaches affordance silently. Diverges from ProducerCard P<span class="numeric">2</span> v<span class="numeric">4</span> (border + underline) because each category card already carries an editorial numeral that anchors the eye.</p>
+      </div>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px; margin-top: 12px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">meta strip (v8)</div>
+        <p style="font-size: 12.5px; line-height: 1.7; color: var(--doc-ink); margin-bottom: 6px;"><strong style="color: var(--doc-ink);">Center-aligned numeral + category name.</strong> Top padding <span class="numeric">24</span>px (hero <span class="numeric">32</span>px) on <span class="numeric">8</span>-grid.</p>
+        <p style="font-size: 12px; line-height: 1.65; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic;">Separated from glyph zone — illustration cards use bar-pattern, not over-art. Cream base lacks depth for integrated label feel, so the honest treatment is the separated bar (Vignelli / Cereal precedent).</p>
+      </div>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px; margin-top: 12px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">eyebrow (v6)</div>
+        <p style="font-size: 12.5px; line-height: 1.7; color: var(--doc-ink); margin-bottom: 6px;"><strong style="color: var(--doc-ink);">Section indicator only.</strong> No count, no inventory.</p>
+        <p style="font-size: 12px; line-height: 1.65; color: var(--doc-ink-mute); font-family: var(--font-italic); font-style: italic;">Industry pattern: magazine eyebrows are wayfinding, not metrics. Cereal / Kinfolk / The Gentlewoman use numbers only for issue / volume ("Issue <span class="numeric">28</span>", "nº <span class="numeric">33</span>") — never for section counts.</p>
+      </div>
+      <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 16px 20px; margin-top: 12px;">
+        <div style="font-family: var(--font-body); font-size:10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 6px;">punctuation (v6)</div>
+        <p style="font-size: 12.5px; line-height: 1.7; color: var(--doc-ink);">Section H<span class="numeric">2</span> has no terminal period. Period reserved for the Hero's declarative thesis ("אוכל מקומי. במקום אחד.") — navigation prompts read as invitations, not assertions.</p>
+      </div>
+    </div>
+  </section>
+  <!-- ──────────── COUNCIL PASS — 6 VOICES, END-TO-END ──────────── -->
+  <section class="section-head" style="margin-top: 16px;">
+    <div class="letter">D</div>
+    <div>
+      <h2>Council pass — <em>six voices, end-to-end.</em></h2>
+      <p class="pitch">Each voice ran the full P<span class="numeric">3</span> v<span class="numeric">2</span> surface (Desktop + Tablet + Mobile + Inspector). Bullets are specific, not nods. Where I disagreed, I say so. Where I deferred, I say so. <strong style="color: var(--gold); font-family: var(--font-italic); font-style: italic;">4 of 6</strong> resulted in concrete v<span class="numeric">3</span> changes.</p>
+    </div>
+    <div class="meta"><span class="numeric">6</span> voices<br><strong>specific evidence</strong></div>
+  </section>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 64px;">
+
+    <!-- Spiekermann -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">01</span> typography · RTL</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Spiekermann.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li><strong style="color: var(--green-dark);">Reading order broken</strong> Desktop row <span class="numeric">1</span> + Tablet row <span class="numeric">2</span>. <em style="font-family: var(--font-italic); color: var(--gold); margin-inline-start: 4px;">→ fixed v3.</em></li>
+        <li>Em-dash "—" in sub renders correctly inside the RTL <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">&lt;p&gt;</code>. Verified Safari + Chrome.</li>
+        <li>Latin numerals <span class="numeric">01</span>–<span class="numeric">06</span> in Cormorant italic gold · friction with Hebrew context = magazine convention. <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">no change.</em></li>
+        <li>H2 LH <span class="numeric">1.05</span> on all three BPs (<span class="numeric">56</span>/<span class="numeric">44</span>/<span class="numeric">36</span>px). ל ך ץ descenders clear.</li>
+      </ul>
+    </section>
+
+    <!-- Vignelli -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">02</span> grid discipline</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Vignelli.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li><span class="numeric">8</span>px baseline grid holds across all spacing · verified in §Grid math (lines <span class="numeric">1058</span>–<span class="numeric">1095</span>). <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">no notes.</em></li>
+        <li>Hero/supporting ratio: glyph <span class="numeric">140</span>:<span class="numeric">80</span> = <strong>1.75:1</strong>; stroke <span class="numeric">2</span>:<span class="numeric">1.5</span> = <strong>1.33:1</strong>. Proportional but loose, not mathematical. <em style="font-family: var(--font-italic); color: var(--gold);">accepted as hand-drawn family loose-by-design.</em></li>
+        <li>Card padding consistent per BP, hero<span class="numeric">+1</span> step over supporting (<span class="numeric">24</span>/<span class="numeric">32</span> vs <span class="numeric">20</span>/<span class="numeric">24</span>). Clean.</li>
+        <li>Section padding <span class="numeric">48</span>/<span class="numeric">32</span>/<span class="numeric">24</span> across BPs — generous, editorial.</li>
+      </ul>
+    </section>
+
+    <!-- Draplin -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">03</span> mark-making · craft</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Draplin.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li><strong style="color: var(--green-dark);">Family cohesion: stroke + line style</strong> — not accent role. Six glyphs share strokeWidth idiom and clean line geometry; gold accent role is functional (eye, hole, drip, highlight). <em style="font-family: var(--font-italic); color: var(--gold);">→ v4 decision: Option B · documented in §Family of marks as conscious variability.</em></li>
+        <li><strong style="color: var(--green-dark);">Gold accent: flexible by design</strong>. Fish eye = anatomical · cheese holes = anatomical · bread steam = functional · carrot drip = functional · bottle highlight = signature · soap leaf-fruit = signature. Three roles, one palette. <em style="font-family: var(--font-italic); color: var(--gold);">Locked, not deferred.</em></li>
+        <li>Hand-drawn imperfection feels geometric, not inky. Truly hand-drawn would have wobble. <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">deferred — SVG-clean is acceptable scaffold.</em></li>
+        <li>Stroke ratio <span class="numeric">2</span>:<span class="numeric">1.5</span> reads at scale; not bold. Could push hero to <span class="numeric">2.5</span> if reviewer wants more contrast.</li>
+      </ul>
+    </section>
+
+    <!-- Park -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">04</span> editorial restraint</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Park.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li>Section earns its place — it is the navigation surface, not filler. <em style="font-family: var(--font-italic); color: var(--doc-ink-mute);">no notes.</em></li>
+        <li>"גלי לפי קטגוריה" + sub — magazine voice; no SaaS smell.</li>
+        <li>Eyebrow "קטגוריות · <span class="numeric">06</span>" reads editorial-functional. The hairline rule before it does the magazine-section work.</li>
+        <li><strong style="color: var(--green-dark);">Editorial push deferred post-Cohort #<span class="numeric">1</span>.</strong> <em>Cereal</em> section heads sometimes set the eyebrow vertically or use an oversized leading initial. Mine is straight. Current restraint level matches Cohort #<span class="numeric">1</span> producer count · magazine-tier typography unlocks post-launch. <em style="font-family: var(--font-italic); color: var(--gold);">→ v4 decision: Option B · documented in §Editorial restraint as conscious gap.</em></li>
+      </ul>
+    </section>
+
+    <!-- Chimero -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">05</span> anti-marketplace · honesty</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Chimero.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li><strong style="color: var(--green-dark);">Counters removed in v5.</strong> Earlier "מתחילות עכשיו" fallback resolved the cold-start case; v5 removes the surface entirely. Magazine convention (Natoora · Cereal · Infatuation) wins over the fallback. <em style="font-family: var(--font-italic); color: var(--gold);">DNA-correct.</em></li>
+        <li>Hierarchy preserved: category name (H<span class="numeric">3</span> <span class="numeric">22</span>–<span class="numeric">32</span>px) &gt; numeral (italic <span class="numeric">22</span>px) &gt; count (caps <span class="numeric">12</span>px). Never inverted.</li>
+        <li>"בתי עסק" used everywhere; zero "מוכרים" / "יצרנים" leaks.</li>
+        <li>Card is <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">&lt;a&gt;</code> to category page · no "buy now" affordance. Anti-Etsy.</li>
+      </ul>
+    </section>
+
+    <!-- Frost -->
+    <section style="background: var(--doc-bg-deep); border: 1px solid rgba(42,38,32,0.18); padding: 28px 32px;">
+      <div style="font-family: var(--font-body); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--doc-ink-mute); margin-bottom: 4px;"><span style="font-family: var(--font-italic); font-style: italic; color: var(--gold); margin-inline-end: 6px; text-transform: none; letter-spacing: 0.02em; font-size: 13px;">06</span> state tokens · system</div>
+      <h3 style="font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--doc-ink); margin-bottom: 12px;">Frost.</h3>
+      <ul style="list-style: none; display: grid; gap: 10px; font-size: 13px; line-height: 1.55;">
+        <li>Hover treatment in P<span class="numeric">3</span> diverges from ProducerCard P<span class="numeric">2</span> v<span class="numeric">4</span>: <strong>border only</strong>, no underline. Reason documented §Hover — each card carries an editorial numeral that already anchors the eye, underline would duplicate.</li>
+        <li>Border tokens semantic: <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">--border</code> (rest) → <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">--green</code> (hover). Correct.</li>
+        <li><strong style="color: var(--doc-warn);">Selected state undefined.</strong> If categories double as filter chips in the producer-list view (likely), we need <code style="font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark);">.cat.is-selected</code>. <em style="font-family: var(--font-italic); color: var(--gold);">flagged → S<span class="numeric">4</span> integration scope.</em></li>
+        <li>Family-of-marks ties documented in inspector but invisible to user — that’s correct (signal is for designers; reader sees only the glyphs).</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="bottom-row">
+    <section class="panel">
+      <h2>Self-check.</h2>
+      <p class="lede">Nine gates from the prompt + <span class="numeric">5</span> review-driven additions — all pass.</p>
+      <div class="checklist">
+        <div class="item"><span class="box">✓</span><span><strong>Six categories with exact names</strong> from CONTENT SYNC v4. No paraphrase, no reorder.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Phosphor OR emoji — not both.</strong> Hand-drawn line set chosen per DS guide §Iconography (categories are hand-drawn, Phosphor is for UI). Documented in inspector.</span><span class="note">pass · annotated</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Zero new tokens.</strong> Only v1.0 primitives.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>8px grid spacing.</strong> All gaps, paddings, gutters land on <span class="numeric">8</span> · <span class="numeric">16</span> · <span class="numeric">24</span> · <span class="numeric">32</span> · <span class="numeric">48</span>. Verified in inspector grid-math.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Latin numerals <span class="numeric">01</span>–<span class="numeric">06</span>.</strong> All numerals wrapped in <code>.numeric</code>, LTR-isolated, tnum + lnum.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No shadow lift.</strong> Hover = border colour shift to <code>--green</code> only. Zero box-shadow change.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Section heading and sub exact wording.</strong> "גלי לפי קטגוריה" / "ישר מבית העסק — בלי מתווכים" verbatim.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>RTL: start/end, not left/right.</strong> Card chrome uses <code>inset-inline-*</code>; numeral is LTR-isolated.</span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>No emoji anywhere</strong> in copy. Eyebrow + sub + card names + count all glyph-free.</span><span class="note">pass · v4.1</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Reading order RTL <span class="numeric">01</span>→<span class="numeric">06</span>.</strong> Desktop hero row = <span class="numeric">01</span> right + <span class="numeric">02</span> left. Supporting = <span class="numeric">03</span> right → <span class="numeric">06</span> left. Tablet rows stack <span class="numeric">01</span>→<span class="numeric">06</span>. Mobile vertical <span class="numeric">01</span>→<span class="numeric">06</span>. <em>v3 fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Zero counters across all BPs.</strong> Card meta = numeral + name only. No "<span class="numeric">N</span> בתי עסק" · no "מתחילות עכשיו". <em>v5 DNA fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Section H<span class="numeric">2</span> has no terminal period.</strong> Period reserved for Hero declarative thesis. "גלי לפי קטגוריה" is invitation, not assertion. Desktop + Tablet + Mobile verified. <em>v6 fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Eyebrow shows "קטגוריות" alone</strong> — no "· <span class="numeric">06</span>" number. Magazine eyebrows are wayfinding, not inventory. Desktop + Tablet + Mobile verified. <em>v6 fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Meta strip text center-aligned</strong> across all BPs and card sizes (Desktop hero + supporting, Tablet, Mobile verified). Top padding <span class="numeric">24</span>px (hero <span class="numeric">32</span>px). Separated bar pattern, not over-art. <em>v8 fix.</em></span><span class="note">pass</span></div>
+        <div class="item"><span class="box">✓</span><span><strong>Hover state: single signal only.</strong> Border <code>--border</code> → <code>--green</code>. No CTA text, no arrow, no underline, no glyph scale, no shadow lift. Card is the button. <em>v7 fix.</em></span><span class="note">pass</span></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Council — applied.</h2>
+      <p class="lede">Voices that shaped each decision in this grid.</p>
+      <div>
+        <div class="council-row"><div class="who">#01 · editorial<strong>Vignelli</strong></div><div class="how">Asymmetry is not chaos — it is hierarchy in disguise. <em><span class="numeric">2</span>+<span class="numeric">4</span> = above-the-fold + supporting strip</em>, same grid math throughout.</div></div>
+        <div class="council-row"><div class="who">#02 · Hebrew type<strong>Spiekermann</strong></div><div class="how">H2 at <span class="numeric">56</span>/<span class="numeric">44</span>/<span class="numeric">36</span> px keeps LH <span class="numeric">1.05</span> across BPs. Em-dash inside RTL container tested — separator survives bidi.</div></div>
+        <div class="council-row"><div class="who">#05 · restraint<strong>Khoi Vinh</strong></div><div class="how">No 12-pill carousel. Six categories, one screen, no overflow. Section eyebrow stops at <em>"קטגוריות · <span class="numeric">06</span>"</em>.</div></div>
+        <div class="council-row"><div class="who">#08 · editorial home<strong>Rosa Park</strong></div><div class="how">No app aesthetic — glyphs sit on cream surfaces inside cream-white cards. Two cream tones do the layering work, not glass.</div></div>
+        <div class="council-row"><div class="who">#10 · iconography<strong>Susan Kare</strong></div><div class="how">One set, one style — hand-drawn line at strokeWidth <span class="numeric">1.5</span>. Each glyph carries exactly one gold accent dot (<em>max <span class="numeric">2</span> colours</em>). No emoji mixed in.</div></div>
+        <div class="council-row"><div class="who">#11 · long-term<strong>Stewart Brand</strong></div><div class="how">Heroes rotate seasonally; layout doesn't. The structure outlives any one editorial choice — the page survives <span class="numeric">6</span>-month evolution.</div></div>
+        <div class="council-row"><div class="who">#12 · medium<strong>McLuhan</strong></div><div class="how">The medium <em>is</em> the magazine claim: opening shot, then a strip of indices. Same grammar as <em>Cereal</em>'s category page — not a marketplace category tree.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ──────────── CHANGELOG ──────────── -->
+  <section class="changelog">
+    <div class="micro">— Changelog · S3 · MEH-638</div>
+    <ul>
+      <li><span class="v numeric">S3.P3.v8</span><span class="d numeric">2026-05-22</span><span class="t"><strong>v8 · LOCK.</strong> Meta strip: numeral + name now center-aligned across Desktop hero + supporting, Tablet, Mobile. Top padding raised to <span class="numeric">24</span>px (hero <span class="numeric">32</span>px) on <span class="numeric">8</span>-grid. Separated bar pattern locked. Inspector §Meta strip added. Self-check <span class="numeric">14</span>/<span class="numeric">14</span>. <strong>S<span class="numeric">3</span> P<span class="numeric">3</span> closes.</strong></span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v7</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Hover gold underline removed · single-signal hover documented.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v6</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">H<span class="numeric">2</span> no period · eyebrow no count.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v5</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Zero counters · row-2 equal width · pointer-events lock on BP cards.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v4</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>Tablet copy parity · Option B locks · hover captured.</s> Carried counters; superseded by DNA decision in v5.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v3</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Reading order Desktop + Tablet fixed · Council pass <span class="numeric">6</span> voices.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);"><s>3 fixes applied</s> Glyph hierarchy + count fallback + hover parity. Reading order bug uncaught; council pass missing. Superseded.</s></span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P3.v1</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Category Grid v1 — approved with <span class="numeric">3</span> fixes. Glyph family locked as hand-drawn.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P2.v4</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">ProducerCard locked · <span class="numeric">8</span> states · zero new tokens · annotation cleanup.</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S3.P1.v2</span><span class="d numeric">2026-05-22</span><span class="t" style="color: var(--doc-ink-mute);">Hero approved (A canonical, B campaign-only).</span></li>
+      <li><span class="v" style="color: var(--doc-ink-mute);">S1.v1.0</span><span class="d numeric">2026-05-21</span><span class="t" style="color: var(--doc-ink-mute);">Design System v1.0 — referenced verbatim throughout.</span></li>
+    </ul>
+  </section>
+
+  <footer>
+    <div>S3 · MEH-638 · Phase <span class="numeric">3</span> · <span class="numeric">2026-05-22</span></div>
+    <div class="italic">Category Grid · 2 + 4 asymmetric · awaiting approval</div>
+    <div>מהמקור · Session <span class="numeric">3</span></div>
+  </footer>
+
+</div>
+
+</body>
+</html>

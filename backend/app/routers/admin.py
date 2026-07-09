@@ -10,14 +10,16 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_admin
 from app.config import settings
-from app.services.auth_notifications import notify_producer_approved
+from app.services.auth_notifications import (
+    notify_producer_approved,
+    notify_producer_changes_requested,
+)
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
 from app.models import (
     DeliveryArea,
     HomeProduct,
-    PhoneOtpToken,
     Producer,
     ProducerCategory,
     Product,
@@ -29,6 +31,7 @@ from app.schemas.schemas import (
     ProducerAdminOut,
     ProducerUpdate,
     RemoveListingBody,
+    RequestChangesIn,
     StoryCardUploadRequest,
 )
 from app.services.license_validation import (
@@ -176,13 +179,16 @@ def admin_create_producer(
         kosher=data.kosher,
         producer_license_number=data.producer_license_number,
         admin_notes=data.admin_notes,
-        is_verified=data.is_verified,
+        # MEH-766 ch3: is_verified no longer set on admin create — column default
+        # False applies; verification is via grant-verified (verified_at) only.
         images=data.images or [],
         # MEH-213 — location mode
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
         delivery_nationwide=data.delivery_nationwide,
-        delivery_cities=data.delivery_cities,
+        # MEH-903 A: the legacy delivery_cities column is no longer written —
+        # delivery_areas (via _apply_delivery_cities below) is the single store.
+        # Column stays declared (drop = Chunk C); new rows keep the [] default.
         status="approved",  # admin = pre-approved
     )
     db.add(producer)
@@ -209,7 +215,11 @@ def admin_update_producer(
 
     payload = data.model_dump(exclude_unset=True)
     category_ids = payload.pop("category_ids", None)
-    delivery_cities = payload.pop("delivery_area_cities", None)
+    delivery_area_cities = payload.pop("delivery_area_cities", None)
+    # MEH-903 A: stop writing the legacy delivery_cities column — delivery_areas
+    # is the single store now. Pop it out of the payload so the bulk setattr loop
+    # below can't resurrect the write. Column stays declared (drop = Chunk C).
+    payload.pop("delivery_cities", None)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,
@@ -254,8 +264,8 @@ def admin_update_producer(
 
     if category_ids is not None:
         _apply_categories(db, producer, category_ids)
-    if delivery_cities is not None:
-        _apply_delivery_cities(db, producer, delivery_cities)
+    if delivery_area_cities is not None:
+        _apply_delivery_cities(db, producer, delivery_area_cities)
 
     db.commit()
     db.refresh(producer)
@@ -358,13 +368,10 @@ def admin_delete_producer(
     )
     db.flush()
 
-    # MEH-755: delete OTP tokens explicitly before db.delete(producer).
-    # phone_otp_tokens.producer_id is NOT NULL, but the ORM relationship
-    # (models.py PhoneOtpToken.producer backref) has no delete cascade, so the
-    # unit-of-work tries to nullify producer_id on delete → NotNullViolation
-    # 500. Mirrors the auth.py::delete_account fix; bulk-delete pre-empts it.
-    db.query(PhoneOtpToken).filter(PhoneOtpToken.producer_id == producer.id).delete()
-
+    # MEH-816: phone_otp_tokens cascade via the DB FK (ondelete=CASCADE) plus
+    # passive_deletes=True on the Producer.otp_tokens backref (MEH-773 Chunk B),
+    # so no explicit pre-delete is needed. DO NOT re-add one — passive_deletes
+    # already pre-empts the NotNullViolation the old MEH-755 bulk-delete guarded.
     db.delete(producer)
     db.commit()
 
@@ -476,6 +483,10 @@ def approve_producer(
             user.id,
         )
     producer.status = "approved"
+    # MEH-1011: clear the request-changes trail on approve — the completion
+    # request (if any) is resolved once the business is approved.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
     db.commit()
 
     # MEH-509 PR1: capture primitives before any post-commit work — ORM
@@ -522,6 +533,11 @@ def reject_producer(
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
     producer.status = "rejected"
+    # MEH-1011: clear any request-changes trail on reject — a rejected producer
+    # must not carry a stale "ממתין להשלמה" trail in ProducerAdminOut. Symmetric
+    # with approve_producer's clearing.
+    producer.requested_changes = None
+    producer.changes_requested_at = None
     db.commit()
 
     reason_text = f"\nסיבת הדחייה: {reason}" if reason else ""
@@ -543,6 +559,85 @@ def reject_producer(
         )
 
     return {"detail": "Producer rejected"}
+
+
+# MEH-1011: producer request-changes — non-terminal "please complete" path.
+# Unlike reject_producer (terminal → status="rejected"), this KEEPS the
+# producer pending and records the admin's feedback so the business can fix
+# the gap (missing photo / license) and be approved.
+@router.post("/producers/{producer_id}/request-changes")
+def request_producer_changes(
+    producer_id: UUID,
+    body: RequestChangesIn,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Send a completion request to a pending producer. `feedback` is required
+    (it becomes the body of the email to the producer) — empty/whitespace → 400,
+    mirroring admin_recipes.py:123. Status stays "pending"; no rejection.
+    """
+    feedback = (body.feedback or "").strip()
+    if not feedback:
+        raise HTTPException(status_code=400, detail="feedback is required")
+
+    producer = db.query(Producer).filter(Producer.id == producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-1011: request-changes is a pending-only operation — it deliberately
+    # leaves status unchanged, so applying it to an already-decided producer
+    # (approved / rejected / inactive) would leave an incoherent record
+    # (e.g. approved + non-null requested_changes, which the "ממתין להשלמה"
+    # badge keys off). 409 mirrors toggle-status's invalid-transition guard
+    # (MEH-769). reject_producer needs no such guard — it transitions status.
+    if producer.status not in ("pending", "pending_whatsapp"):
+        raise HTTPException(
+            status_code=409,
+            detail="ניתן לשלוח בקשת השלמה רק לבית עסק בהמתנה לאישור",
+        )
+
+    producer.requested_changes = feedback
+    # tz-aware (MEH-762 D1, mirrors grant_verified) — the column is TIMESTAMPTZ.
+    producer.changes_requested_at = datetime.now(timezone.utc)
+    # status intentionally unchanged — stays "pending"/"pending_whatsapp".
+    db.commit()
+
+    p_name = producer.name
+    # Env-aware link (mirrors auth_emails.py:159) — staging emails must point
+    # at staging, not production. On prod frontend_url == mehamakor.online.
+    dashboard_link = f"{settings.frontend_url}/producer/dashboard"
+
+    producer_user = db.query(User).filter(User.producer_id == producer.id).first()
+    if producer_user:
+        _send_notification_email(
+            producer_user.email,
+            f'מהמקור — נשאר פרט אחד לפני האישור של "{p_name}"',
+            f"שלום,\n\n"
+            f'הבקשה לרישום "{p_name}" במהמקור נבדקה. כדי שנוכל לאשר ולפרסם את '
+            f"בית העסק, נשאר להשלים:\n\n"
+            f"{feedback}\n\n"
+            f"אפשר להשלים את הפרטים בלוח הבקרה: {dashboard_link}\n"
+            f"לאחר ההשלמה נמשיך בתהליך האישור ונעדכן אתכם.\n\n"
+            f"בברכה,\nצוות מהמקור",
+        )
+
+    # MEH-1051: WhatsApp mirror of the email above (producer_changes_requested_v1,
+    # Meta-approved). Post-commit + fail-open — a Meta outage or missing phone
+    # must never affect the 200; the function handles skip/raise internally.
+    notify_producer_changes_requested(p_name, producer.phone, feedback)
+
+    # Notify admin via WhatsApp
+    if settings.admin_whatsapp_to:
+        _send_whatsapp(
+            settings.admin_whatsapp_to,
+            f"📝 נשלחה בקשת השלמה ל-{p_name}",
+        )
+
+    return {
+        "detail": "בקשת השלמה נשלחה",
+        "requested_changes": producer.requested_changes,
+        "changes_requested_at": producer.changes_requested_at.isoformat(),
+    }
 
 
 # MEH-762 (ADR-022 public tier contract, Chunk 2): admin stamping for the

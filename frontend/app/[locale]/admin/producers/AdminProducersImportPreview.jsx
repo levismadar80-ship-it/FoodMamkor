@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Check } from "@phosphor-icons/react";
 
 // Import preview panel for the admin producers page.
 //
@@ -27,7 +28,7 @@ function ImportRow({ row }) {
       <td className="px-3 py-2 text-xs">
         {hasErrors && <span className="text-red-700">{row.errors.join(", ")}</span>}
         {!hasErrors && hasWarnings && <span className="text-yellow-700">{row.warnings.join(", ")}</span>}
-        {!hasErrors && !hasWarnings && <span className="text-primary">✓</span>}
+        {!hasErrors && !hasWarnings && <Check size={16} weight="bold" className="text-primary" aria-hidden="true" />}
       </td>
     </tr>
   );

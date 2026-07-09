@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import ProducerDetail from "@/app/[locale]/producer/[id]/ProducerDetail";
 import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
+import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 
 // Reserved root paths that must NOT be treated as a slug.
@@ -15,10 +16,32 @@ const RESERVED = new Set([
   "robots.txt", "sitemap.xml", "sw.js",
 ]);
 
+// MEH-1045: fast-404 for scanner probes. This route is a root-level
+// catch-all, so every bot probe (/wp-admin, /.env, /xmlrpc.php…) used to
+// cost a dynamic render + a Railway fetch with a per-slug revalidate:60
+// cache entry. Real slugs are produced by backend _slugify
+// (backend/app/services/producer_import.py:34-41 — lowercase, charset
+// [\w \u0590-\u05FF -], max 100 chars, never contains a dot), so anything
+// outside that shape can be rejected BEFORE the backend fetch.
+const SLUG_SHAPE = /^[a-z0-9_\u0590-\u05FF-]{1,100}$/;
+// Well-known scanner path prefixes that ARE slug-shaped (wp-admin etc.).
+const SCANNER_PREFIXES = ["wp-", "wordpress", "xmlrpc", "phpmyadmin", "cgi-"];
+
+// Exported for unit tests (frontend/__tests__/SlugPageBotHardening.test.jsx).
+export function isSlugShaped(slug) {
+  if (!slug) return false;
+  const s = slug.toLowerCase();
+  if (RESERVED.has(s)) return false;
+  // Dots never appear in generated slugs — kills /.env, /foo.php, /a.txt.
+  if (s.includes(".")) return false;
+  if (SCANNER_PREFIXES.some((p) => s.startsWith(p))) return false;
+  return SLUG_SHAPE.test(s);
+}
+
 async function getProducerBySlug(slug) {
-  if (!slug || RESERVED.has(slug.toLowerCase())) return null;
+  if (!isSlugShaped(slug)) return null;
   try {
-    const res = await fetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
+    const res = await serverFetch(`${API_URL}/producers/by-slug/${encodeURIComponent(slug)}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
@@ -35,6 +58,12 @@ async function getProducerBySlug(slug) {
 export async function generateMetadata(props) {
   const params = await props.params;
   const { slug, locale } = params;
+  // MEH-1045: notFound() here (pre-streaming) returns a REAL 404 status.
+  // A page-level notFound() alone streams a 200 + 404 UI because the
+  // [locale] loading.js boundary flushes the shell first — bots would keep
+  // crawling a soft-404. Only scanner-shaped paths get the hard 404;
+  // slug-shaped misses keep the MEH-476 hreflang-carrying 404 metadata.
+  if (!isSlugShaped(slug)) notFound();
   const producer = await getProducerBySlug(slug);
   const path = `/${slug}`;
   const alternates = buildAlternates(path, locale);

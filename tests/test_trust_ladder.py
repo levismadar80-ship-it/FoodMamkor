@@ -1,6 +1,6 @@
 """MEH-51: tests for trust tier computation + kashrut badge endpoints."""
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -20,6 +20,7 @@ class _FakeProducer:
         self.reviews_count = kwargs.get("reviews_count", 0)
         self.avg_rating = kwargs.get("avg_rating", 0.0)
         self.is_verified = kwargs.get("is_verified", False)
+        self.verified_at = kwargs.get("verified_at", None)
         self.phone_verified = kwargs.get("phone_verified", False)
 
 
@@ -31,12 +32,24 @@ def test_tier2_phone_verified():
     assert compute_trust_tier(_FakeProducer(phone_verified=True)) == 2
 
 
-def test_tier3_is_verified():
-    assert compute_trust_tier(_FakeProducer(is_verified=True)) == 3
+def test_tier3_verified_at():
+    # MEH-766: Tier 3 now sourced from verified_at (document-verified), not is_verified.
+    assert compute_trust_tier(_FakeProducer(verified_at=datetime.now(timezone.utc))) == 3
 
 
 def test_tier3_supersedes_tier2():
-    assert compute_trust_tier(_FakeProducer(phone_verified=True, is_verified=True)) == 3
+    assert (
+        compute_trust_tier(
+            _FakeProducer(phone_verified=True, verified_at=datetime.now(timezone.utc))
+        )
+        == 3
+    )
+
+
+def test_tier3_decoupled_from_is_verified():
+    # MEH-766 decoupling (the whole point): legacy is_verified=True with
+    # verified_at=None is NO LONGER Tier 3 — falls to Tier 1 (no other qual).
+    assert compute_trust_tier(_FakeProducer(is_verified=True, verified_at=None)) == 1
 
 
 def test_tier4_reviews_and_rating():
@@ -334,7 +347,9 @@ def test_set_ambassador_requires_admin(client, db):
 
 def test_trust_tier_in_producer_list(client, db):
     producer = make_producer(db, name="חוות מ")
-    producer.is_verified = True
+    # MEH-766: Tier 3 sourced from verified_at, not is_verified (make_producer
+    # already sets is_verified=True; that alone no longer earns Tier 3).
+    producer.verified_at = datetime.now(timezone.utc)
     db.commit()
 
     r = client.get("/producers")
@@ -342,3 +357,33 @@ def test_trust_tier_in_producer_list(client, db):
     match = next((p for p in r.json() if p["name"] == "חוות מ"), None)
     assert match is not None
     assert match["trust_tier"] == 3
+
+
+def test_trust_tier_decoupled_from_is_verified_in_list(client, db):
+    # MEH-766: a producer with is_verified=True but verified_at=None (the
+    # make_producer default) is NO LONGER Tier 3 in the serialized list.
+    make_producer(db, name="חוות לא מתויגת")  # is_verified=True, verified_at=None
+
+    r = client.get("/producers")
+    assert r.status_code == 200
+    match = next((p for p in r.json() if p["name"] == "חוות לא מתויגת"), None)
+    assert match is not None
+    assert match["trust_tier"] < 3
+
+
+def test_verified_filter_uses_verified_at(client, db):
+    # MEH-766: ?verified now filters on verified_at, not is_verified. Both
+    # producers have is_verified=True (make_producer default); only the
+    # stamped one has verified_at — proving the decoupling.
+    stamped = make_producer(db, name="חוות מאומתת")
+    stamped.verified_at = datetime.now(timezone.utc)
+    make_producer(db, name="חוות לא מאומתת")  # is_verified=True, verified_at=None
+    db.commit()
+
+    names_true = {p["name"] for p in client.get("/producers?verified=true").json()}
+    assert "חוות מאומתת" in names_true
+    assert "חוות לא מאומתת" not in names_true  # decoupling: is_verified alone is not enough
+
+    names_false = {p["name"] for p in client.get("/producers?verified=false").json()}
+    assert "חוות לא מאומתת" in names_false
+    assert "חוות מאומתת" not in names_false

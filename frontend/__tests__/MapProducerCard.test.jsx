@@ -70,7 +70,7 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     );
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
-    expect(pill.textContent).toMatch(/ק"מ ממך$/);
+    expect(pill.textContent).toMatch(/km\u2069 ממך$/);
     expect(pill).toHaveAttribute("dir", "ltr");
   });
 
@@ -86,8 +86,9 @@ describe("MapProducerCard — distance (MEH-826)", () => {
 
 describe("MapProducerCard — glyph-LOCK (MEH-938)", () => {
   it("renders verified + full-profile labels with no raw ✓/→ dingbat (Phosphor only)", () => {
-    // identity t() mock → keys; the verified span (SealCheck + label) renders only when is_verified
-    render(<MapProducerCard producer={{ ...producer, is_verified: true }} />);
+    // identity t() mock → keys; the verified span (SealCheck + label) renders only when
+    // verification_tier === "verified" (MEH-766 ch1 — seal source switched off is_verified)
+    render(<MapProducerCard producer={{ ...producer, verification_tier: "verified" }} />);
     expect(screen.getByText("verified")).toBeInTheDocument();
     expect(screen.getByText("full_profile")).toBeInTheDocument();
     // ✓ and → are now Phosphor icons (mocked <span>), never text dingbats — guards re-introduction

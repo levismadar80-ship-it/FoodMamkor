@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import { Images } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
@@ -40,6 +41,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     touchStartX.current = null;
     touchEndX.current = null;
   }, [images.length]);
+
+  // MEH-1047: open the lightbox at a specific image. The desktop editorial
+  // grid cells open at their own index; the mobile carousel opens at `current`.
+  const openLightbox = useCallback((index) => {
+    setCurrent(index);
+    setLightboxOpen(true);
+  }, []);
 
   // MEH-815: imageless state renders the "Tinted Masthead" editorial hero
   // (Sapir-approved, Claude Design) instead of the old emoji+initials box.
@@ -84,10 +92,92 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     );
   }
 
+  // MEH-1047: a single image keeps the current full-width banner at every
+  // breakpoint; 2+ images get the desktop editorial grid (md+) with the
+  // mobile carousel kept below (chunk 2 restyles the mobile path).
+  const single = images.length === 1;
+
   return (
     <>
+    {/* MEH-1047: shared relative wrapper so a single FavoriteButton overlays
+        the top-start corner of whichever layout is visible (desktop grid hero
+        or mobile carousel) — one mount, one /users/me/favorites fetch. */}
+    <div className="relative">
+    {/* MEH-1047: desktop editorial grid (Direction B) — hero at inline-start
+        + tall stacked secondary column (≤2 cells). The bottom cell of a
+        stacked pair carries the single view_all (N) overlay pill (gallery.view_all). */}
+    {!single && (
+      <div
+        className={`hidden md:grid gap-2 rounded-xl overflow-hidden border border-accent/30 h-[420px] lg:h-[460px] max-h-[460px] grid-cols-[62%_1fr] ${
+          images.length >= 3 ? "grid-rows-2" : ""
+        }`}
+        data-testid="gallery-grid"
+      >
+        {/* Hero cell — inline-start; spans both rows when a stacked pair exists */}
+        <button
+          type="button"
+          onClick={() => openLightbox(0)}
+          aria-label={t("open_aria", { current: 1 })}
+          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
+            images.length >= 3 ? "row-span-2" : ""
+          }`}
+          data-testid="gallery-grid-hero"
+        >
+          {/* MEH-1047 LCP: images[0] is the desktop LCP → eager `priority`.
+              The mobile banner (below) is eager for its own breakpoint; every
+              other image (secondary cells, off-screen slides) is lazy via
+              next/image's default. Responsive dual-tree double-preloads the
+              hero on the hidden breakpoint, but `sizes` bounds that fetch
+              (~45vw mobile / ~60vw desktop) — accepted art-direction cost. */}
+          <ImageWithFallback
+            src={images[0]}
+            alt={t("image_alt", { current: 1 })}
+            fill
+            priority
+            className="object-cover"
+            sizes="(min-width: 1024px) 40vw, 45vw"
+          />
+        </button>
+        {/* Secondary cells — images[1] (+ images[2] when 3+). */}
+        {images.slice(1, 3).map((src, i) => {
+          const idx = i + 1;
+          const isPillCell = images.length >= 3 && idx === 2;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => openLightbox(idx)}
+              aria-label={
+                isPillCell
+                  ? t("view_all", { n: images.length })
+                  : t("open_aria", { current: idx + 1 })
+              }
+              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+              data-testid={isPillCell ? "gallery-grid-pill-cell" : "gallery-grid-cell"}
+            >
+              <ImageWithFallback
+                src={src}
+                alt={t("image_alt", { current: idx + 1 })}
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 30vw"
+              />
+              {isPillCell && (
+                <span
+                  className="absolute bottom-3 end-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-sm font-label-md text-white shadow-md pointer-events-none"
+                  data-testid="gallery-all-pill"
+                >
+                  <Images size={16} weight="bold" aria-hidden="true" />
+                  {t("view_all", { n: images.length })}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    )}
     <div
-      className="relative h-52 rounded-md overflow-hidden bg-gray-100"
+      className={`relative h-52 rounded-md overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -108,52 +198,41 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           sizes="(max-width: 768px) 100vw, 60vw"
         />
       </button>
-      {producerId && (
-        <div className="absolute top-3 start-3 z-10">
-          <FavoriteButton producerId={producerId} variant="gallery" />
-        </div>
-      )}
       {images.length > 1 && (
         <>
-          <button
-            type="button"
-            onClick={() => setCurrent((current - 1 + images.length) % images.length)}
-            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label={t("prev_aria")}
+          {/* MEH-1047 chunk 2: counter chip (1/N) at top-end — opposite the
+              favorite (top-start); dark scrim keeps it legible over any photo.
+              .numeric bidi-isolates the fraction so RTL can't flip "1/5". */}
+          <div
+            className="absolute top-3 end-3 z-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-label-md text-white numeric pointer-events-none"
+            data-testid="gallery-counter"
           >
-            <span aria-hidden="true">←</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrent((current + 1) % images.length)}
-            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label={t("next_aria")}
+            {current + 1}/{images.length}
+          </div>
+          {/* MEH-1047 chunk 2: thin gold progress bar (replaces the dots).
+              Fill width tracks the current slide; decorative — swipe drives
+              navigation, tap opens the lightbox for full arrow-key nav. */}
+          <div
+            className="absolute bottom-0 inset-x-0 h-1 bg-white/30"
+            data-testid="gallery-progress"
+            aria-hidden="true"
           >
-            <span aria-hidden="true">→</span>
-          </button>
-          {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setCurrent(i)}
-                className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
-                aria-label={t("thumb_aria", { n: i + 1 })}
-                aria-current={i === current ? "true" : undefined}
-              >
-                <span
-                  className={`block w-2.5 h-2.5 rounded-full transition pointer-events-none ${
-                    i === current ? "bg-white" : "bg-white/50 hover:bg-white/80"
-                  }`}
-                />
-              </button>
-            ))}
+            <div
+              className="h-full bg-accent transition-[width] duration-base ease-quart"
+              style={{ width: `${((current + 1) / images.length) * 100}%` }}
+            />
           </div>
         </>
       )}
+    </div>
+    {/* MEH-1047: single FavoriteButton for the imaged state — pinned top-start
+        (right, RTL) over the visible layout's hero corner. z-20 clears the
+        counter chip / pill (z-10). */}
+    {producerId && (
+      <div className="absolute top-3 start-3 z-20">
+        <FavoriteButton producerId={producerId} variant="gallery" />
+      </div>
+    )}
     </div>
     {lightboxOpen && (
       <Lightbox

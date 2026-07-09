@@ -41,11 +41,14 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * Hebrew formatter for distance:
- *   < 1 km  → "{N} מ' ממך"     (rounded to nearest 50 m)
- *   1–99 km → "{x.x} ק"מ ממך"  (one decimal)
- *   ≥ 100 km → "{N} ק"מ ממך"    (no decimal — false precision)
+ * Distance formatter (v4 LOCK CARD-18 — MEH-1035: Latin units + bidi isolate):
+ *   < 1 km  → "{N} m ממך"     (rounded to nearest 50 m)
+ *   1–99 km → "{x.x} km ממך"  (one decimal)
+ *   ≥ 100 km → "{N} km ממך"    (no decimal — false precision)
  *
+ * The {number}{unit} run is wrapped in LRI…PDI (\u2066…\u2069) so it renders
+ * LTR (Latin numerals + unit) without flipping the trailing Hebrew "ממך",
+ * which stays OUTSIDE the isolate and flows RTL. REUSES: BadgeRow.jsx:79.
  * Returns null for non-finite inputs so callers can render conditionally.
  */
 export function formatDistance(km) {
@@ -53,13 +56,13 @@ export function formatDistance(km) {
 
   if (km < 1) {
     const meters = Math.round((km * 1000) / 50) * 50;
-    if (meters === 0) return "פחות מ-50 מ' ממך";
-    return `${meters} מ' ממך`;
+    if (meters === 0) return "פחות מ-50 \u2066m\u2069 ממך";
+    return `\u2066${meters} m\u2069 ממך`;
   }
 
   if (km < 100) {
-    return `${km.toFixed(1)} ק"מ ממך`;
+    return `\u2066${km.toFixed(1)} km\u2069 ממך`;
   }
 
-  return `${Math.round(km)} ק"מ ממך`;
+  return `\u2066${Math.round(km)} km\u2069 ממך`;
 }

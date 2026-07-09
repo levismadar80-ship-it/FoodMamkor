@@ -23,12 +23,13 @@ from app.models import (
     Favorite,
     HomeProduct,
     Producer,
+    ProducerCategory,
     ProducerPageView,
     Report,
     StaticPage,
     User,
 )
-from app.models.models import KashrutBadgeRequest
+from app.models.models import KashrutBadgeRequest, ProducerRecipe
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -166,7 +167,20 @@ def user_favorites(
 def list_categories_admin(
     user: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    return db.query(Category).order_by(Category.id).all()
+    # MEH-1034: annotate each category with its producer count in ONE query
+    # (outerjoin + group_by — no N+1). Query-time only; no DB column.
+    rows = (
+        db.query(Category, func.count(ProducerCategory.producer_id))
+        .outerjoin(ProducerCategory, ProducerCategory.category_id == Category.id)
+        .group_by(Category.id)
+        .order_by(Category.id)
+        .all()
+    )
+    categories = []
+    for cat, producer_count in rows:
+        cat.producer_count = producer_count
+        categories.append(cat)
+    return categories
 
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
@@ -520,7 +534,8 @@ def get_dashboard(
     week_ago = now - timedelta(days=7)
 
     # feature/producer-analytics: pending moderation is the sum across
-    # four queues. Individual counts stay available for the alert cards.
+    # six queues (MEH-997 added recipes). Individual counts stay
+    # available for the alert cards.
     pending_producers = (
         db.query(func.count(Producer.id))
         .filter(Producer.status.in_(["pending", "pending_whatsapp"]))
@@ -546,12 +561,22 @@ def get_dashboard(
         .scalar()
         or 0
     )
+    # MEH-997: recipes were the one moderation queue missing from the
+    # sidebar badge (admin_recipes.py shipped in MEH-589 with no UI and
+    # no count). Mirrors the experiences pair: pending + awaiting-fix.
+    pending_recipes = (
+        db.query(func.count(ProducerRecipe.id))
+        .filter(ProducerRecipe.moderation_status.in_(["pending", "needs_revision"]))
+        .scalar()
+        or 0
+    )
     pending_moderation_count = int(
         pending_producers
         + open_reports
         + flagged_home_products
         + pending_experiences
         + pending_kashrut_requests
+        + pending_recipes
     )
 
     stats = {
@@ -584,6 +609,7 @@ def get_dashboard(
         "flagged_home_products": int(flagged_home_products),
         "pending_experiences": int(pending_experiences),
         "pending_kashrut_requests": int(pending_kashrut_requests),
+        "pending_recipes": int(pending_recipes),
         "pending_moderation_count": pending_moderation_count,
     }
 

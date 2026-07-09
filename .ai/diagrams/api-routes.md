@@ -45,6 +45,7 @@ graph TD
     Home --> GCategories[GET /categories<br/>🌐 list all]
     Home --> GStats[GET /stats<br/>🌐 producers_count, categories_count]
     Home --> GCities[GET /cities<br/>🌐 deduped sorted list]
+    Home --> GProducerCities[GET /producers/cities<br/>🌐 MEH-970: per-city approved counts<br/>GROUP BY city, NULL/blank omitted]
 
     ProducerClick[Click producer card] --> GProducer[GET /producers/{id}<br/>🌐 + ?from=search/map/home<br/>logs producer_page_views best-effort]
     ProducerClick --> GSlug[GET /producers/by-slug/{slug}<br/>🌐 same but by slug]
@@ -109,6 +110,7 @@ graph TD
     Producers[/admin/producers page] --> AdminPList[GET /admin/producers/pending<br/>🛡️]
     Producers --> Approve[POST /admin/producers/{id}/approve<br/>🛡️]
     Producers --> Reject[POST /admin/producers/{id}/reject<br/>🛡️]
+    Producers --> ProdChanges[POST /admin/producers/{id}/request-changes<br/>🛡️ MEH-1011 feedback required, pending-only 409, email + WA, non-terminal]
     Producers --> Toggle[POST /admin/producers/{id}/toggle-status<br/>🛡️]
     Producers --> Import[POST /admin/producers/import<br/>🛡️ Excel dry-run + commit]
     Producers --> AdminEdit[PATCH /admin/producers/{id}<br/>🛡️ any field]
@@ -131,6 +133,11 @@ graph TD
     ExperiencesAdmin --> ExpApprove[POST /admin/experiences/{id}/approve<br/>🛡️]
     ExperiencesAdmin --> ExpReject[POST /admin/experiences/{id}/reject<br/>🛡️ host notification email]
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
+
+    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589<br/>queue entry pings admin — MEH-1000<br/>WhatsApp+email on submit/resubmit]
+    RecipesAdmin --> RecApprove[POST /admin/recipes/{id}/approve<br/>🛡️ publishes]
+    RecipesAdmin --> RecReject[POST /admin/recipes/{id}/reject<br/>🛡️ no producer notification — notes shown in dashboard]
+    RecipesAdmin --> RecChanges[POST /admin/recipes/{id}/request-changes<br/>🛡️ feedback required — notes shown in dashboard]
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]

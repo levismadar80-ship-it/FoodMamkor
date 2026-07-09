@@ -18,7 +18,7 @@ locks that decision in as a regression guard.
 from __future__ import annotations
 
 from app.models.models import Producer
-from tests.conftest import auth_header, make_category, make_user
+from tests.conftest import auth_header, make_category, make_producer, make_user
 
 
 BAKERY = "לחמים ואפייה"
@@ -359,3 +359,158 @@ class TestRegisterProducerLicensePending:
         assert producer is not None
         assert producer.producer_license_number is None
         assert producer.status == "pending_whatsapp"
+
+
+class TestAdminLicensePendingFlag:
+    """MEH-971 chunk 3 — ProducerAdminOut.license_pending derived flag.
+
+    True iff the producer is in >=1 license-required category AND has no
+    license number. Computed schema-side from the loaded categories +
+    constants.LICENSE_REQUIRED_CATEGORIES (no new column, no DB round-trip).
+    Status-independent. Admin-only (not on the public ProducerListOut).
+    """
+
+    def _set_license(self, db, producer, value):
+        producer.producer_license_number = value
+        db.commit()
+        db.refresh(producer)
+
+    def _fetch_admin_row(self, client, admin, producer_id):
+        resp = client.get("/admin/producers", headers=auth_header(admin))
+        assert resp.status_code == 200, resp.text
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
+        return rows.get(str(producer_id))
+
+    def test_required_category_empty_license_true(self, client, db):
+        """(1) license-required + empty license → license_pending True."""
+        admin = make_user(db, email="lpadmin1@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is True
+
+    def test_required_category_with_license_false(self, client, db):
+        """(2) license-required + license present → False."""
+        admin = make_user(db, email="lpadmin2@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        self._set_license(db, producer, "1234567")
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_non_license_category_empty_false(self, client, db):
+        """(3) non-license category + empty license → False."""
+        admin = make_user(db, email="lpadmin3@example.com", role="admin")
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        producer = make_producer(db, status="pending", category=veggies)
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_non_license_category_with_license_false(self, client, db):
+        """(4) non-license category + license present → False."""
+        admin = make_user(db, email="lpadmin4@example.com", role="admin")
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        producer = make_producer(db, status="pending", category=veggies)
+        self._set_license(db, producer, "1234567")
+        row = self._fetch_admin_row(client, admin, producer.id)
+        assert row is not None
+        assert row["license_pending"] is False
+
+    def test_pending_queue_endpoint_exposes_field(self, client, db):
+        """GET /admin/producers?status=pending returns license_pending."""
+        admin = make_user(db, email="lpadmin5@example.com", role="admin")
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer = make_producer(db, status="pending", category=bakery)
+        resp = client.get("/admin/producers?status=pending", headers=auth_header(admin))
+        assert resp.status_code == 200, resp.text
+        rows = {str(r["id"]): r for r in resp.json()}  # str() = id-type-agnostic key
+        row = rows.get(str(producer.id))
+        assert row is not None
+        assert "license_pending" in row
+        assert row["license_pending"] is True
+
+
+class TestOwnerPutGrandfathersLicense:
+    """MEH-999 (B10) — PUT /producers/me grandfathers already-held categories.
+
+    A producer who registered via the MEH-971 license_pending opt-in holds a
+    license-required category with a NULL license. The PUT gate previously
+    re-validated her FULL persisted category set on every edit, bricking the
+    whole edit surface. The grandfather rule validates NEWLY-ADDED categories
+    only, plus an explicit license-clearing guard (a licensed producer cannot
+    blank her license while keeping a license-required category).
+    """
+
+    def _owner(self, db, *, category, license_number=None):
+        """Pending producer + linked producer-role user (owner)."""
+        producer = make_producer(db, status="pending", category=category)
+        if license_number is not None:
+            producer.producer_license_number = license_number
+            db.commit()
+            db.refresh(producer)
+        user = make_user(db, role="producer")
+        user.producer_id = producer.id
+        db.commit()
+        return producer, user
+
+    def test_a_pending_producer_saves_unrelated_edit_200(self, client, db):
+        """(a) license-pending producer edits her bio → 200, edit persists."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer, user = self._owner(db, category=bakery)  # NULL license
+        resp = client.put(
+            "/producers/me",
+            json={"description": "מאפייה ביתית עם אהבה"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(producer)
+        assert producer.description == "מאפייה ביתית עם אהבה"
+        assert producer.producer_license_number is None  # still pending
+
+    def test_b_pending_producer_adds_new_licensed_category_422(self, client, db):
+        """(b) grandfather does NOT cover newly-added licensed categories."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        honey = make_category(db, name=HONEY, emoji="🍯")
+        producer, user = self._owner(db, category=bakery)  # NULL license
+        resp = client.put(
+            "/producers/me",
+            json={"category_ids": [bakery.id, honey.id]},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422, resp.text
+        assert LICENSE_REQUIRED_HE in resp.text
+        db.refresh(producer)
+        assert {c.id for c in producer.categories} == {bakery.id}  # unchanged
+
+    def test_c_licensed_producer_clears_license_keeping_category_422(
+        self, client, db
+    ):
+        """(c) 2c guard — blanking a held license with a licensed category → 422."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        producer, user = self._owner(db, category=bakery, license_number="1234567")
+        resp = client.put(
+            "/producers/me",
+            json={"producer_license_number": ""},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422, resp.text
+        assert LICENSE_REQUIRED_HE in resp.text
+        db.refresh(producer)
+        assert producer.producer_license_number == "1234567"  # not cleared
+
+    def test_d_pending_producer_adds_unlicensed_category_200(self, client, db):
+        """(d) adding a NON-licensed category while pending stays allowed."""
+        bakery = make_category(db, name=BAKERY, emoji="🍞")
+        veggies = make_category(db, name=VEGGIES, emoji="🥬")
+        producer, user = self._owner(db, category=bakery)  # NULL license
+        resp = client.put(
+            "/producers/me",
+            json={"category_ids": [bakery.id, veggies.id]},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200, resp.text
+        db.refresh(producer)
+        assert {c.id for c in producer.categories} == {bakery.id, veggies.id}

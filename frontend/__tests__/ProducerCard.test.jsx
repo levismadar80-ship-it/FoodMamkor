@@ -116,6 +116,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Phone: (props) => <span data-testid="icon-phone" {...props} />,
   Globe: (props) => <span data-testid="icon-globe" {...props} />,
   EnvelopeSimple: (props) => <span data-testid="icon-email" {...props} />,
+  // MEH-990: rating ★ glyph → Phosphor Star (Emoji LOCK).
+  Star: (props) => <span data-testid="icon-star" {...props} />,
   // MEH-76 chunk 4 — S12 tier badge glyphs rendered by BadgeRow.
   SealCheck: (props) => <span data-testid="icon-seal" {...props} />,
   Note: (props) => <span data-testid="icon-note" {...props} />,
@@ -229,6 +231,14 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(price.className).toMatch(/max-w-/);
   });
 
+  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
+  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
+  it("bidi-isolates the price label with dir=ltr", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    const price = screen.getByText("₪40-80");
+    expect(price).toHaveAttribute("dir", "ltr");
+  });
+
   it("hides price when both price_range and starting_price_label are null", () => {
     render(<ProducerCard producer={minimalProducer} />);
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
@@ -238,7 +248,9 @@ describe("ProducerCard — Phase B anatomy", () => {
     render(<ProducerCard producer={fullProducer} />);
     const rating = screen.getByTestId("card-rating");
     expect(rating).toHaveAttribute("dir", "ltr");
-    expect(rating.textContent).toBe("★ 4.5 · 12");
+    // MEH-990: leading ★ glyph is now a Phosphor Star icon (no text node).
+    expect(rating.querySelector('[data-testid="icon-star"]')).toBeInTheDocument();
+    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 · 12");
   });
 
   it("hides rating entirely when reviews_count < 3", () => {
@@ -309,7 +321,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    expect(distance.textContent).toMatch(/km\u2069 ממך$/);
     expect(distance).toHaveAttribute("dir", "ltr");
   });
 
@@ -399,8 +411,11 @@ describe("ProducerCard — Phase B anatomy", () => {
   it("calls onClick when the card body is tapped outside interactive children", () => {
     const onClick = vi.fn();
     render(<ProducerCard producer={fullProducer} onClick={onClick} active={false} />);
-    const desc = screen.getByTestId("card-description");
-    desc.click();
+    // MEH-1028: tap the location line — a non-interactive body element that stays
+    // visible on mobile (the description is now `hidden sm:block`, so it's not a
+    // representative mobile tap target).
+    const body = screen.getByTestId("location-line");
+    body.click();
     expect(onClick).toHaveBeenCalledWith(fullProducer);
   });
 
@@ -494,5 +509,34 @@ describe("ProducerCard — heart (Phase C)", () => {
     render(<ProducerCard producer={fullProducer} onClick={onClick} />);
     fireEvent.click(screen.getByTestId("card-heart"));
     expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+// MEH-991 (CARD-09): v4 LOCK — a third+ badge collapses to a "+N" overflow chip.
+describe("ProducerCard — badge overflow chip (MEH-991)", () => {
+  it("renders +N when the producer earns more than 2 badges", () => {
+    render(
+      <ProducerCard
+        producer={{
+          ...minimalProducer,
+          organic_certified: true,
+          grass_fed: true,
+          has_gluten_free_products: true,
+          has_delivery: true,
+        }}
+      />,
+    );
+    const chip = screen.getByTestId("badge-overflow");
+    expect(chip).toHaveTextContent("+2");
+    expect(chip).toHaveAttribute("dir", "ltr");
+  });
+
+  it("renders no overflow chip at 2 badges or fewer", () => {
+    render(
+      <ProducerCard
+        producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
+      />,
+    );
+    expect(screen.queryByTestId("badge-overflow")).not.toBeInTheDocument();
   });
 });

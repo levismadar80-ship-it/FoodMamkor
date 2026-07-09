@@ -64,23 +64,26 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
   return (
     <div
       ref={sheetRef}
-      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-lg border-t border-border flex flex-col"
+      className="fixed inset-x-0 bottom-0 z-[600] bg-background rounded-t-3xl border-t border-border flex flex-col"
       style={{
         height: `${heightVh}vh`,
         transition: transient != null ? "none" : "height 0.3s cubic-bezier(0.32,0.72,0,1)",
         paddingBottom: "64px",
       }}
     >
-      {/* Drag handle — S5 FINAL 32×4, warm tan (#D4C5A9, FINAL-specified; not yet tokenized) */}
+      {/* Drag handle — MEH-1029 (MAP-11): S5 chrome 44×5 (was 32×4). Warm tan
+          (#D4C5A9) kept as-is — tokenization is a separate token-additions issue.
+          `justify-center` is the direction-neutral centering idiom (no physical prop). */}
       <div className="flex justify-center py-2 cursor-grab shrink-0" aria-hidden="true">
-        <div className="w-8 h-1 rounded-full bg-[#D4C5A9]" />
+        <div className="w-11 h-[5px] rounded-full bg-[#D4C5A9]" />
       </div>
 
       {/* Peek header */}
       <div className="px-4 pb-2 shrink-0 flex items-center justify-between">
         {/* MEH-935: ICU plural — count=1 singular, count=2 Hebrew dual, ≥3 plural.
-            Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור"). */}
-        <p className="text-sm font-medium text-text numeric">
+            Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור").
+            MEH-1029 (MAP-11): gold accent token (styling only; count string unchanged). */}
+        <p className="text-sm font-medium text-accent numeric">
           {t("count", { count })}
         </p>
         {snap === HALF && (

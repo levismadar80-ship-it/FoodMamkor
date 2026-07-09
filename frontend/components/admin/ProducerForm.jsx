@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, Seal } from "@phosphor-icons/react";
+import { Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
@@ -114,12 +116,11 @@ const EMPTY = {
   category_ids: [],
   has_delivery: false,
   pickup_points: false,
-  delivery_area_cities: "",
   kosher: "",
   grass_fed: false,
   organic_certified: false,
   // MEH-293: dietary flags (gluten_free / vegan / lactose_free) moved to per-product.
-  is_verified: true,
+  // MEH-766 ch3: is_verified removed — verification is the doc-grant flow, not a form toggle.
   // MEH-18
   is_recommended: false,
   // MEH-530: admin form persists raw value; backend enforces conditional-
@@ -161,8 +162,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         lng: initial.lng ?? "",
         slug: initial.slug ?? "",
         category_ids: initial.categories?.map((c) => c.id) ?? [],
-        delivery_area_cities:
-          initial.delivery_areas?.map((d) => d.city).join(", ") ?? "",
         images: initial.images ?? [],
         kosher: initial.kosher ?? "",
         // MEH-530: admin GET /admin/producers/{id} returns ProducerAdminOut
@@ -185,7 +184,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         has_physical_location: initial.has_physical_location ?? true,
         offers_delivery: initial.offers_delivery ?? false,
         delivery_nationwide: initial.delivery_nationwide ?? false,
-        delivery_cities: initial.delivery_cities ?? [],
+        // MEH-903 A: the single cities input is populated from the delivery_areas
+        // relation (the store), not the legacy delivery_cities column.
+        delivery_cities: initial.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
         availability_state:
           initial.availability_state ??
@@ -231,7 +232,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
     } catch (err) {
-      setError(err.response?.data?.detail || t("producers.form.errors.image_upload"));
+      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.image_upload"));
     } finally {
       setUploading(false);
     }
@@ -252,10 +253,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       lng: form.lng === "" ? null : parseFloat(form.lng),
       // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
       contact_email: form.contact_email?.trim() || null,
-      delivery_area_cities: form.delivery_area_cities
-        .split(",")
-        .map((c) => c.trim())
-        .filter(Boolean),
+      // MEH-903 A: the single CitiesAutocomplete (form.delivery_cities) is the
+      // source for delivery_area_cities → delivery_areas table. The legacy
+      // delivery_cities column is spread via ...form but is inert on the backend
+      // (admin no longer writes it — Chunk A).
+      delivery_area_cities: form.delivery_cities,
       // MEH-291 — clear vacation_until when not on vacation
       vacation_until: form.availability_state === "on_vacation" && form.vacation_until ? form.vacation_until : null,
     };
@@ -268,7 +270,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       }
       router.push("/admin?tab=producers");
     } catch (err) {
-      setError(err.response?.data?.detail || t("producers.form.errors.save"));
+      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.save"));
     } finally {
       setSaving(false);
     }
@@ -443,7 +445,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                 className="w-4 h-4 accent-primary"
               />
               <span>
-                {c.emoji} {c.name}
+                {c.name}
               </span>
             </label>
           ))}
@@ -468,15 +470,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             <Cow size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.grass_fed")}
           </label>
           {/* MEH-293: dietary checkboxes (gluten_free / vegan / lactose_free) moved to per-product. */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.is_verified}
-              onChange={(e) => update("is_verified", e.target.checked)}
-              className="w-4 h-4 accent-primary"
-            />
-            <Seal size={16} weight="fill" className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("producers.form.fields.verified")}
-          </label>
+          {/* MEH-766 ch3: "verified" checkbox removed — verification is the
+              admin doc-grant flow (grant-verified → verified_at), not a free toggle. */}
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -587,14 +582,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             />
             {t("producers.form.fields.pickup_points")}
           </label>
-          <Field label={t("producers.form.fields.delivery_area_cities")} full>
-            <input
-              value={form.delivery_area_cities}
-              onChange={(e) => update("delivery_area_cities", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.delivery_area_cities_placeholder")}
-            />
-          </Field>
+          {/* MEH-903 A: the legacy comma-separated delivery_area_cities input was
+              removed — cities are now entered once via the CitiesAutocomplete in
+              the location-mode block above (single store: delivery_areas). */}
         </div>
       </Section>
 
@@ -649,16 +639,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               <div key={url} className="relative group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={url}
+                  src={optimizeCloudinary(url)}
                   alt=""
                   className="w-full h-24 object-cover rounded-[8px] border border-border"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 text-xs opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  aria-label={t("common.delete")}
                 >
-                  ✕
+                  <X size={14} weight="bold" aria-hidden="true" />
                 </button>
               </div>
             ))}

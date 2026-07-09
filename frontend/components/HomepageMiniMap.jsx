@@ -38,8 +38,11 @@ import { styleForProducer } from "@/lib/map-categories";
 // MEH-538: Tel Aviv (population center) initial frame. MEH-856: this is now
 // only the PRE-FIT initial/fallback — FitToBusinesses fitBounds()es to the real
 // markers on load so the default view sits on the business base (density), not a
-// fixed Tel-Aviv frame. (Chosen over /map's Jerusalem 31.7683,35.2137 as a
-// neutral country-level fallback before the marker bounds are known.)
+// fixed Tel-Aviv frame. (Chosen over /map's then-current Jerusalem center
+// 31.7683,35.2137 as a neutral country-level fallback before the marker bounds
+// are known. Historical note — MEH-939: /map's default has since moved to the
+// MEH-932 producer band [32.4, 34.95]; this pre-fit fallback is independent of
+// that change and stays [32.0853, 34.7818].)
 const ISRAEL_CENTER = [32.0853, 34.7818];
 const ISRAEL_ZOOM = 8;
 
@@ -141,7 +144,7 @@ function PreviewEmpty() {
     <div className="w-full h-full rounded-[12px] bg-green-50 flex flex-col items-center justify-center gap-2 px-4 text-center">
       <MapTrifold size={48} className="text-primary/40" />
       <p className="text-text text-sm">
-        {t("pre_launch_hint")} 🌿
+        {t("pre_launch_hint")}
       </p>
     </div>
   );

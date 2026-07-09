@@ -14,9 +14,10 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Camera } from "@phosphor-icons/react";
+import { Camera, DownloadSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { BRAND_NAME } from "@/lib/constants";
 
 const W = 1080;
@@ -139,7 +140,7 @@ async function drawCard(canvas, producer, strings) {
   wrapText(ctx, producer.name || "", W / 2, nameY, W - 160, 68);
 
   // City + category line
-  const categories = producer.categories?.map((c) => c.emoji ? `${c.emoji} ${c.name}` : c.name).join("  ·  ") || "";
+  const categories = producer.categories?.map((c) => c.name).join("  ·  ") || "";
   const cityLine = [producer.city, categories].filter(Boolean).join("  ·  ");
   ctx.fillStyle = "#EAF3DE";
   ctx.font = `400 28px "DM Sans", sans-serif`;
@@ -206,7 +207,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       setUploadedUrl(r.data.url);
       onUploaded?.(r.data.url);
     } catch (err) {
-      alert(err.response?.data?.detail || t("upload_error"));
+      alert(detailToMessage(err.response?.data?.detail) || t("upload_error"));
     } finally {
       setUploading(false);
     }
@@ -247,7 +248,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
           disabled={!rendered}
           className="text-sm border border-border px-4 py-2 rounded-[8px] hover:border-primary transition disabled:opacity-40"
         >
-          ⬇️ {t("download")}
+          <DownloadSimple size={16} className="inline align-[-2px]" aria-hidden="true" /> {t("download")}
         </button>
         <button
           onClick={uploadToCloudinary}

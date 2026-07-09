@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowCounterClockwise,
+  ArrowRight,
   Basket,
   CalendarBlank,
   CalendarX,
@@ -284,7 +285,9 @@ export default function EventsPage() {
             href={isExp ? "/experiences/new" : "/producer/dashboard/events/new"}
             className="ms-auto self-center min-h-[44px] inline-flex items-center text-sm font-medium text-primary hover:underline"
           >
-            {isExp ? t("submit_experience") : t("add_event")} →
+            {isExp ? t("submit_experience") : t("add_event")}
+            {/* MEH-990: raw → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-938 pattern) */}
+            <ArrowRight size={16} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
           </Link>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import {
   CalendarBlank,
-  CookingPot,
   HourglassSimple,
   Package,
   Sparkle,
@@ -15,6 +14,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { detailToMessage } from "@/lib/errors";
 import { getProducerStatusLabel } from "@/lib/producer-status";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     api.get("/admin/dashboard")
       .then((r) => setData(r.data))
-      .catch((e) => setError(e.response?.data?.detail || t("common.error_loading")));
+      .catch((e) => setError(detailToMessage(e.response?.data?.detail) || t("common.error_loading")));
   }, [t]);
 
   if (error) {
@@ -42,7 +42,6 @@ export default function AdminDashboard() {
     { key: "total_producers",   label: t("dashboard.stats.total_producers"),   value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
     { key: "pending_approval",  label: t("dashboard.stats.pending_approval"),  value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
     { key: "registered_users",  label: t("dashboard.stats.registered_users"),  value: s.total_users,         Icon: Users, href: "/admin/users" },
-    { key: "home_products",     label: t("dashboard.stats.home_products"),     value: s.total_home_products, Icon: CookingPot, href: "/admin/content" },
     { key: "group_buys",        label: t("dashboard.stats.group_buys"),        value: "›",                   Icon: Package, href: "/admin/group-buys" },
   ];
 
@@ -102,8 +101,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Alerts */}
-      {(s.pending_producers > 0 || s.open_reports > 0 || s.hidden_home_products > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {(s.pending_producers > 0 || s.open_reports > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {s.pending_producers > 0 && (
             <Link
               href="/admin/producers?status=pending"
@@ -125,18 +124,6 @@ export default function AdminDashboard() {
               <div>
                 <p className="font-medium text-sm">{t("dashboard.alerts.open_reports", { count: s.open_reports })}</p>
                 <p className="text-xs text-muted">{t("dashboard.alerts.needs_review")}</p>
-              </div>
-            </Link>
-          )}
-          {s.hidden_home_products > 0 && (
-            <Link
-              href="/admin/content"
-              className="bg-orange-50 border border-orange-200 rounded-[12px] p-4 flex items-center gap-3 hover:bg-orange-100 transition"
-            >
-              <Package size={28} aria-hidden="true" className="text-orange-500" />
-              <div>
-                <p className="font-medium text-sm">{t("dashboard.alerts.hidden_home_products", { count: s.hidden_home_products })}</p>
-                <p className="text-xs text-muted">{t("dashboard.alerts.for_review")}</p>
               </div>
             </Link>
           )}
@@ -210,7 +197,7 @@ export default function AdminDashboard() {
           {(data.recent_activity || []).map((a) => (
             <li key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
               <div className="flex items-center gap-2">
-                <span>🆕</span>
+                <Sparkle size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
                 <span>{t("dashboard.activity.added_producer")}</span>
                 <Link href={`/admin/producers/${a.id}/edit`} className="font-medium text-primary hover:underline">
                   {a.name}

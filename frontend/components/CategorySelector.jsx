@@ -122,6 +122,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                 <button
                   key={cat.id}
                   type="button"
+                  data-testid={`category-chip-${cat.id}`}
                   aria-pressed={selected}
                   onClick={() => onChange(cat.id)}
                   className={[

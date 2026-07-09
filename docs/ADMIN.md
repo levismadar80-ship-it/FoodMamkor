@@ -7,12 +7,13 @@ sidebar קבוע ב: `frontend/app/admin/layout.js` — 9 דפים
 | דף | URL | תוכן |
 |----|-----|-------|
 | Dashboard | /admin | 4 ראשיים + 4 משניים + התראות + גרף עסקים חדשים 6 חודשים + ערים מובילות + DAU 30 יום + לוח בריאות שרת + פעילות (ראה "אנליטיקס על /admin") |
-| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר + Toggle שגרירה (approved בלבד) |
+| בתי עסק | /admin/producers | טבלה + חיפוש + ייבוא/ייצוא Excel + אישור מהיר inline; השהה/שגריר/סטורי/מחיקה בתפריט ⋮ פר-שורה (MEH-1027) |
 | משתמשים | /admin/users | חיפוש + שינוי role + חסימה |
 | תוכן | /admin/content | קטגוריות CRUD + עורך about/terms |
 | דיווחים | /admin/reports | ממוין לפי דחיפות + פתור/השהה/התעלם |
 | אנליטיקס | /admin/analytics | גרפים + heat map + top producers |
 | חוויות | /admin/experiences | מיתון חוויות — 5 טאבים (ממתינות לאישור / דרוש תיקון / מאושרות / נדחו / הכל) + כפתורי אישור/דחייה/בקשת שינויים + התראת מייל למארח |
+| מתכונים | /admin/recipes | מיתון מתכונים של בתי עסק (MEH-997) — 5 טאבים (ממתינים / דרוש תיקון / מאושרים / נדחו / הכל) לפי moderation_status + אישור (מפרסם) / בקשת שינויים (הערה חובה) / דחייה. אין התראה לבית העסק — ההערות מוצגות בדשבורד שלו |
 | כשרות | /admin/kashrut | טבלת בקשות badge + אישור/דחייה + הערות דחייה. Badge צהוב ב-sidebar כשיש בקשות ממתינות |
 | הגדרות | /admin/settings | אימייל/WhatsApp אדמין + freemium + בדיקת Twilio/Cloudinary |
 
@@ -91,7 +92,7 @@ npx playwright test             # E2E
 - נטען ב-`frontend/app/admin/layout.js` כ-fetch ל-`/admin/dashboard` בכל
   שינוי של `pathname`, כך שהמספר מתעדכן כשעוברים בין דפי admin.
 - הסכום: `pending_producers + open_reports + flagged_home_products +
-  pending_experiences + pending_kashrut_requests`.
+  pending_experiences + pending_kashrut_requests + pending_recipes` (MEH-997).
 - מופיע כ-pill צהוב (`bg-yellow-400 text-yellow-900`) על הניווט "לוח
   מחוונים" (הסכום הכולל) ועל "כשרות" (pending_kashrut_requests בלבד).
   רק כשהספירה > 0.
@@ -111,7 +112,7 @@ npx playwright test             # E2E
 **Kashrut badges** — 8 קודים תקפים: `rabanut, badatz, chalak, mehadrin, organic-kosher, shmitta, kilayim, artisan-dairy`.
 בקשה מבית עסק → `POST /producers/me/kashrut-request`. אדמין מאשרת/דוחה ב-`/admin/kashrut`.
 
-**Ambassador toggle** — זמין ב-`/admin/producers` (כפתור "☆ שגריר") לבתי עסק עם `status = approved` בלבד.
+**Ambassador toggle** — זמין ב-`/admin/producers` (פריט "☆ שגריר" בתפריט ⋮ של השורה — MEH-1027; לפני כן כפתור inline) לבתי עסק עם `status = approved` בלבד.
 `POST /admin/producers/{id}/set-ambassador` מחזיר 400 אם `status != approved`.
 
 **POST /producers/{id}/whatsapp-click** — anonymous, rate-limited 10/min per IP.
