@@ -99,9 +99,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
 
   return (
     <>
+    {/* MEH-1047: shared relative wrapper so a single FavoriteButton overlays
+        the top-start corner of whichever layout is visible (desktop grid hero
+        or mobile carousel) — one mount, one /users/me/favorites fetch. */}
+    <div className="relative">
     {/* MEH-1047: desktop editorial grid (Direction B) — hero at inline-start
         + tall stacked secondary column (≤2 cells). The bottom cell of a
-        stacked pair carries the single "כל התמונות (N)" overlay pill. */}
+        stacked pair carries the single view_all (N) overlay pill (gallery.view_all). */}
     {!single && (
       <div
         className={`hidden md:grid gap-2 rounded-xl overflow-hidden border border-accent/30 h-[420px] lg:h-[460px] max-h-[460px] grid-cols-[62%_1fr] ${
@@ -188,52 +192,41 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           sizes="(max-width: 768px) 100vw, 60vw"
         />
       </button>
-      {producerId && (
-        <div className="absolute top-3 start-3 z-10">
-          <FavoriteButton producerId={producerId} variant="gallery" />
-        </div>
-      )}
       {images.length > 1 && (
         <>
-          <button
-            type="button"
-            onClick={() => setCurrent((current - 1 + images.length) % images.length)}
-            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label={t("prev_aria")}
+          {/* MEH-1047 chunk 2: counter chip (1/N) at top-end — opposite the
+              favorite (top-start); dark scrim keeps it legible over any photo.
+              .numeric bidi-isolates the fraction so RTL can't flip "1/5". */}
+          <div
+            className="absolute top-3 end-3 z-10 rounded-full bg-black/55 px-2.5 py-1 text-xs font-label-md text-white numeric pointer-events-none"
+            data-testid="gallery-counter"
           >
-            <span aria-hidden="true">←</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrent((current + 1) % images.length)}
-            // eslint-disable-next-line no-restricted-syntax -- rtl-ok: carousel arrow (physical by design)
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 rounded-full w-11 h-11 flex items-center justify-center hover:bg-white transition focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label={t("next_aria")}
+            {current + 1}/{images.length}
+          </div>
+          {/* MEH-1047 chunk 2: thin gold progress bar (replaces the dots).
+              Fill width tracks the current slide; decorative — swipe drives
+              navigation, tap opens the lightbox for full arrow-key nav. */}
+          <div
+            className="absolute bottom-0 inset-x-0 h-1 bg-white/30"
+            data-testid="gallery-progress"
+            aria-hidden="true"
           >
-            <span aria-hidden="true">→</span>
-          </button>
-          {/* eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setCurrent(i)}
-                className="w-11 h-11 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg"
-                aria-label={t("thumb_aria", { n: i + 1 })}
-                aria-current={i === current ? "true" : undefined}
-              >
-                <span
-                  className={`block w-2.5 h-2.5 rounded-full transition pointer-events-none ${
-                    i === current ? "bg-white" : "bg-white/50 hover:bg-white/80"
-                  }`}
-                />
-              </button>
-            ))}
+            <div
+              className="h-full bg-accent transition-[width] duration-base ease-quart"
+              style={{ width: `${((current + 1) / images.length) * 100}%` }}
+            />
           </div>
         </>
       )}
+    </div>
+    {/* MEH-1047: single FavoriteButton for the imaged state — pinned top-start
+        (right, RTL) over the visible layout's hero corner. z-20 clears the
+        counter chip / pill (z-10). */}
+    {producerId && (
+      <div className="absolute top-3 start-3 z-20">
+        <FavoriteButton producerId={producerId} variant="gallery" />
+      </div>
+    )}
     </div>
     {lightboxOpen && (
       <Lightbox

@@ -90,11 +90,37 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     secondaryImgs.forEach((img) => expect(img).toHaveAttribute("data-priority", "0"));
   });
 
-  it("FavoriteButton stays top-start over the imaged hero", () => {
+  it("renders exactly one FavoriteButton, pinned top-start (shared across grid + carousel)", () => {
+    // Regression guard: the favorite must not be trapped inside the md:hidden
+    // carousel (it would vanish on desktop for 2+ images) nor mounted twice
+    // (double /users/me/favorites fetch). One instance, hoisted to the wrapper.
     render(<ImageGallery images={urls(4)} producerId="p-1" />);
-    const fav = screen.getByTestId("favorite-btn");
-    expect(fav).toHaveAttribute("data-producer-id", "p-1");
-    expect(fav.parentElement.className).toMatch(/start-3/);
-    expect(fav.parentElement.className).toMatch(/top-3/);
+    const favs = screen.getAllByTestId("favorite-btn");
+    expect(favs).toHaveLength(1);
+    expect(favs[0]).toHaveAttribute("data-producer-id", "p-1");
+    expect(favs[0].parentElement.className).toMatch(/start-3/);
+    expect(favs[0].parentElement.className).toMatch(/top-3/);
+    expect(favs[0].parentElement.className).toMatch(/z-20/);
+  });
+});
+
+describe("ImageGallery imaged state — mobile carousel (MEH-1047 chunk 2)", () => {
+  it("shows a counter chip (current/total) and a gold progress bar, no dots", () => {
+    render(<ImageGallery images={urls(5)} />);
+    expect(screen.getByTestId("gallery-counter")).toHaveTextContent("1/5");
+    const progress = screen.getByTestId("gallery-progress");
+    expect(progress).toBeInTheDocument();
+    // gold fill child present
+    expect(progress.querySelector(".bg-accent")).not.toBeNull();
+    // dots + arrows removed — their aria-labels must no longer exist
+    expect(screen.queryByLabelText(/עבור לתמונה/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("תמונה קודמת")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("תמונה הבאה")).not.toBeInTheDocument();
+  });
+
+  it("omits counter + progress bar for a single image", () => {
+    render(<ImageGallery images={urls(1)} />);
+    expect(screen.queryByTestId("gallery-counter")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("gallery-progress")).not.toBeInTheDocument();
   });
 });
