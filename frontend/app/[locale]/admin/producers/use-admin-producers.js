@@ -148,15 +148,26 @@ function useProducerActions(loadAllProducers) {
             : errorMessage(err, tError),
         ),
     );
-  const deleteProducer = (id, name) => {
-    if (!confirm(t("producers.table.confirm_delete", { name }))) return;
+  // MEH-1027 Chunk B: the native browser confirm was replaced by a modal dialog
+  // (page.js renders it — mirrors the content/page.js category-delete dialog,
+  // MEH-1023 Ch.B pattern). Signature unchanged so AdminProducersTable's
+  // kebab wiring (Chunk A) is untouched; this now only OPENS the dialog.
+  const [confirmDelete, setConfirmDelete] = useState(null); // {id, name} | null
+  const deleteProducer = (id, name) => setConfirmDelete({ id, name });
+  const closeDeleteConfirm = () => setConfirmDelete(null);
+  const confirmDeleteProducer = () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
     // MEH-747: surface delete failures — the 500 was previously swallowed
     // silently (no catch), so a failed delete looked like a no-op to the admin.
+    // Dialog closes only on success; on failure the delete_error toast fires
+    // (run's onError) and the dialog stays open for retry/cancel.
     return run(
       `delete:${id}`,
       async () => {
         await api.delete(`/admin/producers/${id}`);
         loadAllProducers();
+        setConfirmDelete(null);
       },
       t("producers.table.delete_error"),
     );
@@ -171,6 +182,8 @@ function useProducerActions(loadAllProducers) {
     // MEH-1011 Chunk 2: request-changes modal controller.
     modalProducer, feedback, setFeedback,
     openRequestChanges, closeRequestChanges, submitRequestChanges,
+    // MEH-1027 Chunk B: delete confirm dialog controller.
+    confirmDelete, closeDeleteConfirm, confirmDeleteProducer,
   };
 }
 

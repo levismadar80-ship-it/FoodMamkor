@@ -1287,7 +1287,8 @@
         "empty": "No businesses to display",
         "awaiting_completion": "Awaiting completion",
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
-        "delete_error": "Deleting the business failed. Please try again."
+        "delete_error": "Deleting the business failed. Please try again.",
+        "deleting": "Deleting…"
       },
       "toggle": {
         "invalid_transition": "Can't change status in the current state — approve or reject the business via the approve/reject buttons."

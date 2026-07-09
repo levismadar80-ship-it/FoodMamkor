@@ -248,6 +248,17 @@ and MEH-374 (62 commits)._
     on a "failing" signal you cannot read logs for. Wait for budget
     resolution before proceeding. (Root cause: MEH-314/317, 2026-04-25 —
     test bug was masked by budget exhaustion and shipped in PR #337.)
+    - **Superseded-run false-failure.** A `CI gate (required)` failure
+      webhook can be a *cancelled* run, not a real one: flipping a PR
+      draft→ready (or a rapid second push) starts a new `pr-checks` run
+      that concurrency-cancels the in-flight one, and the gate's bash
+      aggregator maps its `cancelled` deps to FAIL (`R_BUILD: cancelled`
+      → `exit 1`). Before diagnosing a gate failure, list runs for the
+      head SHA — if a newer run is `in_progress`, the older
+      `conclusion: cancelled` gate is stale; wait for the newer run
+      rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
+      emitted "CI gate failed" from superseded run #2279 while #2280 ran
+      green and auto-merged.)
 
 ---
 
@@ -574,6 +585,8 @@ Code session = quota usage. Use on-demand, never always-on.
 - 5+ concurrent loops in same session
 
 Tasks auto-expire after 7 days.
+
+**Loop-primitive tiers + DoD self-check (MEH-1052):** `/goal` · `/loop` · `/schedule` authority by GREEN/YELLOW/RED — and the `mehamakor-dod` skill (`bash .claude/skills/mehamakor-dod/check.sh`; exit 0 = mechanical DoD met, required before any GREEN `/goal` declares itself done) — are defined in [ADR-025](../../docs/decisions/ADR-025-loop-tiers.md).
 
 ---
 

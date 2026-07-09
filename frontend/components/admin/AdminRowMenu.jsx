@@ -18,7 +18,8 @@ import { DotsThreeVertical } from "@phosphor-icons/react";
  *           app/[locale]/admin/producers/AdminProducersTable.jsx (consumer) ·
  *           __tests__/AdminRowMenu.test.jsx
  * History:  MEH-1023 (creation — admin destructive-action safeguards, Chunk A);
- *           MEH-1027 (per-item disabled — producers-table busy guards)
+ *           MEH-1027 (per-item disabled — producers-table busy guards;
+ *           Ch.B: native disabled → aria-disabled + click-guard, APG)
  */
 
 /**
@@ -87,15 +88,26 @@ export default function AdminRowMenu({ items = [], ariaLabel }) {
               key={it.key}
               type="button"
               role="menuitem"
-              // MEH-1027: busy actions stay visible but inert (menu stays open —
-              // a disabled button fires no click, so setOpen never runs).
-              disabled={it.disabled}
+              // MEH-1027 Ch.B: aria-disabled + click-guard instead of native
+              // disabled (WAI-ARIA APG) — a busy item stays focusable so
+              // keyboard/screen-reader users perceive it instead of silently
+              // skipping it. The guard sits BEFORE setOpen so the menu stays
+              // open on a no-op click. Items without `disabled` (users page)
+              // get no attribute — behavior identical to pre-Ch.B.
+              aria-disabled={it.disabled || undefined}
               onClick={() => {
+                if (it.disabled) return;
                 setOpen(false);
                 it.onSelect();
               }}
-              className={`block w-full text-start px-3 py-2 text-sm transition hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
-                it.tone === "danger" ? "text-red-600 hover:bg-red-50" : "text-text"
+              className={`block w-full text-start px-3 py-2 text-sm transition ${
+                it.disabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-50"
+              } ${
+                it.tone === "danger"
+                  ? `text-red-600 ${it.disabled ? "" : "hover:bg-red-50"}`
+                  : "text-text"
               }`}
             >
               {it.label}
