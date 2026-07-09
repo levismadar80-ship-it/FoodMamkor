@@ -428,7 +428,7 @@
     },
     "producers": {
       "heading": "בתי עסק מומלצים",
-      "map_link": "הצג במפה",
+      "map_link": "הצגה במפה",
       "filter_prefix": "מסנן לפי:",
       "counter": "מציגים {shown} מתוך {total}",
       "hint_favorites": "לחצו בכרטיס עסק כדי לשמור עסקים שאהבתם",
