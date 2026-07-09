@@ -149,7 +149,9 @@ def _sanitize_wa_param(text: str) -> str:
     return flat[:_WA_PARAM_MAX_LEN]
 
 
-def notify_producer_changes_requested(name: str, phone: str | None, feedback: str) -> bool:
+def notify_producer_changes_requested(
+    name: str, phone: str | None, feedback: str
+) -> bool:
     """Send WhatsApp changes-requested template after an admin asks a pending
     producer to complete details (MEH-1011 flow, MEH-1051 template).
 
