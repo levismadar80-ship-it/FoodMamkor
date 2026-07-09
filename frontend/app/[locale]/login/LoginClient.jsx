@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
+import { ArrowRight, EnvelopeSimple, Eye, EyeSlash, Lock } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
@@ -299,11 +299,12 @@ function LoginPageBody() {
             </p>
           )}
 
-          {/* Submit — site-standard rounded primary (per "NOT green pill" constraint) */}
+          {/* Submit — S9 green pill + reading-forward arrow (Refs MEH-1033).
+              Overrides the prior site-standard-rounded ("NOT green pill") constraint. */}
           <button
             type="submit"
             disabled={loading || !formIsValid}
-            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-[10px] px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="w-full min-h-[54px] flex items-center justify-center bg-primary text-white rounded-full px-6 font-bold hover:bg-primary-dark transition disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {loading ? (
               <span className="inline-flex items-center justify-center gap-2">
@@ -311,7 +312,10 @@ function LoginPageBody() {
                 {t("submitting")}
               </span>
             ) : (
-              t("submit")
+              <span className="inline-flex items-center justify-center">
+                {t("submit")}
+                <ArrowRight size={18} weight="bold" aria-hidden="true" className="ms-1 rtl:rotate-180" />
+              </span>
             )}
           </button>
         </form>
