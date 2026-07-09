@@ -135,12 +135,15 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
       </motion.div>
 
       {/* Actions — on cream (re-coloured from the on-photo treatment): primary
-          CTA (גלו עסקים) + near-me (MEH-41) + "how it works". */}
+          CTA (גלו עסקים) + near-me (MEH-41) + "how it works". MEH-1070: CTA row
+          is centered at every breakpoint — supersedes HOME-06 alignment per
+          Sapir 09/07 (the md:justify-start + md:px-12 start-geometry from #1476
+          is dropped; centered content needs neither). near-me keeps border-primary. */}
       <motion.div
         initial={{ y: 12 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.42, delay: 0.34, ease: EASE_QUART }}
-        className="mt-5 px-4 md:px-12 pb-6 md:pb-8 flex flex-wrap items-center justify-center md:justify-start gap-3"
+        className="mt-5 px-4 pb-6 md:pb-8 flex flex-wrap items-center justify-center gap-3"
       >
         <button
           type="button"
