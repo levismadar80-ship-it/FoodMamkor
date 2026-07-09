@@ -13,6 +13,15 @@
 - **Sapir pending:** staging QA — delete dialog open/cancel/Escape/confirm/failure on `/admin/producers` + **users-page kebab non-regression** (promote/demote unchanged) → merge (`Closes MEH-1027` auto-closes the ticket).
 - **Scope held:** `use-admin-producers.js` + `page.js` + `AdminRowMenu.jsx` + `he/en.json` + 1 new / 2 updated tests + CHANGELOG/MANUAL_TESTING/HANDOFF. No backend, no `AdminProducersTable.jsx`, no other admin pages.
 
+## 2026-07-09 — MEH-1049: ProducerContactCard CTA hierarchy + remove "שתפו וקבלו 10%" chip — DRAFT PR (closes MEH-1049; WAIT for Sapir mobile QA)
+
+- **Branch:** `feature/meh-1049-contact-cta-hierarchy` off `origin/staging` (harness cut a `claude/*` branch; recreated as `feature/*` per project rule 3, Sapir-confirmed). Frontend YELLOW, chunk-by-chunk with WAIT gates. `Closes MEH-1049`.
+- **Phase 0:** mapped all 17 CTA/share/refer affordances across 3 zones (`ContactSidebar` desktop, `ActionRow` mobile, `StickyContactBar`). Finding: page was *already* mostly single-primary — WhatsApp (`btn-whatsapp`) the only fill, except FollowButton's green-fill `following` state.
+- **Chunk 1 (`a9e88c7`):** `FollowButton.jsx` demoted to secondary weight (className only) — `following → bg-primary/10 text-primary border-primary/40`, `not-following → border-border text-fg-muted`. Primary-token tints only (Sapir: no raw Tailwind palette). WhatsApp = sole filled primary. Sticky bar + primary CTA untouched.
+- **Chunk 2 (`085d485`):** removed the platform "שתפו וקבלו 10%" referral chip from `ActionRow.jsx`; grep-confirmed `user` orphaned → dropped the prop from ActionRow destructure + ProducerDetail call site (`user` stays live via `isOwner`). Cleaned `producer.detail.action_row.referral_cta` + `.referral_msg` from he+en. `referral_badge` (separate /register feature) left in place. UI-only; referral backend + rating_dispatcher (MEH-796) untouched.
+- **Verify:** `npm run build` exit 0 · vitest **759 passed** · both locale JSONs parse · grep proofs (0 matches for removed keys in locales + app/components/lib/tests). Screenshots = token-accurate mocks (375px + desktop) — a true live capture isn't reachable from the CC sandbox (FollowButton renders only for a logged-in user against a seeded producer; backend/DB egress blocked).
+- **Sapir pending:** mobile QA on the Vercel preview (375px) — confirm single filled primary in the contact card, follow states legible, 10% chip gone from the action row; then mark ready + merge (`Closes MEH-1049`, DRAFT only per Rule 23).
+- **Scope held:** `FollowButton.jsx` + `ActionRow.jsx` + `ProducerDetail.jsx` (call-site prop) + `he.json`/`en.json` + CHANGELOG/HANDOFF. No backend, no new components, no card-layout redesign.
 ## 2026-07-07 — MEH-1045: bot hardening — catch-all fast-404 + robots.txt + localeDetection:false — DRAFT PR (batch stage 2/2)
 
 - **Branch:** `feature/meh-1045-bot-hardening` off `origin/staging` (clean cut). LOW-RISK, end-to-end per batch authority. `Closes MEH-1045`. Vector #2 of the 07-07 Edge Requests incident; stage 1 (MEH-1044, vector #1) = PR #1525.
