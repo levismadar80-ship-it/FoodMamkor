@@ -413,7 +413,7 @@
     },
     "producers": {
       "heading": "Recommended businesses",
-      "map_link": "Show on map",
+      "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
       "hint_favorites": "Tap on a business card to save favourites",

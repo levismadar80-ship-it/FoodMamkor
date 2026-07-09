@@ -23,12 +23,12 @@ export function HomeRecentlyViewed({ items }) {
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
         {items.map((p) => {
           const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = p.images?.[0];
+          const imgSrc = optimizeCloudinary(p.images?.[0]);
           return (
             <Link
               key={p.id}
               href={href}
-              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group"
+              className="shrink-0 w-[160px] bg-background border border-border rounded-[12px] overflow-hidden transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
             >
               <div className="relative w-full h-[100px] bg-green-50 overflow-hidden">
                 {imgSrc ? (
