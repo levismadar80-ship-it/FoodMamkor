@@ -15,6 +15,15 @@
 - **Sapir pending:** apply e2e.yml (replace whole file), apply vercel.json ignoreCommand, merge PR. Post-merge DoD: one green E2E run on the runner + 48h Vercel usage showing ~0 preview-driven edge requests.
 - **Next:** MEH-1045 (bot hardening — catch-all static 404, robots.txt, localeDetection) — Stage 2 of the same batch, separate PR.
 
+
+## 2026-07-07 — MEH-1027 Chunk A: producers row secondary/destructive actions → AdminRowMenu kebab — DRAFT PR (STOP; WAIT for Sapir before Chunk B)
+
+- **Branch:** `feature/meh-1027-producers-row-overflow` off `origin/staging` (clean cut, divergence 0). HIGH-RISK admin surface → chunk-by-chunk; plan approved with 2 defaults + 1 scope extension (see below). `Refs MEH-1027` (Chunk B closes).
+- **Collision check (session start):** no open PR touches `AdminProducersTable.jsx`; no `meh-766`/`meh-996` branches on remote (`git ls-remote` cross-verify per MEH-478 — the list_pull_requests sweep alone wasn't trusted for the negative). MEH-766's `verification_tier` work already on staging (`AdminProducersTable.jsx:121`).
+- **What shipped:** `ProducerActions` keeps inline — quick-approve + request-changes (pending), edit, view; moves into the MEH-1023 kebab — toggle-status / ambassador / story-card / delete (`tone="danger"`), same guards + handlers + `isBusy` keys (trigger location only; ambassador + story behavior unchanged). **Sapir-approved decisions:** (1) view link spec-silent → stays inline untouched; (2) `AdminRowMenu.jsx` gained an additive per-item `disabled` prop (scope extension approved in-conversation; MEH-1027 description updated by Sapir) — disabled item renders inert, menu stays open, users page unaffected. i18n `producers.table.actions.menu_aria` he+en (MEH-978).
+- **Verify:** rule-5 order held (8+2 new test cases written failing-first → green): `npm run build` exit 0 · vitest **765 passed** / 41 skipped · 0 eslint errors (30 warn-only) · 0 physical RTL classes · en-parity 2✓ · adversarial review **0 must-fix**. QA notes for preview: (a) non-portal menu can clip at the table's `overflow-hidden` edge — identical accepted trait as `/admin/users` (MEH-1023); (b) ambassador/story hover-`title`s don't carry into menu items (labels unchanged; note only). Delete still fires native `confirm()` — that upgrade IS Chunk B, not a gap.
+- **Sapir pending:** mobile QA on preview (pending row: approve+request-changes+edit inline, menu=delete only; approved row: menu=suspend/ambassador/story/delete; story from menu opens canvas; busy item disabled) → approve Chunk A → only then Chunk B (`feature/meh-1027-producer-delete-confirm`: modal confirm dialog for producer delete, replacing `use-admin-producers.js:151` native confirm).
+- **Scope held:** `AdminProducersTable.jsx` + `AdminRowMenu.jsx` (+its test, approved) + `he/en.json` + `AdminProducersTableActions.test.jsx` + CHANGELOG/MANUAL_TESTING/HANDOFF. No backend, no `use-admin-producers.js`, no handler logic.
 ## 2026-07-07 — MEH-1046: /admin/users client-side pagination — DRAFT PR
 
 - **Branch:** `feature/meh-1046-admin-users-pagination` off `origin/staging` (clean cut, divergence 0). LOW-RISK frontend-only end-to-end. `Closes MEH-1046`.
