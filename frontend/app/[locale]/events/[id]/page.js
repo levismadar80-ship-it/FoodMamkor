@@ -3,7 +3,7 @@ import EventDetailClient from "./EventDetailClient";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-import { buildEventJsonLd } from "@/lib/seo"; // MEH-1062: Event + Breadcrumb JSON-LD
+import { buildEventJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: Event + Breadcrumb JSON-LD
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
 // Client Components cannot export generateMetadata; the actual UI lives in
@@ -82,7 +82,7 @@ function EventJsonLd({ event, locale }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }
