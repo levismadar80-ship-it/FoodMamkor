@@ -47,11 +47,11 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
         setExcerpt(body.length > MAX_LEN ? `${body.slice(0, MAX_LEN).trimEnd()}…` : body);
       })
       .catch((err) => {
-        // Swallow aborts (unmount / param change) — only report real failures.
+        // Swallow ONLY genuine aborts (axios CanceledError on unmount / param
+        // change). Checking the error — not signal.aborted — avoids dropping a
+        // real error whose .catch races cleanup, preserving MEH-325 observability.
         // Fail-open: no excerpt on error (the header rating pill still shows).
-        // Sentry keeps the non-critical path observable (not a silent-except,
-        // MEH-325) without surfacing a 5xx to the user.
-        if (controller.signal.aborted) return;
+        if (err?.code === "ERR_CANCELED") return;
         Sentry.captureException(err);
       });
     return () => {
