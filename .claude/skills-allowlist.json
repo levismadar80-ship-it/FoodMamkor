@@ -212,7 +212,16 @@
       "author_verified": false,
       "last_audit_date": "2026-07-09",
       "audit_verdict": "approved",
-      "notes": "Audited MEH-1053 (upstream d574778f, skills/productivity/grill-me, SHA256 6189dfce...eba54). Single 147-byte SKILL.md, disable-model-invocation: true. Zero network/exec/secret/injection/write patterns. FINDING: body is one chained reference — 'Run a /grilling session' — and the grilling skill is NOT installed; dead pointer, inert today. Any future skill named 'grilling' re-activates it and MUST be audited before install (MEH-422 Class A dead-pointer class).",
+      "notes": "Audited MEH-1053 (upstream d574778f, skills/productivity/grill-me, SHA256 6189dfce...eba54). Single 147-byte SKILL.md, disable-model-invocation: true. Zero network/exec/secret/injection/write patterns. FINDING: body is one chained reference — 'Run a /grilling session' — and the grilling skill is NOT installed; dead pointer, inert today. Any future skill named 'grilling' re-activates it and MUST be audited before install (MEH-422 Class A dead-pointer class). RESOLVED (MEH-1067, 2026-07-09): 'grilling' fetched from the same upstream (d574778f), audited clean, and installed at .claude/skills/grilling/ — dead pointer no longer inert, /grill-me is now functional.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": null
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "author_verified": false,
+      "last_audit_date": "2026-07-09",
+      "audit_verdict": "approved",
+      "notes": "Audited MEH-1067 (upstream d574778f, skills/productivity/grilling/SKILL.md, SHA256 5a35925d03a391bcfa46940868b649b72dba89ec9c19525e785bbb6bd3a7f478). Single 821-byte SKILL.md, model-invocable (no disable-model-invocation flag, unlike grill-me). Pure interviewing prose (stress-test a plan/design one question at a time). Full-body scan: zero network/exec/secret/prompt-injection/file-write patterns; one benign typographic em-dash (U+2014) in prose. No further chained skill reference — the grill-me->grilling chain TERMINATES here, no third dead pointer. Resolves the MEH-1053 grill-me dead-pointer finding; /grill-me now functional.",
       "allowed_shell_invocations": [],
       "allowed_network_hosts": null
     },
