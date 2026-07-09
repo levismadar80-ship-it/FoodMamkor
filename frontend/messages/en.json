@@ -2774,7 +2774,8 @@
     "image_alt": "Image {current}",
     "prev_aria": "Previous image",
     "next_aria": "Next image",
-    "thumb_aria": "Go to image {n}"
+    "thumb_aria": "Go to image {n}",
+    "view_all": "All photos ({n})"
   },
   "whatsapp": {
     "button": {

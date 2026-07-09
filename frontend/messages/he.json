@@ -2797,7 +2797,8 @@
     "image_alt": "תמונה {current}",
     "prev_aria": "תמונה קודמת",
     "next_aria": "תמונה הבאה",
-    "thumb_aria": "עבור לתמונה {n}"
+    "thumb_aria": "עבור לתמונה {n}",
+    "view_all": "כל התמונות ({n})"
   },
   "whatsapp": {
     "button": {

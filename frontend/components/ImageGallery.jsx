@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import { Images } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
@@ -40,6 +41,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     touchStartX.current = null;
     touchEndX.current = null;
   }, [images.length]);
+
+  // MEH-1047: open the lightbox at a specific image. The desktop editorial
+  // grid cells open at their own index; the mobile carousel opens at `current`.
+  const openLightbox = useCallback((index) => {
+    setCurrent(index);
+    setLightboxOpen(true);
+  }, []);
 
   // MEH-815: imageless state renders the "Tinted Masthead" editorial hero
   // (Sapir-approved, Claude Design) instead of the old emoji+initials box.
@@ -84,10 +92,82 @@ export default function ImageGallery({ images = [], producerId = null, producerN
     );
   }
 
+  // MEH-1047: a single image keeps the current full-width banner at every
+  // breakpoint; 2+ images get the desktop editorial grid (md+) with the
+  // mobile carousel kept below (chunk 2 restyles the mobile path).
+  const single = images.length === 1;
+
   return (
     <>
+    {/* MEH-1047: desktop editorial grid (Direction B) — hero at inline-start
+        + tall stacked secondary column (≤2 cells). The bottom cell of a
+        stacked pair carries the single "כל התמונות (N)" overlay pill. */}
+    {!single && (
+      <div
+        className={`hidden md:grid gap-2 rounded-xl overflow-hidden border border-accent/30 h-[420px] lg:h-[460px] max-h-[460px] grid-cols-[62%_1fr] ${
+          images.length >= 3 ? "grid-rows-2" : ""
+        }`}
+        data-testid="gallery-grid"
+      >
+        {/* Hero cell — inline-start; spans both rows when a stacked pair exists */}
+        <button
+          type="button"
+          onClick={() => openLightbox(0)}
+          aria-label={t("open_aria", { current: 1 })}
+          className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
+            images.length >= 3 ? "row-span-2" : ""
+          }`}
+          data-testid="gallery-grid-hero"
+        >
+          <ImageWithFallback
+            src={images[0]}
+            alt={t("image_alt", { current: 1 })}
+            fill
+            priority
+            className="object-cover"
+            sizes="(min-width: 1024px) 40vw, 45vw"
+          />
+        </button>
+        {/* Secondary cells — images[1] (+ images[2] when 3+). */}
+        {images.slice(1, 3).map((src, i) => {
+          const idx = i + 1;
+          const isPillCell = images.length >= 3 && idx === 2;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => openLightbox(idx)}
+              aria-label={
+                isPillCell
+                  ? t("view_all", { n: images.length })
+                  : t("open_aria", { current: idx + 1 })
+              }
+              className="relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+              data-testid={isPillCell ? "gallery-grid-pill-cell" : "gallery-grid-cell"}
+            >
+              <ImageWithFallback
+                src={src}
+                alt={t("image_alt", { current: idx + 1 })}
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 30vw"
+              />
+              {isPillCell && (
+                <span
+                  className="absolute bottom-3 end-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-sm font-label-md text-white shadow-md pointer-events-none"
+                  data-testid="gallery-all-pill"
+                >
+                  <Images size={16} weight="bold" aria-hidden="true" />
+                  {t("view_all", { n: images.length })}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    )}
     <div
-      className="relative h-52 rounded-md overflow-hidden bg-gray-100"
+      className={`relative h-52 rounded-md overflow-hidden bg-gray-100${single ? "" : " md:hidden"}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
