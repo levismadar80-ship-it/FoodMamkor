@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Quotes } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import * as Sentry from "@sentry/nextjs";
 import api from "@/lib/api";
 
 /**
@@ -44,12 +45,9 @@ export default function ReviewExcerpt({ producerId, reviewsCount = 0 }) {
       })
       .catch((err) => {
         // Fail-open: no excerpt on error (the header rating pill still shows).
-        // Log in dev so it isn't a silent-except (MEH-325) — this path is
-        // non-critical and never surfaces a 5xx to the user.
-        if (process.env.NODE_ENV !== "production") {
-          // eslint-disable-next-line no-console
-          console.error("ReviewExcerpt: review excerpt fetch failed", err);
-        }
+        // Report to Sentry so this non-critical path stays observable in prod
+        // (not a silent-except, MEH-325) without surfacing a 5xx to the user.
+        Sentry.captureException(err);
       });
     return () => {
       alive = false;

@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-09 — MEH-1048: Producer trust strip — rating + review count + excerpt next to h1 — PR #1542 (closes MEH-1048)
+
+- **Branch:** `feature/meh-1048-producer-trust-strip` off fresh `origin/staging` (`46780dd`, after MEH-1047 + MEH-1049 merged). Frontend YELLOW, chunk-by-chunk with WAIT gates. **PR #1542.** `Closes MEH-1048`.
+- **Phase 0:** `avg_rating`+`reviews_count` on `ProducerDetailOut` (`schemas.py:758-759`) → no backend. Review quote NOT at page load (IO-lazy reviews) → Sapir chose frontend eager-fetch (Option A), page-of-10 (no `limit` param exists), fall-through to newest-with-text.
+- **Chunk 1:** `ProducerHeader.jsx` rating chip → `<a href="#reviews">` "★ 4.8 · N ביקורות" (reuses `review_count`, no new copy; `dir=ltr`+`.numeric`; `reviews_count>0` guard). `ProducerSections.jsx` `id="reviews" scroll-mt-24`.
+- **Chunk 2:** new `ReviewExcerpt.jsx` (client, co-located) — eager page-1 fetch only when `reviews_count>0`, most-recent-with-text (fall-through rating-only), ≤120+`…`, links `#reviews`. i18n `review_excerpt_aria` (he+en).
+- **Reviewer fixes:** excerpt accessible name = the quote (nav purpose = `sr-only` suffix, not an overriding `aria-label`); fetch error → `Sentry.captureException` (fail-open; also removed the unused `no-console` eslint-disable that failed `Frontend lint`).
+- **Verify:** `npm run build` exit 0 · vitest **832 passed** (`ProducerHeaderTrustStrip` 3 + `ReviewExcerpt` 5) · 0 physical RTL · required gates green. Screenshots (real components via Playwright, network-intercepted for the excerpt): with/zero reviews + with-text/all-rating-only, 375px + desktop.
+- **Scope held:** `ProducerHeader.jsx` + `ProducerSections.jsx` + new `ReviewExcerpt.jsx` + 2 test files + `he.json`/`en.json` + docs. No backend, no schema, no reviews-section internals.
+
 ## 2026-07-09 — MEH-1047: Producer hero redesign — photo-first gallery grid (Direction B) — PR #1533, Ready-for-Review (closes MEH-1047)
 
 - **Branch:** `feature/meh-1047-producer-hero-gallery` off `origin/staging` (harness cut a `claude/*` branch; recreated as `feature/*` per project rule 3, Sapir-confirmed). Frontend YELLOW, chunk-by-chunk with WAIT gates. **PR #1533** — marked Ready-for-Review after Sapir desktop + mobile QA. `Closes MEH-1047`.
