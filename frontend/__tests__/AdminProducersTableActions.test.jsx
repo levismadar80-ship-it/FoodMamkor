@@ -159,7 +159,7 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     const h = renderRow({ id: "p1", status: "approved", slug: "farm", name: "חוה" });
     openMenu();
     const del = screen.getByRole("menuitem", { name: DELETE_KEY });
-    expect(del.className).toContain("text-red-600");
+    expect(del).toHaveClass("text-red-600");
     fireEvent.click(del);
     expect(h.onDeleteProducer).toHaveBeenCalledWith("p1", "חוה");
   });
@@ -178,14 +178,15 @@ describe("ProducerActions — overflow menu (MEH-1027 Chunk A)", () => {
     expect(h.onToggleAmbassador).toHaveBeenCalledWith("p1", false);
   });
 
-  it("busy action disables its menu item and blocks the handler (isBusy keys unchanged)", () => {
+  it("busy action marks its menu item aria-disabled and blocks the handler (isBusy keys unchanged)", () => {
     const h = renderRow(
       { id: "p1", status: "approved", slug: "farm", name: "חוה" },
       { isBusy: (k) => k === "delete:p1" }
     );
     openMenu();
     const del = screen.getByRole("menuitem", { name: DELETE_KEY });
-    expect(del).toBeDisabled();
+    // MEH-1027 Ch.B: aria-disabled (focusable) instead of native disabled (APG).
+    expect(del).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(del);
     expect(h.onDeleteProducer).not.toHaveBeenCalled();
   });
