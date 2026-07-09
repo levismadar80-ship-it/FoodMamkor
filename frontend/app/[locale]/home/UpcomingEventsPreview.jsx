@@ -43,7 +43,7 @@ export function UpcomingEventsPreview() {
           <Link
             key={ev.id}
             href={`/events/${ev.id}`}
-            className="bg-background border border-border rounded-[16px] overflow-hidden transition"
+            className="bg-background border border-border rounded-[16px] overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
           >
             {ev.image_url && (
               <div
