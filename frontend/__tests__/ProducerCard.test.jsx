@@ -321,7 +321,7 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    expect(distance.textContent).toMatch(/km\u2069 ממך$/);
     expect(distance).toHaveAttribute("dir", "ltr");
   });
 
@@ -411,8 +411,11 @@ describe("ProducerCard — Phase B anatomy", () => {
   it("calls onClick when the card body is tapped outside interactive children", () => {
     const onClick = vi.fn();
     render(<ProducerCard producer={fullProducer} onClick={onClick} active={false} />);
-    const desc = screen.getByTestId("card-description");
-    desc.click();
+    // MEH-1028: tap the location line — a non-interactive body element that stays
+    // visible on mobile (the description is now `hidden sm:block`, so it's not a
+    // representative mobile tap target).
+    const body = screen.getByTestId("location-line");
+    body.click();
     expect(onClick).toHaveBeenCalledWith(fullProducer);
   });
 

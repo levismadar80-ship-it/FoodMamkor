@@ -295,6 +295,10 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     emoji: str | None = None
+    # MEH-1034: query-time count over producer_categories, populated only by
+    # GET /admin/categories. Optional so public consumers (GET /categories,
+    # ProducerOut.categories) serialize unchanged — NOT a DB column.
+    producer_count: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -956,6 +960,15 @@ class ProducerOwnerOut(ProducerDetailOut):
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
     address: str | None = None
+    # MEH-1025 Chunk A: the owner sees her OWN completion-request trail so the
+    # dashboard can render the "נשאר להשלים" banner (Chunk B). Same owner-private
+    # pattern as kosher/license/address above. Columns exist since MEH-1011
+    # (migration a1b2c3d4e5f6) — Pydantic-only exposure, no migration. Contrast
+    # risk_score/risk_reasoning + declared_at, which stay admin-only on
+    # ProducerAdminOut (the producer must never see her own risk score).
+    # REUSES: schemas.py:913-914 (ProducerAdminOut declarations).
+    requested_changes: str | None = None
+    changes_requested_at: datetime | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -1775,6 +1788,26 @@ class ReviewCreateNested(BaseModel):
         return sanitize_text(v, max_length=500)
 
 
+class ReviewReplyUpdate(BaseModel):
+    """MEH-1039: business-owner reply to a customer review. An empty/blank
+    `reply` clears the existing reply; a non-empty reply is 2-1000 chars with
+    ≥3 letters (MEH-555) after sanitize."""
+
+    reply: str = Field(..., max_length=1000)
+
+    @field_validator("reply")
+    @classmethod
+    def _validate_reply(cls, v):
+        v = sanitize_text(v, max_length=1000)
+        stripped = (v or "").strip()
+        if not stripped:
+            return ""  # empty → clear the reply
+        if len(stripped) < 2:
+            raise ValueError("התגובה חייבת להכיל לפחות 2 תווים")
+        # MEH-555: reject punctuation-only ("???") — require ≥3 letters.
+        return _min_letters_validator(stripped, min_count=3)
+
+
 class ReviewOut(BaseModel):
     id: UUID
     producer_id: UUID
@@ -1783,6 +1816,9 @@ class ReviewOut(BaseModel):
     stars: int
     body: str | None = None
     created_at: str
+    # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
+    reply: str | None = None
+    reply_at: str | None = None
 
     model_config = {"from_attributes": True}
 

@@ -542,7 +542,8 @@ class TestExperienceEdit:
             json={"title": "hijacked"},
             headers=auth_header(other),
         )
-        assert resp.status_code == 403
+        # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
+        assert resp.status_code == 404
 
     def test_non_owner_cannot_delete(self, client, db):
         host = make_user(db, email="a@t.com")
@@ -552,7 +553,8 @@ class TestExperienceEdit:
         resp = client.delete(
             f"/experiences/{ex.id}", headers=auth_header(other)
         )
-        assert resp.status_code == 403
+        # MEH-1001: 404 (was 403) — non-owner must not confirm existence.
+        assert resp.status_code == 404
 
     def test_owner_can_delete(self, client, db):
         host = make_user(db)

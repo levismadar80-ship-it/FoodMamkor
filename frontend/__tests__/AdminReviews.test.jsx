@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import AdminReviewsPage from "@/app/[locale]/admin/reviews/page";
 
 // Mock Phosphor icons — spans so we can assert presence
@@ -38,6 +38,7 @@ vi.mock("next-intl", () => {
     "admin.reviews.columns.content": "תוכן",
     "admin.reviews.columns.date": "תאריך",
     "admin.reviews.columns.actions": "פעולות",
+    "admin.common.cancel": "ביטול",
   };
   return {
     useLocale: () => "he",
@@ -147,17 +148,22 @@ describe("AdminReviewsPage", () => {
     });
   });
 
-  it("deletes a review after confirm + removes the row optimistically", async () => {
+  // MEH-1040: delete now goes through the modal confirm dialog (the native
+  // window.confirm was removed). Full lifecycle coverage lives in
+  // AdminReviewDelete.test.jsx; these two keep the row-level flow honest.
+  it("deletes a review after dialog confirm + removes the row optimistically", async () => {
     const api = (await import("@/lib/api")).default;
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.delete.mockClear();
 
     render(<AdminReviewsPage />);
     await waitFor(() => expect(screen.getByText("חוות השקמה")).toBeInTheDocument());
 
-    // Delete button for the first row (דנה כהן)
-    const deleteBtn = screen.getByLabelText("מחקי ביקורת של דנה כהן");
-    fireEvent.click(deleteBtn);
+    // Delete button for the first row (דנה כהן) opens the dialog — no DELETE yet.
+    fireEvent.click(screen.getByLabelText("מחקי ביקורת של דנה כהן"));
+    const dialog = screen.getByRole("dialog");
+    expect(api.delete).not.toHaveBeenCalled();
 
+    fireEvent.click(within(dialog).getByText("מחקי")); // confirm inside the dialog
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith("/reviews/r1");
     });
@@ -165,24 +171,23 @@ describe("AdminReviewsPage", () => {
       expect(screen.queryByText("חוות השקמה")).not.toBeInTheDocument();
     });
     expect(screen.getByText("מאפיית אביב")).toBeInTheDocument();
-
-    confirmSpy.mockRestore();
   });
 
-  it("does NOT delete when user cancels confirm", async () => {
+  it("does NOT delete when the user cancels the dialog", async () => {
     const api = (await import("@/lib/api")).default;
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     api.delete.mockClear();
 
     render(<AdminReviewsPage />);
     await waitFor(() => expect(screen.getByText("חוות השקמה")).toBeInTheDocument());
 
     fireEvent.click(screen.getByLabelText("מחקי ביקורת של דנה כהן"));
+    fireEvent.click(within(screen.getByRole("dialog")).getByText("ביטול"));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
     // No delete call, row still there
     expect(api.delete).not.toHaveBeenCalled();
     expect(screen.getByText("חוות השקמה")).toBeInTheDocument();
-
-    confirmSpy.mockRestore();
   });
 
   it("renders placeholder when title and body are both missing", async () => {
