@@ -47,7 +47,7 @@ export function HomeProducersGrid({
         <h2 className="font-headline-lg font-bold text-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
           {t("home.producers.heading")}
         </h2>
-        <Link href="/map" className="text-primary hover:underline flex items-center gap-1">
+        <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           <MapPin size={14} className="text-current" />
           {t("home.producers.map_link")}
         </Link>
