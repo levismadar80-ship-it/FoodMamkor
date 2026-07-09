@@ -3,6 +3,7 @@ import EventDetailClient from "./EventDetailClient";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
+import { buildEventJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: Event + Breadcrumb JSON-LD
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
 // Client Components cannot export generateMetadata; the actual UI lives in
@@ -59,10 +60,40 @@ export async function generateMetadata(props) {
       locale: OG_LOCALE[locale],
       images: event?.image_url ? [event.image_url] : ["/og-image.png"],
     },
+    // MEH-1062 (SEO-05): entity-specific Twitter/X card reusing the event's
+    // own image + title instead of the layout's generic site card.
+    twitter: {
+      card: "summary_large_image",
+      title: buildEntityTitle(entityName, locale),
+      description: event?.description || t("description_fallback"),
+      images: event?.image_url ? [event.image_url] : ["/og-image.png"],
+    },
     alternates,
   };
 }
 
-export default function EventDetailPage() {
-  return <EventDetailClient />;
+// MEH-1062: server-rendered Event + BreadcrumbList JSON-LD. The event is
+// fetched here for the schema (the client still fetches independently for its
+// interactive state) — same double-fetch pattern as the producer route
+// (producer/[id]/page.js:61-70); revalidate:60 caches within the window.
+function EventJsonLd({ event, locale }) {
+  const jsonLd = buildEventJsonLd(event, locale);
+  if (!jsonLd) return null;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+    />
+  );
+}
+
+export default async function EventDetailPage(props) {
+  const params = await props.params;
+  const event = await getEvent(params.id);
+  return (
+    <>
+      <EventJsonLd event={event} locale={params.locale} />
+      <EventDetailClient />
+    </>
+  );
 }

@@ -413,7 +413,7 @@
     },
     "producers": {
       "heading": "Recommended businesses",
-      "map_link": "Show on map",
+      "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
       "hint_favorites": "Tap on a business card to save favourites",
@@ -695,6 +695,7 @@
       },
       "header": {
         "review_count": "{count, plural, =0 {No reviews} one {1 review} other {# reviews}}",
+        "review_excerpt_aria": "Go to all reviews",
         "premium": "Premium",
         "favorites_count": "{count, plural, one {1 saved this business} other {# saved this business}}",
         "behind": "Behind the business: {name}",

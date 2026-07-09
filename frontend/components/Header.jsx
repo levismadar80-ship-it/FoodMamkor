@@ -54,14 +54,14 @@ import { BRAND_NAME } from "@/lib/constants";
  *     stays the lighter member of the rounded-white family (Gestalt: same
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
- *     [logo + links] · inter-group gap · action cluster. MEH-899: at top of
- *     ANY page the pill is WIDER, with the extra width DISTRIBUTED (end-cap
- *     px-11, inter-group gap-14, lead-group intra-gap gap-11) so the middle
- *     gap isn't the only thing growing (MEH-890 void trap). All SNAP compact
- *     (px-4 / gap-8 / gap-9) at the y=60 scroll threshold — not animated
- *     (gap/px stay out of the transition allowlist, MEH-732 guardrail).
- *     Width keys off `!scrolled` (DECOUPLED from `transparent`) so inner
- *     pages get the wide rest too — consistent nav size on every page.
+ *     [logo + links] · inter-group gap · action cluster. MEH-1072: pill
+ *     geometry is now FIXED (end-cap px-4, inter-group gap-8, lead-group
+ *     intra-gap gap-9) at every scroll position — supersedes MEH-899's
+ *     rest-wide→compact width switching (was px-11/gap-14/gap-11 at rest,
+ *     snapping to px-4/gap-8/gap-9 at y=60) per Sapir 09/07 + NAV-01. Geometry
+ *     is scroll-independent; only the SURFACE still varies (MEH-890/896/947
+ *     branch below). Still not animated (gap/px stay out of the transition
+ *     allowlist, MEH-732 guardrail).
  *
  * LOCKs: no shadow-lift on hover (MEH-638 — hover = color/bg shift only);
  * active link = MEH-896 chunk 2 soft green-tint chip (was the MEH-643 gold
@@ -229,21 +229,19 @@ export default function Header() {
             // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            // MEH-899: the gap is now state-dependent (gap-14 at rest, gap-8
-            // scrolled) — see the branch classes below; pill stays w-auto.
+            // MEH-1072: the gap/px are FIXED (gap-8 px-4) — see the geometry
+            // note below; pill stays w-auto. (MEH-899's state-dependent gap-14
+            // at rest / gap-8 scrolled is retired per Sapir 09/07 + NAV-01.)
             "w-auto max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
             "transition-[background-color,border-color,box-shadow,color] duration-base ease-quart motion-reduce:transition-none",
-            // MEH-899 (revised): the SURFACE branch (transparent vs solid
-            // glass) stays keyed off `transparent` — that's homepage-hero
-            // specific. The WIDTH (gap/px) is decoupled and keyed off
-            // `!scrolled` so the rest-wide pill is CONSISTENT across all
-            // pages at top (homepage + inner), snapping compact at y=60 on
-            // every page. Surface and width snap on the same threshold
-            // (scrollY>=60), just with different conditions: surface keys
-            // off (isHomepage && !scrolled), width keys off (!scrolled).
+            // The SURFACE branch (transparent vs solid glass) is keyed off
+            // `transparent` — that's homepage-hero specific — and snaps on the
+            // scrollY>=60 threshold. MEH-1072: the WIDTH (gap/px) no longer
+            // switches on scroll (it was keyed off `!scrolled` pre-MEH-1072);
+            // it is now FIXED — see the geometry note below.
             // MEH-947: surface is now THREE-way. The homepage keeps its
             // float-over-hero glass verbatim (at-rest /85, scrolled /60) — that
             // translucency is intentional there. INNER pages (!isHomepage) get a
@@ -258,22 +256,23 @@ export default function Header() {
               : transparent
                 ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
                 : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
-            // MEH-899 (revised): WIDTH — wide at rest (any page at top),
-            // compact when scrolled. Distributed: end-cap px-11, inter-group
-            // gap-14, lead-group intra-gap gap-11 (see :247). Snaps to
-            // px-4 + gap-8 + lead gap-9 at y=60. Still NOT animated —
-            // gap/px stay out of the transition allowlist (MEH-732 upheld).
-            !scrolled ? "gap-14 px-11" : "gap-8 px-4",
+            // MEH-1072: WIDTH is now FIXED geometry (gap-8 px-4) at every
+            // scroll position — supersedes MEH-899 width switching per Sapir
+            // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
+            // gap-8/px-4 at y=60) is retired; the pill reads at one consistent
+            // compact size on every page, at rest and scrolled. Still NOT
+            // animated — gap/px stay out of the transition allowlist above
+            // (MEH-732 guardrail upheld). Surface still varies on scroll
+            // (MEH-890/896/947 branch above) — only the geometry is frozen.
+            "gap-8 px-4",
           ].join(" ")}
         >
-          {/* LEAD GROUP — logo + nav links together. MEH-899: the intra-group
-              gap (logo ↔ links) widens at rest (gap-11) and snaps compact
-              (gap-9) at y=60 — distributes the rest widening so the middle
-              inter-group gap isn't the only thing growing (MEH-890 void trap).
-              Keyed off `!scrolled` (NOT `transparent`) so the wide rest
-              applies on inner pages too — consistent nav size on every page.
-              start of the row (visual right in RTL). */}
-          <div className={["flex items-center", !scrolled ? "gap-11" : "gap-9"].join(" ")}>
+          {/* LEAD GROUP — logo + nav links together. MEH-1072: the intra-group
+              gap (logo ↔ links) is FIXED at gap-9 — supersedes MEH-899 width
+              switching (was gap-11 at rest → gap-9 at y=60) per Sapir 09/07 +
+              NAV-01. Fixed compact geometry, scroll-independent, matches the
+              frozen end-cap/gap above. start of the row (visual right in RTL). */}
+          <div className="flex items-center gap-9">
             <Link href="/" onClick={handleHomeClick} className="shrink-0 inline-flex items-center min-h-[44px]" aria-label={BRAND_NAME}>
               <Image
                 src="/logo.png"

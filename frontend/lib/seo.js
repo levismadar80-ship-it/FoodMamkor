@@ -29,6 +29,36 @@ const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
 const COUNTRY_LABEL = { he: "ישראל", en: "Israel" };
 
 /**
+ * MEH-1069: single owner of JSON-LD serialization for every
+ * `<script type="application/ld+json">` injection site (7 sites, all routed
+ * through here — do NOT call raw JSON.stringify inside a script tag; that is
+ * the `</script>` breakout the auto-review flagged on #1545, and a second
+ * escaper would recreate the two-mechanism drift MEH-271 warns against).
+ *
+ * Escapes the three HTML-significant characters to their `\uXXXX` JSON string
+ * escapes. `<` for `<` is the load-bearing one: it stops a `</script>`
+ * inside any user-derived string (producer name, event title, review body)
+ * from closing the tag early and injecting markup. `>` and `&` are escaped
+ * too as defense-in-depth (breaks `]]>`, HTML entities). All three outputs
+ * are valid JSON — a spec-compliant JSON parser decodes them back to `< > &`,
+ * so the rendered schema.org data is byte-identical; only the wire bytes
+ * change.
+ *
+ * NOTE: the source strings MUST be the 6-char sequences "\\u003c" etc. — a
+ * bare "<" in JS source is the literal char `<` (a no-op). Verified by
+ * the '</script>' breakout unit test.
+ *
+ * @param {unknown} obj the JSON-LD object (or @graph wrapper) to serialize
+ * @returns {string} HTML-safe JSON string for dangerouslySetInnerHTML
+ */
+export function serializeJsonLd(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
+/**
  * Build the <title> per the MEH-9 spec:
  *   [name] — [category] ב[city] | מהמקור
  *
@@ -148,6 +178,30 @@ function parseOpeningHoursSpec(raw) {
     }
   }
   return spec.length > 0 ? spec : null;
+}
+
+/**
+ * MEH-1062: shared BreadcrumbList builder — the single owner of the
+ * schema.org/BreadcrumbList shape across producer (buildJsonLd), event
+ * (buildEventJsonLd), and recipe (buildRecipeBreadcrumbJsonLd) pages.
+ * Extracted verbatim from buildJsonLd's inline construction (MEH-172) so the
+ * existing producer JSON-LD output stays byte-identical (same keys, same
+ * order). One owner per MEH-271 — do NOT inline a second breadcrumb literal.
+ *
+ * @param {{name: string, item: string}[]} crumbs ordered trail, no gaps
+ * @param {string} id the "@id" value (e.g. `${url}#breadcrumb`)
+ */
+function buildBreadcrumbList(crumbs, id) {
+  return {
+    "@type": "BreadcrumbList",
+    "@id": id,
+    itemListElement: crumbs.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: c.name,
+      item: c.item,
+    })),
+  };
 }
 
 /**
@@ -272,16 +326,7 @@ export function buildJsonLd(producer, locale = "he") {
   }
   crumbs.push({ name: producer.name, item: pageUrl });
 
-  const breadcrumbList = {
-    "@type": "BreadcrumbList",
-    "@id": `${pageUrl}#breadcrumb`,
-    itemListElement: crumbs.map((c, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: c.name,
-      item: c.item,
-    })),
-  };
+  const breadcrumbList = buildBreadcrumbList(crumbs, `${pageUrl}#breadcrumb`);
 
   // WebPage --------------------------------------------------------------
   const webPage = {
@@ -396,5 +441,132 @@ export function buildProducerMetadata(producer) {
       locale: "he_IL",
       siteName: BRAND_NAME,
     },
+    // MEH-1062 (SEO-05): entity-specific Twitter/X card. Reuses the same
+    // OG-transformed image + producer name so the card shows the producer,
+    // not the layout's generic site image. `undefined` images key is dropped
+    // by Next.js (omit, never empty — HOT-017/MEH-741 precedent).
+    twitter: {
+      card: "summary_large_image",
+      title: producer.name,
+      description,
+      images: img ? [img] : undefined,
+    },
+  };
+}
+
+/**
+ * MEH-1062: schema.org/Event JSON-LD for the /events/[id] detail page (which
+ * previously carried no structured data — only metadata + OG). Emits a
+ * `@graph` of [Event, BreadcrumbList] from one <script>, mirroring the
+ * producer buildJsonLd pattern. Only fields present in the event payload are
+ * emitted — omit, never invent (MEH-741 precedent). Event shape: backend
+ * EventOut (backend/app/schemas/schemas.py:1742). All values are serialized
+ * by the caller via JSON.stringify — no raw interpolation into HTML.
+ */
+export function buildEventJsonLd(event, locale = "he") {
+  if (!event) return null;
+  const eventUrl = `${SITE_URL}/events/${event.id}`;
+
+  // startDate: event_date (required on EventOut) + optional event_time (HH:MM).
+  let startDate = event.event_date || undefined;
+  if (startDate && event.event_time) {
+    startDate = `${startDate}T${String(event.event_time).slice(0, 5)}`;
+  }
+
+  const ev = {
+    "@type": "Event",
+    "@id": `${eventUrl}#event`,
+    name: event.title,
+    url: eventUrl,
+    eventStatus: "https://schema.org/EventScheduled",
+  };
+  if (startDate) ev.startDate = startDate;
+  if (event.description) ev.description = event.description;
+  if (event.image_url) ev.image = event.image_url;
+
+  // location — a Place, only when we actually have a venue name or city.
+  // Attendance mode is asserted OFFLINE only alongside a real location.
+  if (event.location || event.city) {
+    const place = { "@type": "Place", name: event.location || event.city };
+    if (event.city) {
+      place.address = {
+        "@type": "PostalAddress",
+        addressLocality: event.city,
+        addressCountry: "IL",
+      };
+    }
+    if (event.lat && event.lng) {
+      place.geo = {
+        "@type": "GeoCoordinates",
+        latitude: event.lat,
+        longitude: event.lng,
+      };
+    }
+    ev.location = place;
+    ev.eventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode";
+  }
+
+  if (event.producer_name) {
+    ev.organizer = { "@type": "Organization", name: event.producer_name };
+    if (event.producer_id) {
+      ev.organizer.url = `${SITE_URL}/producer/${event.producer_id}`;
+    }
+  }
+
+  // offers — price is a required int on EventOut (0 = free); emit the real
+  // value. registration_url when present, else the event page.
+  if (event.price != null) {
+    ev.offers = {
+      "@type": "Offer",
+      price: String(event.price),
+      priceCurrency: "ILS",
+      url: event.registration_url || eventUrl,
+    };
+  }
+
+  // Breadcrumb: ישראל → בית העסק (when named) → האירוע.
+  const crumbs = [
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+  ];
+  if (event.producer_name && event.producer_id) {
+    crumbs.push({
+      name: event.producer_name,
+      item: `${SITE_URL}/producer/${event.producer_id}`,
+    });
+  }
+  crumbs.push({ name: event.title, item: eventUrl });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [ev, buildBreadcrumbList(crumbs, `${eventUrl}#breadcrumb`)],
+  };
+}
+
+/**
+ * MEH-1062: standalone schema.org/BreadcrumbList for the recipe detail page
+ * (/[slug]/recipes/[recipe_id]). RecipeJsonLd.jsx (MEH-591) still owns the
+ * Recipe entity, untouched; this adds the missing breadcrumb trail as a
+ * second <script> tag. Trail: ישראל → בית העסק → המתכון.
+ *
+ * @param producer producer object (name, slug/id) from the recipe page
+ * @param recipe recipe object (title)
+ * @param canonicalUrl the page's relative canonical (e.g. `/slug/recipes/id`)
+ */
+export function buildRecipeBreadcrumbJsonLd(
+  producer,
+  recipe,
+  canonicalUrl,
+  locale = "he",
+) {
+  if (!producer || !recipe) return null;
+  const recipeUrl = `${SITE_URL}${canonicalUrl}`;
+  const crumbs = [
+    { name: COUNTRY_LABEL[locale] ?? COUNTRY_LABEL.he, item: SITE_URL },
+    { name: producer.name, item: buildPageUrl(producer) },
+    { name: recipe.title, item: recipeUrl },
+  ];
+  return {
+    "@context": "https://schema.org",
+    ...buildBreadcrumbList(crumbs, `${recipeUrl}#breadcrumb`),
   };
 }

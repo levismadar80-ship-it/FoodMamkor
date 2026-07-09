@@ -66,7 +66,7 @@ import { categoryGlyphSvg } from "@/lib/marker-glyph";
  */
 // Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
 // string, so Tailwind tokens can't apply. Values map to design tokens:
-// #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #8B6914 = accent.
+// #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #896714 = accent.
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
@@ -116,7 +116,9 @@ function createCategoryMarker(
   // (active glow / hover ring) + premium gold ring (6px, outside the others).
   const activeRing = active ? ",0 0 0 4px rgba(46,104,83,0.22)" : "";
   const hoverRing = hovered && !active ? ",0 0 0 3px rgba(46,104,83,0.18)" : "";
-  const premiumRing = isPremium ? ",0 0 0 6px #8B6914" : "";
+  // MEH-1065: accent token value #896714 (retired the stale gold that failed AA, MEH-917).
+  // Inline hex required — Leaflet divIcon renders raw HTML, no Tailwind class here.
+  const premiumRing = isPremium ? ",0 0 0 6px #896714" : "";
   const boxShadow = `0 2px 8px rgba(0,0,0,0.2)${activeRing}${hoverRing}${premiumRing}`;
 
   const html = `
