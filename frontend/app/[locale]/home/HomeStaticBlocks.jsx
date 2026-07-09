@@ -237,26 +237,29 @@ export function HomeComparisonTeaser() {
  */
 export function HomeCTA() {
   const t = useTranslations();
+  // MEH-1041: HOME-28 light-warm treatment — cream surface, gold rule + green-pill CTA (was dark band + white button).
   return (
-    <section className="bg-primary-dark text-white py-20">
+    <section className="bg-background text-text py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
+        {/* Gold eyebrow rule — 64px. mx-auto = sanctioned horizontal-center idiom (text-center section), not a physical RTL prop. */}
+        <span className="block w-16 h-px bg-accent mx-auto mb-6" aria-hidden="true" />
         <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
           {t("home.cta.heading")}
         </h2>
         {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,
             then curation, then the closing nudge) — body prose keeps periods. */}
-        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
           {t("home.cta.body_l1")}
         </p>
-        <p className="text-green-50/90 text-lg mb-2 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-2 max-w-xl mx-auto">
           {t("home.cta.body_l2")}
         </p>
-        <p className="text-green-50/90 text-lg mb-8 max-w-xl mx-auto">
+        <p className="text-fg-muted text-lg mb-8 max-w-xl mx-auto">
           {t("home.cta.body_l3")}
         </p>
         <Link
           href="/register/producer"
-          className="inline-block bg-white text-primary px-8 py-3 rounded-[12px] hover:bg-green-50 transition font-medium"
+          className="inline-block bg-primary text-white px-8 py-3 rounded-full hover:bg-primary-dark transition font-medium"
         >
           {t("home.cta.button")}
         </Link>
