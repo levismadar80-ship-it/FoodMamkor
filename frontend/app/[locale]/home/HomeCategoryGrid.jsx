@@ -33,9 +33,11 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
   const t = useTranslations();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
-      <FadeInSection className="text-center mb-10">
-        <span className="block font-english italic text-accent text-lg mb-1">
+      <FadeInSection className="mb-10">
+        {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
+        <span className="flex items-center gap-3 font-medium text-[11px] tracking-[0.18em] text-accent mb-1">
           {t("home.categories.eyebrow")}
+          <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
         <h2 className="font-headline-display font-bold text-text" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
           {t("home.categories.heading")}
