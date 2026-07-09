@@ -15,7 +15,7 @@ History:  MEH-589 (creation; chunk 1 = MEH-588 schema; chunks 3-4 = UI).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth import require_producer
@@ -27,6 +27,7 @@ from app.schemas.schemas import (
     ProducerRecipeOut,
     ProducerRecipeUpdate,
 )
+from app.services.auth_notifications import notify_admin_new_recipe
 from app.services.producer_recipe_moderation import validate_producer_recipe
 
 router = APIRouter(tags=["producer-recipes"])
@@ -106,6 +107,7 @@ def _validate_product_ids(
 def create_my_recipe(
     request: Request,  # required by slowapi
     data: ProducerRecipeCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -153,6 +155,14 @@ def create_my_recipe(
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
+
+    # MEH-1000: ping admin that the queue grew. Capture primitives NOW —
+    # expire_on_commit + session close would break lazy access inside the
+    # background task. REUSES: auth.py:527-535 (registration notify pattern).
+    producer_name = (
+        db.query(Producer.name).filter(Producer.id == user.producer_id).scalar() or ""
+    )
+    background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
 
     recipe = (
         db.query(ProducerRecipe)
@@ -218,10 +228,11 @@ _CONTENT_FIELDS = ("title", "description", "ingredients", "instructions")
     response_model=ProducerRecipeOut,
 )
 @limiter.limit("10/hour")
-def update_my_recipe(
+def update_my_recipe(  # noqa: PLR0913 — all 6 args are FastAPI-injected (slowapi request, path id, body, BackgroundTasks, auth dep, db dep); MEH-1000 added the notify hop
     request: Request,  # required by slowapi
     recipe_id: UUID,
     data: ProducerRecipeUpdate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(require_producer),
     db: Session = Depends(get_db),
 ):
@@ -238,6 +249,12 @@ def update_my_recipe(
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     payload = data.model_dump(exclude_unset=True)
+    # MEH-1000: remember where the recipe stood BEFORE this edit — a
+    # content change below always resets to "pending", and the admin ping
+    # should fire only when the recipe (re-)ENTERS the queue (e.g.
+    # needs_revision → pending resubmit), not on every edit of an
+    # already-pending card.
+    prev_status = recipe.moderation_status
     content_changed = False
 
     for field, value in payload.items():
@@ -276,6 +293,16 @@ def update_my_recipe(
 
     db.commit()
     db.refresh(recipe)
+
+    if content_changed and prev_status != "pending":
+        # MEH-1000: resubmit-after-needs_revision (or an edit to an already
+        # approved/rejected recipe) puts a fresh card in the admin queue —
+        # same fire-and-forget ping as create.
+        producer_name = (
+            db.query(Producer.name).filter(Producer.id == user.producer_id).scalar()
+            or ""
+        )
+        background_tasks.add_task(notify_admin_new_recipe, producer_name, recipe.title)
 
     recipe = (
         db.query(ProducerRecipe)

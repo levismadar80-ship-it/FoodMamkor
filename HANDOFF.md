@@ -271,6 +271,13 @@ Re-anchored Phase 0 (@6c46b434) proved `producers.delivery_cities` was a LIVE dr
 
 **Pending (not CC):** nothing blocking for 903 — Chunk C is a deliberate post-launch parking, not a TODO. Also still open from prior sessions: MEH-993 Sentry Chunk-1 (Sapir DSN), MEH-964 dashboard chunks, bio-heading copy pick.
 
+## 2026-07-03 — Batch: #1448 MERGED (Sapir-authorized) · MEH-1000 DRAFT PR #1450 · MEH-1001 Phase 0 matrix
+
+- **#1448 (MEH-997) merged to staging** (squash `9adcb108`) — Sapir gave explicit one-time merge authorization ("Yes — merge then run batch"). Pre-merge fixes on the branch: EN sidebar raw key `admin.layout.nav.whatsapp_failures` (en twin + baseline removal), contract-audit `KNOWN_DYNAMIC_EXPANSIONS` entry for the recipes modal POST. All required checks green on head `71f34a79` (pytest 7m17s real run, Playwright E2E on preview green); one earlier red herring: CI gate failed on a superseded head because pytest was `cancelled` by the next push.
+- **MEH-1000 — DRAFT PR #1450** (`feature/meh-1000-recipe-admin-notification`): `notify_admin_new_recipe` in `auth_notifications.py` (admin WhatsApp+email, mirrors `notify_admin_new_producer`, fail-open logged), fired via BackgroundTasks on create + on content-edit transitions INTO pending (resubmit); journey-1b probe flipped to mock-capture PASS. Full pytest **1284 passed / 0 failed**. Sibling gaps (report-only): `home_products` + `category_requests` queues have no admin ping; experiences already notify.
+- **MEH-1001 Phase 0 (read-only) — cross-owner convention matrix delivered in batch report.** Headline: READ paths uniformly 404 (anti-leak); MUTATION paths split — `producer_recipes` 404 vs **403 with owner-identifying strings** on `events.py:188-189,216-219`, `experiences.py:288-289,343-346`, `home_products.py:281-282,326-327`, `reviews.py:320-323`. Also: `events PUT` + `experiences PUT` have **no admin override** (their DELETEs do). Zero edits — Chunk 1 waits for Sapir's explicit "go".
+- **Claude[bot] review notes on #1448 (no Must Fix, all deliberate):** `playwright.local.config.ts` intentionally tracked (LOCAL-ONLY docstring); Hebrew test fixtures = suite convention; admin `alert()` = experiences parity.
+- **Sapir pending:** review/merge #1450 · mobile glance `/admin/recipes` on staging · "go" for MEH-1001 Chunk 1 · tickets: home_products/category_requests notify gaps, `/en` whatsapp-failures page keys (13 baselined he-only keys), MEH-472 EN wave.
 ## 2026-07-03 — MEH-1004: design-code truth — template 01 v2.1 + design-inventory bootstrap — DRAFT PR
 
 - **Branch:** `feature/meh-1004-design-code-truth` off `origin/staging`. Docs-only, GREEN, end-to-end authority per ticket (Phase 0+1+2, draft PR, Sapir merges — Rule 23).

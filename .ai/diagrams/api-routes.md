@@ -134,10 +134,10 @@ graph TD
     ExperiencesAdmin --> ExpReject[POST /admin/experiences/{id}/reject<br/>🛡️ host notification email]
     ExperiencesAdmin --> ExpChanges[POST /admin/experiences/{id}/request-changes<br/>🛡️ host notification email]
 
-    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589]
+    RecipesAdmin[/admin/recipes page<br/>MEH-997 — mirrors experiences queue] --> AdminRecList[GET /admin/recipes?moderation_status=<br/>🛡️ 5-tab queue MEH-589<br/>queue entry pings admin — MEH-1000<br/>WhatsApp+email on submit/resubmit]
     RecipesAdmin --> RecApprove[POST /admin/recipes/{id}/approve<br/>🛡️ publishes]
-    RecipesAdmin --> RecReject[POST /admin/recipes/{id}/reject<br/>🛡️ no notification — polling only]
-    RecipesAdmin --> RecChanges[POST /admin/recipes/{id}/request-changes<br/>🛡️ feedback required, no notification]
+    RecipesAdmin --> RecReject[POST /admin/recipes/{id}/reject<br/>🛡️ no producer notification — notes shown in dashboard]
+    RecipesAdmin --> RecChanges[POST /admin/recipes/{id}/request-changes<br/>🛡️ feedback required — notes shown in dashboard]
 
     Settings[/admin/settings page] --> AdminSettings[GET/PUT /admin/settings<br/>🛡️ admin emails, WhatsApp,<br/>Twilio/Cloudinary health checks]
     Settings --> AdminVacation[GET/POST /admin/settings/vacation<br/>🛡️ MEH-509 PR2a typed vacation toggle<br/>persists to admin_settings keys]
