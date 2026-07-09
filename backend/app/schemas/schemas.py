@@ -295,6 +295,10 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     emoji: str | None = None
+    # MEH-1034: query-time count over producer_categories, populated only by
+    # GET /admin/categories. Optional so public consumers (GET /categories,
+    # ProducerOut.categories) serialize unchanged — NOT a DB column.
+    producer_count: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -906,6 +910,12 @@ class ProducerAdminOut(ProducerDetailOut):
     # no binding declaration was made (admin-created / imported producers).
     declared_at: datetime | None = None
     declaration_version: str | None = None
+    # MEH-1011: producer request-changes trail — admin-only (never on the
+    # public ProducerDetailOut/ListOut). `requested_changes` = the admin's
+    # free-text completion feedback; `changes_requested_at` = tz-aware stamp.
+    # Both NULL once the producer is approved (approve_producer clears them).
+    requested_changes: str | None = None
+    changes_requested_at: datetime | None = None
     # MEH-971 chunk 3: admin-only "license pending — verify before approving"
     # flag. COMPUTED below (never a stored column) — True iff the producer is in
     # >=1 license-required category AND has no license number. Status-independent
@@ -950,6 +960,15 @@ class ProducerOwnerOut(ProducerDetailOut):
     # MEH-829: owner sees her own submitted street address (private — not on the
     # public DetailOut/ListOut).
     address: str | None = None
+    # MEH-1025 Chunk A: the owner sees her OWN completion-request trail so the
+    # dashboard can render the "נשאר להשלים" banner (Chunk B). Same owner-private
+    # pattern as kosher/license/address above. Columns exist since MEH-1011
+    # (migration a1b2c3d4e5f6) — Pydantic-only exposure, no migration. Contrast
+    # risk_score/risk_reasoning + declared_at, which stay admin-only on
+    # ProducerAdminOut (the producer must never see her own risk score).
+    # REUSES: schemas.py:913-914 (ProducerAdminOut declarations).
+    requested_changes: str | None = None
+    changes_requested_at: datetime | None = None
 
 
 # --- MEH-51: Kashrut badge requests ---
@@ -1000,6 +1019,18 @@ class GrantVerifiedIn(BaseModel):
     # handler. 1:1 with VERIFICATION.md §3 document_type. "cosmetics" has no
     # tooltip key yet (MEH-758 micro-follow-up); the Chunk-3 resolver maps it.
     doc_type: Literal["license", "exemption", "cosmetics"]
+
+
+class RequestChangesIn(BaseModel):
+    """MEH-1011: admin "request-changes" payload for a pending producer.
+
+    REUSES: schemas.py:1499 ProducerRecipeModerationAction — single optional
+    `feedback` field. Unlike recipes (where empty feedback is only rejected in
+    the handler), here the feedback is emailed to the producer verbatim, so the
+    handler rejects empty/whitespace-only with a 400 (admin_recipes.py:123).
+    """
+
+    feedback: str | None = Field(None, max_length=2000)
 
 
 # --- User ---
@@ -1757,6 +1788,26 @@ class ReviewCreateNested(BaseModel):
         return sanitize_text(v, max_length=500)
 
 
+class ReviewReplyUpdate(BaseModel):
+    """MEH-1039: business-owner reply to a customer review. An empty/blank
+    `reply` clears the existing reply; a non-empty reply is 2-1000 chars with
+    ≥3 letters (MEH-555) after sanitize."""
+
+    reply: str = Field(..., max_length=1000)
+
+    @field_validator("reply")
+    @classmethod
+    def _validate_reply(cls, v):
+        v = sanitize_text(v, max_length=1000)
+        stripped = (v or "").strip()
+        if not stripped:
+            return ""  # empty → clear the reply
+        if len(stripped) < 2:
+            raise ValueError("התגובה חייבת להכיל לפחות 2 תווים")
+        # MEH-555: reject punctuation-only ("???") — require ≥3 letters.
+        return _min_letters_validator(stripped, min_count=3)
+
+
 class ReviewOut(BaseModel):
     id: UUID
     producer_id: UUID
@@ -1765,6 +1816,9 @@ class ReviewOut(BaseModel):
     stars: int
     body: str | None = None
     created_at: str
+    # MEH-1039: business-owner reply (owner-only PUT /reviews/{id}/reply).
+    reply: str | None = None
+    reply_at: str | None = None
 
     model_config = {"from_attributes": True}
 

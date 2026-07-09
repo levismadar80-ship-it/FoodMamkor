@@ -33,9 +33,11 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
   const t = useTranslations();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
-      <FadeInSection className="text-center mb-10">
-        <span className="block font-english italic text-accent text-lg mb-1">
+      <FadeInSection className="mb-10">
+        {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
+        <span className="flex items-center gap-3 font-medium text-[11px] tracking-[0.18em] text-accent mb-1">
           {t("home.categories.eyebrow")}
+          <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
         <h2 className="font-headline-display font-bold text-text" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
           {t("home.categories.heading")}
@@ -68,15 +70,16 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
               <div
                 className={[
                   "grid place-items-center bg-background text-primary",
-                  isHero ? "aspect-[16/9] md:aspect-[4/3] lg:aspect-[16/9]" : "aspect-[4/3]",
+                  // MEH-991 (HOME-18): v8 aspect matrix — small 1:1 desktop+mobile / 4:3 tablet; hero mobile 16:7.
+                  isHero ? "aspect-[16/7] md:aspect-[4/3] lg:aspect-[16/9]" : "aspect-square md:aspect-[4/3] lg:aspect-square",
                 ].join(" ")}
               >
                 {LineArt && (
                   <LineArt
                     className={
                       isHero
-                        ? "w-24 h-24 lg:w-[120px] lg:h-[120px] transition-transform duration-base ease-quart group-hover:scale-[1.06]"
-                        : "w-16 h-16 transition-transform duration-base ease-quart group-hover:scale-[1.06]"
+                        ? "w-24 h-24 lg:w-[120px] lg:h-[120px]"
+                        : "w-16 h-16"
                     }
                   />
                 )}
@@ -88,7 +91,8 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
                   {numeral}
                 </span>
                 <h3 className={[
-                  "font-headline-md font-bold text-text leading-tight",
+                  // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline; glyph never scales.
+                  "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
                   isHero ? "text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
                 ].join(" ")}>
                   {card.name}

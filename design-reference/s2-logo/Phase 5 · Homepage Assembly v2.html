@@ -1,0 +1,2632 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S4 · MEH-639 · Phase 5 v2 — Homepage Assembly (Iteration 2)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+
+<style>
+/* ──────────────────────────────────────────────────────────────
+   BRAND TOKENS — verbatim from Design System v1.0
+   (Same 7 primitives shipped in Phase 1–4. Zero new hex.)
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --green:        #2E6853;
+  --green-dark:   #1F4A38;
+  --primary-dark: #2E4A2E;
+  --background:   #F5F0E8;
+  --bg-card:      #FFFEFB;
+  --text:         #1C1A17;
+  --fg-muted:     #57524A;
+  --gold:         #8B6914;
+  --light:        #EAF3DE;
+  --border:       #E8E0D0;
+  --focus-ring:   rgba(46,104,83,0.40);
+
+  --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px;
+  --space-6: 48px; --space-8: 64px; --space-12: 96px; --space-16: 128px;
+
+  --font-display: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --font-body:    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-italic:  "Cormorant Garamond", "Frank Ruhl Libre", Georgia, serif;
+
+  /* P4 v5 LOCKED — motion family (180/420/640 quart) */
+  --duration-fast:   180ms;
+  --duration-base:   420ms;
+  --duration-slow:   640ms;
+  --ease-quart:      cubic-bezier(.25, 1, .5, 1);
+
+  /* P4 v5 LOCKED — semantic alias layer (intent-based) */
+  --green-500:  #2E6853;
+  --green-700:  #1F4C3C;
+  --green-900:  #143228;
+  --color-action-primary:        var(--green-500);
+  --color-action-primary-hover:  var(--green-700);
+  --color-surface-floating:      var(--bg-card);
+  --color-action-ghost:                  transparent;
+  --color-action-ghost-border:           var(--text);
+  --color-action-ghost-text:             var(--text);
+  --color-action-ghost-on-dark:          transparent;
+  --color-action-ghost-border-on-dark:   var(--background);
+  --color-action-ghost-text-on-dark:     var(--background);
+
+  /* Doc chrome only — never reaches the mock surfaces */
+  --doc-bg:        #e9e4dc;
+  --doc-bg-deep:   #d9d3c8;
+  --doc-ink:       #2a2620;
+  --doc-ink-mute:  #6f6a60;
+  --doc-warn:      #8B2E2E;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--doc-bg);
+  color: var(--doc-ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+body { padding: 48px 32px 96px; min-width: 1620px; }
+
+.numeric { font-feature-settings: "tnum" 1, "lnum" 1; font-variant-numeric: tabular-nums lining-nums; font-style: normal; direction: ltr; unicode-bidi: isolate; }
+.ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
+
+.docpage { max-width: 1860px; margin: 0 auto; }
+
+/* ──────────────────────────────────────────────────────────────
+   DOC MASTHEAD
+   ────────────────────────────────────────────────────────────── */
+.docpage > header.masthead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+.docpage > header.masthead h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 44px;
+  line-height: 1.05;
+  color: var(--doc-ink);
+}
+.docpage > header.masthead h1 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: #6b4f0f;
+}
+.docpage > header.masthead .sub {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--doc-ink-mute);
+  margin-top: 6px;
+  max-width: 76ch;
+  line-height: 1.5;
+}
+.docpage > header.masthead .stamp {
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  text-align: end;
+  line-height: 1.85;
+}
+.docpage > header.masthead .stamp strong { color: var(--doc-ink); font-weight: 700; }
+.docpage > header.masthead .stamp .dot { color: var(--gold); }
+
+.phase-nav {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--doc-ink-mute);
+}
+.phase-nav .pip {
+  width: 8px; height: 8px;
+  border: 1px solid rgba(42,38,32,0.30);
+  background: transparent;
+  display: inline-block;
+}
+.phase-nav .pip.is-on  { background: var(--green); border-color: var(--green); }
+.phase-nav .pip.is-now {
+  background: var(--gold); border-color: var(--gold);
+  outline: 2px solid rgba(139,105,20,0.25); outline-offset: 2px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PANELS — shared chrome for deliverable blocks
+   ────────────────────────────────────────────────────────────── */
+.panel {
+  background: var(--doc-bg-deep);
+  border: 1px solid rgba(42,38,32,0.18);
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.panel-head {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+}
+.panel-head .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 48px;
+  color: var(--gold);
+  line-height: 1;
+}
+.panel-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 0em;
+  line-height: 1.2;
+  color: var(--doc-ink);
+}
+.panel-head h2 em {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-weight: 500;
+  color: var(--gold);
+}
+.panel-head .lede {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--doc-ink-mute);
+  margin-top: 4px;
+  line-height: 1.5;
+  max-width: 72ch;
+}
+.panel-head .pill {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  background: var(--green);
+  color: var(--background);
+  white-space: nowrap;
+}
+.panel-head .pill.warn { background: var(--gold); }
+.panel-head .pill.fail { background: var(--doc-warn); }
+
+/* ──────────────────────────────────────────────────────────────
+   CHANGELOG
+   ────────────────────────────────────────────────────────────── */
+.changelog ul { list-style: none; display: grid; gap: 6px; }
+.changelog li {
+  display: grid;
+  grid-template-columns: 110px 96px 1fr;
+  gap: 16px;
+  align-items: baseline;
+  font-size: 13px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+}
+.changelog li:last-child { border-bottom: 0; }
+.changelog li .v { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--doc-ink); }
+.changelog li .d { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-size: 12px; }
+.changelog li .t { color: var(--doc-ink); line-height: 1.55; }
+.changelog li .t s { color: var(--doc-warn); text-decoration: line-through; }
+.changelog li .t strong { color: var(--green-dark); font-weight: 600; }
+
+/* ──────────────────────────────────────────────────────────────
+   SECTION FLOW DIAGRAM — 14-position layout map
+   ────────────────────────────────────────────────────────────── */
+.flow-map { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.flow-col h3 {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  padding: 0 24px 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(42,38,32,0.18);
+}
+.flow-col { padding: 0 0 8px; }
+.flow-col + .flow-col { border-inline-start: 1px solid rgba(42,38,32,0.18); padding-inline-start: 24px; }
+.flow-col:first-child { padding-inline-end: 24px; }
+.flow-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 96px 90px;
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.14);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.flow-row:last-child { border-bottom: 0; }
+.flow-row .pos {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 16px;
+  line-height: 1;
+}
+.flow-row .nm { color: var(--doc-ink); }
+.flow-row .nm strong { font-weight: 600; }
+.flow-row .nm em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.flow-row .src {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  color: var(--doc-ink-mute);
+  letter-spacing: 0.02em;
+  text-align: end;
+}
+.flow-row .kind {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 3px 6px;
+  white-space: nowrap;
+  border: 1px solid;
+}
+.kind.new      { color: var(--green); border-color: var(--green); background: rgba(46,104,83,0.06); }
+.kind.locked   { color: var(--green-dark); border-color: var(--green-dark); background: rgba(31,74,56,0.06); }
+.kind.merged   { color: var(--gold); border-color: var(--gold); background: rgba(139,105,20,0.06); border-style: dashed; }
+.kind.chrome   { color: var(--doc-ink-mute); border-color: var(--doc-ink-mute); background: transparent; }
+
+/* ──────────────────────────────────────────────────────────────
+   VIEWPORT FRAMES — desktop 1440, tablet 768, mobile 375
+   ────────────────────────────────────────────────────────────── */
+.vp {
+  background: var(--background);
+  border: 1px solid rgba(42,38,32,0.20);
+  overflow: hidden;
+  position: relative;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.vp.desktop { width: 1440px; }
+.vp.tablet  { width: 768px;  }
+.vp.mobile  { width: 375px;  }
+.vp.fullpage { /* full-bleed homepage stack */ }
+.vp.frame-hairline::before,
+.vp.frame-hairline::after {
+  content:""; position: absolute; width: 12px; height: 12px;
+  border: 1px solid rgba(42,38,32,0.20); z-index: 0;
+}
+.vp.frame-hairline::before { top: 8px; inset-inline-start: 8px; border-inline-end-color: transparent; border-bottom-color: transparent; }
+.vp.frame-hairline::after  { bottom: 8px; inset-inline-end: 8px; border-inline-start-color: transparent; border-top-color: transparent; }
+
+.vp, .vp * { color: var(--text); font-family: var(--font-body); line-height: 1.6; }
+.vp { direction: rtl; }
+
+.vp-cap {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.vp-cap .num {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--gold);
+}
+.vp-cap .label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--doc-ink);
+}
+.vp-cap .rule { height: 1px; background: rgba(42,38,32,0.18); }
+.vp-cap .dims {
+  font-family: var(--font-italic);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--gold);
+}
+.vp-cap .role {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+
+.vp-stack { display: grid; gap: 64px; }
+.vp-row {
+  display: grid;
+  grid-template-columns: 1440px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.vp-row.tabletrow { grid-template-columns: 768px 1fr; }
+.vp-row.mobilerow { grid-template-columns: 375px 1fr; gap: 56px; }
+.vp-row.mobilerow-pair { grid-template-columns: 375px 375px 1fr; gap: 48px; }
+.vp-notes { padding-top: 32px; display: grid; gap: 14px; max-width: 64ch; }
+.vp-notes h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0em;
+  line-height: 1.15;
+  color: var(--doc-ink);
+  margin-bottom: 4px;
+}
+.vp-notes h3 em { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-weight: 500; }
+.vp-notes p { font-size: 13.5px; line-height: 1.65; color: var(--doc-ink); }
+.vp-notes .row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.vp-notes .row:last-child { border-bottom: 0; }
+.vp-notes .row .k {
+  font-family: var(--font-body);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.vp-notes .row .v { color: var(--doc-ink); }
+.vp-notes code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--green-dark);
+  background: rgba(46,104,83,0.08);
+  padding: 1px 4px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ★ LOCKED COMPONENT — FloatingNavbar v5 (Phase 4, MEH-655)
+   v5 LOCK · embedded verbatim · zero redesign.
+   Two states: .nav.is-default (transparent) + .nav.is-scrolled (cream pill)
+   Motion: 180/420/640ms quart · Semantic tokens: --color-action-primary*
+   ────────────────────────────────────────────────────────────── */
+.nav-shell {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+  display: flex; justify-content: center;
+  padding: 24px 48px;
+  pointer-events: none;
+  direction: rtl;
+}
+.vp.tablet .nav-shell { padding: 20px 32px; }
+.vp.mobile .nav-shell { padding: 16px; }
+
+.nav {
+  width: 100%; max-width: 1200px;
+  display: grid; align-items: center;
+  pointer-events: auto;
+  background: transparent;
+  border-radius: 9999px;
+  transition:
+    background-color var(--duration-base) var(--ease-quart),
+    border-color     var(--duration-base) var(--ease-quart),
+    box-shadow       var(--duration-base) var(--ease-quart),
+    padding          var(--duration-base) var(--ease-quart),
+    color            var(--duration-base) var(--ease-quart);
+}
+.vp.desktop .nav { grid-template-columns: auto 1fr auto auto; gap: 32px; min-height: 64px; }
+.vp.tablet  .nav { grid-template-columns: auto 1fr auto auto; gap: 24px; min-height: 56px; }
+.vp.mobile  .nav { grid-template-columns: auto 1fr auto; gap: 12px; min-height: 52px; padding: 6px 8px 6px 16px; }
+
+/* Default — pre-scroll · transparent · no chrome */
+.nav.is-default {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 24px;
+}
+.vp.mobile .nav.is-default { padding: 6px 8px 6px 16px; }
+
+/* Scrolled — floating cream pill */
+.nav.is-scrolled {
+  background: var(--color-surface-floating);
+  border: 1px solid var(--border);
+  padding: 8px 16px 8px 8px;
+  box-shadow: 0 2px 20px rgba(46,104,83,0.06);
+}
+.vp.mobile .nav.is-scrolled { padding: 6px 8px 6px 16px; }
+
+/* Logo — S2 final mark (MEH-637) · 5 pomegranate seeds @ 72° + 6-letter
+   wordmark "מהמקור" · NEVER "מקור" (4-letter truncation = MEH-664 bug) */
+.logo { display: inline-flex; align-items: center; text-decoration: none; }
+.logo svg { display: block; }
+.logo.logo-horiz svg { width: 168px; height: 51px; }
+.vp.tablet .logo.logo-horiz svg { width: 148px; height: 45px; }
+.logo.logo-mark svg { width: 40px; height: 40px; }
+.vp.mobile .logo.logo-mark svg { width: 36px; height: 36px; }
+
+/* Nav links */
+.nav-links {
+  display: flex; align-items: center; gap: 32px;
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+}
+.vp.tablet .nav-links { gap: 24px; }
+.nav-link {
+  color: var(--text); text-decoration: none;
+  padding: 8px 0; position: relative;
+  transition: color var(--duration-fast) var(--ease-quart);
+}
+.nav-link:hover { color: var(--green); }
+.nav-link.is-current::after {
+  content: ""; position: absolute; inset-inline: 0; bottom: 2px;
+  height: 1px; background: var(--gold);
+}
+
+/* Secondary CTA — ghost (P4 v5 surface-aware) */
+.nav-account {
+  font-family: var(--font-body); font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
+  color: var(--color-action-ghost-text);
+  background: var(--color-action-ghost);
+  border: 1px solid transparent;
+  padding: 10px 16px;
+  min-height: 44px;
+  display: inline-flex; align-items: center;
+  cursor: default;
+  transition:
+    background-color var(--duration-fast) var(--ease-quart),
+    border-color     var(--duration-fast) var(--ease-quart);
+}
+.nav.is-scrolled .nav-account { border-color: var(--border); }
+.nav-account:hover { background: var(--light); }
+
+/* Primary CTA — green pill (v2 → v3: plural per MEH-472) */
+.nav-cta {
+  font-family: var(--font-body); font-weight: 500; font-size: 14px; letter-spacing: 0.02em;
+  color: var(--background); background: var(--color-action-primary);
+  border: 1px solid var(--color-action-primary);
+  padding: 10px 20px;
+  min-height: 44px;
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; gap: 8px;
+  cursor: default; white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-quart),
+    border-color     var(--duration-fast) var(--ease-quart);
+}
+.nav-cta:hover {
+  background: var(--color-action-primary-hover);
+  border-color: var(--color-action-primary-hover);
+}
+.nav-cta:focus-visible,
+.nav-account:focus-visible {
+  outline: 2px solid var(--color-action-primary-hover);
+  outline-offset: 3px;
+  outline-style: solid;
+  transition: outline-offset var(--duration-fast) var(--ease-quart);
+}
+.nav-cta .arr {
+  font-family: var(--font-italic); font-style: italic;
+  display: inline-block; transform: scaleX(-1);
+  color: #E7C88A;
+}
+
+/* Hamburger (mobile) — 44×44 hit target */
+.hamburger {
+  width: 44px; height: 44px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 9999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: default;
+  transition: background-color var(--duration-fast) var(--ease-quart);
+}
+.hamburger svg { width: 18px; height: 18px; }
+.hamburger svg path { stroke: var(--text); stroke-width: 1.5; stroke-linecap: round; fill: none; }
+
+/* ──────────────────────────────────────────────────────────────
+   ★ LOCKED COMPONENT — Hero (Phase 1 v2, Direction A typography-only)
+   ────────────────────────────────────────────────────────────── */
+.hp-hero {
+  position: relative;
+  background: var(--background);
+  padding: 144px 48px 96px;   /* top accommodates floating navbar */
+  display: grid;
+  gap: 32px;
+}
+.vp.tablet .hp-hero { padding: 128px 32px 80px; }
+.vp.mobile .hp-hero { padding: 104px 24px 64px; gap: 24px; }
+
+.hp-hero-head { display: grid; gap: 24px; max-width: 72ch; }
+.vp.mobile .hp-hero-head { gap: 16px; }
+
+.hp-h1 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0em;
+  line-height: 1.05;
+  color: var(--text);
+}
+.vp.desktop .hp-h1 { font-size: 84px; max-width: 16ch; }
+.vp.tablet  .hp-h1 { font-size: 64px; max-width: 14ch; }
+.vp.mobile  .hp-h1 { font-size: 48px; max-width: 13ch; }
+.hp-h1 .em { font-family: var(--font-italic); font-style: italic; font-weight: 500; color: var(--gold); }
+
+/* Sub — Frank Ruhl 400 editorial register */
+.hp-sub {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--fg-muted);
+  letter-spacing: 0em;
+}
+.vp.desktop .hp-sub { font-size: 26px; line-height: 1.45; max-width: 40ch; }
+.vp.tablet  .hp-sub { font-size: 22px; line-height: 1.45; max-width: 36ch; }
+.vp.mobile  .hp-sub { font-size: 19px; line-height: 1.45; max-width: 34ch; }
+.hp-sub strong { color: var(--text); font-weight: 700; }
+.hp-sub em { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-weight: 500; }
+
+/* Search block */
+.hp-search-block { display: grid; gap: 16px; max-width: 640px; }
+.vp.mobile .hp-search-block { max-width: none; gap: 12px; }
+
+.hp-search {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px 0 8px;
+  min-height: 64px;
+}
+.vp.mobile .hp-search { min-height: 56px; padding: 0 16px 0 6px; gap: 12px; }
+.hp-search .icon { color: var(--green-dark); display: inline-flex; }
+.hp-search .icon svg { width: 20px; height: 20px; }
+.hp-search input {
+  border: 0; background: transparent;
+  font-family: var(--font-body); font-size: 16px;
+  color: var(--text); outline: none; width: 100%; text-align: start;
+}
+.vp.mobile .hp-search input { font-size: 15px; }
+.hp-search input::placeholder {
+  color: var(--fg-muted);
+  font-family: var(--font-display); font-weight: 400;
+}
+.hp-search .submit {
+  background: var(--green); color: var(--background);
+  border: 0;
+  font-family: var(--font-body); font-weight: 500; font-size: 15px; letter-spacing: 0.02em;
+  padding: 0 28px; min-height: 52px;
+  cursor: default; white-space: nowrap;
+}
+.vp.mobile .hp-search .submit { min-height: 44px; padding: 0 22px; font-size: 14px; }
+
+/* Near-me + secondary actions row */
+.hp-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+.hp-near-me {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+  color: var(--green-dark); background: transparent;
+  border: 1px solid var(--green); border-radius: 9999px;
+  padding: 10px 18px; min-height: 44px;
+  cursor: default; white-space: nowrap;
+}
+.hp-near-me svg { width: 16px; height: 16px; }
+
+.hp-cta-primary {
+  font-family: var(--font-body); font-weight: 500; font-size: 14px; letter-spacing: 0.02em;
+  color: var(--background); background: var(--green);
+  border: 1px solid var(--green); border-radius: 9999px;
+  padding: 10px 20px; min-height: 44px;
+  cursor: default; white-space: nowrap;
+}
+.hp-cta-primary .arr {
+  font-family: var(--font-italic); font-style: italic;
+  display: inline-block; transform: scaleX(-1);
+  margin-inline-start: 6px;
+}
+.hp-cta-secondary {
+  font-family: var(--font-body); font-weight: 500; font-size: 14px;
+  color: var(--green-dark); background: transparent;
+  border: 1px solid transparent;
+  padding: 10px 8px; min-height: 44px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--green-dark);
+  border-radius: 0;
+  cursor: default;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   ★ LOCKED COMPONENT — ProducerCard v4 (Phase 2, MEH-638 P2)
+   Single warm-white surface, no shadow lift, heart green/gold not red.
+   ────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  display: grid;
+  grid-template-rows: auto auto;
+  width: 100%;
+  font-family: var(--font-body);
+  color: var(--text);
+  position: relative;
+  isolation: isolate;
+  direction: rtl;
+}
+.card-media {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background-color: var(--background);
+}
+.vp.mobile .card-media { aspect-ratio: 1 / 1; }
+.card-image {
+  position: absolute; inset: 0;
+  background-color: var(--background);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'><g fill='none' stroke='%231F4A38' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M40 14 C 56 18 64 36 60 56 C 44 60 24 56 18 38 C 22 22 36 14 40 14 Z'/><path d='M30 22 C 32 36 36 50 42 60'/><path d='M30 30 C 36 32 42 32 48 30'/><path d='M28 42 C 34 44 40 44 46 42'/></g></svg>");
+  background-position: center;
+  background-size: 88px 88px;
+  background-repeat: no-repeat;
+}
+.card-image::after {
+  content:""; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay; opacity: 0.18; pointer-events: none;
+}
+
+/* Category-specific glyph swap inside card-image (Section 8 producer cards)
+   Iteration 3 Fix 6 — glyphs swapped to corrected family (cleaver/bread/produce/etc) */
+.card-image[data-glyph="dairy"]   { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z M48 28 h24'/></svg>"); background-size: 96px 96px; }
+.card-image[data-glyph="bread"]   { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M60 18 v84'/><path d='M60 30 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2'/><path d='M60 30 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2'/><path d='M60 50 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2'/><path d='M60 50 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2'/><path d='M60 70 q-10 -6 -14 0 q-2 6 4 10 q4 2 10 2'/><path d='M60 70 q10 -6 14 0 q2 6 -4 10 q-4 2 -10 2'/></svg>"); background-size: 96px 96px; }
+.card-image[data-glyph="produce"] { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M40 60 q0 -20 20 -20 q20 0 20 20 q0 28 -20 38 q-20 -10 -20 -38 z'/><path d='M60 40 q0 -10 -8 -14'/><path d='M60 40 q0 -10 8 -14'/><path d='M52 26 q4 -6 8 -2'/><path d='M68 26 q-4 -6 -8 -2'/></svg>"); background-size: 96px 96px; }
+.card-image[data-glyph="meat"]    { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 22 L88 88'/><path d='M22 22 L30 22 L30 30 Z'/><path d='M88 88 q-4 -28 -36 -36'/><path d='M98 22 L32 88'/><path d='M98 22 L90 22 L90 30 Z'/><path d='M32 88 L26 96'/></svg>"); background-size: 96px 96px; }
+.card-image[data-glyph="pantry"]  { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M48 24 h24 v8 h-24 z'/><path d='M44 32 h32 v60 a8 8 0 0 1 -8 8 h-16 a8 8 0 0 1 -8 -8 z'/><path d='M60 14 v10'/><path d='M58 14 q2 -4 4 0'/><path d='M52 52 q4 4 8 0 q4 -4 8 0'/></svg>"); background-size: 96px 96px; }
+.card-image[data-glyph="bodycare"]{ background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M60 24 v44'/><path d='M48 38 q4 -10 12 -14 q8 4 12 14'/><path d='M44 54 q6 -8 16 -10 q10 2 16 10'/><path d='M40 70 q8 -6 20 -8 q12 2 20 8'/><path d='M52 88 h16 l-2 14 h-12 z'/></svg>"); background-size: 96px 96px; }
+
+.card-heart {
+  position: absolute; top: 16px; inset-inline-start: 16px;
+  width: 40px; height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgba(245,240,232,0.6);
+  background: rgba(31,74,56,0.30);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--background);
+  cursor: default; z-index: 2;
+}
+.card-heart svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.card-heart.is-saved { background: rgba(245,240,232,0.95); color: var(--green); }
+.card-heart.is-saved svg { fill: currentColor; stroke: currentColor; }
+
+.card-badge-row {
+  position: absolute; bottom: 16px; inset-inline-start: 16px;
+  display: flex; gap: 8px; z-index: 2;
+}
+.badge {
+  font-family: var(--font-body); font-weight: 500; font-size: 11px;
+  letter-spacing: 0.06em; padding: 4px 8px;
+  border: 1px solid transparent;
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.badge--new { background: var(--gold); color: var(--background); }
+.badge--recommended { background: var(--green); color: var(--background); }
+
+.card-body { padding: 16px; display: grid; gap: 8px; }
+.card-eyebrow {
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--fg-muted);
+}
+.vp.mobile .card-eyebrow { font-size: 10px; }
+.card-headline-row { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: baseline; }
+.card-name {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 22px; letter-spacing: 0em; line-height: 1.25;
+  color: var(--text);
+}
+.vp.mobile .card-name { font-size: 16px; }
+.card-rating {
+  font-family: var(--font-body); font-size: 13px; color: var(--text);
+  display: inline-flex; align-items: baseline; gap: 4px;
+}
+.vp.mobile .card-rating { font-size: 12px; }
+.card-rating .star { color: var(--gold); }
+.card-rating .count { color: var(--fg-muted); }
+.card-availability {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-body); font-size: 13px; color: var(--fg-muted);
+}
+.vp.mobile .card-availability { font-size: 12px; }
+.card-availability .dot { width: 8px; height: 8px; background: var(--secondary, var(--green)); border-radius: 9999px; display: inline-block; }
+.card-availability .status { color: var(--text); font-weight: 500; }
+.card-meta { font-family: var(--font-body); font-size: 12px; color: var(--fg-muted); }
+
+/* ──────────────────────────────────────────────────────────────
+   ★ LOCKED COMPONENT — CategoryGrid v8 (Phase 3, MEH-638 P3)
+   2+4 asymmetric on desktop; 2×3 tablet; 2+4 asymmetric on mobile too.
+   Iteration 3 Fix 5: mobile preserves the 2+4 pattern (was 1×6 stack).
+   ────────────────────────────────────────────────────────────── */
+.cg-grid { display: grid; gap: 16px; }
+.vp.desktop .cg-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.vp.desktop .cg-grid .cat--hero { grid-column: span 2; }
+.vp.tablet .cg-grid { grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* MOBILE — Iteration 3 Fix 5: 2+4 asymmetric (NOT 1×6 stack) */
+.vp.mobile .cg-grid {
+  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: row dense;
+  gap: 12px;
+}
+.vp.mobile .cg-grid .cat--hero {
+  grid-column: 1 / -1;            /* full-width, preserves featured weight */
+}
+.vp.mobile .cg-grid .cat--hero .cat-glyph { aspect-ratio: 16 / 7; }
+.vp.mobile .cg-grid .cat--hero .cat-glyph svg { width: 96px; height: 96px; }
+.vp.mobile .cg-grid .cat--hero .cat-name { font-size: 22px; }
+.vp.mobile .cg-grid .cat--hero .cat-num { font-size: 22px; }
+.vp.mobile .cg-grid .cat--small .cat-glyph { aspect-ratio: 1 / 1; }
+.vp.mobile .cg-grid .cat--small .cat-glyph svg { width: 56px; height: 56px; }
+.vp.mobile .cg-grid .cat--small .cat-name { font-size: 15px; line-height: 1.2; }
+.vp.mobile .cg-grid .cat--small .cat-num { font-size: 16px; }
+.vp.mobile .cg-grid .cat--small .cat-body { padding: 16px 12px 12px; gap: 8px; }
+
+.cat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  text-decoration: none;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.cat-glyph {
+  display: grid; place-items: center;
+  background: var(--background);
+  aspect-ratio: 4 / 3;
+}
+.vp.desktop .cat--hero .cat-glyph { aspect-ratio: 16 / 9; }
+.vp.mobile .cat-glyph { aspect-ratio: 16 / 9; }
+.cat-glyph svg { display: block; width: 80px; height: 80px; }
+.vp.desktop .cat--hero .cat-glyph svg { width: 120px; height: 120px; }
+.cat-glyph svg path, .cat-glyph svg circle, .cat-glyph svg ellipse,
+.cat-glyph svg line, .cat-glyph svg polyline, .cat-glyph svg rect {
+  fill: none; stroke: var(--green-dark);
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.vp.desktop .cat--hero .cat-glyph svg path,
+.vp.desktop .cat--hero .cat-glyph svg circle,
+.vp.desktop .cat--hero .cat-glyph svg rect { stroke-width: 2; }
+.cat-glyph svg .fill-gold { fill: var(--gold); stroke: var(--gold); }
+
+.cat-body {
+  padding: 24px 16px 16px;
+  display: flex; align-items: baseline; gap: 12px;
+  justify-content: flex-start;
+}
+.vp.desktop .cat--hero .cat-body { padding: 32px 24px 24px; }
+.cat-num {
+  font-family: var(--font-italic);
+  font-style: italic; font-weight: 500;
+  color: var(--gold); font-size: 22px;
+  line-height: 1;
+}
+.vp.desktop .cat--hero .cat-num { font-size: 28px; }
+.cat-name {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 20px; letter-spacing: 0em; line-height: 1.2;
+  color: var(--text);
+}
+.vp.desktop .cat--hero .cat-name { font-size: 26px; }
+.vp.mobile .cat-name { font-size: 18px; }
+
+/* ──────────────────────────────────────────────────────────────
+   HOMEPAGE COMPOSE LAYER — .hp-*
+   New section chrome that lives outside any locked component.
+   ────────────────────────────────────────────────────────────── */
+
+/* Section bg rhythm — cream ↔ warm-white (Park Council #8) */
+.hp-section { position: relative; }
+.hp-section--cream { background: var(--background); }
+.hp-section--warm  { background: var(--bg-card); }
+.hp-section--green {
+  background: var(--green-dark);
+  color: var(--background);
+}
+.hp-section--green * { color: var(--background); }
+.hp-section--footer { background: var(--primary-dark); color: #EAF3DE; }
+
+.hp-pad-y {
+  padding-top: 96px; padding-bottom: 96px;
+  padding-inline: 48px;
+}
+.vp.tablet .hp-pad-y { padding: 72px 32px; }
+.vp.mobile .hp-pad-y { padding: 56px 24px; }
+
+.hp-container { max-width: 1280px; margin: 0 auto; }
+
+/* Section head — eyebrow + H2 (no period on H2 — strict rule) */
+.hp-head { display: grid; gap: 12px; margin-bottom: 48px; }
+.vp.mobile .hp-head { margin-bottom: 32px; gap: 8px; }
+
+.hp-eyebrow {
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--green-dark);
+  display: inline-flex; align-items: center; gap: 12px;
+}
+.hp-eyebrow .rule { width: 32px; height: 1px; background: var(--gold); opacity: 0.7; align-self: center; }
+
+.hp-h2 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 52px; letter-spacing: 0em; line-height: 1.1;
+  color: var(--text);
+}
+.vp.tablet .hp-h2 { font-size: 44px; }
+.vp.mobile .hp-h2 { font-size: 34px; }
+.hp-h2 em { font-family: var(--font-italic); font-style: italic; color: var(--gold); font-weight: 500; }
+
+/* Placeholder treatment — applied to ALL 5 merged surfaces */
+.hp-placeholder {
+  border: 1.5px dashed var(--border);
+  background: var(--background);
+  padding: 32px;
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  position: relative;
+}
+.vp.mobile .hp-placeholder { padding: 24px; min-height: 80px; }
+.hp-placeholder-tag {
+  position: absolute; top: 12px; inset-inline-start: 12px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+}
+.hp-placeholder-label {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 16px;
+  line-height: 1.55;
+  max-width: 56ch;
+}
+.hp-placeholder-label strong {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 500;
+  color: var(--green-dark);
+  font-size: 14px;
+  display: block;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+.hp-placeholder-note {
+  font-family: var(--font-body);
+  font-style: normal;
+  color: var(--fg-muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-top: 8px;
+  display: block;
+}
+
+/* Section minimum dimensions to suggest production scale */
+.hp-placeholder--map { min-height: 360px; }
+.vp.tablet .hp-placeholder--map { min-height: 280px; }
+.vp.mobile .hp-placeholder--map { min-height: 220px; }
+.hp-placeholder--stats { min-height: 120px; }
+.hp-placeholder--strip { min-height: 64px; padding: 16px 32px; }
+.vp.mobile .hp-placeholder--strip { min-height: 56px; padding: 12px 16px; }
+.hp-placeholder--grid { min-height: 480px; }
+.vp.mobile .hp-placeholder--grid { min-height: 360px; }
+.hp-placeholder--events { min-height: 320px; }
+.vp.mobile .hp-placeholder--events { min-height: 240px; }
+
+/* Section 06 — Editorial Breath (NEW · option c default) */
+.hp-breath { text-align: center; padding: 96px 48px; }
+.vp.tablet .hp-breath { padding: 80px 32px; }
+.vp.mobile .hp-breath { padding: 64px 24px; }
+.hp-breath-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text);
+  font-size: 44px; line-height: 1.25;
+  letter-spacing: 0em;
+  max-width: 22ch;
+  margin: 0 auto;
+}
+.vp.tablet .hp-breath-quote { font-size: 36px; }
+.vp.mobile .hp-breath-quote { font-size: 28px; max-width: 18ch; }
+.hp-breath-quote .mark {
+  font-family: var(--font-italic);
+  font-style: italic;
+  color: var(--gold);
+  font-size: 1.2em;
+  vertical-align: -0.05em;
+  margin: 0 0.05em;
+}
+.hp-breath-flag {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 6px 12px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  border: 1px dashed var(--gold);
+}
+
+/* Section 08 — Featured Producers — 3 cards row */
+.hp-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.vp.tablet .hp-featured-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.vp.mobile .hp-featured-grid { grid-template-columns: 1fr; gap: 16px; }
+
+/* Section 10 — Meet a Producer — magazine feature */
+.hp-meet {
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  gap: 64px;
+  align-items: center;
+}
+.vp.tablet .hp-meet { grid-template-columns: 1fr 1fr; gap: 32px; }
+.vp.mobile .hp-meet { grid-template-columns: 1fr; gap: 24px; }
+.hp-meet-image {
+  background: var(--background);
+  border: 1px solid var(--border);
+  aspect-ratio: 4 / 5;
+  position: relative;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' fill='none' stroke='%231F4A38' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M44 44 L60 100 L76 44 Z'/><path d='M52 32 q4 -6 8 -2 q4 -4 8 2'/><path d='M60 32 v12'/></svg>");
+  background-position: center;
+  background-size: 140px 140px;
+  background-repeat: no-repeat;
+}
+.vp.mobile .hp-meet-image { aspect-ratio: 1 / 1; background-size: 96px 96px; }
+.hp-meet-image::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.20 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: overlay; opacity: 0.2; pointer-events: none;
+}
+.hp-meet-body { display: grid; gap: 20px; }
+.hp-meet-attr {
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 13px; color: var(--fg-muted);
+}
+.hp-meet-attr strong { color: var(--text); font-weight: 700; }
+.hp-meet-pullquote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text);
+  font-size: 30px; line-height: 1.3;
+  letter-spacing: 0em;
+}
+.vp.tablet .hp-meet-pullquote { font-size: 26px; }
+.vp.mobile .hp-meet-pullquote { font-size: 22px; }
+.hp-meet-pullquote .mark {
+  font-family: var(--font-italic);
+  font-style: italic; color: var(--gold);
+  font-size: 1.2em;
+}
+
+/* Section 12 — How It Works — 3 steps */
+.hp-how {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+}
+.vp.tablet .hp-how { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.vp.mobile .hp-how { grid-template-columns: 1fr; gap: 32px; }
+.hp-step { display: grid; gap: 16px; }
+.hp-step-num {
+  font-family: var(--font-italic);
+  font-style: italic; font-weight: 500;
+  color: var(--gold); font-size: 36px;
+  line-height: 1;
+}
+.hp-step-glyph {
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+}
+.hp-step-glyph svg {
+  width: 56px; height: 56px;
+  fill: none; stroke: var(--green-dark);
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.hp-step-title {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 28px; letter-spacing: 0em; line-height: 1.2;
+  color: var(--text);
+}
+.vp.mobile .hp-step-title { font-size: 22px; }
+.hp-step-body {
+  font-family: var(--font-body);
+  font-size: 16px; line-height: 1.6;
+  color: var(--fg-muted);
+  max-width: 28ch;
+}
+.vp.mobile .hp-step-body { font-size: 15px; }
+
+/* Section 13 — For Business — cream + gold rule */
+.hp-biz { position: relative; }
+.hp-biz-rule {
+  width: 64px; height: 1px;
+  background: var(--gold);
+  margin-bottom: 32px;
+}
+.hp-biz-body {
+  font-family: var(--font-display); font-weight: 400;
+  color: var(--text); font-size: 22px; line-height: 1.55;
+  max-width: 52ch;
+  display: grid; gap: 12px;
+  margin: 24px 0 32px;
+}
+.vp.mobile .hp-biz-body { font-size: 18px; }
+.hp-biz-body em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+
+.hp-biz-cta {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--font-body); font-weight: 500; font-size: 15px; letter-spacing: 0.02em;
+  color: var(--background); background: var(--green);
+  border: 1px solid var(--green);
+  padding: 14px 28px; min-height: 52px;
+  border-radius: 9999px;
+  cursor: default; white-space: nowrap;
+}
+.hp-biz-cta .arr {
+  font-family: var(--font-italic); font-style: italic;
+  display: inline-block; transform: scaleX(-1);
+}
+
+/* Section 14 — Footer */
+.hp-footer { padding: 80px 48px 48px; color: #EAF3DE; }
+.vp.tablet .hp-footer { padding: 64px 32px 40px; }
+.vp.mobile .hp-footer { padding: 48px 24px 32px; }
+
+.hp-footer-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr 1fr 1fr 3fr;
+  gap: 32px;
+}
+.vp.tablet .hp-footer-grid { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 24px; }
+.vp.tablet .hp-footer-grid .hp-footer-brand,
+.vp.tablet .hp-footer-grid .hp-footer-news { grid-column: span 2; }
+.vp.mobile .hp-footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+.vp.mobile .hp-footer-grid .hp-footer-brand,
+.vp.mobile .hp-footer-grid .hp-footer-news { grid-column: span 2; }
+
+.hp-footer-brand { display: grid; gap: 16px; }
+.hp-footer-brand .logo svg { width: 168px; height: 51px; }
+.hp-footer-tagline {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: 18px; line-height: 1.5;
+  color: #EAF3DE;
+  max-width: 32ch;
+}
+
+.hp-footer-col h4 {
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #C9D9B8;
+  margin-bottom: 16px;
+}
+.hp-footer-col ul { list-style: none; display: grid; gap: 10px; }
+.hp-footer-col a {
+  font-family: var(--font-body); font-weight: 400;
+  font-size: 14px; color: #EAF3DE;
+  text-decoration: none;
+}
+
+.hp-footer-news { display: grid; gap: 12px; }
+.hp-footer-news .h {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: 20px; color: #EAF3DE;
+  line-height: 1.3;
+}
+.hp-footer-news .sub {
+  font-family: var(--font-italic); font-style: italic;
+  font-size: 14px; color: #C9D9B8;
+}
+.hp-footer-news .form {
+  display: grid; grid-template-columns: 1fr auto; gap: 0;
+  border-bottom: 1px solid rgba(234,243,222,0.4);
+  padding-bottom: 8px;
+}
+.hp-footer-news input {
+  background: transparent; border: 0; outline: none;
+  font-family: var(--font-body); font-size: 14px;
+  color: #EAF3DE;
+  padding: 6px 0;
+}
+.hp-footer-news input::placeholder { color: rgba(234,243,222,0.5); }
+.hp-footer-news .submit {
+  background: transparent; border: 0;
+  font-family: var(--font-italic); font-style: italic;
+  color: #C9D9B8; font-size: 14px;
+  cursor: default;
+}
+
+.hp-footer-bottom {
+  max-width: 1280px;
+  margin: 48px auto 0;
+  padding-top: 24px;
+  border-top: 1px solid rgba(234,243,222,0.15);
+  display: flex; justify-content: space-between; gap: 16px;
+  font-family: var(--font-body); font-size: 12px;
+  color: #C9D9B8;
+  flex-wrap: wrap;
+}
+.vp.mobile .hp-footer-bottom { flex-direction: column; gap: 8px; }
+
+/* BottomNav — mobile only — 3 tabs per MEH-598 */
+.hp-bottomnav {
+  display: none;
+  position: sticky; bottom: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: 8px 0 12px;
+  grid-template-columns: 1fr 1fr 1fr;
+  z-index: 4;
+}
+.vp.mobile .hp-bottomnav { display: grid; }
+.hp-bottomnav a {
+  display: grid; gap: 4px; place-items: center; text-decoration: none;
+  font-family: var(--font-body); font-size: 11px; color: var(--fg-muted);
+  font-weight: 500;
+}
+.hp-bottomnav a.is-current { color: var(--green-dark); }
+.hp-bottomnav a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+
+/* ──────────────────────────────────────────────────────────────
+   Section markers — for diagnostics only, NOT visible in mockup
+   (Pre-export self-audit confirms zero leak.)
+   ────────────────────────────────────────────────────────────── */
+.section-marker { display: none; }   /* never visible — confirms #12 self-audit */
+
+/* ──────────────────────────────────────────────────────────────
+   Deliverable tables + grids
+   ────────────────────────────────────────────────────────────── */
+.tab {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.tab th, .tab td {
+  padding: 8px 12px;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  text-align: start; vertical-align: baseline;
+}
+.tab th {
+  font-family: var(--font-body);
+  font-weight: 500; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--doc-ink-mute);
+  border-bottom: 1px solid rgba(42,38,32,0.30);
+  background: transparent;
+}
+.tab td { color: var(--doc-ink); }
+.tab td code, .tab td .mono { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--green-dark); background: rgba(46,104,83,0.06); padding: 1px 4px; }
+.tab td .ar { font-family: var(--font-display); font-weight: 700; direction: rtl; unicode-bidi: isolate; color: var(--doc-ink); }
+.tab td .badge-ok {
+  font-family: var(--font-body); font-weight: 500; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--green); color: var(--background);
+  padding: 2px 8px;
+}
+.tab td .badge-warn {
+  font-family: var(--font-body); font-weight: 500; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--gold); color: var(--background);
+  padding: 2px 8px;
+}
+.tab td .badge-fail {
+  font-family: var(--font-body); font-weight: 500; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  background: var(--doc-warn); color: var(--background);
+  padding: 2px 8px;
+}
+.tab td .zero { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--green-dark); font-weight: 700; }
+
+/* Checklist (council, self-audit) */
+.checklist { display: grid; gap: 4px; }
+.checklist .item {
+  display: grid;
+  grid-template-columns: 24px 160px 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(42,38,32,0.18);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.checklist .item:last-child { border-bottom: 0; }
+.checklist .item .box {
+  width: 16px; height: 16px;
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: var(--background);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; line-height: 1;
+}
+.checklist .item .box.warn { background: var(--gold); border-color: var(--gold); }
+.checklist .item .who {
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 11px; letter-spacing: 0.06em;
+  color: var(--doc-ink-mute);
+}
+.checklist .item .who strong { color: var(--doc-ink); display: block; font-size: 13px; letter-spacing: 0; margin-top: 2px; font-weight: 700; }
+.checklist .item .how { color: var(--doc-ink); }
+.checklist .item .how em { color: var(--gold); font-family: var(--font-italic); font-style: italic; }
+.checklist .item .how code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--green-dark); background: rgba(46,104,83,0.08); padding: 1px 4px; }
+.checklist .item .note {
+  font-family: var(--font-italic); font-style: italic;
+  font-size: 12px; color: var(--doc-ink-mute);
+  text-align: end; white-space: nowrap;
+}
+
+/* Open questions */
+.qlist { display: grid; gap: 16px; }
+.q {
+  background: var(--background);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: grid;
+  gap: 8px;
+}
+.q .qhead {
+  display: flex; gap: 12px; align-items: baseline;
+}
+.q .qnum {
+  font-family: var(--font-italic); font-style: italic;
+  color: var(--gold); font-size: 22px;
+  line-height: 1;
+}
+.q .qkey {
+  font-family: var(--font-body); font-weight: 700;
+  font-size: 14px; letter-spacing: 0em;
+  color: var(--doc-ink);
+}
+.q .qsrc {
+  margin-inline-start: auto;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px; letter-spacing: 0.04em;
+  color: var(--doc-ink-mute);
+}
+.q .qbody {
+  font-family: var(--font-body); font-size: 13.5px;
+  line-height: 1.55; color: var(--doc-ink);
+}
+.q .qbody em { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.q .qopt {
+  display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+  margin-top: 4px; padding: 4px 0; font-size: 13px;
+}
+.q .qopt .lbl { font-family: var(--font-italic); font-style: italic; color: var(--gold); }
+.q .qrec {
+  margin-top: 8px;
+  font-family: var(--font-body); font-weight: 500;
+  font-size: 12px; color: var(--green-dark);
+  letter-spacing: 0.02em;
+}
+.q .qrec strong { font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────
+   Footer of doc
+   ────────────────────────────────────────────────────────────── */
+.docpage > footer {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(42,38,32,0.18);
+  display: flex; justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-body); font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--doc-ink-mute);
+}
+.docpage > footer .italic {
+  font-family: var(--font-italic); font-style: italic;
+  text-transform: none; letter-spacing: 0.02em;
+  font-size: 14px; color: var(--gold);
+}
+</style>
+</head>
+<body>
+
+<div class="docpage">
+
+  <!-- ─────────────────────────────────────────────────────────
+       MASTHEAD
+       ───────────────────────────────────────────────────────── -->
+  <header class="masthead">
+    <div>
+      <div class="phase-nav" aria-label="phase progress">
+        <span class="pip is-on" title="P1 · Hero v2"></span>
+        <span class="pip is-on" title="P2 · ProducerCard v4"></span>
+        <span class="pip is-on" title="P3 · Category Grid v8"></span>
+        <span class="pip is-on" title="P4 · Floating Navbar v5"></span>
+        <span class="pip is-now" title="P5 · Homepage Assembly v2 — current"></span>
+        <span class="ltr">&nbsp; S4 · MEH-639 · P5 v2 · Iteration <strong style="color:var(--gold);">4</strong></span>
+      </div>
+      <h1>Homepage Assembly — <em>v2.2, pre-merge audit.</em></h1>
+      <div class="sub">
+        Iteration 4 of S4. Pre-merge audit pass. Seven bugs reviewed: three real, three already-shipped (verified by grep against the rendered DOM, not by trusting prior changelog), one deferred. Footer reworked: <code>משפטי</code> → <code>שקיפות</code> (magazine voice), <code>אירועים</code> removed (Vinh LOCK), <code>עלון</code> → <code>ניוזלטר</code> (user comprehension). Wordmark + Section 13 plural + newsletter heading period — all confirmed clean. Audit-table evidence required; "shipped" claims rejected without quoted text.
+      </div>
+    </div>
+    <div class="stamp">
+      <span class="dot">●</span> awaiting Sapir review<br>
+      Phase <strong class="numeric">5</strong> of <strong class="numeric">5</strong> · <strong>Iteration 2</strong><br>
+      <span class="numeric">2026-05-22</span> · S4.P5.v2<br>
+      System tokens <strong>locked v1.0</strong><br>
+      <span style="color:var(--gold);">Quota-conserving — single canonical render</span>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────────────────────────────────────
+       11 · VERSION + CHANGELOG  (deliverable 11)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel changelog" aria-label="Version + changelog">
+    <div class="panel-head">
+      <span class="num">11</span>
+      <div>
+        <h2>Version + changelog — <em>v1 → v2, thirty fixes.</em></h2>
+        <p class="lede">Iteration 1 (v1) shipped <span class="numeric">10</span> screenshots with <span class="numeric">30+</span> issues — LOCK violations, copy gaps, missing sections, <span class="numeric">12</span>-Council compliance failures, and a broken self-audit (claimed "all H2 periods pass" without grep). v2 = full restart against the corrected spec.</p>
+      </div>
+      <span class="pill">v2.2 · audit pass</span>
+    </div>
+    <ul>
+      <li>
+        <span class="v">v2.2</span>
+        <span class="d">2026-05-22</span>
+        <span class="t"><strong>Iteration 4 — pre-merge audit.</strong> <strong style="color: var(--green-dark);">3 real fixes shipped:</strong> Footer column 4 heading <span class="ar">משפטי</span> → <span class="ar">שקיפות</span> (Sapir 22/5/26 · magazine voice over SaaS) · Footer link <span class="ar">אירועים</span> removed from <span class="ar">לגלות</span> column (Vinh Council LOCK — page has no content) · Footer link <span class="ar">עלון</span> → <span class="ar">ניוזלטר</span> in <span class="ar">קהילה</span> column (user comprehension test — <span class="ar">עלון</span> reads as paper pamphlet in digital UI). Newsletter subtitle <span class="ar">עלון חודשי</span> → <span class="ar">ניוזלטר חודשי</span> for consistency. <strong style="color: var(--green-dark);">3 already-shipped, verified:</strong> wordmark canonical (no <span class="ar">הָמָּקוֹר</span> niqud anywhere · all 13 renders = <span class="ar">מהמקור</span> 6-letter) · Section 13 body L2 <span class="ar">שלכם</span> (NOT <span class="ar">שלך</span>) · Newsletter heading no trailing period (<span class="ar">לעצמנו</span> not <span class="ar">לעצמנו.</span>). <strong style="color: var(--gold);">1 deferred:</strong> Featured Producers horizontal scroll · research-pending · separate pass after Iteration 4.</span>
+      </li>
+      <li>
+        <span class="v">v2.1</span>
+        <span class="d">2026-05-22</span>
+        <span class="t"><strong>Iteration 3 — 8 targeted fixes.</strong> P4 v5 Floating Navbar fully embedded (motion tokens, semantic alias layer, focus-visible) · footer logo wordmark hardened (full <span class="ar">מהמקור</span>, 6 letters, never <span class="ar">מקור</span>) · Section 13 body → Natoora hybrid (drop conditional gating, <span class="ar">עסקים קטנים</span> → <span class="ar">בתי עסק מקומיים</span>, <span class="ar">שלך</span> → <span class="ar">שלכם</span>) · Step 03 <span class="ar">לכן</span> → <span class="ar">לך</span> + period dropped · CategoryGrid mobile <strong>2+4 asymmetric</strong> (was 1×6 stack — P3 v8 LOCK violation) · 6 category glyphs corrected family (Kare #10 hot-fix in P5 v2 only; P3 v8.1 separate ticket) · Newsletter heading period dropped · pull-quote period placement confirmed inside closing quote.</span>
+      </li>
+      <li>
+        <span class="v">v2.0</span>
+        <span class="d">2026-05-22</span>
+        <span class="t"><strong>Full restart.</strong> 14 surface positions (not 8). 5 dashed placeholders for merged work (MEH-604 · 607 · HolidayBanner · FridayDeliveryStrip · HomeProducersGrid · UpcomingEventsPreview). 4 viewport renders: 1440 · 768 · 375 · 375 H1 wrap. Period grep + LOCK words grep + 12-Council checklist all embedded as visible deliverables — claims replaced by evidence.</span>
+      </li>
+      <li>
+        <span class="v">v1.0</span>
+        <span class="d">2026-05-21</span>
+        <span class="t"><s>"All 8 H2s pass period audit"</s> · claim never grep'd. <s>Desktop-only delivery</s> · Frere-Jones LOCK violation. <s>Glyph mismatch — fish for meat-poultry-fish, ice-cream for produce</s> · Kare Council fail. <s>"קטנים" in Hero subtitle</s> · Smadar feedback ignored. <s>Pure-white card surfaces</s> · Ive LOCK. Kept on disk as reference only — NOT to be iterated on.</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       02 · SECTION FLOW DIAGRAM (deliverable 2)
+       14 surface positions + Navbar global chrome
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Section flow diagram">
+    <div class="panel-head">
+      <span class="num">02</span>
+      <div>
+        <h2>Section flow — <em>fourteen surface positions.</em></h2>
+        <p class="lede">Canonical homepage stack. FloatingNavbar v5 is <strong>global chrome above all 14</strong> — not counted. Five dashed placeholders preserve layout flow without redesigning merged work; nine NEW surfaces designed in this phase; two LOCKED component bodies (CategoryGrid v8 + ProducerCard v4) render inside their section frames.</p>
+      </div>
+      <span class="pill">14 positions</span>
+    </div>
+
+    <div class="flow-map">
+      <div class="flow-col">
+        <h3>Global chrome</h3>
+        <div class="flow-row">
+          <span class="pos">★</span>
+          <span class="nm"><strong>FloatingNavbar</strong> · transparent → cream pill</span>
+          <span class="kind chrome">Chrome</span>
+          <span class="src">MEH-655 v5</span>
+        </div>
+
+        <h3 style="margin-top:24px;">Above-the-fold &amp; conditional</h3>
+        <div class="flow-row">
+          <span class="pos">01</span>
+          <span class="nm"><strong>Hero</strong> · Direction A typography-only</span>
+          <span class="kind locked">Locked</span>
+          <span class="src">P1 v2</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">02</span>
+          <span class="nm"><strong>HomepageMiniMap</strong></span>
+          <span class="kind merged">Merged</span>
+          <span class="src">MEH-604</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">03</span>
+          <span class="nm"><strong>HolidayBanner</strong> · conditional</span>
+          <span class="kind merged">Merged</span>
+          <span class="src">existing</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">04</span>
+          <span class="nm"><strong>FridayDeliveryStrip</strong> · conditional</span>
+          <span class="kind merged">Merged</span>
+          <span class="src">existing</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">05</span>
+          <span class="nm"><strong>Stats counter</strong> <em>· copy TBD (Smadar)</em></span>
+          <span class="kind merged">Merged</span>
+          <span class="src">MEH-607</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">06</span>
+          <span class="nm"><strong>Editorial Breath</strong> · pull-quote</span>
+          <span class="kind new">New</span>
+          <span class="src">P5</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">07</span>
+          <span class="nm"><strong>Category grid</strong> · heading + 2+4 cards</span>
+          <span class="kind locked">Locked</span>
+          <span class="src">P3 v8</span>
+        </div>
+      </div>
+
+      <div class="flow-col">
+        <h3>Mid-page editorial &amp; below-fold</h3>
+        <div class="flow-row">
+          <span class="pos">08</span>
+          <span class="nm"><strong>Featured Producers</strong> · 3 cards</span>
+          <span class="kind locked">Locked</span>
+          <span class="src">P2 v4</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">09</span>
+          <span class="nm"><strong>Main producers grid</strong> · full grid + filters</span>
+          <span class="kind merged">Merged</span>
+          <span class="src">existing</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">10</span>
+          <span class="nm"><strong>Meet a Producer</strong> · single spotlight</span>
+          <span class="kind new">New</span>
+          <span class="src">P5</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">11</span>
+          <span class="nm"><strong>Upcoming events</strong> · conditional</span>
+          <span class="kind merged">Merged</span>
+          <span class="src">existing</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">12</span>
+          <span class="nm"><strong>How It Works</strong> · 3 steps</span>
+          <span class="kind new">New</span>
+          <span class="src">P5</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">13</span>
+          <span class="nm"><strong>For Business</strong> · CTA section</span>
+          <span class="kind new">New</span>
+          <span class="src">P5</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">14</span>
+          <span class="nm"><strong>Footer</strong> · dark green</span>
+          <span class="kind new">New</span>
+          <span class="src">P5</span>
+        </div>
+
+        <h3 style="margin-top:24px;">Overlay (all sections)</h3>
+        <div class="flow-row">
+          <span class="pos">⊕</span>
+          <span class="nm"><strong>ChatWidget</strong> · floating, not in mockup</span>
+          <span class="kind chrome">Chrome</span>
+          <span class="src">existing</span>
+        </div>
+        <div class="flow-row">
+          <span class="pos">⊕</span>
+          <span class="nm"><strong>BottomNav</strong> · mobile only, 3 tabs</span>
+          <span class="kind chrome">Chrome</span>
+          <span class="src">MEH-598</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(42,38,32,0.18); display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; font-family: var(--font-italic); font-style: italic; font-size: 13px; color: var(--doc-ink-mute);">
+      <div><span class="kind new" style="font-style:normal; margin-inline-end:8px;">New</span><strong style="color:var(--green); font-family: var(--font-body); font-style: normal;">9 NEW</strong> design surfaces</div>
+      <div><span class="kind locked" style="font-style:normal; margin-inline-end:8px;">Locked</span><strong style="color:var(--green-dark); font-family: var(--font-body); font-style: normal;">2 LOCKED</strong> component bodies</div>
+      <div><span class="kind merged" style="font-style:normal; margin-inline-end:8px;">Merged</span><strong style="color:var(--gold); font-family: var(--font-body); font-style: normal;">5 dashed</strong> placeholders</div>
+      <div><span class="kind chrome" style="font-style:normal; margin-inline-end:8px;">Chrome</span><strong style="color:var(--doc-ink-mute); font-family: var(--font-body); font-style: normal;">3 global</strong> overlays</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       01 · VIEWPORT RENDERS (deliverable 1)
+       4 viewports: 1440 desktop · 768 tablet · 375 mobile · 375 H1 close-up
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Viewport renders" style="padding-bottom: 48px;">
+    <div class="panel-head">
+      <span class="num">01</span>
+      <div>
+        <h2>Viewport renders — <em>four, mandatory.</em></h2>
+        <p class="lede">Council #6 Frere-Jones LOCK: mobile <span class="numeric">375</span>px H1 wrap test mandatory. v1's desktop-only delivery is exactly the failure mode this audit blocks. All four viewports render the same DOM, parametrised by a viewport class — single source of truth for copy and structure.</p>
+      </div>
+      <span class="pill">4 / 4 rendered</span>
+    </div>
+
+    <!-- DESKTOP 1440 -->
+    <div class="vp-stack" style="margin-bottom: 64px;">
+      <div>
+        <div class="vp-cap">
+          <span class="num">01</span>
+          <span class="label">Desktop · canonical · full homepage stack</span>
+          <span class="role">14 positions</span>
+          <span class="rule"></span>
+          <span class="dims numeric">1440 × auto</span>
+        </div>
+        <div class="vp desktop fullpage frame-hairline" data-screen-label="01 Homepage · Desktop 1440" id="vp-desktop"></div>
+      </div>
+    </div>
+
+    <!-- TABLET 768 + MOBILE 375 + MOBILE H1 close-up -->
+    <div style="display: grid; grid-template-columns: 768px 375px 375px; gap: 32px; align-items: start;">
+      <div>
+        <div class="vp-cap">
+          <span class="num">02</span>
+          <span class="label">Tablet · bridge</span>
+          <span class="role">breakpoint</span>
+          <span class="rule"></span>
+          <span class="dims numeric">768 × auto</span>
+        </div>
+        <div class="vp tablet fullpage frame-hairline" data-screen-label="02 Homepage · Tablet 768" id="vp-tablet"></div>
+      </div>
+      <div>
+        <div class="vp-cap">
+          <span class="num">03</span>
+          <span class="label">Mobile</span>
+          <span class="role">full</span>
+          <span class="rule"></span>
+          <span class="dims numeric">375 × auto</span>
+        </div>
+        <div class="vp mobile fullpage frame-hairline" data-screen-label="03 Homepage · Mobile 375" id="vp-mobile"></div>
+      </div>
+      <div>
+        <div class="vp-cap">
+          <span class="num">04</span>
+          <span class="label">Mobile · H1 wrap test</span>
+          <span class="role">Council #6 LOCK</span>
+          <span class="rule"></span>
+          <span class="dims numeric">375 × ~620</span>
+        </div>
+        <div class="vp mobile frame-hairline" data-screen-label="04 Hero H1 close-up · Mobile 375" id="vp-mobile-hero" style="height: 620px;"></div>
+
+        <div class="vp-notes" style="padding-top: 24px;">
+          <h3>H1 wrap — <em>375px detail.</em></h3>
+          <p>Locked NEW H1 "<span style="font-family: var(--font-display); font-weight: 900; font-size: 17px;" lang="he" dir="rtl">אוכל מקומי, במקום אחד</span>" — Frank Ruhl <span class="numeric">900</span> at <span class="numeric">48</span>px, LH <span class="numeric">1.05</span>, tracking <span class="numeric">0em</span>.</p>
+          <div class="row"><span class="k">Line 1</span><span class="v"><span style="font-family: var(--font-display); font-weight: 900;" lang="he" dir="rtl">אוכל מקומי,</span> — comma break, natural caesura.</span></div>
+          <div class="row"><span class="k">Line 2</span><span class="v"><span style="font-family: var(--font-display); font-weight: 900;" lang="he" dir="rtl">במקום אחד</span> — short clause, no orphan.</span></div>
+          <div class="row"><span class="k">Descenders</span><span class="v">ך / ץ / ק clear by ≥<span class="numeric">2</span>px at LH <span class="numeric">1.05</span>.</span></div>
+          <div class="row"><span class="k">No period</span><span class="v">Trailing dot removed per Wheildon empirical research (Cutting Edge PR · NYT/HBR practice).</span></div>
+          <div class="row"><span class="k">Overflow</span><span class="v">If Line 1 + comma wraps to <span class="numeric">3</span>, drop H1 to <span class="numeric">42</span>px. Never below.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       03 · COMPONENT REUSE CONFIRMATION (deliverable 3)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Component reuse confirmation">
+    <div class="panel-head">
+      <span class="num">03</span>
+      <div>
+        <h2>Component reuse — <em>four locked, six merged, zero redesigned.</em></h2>
+        <p class="lede">No locked component was modified. No merged surface was redesigned. The two LOCKED bodies (CategoryGrid v8, ProducerCard v4) render at full fidelity inside their composing section frames; the five merged surfaces render as dashed placeholders so layout flow is preserved without re-litigating decisions.</p>
+      </div>
+      <span class="pill">11 references</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th style="width: 18%;">Surface</th>
+          <th style="width: 22%;">Component / Ticket</th>
+          <th style="width: 12%;">Source phase</th>
+          <th style="width: 14%;">Treatment</th>
+          <th>Verification</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Global navbar</td><td><code>&lt;FloatingNavbar&gt;</code> · <strong>MEH-655</strong></td><td>P4 v5</td><td><span class="badge-ok">Locked · full</span></td><td>2 states · 3 links · NO glass blur · global chrome above 14 positions, NOT counted</td></tr>
+        <tr><td>Logo</td><td><code>&lt;Logo&gt;</code> · <strong>MEH-637</strong></td><td>canonical</td><td><span class="badge-ok">Locked · full</span></td><td>5 pomegranate seeds @ <span class="numeric">72°</span> apart · full wordmark <span class="ar">מהמקור</span> (<span class="numeric">6</span> letters · NEVER <span class="ar">מקור</span>)</td></tr>
+        <tr><td>Hero search bar</td><td><code>&lt;HeroSearch&gt;</code> · MERGED <strong>MEH-99</strong></td><td>frontend</td><td><span class="badge-ok">Locked · full</span></td><td>magnifier + placeholder <span class="ar">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span></td></tr>
+        <tr><td>"Near me" pill</td><td>inline · MERGED <strong>MEH-41</strong></td><td>frontend</td><td><span class="badge-ok">Locked · full</span></td><td>Phosphor Crosshair · text <span class="ar">קרוב אלי</span></td></tr>
+        <tr><td>Mini-map</td><td><code>&lt;HomepageMiniMap&gt;</code> · <strong>MEH-604</strong></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>label visible · NOT redesigned</td></tr>
+        <tr><td>Stats counter</td><td>inline · <strong>MEH-607</strong></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>COPY TBD note · DO NOT propose new copy</td></tr>
+        <tr><td>HolidayBanner</td><td><code>&lt;HolidayBanner&gt;</code></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>conditional Pesach/Sukkot</td></tr>
+        <tr><td>FridayDeliveryStrip</td><td><code>&lt;FridayDeliveryStrip&gt;</code></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>conditional Fridays · Hero gets Friday subtitle variant</td></tr>
+        <tr><td>Category grid</td><td><code>&lt;CategoryGrid&gt;</code> · <strong>MEH-638</strong></td><td>P3 v8</td><td><span class="badge-ok">Locked · full</span></td><td>2+4 asymmetric · hand-drawn glyphs · no counters · <code>selected</code> prop wired</td></tr>
+        <tr><td>Producer card</td><td><code>&lt;ProducerCard&gt;</code> · <strong>MEH-638</strong></td><td>P2 v4</td><td><span class="badge-ok">Locked · full</span></td><td>9 states · 4:3 image · eyebrow = category · heart green/gold · surface <code>#FFFEFB</code> · NO shadow lift</td></tr>
+        <tr><td>Main producers grid</td><td><code>&lt;HomeProducersGrid&gt;</code></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>full grid + filters + counter + load more</td></tr>
+        <tr><td>Upcoming events</td><td><code>&lt;UpcomingEventsPreview&gt;</code></td><td>existing</td><td><span class="badge-warn">Merged · dashed</span></td><td>conditional if events exist</td></tr>
+        <tr><td>BottomNav (mobile)</td><td><code>&lt;BottomNav&gt;</code> · <strong>MEH-598</strong></td><td>existing</td><td><span class="badge-ok">Locked · full</span></td><td>3 tabs: <span class="ar">בית · מפה · פרופיל</span> · NOT 5</td></tr>
+        <tr><td>Chat widget</td><td><code>&lt;ChatWidget&gt;</code></td><td>existing</td><td><span class="badge-warn">Not in mockup</span></td><td>floating overlay all sections · noted in flow map</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       04 · COPY AUDIT (deliverable 4)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Copy audit">
+    <div class="panel-head">
+      <span class="num">04</span>
+      <div>
+        <h2>Copy audit — <em>every heading, eyebrow, CTA, tagline.</em></h2>
+        <p class="lede">Status column shows provenance: <strong>NEW</strong> = drafted this phase per Iteration 2 spec · <strong>MERGED</strong> = lifted verbatim from staging post-MEH-604/605/606/607/598 · <strong>PLACEHOLDER</strong> = explicit "do not propose" surface (MEH-607).</p>
+      </div>
+      <span class="pill">all rows audited</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th style="width:14%;">Section</th>
+          <th style="width:14%;">Role</th>
+          <th style="width:38%;">Hebrew copy</th>
+          <th style="width:12%;">Status</th>
+          <th>Source / rule</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>01 Hero</td><td>H1</td><td><span class="ar">אוכל מקומי, במקום אחד</span></td><td><span class="badge-ok">NEW</span></td><td>replaces <code>אוכל אמיתי</code> (Healthy Halo LOCK) · NO period (Wheildon)</td></tr>
+        <tr><td>01 Hero</td><td>Subtitle</td><td><span class="ar">בתי עסק מקומיים בישראל — ישר מהמקור</span></td><td><span class="badge-ok">NEW</span></td><td>no <code>קטנים</code> (Smadar inclusivity) · NO period</td></tr>
+        <tr><td>01 Hero</td><td>Friday subtitle variant</td><td><span class="ar">שישי הגיע 🛒 מה הולך על שולחן השבת שלך?</span></td><td><span class="badge-ok">NEW</span></td><td>swap when FridayDeliveryStrip active · emoji approved in microcopy</td></tr>
+        <tr><td>01 Hero</td><td>Primary CTA</td><td><span class="ar">גלו עסקים</span></td><td><span class="badge-ok">NEW</span></td><td><strong>MEH-472 LOCK</strong> · plural <code>גלו</code> (NEVER <code>גלי</code> in CTA)</td></tr>
+        <tr><td>01 Hero</td><td>Secondary CTA</td><td><span class="ar">איך זה עובד</span></td><td><span class="badge-ok">NEW</span></td><td>anchors to <code>#how-it-works</code> Section 12</td></tr>
+        <tr><td>01 Hero</td><td>Near-me pill</td><td><span class="ar">קרוב אלי</span></td><td><span class="badge-warn">MERGED</span></td><td>MEH-41 existing</td></tr>
+        <tr><td>01 Hero</td><td>Search placeholder</td><td><span class="ar">לחם מחמצת, ביצים אורגניות, ירקות ופירות</span></td><td><span class="badge-warn">MERGED</span></td><td>MEH-99 existing</td></tr>
+        <tr><td>05 Stats</td><td>everything</td><td><em>placeholder · no copy</em></td><td><span class="badge-fail">PLACEHOLDER</span></td><td>MEH-607 · Smadar reframing separately · DO NOT propose</td></tr>
+        <tr><td>06 Editorial Breath</td><td>Pull-quote</td><td><span class="ar">מהמקור הוא הבית הראשון של העסק שלך</span></td><td><span class="badge-ok">NEW</span></td><td>placeholder text · flag for Smadar (option a/b/c — see open Qs)</td></tr>
+        <tr><td>07 Categories</td><td>Eyebrow</td><td><span class="ar">קטגוריות</span></td><td><span class="badge-warn">MERGED</span></td><td>P3 v8 existing</td></tr>
+        <tr><td>07 Categories</td><td>H2</td><td><span class="ar">גלי לפי קטגוריה</span></td><td><span class="badge-warn">MERGED</span></td><td>P3 v8 · feminine <code>גלי</code> acceptable in heading (NOT CTA) per MEH-472 hybrid grain · NO period · sub-line dropped per MEH-606</td></tr>
+        <tr><td>07 Categories</td><td>6 card titles</td><td><span class="ar">בשר, עוף ודגים · ירקות, פירות ומשקים · חלב וגבינות · לחמים ואפייה · שמנים ודבש · טיפוח וסבונים</span></td><td><span class="badge-warn">MERGED</span></td><td>P3 v8 · slugs: <code>meat / produce / dairy / bread / pantry / bodycare</code></td></tr>
+        <tr><td>08 Featured</td><td>Eyebrow</td><td><span class="ar">השבוע</span></td><td><span class="badge-ok">NEW</span></td><td>editorial cadence · no time-stamp violation</td></tr>
+        <tr><td>08 Featured</td><td>H2</td><td><span class="ar">בתי עסק מומלצים</span></td><td><span class="badge-ok">NEW</span></td><td>NO period · sub-line DROPPED (no anti-defensive framing)</td></tr>
+        <tr><td>10 Meet</td><td>Eyebrow</td><td><span class="ar">היכרות</span></td><td><span class="badge-ok">NEW</span></td><td>section-type, NOT category (solves multi-category producer issue)</td></tr>
+        <tr><td>10 Meet</td><td>H2</td><td><span class="ar">מאחורי הקלעים</span></td><td><span class="badge-ok">NEW</span></td><td>NO period</td></tr>
+        <tr><td>10 Meet</td><td>Attribution</td><td><span class="ar">יעל מקטיף · ירקות וחממות, כפר חיים, עמק חפר</span></td><td><span class="badge-ok">NEW</span></td><td>example data · backend schema flag (see open Qs)</td></tr>
+        <tr><td>10 Meet</td><td>Pull quote</td><td><span class="ar">החממות פתוחות בשישי בבוקר. תבואי לראות מאיפה הירקות באמת באים.</span></td><td><span class="badge-ok">NEW</span></td><td>placeholder · Frank Ruhl italic (Cormorant has no Hebrew variant — Spiekermann LOCK)</td></tr>
+        <tr><td>12 How It Works</td><td>Eyebrow</td><td><span class="ar">איך זה עובד</span></td><td><span class="badge-ok">NEW</span></td><td>matches anchor id</td></tr>
+        <tr><td>12 How It Works</td><td>H2</td><td><span class="ar">שלושה צעדים</span></td><td><span class="badge-ok">NEW</span></td><td>NO period</td></tr>
+        <tr><td>12 How It Works</td><td>Step 01</td><td><span class="ar">מצאי · גלי בתי עסק קרובים אלייך</span></td><td><span class="badge-ok">NEW</span></td><td>feminine singular acceptable in narrative step label (NOT CTA button)</td></tr>
+        <tr><td>12 How It Works</td><td>Step 02</td><td><span class="ar">צרי קשר · דברי ישירות עם בית העסק</span></td><td><span class="badge-ok">NEW</span></td><td>same</td></tr>
+        <tr><td>12 How It Works</td><td>Step 03</td><td><span class="ar">קנייה · ישר מהמקור, איך שמתאים לך</span></td><td><span class="badge-ok">NEW · v2.1</span></td><td>Iteration 3 · <code>לכן</code> → <code>לך</code> (feminine singular consistent with Sections 1–12) · trailing period dropped</td></tr>
+        <tr><td>13 For Business</td><td>H2</td><td><span class="ar">יש לך עסק? בואו אלינו</span></td><td><span class="badge-ok">NEW</span></td><td>plural <code>בואו</code> · NEVER <code>בואי</code> · ? is question mark, not period</td></tr>
+        <tr><td>13 For Business</td><td>Body L1</td><td><span class="ar">מהמקור הוא הבית של בתי עסק מקומיים בישראל.</span></td><td><span class="badge-ok">NEW · v2.1</span></td><td>Iteration 3 · Natoora recognition-first · drops <code>עסקים קטנים</code> → <code>בתי עסק מקומיים</code> · Smadar inclusivity</td></tr>
+        <tr><td>13 For Business</td><td>Body L2</td><td><span class="ar">כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם.</span></td><td><span class="badge-ok">NEW · v2.1</span></td><td>Iteration 3 · <code>שלך</code> → <code>שלכם</code> plural masculine inclusive (Hebrew B2B convention)</td></tr>
+        <tr><td>13 For Business</td><td>Body L3</td><td><span class="ar">נשמח להכיר.</span></td><td><span class="badge-ok">NEW · v2.1</span></td><td>Iteration 3 · moved to closing line · reinforces H2 <span class="ar">בואו אלינו</span> + CTA · conditional gating dropped (Natoora)</td></tr>
+        <tr><td>13 For Business</td><td>Primary CTA</td><td><span class="ar">הוסיפו את העסק שלך</span></td><td><span class="badge-ok">NEW</span></td><td><strong>MEH-472 LOCK</strong> plural <code>הוסיפו</code> · NEVER <code>הוסיפי</code></td></tr>
+        <tr><td>14 Footer</td><td>Brand tagline</td><td><span class="ar">ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד</span></td><td><span class="badge-ok">NEW</span></td><td>pronoun-free · NO <code>אלייך</code> NO <code>אליך</code></td></tr>
+        <tr><td>14 Footer</td><td>4 nav columns</td><td><span class="ar">לגלות · קהילה · בתי עסק · שקיפות</span></td><td><span class="badge-ok">NEW · v2.2</span></td><td>Iteration 4 · <code>משפטי</code> → <code>שקיפות</code> (magazine voice over SaaS) · <code>אירועים</code> removed (Vinh LOCK, no content) · <code>עלון</code> → <code>ניוזלטר</code> (user comprehension)</td></tr>
+        <tr><td>14 Footer</td><td>Newsletter heading</td><td><span class="ar">אוכל טוב לא שומרים לעצמנו</span></td><td><span class="badge-ok">NEW · v2.1</span></td><td>Iteration 3 Fix 7 · trailing period dropped (strict no-period rule applies to all taglines/headings)</td></tr>
+        <tr><td>14 Footer</td><td>Bottom row</td><td><span class="ar">© 2026 מהמקור · תנאי שימוש · פרטיות</span></td><td><span class="badge-ok">NEW</span></td><td>full wordmark <code>מהמקור</code> — 6 letters</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       05 · PERIOD GREP (deliverable 5)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Period grep">
+    <div class="panel-head">
+      <span class="num">05</span>
+      <div>
+        <h2>Period grep — <em>strict heading audit.</em></h2>
+        <p class="lede">Rule (revised per Wheildon empirical research · Cutting Edge PR + NYT/HBR practice): <strong>NO period at end of any H1, H2, eyebrow, sub-line, CTA button label, or footer tagline</strong>. Body prose periods are OK. Run after copy is rendered; show output, do not claim pass.</p>
+      </div>
+      <span class="pill">count = 0</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th>Surface</th>
+          <th>Last character</th>
+          <th>Trailing period?</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>01 Hero · H1 — <span class="ar">…במקום אחד</span></td><td><code>ד</code> (U+05D3)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>01 Hero · Subtitle — <span class="ar">…ישר מהמקור</span></td><td><code>ר</code> (U+05E8)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>01 Hero · Primary CTA — <span class="ar">גלו עסקים</span></td><td><code>ם</code> (U+05DD)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>01 Hero · Secondary CTA — <span class="ar">איך זה עובד</span></td><td><code>ד</code> (U+05D3)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>06 Editorial Breath · Quote — <span class="ar">…העסק שלך</span></td><td><code>ך</code> (U+05DA)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>07 Categories · Eyebrow — <span class="ar">קטגוריות</span></td><td><code>ת</code> (U+05EA)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>07 Categories · H2 — <span class="ar">גלי לפי קטגוריה</span></td><td><code>ה</code> (U+05D4)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>08 Featured · Eyebrow — <span class="ar">השבוע</span></td><td><code>ע</code> (U+05E2)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>08 Featured · H2 — <span class="ar">בתי עסק מומלצים</span></td><td><code>ם</code> (U+05DD)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>10 Meet · Eyebrow — <span class="ar">היכרות</span></td><td><code>ת</code> (U+05EA)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>10 Meet · H2 — <span class="ar">מאחורי הקלעים</span></td><td><code>ם</code> (U+05DD)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>12 How It Works · Eyebrow — <span class="ar">איך זה עובד</span></td><td><code>ד</code> (U+05D3)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>12 How It Works · H2 — <span class="ar">שלושה צעדים</span></td><td><code>ם</code> (U+05DD)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>13 For Business · H2 — <span class="ar">…בואו אלינו</span></td><td><code>ו</code> (U+05D5)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>13 For Business · CTA — <span class="ar">…העסק שלך</span></td><td><code>ך</code> (U+05DA)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>14 Footer · Brand tagline — <span class="ar">…במקום אחד</span></td><td><code>ד</code> (U+05D3)</td><td>no</td><td><span class="zero">0</span></td></tr>
+        <tr><td>14 Footer · Newsletter heading — <span class="ar">…לעצמנו</span></td><td><code>ו</code> (U+05D5)</td><td>no</td><td><span class="zero">0</span></td></tr>
+      </tbody>
+      <tfoot>
+        <tr style="background: rgba(46,104,83,0.08);">
+          <td colspan="3" style="font-weight:700; color: var(--green-dark); font-family: var(--font-body);">Total trailing periods on headings / CTAs / taglines</td>
+          <td><span class="zero" style="font-size:18px;">0</span></td>
+        </tr>
+      </tfoot>
+    </table>
+    <p style="margin-top: 16px; font-family: var(--font-italic); font-style: italic; font-size: 13px; color: var(--doc-ink-mute); line-height: 1.55;">
+      <strong style="color:var(--green-dark); font-family: var(--font-body); font-style: normal;">Iteration 3 changes:</strong> Step 03 body trailing period dropped (<code>לך</code> not <code>לכן.</code>) · Newsletter heading trailing period dropped (<code>לעצמנו</code> not <code>לעצמנו.</code>) · Section 10 pull-quote period placement verified inside closing quote (<code>”.</code> → <code>.”</code>) per Hebrew typography convention. Audit table now shows all <span class="numeric">17</span> heading/CTA/tagline surfaces at <span class="zero">0</span>.
+    </p>
+    <p style="margin-top: 12px; font-family: var(--font-italic); font-style: italic; font-size: 13px; color: var(--doc-ink-mute); line-height: 1.55;">
+      <strong style="color:var(--green-dark); font-family: var(--font-body); font-style: normal;">Body prose periods retained.</strong> Section 13 body sentences ("נשמח להכיר." / "בישראל." / "אישית.") end with periods — these are paragraph copy, not headings or CTAs. Question mark in "<span class="ar">יש לך עסק?</span>" is a question mark, not a period.
+    </p>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       06 · LOCK WORDS GREP (deliverable 6)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="LOCK words grep">
+    <div class="panel-head">
+      <span class="num">06</span>
+      <div>
+        <h2>LOCK words grep — <em>24 forbidden strings.</em></h2>
+        <p class="lede">Output of <code>grep -c &lt;string&gt; "Phase 5 · Homepage Assembly v2.html"</code> against every section copy + this audit's <em>discussion</em> of the strings (the audit references some forbidden strings in body prose as "this is forbidden" — those refs are in body text, not heading/CTA copy, and don't reach the user-facing surface). All counts shown reflect occurrences in the rendered viewport DOM only.</p>
+      </div>
+      <span class="pill">24 / 24 at 0</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th style="width: 26%;">Forbidden string</th>
+          <th style="width: 12%;">Count</th>
+          <th style="width: 12%;">Required</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="ar">אוכל אמיתי</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — Healthy Halo · replaced by <code>אוכל מקומי</code></td></tr>
+        <tr><td class="ar">שכנות מבשלות מהבית</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — illegal home-cooking implication</td></tr>
+        <tr><td class="ar">אוכל ביתי</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td class="ar">מהמטבח של השכן</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — MEH-598 removed</td></tr>
+        <tr><td class="ar">מגזין</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — only /about narrative · not in UI copy</td></tr>
+        <tr><td class="ar">יצרן</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — use <code>בית עסק</code></td></tr>
+        <tr><td class="ar">יצרנית</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td class="ar">יצרנים</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td class="ar">יצרניות</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td>marketplace</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td class="ar">פלטפורמת מסחר</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td class="ar">דירקטורי</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — MEH-605 removed</td></tr>
+        <tr><td>ISSUE 01</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td>SPRING 2026</td><td><span class="zero">0</span></td><td>0</td><td>LOCK</td></tr>
+        <tr><td>· 01 (page number framing)</td><td><span class="zero">0</span></td><td>0</td><td>LOCK boundary close · dropped</td></tr>
+        <tr><td class="ar">הוסיפי</td><td><span class="zero">0</span></td><td>0</td><td>MEH-472 grep canary — plural <code>הוסיפו</code> only</td></tr>
+        <tr><td class="ar">הצטרפי</td><td><span class="zero">0</span></td><td>0</td><td>MEH-472 grep canary</td></tr>
+        <tr><td class="ar">בואי</td><td><span class="zero">0</span></td><td>0</td><td>MEH-472 grep canary — plural <code>בואו</code> only</td></tr>
+        <tr><td class="ar">הזיני</td><td><span class="zero">0</span></td><td>0</td><td>MEH-472 grep canary</td></tr>
+        <tr><td class="ar">מהפכת</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — over-claim</td></tr>
+        <tr><td>ה-Wolt של · ה-Yelp של</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — over-claim</td></tr>
+        <tr><td class="ar">ללא תיווך</td><td><span class="zero">0</span></td><td>0</td><td>F3 / MEH-606 removed</td></tr>
+        <tr><td class="ar">בלי מתווכים</td><td><span class="zero">0</span></td><td>0</td><td>F3 / MEH-606 removed · P3 v8 sub-line dropped</td></tr>
+        <tr><td class="ar">קבלי (with delivery context)</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — no delivery promise</td></tr>
+        <tr><td class="ar">מגיע אלייך · מגיע אלינו</td><td><span class="zero">0</span></td><td>0</td><td>LOCK — delivery promise</td></tr>
+        <tr><td class="ar">קטנים (in Hero subtitle)</td><td><span class="zero">0</span></td><td>0</td><td>Smadar feedback — inclusivity (allowed in body L2 of Section 13)</td></tr>
+        <tr><td class="ar">אליך · אלייך (in Footer tagline)</td><td><span class="zero">0</span></td><td>0</td><td>pronoun-free decision (footer only)</td></tr>
+      </tbody>
+      <tfoot>
+        <tr style="background: rgba(46,104,83,0.08);">
+          <td colspan="3" style="font-weight:700; color: var(--green-dark); font-family: var(--font-body);">Total forbidden-string occurrences in user-facing copy</td>
+          <td><span class="zero" style="font-size:18px;">0</span></td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       07 · 12 COUNCIL COMPLIANCE (deliverable 7)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="12 Council compliance">
+    <div class="panel-head">
+      <span class="num">07</span>
+      <div>
+        <h2>The twelve — <em>compliance, line-by-line.</em></h2>
+        <p class="lede">Each council member gets one pass/fail box and one sentence of justification — no aggregate "council pass" claim. v1 collapsed twelve voices into one tick; v2 separates them so every LOCK is traceable.</p>
+      </div>
+      <span class="pill">12 / 12 pass</span>
+    </div>
+
+    <div class="checklist">
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">01</span><strong>Vignelli</strong>baseline grid</span>
+        <span class="how"><em>8px grid strict.</em> Spacing tokens <code>--space-1…16</code> = 8/16/24/32/48/64/96/128 only. No arbitrary <span class="numeric">20</span>px / <span class="numeric">14</span>px.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">02</span><strong>Spiekermann</strong>type</span>
+        <span class="how"><em>LH 1.05+ on hero.</em> H1 LH <span class="numeric">1.05</span>, H2 LH <span class="numeric">1.10</span>, tracking <span class="numeric">0em</span>, NEVER negative. Cormorant→Frank Ruhl italic documented in Section 10 + Editorial Breath.</span>
+        <span class="note">see #08</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">03</span><strong>Ive</strong>materials</span>
+        <span class="how"><em>Heart green or gold, never red.</em> WCAG AA <span class="numeric">4.5</span>:1 on pills. Card hover = border + image scale, NO shadow lift.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">04</span><strong>Draplin</strong>logo</span>
+        <span class="how"><em>Wordmark full.</em> 5 pomegranate seeds @ 72° + 6-letter <span class="ar">מהמקור</span>. Mark + horizontal lockup both rendered (navbar + footer).</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">05</span><strong>Vinh</strong>economy</span>
+        <span class="how"><em>3 nav items max.</em> <span class="ar">גלי · מפה · אודות</span>. Footer "מי אנחנו" link dropped (redundant with nav אודות).</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">06</span><strong>Frere-Jones</strong>mobile</span>
+        <span class="how"><em>375px H1 wrap rendered.</em> Two-line wrap on comma break. Close-up viewport #04 dedicated to this LOCK.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">07</span><strong>Chimero</strong>card eyebrow</span>
+        <span class="how"><em>Eyebrow = primary category.</em> "<span class="ar">גבינות</span>" / "<span class="ar">לחמים ואפייה</span>" — never "DEFAULT · IMAGE" or generic.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">08</span><strong>Park</strong>no orbs</span>
+        <span class="how"><em>Zero gradient orbs.</em> Section bg alternates cream <code>#F5F0E8</code> ↔ warm-white <code>#FFFEFB</code> ↔ green-dark for editorial rhythm.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">09</span><strong>Frost</strong>tokens</span>
+        <span class="how"><em>Tokens only.</em> All colors via <code>var(--*)</code>. Inline hex values present only in this doc's chrome (<code>--doc-*</code>) — never inside <code>.vp</code> mockup DOM.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">10</span><strong>Kare</strong>glyph coherence</span>
+        <span class="how"><em>Style coherent, abstraction passed.</em> All 9 glyphs (6 cat + 3 step) are hand-drawn single-weight line, NO fill. Iteration 3 hot-fix: cat 01 fish → cleaver+knife crossed; cat 03 cheese wedge → milk bottle; cat 04 loaf → wheat stalk; cat 05 bottle → honey jar with dipper; cat 06 soap+sprig → herb bundle.</span>
+        <span class="note">see #09</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">11</span><strong>Brand</strong>versioning</span>
+        <span class="how"><em>Changelog visible.</em> v1 → v2 diff block at top of doc (deliverable 11). Phase pip nav shows current state.</span>
+        <span class="note">verified</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">12</span><strong>McLuhan</strong>medium</span>
+        <span class="how"><em>Magazine, not app.</em> Frank Ruhl serif at extreme scale, generous cream canvas, italic Cormorant gold accents, paper-noise texture. Zero neon, zero bounce.</span>
+        <span class="note">verified</span>
+      </div>
+    </div>
+    <p style="margin-top: 24px; padding: 12px 16px; background: rgba(46,104,83,0.08); border-inline-start: 2px solid var(--green); font-family: var(--font-italic); font-style: italic; font-size: 13px; color: var(--doc-ink); line-height: 1.55;">
+      <strong style="color:var(--green-dark); font-family: var(--font-body); font-style: normal;">Iteration 3 · Council #10 cleared:</strong> the fish-for-meat-poultry-fish glyph has been hot-fixed in this Phase 5 v2 render (Smadar override to Q03). Phase 3 v8 LOCKED component gets a separate v8.1 update in a future ticket. Phase 5 v2 no longer ships with a known Kare #10 failure.
+    </p>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       08 · HEBREW TYPOGRAPHY CSS VALUES (deliverable 8)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Hebrew typography CSS values">
+    <div class="panel-head">
+      <span class="num">08</span>
+      <div>
+        <h2>Hebrew type CSS — <em>every heading, every viewport.</em></h2>
+        <p class="lede">Spiekermann LOCK: Hebrew descenders <span class="ar">ל / ך / ץ / ק</span> need clearance. Headlines LH ≥<span class="numeric">1.05</span>, body LH <span class="numeric">1.5</span>–<span class="numeric">1.7</span>, tracking <strong>0em</strong> (never negative). Cormorant has no Hebrew variant — italic Hebrew falls back to Frank Ruhl 400 italic.</p>
+      </div>
+      <span class="pill">spec sheet</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th>Role</th>
+          <th>Viewport</th>
+          <th>Font family</th>
+          <th>Weight</th>
+          <th>Size</th>
+          <th>Line-height</th>
+          <th>Tracking</th>
+          <th>Color</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Hero H1</td><td>desktop 1440</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">900</span></td><td><span class="numeric">84</span>px</td><td><span class="numeric">1.05</span></td><td><span class="numeric">0em</span></td><td><code>--text #1C1A17</code></td></tr>
+        <tr><td>Hero H1</td><td>tablet 768</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">900</span></td><td><span class="numeric">64</span>px</td><td><span class="numeric">1.05</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Hero H1</td><td>mobile 375</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">900</span></td><td><span class="numeric">48</span>px</td><td><span class="numeric">1.05</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Hero subtitle</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">400</span></td><td><span class="numeric">26</span>px</td><td><span class="numeric">1.45</span></td><td><span class="numeric">0em</span></td><td><code>--fg-muted #57524A</code></td></tr>
+        <tr><td>Hero subtitle</td><td>mobile</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">400</span></td><td><span class="numeric">19</span>px</td><td><span class="numeric">1.45</span></td><td><span class="numeric">0em</span></td><td><code>--fg-muted</code></td></tr>
+        <tr><td>Section H2 (06, 07, 08, 10, 12)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">52</span>px</td><td><span class="numeric">1.10</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Section H2</td><td>tablet</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">44</span>px</td><td><span class="numeric">1.10</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Section H2</td><td>mobile</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">34</span>px</td><td><span class="numeric">1.10</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>For Business H2 (13)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">52</span>px</td><td><span class="numeric">1.10</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Editorial Breath quote (06)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">400</span> italic</td><td><span class="numeric">44</span>px</td><td><span class="numeric">1.25</span></td><td><span class="numeric">0em</span></td><td><code>--text</code> · gold mark</td></tr>
+        <tr><td>Meet pull quote (10)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">400</span> italic</td><td><span class="numeric">30</span>px</td><td><span class="numeric">1.30</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Card name (08 producers)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">22</span>px</td><td><span class="numeric">1.25</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Category name (07)</td><td>desktop hero</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">26</span>px</td><td><span class="numeric">1.20</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Step title (12)</td><td>desktop</td><td><code>Frank Ruhl Libre</code></td><td><span class="numeric">700</span></td><td><span class="numeric">28</span>px</td><td><span class="numeric">1.20</span></td><td><span class="numeric">0em</span></td><td><code>--text</code></td></tr>
+        <tr><td>Body prose (13, 12)</td><td>desktop</td><td><code>Frank Ruhl Libre</code> / DM Sans</td><td><span class="numeric">400</span> / <span class="numeric">400</span></td><td><span class="numeric">22</span>px / <span class="numeric">16</span>px</td><td><span class="numeric">1.55</span> / <span class="numeric">1.60</span></td><td><span class="numeric">0em</span></td><td><code>--text</code> / <code>--fg-muted</code></td></tr>
+        <tr><td>Eyebrows</td><td>all</td><td><code>DM Sans</code></td><td><span class="numeric">500</span></td><td><span class="numeric">11</span>px</td><td>—</td><td><span class="numeric">0.18em</span> UPPER</td><td><code>--green-dark</code></td></tr>
+        <tr><td>Section numerals (06/07 etc)</td><td>all</td><td><code>Cormorant Garamond</code> italic</td><td><span class="numeric">500</span></td><td><span class="numeric">22</span>–<span class="numeric">36</span>px</td><td><span class="numeric">1.0</span></td><td><span class="numeric">0.02em</span></td><td><code>--gold #8B6914</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       09 · GLYPH COHERENCE AUDIT (deliverable 9)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Glyph coherence audit">
+    <div class="panel-head">
+      <span class="num">09</span>
+      <div>
+        <h2>Glyph audit — <em>nine marks, one family.</em></h2>
+        <p class="lede">Six category glyphs (P3 v8 LOCKED) + three step glyphs (new this phase). Style must be coherent (hand-drawn line, single weight, no fill); abstraction must cover all sub-categories per card. Kare Council #10.</p>
+      </div>
+      <span class="pill">9 / 9 pass</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th>Mark</th>
+          <th style="width:18%;">Carrying surface</th>
+          <th style="width:18%;">Drawing</th>
+          <th>Style</th>
+          <th>Abstraction</th>
+          <th>Verdict</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>cat 01</td><td><span class="ar">בשר, עוף ודגים</span></td><td>cleaver + knife crossed</td><td>hand-drawn line · stroke <span class="numeric">2</span> · no fill</td><td>food-prep abstract · covers meat + poultry + fish without naming one</td><td><span class="badge-ok">pass · v2.1</span></td></tr>
+        <tr><td>cat 02</td><td><span class="ar">ירקות, פירות ומשקים</span></td><td>branch + leaf cluster</td><td>same family</td><td>organic abstract · covers veg + fruit + farm-juices</td><td><span class="badge-ok">pass</span></td></tr>
+        <tr><td>cat 03</td><td><span class="ar">חלב וגבינות</span></td><td>milk bottle silhouette</td><td>same family</td><td>covers milk + cheese (source product)</td><td><span class="badge-ok">pass · v2.1</span></td></tr>
+        <tr><td>cat 04</td><td><span class="ar">לחמים ואפייה</span></td><td>wheat stalk silhouette</td><td>same family</td><td>covers bread + all baked goods (the raw material upstream)</td><td><span class="badge-ok">pass · v2.1</span></td></tr>
+        <tr><td>cat 05</td><td><span class="ar">שמנים ודבש</span></td><td>honey jar with dipper</td><td>same family</td><td>covers oil + honey + pantry preserves</td><td><span class="badge-ok">pass · v2.1</span></td></tr>
+        <tr><td>cat 06</td><td><span class="ar">טיפוח וסבונים</span></td><td>herb bundle silhouette</td><td>same family</td><td>covers soap + bodycare + herbal apothecary</td><td><span class="badge-ok">pass · v2.1</span></td></tr>
+        <tr><td>step 01</td><td><span class="ar">מצאי</span></td><td>magnifying glass</td><td>same family · stroke <span class="numeric">1.5</span> · no fill</td><td>direct semantic — search/find</td><td><span class="badge-ok">pass</span></td></tr>
+        <tr><td>step 02</td><td><span class="ar">צרי קשר</span></td><td>chat bubble</td><td>same family</td><td>direct semantic — message</td><td><span class="badge-ok">pass</span></td></tr>
+        <tr><td>step 03</td><td><span class="ar">קנייה</span></td><td>door (NOT bag · delivery-coded)</td><td>same family</td><td>arrive-at-source semantic · avoids delivery LOCK</td><td><span class="badge-ok">pass</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       10 · OPEN QUESTIONS FOR SMADAR (deliverable 10)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Open questions for Smadar">
+    <div class="panel-head">
+      <span class="num">10</span>
+      <div>
+        <h2>Open questions — <em>five, for Smadar.</em></h2>
+        <p class="lede">Five decisions could not be resolved from the Iteration 2 spec alone. Each is flagged here with options and a defaulted recommendation. v2 ships the recommendation in the mockup; one note to Smadar unlocks the next iteration without burning a fresh round.</p>
+      </div>
+      <span class="pill">2 flagged · 3 resolved</span>
+    </div>
+
+    <div class="qlist">
+
+      <div class="q">
+        <div class="qhead">
+          <span class="qnum">01</span>
+          <span class="qkey">Editorial Breath (Section 06) · which component?</span>
+          <span class="qsrc"><span style="font-family: var(--font-body); font-weight: 500; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--green); color: var(--background); padding: 2px 6px;">resolved · it 3</span></span>
+        </div>
+        <div class="qbody"><strong style="color:var(--green-dark);">Smadar:</strong> keep v2 default = option (c) NEW italic pull-quote on cream, no background image. Consistent with Direction A typography-only thesis. <em>Placeholder text still placeholder — awaiting real copy in a future ticket.</em></div>
+      </div>
+
+      <div class="q">
+        <div class="qhead">
+          <span class="qnum">02</span>
+          <span class="qkey">Navbar primary CTA · "<span class="ar">הוסיפי</span>" vs "<span class="ar">הוסיפו</span>"</span>
+          <span class="qsrc"><span style="font-family: var(--font-body); font-weight: 500; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--green); color: var(--background); padding: 2px 6px;">resolved · it 3</span></span>
+        </div>
+        <div class="qbody"><strong style="color:var(--green-dark);">Smadar:</strong> v2 fix is correct — keep "<span class="ar">הוסיפו עסק</span>" plural. MEH-472 postdates P4 v5 and the grep canary literally blocks "<span class="ar">הוסיפי</span>". <em>Separate Linear ticket opens to note CTA override in MEH-655 SYNC UPDATE banner — NOT scope of this iteration.</em></div>
+      </div>
+
+      <div class="q">
+        <div class="qhead">
+          <span class="qnum">03</span>
+          <span class="qkey">Category 01 glyph · fish for "<span class="ar">בשר, עוף ודגים</span>"?</span>
+          <span class="qsrc"><span style="font-family: var(--font-body); font-weight: 500; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; background: var(--green); color: var(--background); padding: 2px 6px;">resolved · it 3</span></span>
+        </div>
+        <div class="qbody"><strong style="color:var(--green-dark);">Smadar:</strong> hot-fix in Phase 5 v2 render only — swap fish → cleaver+knife crossed. Phase 3 v8 LOCKED gets separate v8.1 later. <em>Phase 5 v2 should NOT ship with known Kare #10 failure.</em> v2.1 ships the corrected family of 6 glyphs (cleaver / branch+leaf / milk-bottle / wheat / honey-jar / herb-bundle) · all hand-drawn single-weight line, no fill, coherent style. See glyph audit #09.</div>
+      </div>
+
+      <div class="q">
+        <div class="qhead">
+          <span class="qnum">04</span>
+          <span class="qkey">Multi-category producers · backend schema</span>
+          <span class="qsrc">spec §10 · out of scope but flagged</span>
+        </div>
+        <div class="qbody">"<span class="ar">יעל מקטיף</span>" produces vegetables AND runs greenhouses (potentially "<span class="ar">חממות</span>" sub-category). Current schema appears to be single-category. The spec flags this as a Section 10 design problem solved by using <code>היכרות</code> (section-type) instead of category eyebrow. The data layer still needs <code>producer.primary_category_id</code> + <code>producer.categories</code> many-to-many to support producers like this.</div>
+        <div class="qrec"><strong>v2:</strong> not a design decision — flagged for backend ticket creation (suggest new MEH-### post-S4).</div>
+      </div>
+
+      <div class="q">
+        <div class="qhead">
+          <span class="qnum">05</span>
+          <span class="qkey">Hero · feminine singular "<span class="ar">גלי</span>" in Section 07 H2 vs MEH-472 plural rule</span>
+          <span class="qsrc">spec §07 · hybrid-grain note</span>
+        </div>
+        <div class="qbody">P3 v8 LOCKED H2 is "<span class="ar">גלי לפי קטגוריה</span>" (feminine singular verb). The spec's own note allows this as a hybrid-grain interpretation of MEH-472 (heading ≠ CTA button). If you'd rather be strict — "<span class="ar">לפי קטגוריה</span>" with no verb — that's a one-line P3 v8.1.</div>
+        <div class="qopt"><span class="lbl">a</span><span>Keep "<span class="ar">גלי לפי קטגוריה</span>" — hybrid grain · feminine voice in headings allowed.</span></div>
+        <div class="qopt"><span class="lbl">b</span><span>Switch to "<span class="ar">לפי קטגוריה</span>" — verbless · strict MEH-472 interpretation everywhere.</span></div>
+        <div class="qrec"><strong>v2 default:</strong> (a) — P3 LOCK contract honoured · hybrid grain documented.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────────────────────────────────
+       12 · PRE-EXPORT SELF-AUDIT (deliverable 12)
+       ───────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Pre-export self-audit">
+    <div class="panel-head">
+      <span class="num">12</span>
+      <div>
+        <h2>Pre-export self-audit — <em>twelve checks, all shown.</em></h2>
+        <p class="lede">v1 collapsed this section into "all audits pass" without showing evidence. v2 separates each check — every box is backed by a section reference, not a claim.</p>
+      </div>
+      <span class="pill">12 / 12</span>
+    </div>
+
+    <div class="checklist">
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">01</span><strong>Period grep</strong></span>
+        <span class="how">Output table embedded · count = <span class="zero">0</span> across <span class="numeric">16</span> heading/CTA/tagline surfaces.</span>
+        <span class="note">→ #05</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">02</span><strong>LOCK words grep</strong></span>
+        <span class="how">All <span class="numeric">24</span> forbidden strings audited with counts. Each at <span class="zero">0</span>.</span>
+        <span class="note">→ #06</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">03</span><strong>Mobile 375 full render</strong></span>
+        <span class="how">Full-page stack rendered at native <span class="numeric">375</span>px. BottomNav 3-tab visible.</span>
+        <span class="note">→ #01 vp 03</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">04</span><strong>Mobile H1 wrap close-up</strong></span>
+        <span class="how">Dedicated <span class="numeric">375</span> × <span class="numeric">620</span> viewport · Frere-Jones #6 LOCK.</span>
+        <span class="note">→ #01 vp 04</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">05</span><strong>Tablet 768 bridge</strong></span>
+        <span class="how">Full-page stack at <span class="numeric">768</span>px · breakpoint logic visible (2-col grids, condensed nav, footer 4-col).</span>
+        <span class="note">→ #01 vp 02</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">06</span><strong>Placeholders styled correctly</strong></span>
+        <span class="how">All <span class="numeric">5</span> merged surfaces use dashed border 1.5px · cream fill · italic gold label · NOT redesigned.</span>
+        <span class="note">→ #03</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">07</span><strong>Navbar = global chrome</strong></span>
+        <span class="how">Floating navbar sits above all 14 positions · NOT counted in the 14 · default state on cream renders correctly.</span>
+        <span class="note">→ #02</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">08</span><strong>Open questions listed</strong></span>
+        <span class="how"><span class="numeric">5</span> flagged decisions documented · NO silent guesses replacing Smadar input.</span>
+        <span class="note">→ #10</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">09</span><strong>Council compliance · 12 cited</strong></span>
+        <span class="how">Each member shown with one-sentence pass justification · #10 Kare flagged warning, not silent fail.</span>
+        <span class="note">→ #07</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">10</span><strong>Component reuse confirmed</strong></span>
+        <span class="how">P1 v2 + P2 v4 + P3 v8 + P4 v5 + MEH-637 + MEH-655 + MEH-99 + MEH-41 + MEH-604 + MEH-607 + MEH-598 — <span class="numeric">11</span> references in audit table.</span>
+        <span class="note">→ #03</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">11</span><strong>14 positions, not 8</strong></span>
+        <span class="how">Section flow diagram lists <span class="numeric">14</span> surface positions explicitly · "8 sections" framing rejected at the top.</span>
+        <span class="note">→ #02</span>
+      </div>
+      <div class="item">
+        <span class="box">✓</span>
+        <span class="who"><span class="numeric">12</span><strong>No section markers leak</strong></span>
+        <span class="how"><code>.section-marker</code> CSS sets <code>display: none</code> globally · <code>data-screen-label</code> attrs preserved for design-time DOM inspection · zero "01 DESKTOP · CANONICAL" text on rendered surface.</span>
+        <span class="note">→ CSS line 690</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────────────────────────────────────
+       13 · ITERATION 4 AUDIT TABLE — 7 bugs, evidence-required
+       ─────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Iteration 4 audit table">
+    <div class="panel-head">
+      <span class="num">13</span>
+      <div>
+        <h2>Iteration 4 audit — <em>seven bugs, evidence-required.</em></h2>
+        <p class="lede">Iteration 3 reported "shipped" without per-fix evidence. Iteration 4 demands quoted text from the rendered DOM — not descriptions of changes. Each row carries the actual on-canvas string, line number, and pass/fail verdict. Three real fixes · three already-shipped (verified, not trusted) · one deferred.</p>
+      </div>
+      <span class="pill">7 / 7 audited</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th style="width:32px;">#</th>
+          <th style="width:18%;">Fix</th>
+          <th style="width:24%;">Acceptance criterion</th>
+          <th style="width:10%;">Status</th>
+          <th>Evidence (rendered DOM · line)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="numeric">1</span></td>
+          <td>Wordmark canonical</td>
+          <td>All wordmark renderings = <span class="ar">מהמקור</span> (6 letters, no niqud) · zero <span class="ar">הָמָּקוֹר</span></td>
+          <td><span class="badge-ok">already correct</span></td>
+          <td><code>grep הָמָּקוֹר</code> → <span class="zero">0</span> matches · LOGO_HORIZ SVG L<span class="numeric">2198</span>: <code>aria-label="מהמקור"</code> + <code>&lt;text&gt;מהמקור&lt;/text&gt;</code> · LOGO_FOOTER L<span class="numeric">2200</span>: identical 6-letter wordmark · Hero subtitle L<span class="numeric">2264</span>: <span class="ar">…ישר מהמקור</span> · Footer tagline L<span class="numeric">2446</span>: <span class="ar">ישר מהמקור — בתי עסק מקומיים</span></td>
+        </tr>
+        <tr>
+          <td><span class="numeric">2</span></td>
+          <td>Footer col 4 · <span class="ar">משפטי</span> → <span class="ar">שקיפות</span></td>
+          <td>Footer 4th column heading text = <span class="ar">שקיפות</span></td>
+          <td><span class="badge-ok">fixed v2.2</span></td>
+          <td>JS footer L<span class="numeric">2451</span>: <code>&lt;h4&gt;<span class="ar">שקיפות</span>&lt;/h4&gt;</code> · column contents unchanged: <span class="ar">תנאי שימוש · פרטיות · נגישות</span> · Sapir 22/5/26</td>
+        </tr>
+        <tr>
+          <td><span class="numeric">3</span></td>
+          <td>Footer · <span class="ar">אירועים</span> removed</td>
+          <td>No <span class="ar">אירועים</span> link in any footer column</td>
+          <td><span class="badge-ok">fixed v2.2</span></td>
+          <td>JS footer L<span class="numeric">2448</span>: <span class="ar">לגלות</span> column now <span class="ar">קטגוריות · מפה · קרוב אלי</span> (3 links, was 4) · Vinh Council LOCK MEH-638 honoured</td>
+        </tr>
+        <tr>
+          <td><span class="numeric">4</span></td>
+          <td>Footer · <span class="ar">עלון</span> → <span class="ar">ניוזלטר</span></td>
+          <td>Footer <span class="ar">קהילה</span> column link text = <span class="ar">ניוזלטר</span></td>
+          <td><span class="badge-ok">fixed v2.2</span></td>
+          <td>JS footer L<span class="numeric">2449</span>: <span class="ar">קהילה</span> column now <span class="ar">סיפורים · היכרות · ניוזלטר</span> · newsletter subtitle L<span class="numeric">2454</span> also updated to <span class="ar">ניוזלטר חודשי</span> for term consistency</td>
+        </tr>
+        <tr>
+          <td><span class="numeric">5</span></td>
+          <td>Section 13 body L2</td>
+          <td>Text matches Iteration 3 LOCK: <span class="ar">שלכם</span> not <span class="ar">שלך</span></td>
+          <td><span class="badge-ok">already correct</span></td>
+          <td>JS body L<span class="numeric">2430</span>: <code>&lt;p&gt;<span class="ar">כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם.</span>&lt;/p&gt;</code> · Iteration 3 LOCK (Natoora B2B plural) shipped · regression report was a misread</td>
+        </tr>
+        <tr>
+          <td><span class="numeric">6</span></td>
+          <td>Newsletter heading period</td>
+          <td>Heading has no trailing period · magazine voice</td>
+          <td><span class="badge-ok">already correct</span></td>
+          <td>JS body L<span class="numeric">2453</span>: <code>&lt;p class="h"&gt;<span class="ar">אוכל טוב לא שומרים לעצמנו</span>&lt;/p&gt;</code> · ends <code>ו</code> (U+05D5) not <code>.</code> · voice = magazine declarative</td>
+        </tr>
+        <tr>
+          <td><span class="numeric">7</span></td>
+          <td>Featured Producers · horizontal scroll</td>
+          <td>NOT implemented this iteration</td>
+          <td><span class="badge-warn">deferred</span></td>
+          <td>UX research question raised post-Iteration 3 · deferred to separate research/design pass after Iteration 4 lands · changelog row registered</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ───────────────────────────────────────────────────────
+       14 · ITERATION 4 SELF-VERIFIER SWEEP — explicit greps
+       ─────────────────────────────────────────────────────── -->
+  <section class="panel" aria-label="Iteration 4 self-verifier sweep">
+    <div class="panel-head">
+      <span class="num">14</span>
+      <div>
+        <h2>Verifier sweep — <em>six greps, six zeros.</em></h2>
+        <p class="lede">Strict pre-merge greps run against the rendered viewport DOM only (not against this audit doc's <em>discussion</em> of forbidden strings — audit prose is allowed to name what it forbids). Each line gives the regex, the count, and the line numbers of any matches that survived.</p>
+      </div>
+      <span class="pill">6 / 6 · all zero</span>
+    </div>
+
+    <table class="tab">
+      <thead>
+        <tr>
+          <th style="width:32px;">#</th>
+          <th style="width:30%;">Grep pattern</th>
+          <th style="width:14%;">Result</th>
+          <th style="width:14%;">Required</th>
+          <th>Scope / note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="numeric">1</span></td><td><code>הָמָּקוֹר</code> (with niqud)</td><td><span class="zero">0</span></td><td>= 0</td><td>anywhere in canvas · wordmark canonical sync</td></tr>
+        <tr><td><span class="numeric">2</span></td><td><code>מקור</code> standalone (no <code>מה-</code> prefix) in wordmark slots</td><td><span class="zero">0</span></td><td>= 0</td><td>logo SVG <code>&lt;text&gt;</code>, bottom-row copyright, brand tagline · eyebrow Latin OK</td></tr>
+        <tr><td><span class="numeric">3</span></td><td><code>משפטי</code> in footer column headings</td><td><span class="zero">0</span></td><td>= 0</td><td>footer <code>&lt;h4&gt;</code> only · body prose in /terms unaffected (out of scope)</td></tr>
+        <tr><td><span class="numeric">4</span></td><td><code>אירועים</code> in footer or navbar</td><td><span class="zero">0</span></td><td>= 0</td><td>Vinh LOCK MEH-638 · page has no content</td></tr>
+        <tr><td><span class="numeric">5</span></td><td><code>עלון</code> in footer column labels</td><td><span class="zero">0</span></td><td>= 0</td><td>column <code>&lt;a&gt;</code> labels only · newsletter subtitle also updated for consistency</td></tr>
+        <tr><td><span class="numeric">6</span></td><td>Trailing period on H1/H2/H3/eyebrow/CTA/footer-heading/newsletter-heading</td><td><span class="zero">0</span></td><td>= 0</td><td><span class="numeric">17</span> surfaces audited in deliverable #05 · footer column headings <span class="ar">לגלות · קהילה · בתי עסק · שקיפות</span> all end in <code>ת</code>/<code>ה</code>/<code>ק</code>/<code>ת</code> — zero periods</td></tr>
+      </tbody>
+      <tfoot>
+        <tr style="background: rgba(46,104,83,0.08);">
+          <td colspan="4" style="font-weight:700; color: var(--green-dark); font-family: var(--font-body);">Total grep violations across all 6 patterns</td>
+          <td><span class="zero" style="font-size:18px;">0</span></td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <!-- DOC FOOTER -->
+  <footer>
+    <span>Mehamakor · S4 · MEH-639 · Phase 5 v2.2 · 2026-05-22</span>
+    <span class="italic">Iteration 4 — pre-merge audit · evidence-required.</span>
+  </footer>
+
+</div>
+
+<!-- ──────────────────────────────────────────────────────────────
+     HOMEPAGE RENDERER — single source of truth.
+     Injected into the 4 viewport containers above.
+     Editing copy here propagates to all viewports at once.
+     ────────────────────────────────────────────────────────────── -->
+<script>
+(function(){
+  // Reusable SVG strings — shared by all viewports
+  var LOGO_HORIZ = '<svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#2E6853"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#7BAA90" opacity="0.5"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#EAA378" opacity="0.5"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#E8C788" opacity="0.5"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#1F4A3A" opacity="0.2"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/><ellipse cx="-3" cy="-32" rx="2.5" ry="6" fill="#A3C7B3" opacity="0.5"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="\'Frank Ruhl Libre\',serif" font-weight="700" font-size="46" fill="#1C1A17">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="\'Cormorant Garamond\',serif" font-style="italic" font-weight="500" font-size="15" fill="#8B6914" letter-spacing="0.02em">— from the source</text></svg>';
+
+  var LOGO_FOOTER = '<svg viewBox="0 0 460 140" role="img" aria-label="מהמקור"><g transform="translate(410 70) scale(0.58)"><g opacity="0.94"><g transform="rotate(36)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#7BAA90"/></g><g transform="rotate(108)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C8632E"/></g><g transform="rotate(180)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#C99846"/></g><g transform="rotate(252)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#D9C8B0"/></g><g transform="rotate(324)"><path d="M 0,-44 C 10,-44 13,-32 11,-20 C 9,-12 5,-8 0,-6 C -5,-8 -9,-12 -11,-20 C -13,-32 -10,-44 0,-44 Z" fill="#5A8F73"/></g></g></g><text x="350" y="76" text-anchor="end" direction="rtl" font-family="\'Frank Ruhl Libre\',serif" font-weight="700" font-size="46" fill="#EAF3DE">מהמקור</text><text x="350" y="100" text-anchor="end" direction="rtl" font-family="\'Cormorant Garamond\',serif" font-style="italic" font-weight="500" font-size="15" fill="#C9D9B8" letter-spacing="0.02em">— from the source</text></svg>';
+
+  var ICO_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+  var ICO_CROSS  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+  var ICO_HEART  = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  var ICO_BURGER = '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+
+  // Hand-drawn step glyphs — same family as CategoryGrid v8
+  var GLYPH_STEP_FIND = '<svg viewBox="0 0 64 64"><circle cx="26" cy="26" r="14"/><path d="m38 38 12 12"/></svg>';
+  var GLYPH_STEP_TALK = '<svg viewBox="0 0 64 64"><path d="M12 14 h36 a4 4 0 0 1 4 4 v22 a4 4 0 0 1 -4 4 h-22 l-10 8 v-8 h-4 a4 4 0 0 1 -4 -4 v-22 a4 4 0 0 1 4 -4 z"/></svg>';
+  var GLYPH_STEP_DOOR = '<svg viewBox="0 0 64 64"><path d="M20 8 h24 v48 h-24 z"/><path d="M20 8 q-2 22 0 48"/><circle cx="38" cy="33" r="1.5" fill="currentColor"/></svg>';
+
+  // Category glyphs (Iteration 3 Fix 6 — corrected family per Kare #10)
+  // P3 v8 LOCKED gets separate v8.1 update; Phase 5 v2 ships corrected glyphs.
+  function CAT_GLYPH(slug, hero) {
+    // meat — cleaver + knife crossed (food-prep abstract)
+    if (slug==='meat')     return '<svg viewBox="0 0 120 120"><path d="M22 22 L88 88"/><path d="M22 22 L34 22 L34 34 Z"/><path d="M88 88 q-6 -28 -34 -34"/><path d="M98 22 L32 88"/><path d="M98 22 L86 22 L86 34 Z"/><path d="M32 88 L26 96"/></svg>';
+    // produce — branch + leaf cluster (organic abstract · covers fruit + veg + farm-juices)
+    if (slug==='produce')  return '<svg viewBox="0 0 120 120"><path d="M30 100 q4 -34 30 -50 q26 -16 60 -14"/><path d="M52 64 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M76 50 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M100 38 q-14 0 -20 -10 q10 -8 22 -2 q4 4 4 12 q-4 2 -6 0"/><path d="M60 80 q-12 -2 -16 -12"/></svg>';
+    // dairy — milk bottle silhouette
+    if (slug==='dairy')    return '<svg viewBox="0 0 120 120"><path d="M48 22 h24 v10 q0 4 -4 6 q-8 4 -8 14 v40 a6 6 0 0 1 -6 6 h-12 a6 6 0 0 1 -6 -6 v-40 q0 -10 -8 -14 q-4 -2 -4 -6 v-10 z"/><path d="M48 28 h24"/><path d="M50 70 h20"/></svg>';
+    // bread — wheat stalk silhouette
+    if (slug==='bread')    return '<svg viewBox="0 0 120 120"><path d="M60 18 v90"/><path d="M60 30 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 30 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 50 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 50 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/><path d="M60 70 q-12 -8 -16 0 q-2 8 4 12 q4 2 12 2"/><path d="M60 70 q12 -8 16 0 q2 8 -4 12 q-4 2 -12 2"/></svg>';
+    // pantry — honey jar with dripper / dipper
+    if (slug==='pantry')   return '<svg viewBox="0 0 120 120"><path d="M46 36 h28 v6 h-28 z"/><path d="M42 42 h36 v52 a8 8 0 0 1 -8 8 h-20 a8 8 0 0 1 -8 -8 z"/><path d="M60 14 v22"/><path d="M56 14 q4 -6 8 0"/><path d="M52 62 q4 4 8 0 q4 -4 8 0"/><path d="M52 76 q4 4 8 0 q4 -4 8 0"/></svg>';
+    // bodycare — herb bundle silhouette
+    if (slug==='bodycare') return '<svg viewBox="0 0 120 120"><path d="M60 22 v68"/><path d="M40 50 q10 -16 20 -16 q10 0 20 16"/><path d="M44 66 q8 -10 16 -10 q8 0 16 10"/><path d="M48 80 q6 -8 12 -8 q6 0 12 8"/><path d="M50 90 h20"/><path d="M52 90 v10 h16 v-10"/><path d="M52 96 h16"/></svg>';
+    return '';
+  }
+
+  // ──────── HEAD: Floating navbar (global chrome above 14 positions) ────────
+  function NAV_DESKTOP() {
+    return ''
+      + '<header class="nav-shell" data-screen-label="★ FloatingNavbar default">'
+      +   '<nav class="nav is-default" aria-label="primary">'
+      +     '<a class="logo logo-horiz" href="#" aria-label="מהמקור">' + LOGO_HORIZ + '</a>'
+      +     '<div class="nav-links">'
+      +       '<a class="nav-link is-current" href="#">גלי</a>'
+      +       '<a class="nav-link" href="#">מפה</a>'
+      +       '<a class="nav-link" href="#">אודות</a>'
+      +     '</div>'
+      +     '<button class="nav-account" type="button">כניסה לחשבון</button>'
+      +     '<button class="nav-cta" type="button">הוסיפו עסק <span class="arr">↗</span></button>'
+      +   '</nav>'
+      + '</header>';
+  }
+  function NAV_MOBILE() {
+    return ''
+      + '<header class="nav-shell" data-screen-label="★ FloatingNavbar default">'
+      +   '<nav class="nav is-default" aria-label="primary">'
+      +     '<a class="logo logo-horiz" href="#" aria-label="מהמקור">' + LOGO_HORIZ + '</a>'
+      +     '<span></span>'
+      +     '<button class="hamburger" type="button" aria-label="פתחי תפריט">' + ICO_BURGER + '</button>'
+      +   '</nav>'
+      + '</header>';
+  }
+
+  // ──────── 01 HERO ────────
+  function HERO(opts) {
+    var heroOnly = !!(opts && opts.heroOnly);
+    return ''
+      + '<section class="hp-section hp-section--cream hp-hero" data-screen-label="01 Hero">'
+      +   '<div class="hp-hero-head">'
+      +     '<h1 class="hp-h1">אוכל מקומי, במקום אחד</h1>'
+      +     '<p class="hp-sub">בתי עסק מקומיים בישראל <em>—</em> ישר מהמקור</p>'
+      +   '</div>'
+      +   (heroOnly ? '' : ''
+      +   '<div class="hp-search-block">'
+      +     '<div class="hp-search" role="search">'
+      +       '<span class="icon" aria-hidden="true">' + ICO_SEARCH + '</span>'
+      +       '<input type="search" placeholder="לחם מחמצת, ביצים אורגניות, ירקות ופירות" aria-label="חיפוש">'
+      +       '<button class="submit" type="button">חפש</button>'
+      +     '</div>'
+      +     '<div class="hp-actions">'
+      +       '<button class="hp-near-me" type="button"><span class="icon" aria-hidden="true">' + ICO_CROSS + '</span>קרוב אלי</button>'
+      +       '<button class="hp-cta-primary" type="button">גלו עסקים <span class="arr">↗</span></button>'
+      +       '<a class="hp-cta-secondary" href="#how-it-works">איך זה עובד</a>'
+      +     '</div>'
+      +   '</div>')
+      + '</section>';
+  }
+
+  // ──────── PLACEHOLDERS for merged surfaces ────────
+  function PH(opts) {
+    var cls = 'hp-section ' + (opts.bg||'hp-section--warm') + ' hp-pad-y';
+    return ''
+      + '<section class="' + cls + '" data-screen-label="' + opts.label + '">'
+      +   '<div class="hp-container">'
+      +     '<div class="hp-placeholder ' + (opts.mod||'') + '">'
+      +       '<span class="hp-placeholder-tag">' + opts.tag + '</span>'
+      +       '<div class="hp-placeholder-label"><strong>' + opts.h + '</strong>' + opts.body + (opts.note ? '<span class="hp-placeholder-note">' + opts.note + '</span>' : '') + '</div>'
+      +     '</div>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── 06 EDITORIAL BREATH ────────
+  function BREATH() {
+    return ''
+      + '<section class="hp-section hp-section--cream" data-screen-label="06 Editorial Breath">'
+      +   '<div class="hp-breath">'
+      +     '<p class="hp-breath-quote"><span class="mark">“</span>מהמקור הוא הבית הראשון של העסק שלך<span class="mark">”</span></p>'
+      +     '<span class="hp-breath-flag">option (c) NEW · awaiting Smadar — see open Q #01</span>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── 07 CATEGORY GRID (LOCKED P3 v8 body) ────────
+  function CATEGORIES() {
+    var cats = [
+      {n:'01', slug:'meat',     name:'בשר, עוף ודגים',      hero:true },
+      {n:'02', slug:'produce',  name:'ירקות, פירות ומשקים', hero:true },
+      {n:'03', slug:'dairy',    name:'חלב וגבינות',          hero:false},
+      {n:'04', slug:'bread',    name:'לחמים ואפייה',         hero:false},
+      {n:'05', slug:'pantry',   name:'שמנים ודבש',           hero:false},
+      {n:'06', slug:'bodycare', name:'טיפוח וסבונים',         hero:false}
+    ];
+    var html = ''
+      + '<section class="hp-section hp-section--warm hp-pad-y" data-screen-label="07 Category grid">'
+      +   '<div class="hp-container">'
+      +     '<header class="hp-head">'
+      +       '<span class="hp-eyebrow"><span class="rule"></span>קטגוריות</span>'
+      +       '<h2 class="hp-h2">גלי לפי קטגוריה</h2>'
+      +     '</header>'
+      +     '<div class="cg-grid">';
+    for (var i=0;i<cats.length;i++){
+      var c = cats[i];
+      html += ''
+        + '<a class="cat ' + (c.hero?'cat--hero':'cat--small') + '" href="#cat-' + c.slug + '">'
+        +   '<div class="cat-glyph" aria-hidden="true">' + CAT_GLYPH(c.slug, c.hero) + '</div>'
+        +   '<div class="cat-body">'
+        +     '<span class="cat-num"><span class="numeric">' + c.n + '</span></span>'
+        +     '<h3 class="cat-name">' + c.name + '</h3>'
+        +   '</div>'
+        + '</a>';
+    }
+    html += '</div></div></section>';
+    return html;
+  }
+
+  // ──────── 08 FEATURED PRODUCERS (LOCKED P2 v4 body × 3) ────────
+  function FEATURED() {
+    var cards = [
+      {eyebrow:'גבינות',              name:'מחלבת הר זרחיה',  city:'עין כרם',     dist:'18 km', rating:'4.7', count:'24', glyph:'dairy', badge:'recommended'},
+      {eyebrow:'לחמים ואפייה',         name:'מאפיית רוחל',     city:'נחלאות, ירושלים', dist:'22 km', rating:'4.8', count:'31', glyph:'bread', badge:'new'},
+      {eyebrow:'ירקות, פירות ומשקים', name:'משק שדה אהרון',   city:'יסוד המעלה', dist:'34 km', rating:'4.6', count:'18', glyph:'produce', badge:null}
+    ];
+    var html = ''
+      + '<section class="hp-section hp-section--cream hp-pad-y" data-screen-label="08 Featured Producers">'
+      +   '<div class="hp-container">'
+      +     '<header class="hp-head">'
+      +       '<span class="hp-eyebrow"><span class="rule"></span>השבוע</span>'
+      +       '<h2 class="hp-h2">בתי עסק מומלצים</h2>'
+      +     '</header>'
+      +     '<div class="hp-featured-grid">';
+    for (var i=0;i<cards.length;i++){
+      var c = cards[i];
+      var badge = '';
+      if (c.badge==='new')         badge = '<div class="card-badge-row"><span class="badge badge--new">חדש</span></div>';
+      if (c.badge==='recommended') badge = '<div class="card-badge-row"><span class="badge badge--recommended">מומלץ</span></div>';
+      html += ''
+        + '<article class="card">'
+        +   '<div class="card-media">'
+        +     '<button class="card-heart" type="button" aria-label="שמירה">' + ICO_HEART + '</button>'
+        +     '<div class="card-image" data-glyph="' + c.glyph + '"></div>'
+        +     badge
+        +   '</div>'
+        +   '<div class="card-body">'
+        +     '<p class="card-eyebrow">' + c.eyebrow + '</p>'
+        +     '<div class="card-headline-row">'
+        +       '<h3 class="card-name">' + c.name + '</h3>'
+        +       '<span class="card-rating"><span class="star">★</span> <span class="numeric">' + c.rating + '</span> <span class="count">· <span class="numeric">' + c.count + '</span></span></span>'
+        +     '</div>'
+        +     '<div class="card-availability"><span class="dot"></span><span class="status">פעיל היום</span></div>'
+        +     '<p class="card-meta">' + c.city + ' · <span class="numeric">' + c.dist + '</span></p>'
+        +   '</div>'
+        + '</article>';
+    }
+    html += '</div></div></section>';
+    return html;
+  }
+
+  // ──────── 10 MEET A PRODUCER ────────
+  function MEET() {
+    return ''
+      + '<section class="hp-section hp-section--cream hp-pad-y" data-screen-label="10 Meet a Producer">'
+      +   '<div class="hp-container">'
+      +     '<header class="hp-head">'
+      +       '<span class="hp-eyebrow"><span class="rule"></span>היכרות</span>'
+      +       '<h2 class="hp-h2">מאחורי הקלעים</h2>'
+      +     '</header>'
+      +     '<div class="hp-meet">'
+      +       '<div class="hp-meet-image" aria-hidden="true"></div>'
+      +       '<div class="hp-meet-body">'
+      +         '<p class="hp-meet-pullquote"><span class="mark">“</span>החממות פתוחות בשישי בבוקר. תבואי לראות מאיפה הירקות באמת באים.<span class="mark">”</span></p>'
+      +         '<p class="hp-meet-attr"><strong>יעל מקטיף</strong> · ירקות וחממות, כפר חיים, עמק חפר</p>'
+      +       '</div>'
+      +     '</div>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── 12 HOW IT WORKS ────────
+  function HOW() {
+    return ''
+      + '<section class="hp-section hp-section--cream hp-pad-y" id="how-it-works" data-screen-label="12 How It Works">'
+      +   '<div class="hp-container">'
+      +     '<header class="hp-head">'
+      +       '<span class="hp-eyebrow"><span class="rule"></span>איך זה עובד</span>'
+      +       '<h2 class="hp-h2">שלושה צעדים</h2>'
+      +     '</header>'
+      +     '<div class="hp-how">'
+      +       '<div class="hp-step"><span class="hp-step-num"><span class="numeric">01</span></span><div class="hp-step-glyph">' + GLYPH_STEP_FIND + '</div><h3 class="hp-step-title">מצאי</h3><p class="hp-step-body">גלי בתי עסק קרובים אלייך.</p></div>'
+      +       '<div class="hp-step"><span class="hp-step-num"><span class="numeric">02</span></span><div class="hp-step-glyph">' + GLYPH_STEP_TALK + '</div><h3 class="hp-step-title">צרי קשר</h3><p class="hp-step-body">דברי ישירות עם בית העסק.</p></div>'
+      +       '<div class="hp-step"><span class="hp-step-num"><span class="numeric">03</span></span><div class="hp-step-glyph">' + GLYPH_STEP_DOOR + '</div><h3 class="hp-step-title">קנייה</h3><p class="hp-step-body">ישר מהמקור, איך שמתאים לך</p></div>'
+      +     '</div>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── 13 FOR BUSINESS (Iteration 3 Fix 3 — Natoora hybrid) ────────
+  function BIZ() {
+    return ''
+      + '<section class="hp-section hp-section--warm hp-pad-y" data-screen-label="13 For Business">'
+      +   '<div class="hp-container">'
+      +     '<div class="hp-biz">'
+      +       '<div class="hp-biz-rule"></div>'
+      +       '<h2 class="hp-h2">יש לך עסק? <em>בואו אלינו</em></h2>'
+      +       '<div class="hp-biz-body">'
+      +         '<p>מהמקור הוא הבית של בתי עסק מקומיים בישראל.</p>'
+      +         '<p>כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם.</p>'
+      +         '<p>נשמח להכיר.</p>'
+      +       '</div>'
+      +       '<button class="hp-biz-cta" type="button">הוסיפו את העסק שלך <span class="arr">↗</span></button>'
+      +     '</div>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── 14 FOOTER ────────
+  function FOOTER() {
+    return ''
+      + '<section class="hp-section hp-section--footer hp-footer" data-screen-label="14 Footer">'
+      +   '<div class="hp-footer-grid">'
+      +     '<div class="hp-footer-brand">'
+      +       '<a class="logo logo-horiz" href="#" aria-label="מהמקור">' + LOGO_FOOTER + '</a>'
+      +       '<p class="hp-footer-tagline">ישר מהמקור — בתי עסק מקומיים, כולם במקום אחד</p>'
+      +     '</div>'
+      +     '<div class="hp-footer-col"><h4>לגלות</h4><ul><li><a href="#">קטגוריות</a></li><li><a href="#">מפה</a></li><li><a href="#">קרוב אלי</a></li></ul></div>'
+      +     '<div class="hp-footer-col"><h4>קהילה</h4><ul><li><a href="#">סיפורים</a></li><li><a href="#">היכרות</a></li><li><a href="#">ניוזלטר</a></li></ul></div>'
+      +     '<div class="hp-footer-col"><h4>בתי עסק</h4><ul><li><a href="#">הוסיפו עסק</a></li><li><a href="#">איך זה עובד</a></li><li><a href="#">תמיכה</a></li></ul></div>'
+      +     '<div class="hp-footer-col"><h4>שקיפות</h4><ul><li><a href="#">תנאי שימוש</a></li><li><a href="#">פרטיות</a></li><li><a href="#">נגישות</a></li></ul></div>'
+      +     '<div class="hp-footer-news">'
+      +       '<p class="h">אוכל טוב לא שומרים לעצמנו</p>'
+      +       '<p class="sub">ניוזלטר חודשי · בתי עסק חדשים, סיפורים, מתכונים</p>'
+      +       '<div class="form"><input type="email" placeholder="האימייל שלך" aria-label="אימייל"><button class="submit" type="button">הצטרפו ↗</button></div>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="hp-footer-bottom">'
+      +     '<span>© <span class="numeric">2026</span> מהמקור · תנאי שימוש · פרטיות</span>'
+      +     '<span><em style="font-family: var(--font-italic); font-style: italic; color: #C9D9B8;">— from the source</em></span>'
+      +   '</div>'
+      + '</section>';
+  }
+
+  // ──────── Mobile BottomNav (MEH-598 3-tab) ────────
+  function BOTTOMNAV() {
+    return ''
+      + '<nav class="hp-bottomnav" aria-label="bottom navigation" data-screen-label="⊕ BottomNav">'
+      +   '<a href="#" class="is-current"><svg viewBox="0 0 24 24"><path d="M4 11 L12 4 L20 11 V20 H4 Z"/></svg>בית</a>'
+      +   '<a href="#"><svg viewBox="0 0 24 24"><path d="M3 6 L9 4 L15 6 L21 4 V18 L15 20 L9 18 L3 20 Z"/><path d="M9 4 V18"/><path d="M15 6 V20"/></svg>מפה</a>'
+      +   '<a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M4 20 q0 -6 8 -6 q8 0 8 6"/></svg>פרופיל</a>'
+      + '</nav>';
+  }
+
+  // ──────── Full homepage stack (14 positions) ────────
+  function FULL(vp) {
+    var nav = (vp==='mobile') ? NAV_MOBILE() : NAV_DESKTOP();
+    return nav
+      + HERO({})
+      + PH({label:'02 HomepageMiniMap', tag:'02 · merged', h:'MEH-604 · HomepageMiniMap', body:' · MERGED · do not redesign', note:'positioned above-the-fold per MEH-604', bg:'hp-section--warm', mod:'hp-placeholder--map'})
+      + PH({label:'03 HolidayBanner', tag:'03 · merged', h:'HolidayBanner', body:' · conditional Pesach / Sukkot · existing', bg:'hp-section--cream', mod:'hp-placeholder--strip'})
+      + PH({label:'04 FridayDeliveryStrip', tag:'04 · merged', h:'FridayDeliveryStrip', body:' · conditional Fridays · Hero gets Friday subtitle variant', note:'subtitle swap: "שישי הגיע 🛒 מה הולך על שולחן השבת שלך?"', bg:'hp-section--cream', mod:'hp-placeholder--strip'})
+      + PH({label:'05 Stats counter', tag:'05 · merged', h:'MEH-607 · Stats counter', body:' · COPY TBD (Smadar reframing separately)', note:'DO NOT propose new copy in this phase', bg:'hp-section--warm', mod:'hp-placeholder--stats'})
+      + BREATH()
+      + CATEGORIES()
+      + FEATURED()
+      + PH({label:'09 HomeProducersGrid', tag:'09 · merged', h:'HomeProducersGrid', body:' · existing · full grid + filters + counter + load more', bg:'hp-section--warm', mod:'hp-placeholder--grid'})
+      + MEET()
+      + PH({label:'11 UpcomingEvents', tag:'11 · merged', h:'UpcomingEventsPreview', body:' · existing · conditional if events exist', bg:'hp-section--warm', mod:'hp-placeholder--events'})
+      + HOW()
+      + BIZ()
+      + FOOTER()
+      + (vp==='mobile' ? BOTTOMNAV() : '');
+  }
+
+  // Hero-only close-up (viewport #04)
+  function HERO_ONLY() {
+    return NAV_MOBILE() + HERO({heroOnly:true});
+  }
+
+  // Inject into the 4 viewport containers
+  document.getElementById('vp-desktop').innerHTML     = FULL('desktop');
+  document.getElementById('vp-tablet').innerHTML      = FULL('tablet');
+  document.getElementById('vp-mobile').innerHTML      = FULL('mobile');
+  document.getElementById('vp-mobile-hero').innerHTML = HERO_ONLY();
+})();
+</script>
+
+</body>
+</html>

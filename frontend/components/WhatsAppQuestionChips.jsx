@@ -33,7 +33,7 @@ export default function WhatsAppQuestionChips({ producer }) {
               rel="noopener noreferrer"
               className="inline-flex items-center font-body-md text-primary transition hover:bg-green-50"
               style={{
-                border: "1px solid #e8e0d0",
+                border: "1px solid #e5dfd3",
                 borderRadius: "20px",
                 padding: "6px 12px",
                 fontSize: "12px",

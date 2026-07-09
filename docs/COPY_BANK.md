@@ -721,3 +721,42 @@ multiple surfaces, lock it here so future copy edits stay consistent.
 ### Status
 
 🕐 Guardrail only — no testimonial copy locked yet. Each published testimonial gets its own row here (quote · attribution · i18n key · speaker-approval date) when it goes live.
+
+---
+
+## Section 9 — /join landing (MEH-995, positioning-FINAL)
+
+> **Source:** MEH-995 §positioning-FINAL (locked in-ticket after 5 design rounds) + Sapir-approved drafts (session 2026-07-07). /join applies existing brand rules — no new brand decision (BRAND.md §8 untouched by design). All keys under `join.*` + `seo.join.*` (he + en twins, MEH-978/840).
+
+### Hero
+| Field | Value |
+|---|---|
+| **Eyebrow** | `לבתי עסק מקומיים` — aligned with the approved footer tagline; zero partial-category |
+| **H1** | `העסק שלכם. עמוד משלו.` — why-first, editorial through what-you-get |
+| **Subhead** | `עמוד עם התמונות והסיפור שלכם, כל עסק נבחר אישית, ופנייה ישירה ב-WhatsApp — לקוחות מקומיים פוגשים את הסיפור שלכם.` — carries the softened editorial line; the discovery variant ("לקוחות שמחפשים בדיוק מה שאתם מכינים") is **forbidden** (marketplace framing) |
+| **CTA** | `מצטרפים` → `/register/producer` — the page's single CTA |
+| **Trust hint** | `חינם להצטרף` — NOT "חינם לעולם"; zero premium mention anywhere on the page (MEH-617 model undecided) |
+| **i18n keys** | `join.eyebrow` · `join.h1` · `join.subhead` · `join.cta` · `join.trust_hint` |
+| **Status** | ⏳ MEH-995 |
+
+### How it works (4 steps)
+| Step | Title | Body | Derived from |
+|---|---|---|---|
+| 01 | `נרשמים` | `טופס קצר על העסק — סיפור, תמונות ופרטי קשר. בערך 10 דקות.` | MEH-994b locked duration |
+| 02 | `שיחה אישית` | `הצוות שלנו יוצר קשר לשיחה קצרה — היכרות עם העסק והסיפור.` | MEH-994 after_body |
+| 03 | `העמוד עולה` | `בדרך כלל תוך יום-יומיים העסק שלכם מופיע באתר.` | chat.py approval timeframe |
+| 04 | `לקוחות פונים ישירות` | `כפתור WhatsApp בעמוד פותח שיחה ישירה אתכם. הקשר והתשלום — ביניכם ובין הלקוחות בלבד.` | MEH-1003 neutral no-fees copy (avoids forbidden "מתווכים") |
+
+Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/process`.
+
+### Checklist / card / FAQ teaser
+| Field | Value |
+|---|---|
+| **Checklist** | mirrors the MEH-994 pre-flight items verbatim (`join.prepare.*`) — keep the two surfaces in sync on any copy change |
+| **Card title** | `כל בית עסק עובר שיחה אישית` — positive framing; definition-by-negation ("לא בירוקרטיה") is **forbidden** |
+| **Card body** | `כל בית עסק במהמקור עובר היכרות אישית — זהות, סיפור ושיחה. כך כל עמוד באתר נשאר אמין ואישי.` — extends the approved `success.tier_trust` |
+| **FAQ Q/A** | `כמה זה עולה?` → `חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.` — the no-fees LOCK lives HERE (Etsy pattern), never in the headline. Link: `לכל השאלות` → `/about/for-businesses` |
+| **Status** | ⏳ MEH-995 |
+
+### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
+The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.

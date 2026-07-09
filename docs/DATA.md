@@ -51,6 +51,8 @@
 
 > **MEH-762 (ADR-022 public tier contract, 2026-06-06):** `producers.verified_at` (TIMESTAMP WITH TIME ZONE, nullable, migration `f1c7b9a3e264`, Chunk 1) + `producers.verification_doc_type` (VARCHAR(20), nullable; `license`\|`exemption`\|`cosmetics`) record the tier-1 "מאומת" document review. **Chunk 2:** admin stamping via `POST /admin/producers/{id}/grant-verified` (`{doc_type}`) + `/revoke-verified`; `is_verified` untouched (legacy axis, decoupling deferred). **Chunk 3 public exposure:** `ProducerListOut`/`ProducerDetailOut` now carry `verification_tier` (`"verified"`\|`"declared"`\|`null` — **computed** in `_compute_verification_tier`, never stored), `verified_at` (**date granularity only** — the TIMESTAMPTZ is truncated so no time leaks), and `verification_doc_type`. Resolver (D2/D3): `verified_at` set → `"verified"`; else if no category is in `LICENSE_REQUIRED_CATEGORIES` → `"declared"`; else `null` (no badge, no negative label). Mirrors the MEH-530 name-membership predicate (`license_validation.categories_require_license`) against the loaded categories. Privacy: `verified_at`(date)/`doc_type`/`tier` are public; `declared_at`/`declaration_version`/`producer_license_number` stay admin-only (`ProducerAdminOut`, which also inherits the three public fields at date granularity).
 
+> **MEH-1011 (2026-07-03):** producer **request-changes** (completion request) flow — the non-terminal twin of reject. Two nullable `producers` columns (migration `a1b2c3d4e5f6`): `requested_changes` (TEXT — the admin's free-text feedback) + `changes_requested_at` (TIMESTAMPTZ, tz-aware). `POST /admin/producers/{id}/request-changes` (`{feedback}`, empty → 400) records the feedback, KEEPS status `pending`, emails the producer, WhatsApps the producer (**MEH-1051** — Meta-approved `producer_changes_requested_v1`, 2 body params `{name, missing}`, fail-open post-commit), and WhatsApps admin; `approve_producer` clears both columns on success. Admin-only exposure via `ProducerAdminOut` (both fields), never public `ProducerListOut`/`ProducerDetailOut`.
+>
 > **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
 
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
@@ -402,7 +404,7 @@ GET    /users/me/following                        auth
 
 # Producer-self (role=producer)
 GET    /producers/me                              producer
-PUT    /producers/me                              producer
+PUT    /producers/me                              producer — MEH-999: license gate grandfathers already-held categories (validates NEWLY-ADDED category_ids only, so MEH-971 license-pending producers can edit their profile); clearing a held producer_license_number while a license-required category remains → 422
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
@@ -462,13 +464,18 @@ GET    /events                    public — filter: city, category, from_date, 
 GET    /events/upcoming            public — limit=N next events
 GET    /events/{event_id}          public
 POST   /events                     producer — only approved producers
-PUT    /events/{event_id}          producer — owner only
-DELETE /events/{event_id}          auth    — owner or admin
+PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
+DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
 
 No moderation. Producer publishes, it's live. Designed for the
 "יום קטיף / סיור בחווה" calendar on producer pages. Category enum:
 `סדנה | סיור | שוק | קטיף | טעימות | אחר`.
+
+**MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
+"Event not found"**, not 403 — a foreign producer can't confirm an
+event id exists (matches `producer_recipes.py:203-206`). DELETE keeps
+its admin-override, so an admin still deletes (→ 200).
 
 ### Experiences (community workshops — `app/routers/experiences.py`)
 
@@ -478,9 +485,14 @@ GET    /experiences                    public  — filter: category, city. Only 
 GET    /experiences/mine               auth    — owner's submissions, any status
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
 POST   /experiences                    auth    — 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
-PUT    /experiences/{id}               auth    — owner only. Any edit resets to status=pending + re-runs Claude.
-DELETE /experiences/{id}               auth    — owner or admin
+PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). Any edit resets to status=pending + re-runs Claude.
+DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
+
+**MEH-1001 (existence-leak):** a cross-owner PUT/DELETE returns **404
+"Experience not found"**, not 403 — a stranger can't confirm an experience
+id exists (matches `producer_recipes.py:203-206` + events). DELETE keeps
+its admin-override (admin → 200).
 
 **Moderation flow:**
 
@@ -527,7 +539,8 @@ POST   /admin/producers/{id}/revoke-verified   admin — MEH-762: clear verified
 GET    /admin/kashrut                          admin — list badge requests (?status=pending|approved|rejected)
 POST   /admin/kashrut/{id}/approve             admin — activates badge in kashrut_badges[], sets expiry
 POST   /admin/kashrut/{id}/reject              admin — rejects request with optional notes
-POST   /admin/producers/{id}/reject            admin — with reason
+POST   /admin/producers/{id}/reject            admin — with reason (terminal → status=rejected)
+POST   /admin/producers/{id}/request-changes   admin — MEH-1011: feedback required (empty → 400); pending-only (409 if status ∉ pending/pending_whatsapp, MEH-769 precedent); NON-terminal (status stays pending), sets requested_changes + changes_requested_at (tz-aware), emails producer + WhatsApp admin; cleared on approve
 POST   /admin/producers/import                 admin — Excel/CSV upload, dry_run=true by default
 
 # Home products moderation
@@ -545,7 +558,7 @@ POST   /admin/users/{id}/block                 admin
 GET    /admin/users/{id}/favorites             admin
 
 # Content
-GET    /admin/categories                       admin
+GET    /admin/categories                       admin — rows include producer_count (query-time, MEH-1034)
 POST   /admin/categories                       admin
 PUT    /admin/categories/{id}                  admin
 DELETE /admin/categories/{id}                  admin
@@ -615,8 +628,12 @@ POST   /admin/recipes/{id}/reject           admin     — feedback optional → 
 ```
 GET    /producers/{id}/reviews   public
 POST   /reviews                  auth  — upsert (1 per user per producer)
-DELETE /reviews/{id}             auth  — owner or admin
+DELETE /reviews/{id}             auth  — owner or admin (stranger → 404)
 ```
+
+**MEH-1001 (existence-leak):** a non-owner-non-admin DELETE returns **404
+"ביקורת לא נמצאה"**, not 403 — review existence isn't leaked. Admin-override
+preserved (admin → 200).
 
 ### Reports (`app/routers/reports.py`)
 

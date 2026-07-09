@@ -7,6 +7,7 @@ import { Cow, Leaf, Package, Seal, Truck, Circle, StarOfDavid } from "@phosphor-
 import Pagination from "@/components/Pagination";
 import StoryCardCanvas from "@/components/StoryCardCanvas";
 import InfoTooltip from "@/components/InfoTooltip";
+import AdminRowMenu from "@/components/admin/AdminRowMenu";
 import { getProducerStatusLabel, getProducerStatusColor } from "@/lib/producer-status";
 
 // Phosphor icon size used in trait tags + the action row.
@@ -24,6 +25,27 @@ function StatusBadge({ status }) {
   const label = getProducerStatusLabel(status);
   const cls = getProducerStatusColor(status);
   return <span className={`text-xs px-2 py-1 rounded-full ${cls}`}>{label}</span>;
+}
+
+// MEH-1011 Chunk 2: "ממתין להשלמה" trail badge — shown when the admin has sent
+// a request-changes (requested_changes ≠ null). Status stays pending; this
+// flags that the producer owes a fix. The date is wrapped dir="ltr" so the
+// RTL page doesn't flip its segments (bidi-isolate); full feedback in title.
+export function AwaitingCompletionBadge({ producer }) {
+  const t = useTranslations("admin");
+  if (!producer.requested_changes) return null;
+  const date = producer.changes_requested_at
+    ? new Date(producer.changes_requested_at).toLocaleDateString("he-IL")
+    : null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-[10px] font-medium"
+      title={producer.requested_changes}
+    >
+      {t("producers.table.awaiting_completion")}
+      {date && <span dir="ltr" className="tabular-nums">{date}</span>}
+    </span>
+  );
 }
 
 // MEH-509 PR3: Anthropic-Haiku-backed risk score badge.
@@ -119,20 +141,29 @@ function ProducerTags({ producer }) {
   );
 }
 
-export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
+export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer, onToggleStoryCard, isBusy }) {
   const t = useTranslations("admin");
   const p = producer;
   // UIS Pattern A (MEH-228): disable the in-flight action's button. `isBusy`
   // may be undefined if a caller doesn't pass it — default to never-busy.
   const busy = isBusy || (() => false);
+  const isPending = ["pending", "pending_whatsapp"].includes(p.status);
   return (
     <div className="flex gap-3 flex-wrap">
       {/* MEH-745: self-registered producers sit in pending_whatsapp; the
           approve endpoint has no status guard, so surface approve for both
-          waiting states (admin fallback alongside the OTP self-serve path). */}
-      {["pending", "pending_whatsapp"].includes(p.status) && (
-        <button onClick={() => onQuickApprove(p.id)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+          waiting states (admin fallback alongside the OTP self-serve path).
+          MEH-1011 Chunk 2: pass the full producer so the approve-422 handler
+          can open request-changes prefilled with the gate-matched chip. */}
+      {isPending && (
+        <button onClick={() => onQuickApprove(p)} disabled={busy(`approve:${p.id}`)} className="text-primary hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
           {t("producers.table.actions.approve_short")}
+        </button>
+      )}
+      {/* MEH-1011 Chunk 2: non-terminal "please complete" request — pending only. */}
+      {isPending && (
+        <button onClick={() => onRequestChanges(p)} disabled={busy(`request-changes:${p.id}`)} className="text-accent hover:underline text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
+          {t("producers.table.actions.request_changes")}
         </button>
       )}
       <Link href={`/admin/producers/${p.id}/edit`} className="text-primary hover:underline text-xs">
@@ -143,33 +174,45 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onToggl
           {t("common.view")}
         </Link>
       )}
-      {(p.status === "approved" || p.status === "inactive") && (
-        <button onClick={() => onToggleStatus(p.id)} disabled={busy(`status:${p.id}`)} className="text-muted hover:text-primary text-xs disabled:opacity-50 disabled:cursor-not-allowed">
-          {p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate")}
-        </button>
-      )}
-      {p.status === "approved" && (
-        <button
-          onClick={() => onToggleAmbassador(p.id, p.ambassador)}
-          disabled={busy(`ambassador:${p.id}`)}
-          className={`text-xs disabled:opacity-50 disabled:cursor-not-allowed ${p.ambassador ? "text-amber-700 hover:text-amber-900" : "text-fg-muted hover:text-primary"}`}
-          title={p.ambassador ? t("producers.table.actions.remove_ambassador_title") : t("producers.table.actions.set_ambassador_title")}
-        >
-          {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
-        </button>
-      )}
-      {p.status === "approved" && p.slug && (
-        <button
-          onClick={() => onToggleStoryCard(p.id)}
-          className="text-primary hover:underline text-xs"
-          title={t("producers.table.actions.story_card_title")}
-        >
-          {t("producers.table.actions.story_card")}
-        </button>
-      )}
-      <button onClick={() => onDeleteProducer(p.id, p.name)} disabled={busy(`delete:${p.id}`)} className="text-red-600 hover:underline text-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline">
-        {t("common.delete")}
-      </button>
+      {/* MEH-1027 Chunk A: secondary + destructive actions live in the kebab
+          (MEH-1023 pattern) — same guards, same handlers, same busy keys as
+          the inline buttons they replace; only the trigger location moved.
+          Ambassador + story-card behavior is unchanged (reposition only). */}
+      <AdminRowMenu
+        ariaLabel={t("producers.table.actions.menu_aria")}
+        items={[
+          ...(p.status === "approved" || p.status === "inactive"
+            ? [{
+                key: "status",
+                label: p.status === "approved" ? t("producers.table.actions.suspend") : t("producers.table.actions.activate"),
+                disabled: busy(`status:${p.id}`),
+                onSelect: () => onToggleStatus(p.id),
+              }]
+            : []),
+          ...(p.status === "approved"
+            ? [{
+                key: "ambassador",
+                label: p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive"),
+                disabled: busy(`ambassador:${p.id}`),
+                onSelect: () => onToggleAmbassador(p.id, p.ambassador),
+              }]
+            : []),
+          ...(p.status === "approved" && p.slug
+            ? [{
+                key: "story",
+                label: t("producers.table.actions.story_card"),
+                onSelect: () => onToggleStoryCard(p.id),
+              }]
+            : []),
+          {
+            key: "delete",
+            label: t("common.delete"),
+            tone: "danger",
+            disabled: busy(`delete:${p.id}`),
+            onSelect: () => onDeleteProducer(p.id, p.name),
+          },
+        ]}
+      />
     </div>
   );
 }
@@ -189,7 +232,12 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
         <td className="px-4 py-3 text-muted">{p.city || "—"}</td>
         <td className="px-4 py-3 text-xs">{p.categories?.map((c) => c.name).join(", ") || "—"}</td>
         <td className="px-4 py-3 text-xs"><ProducerTags producer={p} /></td>
-        <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+        <td className="px-4 py-3">
+          <div className="flex flex-col items-start gap-1">
+            <StatusBadge status={p.status} />
+            <AwaitingCompletionBadge producer={p} />
+          </div>
+        </td>
         <td className="px-4 py-3"><RiskBadge score={p.risk_score} reasoning={p.risk_reasoning} /></td>
         <td className="px-4 py-3">
           <ProducerActions producer={p} isStoryOpen={isStoryOpen} {...handlers} />
@@ -253,14 +301,14 @@ function EmptyRow({ incompleteOnly }) {
 
 export default function AdminProducersTable({
   rows, incompleteOnly, storyCardOpenId, onSetStoryCardOpenId,
-  onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+  onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
   onUploadStoryCard, isBusy,
   page, totalPages, perPage, onPageChange, onPerPageChange, visibleCount,
 }) {
   const onToggleStoryCard = (id) =>
     onSetStoryCardOpenId((prev) => (prev === id ? null : id));
   const handlers = {
-    onQuickApprove, onToggleStatus, onToggleAmbassador, onDeleteProducer,
+    onQuickApprove, onRequestChanges, onToggleStatus, onToggleAmbassador, onDeleteProducer,
     onUploadStoryCard, onToggleStoryCard, isBusy,
   };
   return (

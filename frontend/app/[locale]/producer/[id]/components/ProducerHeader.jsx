@@ -38,7 +38,10 @@ export default function ProducerHeader({
             Tinted Masthead hero (the page <h1>), so this h1 is omitted to keep
             the producer name appearing exactly once. Badges/meta stay. */}
         {hasImages && (
-          <h1 className="font-headline-lg text-4xl font-bold text-text">
+          // MEH-1031 (A3): me-3 gives the badge row breathing room from the
+          // H1 (margin-inline-end, RTL-safe) without touching the container
+          // gap-2 that sets inter-badge spacing.
+          <h1 className="font-headline-lg text-4xl font-bold text-text me-3">
             {producer.name}
           </h1>
         )}
@@ -96,7 +99,7 @@ export default function ProducerHeader({
         {primaryCategory && (
           <>
             <span className="mx-1">·</span>
-            {primaryCategory.emoji} {primaryCategory.name}
+            {primaryCategory.name}
           </>
         )}
       </p>
