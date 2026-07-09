@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-09 — MEH-1047: Producer hero redesign — photo-first gallery grid (Direction B) — PR #1533, Ready-for-Review (closes MEH-1047)
+
+- **Branch:** `feature/meh-1047-producer-hero-gallery` off `origin/staging` (harness cut a `claude/*` branch; recreated as `feature/*` per project rule 3, Sapir-confirmed). Frontend YELLOW, chunk-by-chunk with WAIT gates. **PR #1533** — marked Ready-for-Review after Sapir desktop + mobile QA. `Closes MEH-1047`.
+- **Scope:** imaged state of `/producer/[id]` only — all in `frontend/components/ImageGallery.jsx`. The MEH-815 Tinted Masthead empty state is **byte-identical** (diff-verified).
+- **Chunk 1 (`e50ed58` incl. reviewer test-fix):** desktop grid (md+) — hero inline-start ~62% + tall stacked secondary column, `border-accent/30` gold hairline, `rounded-xl`, `gap-2`, `max-h ~460px`. Densities 4+/3 = hero + 2 stacked with "כל התמונות (N)" gold pill on bottom cell (N=total); 2 = hero + single companion (no pill); 1 = full-width banner unchanged. Cells → existing Lightbox at index. New i18n `gallery.view_all` (he+en).
+- **Chunk 2 (`c24ff74`):** mobile 375px — dots+arrows → counter chip (1/N, `.numeric`, top-end) + thin gold progress bar (`accent` fill). **Fixed reviewer-caught regression:** FavoriteButton was inside the now-`md:hidden` carousel → invisible on desktop for 2+ images; hoisted to a single shared `relative`-wrapper overlay (`top-3 start-3`, `z-20`) — one mount, one `/users/me/favorites` fetch.
+- **Chunk 3 (this session):** LCP audit (grid hero + mobile banner `images[0]` eager `priority`, rest lazy; dual-tree double-preload bounded by `sizes`, documented), reviewer #2 test idiom (`toHaveClass`), RTL sweep (0 `rtl-ok` left), docs (CHANGELOG/HANDOFF/MANUAL_TESTING/DESIGN), `/adversarial-review`.
+- **Verify:** `npm run build` exit 0 · vitest **818 passed** · 0 physical RTL · new `__tests__/ImageGalleryGrid.test.jsx`. Screenshots (375+desktop, real component via Playwright) use the leaf placeholder — Cloudinary egress blocked from the CC sandbox (MEH-360 class); live-photo QA on the Vercel preview.
+- **Scope held:** `ImageGallery.jsx` + `ImageGalleryGrid.test.jsx` + `he.json`/`en.json` (`view_all`) + docs. No backend, no changes to Lightbox/ImageWithFallback/FavoriteButton internals, no Masthead touch.
+
 ## 2026-07-09 — MEH-1049: ProducerContactCard CTA hierarchy + remove "שתפו וקבלו 10%" chip — DRAFT PR (closes MEH-1049; WAIT for Sapir mobile QA)
 
 - **Branch:** `feature/meh-1049-contact-cta-hierarchy` off `origin/staging` (harness cut a `claude/*` branch; recreated as `feature/*` per project rule 3, Sapir-confirmed). Frontend YELLOW, chunk-by-chunk with WAIT gates. `Closes MEH-1049`.

@@ -56,15 +56,15 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     expect(screen.queryByTestId("gallery-grid-pill-cell")).not.toBeInTheDocument();
     expect(screen.queryByTestId("gallery-all-pill")).not.toBeInTheDocument();
     // single companion → no 2-row template, hero does not span rows
-    expect(screen.getByTestId("gallery-grid").className).not.toMatch(/grid-rows-2/);
-    expect(screen.getByTestId("gallery-grid-hero").className).not.toMatch(/row-span-2/);
+    expect(screen.getByTestId("gallery-grid")).not.toHaveClass("grid-rows-2");
+    expect(screen.getByTestId("gallery-grid-hero")).not.toHaveClass("row-span-2");
   });
 
   it("3 images: hero (row-span-2) + 2 stacked, pill shows total count", () => {
     render(<ImageGallery images={urls(3)} />);
     const grid = screen.getByTestId("gallery-grid");
-    expect(grid.className).toMatch(/grid-rows-2/);
-    expect(screen.getByTestId("gallery-grid-hero").className).toMatch(/row-span-2/);
+    expect(grid).toHaveClass("grid-rows-2");
+    expect(screen.getByTestId("gallery-grid-hero")).toHaveClass("row-span-2");
     expect(screen.getAllByTestId("gallery-grid-cell")).toHaveLength(1); // images[1]
     expect(screen.getByTestId("gallery-grid-pill-cell")).toBeInTheDocument(); // images[2]
     expect(screen.getByTestId("gallery-all-pill")).toHaveTextContent("כל התמונות (3)");

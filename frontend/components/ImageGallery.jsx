@@ -123,6 +123,12 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           }`}
           data-testid="gallery-grid-hero"
         >
+          {/* MEH-1047 LCP: images[0] is the desktop LCP → eager `priority`.
+              The mobile banner (below) is eager for its own breakpoint; every
+              other image (secondary cells, off-screen slides) is lazy via
+              next/image's default. Responsive dual-tree double-preloads the
+              hero on the hidden breakpoint, but `sizes` bounds that fetch
+              (~45vw mobile / ~60vw desktop) — accepted art-direction cost. */}
           <ImageWithFallback
             src={images[0]}
             alt={t("image_alt", { current: 1 })}
