@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-07 — MEH-1045: bot hardening — catch-all fast-404 + robots.txt + localeDetection:false — DRAFT PR (batch stage 2/2)
+
+- **Branch:** `feature/meh-1045-bot-hardening` off `origin/staging` (clean cut). LOW-RISK, end-to-end per batch authority. `Closes MEH-1045`. Vector #2 of the 07-07 Edge Requests incident; stage 1 (MEH-1044, vector #1) = PR #1525.
+- **Shipped:** (1) `app/[locale]/[slug]/page.js` — exported `isSlugShaped()` fast-404 guard (dot / `wp-`·`wordpress`·`xmlrpc`·`phpmyadmin`·`cgi-` prefixes / >100 chars / outside the backend `_slugify` charset) runs BEFORE the Railway fetch; RESERVED intact; `getProducerBySlug` now guards on it. (2) `public/robots.txt` — AI-crawler disallow block (GPTBot/CCBot/Amazonbot/Bytespider/PetalBot/ClaudeBot/meta-externalagent), search engines unchanged, sitemap host fixed co.il→online. (3) `i18n/routing.js` — `localeDetection: false` (kills the 307 `/`→`/en` for cookie-less clients; hreflang per MEH-476 preserves SEO). (4) New `__tests__/SlugPageBotHardening.test.jsx` — 24✓ (guard shapes; page 404s probes with `serverFetch` never called; legit slug still fetches). middleware.js untouched per spec.
+- **Verify:** vitest new file 24✓ + full suite green (see PR); `npm run build` exit 0; curl differential on local `next start` in PR body (sandbox has no backend → "real slug 200" deferred to staging preview per MEH-360).
+- **Sapir pending:** mobile QA one real producer page on the staging preview (per DoD), merge. Follow-ups from the same discovery (separate tickets, not here): next/image→Cloudinary direct loader, `prefetch={false}` on card grids, GroupBuyDetailClient visibilitychange pause.
+
+
 ## 2026-07-07 — MEH-1044: Edge Requests burn — E2E → local `next start` + dependabot throttle — DRAFT PR (e2e.yml content for Sapir)
 
 - **Branch:** `feature/meh-1044-e2e-local-ci` off `origin/staging` (clean cut, divergence 0). LOW-RISK CI/config, end-to-end authority per batch prompt. `Closes MEH-1044`. Follows the 2026-07-07 discovery report (E2E against live previews ≈ 1–2M edge req/mo → Hobby pause at 319%).
