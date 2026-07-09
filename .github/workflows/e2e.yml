@@ -1,46 +1,58 @@
 name: E2E Tests
 
-# Trigger: fires when Vercel signals a preview deployment succeeded.
-# The preview URL arrives in github.event.deployment_status.target_url
-# — zero polling, zero comment-regex parsing.
+# MEH-1044 — E2E now runs against a LOCAL `next start` server inside the CI
+# runner instead of the live Vercel preview URL. Rationale: every preview-URL
+# run re-downloaded all _next/static chunks per test (fresh browser context =
+# zero cache, ~50+ requests/page × ~80 test executions) and burned the Vercel
+# Hobby Edge Requests quota (319% overage, team paused 2026-07-07). Local
+# target = zero Vercel edge requests; same specs, same flake gate.
 #
-# Why deployment_status (not pull_request):
-#   The previous pull_request trigger polled for the Vercel bot PR comment
-#   and extracted the URL with a regex (\[Preview\]\(https://...\)). The
-#   regex never matched the actual Vercel comment format, so all 20 poll
-#   attempts (5 min) exhausted silently and every job exited 1 — regardless
-#   of PR content. Switching to deployment_status means the job only starts
-#   AFTER Vercel signals readiness; the URL is a first-class event field.
-#   Confirmed failure pattern on PRs #234 and #236 (MEH-212).
+# Trigger history: deployment_status (MEH-212) replaced pull_request comment-
+# polling because the Vercel-bot comment regex never matched — the job needed
+# the preview URL. Now that the suite no longer targets the preview, the
+# trigger returns to pull_request (+ push to staging for post-merge coverage);
+# the original reason for deployment_status is gone with it.
 #
-# Fallback path: if Vercel stops firing deployment_status events for
-#   staging-targeting PRs, switch to repository_dispatch with
-#   event_type: vercel.deployment.success (see docs/DEPLOYMENT.md → "E2E CI").
+# Backend strategy unchanged (MEH-1044 constraint): tests exercise the same
+# Railway staging backend the Vercel previews proxied to, via next.config.js
+# rewrites (/api/* → NEXT_PUBLIC_API_URL; inlined at build, read again at
+# server boot).
 #
-# Required secrets: none beyond the auto-provided GITHUB_TOKEN.
+# Preserved cost/flake fixes: paths-filter skip (MEH-424/499/675), dependabot
+# skip (May 2026 cost sweep — was ref-based on deployment.ref, now actor-based
+# since the event changed), Playwright browser cache, chromium-only install,
+# 15-min timeout, concurrency cancel, --fail-on-flaky-tests (MEH-484), report
+# + trace upload. MEH-728's preview warm-up is replaced by a localhost
+# readiness poll (same purpose: cold start must not trip the flake gate).
+#
+# Required secrets: none. VERCEL_AUTOMATION_BYPASS_SECRET is no longer used —
+# playwright.config.ts still sends the (empty) bypass header, which localhost
+# ignores; TEST_URL manual runs against previews keep working with the secret
+# exported locally.
 
 on:
-  deployment_status:
+  pull_request:
+    branches: [staging]
+  push:
+    branches: [staging]
 
 permissions:
   contents: read
   pull-requests: read
 
 concurrency:
-  group: e2e-${{ github.event.deployment.ref }}
+  group: e2e-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
   filter:
     name: Paths filter
     runs-on: ubuntu-latest
-    if: github.event.deployment_status.state == 'success'
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.deployment.sha }}
           fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
       - uses: dorny/paths-filter@v3
         id: filter
@@ -60,35 +72,25 @@ jobs:
               - '!CHANGELOG.md'
 
   e2e:
+    # NOTE (MEH-1044): job name kept verbatim although the target is now
+    # localhost — required-check identities match on the name: field. Rename
+    # only in a follow-up that updates branch protection in the same change.
     name: Playwright E2E (Vercel preview)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: filter
 
-    # Only run on successful deployments (preview or production).
-    # The environment filter `startsWith(environment, 'Preview')` was removed
-    # because Vercel's environment naming is inconsistent across SDK versions
-    # and caused the condition to evaluate false → 2-second failure on every run.
-    # Tests are read-only so running against production is safe; the concurrency
-    # group (e2e-${{ deployment.ref }}) ensures no two runs race on the same ref.
     # paths-filter (MEH-424): skip when no frontend files changed.
-    # Cost sweep (May 2026): skip Dependabot PRs. deployment.ref carries the
-    # head branch (dependabot/*, all ecosystems); ~285 min/month saved (19
-    # runs × ~15 min). creator.login is unusable here — it's vercel[bot].
+    # Cost sweep (May 2026): skip Dependabot PRs — they get lint/build only.
+    # (Was `!startsWith(deployment.ref, 'dependabot/')`; with pull_request
+    # events the actor is dependabot[bot] directly.)
     if: |
-      github.event.deployment_status.state == 'success' &&
       needs.filter.outputs.frontend == 'true' &&
-      !startsWith(github.event.deployment.ref, 'dependabot/')
+      github.actor != 'dependabot[bot]'
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          # deployment.sha is the commit Vercel deployed. Fall back to
-          # github.sha (same value for deployment_status events) in case
-          # Vercel omits it on fast deploys — avoids an instant failure
-          # from checkout receiving an empty ref string.
-          ref: ${{ github.event.deployment.sha || github.sha }}
-          fetch-depth: 0  # MEH-675: paths-filter needs full history to diff against parent
+
       - name: Set up Node.js 20
         uses: actions/setup-node@v6
         with:
@@ -112,32 +114,43 @@ jobs:
         working-directory: frontend
         if: steps.playwright-cache.outputs.cache-hit != 'true'
 
-      # MEH-728 — warm up the Vercel preview before the suite so cold-start
-      # latency doesn't blow the per-wait budgets and trip --fail-on-flaky-tests
-      # (MEH-484). Soft readiness gate: poll the preview (with the same
-      # protection-bypass header the tests use) until it serves 200, capped at
-      # ~90s, then proceed regardless — the raised Playwright budgets cover any
-      # residual latency, so warm-up can never become a new failure source.
-      - name: Warm up Vercel preview
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+        env:
+          # Silence telemetry noise in CI logs (mirrors PR-Checks).
+          NEXT_TELEMETRY_DISABLED: "1"
+          # Same backend the Vercel previews proxied to (Railway staging,
+          # docs/DEPLOYMENT.md → env table). NEXT_PUBLIC_* is inlined at
+          # build time; rewrites() reads it again at server boot.
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+
+      # MEH-1044 — replaces MEH-728's "Warm up Vercel preview". Same purpose
+      # (a cold server must not trip --fail-on-flaky-tests), local target:
+      # start `next start` in the background, then poll until it serves 200,
+      # capped at ~90s. Unlike the preview warm-up this gate is HARD — a dead
+      # local server means the runner is broken, not "residual latency".
+      - name: Start Next.js server (background)
         run: |
-          url="${TARGET_URL%/}"
-          echo "Warming preview: $url"
+          nohup npm run start > /tmp/next-start.log 2>&1 &
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://foodmamkor-staging.up.railway.app
+
+      - name: Wait for localhost readiness
+        run: |
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' \
-              -H "x-vercel-protection-bypass: ${VERCEL_BYPASS_SECRET}" \
-              -H "x-vercel-skip-toolbar: 1" \
-              "$url/" || echo 000)
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/ || echo 000)
             echo "attempt $i → HTTP $code"
             if [ "$code" = "200" ]; then
-              echo "Preview warm after ${i} attempt(s)."
+              echo "Server ready after ${i} attempt(s)."
               exit 0
             fi
             sleep 3
           done
-          echo "::warning::Preview did not return 200 within ~90s warm-up cap; proceeding (raised budgets cover residual latency)."
-        env:
-          TARGET_URL: ${{ github.event.deployment_status.target_url }}
-          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          echo "::error::next start did not serve 200 within ~90s."
+          tail -50 /tmp/next-start.log
+          exit 1
 
       - name: Run E2E tests
         # MEH-484 — --fail-on-flaky-tests turns "passed on retry" into a hard
@@ -146,13 +159,8 @@ jobs:
         run: npx playwright test --fail-on-flaky-tests
         working-directory: frontend
         env:
-          TEST_URL: ${{ github.event.deployment_status.target_url }}
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
           CI: "true"
-          # MEH-264 — Vercel Deployment Protection bypass. Without this
-          # secret, every Vercel preview URL returns 403 "host_not_allowed"
-          # and the whole E2E suite fails instantly. Consumed by
-          # frontend/playwright.config.ts via extraHTTPHeaders.
-          VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
