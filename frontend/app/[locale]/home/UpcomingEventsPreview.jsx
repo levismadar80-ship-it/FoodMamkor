@@ -8,6 +8,7 @@ import api from "@/lib/api";
 // MEH-785: locale-aware dates via the shared helper — replaces the local
 // formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
 import { formatEventDate } from "@/lib/format-date";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
  * Small inline component for "upcoming events" homepage preview.
@@ -48,7 +49,7 @@ export function UpcomingEventsPreview() {
             {ev.image_url && (
               <div
                 className="h-40 bg-cover bg-center"
-                style={{ backgroundImage: `url(${ev.image_url})` }}
+                style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url)})` }}
               />
             )}
             <div className="p-4">

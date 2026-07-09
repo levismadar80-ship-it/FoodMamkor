@@ -22,6 +22,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 function splitLines(text) {
   if (!text) return [];
@@ -67,7 +68,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {recipe.image_url && (
         <div className="relative aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
           <Image
-            src={recipe.image_url}
+            src={optimizeCloudinary(recipe.image_url)}
             alt={recipe.title}
             fill
             sizes="(max-width: 768px) 100vw, 768px"
