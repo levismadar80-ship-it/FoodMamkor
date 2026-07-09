@@ -350,6 +350,15 @@
       "audit_verdict": "approved",
       "notes": "Audited MEH-403. Chains to product-marketing-context. Pure marketing/CRO/SEO prose, no scripts. Author: Corey Haines."
     },
+    "mehamakor-dod": {
+      "source": "internal",
+      "author_verified": false,
+      "last_audit_date": "2026-07-09",
+      "audit_verdict": "approved",
+      "notes": "Authored internally (MEH-1052). Executable DoD self-check: check.sh runs local build/vitest/pytest + reuses .claude/scripts/rtl-scan.sh and the MEH-978 en-parity-guard. Bash only, no network, no tools/ bypass.",
+      "allowed_shell_invocations": [],
+      "allowed_network_hosts": []
+    },
     "normalize": {
       "source": "pbakaus/impeccable",
       "author_verified": false,

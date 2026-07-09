@@ -575,6 +575,8 @@ Code session = quota usage. Use on-demand, never always-on.
 
 Tasks auto-expire after 7 days.
 
+**Loop-primitive tiers + DoD self-check (MEH-1052):** `/goal` · `/loop` · `/schedule` authority by GREEN/YELLOW/RED — and the `mehamakor-dod` skill (`bash .claude/skills/mehamakor-dod/check.sh`; exit 0 = mechanical DoD met, required before any GREEN `/goal` declares itself done) — are defined in [ADR-025](../../docs/decisions/ADR-025-loop-tiers.md).
+
 ---
 
 22. **Copy approval gate before Linear issue creation (MEH-579 lesson, May 14 2026).**
