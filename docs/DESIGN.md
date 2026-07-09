@@ -324,6 +324,15 @@ front matter for the normative token bindings.
   pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
   First image is eager (`priority`); the rest are lazy. Imageless state = the
   Tinted Masthead (MEH-815, unchanged). RTL logical props only.
+- **Producer trust strip (`ProducerHeader` + `ReviewExcerpt`, MEH-1048):** social
+  proof beside the h1. A `green-50`/`accent` pill **`★ 4.8 · N ביקורות`** (Phosphor
+  `Star`) links to the reviews section (`<a href="#reviews">` → `id="reviews"
+  scroll-mt-24`); the rating decimal is `dir="ltr"` + `.numeric` (RTL flip guard).
+  Below the tagline, one **review excerpt** (`Quotes` glyph in `accent`, italic
+  `fg-muted`, `line-clamp-2`, ≤120 chars + `…`) — the most-recent review with text,
+  also linking to `#reviews`. **Zero reviews → the whole strip is absent** (no
+  "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
+  excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
 
 ## Do's and Don'ts
 

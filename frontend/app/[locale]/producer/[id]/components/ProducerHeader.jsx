@@ -6,6 +6,7 @@ import BadgeRow from "@/components/BadgeRow";
 import CategoryTag from "@/components/CategoryTag";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import TrustBadge from "@/components/TrustBadge";
+import ReviewExcerpt from "./ReviewExcerpt";
 
 /**
  * Main-column header block for the producer detail page.
@@ -49,16 +50,20 @@ export default function ProducerHeader({
         <BadgeRow producer={producer} />
         {/* MEH-51: trust tier badge */}
         <TrustBadge tier={producer.trust_tier} />
+        {/* MEH-1048: trust strip — rating + review count as an anchor that
+            scrolls to the lazy reviews section (#reviews, ProducerSections).
+            Zero reviews → nothing (reviews_count guard). Rating decimal is
+            dir="ltr" + .numeric so RTL can't flip "4.8" → "8.4" (MEH-763). */}
         {producer.reviews_count > 0 && (
-          <span
-            className="inline-flex items-center gap-1 bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full"
-            title={t("producer.detail.header.review_count", { count: producer.reviews_count })}
+          <a
+            href="#reviews"
+            className="inline-flex items-center gap-1 bg-green-50 text-accent border border-accent/20 text-xs px-3 py-1 rounded-full hover:bg-green-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 transition-colors"
           >
-            {/* MEH-76: emoji star -> Phosphor; rating digits bidi-isolated
-                (.numeric, MEH-763 convention). */}
             <Star size={12} weight="fill" aria-hidden="true" />
-            <span className="numeric">{Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})</span>
-          </span>
+            <span className="numeric" dir="ltr">{Number(producer.avg_rating).toFixed(1)}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t("producer.detail.header.review_count", { count: producer.reviews_count })}</span>
+          </a>
         )}
         {producer.plan === "premium" && (
           <span className="bg-accent text-white text-xs px-3 py-1 rounded-full">
@@ -86,6 +91,11 @@ export default function ProducerHeader({
           {producer.short_description}
         </p>
       )}
+
+      {/* MEH-1048 (chunk 2): one short review quote above the fold. Self-guards
+          on reviews_count (no fetch when zero) and renders nothing if no review
+          has text — so it never adds empty space. */}
+      <ReviewExcerpt producerId={producer.id} reviewsCount={producer.reviews_count} />
 
       {producer.contact_name && (
         <p className="text-[12px] text-fg-muted mt-0.5">
