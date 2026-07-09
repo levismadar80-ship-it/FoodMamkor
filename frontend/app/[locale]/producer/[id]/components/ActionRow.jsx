@@ -25,7 +25,6 @@ import { markWhatsAppClickedLocal, pingWhatsAppBeacon } from "@/lib/contact-trac
  */
 export default function ActionRow({
   producer,
-  user,
   inlineCTARef,
   shareUrl,
   onShowOnMap,
@@ -70,17 +69,10 @@ export default function ActionRow({
           </button>
         )}
         <WhatsAppShareButton producer={producer} url={shareUrl} />
-        {/* MEH-49: referral chip — only for logged-in users with a referral code */}
-        {user?.referral_code && (
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(t("producer.detail.action_row.referral_msg", { code: user.referral_code }))}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 border border-border text-fg-muted px-4 min-h-[44px] rounded-md hover:bg-green-50 transition text-sm font-medium"
-          >
-            {t("producer.detail.action_row.referral_cta")}
-          </a>
-        )}
+        {/* MEH-1049: platform-wide "שתפו וקבלו 10%" referral chip removed —
+            a platform promise made on businesses' behalf without opt-in.
+            Merchant-owned offers tracked in MEH-1050. Referral backend
+            (/referral/claim, referral_code) untouched. */}
       </div>
     </>
   );

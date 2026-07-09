@@ -714,9 +714,7 @@
         "aria": {
           "show_on_map": "Open the business location on the map"
         },
-        "show_on_map": "Show on map",
-        "referral_msg": "I discovered Mehamakor — amazing local food businesses 🌿\nJoin with my link and get 10% off: https://mehamakor.co.il/ref/{code}",
-        "referral_cta": "Share and get 10%"
+        "show_on_map": "Show on map"
       },
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
