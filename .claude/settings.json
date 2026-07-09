@@ -281,7 +281,6 @@
       "Bash(alembic upgrade*)",
       "Bash(alembic downgrade*)",
       "Bash(alembic stamp*)",
-      "Bash(alembic revision*)",
       "Bash(railway up*)",
       "Bash(railway redeploy*)",
       "Bash(railway run*)",
@@ -299,7 +298,6 @@
       "Bash(vercel domains*)",
       "Bash(vercel env*)",
       "Bash(vercel link*)",
-      "Bash(gh pr merge*)",
       "Bash(gh pr close*)",
       "Bash(rm *)",
       "Bash(del *)",
@@ -316,7 +314,6 @@
       "Bash(curl -X POST*)",
       "Edit(backend/app/main.py)",
       "Edit(backend/app/config.py)",
-      "Edit(.github/workflows/**)",
       "Edit(.claude/settings.json)",
       "Edit(.claude/hooks/**)",
       "Edit(frontend/middleware.ts)",
@@ -332,7 +329,6 @@
       "Edit(package-lock.json)",
       "Edit(pyproject.toml)",
       "Edit(uv.lock)",
-      "Write(.github/workflows/**)",
       "Write(.claude/settings.json)",
       "Write(.env*)"
     ]
