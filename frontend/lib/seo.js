@@ -29,6 +29,36 @@ const IN_LANGUAGE = { he: "he-IL", en: "en-US" };
 const COUNTRY_LABEL = { he: "ישראל", en: "Israel" };
 
 /**
+ * MEH-1069: single owner of JSON-LD serialization for every
+ * `<script type="application/ld+json">` injection site (7 sites, all routed
+ * through here — do NOT call raw JSON.stringify inside a script tag; that is
+ * the `</script>` breakout the auto-review flagged on #1545, and a second
+ * escaper would recreate the two-mechanism drift MEH-271 warns against).
+ *
+ * Escapes the three HTML-significant characters to their `\uXXXX` JSON string
+ * escapes. `<` for `<` is the load-bearing one: it stops a `</script>`
+ * inside any user-derived string (producer name, event title, review body)
+ * from closing the tag early and injecting markup. `>` and `&` are escaped
+ * too as defense-in-depth (breaks `]]>`, HTML entities). All three outputs
+ * are valid JSON — a spec-compliant JSON parser decodes them back to `< > &`,
+ * so the rendered schema.org data is byte-identical; only the wire bytes
+ * change.
+ *
+ * NOTE: the source strings MUST be the 6-char sequences "\\u003c" etc. — a
+ * bare "<" in JS source is the literal char `<` (a no-op). Verified by
+ * the '</script>' breakout unit test.
+ *
+ * @param {unknown} obj the JSON-LD object (or @graph wrapper) to serialize
+ * @returns {string} HTML-safe JSON string for dangerouslySetInnerHTML
+ */
+export function serializeJsonLd(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
+/**
  * Build the <title> per the MEH-9 spec:
  *   [name] — [category] ב[city] | מהמקור
  *

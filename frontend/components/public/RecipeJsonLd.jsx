@@ -11,6 +11,8 @@
  * Server-component-safe: pure props → string. No React hooks.
  */
 
+import { serializeJsonLd } from "@/lib/seo"; // MEH-1069: shared JSON-LD escaper
+
 const ISO_MIN_LIMIT = 1440; // matches the Pydantic ge/le on prep/cook fields.
 
 function minutesToIso8601(minutes) {
@@ -72,7 +74,7 @@ export default function RecipeJsonLd({ recipe, producerName, canonicalUrl }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }

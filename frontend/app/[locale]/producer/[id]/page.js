@@ -1,5 +1,5 @@
 import ProducerDetail from "./ProducerDetail";
-import { buildProducerMetadata, buildJsonLd } from "@/lib/seo";
+import { buildProducerMetadata, buildJsonLd, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -53,7 +53,7 @@ function ProducerJsonLd({ producer, locale }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
     />
   );
 }
