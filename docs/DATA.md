@@ -83,7 +83,7 @@ producers (
   phone, instagram, website, whatsapp_group, facebook, external_order_form,
   status: pending|approved|rejected|inactive,
   images text[],
-  is_verified bool,
+  is_verified bool,           -- MEH-766 ch5: NOT serialized (contract = verification_tier/verified_at); column drops in ch6
   plan: free|premium,
   slug text unique,
   contact_name, top_product_name,

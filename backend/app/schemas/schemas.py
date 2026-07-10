@@ -708,7 +708,8 @@ class ProducerListOut(BaseModel):
     lat: float | None = None
     lng: float | None = None
     status: str = "pending"
-    is_verified: bool = False
+    # MEH-766 ch5: is_verified removed from the public contract — the tier
+    # surface is verification_tier/verified_at (ADR-022). Column drops in ch6.
     plan: str = "free"
     slug: str | None = None
     top_product_name: str | None = None
