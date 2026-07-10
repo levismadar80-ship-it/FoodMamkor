@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — Cleanup batch: 14 tickets Done, gold LOCK closed
+Done: MEH-994, 996, 1035, 970, 1042, 1041, 1032, 1033, 1047, 1027, 1064, 1068, 1069, 1065.
+Backlog: MEH-903 (post-launch).
+Gold #896714 LOCK fully closed: #1544 (2 code sites) + #1573 (4 synced DS assets, hex+rgb). Source clean; future /design-sync regenerates cleanly.
+Carry-forward (not blocking): wider design-reference/ tree (_archive, _preview, s2-logo, uploads) still has stale #8b6914 — low-pri post-launch sweep candidate, not build-fed.
+STILL OPEN: (1) PR triage batch NOT YET RUN — undraft #1492, 8 Dependabot merge-safety verdicts, #1391/MEH-787 uv-lock gate READY assessment. (2) Sentry replay-masking dashboard verify on staging (MEH-1068). (3) CMP legal-copy tickets from MEH-1064 report — parked, need Sapir wording.
+
 ## 2026-07-10 — MEH-1077: discovery anti-pattern audit — findings matrix (docs-only PR, Refs MEH-1077)
 
 - **Branch:** `feature/meh-1077-discovery-antipattern-audit` off `origin/staging` (clean cut, divergence 0; harness `claude/*` branch recreated as `feature/*` per rule 3). GREEN end-to-end (read-only audit, docs-only PR). **Audit only — zero product-code changes.**
