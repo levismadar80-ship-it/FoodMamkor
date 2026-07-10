@@ -128,6 +128,9 @@ class TestNotifyAdminNewCategoryRequestService:
         monkeypatch.setattr(
             svc, "send_text", MagicMock(side_effect=RuntimeError("boom"))
         )
+        # Mock the email channel too so a set admin_email never reaches the
+        # real Resend client when RESEND_API_KEY is present in CI.
+        monkeypatch.setattr(svc, "send_email", MagicMock())
         monkeypatch.setattr(settings, "admin_whatsapp_to", "+972500000001")
         monkeypatch.setattr(settings, "admin_email", "admin@example.com")
 
