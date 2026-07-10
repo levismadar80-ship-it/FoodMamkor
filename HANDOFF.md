@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — MEH-1086: error-color sweep completion (T1) + ADR-025/026 index rows — PR #1571
+
+- **Branch:** `feature/meh-1086-error-color-sweep` off `origin/staging` (harness had auto-created a `claude/*` branch — recut per repo rule). YELLOW chunk-by-chunk with WAIT gates; Sapir approved all three chunks + self-merge on green gates. **PR #1571.** `Refs MEH-1073` · `Closes MEH-1086`.
+- **Premise correction (meta-patterns §1):** ticket said "write the missing ADR-026 retroactively" — ADR-026 already existed on staging (PR #1561, complete: token pair, M3 basis, ratios, narrows-ADR-019 framing). Chunk A re-scoped with Sapir's approval to the genuine gap: `docs/decisions/README.md` index rows for ADR-025 + ADR-026 (table ended at 024).
+- **Chunk B (error reds only):** `ui/Input.jsx:63,73` · `RegisterClient.jsx:298,325` (border-red-400 sibling gap ADR-026 flagged) · `VerifyBanner.jsx:82` · `PhoneVerifyCard.jsx:130` · `RecipeForm.jsx:322` → `text-error`/`border-error`; `ui-Input.test.jsx:42` assertion updated. All surfaces re-verified ≥4.5:1 (worst: VerifyBanner on `background-alt` 5.18:1). Left untouched per scope: RecipeForm asterisks 162/188/204 + image-remove 270 (non-error reds).
+- **Chunk C dropped (Sapir decision):** `BottomNav.jsx:184` `text-[#4b4841]` stays — it's the MEH-919 AA fix (4.55:1); `fg-muted` is 3.53:1 on the sage capsule and would REGRESS it. A nav-muted token = separate ADR-019 exception if ever wanted.
+- **Verify:** compiled CSS emits `.border-error`/`.text-error` (first border-scale use of the token — config spreads tokens into full `colors`); `npm run build` exit 0; vitest 849 passed; adversarial review 0 REFEREE verdicts; Playwright QA comment PASS on the docs-only commit.
+- **Known pre-existing (not filed here):** RecipeForm required-asterisks `text-red-500` ≈3.3:1 — required-marker semantics, candidate for a future ticket.
+
 ## 2026-07-10 — MEH-991 Chunk 3: Playwright VRT baselines (Launch Sprint MEH-1074, Wave 0.3) — closes the MEH-991 epic
 
 - **Branch:** `feature/meh-991-parity-vrt` off `origin/staging`. Autonomous run under MEH-1074/ADR-016 v2. `Refs MEH-1074` · `Closes MEH-991`.
