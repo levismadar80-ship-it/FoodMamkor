@@ -13,6 +13,10 @@ export default function EmptyState({
   ctaOnClick,
   secondaryLabel,
   secondaryHref,
+  // MEH-1097 (F15): optional ghost "this is what a good entry looks like" card,
+  // rendered under the description. Presentational only — aria-hidden and
+  // non-interactive; existing consumers that omit it are unaffected.
+  example,
 }) {
   return (
     <div className="text-center py-12 px-6">
@@ -26,6 +30,11 @@ export default function EmptyState({
       <h3 className="font-headline-md text-2xl font-bold text-text mb-2">{title}</h3>
       {description && (
         <p className="text-[15px] text-fg-muted max-w-xs mx-auto mb-6">{description}</p>
+      )}
+      {example && (
+        <div aria-hidden="true" className="mb-6 flex justify-center">
+          {example}
+        </div>
       )}
       {ctaLabel && (ctaHref || ctaOnClick) && (
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
