@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 
 import { TOGGLE_CHIPS } from "@/lib/map-chips";
@@ -81,6 +82,19 @@ export default function FilterSheet({
 
   if (!open) return null;
 
+  // MEH-1075 adversarial-review fix: on /map the mobile trigger lives inside
+  // the sticky filter bar (MapClient.jsx:456), whose `backdrop-blur` makes it
+  // the CONTAINING BLOCK for fixed descendants and traps z-[1200] inside the
+  // bar's z-[50] stacking context — an in-place `fixed` sheet renders clipped
+  // inside the bar, below the map controls. Below md, portal the overlay to
+  // <body>. Safe to read matchMedia during render: `open` is only ever set by
+  // a client-side click, so this branch never runs on the server. Desktop
+  // (md+) stays in place — the anchored panel needs the trigger's `relative`
+  // wrapper. (Resize while open is a known cosmetic edge; reopen recovers.)
+  const isMdUp =
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 768px)").matches;
+
   const onHandleTouchStart = (e) => {
     dragStartY.current = e.touches[0].clientY;
   };
@@ -91,7 +105,7 @@ export default function FilterSheet({
     if (dy > DRAG_CLOSE_PX) onClose();
   };
 
-  return (
+  const overlay = (
     <div>
       {/* Backdrop — dimmed scrim on mobile, invisible click-away layer on
           desktop (the anchored panel needs outside-click close, not dimming). */}
@@ -175,4 +189,6 @@ export default function FilterSheet({
       </div>
     </div>
   );
+
+  return isMdUp ? overlay : createPortal(overlay, document.body);
 }
