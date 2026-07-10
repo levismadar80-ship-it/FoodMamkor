@@ -169,7 +169,7 @@ function CustomQuestionsCard({ profile, onSave }) {
               setQuestions(updated);
             }}
             placeholder={t(`placeholder_${i + 1}`)}
-            className="w-full border border-[#e5e0d8] rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
+            className="w-full border border-border rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
             dir="rtl"
           />
         ))}
@@ -306,20 +306,40 @@ function ContactChannelsCard({ profile, onSave }) {
       <fieldset className="mt-5">
         <legend className="text-sm font-medium text-text mb-2">{t("primary_legend")}</legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {PRIMARY_METHODS.map((m) => (
-            <label key={m} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="radio"
-                name="primary_contact_method"
-                value={m}
-                checked={form.primary_contact_method === m}
-                onChange={() => upd("primary_contact_method", m)}
-                className="accent-primary"
-              />
-              <span>{t(`primary_${m}`)}</span>
-            </label>
-          ))}
+          {PRIMARY_METHODS.map((m) => {
+            // MEH-1093 F5: disable a method whose backing field is empty up-front
+            // (except the current selection — the save-time guard + inline hint
+            // still cover that), so the owner can't pick a channel that would
+            // only fail on save. Filling the field re-enables it live.
+            const backing = METHOD_FIELD[m];
+            const backingEmpty = backing && !form[backing].trim();
+            const disabled = backingEmpty && form.primary_contact_method !== m;
+            return (
+              <label
+                key={m}
+                title={disabled ? t("hint_empty") : undefined}
+                className={`flex items-center gap-2 text-sm ${
+                  disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="primary_contact_method"
+                  value={m}
+                  checked={form.primary_contact_method === m}
+                  disabled={disabled}
+                  onChange={() => upd("primary_contact_method", m)}
+                  className="accent-primary"
+                />
+                <span>{t(`primary_${m}`)}</span>
+              </label>
+            );
+          })}
         </div>
+        {PRIMARY_METHODS.some((m) => {
+          const b = METHOD_FIELD[m];
+          return b && !form[b].trim() && form.primary_contact_method !== m;
+        }) && <p className="text-xs text-fg-muted mt-2">{t("hint_empty")}</p>}
       </fieldset>
 
       {errorMsg && (
