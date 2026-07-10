@@ -258,12 +258,12 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         className="flex-1 min-w-0 bg-transparent outline-none text-text placeholder:text-fg-muted text-base focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
         autoComplete="off"
         role="combobox"
-        aria-expanded={(showAutocomplete && hasAutoResults) || showEmpty}
+        aria-expanded={showAutocomplete || showEmpty}
         aria-autocomplete="list"
         aria-controls="hero-search-listbox"
         aria-activedescendant={
-          isAutocomplete && hasAutoResults
-            ? `hero-search-row-${highlightIdx}`
+          isOpen && navRows.length > 0
+            ? `hero-search-row-${Math.min(highlightIdx, navRows.length - 1)}`
             : undefined
         }
       />
@@ -363,6 +363,8 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {/* ---- Empty-input dropdown (recent or trending) ---- */}
       {showEmpty && (
         <div
+          id="hero-search-listbox"
+          role="listbox"
           data-testid="hero-search-history"
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-start"
           dir="rtl"
