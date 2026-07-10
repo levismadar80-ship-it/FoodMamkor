@@ -32,11 +32,10 @@ def test_admin_create_leaves_is_verified_false(client, db):
         headers=auth_header(admin),
     )
     assert resp.status_code == 201, resp.text
-    assert (
-        resp.json()["is_verified"] is False
-    )  # serialized output (ch5 field, still emitted)
+    # MEH-766 ch5: is_verified is no longer part of the serialized contract.
+    assert "is_verified" not in resp.json()
     producer = db.query(Producer).filter(Producer.id == resp.json()["id"]).first()
-    assert producer.is_verified is False  # the DB row itself
+    assert producer.is_verified is False  # the DB row itself (column drops ch6)
 
 
 def test_admin_create_ignores_is_verified_in_payload(client, db):
@@ -50,7 +49,10 @@ def test_admin_create_ignores_is_verified_in_payload(client, db):
         headers=auth_header(admin),
     )
     assert resp.status_code == 201, resp.text
-    assert resp.json()["is_verified"] is False
+    # MEH-766 ch5: field absent from output; the DB row proves the ignore.
+    assert "is_verified" not in resp.json()
+    producer = db.query(Producer).filter(Producer.id == resp.json()["id"]).first()
+    assert producer.is_verified is False
 
 
 def test_admin_put_cannot_set_is_verified(client, db):
@@ -71,3 +73,20 @@ def test_admin_put_cannot_set_is_verified(client, db):
     db.refresh(producer)
     assert producer.is_verified is False  # writer retired — the PUT could not set it
     assert producer.name == "עסק PUT מעודכן"  # but the rest of the update applied
+
+
+def test_public_list_output_has_no_is_verified(client, db):
+    # MEH-766 ch5 (Contract): the public producers list no longer serializes
+    # the legacy boolean — verification_tier/verified_at are the only public
+    # verification surface (ADR-022). Locks the contract so ch6's DROP can't
+    # surprise a consumer.
+    producer = make_producer(db, name="עסק חוזה ציבורי")
+    producer.status = "approved"
+    db.commit()
+    resp = client.get("/producers")
+    assert resp.status_code == 200, resp.text
+    items = resp.json()
+    assert items, "expected the approved producer in the public list"
+    for item in items:
+        assert "is_verified" not in item
+        assert "verification_tier" in item

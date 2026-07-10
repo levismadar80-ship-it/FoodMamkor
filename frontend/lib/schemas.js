@@ -11,9 +11,10 @@ export const ProducerSchema = z.object({
   lng: z.number().finite().nullable().optional(),
   phone: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
-  is_verified: z.boolean().optional(),
-  // MEH-766 ch1: public doc-verification tier (computed backend, ProducerListOut:786).
-  // Declared so z.object stops stripping it; seals read this, is_verified kept (drops ch5).
+  // MEH-766 ch5: is_verified dropped from the backend contract (ADR-022) —
+  // seals read verification_tier below; the legacy boolean is gone.
+  // MEH-766 ch1: public doc-verification tier (computed backend, ProducerListOut).
+  // Declared so z.object stops stripping it.
   verification_tier: z.enum(["verified", "declared"]).nullable().optional(),
   plan: z.string().optional(),
   images: z.array(z.string()).optional().default([]),
