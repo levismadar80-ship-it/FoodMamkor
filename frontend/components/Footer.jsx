@@ -189,7 +189,7 @@ export default function Footer() {
               <p
                 role="status"
                 aria-live="polite"
-                className={`text-sm mt-3 ${status === "success" ? "text-green-50" : "text-red-200"}`}
+                className={`text-sm mt-3 ${status === "success" ? "text-green-50" : "text-error-on-dark"}`}
               >
                 {message}
               </p>

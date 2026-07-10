@@ -22,6 +22,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 function splitLines(text) {
   if (!text) return [];
@@ -45,7 +46,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         className="text-sm text-fg-muted mb-6"
         aria-label={t("breadcrumb_aria")}
       >
-        <Link href={`/${producer.slug}`} className="hover:underline">
+        <Link href={`/${producer.slug}`} className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
           {producer.name}
         </Link>
         <span className="mx-2" aria-hidden="true">
@@ -53,7 +54,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </span>
         <Link
           href={`/${producer.slug}#recipes`}
-          className="hover:underline"
+          className="hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {t("breadcrumb_recipes")}
         </Link>
@@ -67,7 +68,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {recipe.image_url && (
         <div className="relative aspect-[16/9] bg-green-50 rounded-[16px] overflow-hidden mb-6">
           <Image
-            src={recipe.image_url}
+            src={optimizeCloudinary(recipe.image_url)}
             alt={recipe.title}
             fill
             sizes="(max-width: 768px) 100vw, 768px"
@@ -76,7 +77,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </div>
       )}
 
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
+      <h1 className="font-headline-lg text-3xl font-black text-text mb-3">
         {recipe.title}
       </h1>
 
@@ -189,7 +190,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
       {/* Back link */}
       <Link
         href={`/${producer.slug}`}
-        className="text-sm text-primary hover:underline"
+        className="text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         {t("back_to_producer")}
       </Link>

@@ -8,6 +8,7 @@ import api from "@/lib/api";
 // MEH-785: locale-aware dates via the shared helper — replaces the local
 // formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
 import { formatEventDate } from "@/lib/format-date";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 
 /**
  * Small inline component for "upcoming events" homepage preview.
@@ -30,7 +31,7 @@ export function UpcomingEventsPreview() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y border-t border-border">
       <div className="flex items-baseline justify-between mb-8">
-        <h2 className="font-headline-lg font-bold text-text flex items-center gap-2" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg text-headline-lg text-text flex items-center gap-2">
           <Calendar size={16} className="text-current" />
           {t("home.events.heading")}
         </h2>
@@ -43,12 +44,12 @@ export function UpcomingEventsPreview() {
           <Link
             key={ev.id}
             href={`/events/${ev.id}`}
-            className="bg-background border border-border rounded-[16px] overflow-hidden transition"
+            className="bg-background border border-border rounded-[16px] overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
           >
             {ev.image_url && (
               <div
                 className="h-40 bg-cover bg-center"
-                style={{ backgroundImage: `url(${ev.image_url})` }}
+                style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url)})` }}
               />
             )}
             <div className="p-4">
@@ -60,7 +61,8 @@ export function UpcomingEventsPreview() {
                 {ev.producer_name} · {ev.city}
               </p>
               <p className="text-sm text-accent font-semibold">
-                {ev.price > 0 ? `₪${ev.price}` : t("home.events.free")}
+                {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
+                {ev.price > 0 ? <span dir="ltr">{`₪${ev.price}`}</span> : t("home.events.free")}
               </p>
             </div>
           </Link>

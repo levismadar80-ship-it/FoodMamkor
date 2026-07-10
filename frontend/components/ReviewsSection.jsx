@@ -122,7 +122,7 @@ function ReviewReply({ review, isOwner, onSaved }) {
           className="w-full border border-border rounded-[8px] px-3 py-2 bg-white resize-none focus-visible:ring-2 focus-visible:ring-primary/40 outline-none text-[14px]"
         />
         {error && (
-          <p className="text-sm text-red-600 mt-1" role="alert">{error}</p>
+          <p className="text-sm text-error mt-1" role="alert">{error}</p>
         )}
         <div className="flex items-center gap-4 mt-2">
           <button
@@ -367,7 +367,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <p className="text-xs text-fg-muted mt-1">{body.length}/500</p>
               </div>
               {error && (
-                <p className="text-sm text-red-600" role="alert">
+                <p className="text-sm text-error" role="alert">
                   {error}
                 </p>
               )}

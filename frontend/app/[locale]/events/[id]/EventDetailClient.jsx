@@ -7,6 +7,7 @@ import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 
 const DETAIL_DATE_OPTIONS = {
@@ -75,7 +76,7 @@ export default function EventDetailClient() {
       {event.image_url && (
         <div
           className="h-[360px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${event.image_url})` }}
+          style={{ backgroundImage: `url(${optimizeCloudinary(event.image_url)})` }}
           role="img"
           aria-label={event.title}
         />
@@ -95,7 +96,7 @@ export default function EventDetailClient() {
           {event.category}
         </span>
 
-        <h1 className="font-headline-display text-4xl md:text-5xl font-bold text-text mb-4">
+        <h1 className="font-headline-display text-4xl md:text-5xl font-black text-text mb-4">
           {event.title}
         </h1>
 
@@ -117,7 +118,8 @@ export default function EventDetailClient() {
                 glyph leads in this row's accent color — same principle as MapPin
                 leading its row in text-primary at :96. */}
             <Coins size={16} className="text-accent inline align-[-3px]" aria-hidden="true" />
-            {event.price > 0 ? `₪${event.price}` : t("free")}
+            {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
+            {event.price > 0 ? <span dir="ltr">{`₪${event.price}`}</span> : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">
