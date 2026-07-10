@@ -10,8 +10,8 @@ vi.mock("next-intl", () => ({
   useLocale: () => mockLocale.current,
   useTranslations: () => (key, vars = {}) => {
     const flat = {
-      red_headline: "הפרופיל שלך חסר פרטים קריטיים",
-      red_sub: "בלעדיהם לקוחות לא יראו אותך במפה ובחיפוש",
+      red_headline: "עוד כמה פרטים חשובים ואתם באוויר",
+      red_sub: "מיקום ופרטי קשר עוזרים ללקוחות למצוא אתכם ולפנות אליכם",
       yellow_low_headline: "הפרופיל שלך {percent}% מוכן",
       yellow_low_sub: "עוד כמה פרטים ותוכלי להתחיל לקבל לקוחות",
       yellow_high_headline: "כמעט שם — {percent}% מוכן",
@@ -77,11 +77,13 @@ describe("ProfileCompletenessCard", () => {
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
   });
 
-  it("red → critical-missing headline + progressbar + CTA", () => {
-    // Missing city → red. 1 of 6 missing → 83% filled, but the red copy wins.
+  it("red-tier → positive (non-threat) headline + progressbar + CTA", () => {
+    // Missing city → red tier. 1 of 6 missing → 83% filled. MEH-1092: the
+    // headline is framed positively (no "critical/threat" copy), the ring is
+    // gold not red — but the tier still drives the CTA target (/settings).
     render(<ProfileCompletenessCard producer={{ ...base, city: null }} />);
     expect(
-      screen.getByText("הפרופיל שלך חסר פרטים קריטיים"),
+      screen.getByText("עוד כמה פרטים חשובים ואתם באוויר"),
     ).toBeInTheDocument();
     const ring = screen.getByRole("progressbar");
     expect(ring).toHaveAttribute("aria-valuenow", "83");

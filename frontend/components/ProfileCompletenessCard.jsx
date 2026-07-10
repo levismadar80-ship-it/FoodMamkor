@@ -46,9 +46,12 @@ const FIELD_KEY = Object.fromEntries(
 
 // Ring stroke per priority. Raw hex in the SVG stroke attribute follows the
 // existing inline-SVG precedent in the dashboard (ViewsLineChart, page.js:613).
+// MEH-1092 (F3): incomplete never uses red — a partial profile is progress, not
+// a failure. Both incomplete tiers use the gold token (#896714); complete uses
+// the primary token (#2e6853). No threat colour.
 const RING_STROKE = {
-  red: "#B91C1C",
-  yellow: "#C98600",
+  red: "#896714",
+  yellow: "#896714",
   green: "#2e6853",
 };
 

@@ -3642,8 +3642,8 @@
         "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
       },
       "completeness": {
-        "red_headline": "Your profile is missing critical details",
-        "red_sub": "Without them, customers won't see you on the map or in search",
+        "red_headline": "A few key details left before you're live",
+        "red_sub": "Location and contact details help customers find and reach you",
         "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
         "yellow_high_headline": "Almost there — {percent}% ready",
