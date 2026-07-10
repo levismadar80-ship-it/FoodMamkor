@@ -133,7 +133,6 @@ class TestResetPasswordPolicy:
         assert "same_as_current" in resp.json()["detail"]["failures"]
 
     def test_reset_password_valid_succeeds_invalidates_old_jwt(self, client, db):
-        from app.models import User
 
         user = make_user(db, password="OldPass9!")
         # Stamp pre-existing iat-anchor so the JWT issued before reset is

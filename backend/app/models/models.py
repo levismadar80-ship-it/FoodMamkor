@@ -72,7 +72,8 @@ class Producer(Base):
         String(20), default="pending"
     )  # pending | approved | rejected | inactive
     images = Column(ARRAY(Text), default=[])
-    is_verified = Column(Boolean, default=False)
+    # MEH-766 ch6: is_verified DROPPED (revision d4e7a92c81b5) — verification
+    # is verification_tier/verified_at only (ADR-022). Do not re-add.
     # MEH-18: manual "מומלץ" (recommended) badge toggled by admins. Separate
     # from the "verified" trust badge — recommended ≈ editorial pick.
     is_recommended = Column(Boolean, default=False)

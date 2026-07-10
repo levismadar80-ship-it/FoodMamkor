@@ -18,7 +18,7 @@ Two admin paths could create the orphan:
 
 Registration is already atomic and is NOT touched by this work.
 """
-from app.models import Producer, User
+from app.models import Producer
 
 from tests.conftest import auth_header, make_producer, make_user
 

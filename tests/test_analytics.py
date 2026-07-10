@@ -17,17 +17,14 @@ They use the shared pytest fixtures in conftest.py.
 from datetime import datetime, timedelta
 
 from app.models.models import (
-    Event,
     Experience,
     HomeProduct,
-    Producer,
     ProducerFollower,
     ProducerPageView,
-    ProducerReview,
     ProducerWhatsAppClick,
     Report,
 )
-from conftest import auth_header, make_category, make_producer, make_user
+from conftest import auth_header, make_producer, make_user
 
 
 # ============================================================

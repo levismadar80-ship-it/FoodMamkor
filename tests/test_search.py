@@ -17,7 +17,7 @@ import pytest
 from sqlalchemy import text
 
 from app.models.models import Product
-from conftest import auth_header, make_category, make_producer, make_user
+from conftest import make_category, make_producer
 
 
 class TestProducerSearch:

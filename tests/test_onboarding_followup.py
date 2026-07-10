@@ -54,7 +54,6 @@ def _make_producer_user(
         lat=32.0853,
         lng=34.7818,
         status=status,
-        is_verified=True,
         producer_license_number=license_number,
         created_at=backdated,
     )

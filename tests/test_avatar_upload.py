@@ -12,7 +12,6 @@ Coverage:
 import io
 from unittest.mock import patch
 
-from app.models.models import User
 from conftest import auth_header, make_user
 
 # Minimal valid JPEG magic bytes (+ padding to pass size check)

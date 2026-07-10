@@ -8,7 +8,7 @@ that letter stripped before the LIKE, as long as the remainder is
 at least 3 characters.
 """
 import pytest
-from tests.conftest import make_category, make_producer
+from tests.conftest import make_producer
 
 
 def test_search_strips_he_prefix_on_single_word(client, db):

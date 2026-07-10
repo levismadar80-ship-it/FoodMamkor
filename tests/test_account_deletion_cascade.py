@@ -18,7 +18,6 @@ from app.models.models import (
     Favorite,
     PhoneOtpToken,
     Producer,
-    ProducerCategory,
     ProducerFollower,
     ProducerReview,
 )

@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS producers (
     website VARCHAR(200),
     status VARCHAR(20) DEFAULT 'pending',
     images TEXT[] DEFAULT '{}',
-    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

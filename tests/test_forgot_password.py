@@ -9,8 +9,7 @@ Coverage:
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from app.auth import hash_password, verify_password
-from app.models.models import User
+from app.auth import verify_password
 from conftest import make_user
 
 

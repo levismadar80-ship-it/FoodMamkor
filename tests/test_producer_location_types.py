@@ -152,7 +152,6 @@ class TestGeoSearchExcludesDeliveryOnly:
             lat=32.0853,
             lng=34.7818,
             status="approved",
-            is_verified=True,
             has_physical_location=False,
             offers_delivery=True,
             delivery_nationwide=True,

@@ -1,10 +1,8 @@
 """MEH-51: tests for trust tier computation + kashrut badge endpoints."""
-import uuid
 from datetime import datetime, timedelta, timezone
 
-import pytest
 
-from app.models.models import KashrutBadgeRequest, PhoneOtpToken, Producer
+from app.models.models import KashrutBadgeRequest, PhoneOtpToken
 from app.services.trust_tier import compute_trust_tier, VALID_BADGE_CODES
 
 from tests.conftest import make_producer, make_user, auth_header
@@ -19,7 +17,7 @@ class _FakeProducer:
         self.ambassador = kwargs.get("ambassador", False)
         self.reviews_count = kwargs.get("reviews_count", 0)
         self.avg_rating = kwargs.get("avg_rating", 0.0)
-        self.is_verified = kwargs.get("is_verified", False)
+        # MEH-766 ch6: is_verified dropped from the model — the fake mirrors it.
         self.verified_at = kwargs.get("verified_at", None)
         self.phone_verified = kwargs.get("phone_verified", False)
 
@@ -46,10 +44,10 @@ def test_tier3_supersedes_tier2():
     )
 
 
-def test_tier3_decoupled_from_is_verified():
-    # MEH-766 decoupling (the whole point): legacy is_verified=True with
-    # verified_at=None is NO LONGER Tier 3 — falls to Tier 1 (no other qual).
-    assert compute_trust_tier(_FakeProducer(is_verified=True, verified_at=None)) == 1
+def test_tier3_requires_verified_at():
+    # MEH-766: Tier 3 comes ONLY from verified_at (was the ch2 decoupling test
+    # against the legacy is_verified boolean; the column itself dropped in ch6).
+    assert compute_trust_tier(_FakeProducer(verified_at=None)) == 1
 
 
 def test_tier4_reviews_and_rating():
@@ -68,7 +66,7 @@ def test_tier5_ambassador():
 
 def test_tier5_supersedes_all():
     p = _FakeProducer(
-        ambassador=True, is_verified=True, phone_verified=True,
+        ambassador=True, phone_verified=True,
         reviews_count=10, avg_rating=4.9,
     )
     assert compute_trust_tier(p) == 5
@@ -347,8 +345,8 @@ def test_set_ambassador_requires_admin(client, db):
 
 def test_trust_tier_in_producer_list(client, db):
     producer = make_producer(db, name="חוות מ")
-    # MEH-766: Tier 3 sourced from verified_at, not is_verified (make_producer
-    # already sets is_verified=True; that alone no longer earns Tier 3).
+    # MEH-766: Tier 3 is sourced from verified_at only (the legacy
+    # is_verified column dropped in ch6).
     producer.verified_at = datetime.now(timezone.utc)
     db.commit()
 
@@ -359,10 +357,11 @@ def test_trust_tier_in_producer_list(client, db):
     assert match["trust_tier"] == 3
 
 
-def test_trust_tier_decoupled_from_is_verified_in_list(client, db):
-    # MEH-766: a producer with is_verified=True but verified_at=None (the
-    # make_producer default) is NO LONGER Tier 3 in the serialized list.
-    make_producer(db, name="חוות לא מתויגת")  # is_verified=True, verified_at=None
+def test_trust_tier_without_verified_at_in_list(client, db):
+    # MEH-766: without verified_at a producer is below Tier 3 in the
+    # serialized list (was the ch2 decoupling test vs the legacy boolean,
+    # which dropped in ch6).
+    make_producer(db, name="חוות לא מתויגת")  # verified_at=None
 
     r = client.get("/producers")
     assert r.status_code == 200
@@ -372,9 +371,8 @@ def test_trust_tier_decoupled_from_is_verified_in_list(client, db):
 
 
 def test_verified_filter_uses_verified_at(client, db):
-    # MEH-766: ?verified now filters on verified_at, not is_verified. Both
-    # producers have is_verified=True (make_producer default); only the
-    # stamped one has verified_at — proving the decoupling.
+    # MEH-766: ?verified filters on verified_at (the legacy boolean dropped
+    # in ch6); only the stamped producer matches.
     stamped = make_producer(db, name="חוות מאומתת")
     stamped.verified_at = datetime.now(timezone.utc)
     make_producer(db, name="חוות לא מאומתת")  # is_verified=True, verified_at=None
@@ -382,7 +380,7 @@ def test_verified_filter_uses_verified_at(client, db):
 
     names_true = {p["name"] for p in client.get("/producers?verified=true").json()}
     assert "חוות מאומתת" in names_true
-    assert "חוות לא מאומתת" not in names_true  # decoupling: is_verified alone is not enough
+    assert "חוות לא מאומתת" not in names_true  # verified_at is the only qualifier
 
     names_false = {p["name"] for p in client.get("/producers?verified=false").json()}
     assert "חוות לא מאומתת" in names_false
