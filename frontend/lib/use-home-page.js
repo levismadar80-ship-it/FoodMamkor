@@ -117,9 +117,15 @@ export function useHomePage() {
       delivery_city: p.get("city") || "",
       has_delivery: p.get("delivery") === "1",
     };
+    // MEH-1083: hydrate all 7 CHIPS_CONFIG keys — gluten_free/vegan/
+    // lactose_free filtered results without surviving refresh/share
+    // (MEH-1077 DISC-02).
     const initChips = {
       kosher: p.get("kosher") === "1",
       organic: p.get("organic") === "1",
+      gluten_free: p.get("gluten_free") === "1",
+      vegan: p.get("vegan") === "1",
+      lactose_free: p.get("lactose_free") === "1",
       has_delivery: p.get("delivery") === "1",
       verified: p.get("verified") === "1",
     };
@@ -228,6 +234,11 @@ export function useHomePage() {
     if (f.delivery_city) p.set("city", f.delivery_city);
     if (c.kosher) p.set("kosher", "1");
     if (c.organic) p.set("organic", "1");
+    // MEH-1083: diet keys were missing from the serializer — param names
+    // match the chip keys (delivery stays the legacy short name).
+    if (c.gluten_free) p.set("gluten_free", "1");
+    if (c.vegan) p.set("vegan", "1");
+    if (c.lactose_free) p.set("lactose_free", "1");
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
     const qs = p.toString();
