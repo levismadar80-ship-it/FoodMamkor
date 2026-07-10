@@ -50905,7 +50905,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
     "\u05D1\u05E9\u05E8, \u05E2\u05D5\u05E3 \u05D5\u05D3\u05D2\u05D9\u05DD": { color: "#c04040", icon: n7, iconName: "Cow" },
     "\u05D9\u05E8\u05E7\u05D5\u05EA, \u05E4\u05D9\u05E8\u05D5\u05EA \u05D5\u05DE\u05E9\u05E7\u05D9\u05DD": { color: "#2e6853", icon: s16, iconName: "Plant" },
     "\u05D7\u05DC\u05D1 \u05D5\u05D2\u05D1\u05D9\u05E0\u05D5\u05EA": { color: "#4a90d9", icon: n5, iconName: "Cheese" },
-    "\u05DC\u05D7\u05DE\u05D9\u05DD \u05D5\u05D0\u05E4\u05D9\u05D9\u05D4": { color: "#8B6914", icon: n2, iconName: "Bread" },
+    "\u05DC\u05D7\u05DE\u05D9\u05DD \u05D5\u05D0\u05E4\u05D9\u05D9\u05D4": { color: "#896714", icon: n2, iconName: "Bread" },
     // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
     // dedicated identity — brand honey #C8821E + Hexagon (honeycomb) — distinct
     // from oils (#e8a020 + JarLabel).
@@ -54360,7 +54360,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
       {
         size,
         weight: n28 <= value ? "fill" : "regular",
-        color: n28 <= value ? "#8B6914" : "#e8e0d0",
+        color: n28 <= value ? "#896714" : "#e8e0d0",
         "aria-hidden": "true"
       },
       n28
@@ -54384,7 +54384,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
             {
               size: 32,
               weight: filled ? "fill" : "regular",
-              color: filled ? "#8B6914" : "#e8e0d0"
+              color: filled ? "#896714" : "#e8e0d0"
             }
           )
         },
@@ -55650,7 +55650,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
             {
               size: 36,
               weight: filled ? "fill" : "regular",
-              color: filled ? "#8B6914" : "#e8e0d0"
+              color: filled ? "#896714" : "#e8e0d0"
             }
           )
         },
