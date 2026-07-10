@@ -2393,9 +2393,6 @@ class TestGetProducersMeRouteOrder:
         # make_producer fixture is bypassed because its signature
         # (conftest.py:151-159) forces description="Test producer" + non-null
         # lat/lng, which would mask the NULL-field shape this test guards.
-        # is_verified is left at the SQLAlchemy column default (False) rather
-        # than the fixture's True, matching the register-flow handler which
-        # does not set the column.
         from app.models.models import Producer
         producer = Producer(
             name="חוות מה-321",
