@@ -22,7 +22,7 @@
  *   producer can edit and retry.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -54,6 +54,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
   const tError = useTranslations("error");
+  // MEH-1096: per-instance id prefix so label↔control ids never collide if two
+  // RecipeForms ever mount on one page (modal + inline, etc.).
+  const uid = useId();
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -158,10 +161,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </h2>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-title`} className="block text-sm font-medium mb-1">
           {t("title_label")} <span className="text-red-500">*</span>
         </label>
         <input
+          id={`${uid}recipe-title`}
           required
           minLength={3}
           maxLength={200}
@@ -173,8 +177,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+        <label htmlFor={`${uid}recipe-description`} className="block text-sm font-medium mb-1">{t("description_label")}</label>
         <textarea
+          id={`${uid}recipe-description`}
           rows={2}
           value={form.description}
           onChange={set("description")}
@@ -184,10 +189,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-ingredients`} className="block text-sm font-medium mb-1">
           {t("ingredients_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id={`${uid}recipe-ingredients`}
           required
           minLength={10}
           rows={6}
@@ -200,10 +206,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-instructions`} className="block text-sm font-medium mb-1">
           {t("instructions_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id={`${uid}recipe-instructions`}
           required
           minLength={10}
           rows={8}
@@ -217,8 +224,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
+          <label htmlFor={`${uid}recipe-prep-time`} className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
           <input
+            id={`${uid}recipe-prep-time`}
             type="number"
             min={0}
             max={1440}
@@ -229,8 +237,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
+          <label htmlFor={`${uid}recipe-cook-time`} className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
           <input
+            id={`${uid}recipe-cook-time`}
             type="number"
             min={0}
             max={1440}
@@ -241,8 +250,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">{t("servings_label")}</label>
+          <label htmlFor={`${uid}recipe-servings`} className="block text-sm font-medium mb-1">{t("servings_label")}</label>
           <input
+            id={`${uid}recipe-servings`}
             type="number"
             min={1}
             max={100}
@@ -255,7 +265,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("image_label")}</label>
+        {/* MEH-1096: group heading, not a control label — the file input below
+            is labelled by its own wrapping <label>, so this stays a <span> to
+            avoid an orphan-label / multiple-labels a11y violation. */}
+        <span className="block text-sm font-medium mb-1">{t("image_label")}</span>
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -287,12 +300,15 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        {/* MEH-1096: group heading for the checkbox list — each checkbox is
+            labelled by its own wrapping <label>, so this is a <span>, not an
+            orphan control label. */}
+        <span className="block text-sm font-medium mb-1">
           {t("related_products_label")}
           <span className="ms-2 text-xs text-fg-muted">
             {t("related_products_hint")}
           </span>
-        </label>
+        </span>
         {productsLoading ? (
           <p className="text-sm text-fg-muted">{t("products_loading")}</p>
         ) : products.length === 0 ? (
