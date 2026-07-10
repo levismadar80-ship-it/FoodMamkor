@@ -79,12 +79,17 @@ export default function ProducerRecipesPage() {
             {t("heading")}
           </h1>
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
-        >
-          {showForm ? t("btn_close_form") : t("btn_open_form")}
-        </button>
+        {/* MEH-1097 F14: hide the top toggle in the empty state — the EmptyState
+            CTA is the single "publish" button there. It returns once recipes
+            exist, or while the create form is open (rendering as "close"). */}
+        {!(items?.length === 0 && !showForm) && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+          >
+            {showForm ? t("btn_close_form") : t("btn_open_form")}
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -112,6 +117,20 @@ export default function ProducerRecipesPage() {
             description={t("empty_description")}
             ctaLabel={t("empty_cta")}
             ctaOnClick={() => setShowForm(true)}
+            example={
+              <div className="w-full max-w-xs text-start opacity-70">
+                <p className="text-[11px] text-fg-muted mb-1">{t("sample_label")}</p>
+                <div className="border border-border rounded-[12px] p-3 bg-surface-card flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+                    <Bread size={22} className="text-fg-muted" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text">{t("sample_title")}</p>
+                    <p className="text-xs text-fg-muted">{t("sample_meta")}</p>
+                  </div>
+                </div>
+              </div>
+            }
           />
         )
       ) : (

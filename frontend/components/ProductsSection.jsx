@@ -212,7 +212,10 @@ export default function ProductsSection() {
     <div className="bg-white border border-border rounded-[16px] p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
-        {!adding && (
+        {/* MEH-1097 F14: the top add button is redundant with the EmptyState CTA
+            while empty — show it only once products exist (or restores after the
+            first add). Empty state → the EmptyState CTA is the single button. */}
+        {!adding && products?.length > 0 && (
           <button
             onClick={() => { setAdding(true); setError(""); }}
             className="inline-flex items-center gap-1.5 text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition"
@@ -232,6 +235,20 @@ export default function ProductsSection() {
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
           ctaOnClick={() => { setAdding(true); setError(""); }}
+          example={
+            <div className="w-full max-w-xs text-start opacity-70">
+              <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
+              <div className="border border-border rounded-[12px] p-3 bg-surface-card flex items-center gap-3">
+                <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
+                  <Package size={22} className="text-fg-muted" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-text">{t("empty.sample_name")}</p>
+                  <p className="text-xs text-fg-muted">{t("empty.sample_price")}</p>
+                </div>
+              </div>
+            </div>
+          }
         />
       )}
 
