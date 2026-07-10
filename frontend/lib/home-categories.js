@@ -24,10 +24,13 @@ export const CATEGORY_CARDS = [
   { key: "fish",   name: "דגים" },
   { key: "fruit",  name: "פירות" },
   { key: "drinks", name: "יין, בירה ומשקאות" },
-  // MEH-1098 (A1): renamed DB category "קרמים ושמנים" → "קוסמטיקה טבעית".
-  // Card name must track the DB value verbatim or the exact-match resolver
-  // (matchCategoryId) returns categoryId:null and the card renders inert.
-  { key: "cream",  name: "קוסמטיקה טבעית" },
+  // MEH-1098 (A1): DB category renamed "קרמים ושמנים" → "קוסמטיקה טבעית".
+  // `matchAliases` (ADR-007 expand-contract) keeps this card resolving against
+  // the OLD DB value during the transition window — staging/prod are renamed by
+  // a separate manual Railway SQL step run AFTER this merge, so until then
+  // GET /categories still returns "קרמים ושמנים". Drop the alias in a contract
+  // follow-up once the production rename is confirmed.
+  { key: "cream",  name: "קוסמטיקה טבעית", matchAliases: ["קרמים ושמנים"] },
 ];
 
 // Exact-name resolution — category ids differ per environment
@@ -37,7 +40,9 @@ export const CATEGORY_CARDS = [
 // MEH-1080: exact `===` match replaced includes()-first-match (DISC-03).
 export function matchCategoryId(cards, categories) {
   return cards.map((card) => {
-    const found = categories.find((c) => c.name === card.name);
+    // Primary name first, then any transitional aliases (MEH-1098 expand phase).
+    const names = [card.name, ...(card.matchAliases || [])];
+    const found = categories.find((c) => names.includes(c.name));
     return { ...card, categoryId: found ? found.id : null };
   });
 }

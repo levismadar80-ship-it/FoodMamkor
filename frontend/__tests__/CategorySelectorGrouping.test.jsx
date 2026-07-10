@@ -1,14 +1,5 @@
-/**
- * MEH-1098 (B1) — CategorySelector food / home-care group headers.
- *
- * Renders the selector under the REAL NextIntlClientProvider + he.json
- * (mirrors the EditTabCategoriesCard harness). Asserts the expanded grid
- * gains presentational "מזון" / "בית וטיפוח" subheaders, that food
- * categories render before the home-and-care ones, and that the collapsed
- * popular view has NO headers — grouping is presentational and expanded-only.
- * The register wizard can't be driven headless in the CC sandbox (Suspense
- * preflight doesn't hydrate), so this is the deterministic B1 check.
- */
+// MEH-1098 B1 — CategorySelector food/home group-header behaviour (expanded-only,
+// presentational; deterministic stand-in for the un-hydratable register wizard).
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -52,7 +43,8 @@ function renderSelector() {
   return { onChange, ...utils };
 }
 
-const FOLLOWS = (a, b) =>
+// PRECEDES(a, b) === "a comes before b in DOM order".
+const PRECEDES = (a, b) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe("CategorySelector food/home grouping (MEH-1098 B1)", () => {
@@ -75,10 +67,10 @@ describe("CategorySelector food/home grouping (MEH-1098 B1)", () => {
     expect(home).toHaveAttribute("role", "presentation");
 
     // food header precedes the home header
-    expect(FOLLOWS(food, home)).toBe(true);
+    expect(PRECEDES(food, home)).toBe(true);
     // a food category (meat) sits before the home header; the renamed
     // "קוסמטיקה טבעית" sits under the home group after it
-    expect(FOLLOWS(screen.getByText("בשר"), home)).toBe(true);
-    expect(FOLLOWS(home, screen.getByText("קוסמטיקה טבעית"))).toBe(true);
+    expect(PRECEDES(screen.getByText("בשר"), home)).toBe(true);
+    expect(PRECEDES(home, screen.getByText("קוסמטיקה טבעית"))).toBe(true);
   });
 });
