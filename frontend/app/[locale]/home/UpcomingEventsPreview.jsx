@@ -31,7 +31,7 @@ export function UpcomingEventsPreview() {
   return (
     <section className="max-w-7xl mx-auto px-4 section-y border-t border-border">
       <div className="flex items-baseline justify-between mb-8">
-        <h2 className="font-headline-lg font-bold text-text flex items-center gap-2" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg text-headline-lg text-text flex items-center gap-2">
           <Calendar size={16} className="text-current" />
           {t("home.events.heading")}
         </h2>

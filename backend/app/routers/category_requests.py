@@ -3,18 +3,19 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user_optional, require_admin
 from app.database import get_db
-from app.models.models import CategoryRequest, User
+from app.models.models import CategoryRequest, Producer, User
 from app.rate_limit import limiter
 from app.schemas.schemas import (
     CategoryRequestCreate,
     CategoryRequestOut,
     CategoryRequestUpdate,
 )
+from app.services.auth_notifications import notify_admin_new_category_request
 
 router = APIRouter(tags=["category-requests"])
 
@@ -24,6 +25,7 @@ router = APIRouter(tags=["category-requests"])
 def submit_category_request(
     request: Request,
     body: CategoryRequestCreate,
+    background_tasks: BackgroundTasks,
     user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
@@ -45,6 +47,19 @@ def submit_category_request(
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    # MEH-1063: ping admin that the category-request queue grew. Mirrors
+    # MEH-1000 (producer_recipes.py:159-165). Capture primitives NOW —
+    # expire_on_commit + session close would break lazy access inside the
+    # background task. Anonymous submissions pass producer_name=None.
+    producer_name = (
+        db.query(Producer.name).filter(Producer.id == verified_producer_id).scalar()
+        if verified_producer_id
+        else None
+    )
+    background_tasks.add_task(
+        notify_admin_new_category_request, row.requested_name, producer_name
+    )
     return row
 
 

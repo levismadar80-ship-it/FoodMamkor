@@ -14,6 +14,14 @@
 - **Dedup locked:** MEH-1075 (map chips + no-URL decision), MEH-819 (dual search), MEH-611/613 (persistence/pagination), MEH-1062 SEO-04 (dual producer URLs); resolved: MEH-920/922/1048/1049 verified still fixed.
 - **Sapir pending:** triage session on the matrix → child tickets (templates 06/07); DISC-01 gets its own ticket per MEH-1077 plan. DoD exception: docs-only — no mobile QA requirement.
 
+## 2026-07-10 — MEH-991 Chunk 3: Playwright VRT baselines (Launch Sprint MEH-1074, Wave 0.3) — closes the MEH-991 epic
+
+- **Branch:** `feature/meh-991-parity-vrt` off `origin/staging`. Autonomous run under MEH-1074/ADR-016 v2. `Refs MEH-1074` · `Closes MEH-991`.
+- **Shipped:** `frontend/e2e/visual/parity.spec.ts` (6 routes × desktop/mobile, masks for live data) + `parity.css` (hides date-dependent HolidayBanner/FridayDeliveryStrip — got `data-testid`s; masks can't absorb appear/disappear layout shift) + `playwright.config.ts` (`testMatch` += `e2e/visual/**`, `expect.toHaveScreenshot` = 0.02/animations-off/caret-hide) + **`.github/workflows/vrt-update.yml`** — workflow_dispatch that regenerates baselines ON THE RUNNER and commits them to the dispatched branch (sandbox/Windows font stacks ≠ runner → local baselines would always red-line CI). Baseline refresh after any intentional visual change = dispatch vrt-update on the branch.
+- **Verify:** build exit 0 · vitest green · sandbox smoke 10 passed / 2 graceful-skips (producer detail needs backend egress) · vrt-update dispatched on the branch for the real baselines before the PR opened.
+- **Discovered:** duplicate `id="hero-search-input"` (header + hero both mount HeroSearch) — a11y ticket opened via discovered_work_protocol.
+- **Wave 0 status:** W0.2 MEH-1076 merged (#1558) · MEH-787 merged (#1391) · MEH-1024 verified already-resolved (relock landed in #1537; `uv lock --check` + `uv sync --frozen` both exit 0) → closed Done with evidence · W0.1 = draft-skip merged (#1557), pass/fail-comment step pending as small follow-up.
+
 ## 2026-07-09 — MEH-1070 + MEH-1071 + MEH-1072 batch (design-parity sweep, Sapir FULL authority 09/07) — 3 PRs, self-merged on green CI
 
 - **Batch outcome:** three independent GREEN design-parity fixes, each its own `feature/*` branch off `staging`, PR, CI-green, self-merged (squash + branch delete). Sequential order held because tasks 1 + 3 both touch `docs/DESIGN-GAP-MATRIX.md` (HOME-06 vs NAV-01 rows — no collision, but merged in order). One consolidated Sapir mobile pass pending on the staging preview (`/he`).
