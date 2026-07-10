@@ -6,17 +6,28 @@ name: VRT baseline update
 # chromium): dev machines (Windows) and the CC sandbox render different font
 # stacks, so locally-generated baselines would red-line every CI comparison.
 #
-# Trigger: manual only (workflow_dispatch on a feature branch). Run it after
-# any intentional visual change, review the committed baseline diff in the
-# PR, merge. It never runs on a schedule and never pushes to staging/main —
-# the branch it commits to is whatever ref it was dispatched on, and both
-# protected branches reject direct pushes at the ruleset level anyway.
+# Triggers:
+# - workflow_dispatch on a feature branch (when a token with actions:write
+#   is available — the GitHub MCP integration in CC sessions is not).
+# - push to a feature branch touching e2e/visual/** or this file — the
+#   self-service path: any change to the VRT spec/css regenerates baselines
+#   for that branch automatically. The actor guard below stops the bot's
+#   own baseline commit from re-triggering the workflow (self-loop).
+# It never runs on a schedule and never pushes to staging/main — it commits
+# to the ref it ran on, and both protected branches reject direct pushes at
+# the ruleset level anyway (post-merge pushes to staging are filtered out
+# by branches-ignore).
 #
 # Build/start steps mirror e2e.yml (MEH-1044 localhost target) — keep the
 # two in sync when the server strategy changes.
 
 on:
   workflow_dispatch:
+  push:
+    branches-ignore: [staging, main]
+    paths:
+      - "frontend/e2e/visual/**"
+      - ".github/workflows/vrt-update.yml"
 
 permissions:
   contents: write
@@ -30,6 +41,8 @@ jobs:
     name: Regenerate VRT baselines
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Self-loop guard: the baseline commit this job pushes must not re-run it.
+    if: github.actor != 'github-actions[bot]'
 
     steps:
       - uses: actions/checkout@v7
