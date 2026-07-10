@@ -2569,6 +2569,7 @@
     },
     "filters": {
       "city_chip": "בעיר שלי",
+      "category_all": "כל הקטגוריות",
       "filter_by": "מסנן לפי:",
       "clear_all": "נקו הכל"
     },

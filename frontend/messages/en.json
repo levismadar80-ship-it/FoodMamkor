@@ -2546,6 +2546,7 @@
     },
     "filters": {
       "city_chip": "In my city",
+      "category_all": "All categories",
       "filter_by": "Filter by:",
       "clear_all": "Clear all"
     },

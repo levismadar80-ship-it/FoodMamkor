@@ -16,6 +16,7 @@ import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
+import { CategoriesResponseSchema } from "@/lib/api-schemas";
 
 const FILTER_LIMIT = 100;
 const PAGE_SIZE = 24; // matches PER_PAGE in page.jsx
@@ -76,6 +77,14 @@ export default function ProducersClient({
 
   const [searchQ, setSearchQ] = useState(() => searchParams.get("q") || "");
 
+  // MEH-1081 (MEH-1077 DISC-04): canonical category axis — radio chip row
+  // backed by ?category=<id>, the same param + type the homepage grid already
+  // sends (backend: producers.py `category: int` → ProducerCategory join).
+  const [categoryFilter, setCategoryFilter] = useState(
+    () => searchParams.get("category") || null,
+  );
+  const [categories, setCategories] = useState([]);
+
   // MEH-820: free-text search box driving the existing q filter.
   const [searchInput, setSearchInput] = useState(() => searchQ);
   const searchInputRef = useRef(null);
@@ -91,15 +100,18 @@ export default function ProducersClient({
     setSearchInput(searchQ);
   }, [searchQ]);
 
-  const hasActiveChips = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
+  const hasActiveChips =
+    Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
   const displayItems = hasActiveChips
     ? (filteredItems ?? [])
     : [...initialItems, ...appendItems];
   const activeChipDefs = CHIPS_CONFIG.filter((c) => chips[c.key]);
 
   const syncUrl = useCallback(
-    (chipState, city, q) => {
+    // MEH-1081: category rides the same URL sync as chips/city/q.
+    (chipState, city, q, category) => {
       const params = new URLSearchParams();
+      if (category) params.set("category", category);
       for (const chip of CHIPS_CONFIG) {
         if (chipState[chip.key]) params.set(chip.key, "1");
       }
@@ -111,10 +123,11 @@ export default function ProducersClient({
     [router],
   );
 
-  const fetchFiltered = useCallback((chipState, city, q) => {
+  const fetchFiltered = useCallback((chipState, city, q, category) => {
     const params = buildChipParams(chipState);
     if (city) params.delivery_city = city;
     if (q) params.q = q;
+    if (category) params.category = category;
     if (Object.keys(params).length === 0) {
       setFilteredItems(null);
       return;
@@ -167,9 +180,22 @@ export default function ProducersClient({
   useEffect(() => {
     if (mountFetched.current) return;
     mountFetched.current = true;
-    const anyActive = Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ;
-    if (anyActive) fetchFiltered(chips, cityFilter, searchQ);
+    const anyActive =
+      Object.values(chips).some(Boolean) || !!cityFilter || !!searchQ || !!categoryFilter;
+    if (anyActive) fetchFiltered(chips, cityFilter, searchQ, categoryFilter);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-1081: load the DB categories for the radio row. Rule-19: shape
+  // validated; on parse/network failure the row self-hides (categories=[]).
+  useEffect(() => {
+    api
+      .get("/categories")
+      .then((r) => {
+        const parsed = CategoriesResponseSchema.safeParse(r.data);
+        setCategories(parsed.success ? parsed.data : []);
+      })
+      .catch(() => {});
+  }, []);
 
   // MEH-159: revalidate total on tab focus so the counter stays fresh if
   // producers were deleted while the user had the tab in the background.
@@ -188,17 +214,27 @@ export default function ProducersClient({
   const toggleChip = (key) => {
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
-    syncUrl(next, cityFilter, searchQ);
-    fetchFiltered(next, cityFilter, searchQ);
+    syncUrl(next, cityFilter, searchQ, categoryFilter);
+    fetchFiltered(next, cityFilter, searchQ, categoryFilter);
     trackEvent("producers_chip_toggle", { chip: key, active: !chips[key] });
+  };
+
+  // MEH-1081: radio select — "all" is ChipScrollRow's reset sentinel
+  // (same bridge as /events, EventsClient.jsx chips comment).
+  const handleCategorySelect = (key) => {
+    const next = key === "all" ? null : key;
+    setCategoryFilter(next);
+    syncUrl(chips, cityFilter, searchQ, next);
+    fetchFiltered(chips, cityFilter, searchQ, next);
+    trackEvent("producers_category_filter", { category: next });
   };
 
   const handleChipClick = (key) => {
     if (key === "city") {
       if (cityFilter) {
         setCityFilter(null);
-        syncUrl(chips, null, searchQ);
-        fetchFiltered(chips, null, searchQ);
+        syncUrl(chips, null, searchQ, categoryFilter);
+        fetchFiltered(chips, null, searchQ, categoryFilter);
       } else {
         setLocationModalOpen(true);
       }
@@ -211,8 +247,8 @@ export default function ProducersClient({
     setLocationModalOpen(false);
     setCityFilter(city);
     setUserCity(city);
-    syncUrl(chips, city, searchQ);
-    fetchFiltered(chips, city, searchQ);
+    syncUrl(chips, city, searchQ, categoryFilter);
+    fetchFiltered(chips, city, searchQ, categoryFilter);
     trackEvent("producers_city_filter", { city });
   };
 
@@ -222,22 +258,29 @@ export default function ProducersClient({
     e.preventDefault();
     const term = searchInput.trim();
     setSearchQ(term);
-    syncUrl(chips, cityFilter, term);
-    fetchFiltered(chips, cityFilter, term);
+    syncUrl(chips, cityFilter, term, categoryFilter);
+    fetchFiltered(chips, cityFilter, term, categoryFilter);
   };
 
   const clearAll = () => {
     setChips(CHIPS_DEFAULT);
     setCityFilter(null);
     setSearchQ("");
+    setCategoryFilter(null);
     setFilteredItems(null);
-    syncUrl(CHIPS_DEFAULT, null, "");
+    syncUrl(CHIPS_DEFAULT, null, "", null);
     trackEvent("producers_clear_all");
   };
 
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
   const allChips = [...CHIPS_CONFIG, cityChip];
   const activeKeys = { ...chips, city: !!cityFilter };
+  // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
+  const categoryChips = [
+    { key: "all", label: t("filters.category_all") },
+    ...categories.map((c) => ({ key: String(c.id), label: c.name })),
+  ];
+  const activeCategory = categories.find((c) => String(c.id) === categoryFilter);
 
   const showFilterEmpty =
     hasActiveChips && !loading && filteredItems !== null && filteredItems.length === 0;
@@ -309,6 +352,19 @@ export default function ProducersClient({
         </button>
       </form>
 
+      {/* MEH-1081: category radio row — the canonical ?category=<id> axis.
+          Self-hides while /categories hasn't resolved (or failed). */}
+      {categories.length > 0 && (
+        <ChipScrollRow
+          variant="category"
+          chips={categoryChips}
+          activeKey={categoryFilter ?? "all"}
+          onChipClick={handleCategorySelect}
+          fadeBg="#F5F0E8"
+          className="mb-2"
+        />
+      )}
+
       {/* Chip row */}
       <ChipScrollRow
         variant="toggle"
@@ -325,6 +381,18 @@ export default function ProducersClient({
           <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
             {t("filters.filter_by")}
           </span>
+          {/* MEH-1081: removable category chip — mirrors the city/search chips. */}
+          {activeCategory && (
+            <button
+              type="button"
+              data-testid="active-category-chip"
+              onClick={() => handleCategorySelect("all")}
+              className="inline-flex items-center gap-1 bg-white text-primary border border-primary rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap shrink-0"
+            >
+              <span aria-hidden="true" className="text-[10px] font-bold">×</span>
+              {activeCategory.name}
+            </button>
+          )}
           {activeChipDefs.map((chip) => (
             <button
               key={chip.key}
