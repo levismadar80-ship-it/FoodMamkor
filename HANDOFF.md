@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — MEH-1080 [T-A]: homepage category cards → links, 1:1 split — PR open (Refs MEH-1080; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1080-homepage-category-links` off `origin/staging` (post T-B merge `82e25e9b` — dependency verified live: 14 `categoryFilter` refs in ProducersClient on staging). Card set = Sapir-approved 10 (editorial gate passed in-conversation); Leaf fallback for 4 glyph-less cards approved; labels stay hardcoded (mirror DB).
+- **What shipped:** `home-categories.js` (10-card 1:1 set + exact-name matcher — first-match structurally dead), `HomeCategoryGrid.jsx` (button→Link with real href; inert-card fallback for unresolved ids; Leaf fallback glyphs), `use-home-page.js` (+`page.js` wiring) — `handleCategoryCardClick` removed, `?category=` deep-link compat kept. New `HomeCategoryGridLinks.test.jsx` 4✓ failing-first.
+- **Verify:** vitest **865 passed**/41 skipped · build exit 0 · 0 eslint errors · 0 physical RTL · adversarial review 0 must-fix · Playwright QA (375+desktop): all 10 anchors correct per-category, click → real navigation (history 2→3), Back → homepage.
+- **VRT:** `home.png` parity baseline intentionally changes (6→10 cards) — `vrt-update.yml` dispatched on the branch per the MEH-991 flow; E2E on the PR is red until the refreshed baseline commit lands on the branch.
+- **Sapir pending:** merge; mobile QA — 10-card grid at 375px (2 heroes + 2×4), tap card → filtered /producers, Back → homepage, Leaf-fallback cards legible.
+
 ## 2026-07-10 — MEH-1075: /map filter IA — quick chips + grouped FilterSheet — PR #1565 (Sapir approved MERGE 10/07)
 
 - **Branch:** `feature/meh-1075-map-filter-sheet` off `origin/staging` (harness cut a `claude/*` branch; recreated as `feature/*` per rule 3, Sapir-approved in-conversation). Frontend YELLOW, two chunks with WAIT gates, both approved. `Refs MEH-1075` (merge gate per rule 23 — DRAFT until Sapir mobile QA).
