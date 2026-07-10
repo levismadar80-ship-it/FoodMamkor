@@ -158,9 +158,7 @@ class TestSubmitFiresNotification:
         self, client, db, monkeypatch
     ):
         producer = make_producer(db, name=f"עסק התראות {uuid4().hex[:6]}")
-        owner = make_user(
-            db, role="producer", email=f"n{uuid4().hex[:8]}@example.com"
-        )
+        owner = make_user(db, role="producer", email=f"n{uuid4().hex[:8]}@example.com")
         owner.producer_id = producer.id
         db.commit()
         db.refresh(owner)
@@ -194,9 +192,7 @@ class TestSubmitFiresNotification:
             MagicMock(side_effect=RuntimeError("channel down")),
         )
         try:
-            resp = client.post(
-                "/category-requests", json={"requested_name": "מותססים"}
-            )
+            resp = client.post("/category-requests", json={"requested_name": "מותססים"})
         except RuntimeError:
             # TestClient re-raises background-task exceptions AFTER the
             # response completed — a real client already got its 201. The

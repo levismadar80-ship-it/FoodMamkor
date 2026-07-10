@@ -276,9 +276,7 @@ def notify_admin_new_category_request(
         # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
         if settings.admin_whatsapp_to:
             if send_text(settings.admin_whatsapp_to, message):
-                logger.info(
-                    "[WHATSAPP] Category-request notification sent to admin"
-                )
+                logger.info("[WHATSAPP] Category-request notification sent to admin")
             else:
                 # send_text returned False without raising — keep the MEH-977
                 # observability contract: log WITH request context.
