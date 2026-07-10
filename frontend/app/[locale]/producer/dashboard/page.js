@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+import { showToast } from "@/lib/toast";
 import { getUpcomingHoliday } from "@/lib/holidays";
 import InfoTooltip from "@/components/InfoTooltip";
 import PhoneVerifyCard from "@/components/PhoneVerifyCard";
@@ -159,8 +160,10 @@ export default function ProducerDashboardPage() {
       // MEH-989: surface the backend's Hebrew detail (e.g. missing vacation
       // date → 422, rate limit → 429); fall back to generic only when absent.
       // detailToMessage (MEH-957) normalises the FastAPI 422 array shape so a
-      // validation error never renders as "[object Object]" via alert().
-      alert(detailToMessage(err?.response?.data?.detail) || t("error_availability_update"));
+      // validation error never renders as "[object Object]".
+      // MEH-1092: native alert() → toast (matches recipes/page.js; anti-pattern
+      // retired for admin in MEH-1023/1040).
+      showToast.error(detailToMessage(err?.response?.data?.detail) || t("error_availability_update"));
       // Refetch on failure so the UI doesn't stay out of sync.
       api
         .get("/producers/me/dashboard")
@@ -386,12 +389,18 @@ export default function ProducerDashboardPage() {
             const active = isVacation
               ? vacationSelected || savedState === "on_vacation"
               : !vacationSelected && savedState === opt.value;
+            // MEH-1092 F4: pre-approval the pills are already disabled, but the
+            // saved state still read as "live" (bg-primary active fill). Show the
+            // pills NEUTRAL (no active highlight, aria-checked=false) until the
+            // business is approved, so a locked block never reads as an active
+            // status in the air. Post-approval is unchanged.
+            const showActive = active && isApproved;
             return (
               <button
                 key={opt.value}
                 type="button"
                 role="radio"
-                aria-checked={active}
+                aria-checked={showActive}
                 // MEH-964 1D: availability is disabled until the business is
                 // published (approved) — an unpublished listing has no public
                 // surface for the state to affect. Hint below carries the why.
@@ -408,7 +417,7 @@ export default function ProducerDashboardPage() {
                   }
                 }}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-medium transition border focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                  active
+                  showActive
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text border-border hover:bg-green-50"
                 } ${!isApproved ? "opacity-50 cursor-not-allowed" : ""}`}
