@@ -1,6 +1,6 @@
 # ADR-026 — Error color token (AA-passing, cream + on-dark pair)
 
-**Status:** Proposed — pending Sapir approval of the exact hex (MEH-1073 T1 gate)
+**Status:** Accepted — Sapir chose `#B3261E` (2026-07-10, MEH-1073 T1 gate)
 **Date:** 2026-07-09
 **Supersedes/amends:** narrows [ADR-019](./ADR-019-component-state-tokens.md) — adds the **first** state-color token, by explicit exception, for the one case ADR-019 anticipated ("a state that genuinely cannot be served by opacity-on-cream + fg-muted ... the resolution is a new ADR that supersedes ADR-019").
 
@@ -53,6 +53,12 @@ Raw red → the approved token, each site re-verified ≥4.5:1:
 - ADR-019's "no state-color palette" now has **exactly one** documented exception (error), gated behind this ADR. The camel's-nose risk ADR-019 warned about is bounded by: this is error-only, requires an ADR to extend further, and adds a light/on-dark pair rather than a full scale.
 - `warning`/`info`/`success` remain un-tokenized (success stays `primary`); a future need still requires its own ADR.
 
-## Open question for Sapir (the gate)
+## Resolution (2026-07-10)
 
-**Which hex for `error`:** `#B3261E` (Material M3, pedigree) or `#9A2A22` (warm terracotta, brand-fit)? And confirm `#FCA5A5` for `error-on-dark` (or `#FECACA` red-200 for a softer tone). No `tokens.json` write or sweep happens until this is answered.
+Sapir chose **`error = #B3261E`** (Material M3, pedigree) + **`error-on-dark = #FCA5A5`**. Both added to `docs/DESIGN.md` front-matter **and** `frontend/tailwind.tokens.json` (kept in sync to avoid the MEH-271 two-owner drift; tokens.json is generated from the DESIGN.md front-matter).
+
+**Sweep applied (5 sites, each re-verified ≥4.5:1):** `RegisterClient.jsx` ×3 (`text-red-500`→`text-error`), `ReviewsSection.jsx` ×2 (`text-red-600`→`text-error`), `AboutClient.jsx:431` (`text-red-600`→`text-error`), `Header.jsx:473` (`text-red-700`→`text-error`), `Footer.jsx:192` (`text-red-200`→`text-error-on-dark`, dark footer).
+
+**Excluded from this ADR (flagged, not error-colors):**
+- `BottomNav.jsx:184` `text-[#4b4841]` is a **gray inactive-label** (MEH-919 AA fix), not a red/error — applying the error token would wrongly redden nav labels. Left as a separate token-hygiene follow-up.
+- `RegisterClient` input `border-red-400` (≈2.4:1, < 3:1 for UI) sits on different lines than the named text sweep; a sibling AA fix to fold into a follow-up.

@@ -24,7 +24,9 @@
         "surface-floating": "#fffefb",
         "action-primary": "#2e6853",
         "action-primary-hover": "#2e4a2e",
-        "state-selected": "#2e4a2e"
+        "state-selected": "#2e4a2e",
+        "error": "#b3261e",
+        "error-on-dark": "#fca5a5"
       },
       "fontFamily": {
         "headline-display": [
