@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { SkeletonStyles } from "@/components/Skeleton";
+
 // S5 FINAL (MEH-763): split-view sheet — TWO snap points, peek + 45vh open.
 // PEEK/HALF export names kept (useFirstVisitHints imports PEEK; useMapSync
 // imports HALF for the marker-tap open) — only HALF's value moved 55→45.
@@ -16,8 +18,30 @@ function closest(value) {
   return SNAPS.reduce((a, b) => (Math.abs(b - value) < Math.abs(a - value) ? b : a));
 }
 
-export default function MapBottomSheet({ snap, onSnapChange, children, count }) {
+// MEH-1054 (MAP-16): static list-row geometry shown while the feed's first
+// fetch is in flight — reuses the global `skeleton-box` pulse util (CARD-26
+// spec, globals.css), no new animation. Row height ≈ MobileSheetCard so the
+// swap to real cards doesn't jump the sheet content.
+function SheetListSkeleton({ label }) {
+  return (
+    // role="status" + existing common.skeleton.loading_businesses label —
+    // mirrors SkeletonProducerGrid so AT hears "loading", not silence
+    // (bars themselves stay aria-hidden).
+    <div data-testid="sheet-list-skeleton" role="status" aria-label={label}>
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="skeleton-box rounded-[16px] h-20 mb-3" aria-hidden="true" />
+      ))}
+      {/* skeleton-box styles are NOT global CSS — they ship via styled-jsx
+          from Skeleton.jsx; without this mount the bars render invisible. */}
+      <SkeletonStyles />
+    </div>
+  );
+}
+
+export default function MapBottomSheet({ snap, onSnapChange, children, count, loading = false }) {
   const t = useTranslations("map.bottom_sheet");
+  // MEH-1054: existing key reused for the skeleton's AT label (no new copy).
+  const tSkeleton = useTranslations("common.skeleton");
   const sheetRef = useRef(null);
   const startY = useRef(0);
   const startSnap = useRef(snap);
@@ -83,9 +107,22 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
         {/* MEH-935: ICU plural — count=1 singular, count=2 Hebrew dual, ≥3 plural.
             Was `{count} {t("title")}` (static noun → "1 בתי עסק מקומיים באזור").
             MEH-1029 (MAP-11): gold accent token (styling only; count string unchanged). */}
-        <p className="text-sm font-medium text-accent numeric">
-          {t("count", { count })}
-        </p>
+        {loading ? (
+          // MEH-1054: while loading, a short pulse bar holds the count's slot —
+          // rendering "0 בתי עסק" before the first response would read as a
+          // (false) empty result. Count string itself unchanged (MAP-16
+          // constraint: geometry only, no copy change).
+          <span
+            data-testid="sheet-count-skeleton"
+            className="skeleton-box rounded-lg inline-block"
+            style={{ width: "120px", height: "14px" }}
+            aria-hidden="true"
+          />
+        ) : (
+          <p className="text-sm font-medium text-accent numeric">
+            {t("count", { count })}
+          </p>
+        )}
         {snap === HALF && (
           <button
             type="button"
@@ -99,7 +136,7 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count }) 
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-4">
-        {children}
+        {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>
   );

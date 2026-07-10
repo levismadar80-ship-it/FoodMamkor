@@ -8,6 +8,42 @@ import { useTranslations } from "next-intl";
  * ProducerCard v4 skeleton spec (was a gradient shimmer). Keyframed inline so
  * we don't depend on tailwind config edits.
  */
+
+/**
+ * MEH-1054: the `.skeleton-box` pulse rules, extracted from
+ * SkeletonProducerGrid so other skeleton consumers (MapBottomSheet's MAP-16
+ * list skeleton) can mount them without duplicating the keyframes (single
+ * owner, MEH-271). styled-jsx dedupes identical global blocks, so rendering
+ * this in several mounted components is safe. NOTE: SkeletonCard/SkeletonLine
+ * alone do NOT inject styles — a page using them must render <SkeletonStyles/>
+ * (or SkeletonProducerGrid) once.
+ */
+export function SkeletonStyles() {
+  return (
+    <style jsx global>{`
+      .skeleton-box {
+        /* fg-muted (#5c584f) @ 0.15 — ProducerCard v4 skeleton spec */
+        background: rgba(92, 88, 79, 0.15);
+        animation: skeleton-pulse 1.8s infinite ease-in-out;
+      }
+      @keyframes skeleton-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton-box {
+          animation: none;
+        }
+      }
+    `}</style>
+  );
+}
+
 export function SkeletonCard({ className = "" }) {
   return (
     <div
@@ -71,27 +107,8 @@ export function SkeletonProducerGrid({ count = 8 }) {
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonProducerCard key={i} />
       ))}
-      <style jsx global>{`
-        .skeleton-box {
-          /* fg-muted (#5c584f) @ 0.15 — ProducerCard v4 skeleton spec */
-          background: rgba(92, 88, 79, 0.15);
-          animation: skeleton-pulse 1.8s infinite ease-in-out;
-        }
-        @keyframes skeleton-pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .skeleton-box {
-            animation: none;
-          }
-        }
-      `}</style>
+      {/* MEH-1054: rules extracted to SkeletonStyles (shared with MapBottomSheet) */}
+      <SkeletonStyles />
     </div>
   );
 }
