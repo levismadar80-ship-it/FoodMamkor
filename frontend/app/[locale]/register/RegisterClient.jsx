@@ -276,7 +276,8 @@ function RegisterPageBody() {
             The three orphaned keys stay in the JSONs (untouched), same as
             login's retained value_save/rate/publish. */}
 
-        {/* MEH-49: referral discount badge */}
+        {/* MEH-49: referral badge — MEH-1049 reworded to share-loop framing
+            (social proof only, no discount promise) */}
         {referralCode && (
           <div className="mb-4 rounded-md bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
             {t("auth.register.consumer.referral_badge")}
