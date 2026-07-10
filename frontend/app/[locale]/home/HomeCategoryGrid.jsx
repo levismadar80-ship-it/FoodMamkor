@@ -39,7 +39,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
           {t("home.categories.eyebrow")}
           <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>
-        <h2 className="font-headline-display font-bold text-text" style={{ fontSize: "clamp(32px, 4vw, 48px)" }}>
+        <h2 className="font-headline-display text-headline-display text-text">
           {t("home.categories.heading")}
         </h2>
       </FadeInSection>

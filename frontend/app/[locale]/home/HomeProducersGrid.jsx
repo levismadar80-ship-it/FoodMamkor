@@ -44,7 +44,7 @@ export function HomeProducersGrid({
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="font-headline-lg font-bold text-text" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg text-headline-lg text-text">
           {t("home.producers.heading")}
         </h2>
         <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">

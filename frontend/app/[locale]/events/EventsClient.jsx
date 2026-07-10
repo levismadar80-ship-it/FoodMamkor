@@ -241,7 +241,7 @@ export default function EventsPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-100">
               {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
             </p>
-            <h1 className="font-headline-display font-bold text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
+            <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
               {isExp ? t("h1_experiences") : t("title")}
             </h1>
             <p className="text-base md:text-xl text-background/85 mt-2 leading-snug">
@@ -414,7 +414,7 @@ function EntryRow({ entry, freeLabel }) {
       <span aria-hidden="true" className={`absolute start-0 inset-y-0 w-[3px] ${tickBg}`} />
       {/* date rail */}
       <div className="py-4 md:py-5 grid justify-items-center content-start gap-0.5">
-        <span className="font-headline-display font-bold text-3xl md:text-5xl leading-none text-text numeric">
+        <span className="font-headline-display font-black text-3xl md:text-5xl leading-none text-text numeric">
           {day}
         </span>
         <span className="text-xs font-semibold text-fg-muted mt-1">{weekday}</span>

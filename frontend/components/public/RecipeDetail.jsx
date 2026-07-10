@@ -77,7 +77,7 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </div>
       )}
 
-      <h1 className="font-headline-lg text-3xl font-bold text-text mb-3">
+      <h1 className="font-headline-lg text-3xl font-black text-text mb-3">
         {recipe.title}
       </h1>
 

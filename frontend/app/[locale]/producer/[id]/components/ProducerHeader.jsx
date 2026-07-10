@@ -42,7 +42,7 @@ export default function ProducerHeader({
           // MEH-1031 (A3): me-3 gives the badge row breathing room from the
           // H1 (margin-inline-end, RTL-safe) without touching the container
           // gap-2 that sets inter-badge spacing.
-          <h1 className="font-headline-lg text-4xl font-bold text-text me-3">
+          <h1 className="font-headline-lg text-4xl font-black text-text me-3">
             {producer.name}
           </h1>
         )}
