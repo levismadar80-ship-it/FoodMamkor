@@ -255,8 +255,9 @@ export default function ProductsSection() {
                 </p>
               )}
               <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
+                <label htmlFor={`edit-product-${product.id}-name`} className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
                 <input
+                  id={`edit-product-${product.id}-name`}
                   required
                   value={editForm.name || ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
@@ -264,8 +265,9 @@ export default function ProductsSection() {
                 />
               </div>
               <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
+                <label htmlFor={`edit-product-${product.id}-description`} className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
                 <input
+                  id={`edit-product-${product.id}-description`}
                   value={editForm.description || ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
                   className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
@@ -273,8 +275,9 @@ export default function ProductsSection() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
+                  <label htmlFor={`edit-product-${product.id}-price-min`} className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
                   <input
+                    id={`edit-product-${product.id}-price-min`}
                     required
                     type="number"
                     min={1}
@@ -286,8 +289,9 @@ export default function ProductsSection() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
+                  <label htmlFor={`edit-product-${product.id}-price-max`} className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
                   <input
+                    id={`edit-product-${product.id}-price-max`}
                     type="number"
                     min={1}
                     max={10000}
@@ -331,7 +335,9 @@ export default function ProductsSection() {
                 </div>
               </div>
               <div>
-                <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
+                {/* MEH-1096: group heading — file input below is labelled by its
+                    own wrapping <label>, so this stays a <span>. */}
+                <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
                 {editForm.image_url ? (
                   <div className="flex items-center gap-2">
                     <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
@@ -428,8 +434,9 @@ export default function ProductsSection() {
             </button>
           </div>
           <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
+            <label htmlFor="new-product-name" className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
             <input
+              id="new-product-name"
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -437,8 +444,9 @@ export default function ProductsSection() {
             />
           </div>
           <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
+            <label htmlFor="new-product-description" className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
             <input
+              id="new-product-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
@@ -446,8 +454,9 @@ export default function ProductsSection() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
+              <label htmlFor="new-product-price-min" className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
               <input
+                id="new-product-price-min"
                 required
                 type="number"
                 min={1}
@@ -459,8 +468,9 @@ export default function ProductsSection() {
               />
             </div>
             <div>
-              <label className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
+              <label htmlFor="new-product-price-max" className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
               <input
+                id="new-product-price-max"
                 type="number"
                 min={1}
                 max={10000}
@@ -504,7 +514,9 @@ export default function ProductsSection() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</label>
+            {/* MEH-1096: group heading — file input below is labelled by its
+                own wrapping <label>, so this stays a <span>. */}
+            <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
             {form.image_url ? (
               <div className="flex items-center gap-2">
                 <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">

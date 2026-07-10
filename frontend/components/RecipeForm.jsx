@@ -158,10 +158,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </h2>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor="recipe-title" className="block text-sm font-medium mb-1">
           {t("title_label")} <span className="text-red-500">*</span>
         </label>
         <input
+          id="recipe-title"
           required
           minLength={3}
           maxLength={200}
@@ -173,8 +174,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("description_label")}</label>
+        <label htmlFor="recipe-description" className="block text-sm font-medium mb-1">{t("description_label")}</label>
         <textarea
+          id="recipe-description"
           rows={2}
           value={form.description}
           onChange={set("description")}
@@ -184,10 +186,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor="recipe-ingredients" className="block text-sm font-medium mb-1">
           {t("ingredients_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="recipe-ingredients"
           required
           minLength={10}
           rows={6}
@@ -200,10 +203,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label htmlFor="recipe-instructions" className="block text-sm font-medium mb-1">
           {t("instructions_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
+          id="recipe-instructions"
           required
           minLength={10}
           rows={8}
@@ -217,8 +221,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
+          <label htmlFor="recipe-prep-time" className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
           <input
+            id="recipe-prep-time"
             type="number"
             min={0}
             max={1440}
@@ -229,8 +234,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
+          <label htmlFor="recipe-cook-time" className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
           <input
+            id="recipe-cook-time"
             type="number"
             min={0}
             max={1440}
@@ -241,8 +247,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">{t("servings_label")}</label>
+          <label htmlFor="recipe-servings" className="block text-sm font-medium mb-1">{t("servings_label")}</label>
           <input
+            id="recipe-servings"
             type="number"
             min={1}
             max={100}
@@ -255,7 +262,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">{t("image_label")}</label>
+        {/* MEH-1096: group heading, not a control label — the file input below
+            is labelled by its own wrapping <label>, so this stays a <span> to
+            avoid an orphan-label / multiple-labels a11y violation. */}
+        <span className="block text-sm font-medium mb-1">{t("image_label")}</span>
         {form.image_url ? (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -287,12 +297,15 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        {/* MEH-1096: group heading for the checkbox list — each checkbox is
+            labelled by its own wrapping <label>, so this is a <span>, not an
+            orphan control label. */}
+        <span className="block text-sm font-medium mb-1">
           {t("related_products_label")}
           <span className="ms-2 text-xs text-fg-muted">
             {t("related_products_hint")}
           </span>
-        </label>
+        </span>
         {productsLoading ? (
           <p className="text-sm text-fg-muted">{t("products_loading")}</p>
         ) : products.length === 0 ? (
