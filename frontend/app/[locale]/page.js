@@ -55,7 +55,7 @@ export default function HomePage() {
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
     featuredProducer,
-    handleNearMe, handleCitySelected, handleCategoryCardClick,
+    handleNearMe, handleCitySelected,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -166,11 +166,9 @@ export default function HomePage() {
         />
       </div>
 
-      <HomeCategoryGrid
-        categoryCards={categoryCards}
-        onCardClick={handleCategoryCardClick}
-        selectedCategory={filters.category}
-      />
+      {/* MEH-1080: cards are real links to /producers?category=<id> —
+          no click handler, no selection state on the homepage anymore. */}
+      <HomeCategoryGrid categoryCards={categoryCards} />
 
       <HomeProducersGrid
         producers={producers}

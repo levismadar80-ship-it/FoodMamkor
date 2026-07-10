@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { Leaf } from "@phosphor-icons/react";
 import FadeInSection from "@/components/FadeInSection";
 import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 
@@ -9,27 +11,33 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
 const EASE_QUART = [0.25, 1, 0.5, 1];
 
 /**
- * Category grid — Assembly v2 (MEH-643 chunk 2). Six flat editorial cards in a
- * 2+4 asymmetric layout: 2 hero cards (cat 01-02) + 4 small (03-06). Each card
- * = warm-white surface-card with a 1px border, sharp corners (no radius, no
- * shadow), a hand-drawn glyph on a cream panel, a gold Cormorant-italic numeral
- * (01-06, LTR-isolated), and the category name.
+ * Category grid — Assembly v2 (MEH-643 chunk 2), navigation cards since
+ * MEH-1080. Ten flat editorial cards in the 2-hero + 8-small asymmetric
+ * layout: warm-white surface-card, 1px border, sharp corners, a hand-drawn
+ * glyph on a cream panel (Phosphor Leaf fallback for the 4 cards awaiting
+ * MEH-683 glyphs), a gold Cormorant-italic numeral (01-10, LTR-isolated),
+ * and the category name (= DB value verbatim).
  *
- * Layout: desktop 2+4 (4-col grid, hero span-2) · tablet 2×3 uniform · mobile
- * 2+4 (hero full-width, 4 small in 2×2). No producer counters (LOCK).
+ * MEH-1080 [T-A] (MEH-1077 DISC-01): each card is a real <Link> to
+ * /producers?category=<id> — navigable, crawlable, Back-able. The old
+ * in-place homepage filtering (onCardClick → filter + scroll) is gone.
+ * A card whose categoryId hasn't resolved yet (categories still loading,
+ * or category absent in this environment) renders inert — same visual,
+ * no dead link.
  *
- * Does NOT: own routing (onCardClick → use-home-page sets the filter + scrolls
- * to #producers-grid) or own the glyph paths (CategoryIcons.jsx).
+ * Layout: desktop 2+8 (4-col grid, hero span-2) · tablet uniform · mobile
+ * 2 full-width heroes + 8 small in 2×4. No producer counters (LOCK).
+ *
+ * Does NOT: own the card set or id resolution (lib/home-categories.js) or
+ * the glyph paths (CategoryIcons.jsx).
  *
  * Props:
  *   categoryCards: card[] joined with API category IDs (card.key/name/categoryId).
- *   onCardClick: (card) => void.
- *   selectedCategory: string — the active filters.category; a card is "selected"
- *     when String(card.categoryId) === selectedCategory.
  *
- * History: PREMIUM_DESIGN (photo cards); MEH-643 (Assembly-v2 flat 2+4 redesign).
+ * History: PREMIUM_DESIGN (photo cards); MEH-643 (Assembly-v2 flat redesign);
+ * MEH-1080 (buttons → links, 1:1 card↔category split).
  */
-export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory }) {
+export function HomeCategoryGrid({ categoryCards }) {
   const t = useTranslations();
   return (
     <section className="max-w-7xl mx-auto px-4 section-y">
@@ -48,25 +56,14 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
         {categoryCards.map((card, idx) => {
           const LineArt = CATEGORY_ICONS[card.key];
           const isHero = idx < 2;
-          const selected = card.categoryId != null && String(card.categoryId) === selectedCategory;
           const numeral = String(idx + 1).padStart(2, "0");
-          return (
-            <motion.button
-              key={card.key}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.42, delay: idx * 0.08, ease: EASE_QUART }}
-              onClick={() => onCardClick(card)}
-              aria-pressed={selected}
-              aria-label={t("home.categories.aria", { name: card.name })}
-              className={[
-                "group flex flex-col bg-surface-card border transition-colors duration-base ease-quart focus-ring",
-                selected ? "border-primary" : "border-border hover:border-primary",
-                isHero ? "col-span-2 md:col-span-1 lg:col-span-2" : "col-span-1",
-              ].join(" ")}
-            >
-              {/* Glyph panel — cream background, hand-drawn line glyph in brand green. */}
+          const cardClassName = [
+            "group flex flex-col h-full bg-surface-card border border-border hover:border-primary transition-colors duration-base ease-quart focus-ring",
+          ].join(" ");
+          const cardBody = (
+            <>
+              {/* Glyph panel — cream background, hand-drawn line glyph in brand
+                  green; Phosphor Leaf stand-in until MEH-683 draws the missing 4. */}
               <div
                 className={[
                   "grid place-items-center bg-background text-primary",
@@ -74,7 +71,7 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
                   isHero ? "aspect-[16/7] md:aspect-[4/3] lg:aspect-[16/9]" : "aspect-square md:aspect-[4/3] lg:aspect-square",
                 ].join(" ")}
               >
-                {LineArt && (
+                {LineArt ? (
                   <LineArt
                     className={
                       isHero
@@ -82,6 +79,8 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
                         : "w-16 h-16"
                     }
                   />
+                ) : (
+                  <Leaf weight="thin" className={isHero ? "w-24 h-24 lg:w-[120px] lg:h-[120px]" : "w-16 h-16"} aria-hidden="true" />
                 )}
               </div>
 
@@ -98,7 +97,31 @@ export function HomeCategoryGrid({ categoryCards, onCardClick, selectedCategory 
                   {card.name}
                 </h3>
               </div>
-            </motion.button>
+            </>
+          );
+          return (
+            <motion.div
+              key={card.key}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.42, delay: idx * 0.08, ease: EASE_QUART }}
+              className={isHero ? "col-span-2 md:col-span-1 lg:col-span-2" : "col-span-1"}
+            >
+              {card.categoryId != null ? (
+                <Link
+                  href={`/producers?category=${card.categoryId}`}
+                  aria-label={t("home.categories.aria", { name: card.name })}
+                  className={cardClassName}
+                >
+                  {cardBody}
+                </Link>
+              ) : (
+                // id not resolved (categories loading / absent in this env) —
+                // same visual, no dead link (MEH-1080).
+                <div className={cardClassName}>{cardBody}</div>
+              )}
+            </motion.div>
           );
         })}
       </div>

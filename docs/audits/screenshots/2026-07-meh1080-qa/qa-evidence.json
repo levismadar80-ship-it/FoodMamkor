@@ -1,0 +1,55 @@
+{
+  "card_links": [
+    {
+      "href": "/producers?category=1",
+      "text": "בשר"
+    },
+    {
+      "href": "/producers?category=7",
+      "text": "ירקות"
+    },
+    {
+      "href": "/producers?category=3",
+      "text": "חלב וגבינות"
+    },
+    {
+      "href": "/producers?category=5",
+      "text": "לחמים ואפייה"
+    },
+    {
+      "href": "/producers?category=6",
+      "text": "שמנים"
+    },
+    {
+      "href": "/producers?category=12",
+      "text": "סבונים טבעיים"
+    },
+    {
+      "href": "/producers?category=2",
+      "text": "דגים"
+    },
+    {
+      "href": "/producers?category=8",
+      "text": "פירות"
+    },
+    {
+      "href": "/producers?category=15",
+      "text": "יין, בירה ומשקאות"
+    },
+    {
+      "href": "/producers?category=13",
+      "text": "קרמים ושמנים"
+    }
+  ],
+  "fish_click": {
+    "before": {
+      "url": "http://localhost:3000/",
+      "hist": 2
+    },
+    "after": {
+      "url": "http://localhost:3000/producers?category=2",
+      "hist": 3
+    }
+  },
+  "back_after_click": "http://localhost:3000/"
+}
