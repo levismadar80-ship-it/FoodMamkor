@@ -24,7 +24,10 @@ export const CATEGORY_CARDS = [
   { key: "fish",   name: "דגים" },
   { key: "fruit",  name: "פירות" },
   { key: "drinks", name: "יין, בירה ומשקאות" },
-  { key: "cream",  name: "קרמים ושמנים" },
+  // MEH-1098 (A1): renamed DB category "קרמים ושמנים" → "קוסמטיקה טבעית".
+  // Card name must track the DB value verbatim or the exact-match resolver
+  // (matchCategoryId) returns categoryId:null and the card renders inert.
+  { key: "cream",  name: "קוסמטיקה טבעית" },
 ];
 
 // Exact-name resolution — category ids differ per environment

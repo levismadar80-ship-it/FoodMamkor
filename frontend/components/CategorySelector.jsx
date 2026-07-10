@@ -42,6 +42,13 @@ const POPULAR = [
 const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
 const POPULAR_NAMES = POPULAR.map((p) => p.name);
 
+// MEH-1098 (B1): the 3 non-food (home & personal-care) categories. Names track
+// the DB values verbatim ("קוסמטיקה טבעית" post-A1 rename). They surface under a
+// "בית וטיפוח" subheader in the expanded grid; everything else falls under "מזון".
+// Presentational grouping only — the selection contract (category_ids) is
+// unchanged.
+const HOME_CARE_NAMES = ["סבונים טבעיים", "קוסמטיקה טבעית", "נרות וארומה"];
+
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
   const [query, setQuery] = useState("");
@@ -73,6 +80,23 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
       : popularCats;
 
   const sectionLabel = q ? t("section_results") : t("section_popular");
+
+  // B1: in the expanded (non-search) state, split the full grid into
+  // food / home-and-care groups with presentational subheaders. Every other
+  // state (popular-6, active search) stays a flat grid with no headers.
+  const grouped = !q && expanded;
+  const gridItems = grouped
+    ? [
+        { header: t("group_food"), key: "grp-food" },
+        ...ordered
+          .filter((c) => !HOME_CARE_NAMES.includes(c.name))
+          .map((c) => ({ cat: c })),
+        { header: t("group_home"), key: "grp-home" },
+        ...ordered
+          .filter((c) => HOME_CARE_NAMES.includes(c.name))
+          .map((c) => ({ cat: c })),
+      ]
+    : shown.map((c) => ({ cat: c }));
 
   return (
     <div role="group" aria-label={t("label")}>
@@ -112,7 +136,19 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
         <>
           <p className="text-xs text-fg-muted mb-2">{sectionLabel}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {shown.map((cat) => {
+            {gridItems.map((item) => {
+              if (item.header) {
+                return (
+                  <p
+                    key={item.key}
+                    role="presentation"
+                    className="col-span-1 md:col-span-2 text-xs font-semibold text-fg-muted mt-3 first:mt-0 mb-1"
+                  >
+                    {item.header}
+                  </p>
+                );
+              }
+              const cat = item.cat;
               const selected = selectedIds.includes(cat.id);
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);

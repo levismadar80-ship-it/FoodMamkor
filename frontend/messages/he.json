@@ -2535,6 +2535,8 @@
       },
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
+      "group_food": "מזון",
+      "group_home": "בית וטיפוח",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
       "no_results_cta": "ספרו לנו →",
       "show_more": "← עוד קטגוריות ({count})",
