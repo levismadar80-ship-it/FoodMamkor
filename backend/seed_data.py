@@ -26,7 +26,7 @@ CATEGORIES = [
     ("מוצרים מוכנים", "🫙"),
     ("צמחי מרפא ותוספים", "🌿"),
     ("סבונים טבעיים", "🧴"),
-    ("קרמים ושמנים", "🌸"),
+    ("קוסמטיקה טבעית", "🌸"),
     # MEH-927: "תכשירי צמחים" + "תוספי תזונה" merged into "צמחי מרפא ותוספים"
     # (kept above) — overlapping wellness rows removed.
     ("נרות וארומה", "🕯️"),
@@ -149,7 +149,7 @@ PRODUCERS = [
         "phone": "053-3334455",
         "instagram": "@teva_pure",
         "website": "https://tevapure.co.il",
-        "category_ids": [11, 12],  # סבונים + קרמים
+        "category_ids": [11, 12],  # סבונים + קוסמטיקה טבעית
         "products": [
             {"name": "סבון שמן זית ולבנדר", "price_range": "35₪"},
             {"name": "קרם פנים אלוורה", "price_range": "85₪"},

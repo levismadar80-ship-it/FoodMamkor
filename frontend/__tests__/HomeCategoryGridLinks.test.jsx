@@ -31,6 +31,9 @@ const DB_CATEGORIES = [
   { id: 7, name: "ירקות" },
   { id: 8, name: "פירות" },
   { id: 12, name: "סבונים טבעיים" },
+  // MEH-1098: OLD DB name kept here on purpose — it represents the pre-rename
+  // staging/prod state (the manual SQL runs after merge). The "cream" card must
+  // still resolve to it via matchAliases, so this fixture exercises the alias.
   { id: 13, name: "קרמים ושמנים" },
   { id: 15, name: "יין, בירה ומשקאות" },
 ];
@@ -76,7 +79,18 @@ describe("homepage category cards → links (MEH-1080)", () => {
       "דגים",
       "פירות",
       "יין, בירה ומשקאות",
-      "קרמים ושמנים",
+      "קוסמטיקה טבעית",
     ]);
+  });
+
+  it("MEH-1098: the cream card resolves against BOTH the old and new DB name", () => {
+    const cream = CATEGORY_CARDS.find((c) => c.key === "cream");
+    expect(cream.name).toBe("קוסמטיקה טבעית");
+    // pre-rename DB (staging/prod until the manual SQL runs) → alias resolves it
+    const [pre] = matchCategoryId([cream], [{ id: 13, name: "קרמים ושמנים" }]);
+    expect(pre.categoryId).toBe(13);
+    // post-rename DB (fresh seed / after SQL) → primary name resolves it
+    const [post] = matchCategoryId([cream], [{ id: 13, name: "קוסמטיקה טבעית" }]);
+    expect(post.categoryId).toBe(13);
   });
 });

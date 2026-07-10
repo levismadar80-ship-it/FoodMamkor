@@ -2512,6 +2512,8 @@
       },
       "section_results": "Results",
       "section_popular": "Popular",
+      "group_food": "Food",
+      "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
       "no_results_cta": "Tell us ←",
       "show_more": "← More categories ({count})",
