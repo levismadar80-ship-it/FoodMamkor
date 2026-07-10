@@ -150,7 +150,7 @@ function CustomQuestionsCard({ profile, onSave }) {
         {t("heading")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </h2>
-      <p className="text-xs text-fg-muted mb-1">
+      <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
       </p>
       <p className="text-xs text-fg-muted mb-4">
