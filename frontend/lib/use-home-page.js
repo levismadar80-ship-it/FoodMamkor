@@ -33,10 +33,12 @@ const STATS_DISPLAY_THRESHOLD = 5;
  * Behavior is bit-identical to the prior inline implementation:
  *   - 13 useState calls in declaration order
  *   - 7 useEffect blocks in declaration order
- *   - 7 handlers (updateURL, loadProducers, handleCategoryCardClick,
- *     handleWhatsAppClick, scrollToProducers, toggleChip, handleNearMe,
- *     handleCitySelected) close over the same state via the same
- *     reference identities they did before extraction
+ *   - handlers (updateURL, loadProducers, handleWhatsAppClick,
+ *     scrollToProducers, toggleChip, handleNearMe, handleCitySelected)
+ *     close over the same state via the same reference identities they
+ *     did before extraction. handleCategoryCardClick was removed in
+ *     MEH-1080 — category cards are real links to /producers?category=
+ *     now; the ?category= deep-link path below stays for old shared URLs.
  *   - 7 derived values (visibleProducers, hasMore, categoryCards,
  *     statsProducersCount, statsCategoriesCount, statsLoaded,
  *     newestProducers)
@@ -266,15 +268,11 @@ export function useHomePage() {
       .finally(() => setProducersLoading(false));
   };
 
-  const handleCategoryCardClick = (card) => {
-    if (!card.categoryId) return;
-    const newCat = String(card.categoryId);
-    const newFilters = { ...filters, category: newCat };
-    setFilters(newFilters);
-    updateURL(newFilters);
-    loadProducers({ category: newCat, ...buildChipParams(chips) });
-    document.getElementById("producers-grid")?.scrollIntoView({ behavior: "smooth" });
-  };
+  // MEH-1080: handleCategoryCardClick removed — homepage category cards are
+  // real <Link>s to /producers?category=<id> (HomeCategoryGrid.jsx); no
+  // in-place category filtering is triggered from the cards anymore. The
+  // ?category= deep-link support (initFilters + updateURL + the grid's
+  // active pill/clear) is kept for backward compat with old shared URLs.
 
   const handleWhatsAppClick = async (productId) => {
     if (!user) return;
@@ -402,7 +400,6 @@ export function useHomePage() {
     // handlers
     handleNearMe,
     handleCitySelected,
-    handleCategoryCardClick,
     handleWhatsAppClick,
     scrollToProducers,
     toggleChip,
