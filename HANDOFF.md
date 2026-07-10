@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — MEH-1077: discovery anti-pattern audit — findings matrix (docs-only PR, Refs MEH-1077)
+
+- **Branch:** `feature/meh-1077-discovery-antipattern-audit` off `origin/staging` (clean cut, divergence 0; harness `claude/*` branch recreated as `feature/*` per rule 3). GREEN end-to-end (read-only audit, docs-only PR). **Audit only — zero product-code changes.**
+- **Deliverable:** `docs/audits/2026-07-discovery-antipattern-audit.md` — 12 CONFIRMED rows (file:line + screenshot both required), 4 resolved-regression checks, 3 SUSPECTED, top-10 triage head. Evidence env: local `next start` (production build — dev mode hit a StrictMode Leaflet double-mount crash "Map container is already initialized" on every minimap page, dev-only artifact) + local Postgres seeded via `seed_data.py`; screenshots + `evidence.json` interaction log under `docs/audits/screenshots/2026-07-meh1077/` (14MB, under MEH-233's 25MB precedent). OSM tiles gray in map frames (sandbox egress, MEH-360 class) — markers/chips render.
+- **Calibration (pre-found #1 = DISC-01):** homepage category cards are `motion.button`s (`HomeCategoryGrid.jsx:54-67`) → in-place filter via `router.replace` (`use-home-page.js:234,258-266`); Playwright-proven: URL `/`→`/?category=1` with `history.length` unchanged, Back exits to `about:blank`. Pre-found #2 (flat /map chips) = dedup → MEH-1075 as specced.
+- **Top new findings for triage:** DISC-03 mislabeled merged cards ("בשר, עוף ודגים" filters בשר only — first-match in `home-categories.js:22-29`; fish-category producer provably hidden on screen); DISC-04 12/18 categories with no browse entry on any surface (/producers has NO category axis); DISC-02 homepage diet chips filter but never reach the URL (4-key serializer `use-home-page.js:226-233` vs 7-key `CHIPS_CONFIG`) — homepage sibling of MEH-1075(b); DISC-07 category empty state blames "האזור" + exits to /map.
+- **Dedup locked:** MEH-1075 (map chips + no-URL decision), MEH-819 (dual search), MEH-611/613 (persistence/pagination), MEH-1062 SEO-04 (dual producer URLs); resolved: MEH-920/922/1048/1049 verified still fixed.
+- **Sapir pending:** triage session on the matrix → child tickets (templates 06/07); DISC-01 gets its own ticket per MEH-1077 plan. DoD exception: docs-only — no mobile QA requirement.
+
 ## 2026-07-10 — MEH-1086: error-color sweep completion (T1) + ADR-025/026 index rows — PR #1571
 
 - **Branch:** `feature/meh-1086-error-color-sweep` off `origin/staging` (harness had auto-created a `claude/*` branch — recut per repo rule). YELLOW chunk-by-chunk with WAIT gates; Sapir approved all three chunks + self-merge on green gates. **PR #1571.** `Refs MEH-1073` · `Closes MEH-1086`.
