@@ -168,10 +168,16 @@ jobs:
       # MEH-1074 (W0.1) — QA report as a PR comment: one upserted comment per
       # PR (marker-matched, edited in place — no comment spam on re-push).
       # Runs on pass AND fail (if: always()); skipped on push-to-staging runs
-      # where there is no PR to comment on.
+      # where there is no PR to comment on, and on CANCELLED runs — a rapid
+      # second push concurrency-cancels the in-flight run, and reporting its
+      # outcome would post "FAIL" for a superseded run (the workflow-rule-21
+      # false-failure class, observed live on PR #1568 within an hour of the
+      # step landing). The fresh run upserts the real verdict.
       - name: Post QA report comment
         uses: actions/github-script@v8
-        if: always() && github.event_name == 'pull_request'
+        if: >-
+          always() && github.event_name == 'pull_request' &&
+          steps.e2e-run.outcome != 'cancelled'
         with:
           script: |
             const marker = "<!-- e2e-qa-report -->";
