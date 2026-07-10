@@ -17,6 +17,21 @@
 - **Merge flow gotcha (MEH-926 interaction):** the PR was opened DRAFT → the pr-checks draft run went green **vacuously** (frontend jobs skip on drafts; the gate's `ok()` counts skipped as success). On Sapir's MERGE the ready_for_review conversion happened but GitHub **dropped the ready_for_review workflow run** (no new pr-checks run appeared in 25min — event loss, not concurrency-cancel). Merged only after a `synchronize` push (this staging sync-merge) produced a real non-draft run with Frontend build + vitest actually executing. If this event-loss repeats, consider a follow-up ticket: empty-commit fallback or a gate that hard-fails when frontend jobs skipped on a frontend diff.
 - **Scope held:** FilterSheet.jsx (new) + FilterSheet.test.jsx (new) + map-chips.js + FilterChipsBar.jsx + useMapFilters.js + MapClient.jsx + he/en.json + CHANGELOG/MANUAL_TESTING/HANDOFF. ChipScrollRow untouched; no URL params; no backend; verified-param semantics untouched (MEH-766). Design-QA note for post-merge: at the 25fr desktop split the w-80 panel can overhang the list pane edge (usable — z-1200; cosmetic only).
 
+## 2026-07-10 — MEH-1081 [T-B]: /producers category axis — PR open (Refs MEH-1081; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1081-producers-category-axis` off `origin/staging` (clean cut). YELLOW; Phase 0 approved by Sapir ("go BOTH Wave 1") including the backend-param correction: `?category=<id>` (int, `producers.py:56` → `ProducerCategory` join) — the ticket's `category=<name>` claim was wrong; **no schema change, RED escalation not triggered**.
+- **What shipped (frontend-only):** `ProducersClient.jsx` — category radio row (`ChipScrollRow variant="category"`, all-sentinel, live `/categories` + Rule-19 safeParse, self-hides on failure) + `?category=` through `syncUrl`/`fetchFiltered`/mount-init/`clearAll` (4-arg) + removable strip chip + `hasActiveChips`. i18n `producers.filters.category_all` he+en (surgical 2-line diff — avoided the MEH-1046 json.dump reformat trap). Unlocks T-A (homepage cards → `/producers?category=<id>` links).
+- **Verify:** new `ProducersClientCategoryAxis.test.jsx` 4✓ failing-first · vitest **853 passed**/41 skipped · build exit 0 · 0 eslint errors · adversarial review **0 must-fix** (2 notes: row-appearance CLS = accepted self-hide pattern; H1-while-filtered = T-A/landing-tier scope) · Playwright QA on local `next start`+seed: deep-link `?category=18` (tail cat, chip auto-scrolled into view), select→`?category=6`, compose `?category=6&organic=1`, clear-all→`/producers` (`docs/audits/screenshots/2026-07-meh1081-qa/` + `qa-evidence.json`).
+- **SSR note (Sapir-accepted):** `?category=` deep-links client-filter post-hydration like existing `?organic=1`; true SSR category rendering = post-launch `/categories/[slug]` SEO tier.
+- **Sapir pending:** merge (Rule 23 — no self-merge; Wave 2 T-A is gated on this landing on staging). Mobile QA: select category → URL param; deep-link tail category; compose with אורגני; clear-all.
+
+## 2026-07-10 — MEH-1083: homepage diet chips → URL — PR open (Refs MEH-1083; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1083-homepage-diet-chips-url` off `origin/staging` (clean cut, divergence 0). GREEN end-to-end per batch authority (Wave 1 with MEH-1081 — disjoint files). Phase 0 approved by Sapir ("go BOTH Wave 1").
+- **What shipped:** `use-home-page.js` mount-init (`:120-131`) + `updateURL` serializer (`:229-240`) extended from 4 to all 7 chip keys (added `gluten_free`/`vegan`/`lactose_free`, `=1` convention, `delivery` legacy name kept). Fetch layer + chip render + /map untouched (URL-only per scope).
+- **Verify:** new `useHomePageDietChipsUrl.test.jsx` 4✓ (failing-first) · full vitest **853 passed**/41 skipped · `npm run build` exit 0 · no JSX/i18n touched (0 RTL surface). Diff: 1 file, +11.
+- **Sapir pending:** merge (Rule 23 — no self-merge). Mobile QA per DoD: toggle ללא גלוטן on homepage → URL gets param; refresh keeps chip+filter.
+
 ## 2026-07-10 — Cleanup batch: 14 tickets Done, gold LOCK closed
 Done: MEH-994, 996, 1035, 970, 1042, 1041, 1032, 1033, 1047, 1027, 1064, 1068, 1069, 1065.
 Backlog: MEH-903 (post-launch).
