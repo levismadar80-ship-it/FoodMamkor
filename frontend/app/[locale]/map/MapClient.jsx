@@ -484,8 +484,10 @@ export default function MapPage() {
             (same goToMyLocation path as the filter-bar crosshair). */}
         <NearMePill onClick={handleGoToMyLocation} />
 
-        {/* Bottom sheet */}
-        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length}>
+        {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
+            fetch so the sheet shows a list skeleton instead of flashing an
+            empty "0" state before the first /producers response lands. */}
+        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
             onClose={() => filters.setSelectedProducer(null)}
