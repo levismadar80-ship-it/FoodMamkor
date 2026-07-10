@@ -17,7 +17,7 @@ export function HomeRecentlyViewed({ items }) {
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
-      <h2 className="font-headline-md font-bold text-text mb-4" style={{ fontSize: "clamp(22px, 2.5vw, 28px)" }}>
+      <h2 className="font-headline-md text-headline-md text-text mb-4">
         {t("home.recent.heading")}
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
@@ -128,8 +128,7 @@ export function HomeFeaturedProducer({ featured }) {
           <h2 className="font-headline-md text-xl font-bold text-text mb-4">{t("heading")}</h2>
           {/* MEH-991 (HOME-23): meta moved into the on-image caption chip per FREEZE §10. */}
           <p
-            className="font-headline-lg font-bold text-text leading-snug mb-4"
-            style={{ fontSize: "clamp(24px, 3vw, 36px)" }}
+            className="font-headline-lg text-headline-lg text-text leading-snug mb-4"
           >
             {featured.quote}
           </p>
@@ -179,7 +178,7 @@ export function HomeHowItWorks() {
         <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
           {t("home.how_it_works.eyebrow")}
         </p>
-        <h2 className="font-headline-lg font-bold text-text text-center mb-10" style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}>
+        <h2 className="font-headline-lg text-headline-lg text-text text-center mb-10">
           {t("home.how_it_works.heading")}
         </h2>
       </FadeInSection>
@@ -215,8 +214,7 @@ export function HomeComparisonTeaser() {
           {t("eyebrow")}
         </p>
         <h2
-          className="font-headline-lg font-bold text-text mb-5"
-          style={{ fontSize: "clamp(28px, 3.5vw, 40px)" }}
+          className="font-headline-lg text-headline-lg text-text mb-5"
         >
           {t("heading")}
         </h2>
@@ -243,7 +241,7 @@ export function HomeCTA() {
       <div className="max-w-3xl mx-auto px-4 text-center">
         {/* Gold eyebrow rule — 64px. mx-auto = sanctioned horizontal-center idiom (text-center section), not a physical RTL prop. */}
         <span className="block w-16 h-px bg-accent mx-auto mb-6" aria-hidden="true" />
-        <h2 className="font-headline-display font-bold mb-4" style={{ fontSize: "clamp(32px, 4vw, 52px)" }}>
+        <h2 className="font-headline-display text-headline-display mb-4">
           {t("home.cta.heading")}
         </h2>
         {/* MEH-788 copy-Δ: P5-v2 lock carries 3 body lines (recognition-first,

@@ -276,13 +276,9 @@ function RegisterPageBody() {
             The three orphaned keys stay in the JSONs (untouched), same as
             login's retained value_save/rate/publish. */}
 
-        {/* MEH-49: referral badge — MEH-1049 reworded to share-loop framing
-            (social proof only, no discount promise) */}
-        {referralCode && (
-          <div className="mb-4 rounded-md bg-green-50 border border-primary/20 px-4 py-2 text-sm text-primary font-medium">
-            {t("auth.register.consumer.referral_badge")}
-          </div>
-        )}
+        {/* MEH-1056: the MEH-49 referral discount badge is removed — a blanket
+            platform promise no business opted into (MEH-1050 ruling). The
+            referralCode state + /referral/claim call below stay live; copy only. */}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -304,7 +300,7 @@ function RegisterPageBody() {
               dir="rtl"
             />
             {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
+              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
             )}
             {nameValid && (
               <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
@@ -331,7 +327,7 @@ function RegisterPageBody() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
+              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
             )}
             {emailValid && (
               <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
@@ -371,7 +367,7 @@ function RegisterPageBody() {
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+          {error && <p className="text-error text-sm" role="alert">{error}</p>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}
