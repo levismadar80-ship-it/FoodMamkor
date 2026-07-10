@@ -319,7 +319,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="text-sm text-error" role="alert">
           {error}
         </p>
       )}

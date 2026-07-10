@@ -13,6 +13,38 @@
 - **SSR note (Sapir-accepted):** `?category=` deep-links client-filter post-hydration like existing `?organic=1`; true SSR category rendering = post-launch `/categories/[slug]` SEO tier.
 - **Sapir pending:** merge (Rule 23 — no self-merge; Wave 2 T-A is gated on this landing on staging). Mobile QA: select category → URL param; deep-link tail category; compose with אורגני; clear-all.
 
+## 2026-07-10 — MEH-1083: homepage diet chips → URL — PR open (Refs MEH-1083; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1083-homepage-diet-chips-url` off `origin/staging` (clean cut, divergence 0). GREEN end-to-end per batch authority (Wave 1 with MEH-1081 — disjoint files). Phase 0 approved by Sapir ("go BOTH Wave 1").
+- **What shipped:** `use-home-page.js` mount-init (`:120-131`) + `updateURL` serializer (`:229-240`) extended from 4 to all 7 chip keys (added `gluten_free`/`vegan`/`lactose_free`, `=1` convention, `delivery` legacy name kept). Fetch layer + chip render + /map untouched (URL-only per scope).
+- **Verify:** new `useHomePageDietChipsUrl.test.jsx` 4✓ (failing-first) · full vitest **853 passed**/41 skipped · `npm run build` exit 0 · no JSX/i18n touched (0 RTL surface). Diff: 1 file, +11.
+- **Sapir pending:** merge (Rule 23 — no self-merge). Mobile QA per DoD: toggle ללא גלוטן on homepage → URL gets param; refresh keeps chip+filter.
+
+## 2026-07-10 — Cleanup batch: 14 tickets Done, gold LOCK closed
+Done: MEH-994, 996, 1035, 970, 1042, 1041, 1032, 1033, 1047, 1027, 1064, 1068, 1069, 1065.
+Backlog: MEH-903 (post-launch).
+Gold #896714 LOCK fully closed: #1544 (2 code sites) + #1573 (4 synced DS assets, hex+rgb). Source clean; future /design-sync regenerates cleanly.
+Carry-forward (not blocking): wider design-reference/ tree (_archive, _preview, s2-logo, uploads) still has stale #8b6914 — low-pri post-launch sweep candidate, not build-fed.
+STILL OPEN: (1) PR triage batch NOT YET RUN — undraft #1492, 8 Dependabot merge-safety verdicts, #1391/MEH-787 uv-lock gate READY assessment. (2) Sentry replay-masking dashboard verify on staging (MEH-1068). (3) CMP legal-copy tickets from MEH-1064 report — parked, need Sapir wording.
+
+## 2026-07-10 — MEH-1077: discovery anti-pattern audit — findings matrix (docs-only PR, Refs MEH-1077)
+
+- **Branch:** `feature/meh-1077-discovery-antipattern-audit` off `origin/staging` (clean cut, divergence 0; harness `claude/*` branch recreated as `feature/*` per rule 3). GREEN end-to-end (read-only audit, docs-only PR). **Audit only — zero product-code changes.**
+- **Deliverable:** `docs/audits/2026-07-discovery-antipattern-audit.md` — 12 CONFIRMED rows (file:line + screenshot both required), 4 resolved-regression checks, 3 SUSPECTED, top-10 triage head. Evidence env: local `next start` (production build — dev mode hit a StrictMode Leaflet double-mount crash "Map container is already initialized" on every minimap page, dev-only artifact) + local Postgres seeded via `seed_data.py`; screenshots + `evidence.json` interaction log under `docs/audits/screenshots/2026-07-meh1077/` (14MB, under MEH-233's 25MB precedent). OSM tiles gray in map frames (sandbox egress, MEH-360 class) — markers/chips render.
+- **Calibration (pre-found #1 = DISC-01):** homepage category cards are `motion.button`s (`HomeCategoryGrid.jsx:54-67`) → in-place filter via `router.replace` (`use-home-page.js:234,258-266`); Playwright-proven: URL `/`→`/?category=1` with `history.length` unchanged, Back exits to `about:blank`. Pre-found #2 (flat /map chips) = dedup → MEH-1075 as specced.
+- **Top new findings for triage:** DISC-03 mislabeled merged cards ("בשר, עוף ודגים" filters בשר only — first-match in `home-categories.js:22-29`; fish-category producer provably hidden on screen); DISC-04 12/18 categories with no browse entry on any surface (/producers has NO category axis); DISC-02 homepage diet chips filter but never reach the URL (4-key serializer `use-home-page.js:226-233` vs 7-key `CHIPS_CONFIG`) — homepage sibling of MEH-1075(b); DISC-07 category empty state blames "האזור" + exits to /map.
+- **Dedup locked:** MEH-1075 (map chips + no-URL decision), MEH-819 (dual search), MEH-611/613 (persistence/pagination), MEH-1062 SEO-04 (dual producer URLs); resolved: MEH-920/922/1048/1049 verified still fixed.
+- **Sapir pending:** triage session on the matrix → child tickets (templates 06/07); DISC-01 gets its own ticket per MEH-1077 plan. DoD exception: docs-only — no mobile QA requirement.
+
+## 2026-07-10 — MEH-1086: error-color sweep completion (T1) + ADR-025/026 index rows — PR #1571
+
+- **Branch:** `feature/meh-1086-error-color-sweep` off `origin/staging` (harness had auto-created a `claude/*` branch — recut per repo rule). YELLOW chunk-by-chunk with WAIT gates; Sapir approved all three chunks + self-merge on green gates. **PR #1571.** `Refs MEH-1073` · `Closes MEH-1086`.
+- **Premise correction (meta-patterns §1):** ticket said "write the missing ADR-026 retroactively" — ADR-026 already existed on staging (PR #1561, complete: token pair, M3 basis, ratios, narrows-ADR-019 framing). Chunk A re-scoped with Sapir's approval to the genuine gap: `docs/decisions/README.md` index rows for ADR-025 + ADR-026 (table ended at 024).
+- **Chunk B (error reds only):** `ui/Input.jsx:63,73` · `RegisterClient.jsx:298,325` (border-red-400 sibling gap ADR-026 flagged) · `VerifyBanner.jsx:82` · `PhoneVerifyCard.jsx:130` · `RecipeForm.jsx:322` → `text-error`/`border-error`; `ui-Input.test.jsx:42` assertion updated. All surfaces re-verified ≥4.5:1 (worst: VerifyBanner on `background-alt` 5.18:1). Left untouched per scope: RecipeForm asterisks 162/188/204 + image-remove 270 (non-error reds).
+- **Chunk C dropped (Sapir decision):** `BottomNav.jsx:184` `text-[#4b4841]` stays — it's the MEH-919 AA fix (4.55:1); `fg-muted` is 3.53:1 on the sage capsule and would REGRESS it. A nav-muted token = separate ADR-019 exception if ever wanted.
+- **Verify:** compiled CSS emits `.border-error`/`.text-error` (first border-scale use of the token — config spreads tokens into full `colors`); `npm run build` exit 0; vitest 849 passed; adversarial review 0 REFEREE verdicts; Playwright QA comment PASS on the docs-only commit.
+- **Known pre-existing (not filed here):** RecipeForm required-asterisks `text-red-500` ≈3.3:1 — required-marker semantics, candidate for a future ticket.
+
 ## 2026-07-10 — MEH-991 Chunk 3: Playwright VRT baselines (Launch Sprint MEH-1074, Wave 0.3) — closes the MEH-991 epic
 
 - **Branch:** `feature/meh-991-parity-vrt` off `origin/staging`. Autonomous run under MEH-1074/ADR-016 v2. `Refs MEH-1074` · `Closes MEH-991`.

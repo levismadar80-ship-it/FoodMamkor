@@ -133,10 +133,8 @@ def _default_sender(click: HomeProductWhatsAppClick) -> None:
     body = (
         f"היי! קנית מ{seller_name} ({product_title})? איך היה?\nדרגי כאן 👇\n{rate_url}"
     )
-    # MEH-49: append referral link if the buyer has a referral code.
-    if buyer.referral_code:
-        ref_url = f"https://mehamakor.co.il/ref/{buyer.referral_code}"
-        body += f"\n\nאהבת? שתפי חברה והיא תקבל 10% הנחה בהזמנה הראשונה:\n{ref_url}"
+    # MEH-1049: referral "10% הנחה" append removed — the platform-wide
+    # discount promise is retired; the share-loop lives on without it.
 
     if not send_text(buyer.phone, body):
         raise RuntimeError(
