@@ -150,8 +150,11 @@ function CustomQuestionsCard({ profile, onSave }) {
         {t("heading")}
         <InfoTooltip content={t("tooltip")} position="bottom" />
       </h2>
-      <p className="text-xs text-fg-muted mb-4">
+      <p className="text-xs text-fg-muted mb-1">
         {t("subtitle")}
+      </p>
+      <p className="text-xs text-fg-muted mb-4">
+        {t("context_line")}
       </p>
       <div className="space-y-2">
         {questions.map((q, i) => (
@@ -165,7 +168,7 @@ function CustomQuestionsCard({ profile, onSave }) {
               updated[i] = e.target.value;
               setQuestions(updated);
             }}
-            placeholder={t("placeholder")}
+            placeholder={t(`placeholder_${i + 1}`)}
             className="w-full border border-[#e5e0d8] rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
             dir="rtl"
           />
