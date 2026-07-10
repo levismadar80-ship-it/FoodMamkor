@@ -23,6 +23,13 @@ export function useProducersFeed() {
   const t = useTranslations();
   const [allProducers, setAllProducers] = useState([]);
   const [categories, setCategories] = useState([]);
+  // MEH-1054 (MAP-16): additive loading flag so the bottom sheet can render
+  // a skeleton instead of flashing "0 businesses" on first paint. Starts
+  // true — the mount effect fires loadProducers immediately. NOTE: the
+  // geo-search refetch in useMapSync bypasses loadProducers (documented
+  // above) and deliberately does NOT toggle this flag — MAP-16 covers the
+  // initial-load flicker, not area re-queries over an already-drawn list.
+  const [loading, setLoading] = useState(true);
 
   // MEH-779: a malformed payload degrades to the same state as a network
   // failure — empty list + toast — so the map never crashes on bad data.
@@ -33,6 +40,7 @@ export function useProducersFeed() {
   };
 
   const loadProducers = (params = {}) => {
+    setLoading(true);
     api
       .get("/producers", { params })
       .then((r) => {
@@ -45,7 +53,11 @@ export function useProducersFeed() {
         }
         setAllProducers(parsed.data);
       })
-      .catch(handleLoadFailure);
+      .catch(handleLoadFailure)
+      // MEH-1054: every terminal path (data / malformed / network error)
+      // clears loading — the failure states already render their own UX
+      // (empty list + toast), the skeleton must not stick over them.
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -53,5 +65,5 @@ export function useProducersFeed() {
     loadProducers();
   }, []);
 
-  return { allProducers, setAllProducers, categories, loadProducers };
+  return { allProducers, setAllProducers, categories, loadProducers, loading };
 }
