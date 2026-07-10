@@ -303,7 +303,7 @@ function RegisterPageBody() {
               dir="rtl"
             />
             {nameInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
+              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
             )}
             {nameValid && (
               <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
@@ -330,7 +330,7 @@ function RegisterPageBody() {
               dir="ltr"
             />
             {emailInvalid && (
-              <p className="text-xs text-red-500 mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
+              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
             )}
             {emailValid && (
               <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
@@ -370,7 +370,7 @@ function RegisterPageBody() {
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.
               Duplicate-attempt email (Chunks A+B) is the only signal. */}
-          {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+          {error && <p className="text-error text-sm" role="alert">{error}</p>}
           {/* MEH-839: filled-green primary, mirrors /login's CTA fill
               (LoginClient.jsx:303) — was a ghost/outline. Height stays in
               register's 44px field rhythm (MEH-838), not login's 54px. */}

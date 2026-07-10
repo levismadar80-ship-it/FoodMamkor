@@ -68,6 +68,8 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
     <div
       role="region"
       aria-label={t("aria")}
+      // MEH-991: VRT hides this date-dependent banner via injected CSS (e2e/visual/parity.css)
+      data-testid="holiday-banner"
       className="relative mx-4 md:mx-auto md:max-w-3xl rounded-[16px] px-5 py-4 flex items-center gap-4 shadow-sm"
       style={{ backgroundColor: holiday.color + "18", border: `1.5px solid ${holiday.color}40` }}
     >
