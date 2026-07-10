@@ -3732,7 +3732,12 @@
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
-        "placeholder": "Example: What types of cheese do you have this week?",
+        "context_line": "These questions appear on your business page and help customers start a conversation",
+        "placeholder_1": "Example: What types of cheese do you have this week?",
+        "placeholder_2": "Example: How does delivery work?",
+        "placeholder_3": "Example: What is the kosher certification?",
+        "placeholder_4": "Example: How do I order?",
+        "placeholder_5": "Example: Can I visit in person?",
         "save_cta": "Save questions",
         "saving": "Saving…",
         "saved": "✓ Saved"
