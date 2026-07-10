@@ -60,7 +60,7 @@ export default function Input({
         className={[
           "w-full min-h-[44px] rounded-md border bg-surface-card px-3 text-text",
           "placeholder:text-fg-muted transition-colors duration-fast ease-quart focus-ring",
-          hasError ? "border-red-500" : "border-border focus:border-primary",
+          hasError ? "border-error" : "border-border focus:border-primary",
           disabled ? "opacity-50 cursor-not-allowed bg-background" : "",
           className,
         ].join(" ")}
@@ -70,7 +70,7 @@ export default function Input({
       {message && (
         <span
           id={describedById}
-          className={hasError ? "text-xs text-red-600" : "text-xs text-fg-muted"}
+          className={hasError ? "text-xs text-error" : "text-xs text-fg-muted"}
         >
           {message}
         </span>
