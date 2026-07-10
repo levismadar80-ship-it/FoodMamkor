@@ -127,7 +127,7 @@ export default function PhoneVerifyCard({ onVerified }) {
       )}
 
       {error && (
-        <p className="text-red-600 text-xs font-medium mt-3" role="alert">
+        <p className="text-error text-xs font-medium mt-3" role="alert">
           {error}
         </p>
       )}
