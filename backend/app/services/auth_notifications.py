@@ -248,6 +248,66 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
         )
 
 
+def notify_admin_new_category_request(
+    requested_name: str, producer_name: str | None
+) -> None:
+    """Ping admin (WhatsApp + email) that a new category was requested.
+
+    MEH-1063 — mirrors notify_admin_new_recipe above 1:1: same free-text
+    send_text to settings.admin_whatsapp_to + email to settings.admin_email,
+    no Meta template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks the
+    submission). `producer_name` is None/empty for anonymous submissions.
+    """
+    # Producer-controlled free text — flatten so a crafted name can't inject
+    # extra lines (e.g. a fake URL line) into the admin message. REUSES the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271) — also covers
+    # \r/\t, space runs, and the 550-char cap.
+    safe_requested = _sanitize_wa_param(requested_name)
+    safe_business = _sanitize_wa_param(producer_name) if producer_name else "אנונימי"
+    message = (
+        f"בקשת קטגוריה חדשה: {safe_requested}\n"
+        f"בית עסק: {safe_business}\n"
+        f"לאישור: {settings.frontend_url}/admin/category-requests"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_recipe's independence.
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info(
+                    "[WHATSAPP] Category-request notification sent to admin"
+                )
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH request context.
+                logger.warning(
+                    "[WHATSAPP] Category-request notification NOT delivered for "
+                    f"'{safe_requested}' (business '{safe_business}')"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin category-request WhatsApp FAILED for "
+            f"'{safe_requested}' (business '{safe_business}'): {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - בקשת קטגוריה חדשה: {safe_requested}",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            "[NOTIFY] Admin category-request email FAILED for "
+            f"'{safe_requested}' (business '{safe_business}'): {e}"
+        )
+
+
 def notify_admin_new_producer(name: str, city: str | None) -> None:
     """Send WhatsApp + email notification to admin about new producer."""
     message = (
