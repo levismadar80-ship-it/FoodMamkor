@@ -13,6 +13,7 @@ Includes regression coverage for the two paths that MUST stay open:
 authenticated consumer upgrading to producer (200), and anonymous new
 producer signup (200).
 """
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

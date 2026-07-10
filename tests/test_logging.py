@@ -9,6 +9,7 @@ Four focused tests:
 """
 import io
 import json
+import os
 
 import pytest
 import structlog

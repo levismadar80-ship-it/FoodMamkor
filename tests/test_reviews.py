@@ -8,6 +8,7 @@ Guards tested:
   - PUT /admin/reviews/{id}/hide sets is_hidden, recomputes aggregates
   - _recompute_producer_rating excludes hidden reviews
 """
+import pytest
 
 from conftest import auth_header, make_producer, make_user
 from app.models.models import ProducerReview, ProducerWhatsAppClick

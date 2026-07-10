@@ -11,9 +11,10 @@ Coverage:
 """
 import uuid
 
+import pytest
 
 from app.models.models import Product, User
-from conftest import auth_header, make_producer
+from conftest import auth_header, make_producer, make_user
 
 
 def _make_producer_user(db, *, email=None):
