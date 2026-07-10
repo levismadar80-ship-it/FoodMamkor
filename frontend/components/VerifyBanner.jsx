@@ -79,7 +79,7 @@ export default function VerifyBanner() {
       <div className="flex items-center justify-center gap-3 text-sm flex-wrap pe-11">
         <span className="text-text inline-flex items-center gap-1"><EnvelopeSimple size={16} className="text-accent" />{t("auth.verify.banner")}</span>
         {resendError ? (
-          <span className="text-red-600 text-xs font-medium">{resendError}</span>
+          <span className="text-error text-xs font-medium">{resendError}</span>
         ) : !resendSent ? (
           <button
             onClick={handleResend}
