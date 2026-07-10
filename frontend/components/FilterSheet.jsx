@@ -9,8 +9,9 @@ import { TOGGLE_CHIPS } from "@/lib/map-chips";
 /**
  * Module:   FilterSheet
  * Purpose:  MEH-1075 /map filter IA — the grouped filter surface opened by
- *           the "סינון" button on the /map quick-chip row. Mobile: bottom
- *           sheet with backdrop + drag-down close. Desktop (md+): panel
+ *           the "סינון" button on the /map quick-chip row. Mobile (below lg,
+ *           matching the /map shell switch): bottom sheet with backdrop +
+ *           drag-down close, portaled to <body>. Desktop (lg+): panel
  *           anchored under the trigger (the caller wraps trigger + sheet in
  *           a `relative` container). Toggles write the SHARED chipState
  *           immediately via onToggleChip — there is no staged draft state;
@@ -47,21 +48,32 @@ export default function FilterSheet({
   const panelRef = useRef(null);
   const dragStartY = useRef(null);
 
-  // REUSES: frontend/components/AccountSheet.jsx:40-68 — modal a11y: focus
-  // moves into the panel on open, Escape closes, Tab is trapped, and focus
-  // returns to the trigger on close.
+  const focusables = () =>
+    panelRef.current
+      ? panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')
+      : [];
+
+  // REUSES: frontend/components/AccountSheet.jsx:40-68 — modal a11y, split in
+  // two effects (PR #1565 review): focus capture/restore keys on [open] ONLY,
+  // so a caller re-render that recreates onClose (chipState changes on every
+  // toggle) can't tear this down and yank focus back to the first chip
+  // mid-interaction.
   useEffect(() => {
     if (!open) return;
     const prevActive = document.activeElement;
-    const items = () =>
-      panelRef.current
-        ? panelRef.current.querySelectorAll('a[href],button:not([disabled]),[tabindex]:not([tabindex="-1"])')
-        : [];
-    items()[0]?.focus();
+    focusables()[0]?.focus();
+    return () => {
+      if (prevActive instanceof HTMLElement) prevActive.focus();
+    };
+  }, [open]);
+
+  // Escape closes, Tab is trapped inside the panel.
+  useEffect(() => {
+    if (!open) return;
     const onKey = (e) => {
       if (e.key === "Escape") return onClose();
       if (e.key !== "Tab") return;
-      const list = items();
+      const list = focusables();
       if (!list.length) return;
       const first = list[0];
       const last = list[list.length - 1];
@@ -74,10 +86,7 @@ export default function FilterSheet({
       }
     };
     document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      if (prevActive instanceof HTMLElement) prevActive.focus();
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -86,14 +95,19 @@ export default function FilterSheet({
   // the sticky filter bar (MapClient.jsx:456), whose `backdrop-blur` makes it
   // the CONTAINING BLOCK for fixed descendants and traps z-[1200] inside the
   // bar's z-[50] stacking context — an in-place `fixed` sheet renders clipped
-  // inside the bar, below the map controls. Below md, portal the overlay to
+  // inside the bar, below the map controls. Below lg, portal the overlay to
   // <body>. Safe to read matchMedia during render: `open` is only ever set by
   // a client-side click, so this branch never runs on the server. Desktop
-  // (md+) stays in place — the anchored panel needs the trigger's `relative`
-  // wrapper. (Resize while open is a known cosmetic edge; reopen recovers.)
-  const isMdUp =
+  // (lg+) stays in place — the anchored panel needs the trigger's `relative`
+  // wrapper. Breakpoint is lg (1024), NOT md: the /map shells switch at lg
+  // (MapClient.jsx `hidden lg:grid` / `lg:hidden`), so the backdrop-blur bar
+  // is live through 768–1023px — an md boundary would leave tablets with a
+  // clipped un-portaled backdrop (PR #1565 review). All responsive classes
+  // below use lg: to match. (Resize while open is a cosmetic edge; reopen
+  // recovers.)
+  const isDesktop =
     typeof window !== "undefined" &&
-    window.matchMedia("(min-width: 768px)").matches;
+    window.matchMedia("(min-width: 1024px)").matches;
 
   const onHandleTouchStart = (e) => {
     dragStartY.current = e.touches[0].clientY;
@@ -113,19 +127,20 @@ export default function FilterSheet({
         type="button"
         aria-label={t("filters.sheet.close_aria")}
         onClick={onClose}
-        className="fixed inset-0 z-[1200] bg-green-900/50 md:bg-transparent"
+        className="fixed inset-0 z-[1200] bg-green-900/50 lg:bg-transparent"
       />
       <div
         ref={panelRef}
+        id="filter-sheet-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="filter-sheet-title"
         dir="rtl"
-        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto md:absolute md:inset-x-auto md:bottom-auto md:top-full md:end-0 md:mt-2 md:w-80 md:rounded-xl md:border md:shadow-lg md:max-h-[70vh]"
+        className="fixed inset-x-0 bottom-0 z-[1200] rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[80dvh] overflow-y-auto lg:absolute lg:inset-x-auto lg:bottom-auto lg:top-full lg:end-0 lg:mt-2 lg:w-80 lg:rounded-xl lg:border lg:shadow-lg lg:max-h-[70vh]"
       >
         {/* Drag handle — mobile-only close affordance (MapBottomSheet 44×5 chrome). */}
         <div
-          className="flex justify-center pb-2 cursor-grab md:hidden"
+          className="flex justify-center pb-2 cursor-grab lg:hidden"
           onTouchStart={onHandleTouchStart}
           onTouchEnd={onHandleTouchEnd}
           aria-hidden="true"
@@ -190,5 +205,5 @@ export default function FilterSheet({
     </div>
   );
 
-  return isMdUp ? overlay : createPortal(overlay, document.body);
+  return isDesktop ? overlay : createPortal(overlay, document.body);
 }

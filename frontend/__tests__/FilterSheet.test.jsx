@@ -130,4 +130,23 @@ describe("FilterSheet (MEH-1075)", () => {
     const dialog = screen.getByRole("dialog");
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
+
+  // PR #1565 review regression: FilterChipsBar re-renders on every chipState
+  // change; a new onClose ref + a single [open, onClose] effect used to tear
+  // down the focus capture and yank focus back to the first chip mid-
+  // interaction. Focus capture now keys on [open] only.
+  it("keeps focus in place when the caller re-renders with a new onClose ref", () => {
+    const { rerender, props } = renderSheet();
+    const glutenFree = screen.getByRole("button", { name: "ללא גלוטן" });
+    glutenFree.focus();
+    rerender(
+      <FilterSheet
+        {...props}
+        chipState={{ ...ALL_OFF, gluten_free: true }}
+        onClose={vi.fn()}
+        resultCount={3}
+      />,
+    );
+    expect(document.activeElement).toBe(glutenFree);
+  });
 });
