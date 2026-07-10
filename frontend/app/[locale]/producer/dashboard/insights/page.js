@@ -198,17 +198,23 @@ function ViewsLineChart({ data }) {
   }
   const W = 320;
   const H = 120;
-  const pad = 8;
+  const padTop = 14; // clearance so the top Y-value label isn't clipped
+  const padLeft = 24; // room for the y-axis value labels
+  const padRight = 8;
+  const baseY = H - padTop; // count === 0 sits on the baseline
+  const plotH = baseY - padTop; // pixels available for the max value
+  const plotLeft = padLeft;
+  const plotRight = W - padRight;
   const maxV = Math.max(1, ...data.map((d) => d.count));
-  const stepX = data.length > 1 ? (W - pad * 2) / (data.length - 1) : 0;
+  const stepX = data.length > 1 ? (plotRight - plotLeft) / (data.length - 1) : 0;
+  const yFor = (count) => baseY - (count / maxV) * plotH;
   const points = data
-    .map((d, i) => {
-      const x = pad + i * stepX;
-      const y = H - pad - (d.count / maxV) * (H - pad * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
+    .map((d, i) => `${(plotLeft + i * stepX).toFixed(1)},${yFor(d.count).toFixed(1)}`)
     .join(" ");
 
+  // MEH-1090: 3 readable Y ticks (0 / mid / max), de-duped for tiny ranges,
+  // so a peak reads as "= 12" instead of an unlabelled height.
+  const yTicks = [...new Set([0, Math.round(maxV / 2), maxV])];
   // Show labels for start / mid / end only to avoid x-axis clutter.
   const labelIndexes = [0, Math.floor(data.length / 2), data.length - 1];
 
@@ -219,25 +225,61 @@ function ViewsLineChart({ data }) {
       role="img"
       aria-label={t("views_chart_aria")}
     >
+      {/* Y-axis gridlines + value ticks — token colors via currentColor. */}
+      {yTicks.map((v) => {
+        const y = yFor(v);
+        return (
+          <g key={`y-${v}`}>
+            <line
+              x1={plotLeft}
+              y1={y}
+              x2={plotRight}
+              y2={y}
+              className="text-fg-muted"
+              stroke="currentColor"
+              strokeWidth="1"
+              opacity="0.25"
+            />
+            <text
+              x={plotLeft - 4}
+              y={y + 3}
+              fontSize="9"
+              textAnchor="end"
+              className="text-fg-muted"
+              fill="currentColor"
+            >
+              {v}
+            </text>
+          </g>
+        );
+      })}
       <polyline
         fill="none"
-        stroke="#2e6853"
+        className="text-primary"
+        stroke="currentColor"
         strokeWidth="2"
         points={points}
       />
       {data.map((d, i) => {
-        const x = pad + i * stepX;
-        const y = H - pad - (d.count / maxV) * (H - pad * 2);
+        const x = plotLeft + i * stepX;
+        const y = yFor(d.count);
         return (
           <g key={d.date}>
-            <circle cx={x} cy={y} r={d.count > 0 ? 2.5 : 1.5} fill="#2e6853" />
+            <circle
+              cx={x}
+              cy={y}
+              r={d.count > 0 ? 2.5 : 1.5}
+              className="text-primary"
+              fill="currentColor"
+            />
             {labelIndexes.includes(i) && (
               <text
                 x={x}
                 y={H + 14}
                 fontSize="10"
                 textAnchor="middle"
-                fill="#6b6b6b"
+                className="text-fg-muted"
+                fill="currentColor"
               >
                 {d.date.slice(5)}
               </text>
