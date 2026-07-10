@@ -325,6 +325,9 @@ export default function MapPage() {
       chipState={filters.chipState}
       onCategoryChipClick={filters.onCategoryChipClick}
       onToggleChipClick={filters.onToggleChipClick}
+      onSheetToggleChip={filters.onSheetToggleChip}
+      clearSheetFilters={filters.clearSheetFilters}
+      resultCount={filters.visibleProducers.length}
       activeFilterTags={filters.activeFilterTags}
       resetAllFilters={filters.resetAllFilters}
     />
@@ -369,7 +372,10 @@ export default function MapPage() {
       onCardMouseLeave={sync.handleCardMouseLeave}
       onCardClick={sync.handleCardClick}
       onResetAll={() => {
-        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, grass_fed: false });
+        // MEH-1075: completed to all 7 toggle keys (was missing the diet trio);
+        // cancel any pending debounced sheet fetch so it can't clobber this reset.
+        filters.cancelPendingSheetFetch();
+        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
         filters.setActiveCategoryNames(null);
         filters.setCommittedBounds(null);
         filters.setCityFilter("");
@@ -484,8 +490,10 @@ export default function MapPage() {
             (same goToMyLocation path as the filter-bar crosshair). */}
         <NearMePill onClick={handleGoToMyLocation} />
 
-        {/* Bottom sheet */}
-        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length}>
+        {/* Bottom sheet. MEH-1054 (MAP-16): loading rides the feed's initial
+            fetch so the sheet shows a list skeleton instead of flashing an
+            empty "0" state before the first /producers response lands. */}
+        <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
             onClose={() => filters.setSelectedProducer(null)}
