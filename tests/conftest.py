@@ -174,7 +174,6 @@ def make_producer(
         lat=32.0853,
         lng=34.7818,
         status=status,
-        is_verified=True,
         # MEH-799: approve gate requires >=1 image; default stays imageless
         # so the gate's own tests exercise the 422 path explicitly.
         images=images or [],

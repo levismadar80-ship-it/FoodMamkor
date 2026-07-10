@@ -643,9 +643,10 @@ def request_producer_changes(
 # MEH-762 (ADR-022 public tier contract, Chunk 2): admin stamping for the
 # tier-1 "מאומת" badge. The document review itself stays manual off-platform
 # (VERIFICATION.md §2/§4) — these endpoints only record the OUTCOME in the DB.
-# No auto-stamp on admin-create/import; legacy is_verified is untouched
-# (decoupling = Chunk 4). The public verification_tier resolver + exposure
-# land in Chunk 3.
+# No auto-stamp on admin-create/import. The legacy is_verified column was
+# DROPPED in MEH-766 ch6 (revision d4e7a92c81b5); verified_at is the only
+# verification axis. The public verification_tier resolver + exposure landed
+# in MEH-762 Chunk 3.
 @router.post("/producers/{producer_id}/grant-verified")
 def grant_verified(
     producer_id: UUID,
@@ -681,8 +682,8 @@ def revoke_verified(
     db: Session = Depends(get_db),
 ):
     """Clear the tier-1 "מאומת" stamp (mistake correction). Idempotent —
-    clearing an already-unverified producer is a no-op success. Leaves the
-    legacy is_verified axis untouched (Chunk 4).
+    clearing an already-unverified producer is a no-op success. (The legacy
+    is_verified column was dropped in MEH-766 ch6.)
     """
     producer = db.query(Producer).filter(Producer.id == producer_id).first()
     if not producer:

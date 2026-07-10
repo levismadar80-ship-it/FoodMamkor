@@ -47,7 +47,6 @@ erDiagram
         float lat "indexed with lng"
         float lng
         string status "pending|approved|rejected"
-        boolean is_verified
         float avg_rating "cached aggregate"
         int reviews_count "cached aggregate"
         boolean is_available_today "legacy — preserved during MEH-291 overlap"

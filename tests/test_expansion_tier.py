@@ -21,7 +21,6 @@ def _producer(**kw):
         ambassador=False,
         reviews_count=0,
         avg_rating=0,
-        is_verified=False,
         phone_verified=False,
     )
     base.update(kw)

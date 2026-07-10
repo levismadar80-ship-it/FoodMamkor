@@ -1,11 +1,10 @@
-"""MEH-766 chunk 3 — is_verified writers retired.
+"""MEH-766 chunks 3+5+6 — is_verified fully retired.
 
-After this chunk no admin write path sets `is_verified`; the column stays at
-its SQLAlchemy default (False) until the ch6 DROP. Verification is ONLY via
-grant-verified (which sets `verified_at`, a separate axis — MEH-762). These
-tests assert the retirement at both the schema level (the field is gone from
-the admin input models) and the integration level (admin create + PUT can no
-longer write the column).
+ch3 retired every writer; ch5 removed the field from the serialized contract;
+ch6 DROPPED the column (revision d4e7a92c81b5). Verification is ONLY via
+grant-verified (`verified_at`, MEH-762 / ADR-022). These tests lock the end
+state: no input field, no output field, no model attribute, and a stray
+`is_verified` in a payload is silently ignored rather than 500ing.
 """
 
 from app.models.models import Producer
@@ -22,8 +21,16 @@ def test_admin_input_schemas_have_no_is_verified_field():
     assert "is_verified" not in ProducerUpdate.model_fields
 
 
-def test_admin_create_leaves_is_verified_false(client, db):
-    # MEH-766 ch3: admin create no longer sets is_verified → column default False.
+def test_model_has_no_is_verified_column():
+    # MEH-766 ch6: the column itself is gone (revision d4e7a92c81b5). This is
+    # the model-level lock — re-adding the attribute is a test failure, not a
+    # silent regression.
+    assert not hasattr(Producer, "is_verified")
+
+
+def test_admin_create_emits_no_is_verified(client, db):
+    # MEH-766 ch5/ch6: admin create succeeds and neither serializes the field
+    # nor has a column to write (create path fully clean of the legacy axis).
     admin = make_user(db, email="meh766-c3-create@example.com", role="admin")
     veggies = make_category(db, name="ירקות", emoji="🥬")
     resp = client.post(
@@ -32,15 +39,14 @@ def test_admin_create_leaves_is_verified_false(client, db):
         headers=auth_header(admin),
     )
     assert resp.status_code == 201, resp.text
-    # MEH-766 ch5: is_verified is no longer part of the serialized contract.
     assert "is_verified" not in resp.json()
     producer = db.query(Producer).filter(Producer.id == resp.json()["id"]).first()
-    assert producer.is_verified is False  # the DB row itself (column drops ch6)
+    assert producer is not None  # row created cleanly without the column
 
 
 def test_admin_create_ignores_is_verified_in_payload(client, db):
-    # MEH-766 ch3: even if a client posts is_verified=True, the field is gone
-    # from ProducerAdminCreate → silently ignored; producer stays False.
+    # MEH-766 ch3/ch6: a client posting the retired field is silently ignored
+    # (Pydantic drops unknown keys) — no 422, no 500, no write.
     admin = make_user(db, email="meh766-c3-create2@example.com", role="admin")
     veggies = make_category(db, name="ירקות", emoji="🥬")
     resp = client.post(
@@ -49,20 +55,14 @@ def test_admin_create_ignores_is_verified_in_payload(client, db):
         headers=auth_header(admin),
     )
     assert resp.status_code == 201, resp.text
-    # MEH-766 ch5: field absent from output; the DB row proves the ignore.
     assert "is_verified" not in resp.json()
-    producer = db.query(Producer).filter(Producer.id == resp.json()["id"]).first()
-    assert producer.is_verified is False
 
 
-def test_admin_put_cannot_set_is_verified(client, db):
-    # MEH-766 ch3: is_verified removed from ProducerUpdate → the admin PUT
-    # setattr-loop can't write it. Start False, PUT is_verified=True → stays False
-    # (the rest of the PUT still applies, proving the loop runs).
+def test_admin_put_ignores_is_verified_in_payload(client, db):
+    # MEH-766 ch3/ch6: the retired field in a PUT payload is ignored while the
+    # rest of the update applies (proving the setattr-loop still runs).
     admin = make_user(db, email="meh766-c3-put@example.com", role="admin")
-    producer = make_producer(db, name="עסק PUT")  # make_producer sets is_verified=True
-    producer.is_verified = False
-    db.commit()
+    producer = make_producer(db, name="עסק PUT")
 
     resp = client.put(
         f"/admin/producers/{producer.id}",
@@ -71,8 +71,8 @@ def test_admin_put_cannot_set_is_verified(client, db):
     )
     assert resp.status_code == 200, resp.text
     db.refresh(producer)
-    assert producer.is_verified is False  # writer retired — the PUT could not set it
-    assert producer.name == "עסק PUT מעודכן"  # but the rest of the update applied
+    assert producer.name == "עסק PUT מעודכן"  # the rest of the update applied
+    assert "is_verified" not in resp.json()
 
 
 def test_public_list_output_has_no_is_verified(client, db):
