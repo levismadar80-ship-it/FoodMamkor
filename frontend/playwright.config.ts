@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["e2e/flows/**/*.spec.ts"],
+  // MEH-991 Chunk 3: e2e/visual holds the VRT parity specs; baselines are
+  // runner-generated via .github/workflows/vrt-update.yml (workflow_dispatch).
+  testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"],
   fullyParallel: true,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
@@ -18,6 +20,14 @@ export default defineConfig({
   timeout: 45_000,
   expect: {
     timeout: 20_000,
+    // MEH-991 Chunk 3 — VRT comparison budget. 2% pixel tolerance absorbs
+    // sub-pixel AA jitter between runs on the same runner image; animations
+    // disabled + caret hidden so screenshots are frame-stable.
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.02,
+      animations: "disabled",
+      caret: "hide",
+    },
   },
   use: {
     // MEH-1044 — CI runs E2E against a local `next start` (zero Vercel edge

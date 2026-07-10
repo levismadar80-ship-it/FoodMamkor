@@ -73,6 +73,8 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
     <section
       className="bg-[#F5F0E8] border-b border-border py-4 px-4"
       aria-label={t("title")}
+      // MEH-991: VRT hides this weekday-dependent strip via injected CSS (e2e/visual/parity.css)
+      data-testid="friday-delivery-strip"
       dir="rtl"
     >
       <div className="max-w-6xl mx-auto">
