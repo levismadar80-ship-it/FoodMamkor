@@ -1,0 +1,6 @@
+{
+  "deeplink_url": "http://localhost:3000/producers?category=18",
+  "chip_select_url": "http://localhost:3000/producers?category=6",
+  "compose_url": "http://localhost:3000/producers?category=6&organic=1",
+  "clear_all_url": "http://localhost:3000/producers"
+}
