@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — MEH-1083: homepage diet chips → URL — PR open (Refs MEH-1083; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1083-homepage-diet-chips-url` off `origin/staging` (clean cut, divergence 0). GREEN end-to-end per batch authority (Wave 1 with MEH-1081 — disjoint files). Phase 0 approved by Sapir ("go BOTH Wave 1").
+- **What shipped:** `use-home-page.js` mount-init (`:120-131`) + `updateURL` serializer (`:229-240`) extended from 4 to all 7 chip keys (added `gluten_free`/`vegan`/`lactose_free`, `=1` convention, `delivery` legacy name kept). Fetch layer + chip render + /map untouched (URL-only per scope).
+- **Verify:** new `useHomePageDietChipsUrl.test.jsx` 4✓ (failing-first) · full vitest **853 passed**/41 skipped · `npm run build` exit 0 · no JSX/i18n touched (0 RTL surface). Diff: 1 file, +11.
+- **Sapir pending:** merge (Rule 23 — no self-merge). Mobile QA per DoD: toggle ללא גלוטן on homepage → URL gets param; refresh keeps chip+filter.
+
 ## 2026-07-10 — MEH-991 Chunk 3: Playwright VRT baselines (Launch Sprint MEH-1074, Wave 0.3) — closes the MEH-991 epic
 
 - **Branch:** `feature/meh-991-parity-vrt` off `origin/staging`. Autonomous run under MEH-1074/ADR-016 v2. `Refs MEH-1074` · `Closes MEH-991`.
