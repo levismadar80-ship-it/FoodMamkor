@@ -39,7 +39,7 @@ describe("ui/Input", () => {
 
   it("applies the error border when invalid", () => {
     render(<Input label="x" error="bad" />);
-    expect(screen.getByLabelText("x").className).toContain("border-red-500");
+    expect(screen.getByLabelText("x").className).toContain("border-error");
   });
 
   it("disables the field and applies disabled styling", () => {
