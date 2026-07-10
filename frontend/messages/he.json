@@ -4115,5 +4115,17 @@
       "submit": "ספרו לנו על העסק",
       "secondary": "ממשיכים לטופס ההרשמה"
     }
+  },
+  "filters": {
+    "button": "סינון",
+    "sheet": {
+      "title": "סינון",
+      "close_aria": "סגירת הסינון",
+      "group_diet": "תזונה",
+      "group_quality": "מקור ואיכות",
+      "group_service": "שירות ואמון",
+      "apply": "הצגת {count} בתי עסק",
+      "clear": "ניקוי הכל"
+    }
   }
 }

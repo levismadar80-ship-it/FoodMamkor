@@ -4089,5 +4089,17 @@
       "submit": "Tell us about the business",
       "secondary": "Continue to the registration form"
     }
+  },
+  "filters": {
+    "button": "Filters",
+    "sheet": {
+      "title": "Filters",
+      "close_aria": "Close filters",
+      "group_diet": "Diet",
+      "group_quality": "Source & quality",
+      "group_service": "Service & trust",
+      "apply": "Show {count} businesses",
+      "clear": "Clear all"
+    }
   }
 }

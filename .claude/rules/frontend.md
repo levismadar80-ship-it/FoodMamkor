@@ -60,7 +60,8 @@ Quick reference (full context in [.claude/rules/rtl.md](./rtl.md)):
 
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
-legend:800 → controls/zoom/search:1000 → chat:9999 → cookie:9998
+legend:800 → controls/zoom/search:1000 → cookie:1100 →
+filter-sheet:1200 → chat:9999
 ```
 
 Do not use arbitrary z-index values on `/map`.

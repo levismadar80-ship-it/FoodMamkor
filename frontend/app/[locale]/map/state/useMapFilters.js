@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CATEGORY_LEGEND } from "@/lib/map-categories";
 import {
@@ -64,12 +64,17 @@ export function useMapFilters({
   // MEH-14: chip state per the new spec. Exactly one category chip
   // is active at a time ("all" is the reset sentinel); organic +
   // has_delivery are independent toggles on top of that.
+  // MEH-1075: state completed to all 7 TOGGLE_CHIPS keys — the diet
+  // toggles previously worked only via dynamic `!undefined` toggling.
   const [chipState, setChipState] = useState({
     categoryKey: "all",
     organic: false,
     has_delivery: false,
     verified: false,
     grass_fed: false,
+    vegan: false,
+    gluten_free: false,
+    lactose_free: false,
   });
 
   // MEH-14: build the backend params from the current chip state +
@@ -81,7 +86,18 @@ export function useMapFilters({
     return { ...params, ...extras };
   };
 
+  // MEH-1075: the sheet's debounced refetch (below) must never outlive a
+  // newer instant fetch — a pending timer firing after e.g. a quick-chip
+  // click would clobber the fresher results with stale params. Every
+  // instant-fetch handler cancels it first (the pending fetch is always
+  // subsumed by the newer full-state fetch). Exported for MapClient's
+  // inline onResetAll, which fetches through feed.loadProducers directly.
+  const sheetFetchTimer = useRef(null);
+  const cancelPendingSheetFetch = () => clearTimeout(sheetFetchTimer.current);
+  useEffect(() => cancelPendingSheetFetch, []);
+
   const onCategoryChipClick = (key) => {
+    cancelPendingSheetFetch();
     const next = { ...chipState, categoryKey: key };
     setChipState(next);
     loadProducers(buildParams(next));
@@ -96,6 +112,7 @@ export function useMapFilters({
       setShowCityPicker(true);
       return;
     }
+    cancelPendingSheetFetch();
     const next = { ...chipState, [key]: !chipState[key] };
     setChipState(next);
     loadProducers(buildParams(next));
@@ -105,7 +122,58 @@ export function useMapFilters({
     setActiveProducerId(null);
   };
 
+  // MEH-1075: sheet-originated toggles — chipState updates IMMEDIATELY (one
+  // shared state; the quick chips sync live) but the refetch is debounced so
+  // ticking several chips in the open sheet fires one request, not one per
+  // click. Quick-chip clicks outside the sheet keep the instant fetch above.
+  // has_delivery still routes through onToggleChipClick's CityPickerModal
+  // guard shape — duplicated here because the fetch path differs.
+  const SHEET_FETCH_DEBOUNCE_MS = 300;
+
+  const onSheetToggleChip = (key) => {
+    if (key === "has_delivery" && !chipState.has_delivery && !userCity) {
+      setShowCityPicker(true);
+      return;
+    }
+    const next = { ...chipState, [key]: !chipState[key] };
+    setChipState(next);
+    clearTimeout(sheetFetchTimer.current);
+    sheetFetchTimer.current = setTimeout(
+      () => loadProducers(buildParams(next)),
+      SHEET_FETCH_DEBOUNCE_MS,
+    );
+    setCommittedBounds(null);
+    setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
+  };
+
+  // MEH-1075: "ניקוי הכל" inside FilterSheet — resets the 7 toggles only.
+  // categoryKey + cityFilter survive (the tag strip's clear-all,
+  // resetAllFilters below, still resets everything). Single action → the
+  // fetch is instant, and any pending debounced sheet fetch is superseded.
+  const clearSheetFilters = () => {
+    cancelPendingSheetFetch();
+    const next = {
+      ...chipState,
+      organic: false,
+      has_delivery: false,
+      verified: false,
+      grass_fed: false,
+      vegan: false,
+      gluten_free: false,
+      lactose_free: false,
+    };
+    setChipState(next);
+    loadProducers(buildParams(next));
+    setCommittedBounds(null);
+    setMapMoved(false);
+    setSelectedProducer(null);
+    setActiveProducerId(null);
+  };
+
   const handleCityPickerSelect = (city) => {
+    cancelPendingSheetFetch();
     setUserCity(city);
     setShowCityPicker(false);
     setCityFilter(city);
@@ -117,12 +185,16 @@ export function useMapFilters({
   };
 
   const resetAllFilters = () => {
+    cancelPendingSheetFetch();
     const next = {
       categoryKey: "all",
       organic: false,
       has_delivery: false,
       verified: false,
       grass_fed: false,
+      vegan: false,
+      gluten_free: false,
+      lactose_free: false,
     };
     setChipState(next);
     loadProducers(buildParams(next));
@@ -133,6 +205,7 @@ export function useMapFilters({
   };
 
   const handleCityFilter = () => {
+    cancelPendingSheetFetch();
     loadProducers(buildParams());
     // When the user changes city, clear any committed bounds filter so
     // the grid shows ALL matches for the new city — not a stale viewport
@@ -257,6 +330,9 @@ export function useMapFilters({
     buildParams,
     onCategoryChipClick,
     onToggleChipClick,
+    onSheetToggleChip,
+    clearSheetFilters,
+    cancelPendingSheetFetch,
     handleCityPickerSelect,
     resetAllFilters,
     handleCityFilter,
