@@ -813,6 +813,9 @@
       "empty_title": "You haven't published any recipes yet",
       "empty_description": "A recipe promotes your products — share how your customers use them at home.",
       "empty_cta": "+ Publish new recipe",
+      "sample_label": "Example — how your recipe will look",
+      "sample_title": "Tahini & date cookies",
+      "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
       "published": "Published on the site",
@@ -3918,7 +3921,10 @@
       "empty": {
         "title": "First product = a living business",
         "description": "Without products, your profile looks empty and customers don't know what you offer. Add 3 popular products with a photo and price — it takes 5 minutes.",
-        "cta": "+ Add first product"
+        "cta": "+ Add first product",
+        "sample_label": "Example — how your product will look",
+        "sample_name": "Homemade fig jam",
+        "sample_price": "₪28 per jar"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
