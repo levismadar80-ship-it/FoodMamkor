@@ -469,7 +469,7 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
             type="button"
             role="menuitem"
             onClick={() => { setOpen(false); logout(); }}
-            className="w-full text-start px-4 py-2 text-sm text-red-700 hover:bg-background transition-colors duration-fast ease-quart"
+            className="w-full text-start px-4 py-2 text-sm text-error hover:bg-background transition-colors duration-fast ease-quart"
           >
             {t("account.menu.logout")}
           </button>

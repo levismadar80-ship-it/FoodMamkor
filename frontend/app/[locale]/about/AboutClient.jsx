@@ -427,7 +427,7 @@ export default function AboutPage() {
                 role={contactStatus === "error" ? "alert" : "status"}
                 aria-live={contactStatus === "error" ? "assertive" : "polite"}
                 className={`md:col-span-2 text-sm ${
-                  contactStatus === "success" ? "text-primary" : "text-red-600"
+                  contactStatus === "success" ? "text-primary" : "text-error"
                 }`}
               >
                 {contactMsg}

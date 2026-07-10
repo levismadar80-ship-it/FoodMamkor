@@ -31,6 +31,8 @@ colors:
   action-primary: "#2E6853"
   action-primary-hover: "#2E4A2E"
   state-selected: "#2E4A2E"
+  error: "#B3261E"
+  error-on-dark: "#FCA5A5"
 typography:
   headline-display:
     fontFamily: '"Frank Ruhl Libre", "David Libre", Georgia, serif'
@@ -370,6 +372,12 @@ If a future state genuinely cannot be served by opacity-on-cream + `fg-muted`
 supersedes ADR-019** — not a token quietly added to `tailwind.config.js`. The
 friction is the feature. This rule is already enforced in code: F1 / PR #831
 implemented the HeartButton with `text-primary`, not a red token.
+
+**One documented exception (ADR-026):** `error` (`#B3261E`, AA on cream) + its
+on-dark pair `error-on-dark` (`#FCA5A5`, for `green-900` surfaces) are the sole
+state-color tokens, added for form/validation error text that failed AA as raw
+Tailwind reds. This is the "new ADR supersedes ADR-019" path in action — error
+only; `warning`/`info`/`success` remain un-tokenized (success = `primary`).
 
 ## S4 design tokens (MEH-136)
 
