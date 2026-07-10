@@ -89,4 +89,7 @@ def test_public_list_output_has_no_is_verified(client, db):
     assert items, "expected the approved producer in the public list"
     for item in items:
         assert "is_verified" not in item
+        # Both halves of the ADR-022 public surface (auto-review on #1578):
+        # verification_tier + verified_at (date-granularity, None until granted).
         assert "verification_tier" in item
+        assert "verified_at" in item
