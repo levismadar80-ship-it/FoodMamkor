@@ -22,7 +22,7 @@
  *   producer can edit and retry.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -54,6 +54,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const t = useTranslations("recipes.form");
   // MEH-848: shared generic error copy (collapsed from recipes.form.errors.generic).
   const tError = useTranslations("error");
+  // MEH-1096: per-instance id prefix so label↔control ids never collide if two
+  // RecipeForms ever mount on one page (modal + inline, etc.).
+  const uid = useId();
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}) });
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
@@ -158,11 +161,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </h2>
 
       <div>
-        <label htmlFor="recipe-title" className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-title`} className="block text-sm font-medium mb-1">
           {t("title_label")} <span className="text-red-500">*</span>
         </label>
         <input
-          id="recipe-title"
+          id={`${uid}recipe-title`}
           required
           minLength={3}
           maxLength={200}
@@ -174,9 +177,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label htmlFor="recipe-description" className="block text-sm font-medium mb-1">{t("description_label")}</label>
+        <label htmlFor={`${uid}recipe-description`} className="block text-sm font-medium mb-1">{t("description_label")}</label>
         <textarea
-          id="recipe-description"
+          id={`${uid}recipe-description`}
           rows={2}
           value={form.description}
           onChange={set("description")}
@@ -186,11 +189,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label htmlFor="recipe-ingredients" className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-ingredients`} className="block text-sm font-medium mb-1">
           {t("ingredients_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
-          id="recipe-ingredients"
+          id={`${uid}recipe-ingredients`}
           required
           minLength={10}
           rows={6}
@@ -203,11 +206,11 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div>
-        <label htmlFor="recipe-instructions" className="block text-sm font-medium mb-1">
+        <label htmlFor={`${uid}recipe-instructions`} className="block text-sm font-medium mb-1">
           {t("instructions_label")} <span className="text-red-500">*</span>
         </label>
         <textarea
-          id="recipe-instructions"
+          id={`${uid}recipe-instructions`}
           required
           minLength={10}
           rows={8}
@@ -221,9 +224,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label htmlFor="recipe-prep-time" className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
+          <label htmlFor={`${uid}recipe-prep-time`} className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
           <input
-            id="recipe-prep-time"
+            id={`${uid}recipe-prep-time`}
             type="number"
             min={0}
             max={1440}
@@ -234,9 +237,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label htmlFor="recipe-cook-time" className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
+          <label htmlFor={`${uid}recipe-cook-time`} className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
           <input
-            id="recipe-cook-time"
+            id={`${uid}recipe-cook-time`}
             type="number"
             min={0}
             max={1440}
@@ -247,9 +250,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
           />
         </div>
         <div>
-          <label htmlFor="recipe-servings" className="block text-sm font-medium mb-1">{t("servings_label")}</label>
+          <label htmlFor={`${uid}recipe-servings`} className="block text-sm font-medium mb-1">{t("servings_label")}</label>
           <input
-            id="recipe-servings"
+            id={`${uid}recipe-servings`}
             type="number"
             min={1}
             max={100}
