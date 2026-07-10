@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-10 — MEH-1081 [T-B]: /producers category axis — PR open (Refs MEH-1081; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1081-producers-category-axis` off `origin/staging` (clean cut). YELLOW; Phase 0 approved by Sapir ("go BOTH Wave 1") including the backend-param correction: `?category=<id>` (int, `producers.py:56` → `ProducerCategory` join) — the ticket's `category=<name>` claim was wrong; **no schema change, RED escalation not triggered**.
+- **What shipped (frontend-only):** `ProducersClient.jsx` — category radio row (`ChipScrollRow variant="category"`, all-sentinel, live `/categories` + Rule-19 safeParse, self-hides on failure) + `?category=` through `syncUrl`/`fetchFiltered`/mount-init/`clearAll` (4-arg) + removable strip chip + `hasActiveChips`. i18n `producers.filters.category_all` he+en (surgical 2-line diff — avoided the MEH-1046 json.dump reformat trap). Unlocks T-A (homepage cards → `/producers?category=<id>` links).
+- **Verify:** new `ProducersClientCategoryAxis.test.jsx` 4✓ failing-first · vitest **853 passed**/41 skipped · build exit 0 · 0 eslint errors · adversarial review **0 must-fix** (2 notes: row-appearance CLS = accepted self-hide pattern; H1-while-filtered = T-A/landing-tier scope) · Playwright QA on local `next start`+seed: deep-link `?category=18` (tail cat, chip auto-scrolled into view), select→`?category=6`, compose `?category=6&organic=1`, clear-all→`/producers` (`docs/audits/screenshots/2026-07-meh1081-qa/` + `qa-evidence.json`).
+- **SSR note (Sapir-accepted):** `?category=` deep-links client-filter post-hydration like existing `?organic=1`; true SSR category rendering = post-launch `/categories/[slug]` SEO tier.
+- **Sapir pending:** merge (Rule 23 — no self-merge; Wave 2 T-A is gated on this landing on staging). Mobile QA: select category → URL param; deep-link tail category; compose with אורגני; clear-all.
+
 ## 2026-07-10 — MEH-991 Chunk 3: Playwright VRT baselines (Launch Sprint MEH-1074, Wave 0.3) — closes the MEH-991 epic
 
 - **Branch:** `feature/meh-991-parity-vrt` off `origin/staging`. Autonomous run under MEH-1074/ADR-016 v2. `Refs MEH-1074` · `Closes MEH-991`.
