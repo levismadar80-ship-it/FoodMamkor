@@ -16,6 +16,13 @@ export const ProducerSchema = z.object({
   // MEH-766 ch1: public doc-verification tier (computed backend, ProducerListOut).
   // Declared so z.object stops stripping it.
   verification_tier: z.enum(["verified", "declared"]).nullable().optional(),
+  // MEH-766 ch5 (auto-review on #1578 + sibling grep): the OTHER two ADR-022
+  // surface fields were silently stripped on the Zod-parsed map feed (same
+  // MEH-901 class) — BadgeRow reads both (verified_at:84 date tooltip,
+  // verification_doc_type:86 tooltip variant). verified_at is a date-only
+  // string (backend _verified_at_date_only collapses to YYYY-MM-DD).
+  verified_at: z.string().nullable().optional(),
+  verification_doc_type: z.enum(["license", "exemption", "cosmetics"]).nullable().optional(),
   plan: z.string().optional(),
   images: z.array(z.string()).optional().default([]),
   // MEH-826: weekly hours string ("Sun-Thu 09:00-18:00, …") — without this the
