@@ -59,7 +59,7 @@ export default function ProducerDashboardToolsPage() {
       {/* Quick links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
-          href="/settings"
+          href="/producer/dashboard/edit"
           className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
         >
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.settings.title")}</p>
