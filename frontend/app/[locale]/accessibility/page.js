@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Envelope, Phone } from "@phosphor-icons/react/ssr";
+import { Envelope } from "@phosphor-icons/react/ssr";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -98,8 +98,9 @@ const SECTIONS = [
           {CONTACT_EMAIL}
         </a>
         <br />
-        <Phone size={16} className="inline align-[-2px] text-primary" aria-hidden="true" /> {t("sections.contact.phone_placeholder")}
-        <br />
+        {/* MEH-1059: the phone row rendered a live "להשלים" placeholder on a
+            legal page — removed until a real accessibility phone line exists
+            (restore with the number + the Phone icon import when it does). */}
         <span className="text-sm text-fg-muted">
           {t("sections.contact.footnote")}
         </span>
@@ -137,6 +138,8 @@ export default async function AccessibilityPage({ params }) {
         <h1 className="font-headline-display text-5xl font-bold text-text mb-2">
           {t("heading")}
         </h1>
+        {/* MEH-1059 (תקנה 35): statement update date + last-check date. */}
+        <p className="text-fg-muted mb-1">{t("statement_date")}</p>
         <p className="text-fg-muted mb-12">{t("date_label")}</p>
 
         <div className="space-y-4">
