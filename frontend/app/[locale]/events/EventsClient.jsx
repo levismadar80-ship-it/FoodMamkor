@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowCounterClockwise,
@@ -114,7 +114,6 @@ export default function EventsPage() {
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
   const search = useSearchParams();
-  const router = useRouter();
   // Tab state lives in the URL so /events?tab=experiences is a real
   // deep-link and survives refresh / share / bookmark.
   const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
@@ -148,17 +147,24 @@ export default function EventsPage() {
   };
 
   // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
-  // {tab, city, category} (REUSES: lib/use-home-page.js updateURL pattern,
-  // MEH-1083), so filters survive refresh/share and the switchTab reset
-  // clears them from the URL too — a cross-tab category is never resurrected.
+  // {tab, city, category}, so filters survive refresh/share and the switchTab
+  // reset clears them from the URL too — a cross-tab category is never
+  // resurrected. Shallow history.replaceState, NOT router.replace: a Next
+  // navigation from this mount-time effect re-suspends the useSearchParams
+  // boundary (page.js Suspense) and resets client state — the E2E calendar
+  // toggle caught exactly that. replaceState keeps it a pure URL mirror
+  // (and preserves the locale-prefixed pathname on /en).
   useEffect(() => {
     const p = new URLSearchParams();
     if (tab === "experiences") p.set("tab", "experiences");
     if (city) p.set("city", city);
     if (category) p.set("category", category);
     const qs = p.toString();
-    router.replace(qs ? `/events?${qs}` : "/events", { scroll: false });
-  }, [tab, city, category, router]);
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
+  }, [tab, city, category]);
 
   useEffect(() => {
     load();
