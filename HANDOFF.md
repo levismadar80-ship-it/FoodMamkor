@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1121 (Task D): imageless-hero consistency — masthead fires for blank image arrays (MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1122-imageless-hero` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1121`.
+- **Root cause (file:line):** `ImageGallery.jsx:59` gates the MEH-815 masthead on `!images.length`; `ProducerDetail.jsx:77/106` derived `hasImages` + the gallery prop from the **unfiltered** `producer.images`. A `[""]`/blank array → length 1 → broken single-banner + ProducerHeader's own gray h1 (the ZFFS "small gray title, floating tags, no masthead" symptom). Distinct from PR #1492 audit A1/A2/A7 (that producer had a REAL placeholder PNG — masthead correctly didn't fire).
+- **Fix:** new pure `getRenderableImages()` (`producer-format.js`) filters non-empty trimmed strings; `ProducerDetail.jsx` derives BOTH `hasImages` and the `ImageGallery images` prop from that single list (one owner — MEH-271 Smell #1 avoided). Masthead untouched (LOCK); Latin names keep the Frank Ruhl→David Libre→Georgia h1 fallback (verified). New `ProducerFormatImages.test.js` (5).
+- **Verify:** build exit 0 · 20 gallery/format tests pass · 0 physical RTL. **Sapir QA gate:** live dana-vs-ZFFS DOM comparison deferred (sandbox proxy blocks staging/preview — MEH-360). Draft until Sapir confirms an imageless producer shows the masthead.
 ## 2026-07-11 — MEH-1049 (scope-add): contact-card truncation + share disambiguation (Task A of the producer-page sweep, MEH-1074) — PR open
 
 - **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).
