@@ -78,9 +78,11 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
         <p className="font-semibold text-text text-sm leading-snug">{label}</p>
         <p className="text-fg-muted text-xs mt-0.5 leading-snug line-clamp-1">{holiday.tagline}</p>
       </div>
+      {/* MEH-1103: text-xs py-1.5 → text-sm py-2 (DESIGN.md interactive
+          sizing minimums); dismiss gains a 44px hit area. */}
       <Link
         href={searchHref}
-        className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full text-white transition hover:opacity-90"
+        className="shrink-0 text-sm font-semibold px-3 py-2 rounded-full text-white transition hover:opacity-90"
         style={{ backgroundColor: holiday.color }}
       >
         {holiday.cta}
@@ -88,7 +90,7 @@ export default function HolidayBanner({ suppressed = false, onVisibilityChange }
       <button
         onClick={dismiss}
         aria-label={t("close_aria")}
-        className="shrink-0 text-fg-muted hover:text-text transition p-1 rounded-lg"
+        className="shrink-0 text-fg-muted hover:text-text transition min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
       >
         <X size={16} weight="bold" aria-hidden="true" />
       </button>
