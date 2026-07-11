@@ -11,6 +11,7 @@ import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/InfoTooltip";
+import WhatsThis from "@/components/WhatsThis";
 
 const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700 border-blue-200",
@@ -222,6 +223,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
 export default function ProducerGroupBuysPage() {
   const t = useTranslations("group_buys.dashboard");
+  // MEH-1115: point-of-decision explainer (top-level whats_this namespace).
+  const tWhat = useTranslations("whats_this");
   const locale = useLocale();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -285,6 +288,8 @@ export default function ProducerGroupBuysPage() {
           <h1 className="font-headline-md text-2xl font-bold text-text mt-1">
             {t("heading")}
           </h1>
+          {/* MEH-1115: what a group buy is, under the page heading. */}
+          <WhatsThis content={tWhat("group_buy")} testId="whats-this-group-buy" />
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
