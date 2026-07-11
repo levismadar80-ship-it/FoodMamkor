@@ -45,14 +45,12 @@ const POPULAR_NAMES = POPULAR.map((p) => p.name);
 // MEH-1098 (B1): the non-food (home & personal-care) categories. Names track the
 // DB values verbatim. They surface under a "בית וטיפוח" subheader in the expanded
 // grid; everything else falls under "מזון". Presentational grouping only — the
-// selection contract (category_ids) is unchanged. "קרמים ושמנים" is the pre-A1
-// name kept transitionally (ADR-007 expand): staging/prod DB still returns it
-// until the manual rename SQL runs, and it must group under home-care either way.
-// Drop it in the contract follow-up once the production rename is confirmed.
+// selection contract (category_ids) is unchanged. MEH-1104 (contract phase,
+// ADR-007): the transitional pre-rename alias was removed after the production
+// rename to "קוסמטיקה טבעית" was confirmed.
 const HOME_CARE_NAMES = [
   "סבונים טבעיים",
   "קוסמטיקה טבעית",
-  "קרמים ושמנים",
   "נרות וארומה",
 ];
 
