@@ -4152,5 +4152,11 @@
       "apply": "Show {count} businesses",
       "clear": "Clear all"
     }
+  },
+  "whats_this": {
+    "trigger": "What's this?",
+    "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
+    "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
+    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty."
   }
 }
