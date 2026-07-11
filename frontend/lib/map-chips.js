@@ -1,6 +1,6 @@
 /**
  * Map filter chips (MEH-14). Seven chips per spec:
- *   כל · בשר ועוף · ירקות ופירות · חלב וגבינות · לחם ומאפה · אורגני · משלוח
+ *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · אורגני · משלוח
  *
  * Layout:
  *   - ONE of {כל, בשר, ירקות, חלב, לחם} is active at a time (radio-group
@@ -13,6 +13,10 @@
  * exist without throwing.
  */
 
+// MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
+// /producers CHIPS_CONFIG); `grass_fed` is /map-only so its label stays local.
+import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+
 // `matches` lists every DB category.name variant the chip should resolve to.
 // Names drift between seed_data.py, CATEGORY_STYLES (map-categories.js), and
 // older admin-created rows — covering all known variants means the chip shows
@@ -21,10 +25,10 @@ export const CATEGORY_CHIPS = [
   { key: "all", label: "כל", matches: null },
   // MEH-927: "בשר ודגים" split into "בשר" + "דגים"; "דגים" folded into the meat
   // chip for launch (legacy "בשר ודגים" kept for any pre-migration admin rows).
-  { key: "meat", label: "בשר ועוף", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"] },
+  { key: "meat", label: "בשר ודגים", matches: ["בשר ועוף", "בשר", "דגים", "בשר ודגים", "בשר, עוף ודגים"] },
   { key: "produce", label: "ירקות ופירות", matches: ["ירקות ופירות", "ירקות", "ירקות, פירות ומשקים"] },
   { key: "dairy", label: "חלב וגבינות", matches: ["חלב וגבינות", "חלב"] },
-  { key: "bread", label: "לחם ומאפה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },
+  { key: "bread", label: "לחמים ואפייה", matches: ["לחם ומאפה", "לחם", "לחמים ואפייה", "לחמים"] },
 ];
 
 // MEH-58 Phase 3: RTL order right→left. Boolean toggles are
@@ -36,13 +40,13 @@ export const CATEGORY_CHIPS = [
 // ללא גלוטן · ללא לקטוז). Do NOT add a kosher chip — kosher is verified-only
 // per MEH-986.
 export const TOGGLE_CHIPS = [
-  { key: "has_delivery",  label: "משלוח אליי", group: "service" },
-  { key: "verified",      label: "מאומתים",    group: "service" },
-  { key: "organic",       label: "אורגני",     group: "quality" },
-  { key: "grass_fed",     label: "גראס פד",    group: "quality" },
-  { key: "vegan",         label: "טבעוני",     group: "diet" },
-  { key: "gluten_free",   label: "ללא גלוטן",  group: "diet" },
-  { key: "lactose_free",  label: "ללא לקטוז",  group: "diet" },
+  { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
+  { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
+  { key: "organic",       label: ATTRIBUTE_LABELS.organic,       group: "quality" },
+  { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
+  { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
+  { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
+  { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free,  group: "diet" },
 ];
 
 // MEH-1075: the two toggles that stay inline on the /map quick-chip row.
