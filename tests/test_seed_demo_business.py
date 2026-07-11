@@ -10,6 +10,7 @@ Covers backend/scripts/seed_demo_business.py:
   - the production guard refuses a remote DB host unless
     RAILWAY_ENVIRONMENT == "staging", and always allows localhost.
 """
+
 import importlib.util
 import os
 from datetime import date
@@ -72,9 +73,7 @@ def test_seed_creates_complete_listing(db, seed_mod, bakery_category):
         DeliveryArea.producer_id == row.id
     ).count() == len(seed_mod.DEMO_DELIVERY_AREAS)
 
-    recipe = (
-        db.query(ProducerRecipe).filter(ProducerRecipe.producer_id == row.id).one()
-    )
+    recipe = db.query(ProducerRecipe).filter(ProducerRecipe.producer_id == row.id).one()
     assert recipe.moderation_status == "approved"
     assert recipe.published is True
     assert len(recipe.products) == 1  # promotes the flagship product
@@ -108,9 +107,7 @@ def test_seed_creates_complete_listing(db, seed_mod, bakery_category):
 def test_seed_skips_when_exists(db, seed_mod, bakery_category):
     assert seed_mod.seed_demo_business(db) is not None
     assert seed_mod.seed_demo_business(db) is None
-    assert (
-        db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).count() == 1
-    )
+    assert db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).count() == 1
 
 
 def test_refresh_recreates_without_duplicates(db, seed_mod, bakery_category):
@@ -118,13 +115,10 @@ def test_refresh_recreates_without_duplicates(db, seed_mod, bakery_category):
     second = seed_mod.seed_demo_business(db, refresh=True)
     assert second is not None
     assert second.id != first.id
-    assert (
-        db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).count() == 1
-    )
+    assert db.query(Producer).filter(Producer.slug == seed_mod.DEMO_SLUG).count() == 1
     reviewer_emails = [r["email"] for r in seed_mod.DEMO_REVIEWS]
-    assert (
-        db.query(User).filter(User.email.in_(reviewer_emails)).count()
-        == len(reviewer_emails)
+    assert db.query(User).filter(User.email.in_(reviewer_emails)).count() == len(
+        reviewer_emails
     )
 
 

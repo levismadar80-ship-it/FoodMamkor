@@ -94,23 +94,27 @@ DEMO_PRODUCTS = [
     {
         "name": "לחם מחמצת כפרי",
         "description": "כיכר קלאסית 800 גרם — קמח לבן וקמח מלא טחינת אבן, התפחה של 24 שעות.",
-        "price_min": 28, "price_max": 34,
+        "price_min": 28,
+        "price_max": 34,
         "image_url": "https://res.cloudinary.com/demo/image/upload/bread.jpg",
     },
     {
         "name": "חלה קלועה לשבת",
         "description": "חלה רכה ומבריקה על בסיס מחמצת, נאפית בימי חמישי ושישי בלבד.",
-        "price_min": 24, "price_max": 28,
+        "price_min": 24,
+        "price_max": 28,
     },
     {
         "name": "לחם כוסמין מלא",
         "description": "כיכר 100% כוסמין מלא, מתאימה גם למי שמעדיפות דגנים עתיקים.",
-        "price_min": 30, "price_max": 36,
+        "price_min": 30,
+        "price_max": 36,
     },
     {
         "name": "עוגיות שקדים ללא גלוטן",
         "description": "עוגיות על בסיס קמח שקדים ודבש מקומי — נאפות בנפרד מקו הלחמים.",
-        "price_min": 25, "price_max": 30,
+        "price_min": 25,
+        "price_max": 30,
         "is_gluten_free": True,
     },
 ]
@@ -203,7 +207,10 @@ def _assert_not_production() -> None:
     - RAILWAY_ENVIRONMENT == "staging" → the Railway staging service/CLI
       context (deploy.yml sets the same var; production sets "production").
     """
-    host = (urlparse(str(engine.url).replace("postgresql+psycopg2", "postgresql")).hostname or "").lower()
+    host = (
+        urlparse(str(engine.url).replace("postgresql+psycopg2", "postgresql")).hostname
+        or ""
+    ).lower()
     if host in ("localhost", "127.0.0.1"):
         return
     if os.getenv("RAILWAY_ENVIRONMENT", "").lower() == "staging":
