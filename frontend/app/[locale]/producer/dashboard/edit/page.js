@@ -41,12 +41,31 @@ import AddressSearch from "@/components/AddressSearch";
 import ProductsSection from "@/components/ProductsSection";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
-// The anchor ids are a public deep-link contract (#contact-channels …) —
-// MEH-1106's completeness checklist consumes them next. Do not rename.
+// The anchor ids are a public deep-link contract (#contact-channels …).
+// Do not rename.
 const ANCHOR_TO_KEY = {
   bio: "bio",
   questions: "questions",
   "contact-channels": "contact",
+  categories: "categories",
+  images: "images",
+  location: "location",
+  products: "products",
+  // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
+  // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
+  // under the accordion they resolve to the same cards, auto-expanded.
+  "profile-contact": "contact",
+  "profile-categories": "categories",
+  "profile-images": "images",
+  "profile-products": "products",
+};
+
+// Canonical section id per open-state key — hash aliases above scroll to the
+// section that actually carries the id attribute.
+const KEY_TO_ANCHOR = {
+  bio: "bio",
+  questions: "questions",
+  contact: "contact-channels",
   categories: "categories",
   images: "images",
   location: "location",
@@ -141,9 +160,10 @@ export default function ProducerDashboardEditPage() {
       if (!key) return;
       setOpenKey(key);
       // Wait a frame so the panel un-hides before measuring scroll position.
+      // Scroll to the canonical section id (alias hashes carry no element).
       requestAnimationFrame(() => {
         document
-          .getElementById(anchor)
+          .getElementById(KEY_TO_ANCHOR[key])
           ?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     };
