@@ -5,7 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-11 — MEH-1111: producer-page voice micro-fixes (Task E of the Producer-Page Trust & Contact sweep, MEH-1074) — PR open
+## 2026-07-11 — MEH-1114: ReviewsSection owner empty-state eyebrow + voice (Task F of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1114-owner-reviews-eyebrow` off `origin/staging` (post-E merge). GREEN autonomous. `Refs MEH-1074 · Closes MEH-1114`.
+- **Shipped:** `ReviewsSection.jsx` — `EyeSlash` import + "מוצג רק לך" eyebrow chip (`bg-background-alt`/`border-border`/`text-fg-muted`, rounded-full) above the `isOwner` `EmptyState` only. `he.json`/`en.json` — new `reviews.owner_only_eyebrow`; `owner_empty_description` unified to ADR-024 neutral-plural (`שולחים לכם…אתכם…אף אחד`; en "she"→"they"). Consumer `empty_message` untouched. `ReviewsSection.test.jsx` +2 (MEH-1114).
+- **Verify:** build exit 0 · ReviewsSection + en-parity/locale-guard 11 passed · canaries clean · 0 physical RTL.
+
+## 2026-07-11 — MEH-1111: producer-page voice micro-fixes (Task E of the Producer-Page Trust & Contact sweep, MEH-1074) — MERGED (PR #1607)
 
 - **Branch:** `feature/meh-1111-producer-voice-microfixes` off `origin/staging` (divergence 0). GREEN, autonomous per MEH-1074/ADR-016 v2. First PR of the 9-task producer-page sweep (Tasks A–I). `Refs MEH-1074`.
 - **Shipped (i18n-only):** `he.json` — `reviews.wa_gate_message` `תוכלי`→`תוכלו` (mixed-gender sentence; MEH-885-class but intra-sentence consistency wins), `whatsapp.question_chips.ask_us` `שאלי`→`שאלו` (aligns ChatWidget), `reviews.empty_message` `היי הראשונה`→`היו הראשונים`. `batch.md` MEH-872 canary alternation += `שאלי`, `היי`. en.json untouched (values already correct English — MEH-978 + MEH-840 green).
