@@ -20,6 +20,7 @@ import { useTabScroll } from "./hooks/useTabScroll";
 import {
   buildShareUrl,
   buildShowOnMapHandler,
+  getRenderableImages,
   getVacationReturnLabel,
 } from "./lib/producer-format";
 
@@ -74,7 +75,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const vacationReturnLabel = getVacationReturnLabel(producer, t, locale);
   // MEH-815: imageless profiles render the Tinted Masthead hero (name as h1);
   // ProducerHeader omits its own name h1 in that case to keep the name singular.
-  const hasImages = (producer.images?.length ?? 0) > 0;
+  // MEH-1122 (Task D): blank/whitespace image entries are filtered out so a
+  // producer with only empty strings is treated as imageless — hasImages and
+  // the gallery prop below both derive from this one list (single owner).
+  const images = getRenderableImages(producer.images);
+  const hasImages = images.length > 0;
   const primaryCategory = producer.categories?.[0];
   const handleShowOnMap = buildShowOnMapHandler(producer, router);
 
@@ -103,7 +108,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
       {/* Gallery */}
       <ImageGallery
-        images={producer.images || []}
+        images={images}
         producerId={producer.id}
         producerName={producer.name}
       />

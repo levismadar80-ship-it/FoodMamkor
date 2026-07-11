@@ -13,6 +13,23 @@ export function buildShareUrl(producer) {
   return `${window.location.origin}${path}`;
 }
 
+/**
+ * MEH-1122 (MEH-1074 Task D): the renderable image list for the gallery.
+ *
+ * A producer whose `images` array holds only blank/whitespace entries (`[""]`,
+ * `[null]`, `["  "]`) is effectively imageless — but `images.length` counted
+ * them as 1, so ImageGallery rendered a broken single-photo banner AND
+ * ProducerHeader kept its own gray <h1> (the ZFFS symptom) instead of the
+ * MEH-815 Tinted Masthead. Deriving BOTH `hasImages` and the gallery prop from
+ * this single filtered list keeps the two in agreement (one owner — no
+ * ImageGallery-vs-ProducerDetail "is imageless?" drift, MEH-271 Smell #1) so
+ * every genuinely-imageless approved producer gets the masthead.
+ */
+export function getRenderableImages(images) {
+  if (!Array.isArray(images)) return [];
+  return images.filter((src) => typeof src === "string" && src.trim() !== "");
+}
+
 // MEH-76 chunk 1: label moved to i18n (producer.detail.header.vacation_back*) —
 // the hardcoded Hebrew here rendered on /en too. Callers pass next-intl's
 // t + locale. The date is wrapped FSI…PDI (⁨…⁩, the string-level
