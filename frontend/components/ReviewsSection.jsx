@@ -161,12 +161,13 @@ function ReviewReply({ review, isOwner, onSaved }) {
           )}
         </div>
       )}
-      {/* MEH-1103: 44px hit area (text stays 13px — secondary owner action). */}
+      {/* MEH-1103: 44px hit area + text-[13px] → text-sm (the DESIGN.md 14px
+          floor applies to all interactive text, secondary included). */}
       {isOwner && (
         <button
           type="button"
           onClick={() => { setDraft(reply || ""); setEditing(true); }}
-          className="mt-2 min-h-[44px] inline-flex items-center text-[13px] text-primary hover:underline"
+          className="mt-2 min-h-[44px] inline-flex items-center text-sm text-primary hover:underline"
         >
           {reply ? t("reply_edit") : t("reply_add")}
         </button>

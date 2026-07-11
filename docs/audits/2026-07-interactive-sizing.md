@@ -23,7 +23,7 @@ ChatWidget, map controls). Line numbers anchored at staging `8cbc3dc4`
 | `components/Footer.jsx:140 area` | nav links inline `13px` style | `text-[13px]` class (size unchanged) | #1595 |
 | `components/HolidayBanner.jsx` CTA | `text-xs py-1.5` | `text-sm py-2` | PR-5 |
 | `components/HolidayBanner.jsx` dismiss | `p-1` + 16px glyph (~24px target) | `min-h/min-w-[44px]` + flex centering | PR-5 |
-| `components/ReviewsSection.jsx` action buttons (reply save/cancel, reply add/edit, write-CTA, submit/cancel) | ~34-38px rows | `min-h-[44px]` | PR-5 |
+| `components/ReviewsSection.jsx` action buttons (reply save/cancel, reply add/edit, write-CTA, submit/cancel) | ~34-38px rows; reply add/edit `text-[13px]` | `min-h-[44px]`; reply add/edit also `text-sm` (14px floor) | PR-5 |
 | `components/PhoneVerifyCard.jsx` send + confirm | `py-2` (~38px) | `min-h-[44px]` | PR-5 |
 | `components/HeroSearch.jsx:451` | suggestion section label `uppercase tracking-wider` | removed (kept `text-[11px] font-semibold`; non-interactive label) — Refs MEH-1073 T10 | PR-5 |
 
@@ -51,6 +51,9 @@ ChatWidget, map controls). Line numbers anchored at staging `8cbc3dc4`
 - `components/BottomNav.jsx:187` labels `text-[10.5px]` — iOS tab convention; the tab itself is ≥44px (44 relaxing to 40 in compact mode — see finding above).
 - `.leaflet-control-attribution` 10px — MEH-919 lock (legally required fine print).
 - Inline body-text links — WCAG 2.5.8 inline exception.
+- `components/HeroSearch.jsx:451` suggestion Section label — `text-[11px]`
+  **non-interactive** group caption (the type floor applies to interactive
+  text); PR-5 only removed its `uppercase tracking-wider` (MEH-867 rule).
 - `app/[locale]/dev/components/page.jsx` — dev-only gallery (production-gated `notFound()`), renders all Button sizes by design.
 
 ## Sweep-adjacent notes
