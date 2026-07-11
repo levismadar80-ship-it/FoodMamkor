@@ -7,7 +7,7 @@
  * both), and save.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, createEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -58,6 +58,19 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     fireEvent.dragOver(zone);
     expect(screen.getByText(I.drop_here)).toBeInTheDocument();
 
+    // dragLeave onto a child node must NOT clear the drop state (flicker
+    // guard) — only a true exit (relatedTarget outside the zone) clears it.
+    // jsdom drops relatedTarget from drag-event init → set it explicitly.
+    const leaveToChild = createEvent.dragLeave(zone);
+    Object.defineProperty(leaveToChild, "relatedTarget", { value: zone.firstChild });
+    fireEvent(zone, leaveToChild);
+    expect(screen.getByText(I.drop_here)).toBeInTheDocument();
+    const leaveOutside = createEvent.dragLeave(zone);
+    Object.defineProperty(leaveOutside, "relatedTarget", { value: document.body });
+    fireEvent(zone, leaveOutside);
+    expect(screen.getByText(I.add_cta)).toBeInTheDocument();
+
+    fireEvent.dragOver(zone);
     // Non-image drop → filtered silently, no upload call.
     fireEvent.drop(zone, {
       dataTransfer: { files: [new File(["%PDF"], "doc.pdf", { type: "application/pdf" })] },
