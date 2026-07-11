@@ -420,6 +420,9 @@
       "clear_filter": "Clear filter",
       "empty_heading": "No businesses found in this area — yet",
       "empty_subtext": "Try changing the filter, or explore businesses on the map",
+      "empty_heading_category": "No businesses found in this category — yet",
+      "empty_subtext_category": "Try another category, or clear the filter to see all businesses",
+      "clear_category_cta": "Clear the filter",
       "explore_map": "Explore on map",
       "load_more": "More businesses",
       "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more Tap a card to view details",
@@ -3478,6 +3481,10 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "unsaved_guard": {
+        "banner": "You have unsaved changes",
+        "confirm": "You have unsaved changes. Leave without saving?"
+      },
       "insights_zero_state": {
         "title": "Your page isn't published yet",
         "body": "Once it's approved, views and inquiries will appear here.",
@@ -3571,10 +3578,6 @@
         "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
-        "settings": {
-          "title": "Edit profile",
-          "sub": "Update business details, deliveries, and photos"
-        },
         "add_event": {
           "title": "Add an event",
           "sub": "Workshop, tour, open days, etc."
@@ -3584,11 +3587,11 @@
           "sub": "This is how customers see it"
         },
         "group_buys": {
-          "title": "My group buys",
+          "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
         },
         "recipes": {
-          "title": "Recipes",
+          "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
         }
       },
