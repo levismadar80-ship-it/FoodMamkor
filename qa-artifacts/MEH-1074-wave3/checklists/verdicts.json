@@ -1,0 +1,84 @@
+[
+  {
+    "list": "MEH-215",
+    "item": "A3 אימייל לא תקין → הודעת שגיאה בעברית",
+    "verdict": "PASS",
+    "note": "✓ תקין"
+  },
+  {
+    "list": "MEH-215",
+    "item": "A3 סיסמה קצרה → שגיאה/אינדיקציה",
+    "verdict": "PASS",
+    "note": "סיסמתך חייבת להכיל לפחות 12 תווים"
+  },
+  {
+    "list": "MEH-215",
+    "item": "A3 שדות לא תקינים → submit disabled",
+    "verdict": "PASS"
+  },
+  {
+    "list": "MEH-215",
+    "item": "A3 אימייל קיים → שגיאה",
+    "verdict": "CHECK",
+    "note": ""
+  },
+  {
+    "list": "MEH-217",
+    "item": "1A /admin ללא auth → redirect",
+    "verdict": "PASS",
+    "note": "http://127.0.0.1:3000/login"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב dashboard נטען",
+    "verdict": "PASS",
+    "note": "chars=1451"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב producers נטען",
+    "verdict": "PASS",
+    "note": "chars=1281"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב users נטען",
+    "verdict": "PASS",
+    "note": "chars=1127"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב reports נטען",
+    "verdict": "PASS",
+    "note": "chars=625"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב content נטען",
+    "verdict": "PASS",
+    "note": "chars=916"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב settings נטען",
+    "verdict": "PASS",
+    "note": "chars=1300"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב recipes נטען",
+    "verdict": "PASS",
+    "note": "chars=626"
+  },
+  {
+    "list": "MEH-217",
+    "item": "טאב experiences נטען",
+    "verdict": "PASS",
+    "note": "chars=637"
+  },
+  {
+    "list": "MEH-217",
+    "item": "2B חיפוש בעברית",
+    "verdict": "PASS"
+  }
+]
