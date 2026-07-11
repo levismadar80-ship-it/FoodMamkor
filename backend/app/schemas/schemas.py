@@ -2066,10 +2066,25 @@ class NewsletterIn(BaseModel):
     email: EmailStr
 
 
+# MEH-1113: contact-form topic whitelist → Hebrew label. Single source of
+# truth for both the ContactIn validator (keys = allowed values) and the
+# router's label mapping (marketing.py imports this) — avoids the two-parallel-
+# mechanisms drift (workflow Smell #1). No DB column: topic is prepended to the
+# stored message + the email subject. "general" is the missing/None default.
+CONTACT_TOPIC_LABELS = {
+    "business": "פנייה של בית עסק",
+    "general": "שאלה כללית",
+    "correction": "תיקון מידע באתר",
+    "other": "אחר",
+}
+
+
 class ContactIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     email: EmailStr
     message: str = Field(..., min_length=1, max_length=5000)
+    # MEH-1113: optional whitelisted topic. None → treated as "general".
+    topic: str | None = None
 
     @field_validator("name")
     @classmethod
@@ -2080,6 +2095,16 @@ class ContactIn(BaseModel):
     @classmethod
     def _sanitize_message(cls, v):
         return sanitize_text(v, max_length=5000)
+
+    @field_validator("topic")
+    @classmethod
+    def _validate_topic(cls, v):
+        if v is None:
+            return v
+        v = v.strip()
+        if v not in CONTACT_TOPIC_LABELS:
+            raise ValueError("נושא הפנייה אינו תקין")
+        return v
 
 
 # --- Producers (router) ---

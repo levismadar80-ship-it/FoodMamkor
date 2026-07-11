@@ -2364,7 +2364,14 @@
         "submit": "שליחה",
         "submit_loading": "בשליחה...",
         "success_toast": "תודה! נחזור אליך בקרוב",
-        "email_direct": "אפשר גם ישירות במייל:"
+        "email_direct": "אפשר גם ישירות במייל:",
+        "topic_label": "נושא הפנייה",
+        "topic_options": {
+          "general": "שאלה כללית",
+          "business": "פנייה של בית עסק",
+          "correction": "תיקון מידע באתר",
+          "other": "אחר"
+        }
       }
     }
   },
@@ -3004,8 +3011,9 @@
       },
       "nudge": "אחרי ההרשמה, מד השלמת הפרופיל בדשבורד מראה בדיוק מה עוד חסר בדרך ל-100%."
     },
-    "footer_intro_prefix": "עדיין יש שאלה? כתבי לי ב-Instagram",
-    "footer_intro_suffix": "או הצטרפו עכשיו:",
+    "footer_questions_prefix": "עדיין יש שאלות? כתבו לנו דרך",
+    "footer_form_link": "טופס יצירת הקשר",
+    "footer_or_email": "או במייל",
     "cta": "הוסיפו את העסק שלך"
   },
   "privacy": {
@@ -3711,6 +3719,13 @@
         "checklist_aria": "התקדמות השלמת הפרופיל",
         "checklist_done": "הושלם",
         "checklist_todo": "עדיין חסר",
+        "checklist_sub": "עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות",
+        "steps": {
+          "image": "תמונה ראשית",
+          "location": "קטגוריות ומיקום",
+          "products": "3 מוצרים בקטלוג",
+          "contact": "פרטי קשר"
+        },
         "fields": {
           "city": "עיר",
           "coords": "מיקום על המפה",
