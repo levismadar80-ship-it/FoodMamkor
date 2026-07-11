@@ -5,13 +5,19 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-11 — MEH-1127 (CitySearch consistency): visible label + height + radius — draft PR
+## 2026-07-11 — MEH-1127 (CitySearch consistency): visible label + height + radius — PR #1633
 
 - **Branch:** `claude/meh-1127-citysearch-li3f5g` off `origin/staging` (harness-designated branch for this task). YELLOW — shared component (3+ surfaces), auto-merge allowed after CI green + Playwright self-QA. `Closes MEH-1127`.
 - **Phase 0 (call-sites grepped):** 10 visual CitySearch consumers — `RegisterProducerClient.jsx:615` (target), `map/MapClient.jsx:412`+`:478`, `map/components/CityPickerModal.jsx:63`, `settings/page.jsx:301`, `LocationModal.jsx:104`, `experiences/ExperiencesClient.jsx:114`, `group-buys/GroupBuysClient.jsx:165`, `experiences/new/NewExperienceClient.jsx:361`, `producer/dashboard/events/new/page.js:167`, `events/EventsClient.jsx:324`. No STOP: none rely on the ~60px height for side-by-side alignment (all vertically stacked / standalone rows). Plus non-visual mocks (`RegisterProducerClient.test.jsx`, `ModalFocusReturn.test.jsx`) + one e2e comment.
 - **Fix:** `CitySearch.jsx` — new `labelVisible` prop (default false → `sr-only`, current behavior); wrapper `py-2` removed (input `min-h-[44px]` sets height); `rounded-[8px]`→`rounded-md` on wrapper + dropdown ul. Register call-site passes `labelVisible` + new `city_label` label + example placeholder. i18n he+en twins (`city_label`, `city` value); en-parity baseline (MEH-978) drops the now-translated `city` line.
 - **Verify:** build exit 0 · vitest 20/20 (en-parity + RegisterProducerClient + ModalFocusReturn) · Playwright 375px measured city input 44px == business-name 44px (wrapper 46px, ±2px OK); screenshots `docs/audits/screenshots/2026-07-meh1127-qa/` (register step-2 label visible + rounded-md; /map + /experiences default surfaces unchanged). Sandbox had no backend — `/api/**` mocked in the screenshot run (fail-open, cosmetic only).
-- **Next:** open draft PR, auto-merge on CI green.
+- **Next:** PR #1633 open, both required gates green (full frontend suite ran green on the ready-for-review re-run); squash-merging to staging.
+
+## 2026-07-11 — MEH-1126 (Task I): producer products section image-first cards (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1125-product-cards-image-first` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1126`. (Ticket landed MEH-1126; branch label says 1125 — refs corrected in-tree.)
+- **Shipped:** `ProducerSections.jsx` products block — horizontal icon-left cards → **image-first vertical cards**: Cloudinary 4:3 (`optimizeCloudinary`) → name → price; no-photo → typographic card (name in Frank Ruhl on `bg-primary/[0.06]`, MEH-815 idiom; price below; no Package icon; body omits the repeated name). Grid `items-stretch` + card `flex-col` = equal-height cells (no 2+1 jump). `Package` import removed (unused). Display-only, no backend.
+- **Verify:** build exit 0 · 0 physical RTL · no ProducerSections product-card test existed to update. **Sapir QA gate** (image-first cards; typographic no-photo card; equal columns) — sandbox can't screenshot preview (MEH-360). Draft until Sapir QA. **Completes the MEH-1074 producer-page sweep (Tasks A–I).**
 
 ## 2026-07-11 — MEH-1078: hero-search per-instance ids + spec robustness — PR open (Closes MEH-1078)
 
