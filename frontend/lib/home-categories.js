@@ -24,13 +24,10 @@ export const CATEGORY_CARDS = [
   { key: "fish",   name: "דגים" },
   { key: "fruit",  name: "פירות" },
   { key: "drinks", name: "יין, בירה ומשקאות" },
-  // MEH-1098 (A1): DB category renamed "קרמים ושמנים" → "קוסמטיקה טבעית".
-  // `matchAliases` (ADR-007 expand-contract) keeps this card resolving against
-  // the OLD DB value during the transition window — staging/prod are renamed by
-  // a separate manual Railway SQL step run AFTER this merge, so until then
-  // GET /categories still returns "קרמים ושמנים". Drop the alias in a contract
-  // follow-up once the production rename is confirmed.
-  { key: "cream",  name: "קוסמטיקה טבעית", matchAliases: ["קרמים ושמנים"] },
+  // MEH-1098 (A1): DB category renamed → "קוסמטיקה טבעית". MEH-1104 (contract
+  // phase, ADR-007): production rename confirmed, transitional matchAliases
+  // removed — the card now resolves on the new DB value only.
+  { key: "cream",  name: "קוסמטיקה טבעית" },
 ];
 
 // Exact-name resolution — category ids differ per environment
