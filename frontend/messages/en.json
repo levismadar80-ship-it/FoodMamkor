@@ -2836,6 +2836,7 @@
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
     "date_label": "Last reviewed: April 2026",
+    "statement_date": "Statement last updated: July 2026",
     "sections": {
       "commitment": {
         "title": "Accessibility commitment",
@@ -2864,8 +2865,7 @@
         "intro": "Encountered an accessibility issue? We would be glad to help and fix it. You can reach the site's accessibility coordinator:",
         "coordinator_label": "Accessibility coordinator:",
         "coordinator_value": "The Mehamakor team",
-        "phone_placeholder": "TBD",
-        "footnote": "When contacting us, please describe the issue, the page where you encountered it, and the assistive technology you use. We will respond within 3 business days."
+        "footnote": "When contacting us, please describe the issue, the page where it appeared, and the assistive technology in use. We aim to respond within 3 business days."
       },
       "authority": {
         "title": "Government accessibility authority",
