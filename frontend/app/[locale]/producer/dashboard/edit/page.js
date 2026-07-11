@@ -140,26 +140,35 @@ export default function ProducerDashboardEditPage() {
         reportDirty={reportDirty}
       />
 
-      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-      <ContactChannelsCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "contact" step deep-link. */}
+      <div id="profile-contact" className="scroll-mt-24">
+        <ContactChannelsCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
-      {/* Edit-tab chunk A — producer-facing categories editor */}
-      <CategoriesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* Edit-tab chunk A — producer-facing categories editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "categories+location" step. */}
+      <div id="profile-categories" className="scroll-mt-24">
+        <CategoriesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
-      {/* Edit-tab chunk B — producer-facing gallery images editor */}
-      <ImagesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* Edit-tab chunk B — producer-facing gallery images editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "photo" step deep-link. */}
+      <div id="profile-images" className="scroll-mt-24">
+        <ImagesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
       {/* Edit-tab chunk C — producer-facing location/coords editor.
           MEH-213: only physical-location producers have a map pin; delivery-only
@@ -176,8 +185,11 @@ export default function ProducerDashboardEditPage() {
       {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
           fetching (no profile prop): full CRUD against /producers/me/products.
           Relocated from settings/page.jsx, where it was defined but never
-          mounted. */}
-      <ProductsSection />
+          mounted.
+          MEH-1106: id anchor = ProfileCompletenessCard "3 products" step deep-link. */}
+      <div id="profile-products" className="scroll-mt-24">
+        <ProductsSection />
+      </div>
     </div>
   );
 }
