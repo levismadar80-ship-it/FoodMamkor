@@ -813,6 +813,9 @@
       "empty_title": "You haven't published any recipes yet",
       "empty_description": "A recipe promotes your products — share how your customers use them at home.",
       "empty_cta": "+ Publish new recipe",
+      "sample_label": "Example — how your recipe will look",
+      "sample_title": "Tahini & date cookies",
+      "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
       "published": "Published on the site",
@@ -2512,6 +2515,8 @@
       },
       "section_results": "Results",
       "section_popular": "Popular",
+      "group_food": "Food",
+      "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
       "no_results_cta": "Tell us ←",
       "show_more": "← More categories ({count})",
@@ -2963,7 +2968,7 @@
     "meta_title": "Privacy Policy | Mehamakor",
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
-    "date_label": "Last updated: April 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -2979,6 +2984,7 @@
       },
       "data": {
         "title": "2. What data we collect",
+        "voluntary": "Providing your details is voluntary and not required by law — but without the basic identifying details (email and name) an account cannot be opened, and without contact details we cannot connect buyers with businesses.",
         "items": {
           "identity": {
             "label": "Identity and contact details:",
@@ -3032,10 +3038,13 @@
         "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
         "items": {
           "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
-          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and analytics services.",
+          "google": "<b>Google</b> — Google OAuth for sign-in and Google Fonts.",
           "anthropic": "<b>Anthropic</b> — AI models for support, content moderation, and experience improvements.",
-          "twilio": "<b>Twilio</b> — WhatsApp messages for admin alerts and customers.",
-          "infra": "<b>Vercel & Railway</b> — hosting and servers."
+          "meta": "<b>Meta (WhatsApp Cloud API)</b> — operational WhatsApp messages (signup confirmations, status updates, notifications).",
+          "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
+          "sentry": "<b>Sentry</b> — technical error monitoring for fixing issues.",
+          "clarity": "<b>Microsoft Clarity</b> — site usage analytics. Loaded only after analytics-cookie consent in the cookie banner.",
+          "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
       },
@@ -3637,8 +3646,8 @@
         "top_cities_empty": "No city data yet — customers who aren't signed in don't report a city."
       },
       "completeness": {
-        "red_headline": "Your profile is missing critical details",
-        "red_sub": "Without them, customers won't see you on the map or in search",
+        "red_headline": "A few key details left before you're live",
+        "red_sub": "Location and contact details help customers find and reach you",
         "yellow_low_headline": "Your profile is {percent}% ready",
         "yellow_low_sub": "A few more details and you can start getting customers",
         "yellow_high_headline": "Almost there — {percent}% ready",
@@ -3732,7 +3741,12 @@
         "heading": "Questions that appear on your page",
         "tooltip": "Questions that appear to the customer before she sends you a WhatsApp message — saves you repeat explanations. Up to 5 questions.",
         "subtitle": "Leave blank to show default questions based on your category",
-        "placeholder": "Example: What types of cheese do you have this week?",
+        "context_line": "These questions appear on your business page and help customers start a conversation",
+        "placeholder_1": "Example: What types of cheese do you have this week?",
+        "placeholder_2": "Example: How does delivery work?",
+        "placeholder_3": "Example: What is the kosher certification?",
+        "placeholder_4": "Example: How do I order?",
+        "placeholder_5": "Example: Can I visit in person?",
         "save_cta": "Save questions",
         "saving": "Saving…",
         "saved": "✓ Saved"
@@ -3911,7 +3925,10 @@
       "empty": {
         "title": "First product = a living business",
         "description": "Without products, your profile looks empty and customers don't know what you offer. Add 3 popular products with a photo and price — it takes 5 minutes.",
-        "cta": "+ Add first product"
+        "cta": "+ Add first product",
+        "sample_label": "Example — how your product will look",
+        "sample_name": "Homemade fig jam",
+        "sample_price": "₪28 per jar"
       },
       "edit_heading": "Edit product",
       "edit_legacy_price_note": "Existing price: {range} (not in the new format — enter a numeric price to update)",
