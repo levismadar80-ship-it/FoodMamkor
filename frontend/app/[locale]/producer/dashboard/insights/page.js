@@ -396,7 +396,7 @@ function TopCitiesBarChart({ data }) {
               <span className="text-text">{row.city}</span>
               <span className="text-fg-muted">{row.count}</span>
             </div>
-            <div className="h-2 bg-green-50 rounded-full overflow-hidden">
+            <div data-testid="city-bar" className="h-2 bg-green-50 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary rounded-full"
                 style={{ width: `${pct}%` }}

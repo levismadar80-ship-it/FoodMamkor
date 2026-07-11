@@ -23,7 +23,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("@/i18n/navigation", () => ({
-  // eslint-disable-next-line @next/next/no-html-link-for-pages
   Link: ({ href, children, ...rest }) => <a href={typeof href === "string" ? href : "#"} {...rest}>{children}</a>,
 }));
 
@@ -90,7 +89,7 @@ describe("Insights zero-states (MEH-1101)", () => {
         ],
       },
     );
-    const { container } = renderPage();
+    renderPage();
 
     await waitFor(() =>
       expect(
@@ -101,6 +100,6 @@ describe("Insights zero-states (MEH-1101)", () => {
     expect(screen.queryByTestId("followers-zero-cta")).not.toBeInTheDocument();
     expect(screen.queryByTestId("top-cities-list")).not.toBeInTheDocument();
     // 3 proportional bars render for n=3.
-    expect(container.querySelectorAll(".h-2.bg-green-50")).toHaveLength(3);
+    expect(screen.getAllByTestId("city-bar")).toHaveLength(3);
   });
 });
