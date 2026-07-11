@@ -55,7 +55,8 @@ import { BRAND_NAME } from "@/lib/constants";
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
  *     [logo + links] · inter-group gap · action cluster. MEH-1072: pill
- *     geometry is now FIXED (end-cap px-4, inter-group gap-8, lead-group
+ *     geometry is now FIXED (end-cap px-6 since MEH-1103, was px-4;
+ *     inter-group gap-8, lead-group
  *     intra-gap gap-9) at every scroll position — supersedes MEH-899's
  *     rest-wide→compact width switching (was px-11/gap-14/gap-11 at rest,
  *     snapping to px-4/gap-8/gap-9 at y=60) per Sapir 09/07 + NAV-01. Geometry
@@ -229,7 +230,7 @@ export default function Header() {
             // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            // MEH-1072: the gap/px are FIXED (gap-8 px-4) — see the geometry
+            // MEH-1072: the gap/px are FIXED (gap-8 px-6 since MEH-1103) — see the geometry
             // note below; pill stays w-auto. (MEH-899's state-dependent gap-14
             // at rest / gap-8 scrolled is retired per Sapir 09/07 + NAV-01.)
             "w-auto max-w-[92vw] flex items-center rounded-full border",
@@ -259,7 +260,7 @@ export default function Header() {
               : transparent
                 ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
                 : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5",
-            // MEH-1072: WIDTH is now FIXED geometry (gap-8 px-4) at every
+            // MEH-1072: WIDTH is now FIXED geometry (gap-8, end-cap px-6 since MEH-1103) at every
             // scroll position — supersedes MEH-899 width switching per Sapir
             // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
             // gap-8/px-4 at y=60) is retired; the pill reads at one consistent
