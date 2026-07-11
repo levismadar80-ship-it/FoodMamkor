@@ -448,7 +448,9 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
 function Section({ title, children }) {
   return (
     <div className="py-1">
-      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-fg-muted">
+      {/* MEH-1103: uppercase/tracking-wider dropped (MEH-867 rule — Hebrew has
+          no uppercase and letter-spacing harms RTL legibility). Refs MEH-1073 T10. */}
+      <div className="px-3 pt-2 pb-1 text-[11px] font-semibold text-fg-muted">
         {title}
       </div>
       <ul className="py-1">{children}</ul>

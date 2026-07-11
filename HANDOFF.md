@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1103: sizing-calibration sweep — PR-0…PR-4 MERGED, PR-5 open (Refs MEH-1103)
+
+- **Authority:** MEH-1074 grant — GREEN auto-merge on CI green, YELLOW auto-merge with Playwright screenshots attached. Sequential PR-0→PR-5, each off fresh `origin/staging`.
+- **Merged:** #1581 (PR-0, DESIGN.md "Interactive sizing minimums" — the sweep's normative section), #1592 (PR-1 Header: nav/login text-base, pill py-1.5/px-6, logo 111×42; screenshots under `docs/audits/meh-1103/p1-header/`), #1594 (PR-2 Button md text-base; gallery screenshots under `docs/audits/meh-1103/p2-button/`), #1595 (PR-3 Footer 13px class + 44px utility links), #1596 (PR-4 design-review checklist /neighbor removal).
+- **PR-5 (this branch, `feature/meh-1103-p5-audit`):** `docs/audits/2026-07-interactive-sizing.md` (full census: fixed-in-sweep table + 14 report-only rows) + closed-list fixes (HolidayBanner CTA/dismiss, ReviewsSection ×6 action buttons, PhoneVerifyCard ×2, HeroSearch section-label tracking removal — Refs MEH-1073 T10) + this HANDOFF/CHANGELOG + parity.spec.ts touch to re-ride vrt-update.
+- **Phase 0 corrections vs the orchestrator spec (meta-patterns §1):** (a) `ui/Button`'s only production consumer is the dev gallery — the spec's login/register/dashboard screenshot surfaces use raw `<button>`s (the "12 consumers" grep was matching `<ButtonSpinner`); (b) `ProducersClient.jsx` (not a `/producers` page file) holds the MEH-1081 chips — report-only as specced; (c) no `/neighbor` route exists (STOP condition checked, clear).
+- **Learned/gotchas this session:** Header.test.jsx MEH-1072 block asserts the literal geometry constants — recalibrating the pill means re-anchoring `px-4`→`px-6` there (invariant unchanged); draft→ready flips concurrency-cancel the in-flight pr-checks run and the stale gate reports FAIL (workflow rule 21 superseded-run class — hit on 3 of 5 PRs, every fresh run went green); PR-3 merged without a VRT refresh (its diff doesn't touch `e2e/visual/**` so vrt-update never fired) — PR-5 re-rides the trigger from post-sweep staging.
+- **Deferred (in the audit table):** ProducersClient chips (MEH-1081 in flight), ReviewsSection pagination arrows + star picker hit areas, forgot-password links text-xs (login/settings/reset), ChatWidget suggestions, CookieBanner text floor, Footer column-2 row heights, BottomNav compact 40px deviation (MEH-1014), admin-surface batch ticket proposal, /neighbor references in FEATURES/E2E-LOCATORS/MANUAL_TESTING (docs sweep unticketed).
+- **Sapir pending:** merge PR-5 (auto-merge armed if green); optional mobile QA — holiday banner dismiss reach, review-form buttons, phone-verify card.
+
 ## 2026-07-10 — MEH-1080 [T-A]: homepage category cards → links, 1:1 split — PR open (Refs MEH-1080; WAIT for Sapir merge)
 
 - **Branch:** `feature/meh-1080-homepage-category-links` off `origin/staging` (post T-B merge `82e25e9b` — dependency verified live: 14 `categoryFilter` refs in ProducersClient on staging). Card set = Sapir-approved 10 (editorial gate passed in-conversation); Leaf fallback for 4 glyph-less cards approved; labels stay hardcoded (mirror DB).
