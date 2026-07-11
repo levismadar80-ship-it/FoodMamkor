@@ -74,6 +74,18 @@ describe("BadgeRow", () => {
     expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
   });
 
+  it("hideKeys drops the named badges, keeps the rest (MEH-1124)", () => {
+    render(
+      <BadgeRow
+        hideKeys={["products", "delivery"]}
+        producer={{ ...VERIFIED_LICENSE, has_delivery: true, products_count: 10 }}
+      />,
+    );
+    expect(screen.getByText("מאומת")).toBeInTheDocument();
+    expect(screen.queryByText("משלוח")).not.toBeInTheDocument();
+    expect(screen.queryByText("מוצרים")).not.toBeInTheDocument();
+  });
+
   describe("tooltip interaction", () => {
     // MEH-800: card-Link safety — tap on a chip inside a wrapping clickable
     // (the ProducerCard Link pattern) opens the popover, never navigates.
