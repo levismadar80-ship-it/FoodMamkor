@@ -19,7 +19,7 @@ export default function WhatsAppQuestionChips({ producer }) {
 
   return (
     <div className="mb-3">
-      <p className="text-xs mb-2 font-body-md" style={{ color: "#6B6B6B" }}>
+      <p className="text-xs mb-2 font-body-md text-fg-muted">
         {t("ask_us")}:
       </p>
       <div className="flex flex-wrap gap-2">
@@ -31,14 +31,8 @@ export default function WhatsAppQuestionChips({ producer }) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center font-body-md text-primary transition hover:bg-green-50"
-              style={{
-                border: "1px solid #e5dfd3",
-                borderRadius: "20px",
-                padding: "6px 12px",
-                fontSize: "12px",
-                minBlockSize: "44px",
-              }}
+              className="inline-flex items-center font-body-md text-sm text-primary border border-border rounded-xl px-3 py-1.5 transition hover:bg-green-50"
+              style={{ minBlockSize: "44px" }}
             >
               {q}
             </a>
