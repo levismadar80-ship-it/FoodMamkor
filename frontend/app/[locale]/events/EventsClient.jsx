@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowCounterClockwise,
@@ -114,7 +114,6 @@ export default function EventsPage() {
   const tExpCat = useTranslations("events.experience_categories");
   const locale = useLocale();
   const search = useSearchParams();
-  const router = useRouter();
   // Tab state lives in the URL so /events?tab=experiences is a real
   // deep-link and survives refresh / share / bookmark.
   const initialTab = search.get("tab") === "experiences" ? "experiences" : "events";
@@ -125,20 +124,47 @@ export default function EventsPage() {
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("");
+  // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
+  // URL on mount like `tab` above. A URL category is accepted only when it
+  // belongs to the initial tab's vocabulary, so a cross-tab share link can't
+  // silently filter to zero rows.
+  const [city, setCity] = useState(() => search.get("city") || "");
+  const [category, setCategory] = useState(() => {
+    const fromUrl = search.get("category") || "";
+    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+    return vocab.some((c) => c.key === fromUrl) ? fromUrl : "";
+  });
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
-  // silently filter to zero rows.
+  // silently filter to zero rows. The URL-sync effect below mirrors the
+  // reset into the query string.
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
     setCategory("");
     setCity("");
-    const qs = next === "experiences" ? "?tab=experiences" : "";
-    router.replace(`/events${qs}`, { scroll: false });
   };
+
+  // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
+  // {tab, city, category}, so filters survive refresh/share and the switchTab
+  // reset clears them from the URL too — a cross-tab category is never
+  // resurrected. Shallow history.replaceState, NOT router.replace: a Next
+  // navigation from this mount-time effect re-suspends the useSearchParams
+  // boundary (page.js Suspense) and resets client state — the E2E calendar
+  // toggle caught exactly that. replaceState keeps it a pure URL mirror
+  // (and preserves the locale-prefixed pathname on /en).
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (tab === "experiences") p.set("tab", "experiences");
+    if (city) p.set("city", city);
+    if (category) p.set("category", category);
+    const qs = p.toString();
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
+  }, [tab, city, category]);
 
   useEffect(() => {
     load();
