@@ -2968,7 +2968,7 @@
     "meta_title": "Privacy Policy | Mehamakor",
     "meta_description": "Mehamakor's privacy policy — what data we collect, how we use it, and your rights under the Protection of Privacy Law (Amendment 13, 2025).",
     "heading": "Privacy Policy",
-    "date_label": "Last updated: April 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
+    "date_label": "Last updated: July 2026 · Aligned with the Protection of Privacy Law, 1981 and Amendment 13 (2025)",
     "sections": {
       "operator": {
         "title": "Site operator details",
@@ -2984,6 +2984,7 @@
       },
       "data": {
         "title": "2. What data we collect",
+        "voluntary": "Providing your details is voluntary and not required by law — but without the basic identifying details (email and name) an account cannot be opened, and without contact details we cannot connect buyers with businesses.",
         "items": {
           "identity": {
             "label": "Identity and contact details:",
@@ -3037,10 +3038,13 @@
         "intro": "We use external service providers to operate the platform. Each is subject to its own privacy policy:",
         "items": {
           "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
-          "google": "<b>Google</b> — Google OAuth for sign-in, Google Fonts, and analytics services.",
+          "google": "<b>Google</b> — Google OAuth for sign-in and Google Fonts.",
           "anthropic": "<b>Anthropic</b> — AI models for support, content moderation, and experience improvements.",
-          "twilio": "<b>Twilio</b> — WhatsApp messages for admin alerts and customers.",
-          "infra": "<b>Vercel & Railway</b> — hosting and servers."
+          "meta": "<b>Meta (WhatsApp Cloud API)</b> — operational WhatsApp messages (signup confirmations, status updates, notifications).",
+          "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
+          "sentry": "<b>Sentry</b> — technical error monitoring for fixing issues.",
+          "clarity": "<b>Microsoft Clarity</b> — site usage analytics. Loaded only after analytics-cookie consent in the cookie banner.",
+          "infra": "<b>Vercel & Railway</b> — site infrastructure and servers; the database is hosted on Railway."
         },
         "outro": "We do <b>not sell</b> your information to third parties for marketing purposes."
       },
