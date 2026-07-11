@@ -10,6 +10,12 @@
 - **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).
 - **Shipped:** `ContactSidebar.jsx` — phone + Instagram tiles → full-width (`col-span-2`), no `truncate`/`overflow-hidden`, `dir="ltr"` value, `break-all` (values always fully readable). `WhatsAppShareButton.jsx` — `WhatsappLogo`(#25D366)→`ShareNetwork`; `he/en.json` `share_to_friend` "שלחו לחברה"→"שיתוף עם חברים" + `share_aria` in lockstep (WCAG 2.5.3). New `WhatsAppShareButton.test.jsx` (3). WhatsApp single filled primary already true (PrimaryContactButton; FollowButton demoted in merged chunk 1).
 - **Verify:** build exit 0 · WhatsAppShareButton + en-parity 7 passed · canary clean · 0 physical RTL. **Playwright self-QA against Vercel preview pending** (phone value fully visible @375px, no ellipsis on value span) — draft until captured.
+## 2026-07-11 — MEH-1120 (Task B): unify verification badge — TrustBadge recognition-only (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1120-unify-verification-badge` off `origin/staging`. YELLOW (touches central `ProducerCard.jsx`). `Refs MEH-1074 · Closes MEH-1120`.
+- **Root cause:** `ProducerHeader.jsx:50` `<BadgeRow>` (verification_tier seal, ADR-022) + `:52` `<TrustBadge>` both fired; TrustBadge tier-3 = "עסק מאומת" duplicated the BadgeRow "מאומת" seal (same on `ProducerCard.jsx:291`). tier-2 "מספר מאומת" (phone) read as business verification.
+- **Fix:** `TrustBadge.jsx` self-gates to **tier ≥ 4** (recognition-only: 4 community-leader, 5 ambassador); tiers 2/3 → null everywhere. `ProducerCard.jsx` gate `>=3`→`>=4`. `ProducerHeader.jsx` comments updated. `lib/badges.js`/schema untouched. `TrustBadge.test.jsx` rewritten.
+- **Verify:** build exit 0 · TrustBadge+ProducerCard+BadgeRow+ProducerHeaderTrustStrip 68 passed · 0 physical RTL. **Sapir mobile QA gate** (one verification chip in header, ambassador chip still shows for tier-5) — sandbox can't screenshot preview (proxy blocks *.vercel.app CONNECT, MEH-360 class); draft until Sapir QA. Automated adversarial-review + runner E2E gate on the PR.
 
 ## 2026-07-11 — MEH-1113: unify inbound contact routing (audit-fix batch MEH-1112→MEH-1113, ticket 2 of 2) — PR open
 
