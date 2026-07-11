@@ -102,7 +102,7 @@ export default function AboutPage() {
   // <p> by default so it never outranks the section h2; pass as="h2" where the
   // label IS the section heading (Benefits).
   const Eyebrow = ({ children, as: Tag = "p" }) => (
-    <Tag className="block font-body-md text-[13px] font-semibold tracking-[0.15em] text-fg-muted uppercase mb-3 md:mb-4">
+    <Tag className="block font-body-md text-[13px] font-semibold text-fg-muted mb-3 md:mb-4">
       {children}
     </Tag>
   );
