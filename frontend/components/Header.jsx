@@ -210,7 +210,14 @@ export default function Header() {
         // above is a normal-flow sibling so it scrolls away with the page.
         // MEH-890 chunk 2: the black hero scrim was REMOVED. The pill carries
         // its own glass surface at rest (dark ink, no scrim).
-        className="sticky top-0 z-[1000]"
+        // MEH-1109: z-[1050] (not 1000) — `sticky` + z-index makes this a
+        // stacking context, so the UserMenu dropdown's own z-[1001] is capped
+        // relative to the page at the header's level. At 1000 (== map
+        // controls) the later-in-DOM "חפש באזור זה" pill won on tie-break and
+        // covered the open dropdown (truncating "לוח הבקרה שלי"). 1050 sits
+        // above map controls:1000 and below cookie:1100 — see the /map z-token
+        // ledger in .claude/rules/rtl.md.
+        className="sticky top-0 z-[1050]"
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
