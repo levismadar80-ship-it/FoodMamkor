@@ -14,6 +14,17 @@
 - **Next:** Sapir reviews MEH-1106 report + decides; MEH-1116 PR auto-merges on green.
 - **Merge-conflict addendum (same day):** PR #1621 (parallel session) shipped its own MEH-1106 — ProfileCompletenessCard → 4-step checklist deep-linking `#profile-{images,categories,products,contact}` wrapper divs in edit/page.js, `Closes MEH-1106`. Conflict resolved in the MEH-1116 branch: accordion kept; the 4 `#profile-*` hashes preserved as ALIASES in `ANCHOR_TO_KEY` (auto-expand + scroll to the same cards via `KEY_TO_ANCHOR`) so every checklist deep-link lands on an EXPANDED card. Task-B of the epic prompt (products → 7th heuristic field) NOT executed — #1621 closed MEH-1106 with a different, card-only model (heuristic untouched, products step reads the card); flagged for Sapir before any further MEH-1106 work.
 
+## 2026-07-11 — MEH-1121 (Task D): imageless-hero consistency — masthead fires for blank image arrays (MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1122-imageless-hero` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1121`.
+- **Root cause (file:line):** `ImageGallery.jsx:59` gates the MEH-815 masthead on `!images.length`; `ProducerDetail.jsx:77/106` derived `hasImages` + the gallery prop from the **unfiltered** `producer.images`. A `[""]`/blank array → length 1 → broken single-banner + ProducerHeader's own gray h1 (the ZFFS "small gray title, floating tags, no masthead" symptom). Distinct from PR #1492 audit A1/A2/A7 (that producer had a REAL placeholder PNG — masthead correctly didn't fire).
+- **Fix:** new pure `getRenderableImages()` (`producer-format.js`) filters non-empty trimmed strings; `ProducerDetail.jsx` derives BOTH `hasImages` and the `ImageGallery images` prop from that single list (one owner — MEH-271 Smell #1 avoided). Masthead untouched (LOCK); Latin names keep the Frank Ruhl→David Libre→Georgia h1 fallback (verified). New `ProducerFormatImages.test.js` (5).
+- **Verify:** build exit 0 · 20 gallery/format tests pass · 0 physical RTL. **Sapir QA gate:** live dana-vs-ZFFS DOM comparison deferred (sandbox proxy blocks staging/preview — MEH-360). Draft until Sapir confirms an imageless producer shows the masthead.
+## 2026-07-11 — MEH-1049 (scope-add): contact-card truncation + share disambiguation (Task A of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).
+- **Shipped:** `ContactSidebar.jsx` — phone + Instagram tiles → full-width (`col-span-2`), no `truncate`/`overflow-hidden`, `dir="ltr"` value, `break-all` (values always fully readable). `WhatsAppShareButton.jsx` — `WhatsappLogo`(#25D366)→`ShareNetwork`; `he/en.json` `share_to_friend` "שלחו לחברה"→"שיתוף עם חברים" + `share_aria` in lockstep (WCAG 2.5.3). New `WhatsAppShareButton.test.jsx` (3). WhatsApp single filled primary already true (PrimaryContactButton; FollowButton demoted in merged chunk 1).
+- **Verify:** build exit 0 · WhatsAppShareButton + en-parity 7 passed · canary clean · 0 physical RTL. **Playwright self-QA against Vercel preview pending** (phone value fully visible @375px, no ellipsis on value span) — draft until captured.
 ## 2026-07-11 — MEH-1120 (Task B): unify verification badge — TrustBadge recognition-only (producer-page sweep, MEH-1074) — draft PR
 
 - **Branch:** `feature/meh-1120-unify-verification-badge` off `origin/staging`. YELLOW (touches central `ProducerCard.jsx`). `Refs MEH-1074 · Closes MEH-1120`.
