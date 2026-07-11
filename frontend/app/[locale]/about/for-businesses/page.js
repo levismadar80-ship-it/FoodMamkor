@@ -2,11 +2,13 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import {
   Camera,
   BookOpen,
+  CaretDown,
   SealCheck,
   Basket,
   Truck,
   ChatCircleText,
 } from "@phosphor-icons/react/ssr";
+import { Link } from "@/i18n/navigation";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -120,7 +122,7 @@ export default async function FaqForBusinessesPage({ params }) {
       />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 sm:mb-14">
-          <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
+          <p className="text-xs sm:text-sm mb-3 text-fg-muted">
             {t("eyebrow")}
           </p>
           <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
@@ -130,12 +132,12 @@ export default async function FaqForBusinessesPage({ params }) {
               above the FAQ, so the primary action isn't gated behind 8 accordion
               items. Same string t("cta") + markup as the footer CTA below — no
               new he.json key (MEH-840 freeze). Footer CTA stays as-is. */}
-          <a
+          <Link
             href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-lg px-[22px] py-3"
+            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </a>
+          </Link>
         </header>
 
         <div className="flex flex-col gap-10 sm:gap-12">
@@ -149,16 +151,16 @@ export default async function FaqForBusinessesPage({ params }) {
                   <li key={item.key}>
                     <details
                       open={item.open || undefined}
-                      className="group rounded-lg border border-border bg-white transition-colors"
+                      className="group rounded-lg border border-border bg-surface transition-colors"
                     >
                       <summary className="cursor-pointer list-none flex items-start justify-between gap-4 px-5 py-4 font-headline-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg text-text text-[17px] font-semibold">
                         <span>{t(`faq.${item.key}.q`)}</span>
-                        <span
+                        <CaretDown
                           aria-hidden="true"
-                          className="shrink-0 transition-transform group-open:rotate-45 text-2xl leading-none text-primary"
-                        >
-                          +
-                        </span>
+                          size={20}
+                          weight="bold"
+                          className="shrink-0 mt-1 transition-transform group-open:rotate-180 text-primary"
+                        />
                       </summary>
                       <div className="px-5 pb-5 pt-1 text-[15px] leading-relaxed text-text/90">
                         {renderAnswer(t(`faq.${item.key}.a`))}
@@ -190,7 +192,7 @@ export default async function FaqForBusinessesPage({ params }) {
           <p className="text-[15px] leading-relaxed text-text/90 mb-6">
             {t("showcase.intro")}
           </p>
-          <figure className="rounded-[16px] border border-border bg-white p-6 sm:p-7">
+          <figure className="rounded-lg border border-border bg-surface p-6 sm:p-7">
             <figcaption className="mb-5">
               <p className="font-headline-md text-[17px] font-bold text-text">
                 {t("showcase.example_name")}{" "}
@@ -256,12 +258,12 @@ export default async function FaqForBusinessesPage({ params }) {
               <bdi>{CONTACT_EMAIL}</bdi>
             </a>
           </p>
-          <a
+          <Link
             href="/register/producer"
-            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-lg px-[22px] py-3"
+            className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
           >
             {t("cta")}
-          </a>
+          </Link>
         </footer>
       </div>
     </section>
