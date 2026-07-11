@@ -52,7 +52,11 @@ const SECTION_IDS = [
 
 const DATA_ITEMS = ["identity", "business", "technical", "location", "cookies", "ugc"];
 const WHY_ITEMS = ["service", "analytics", "notifications", "compliance"];
-const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "twilio", "infra"];
+// MEH-1058 (Amendment 13 disclosure duty): full live sub-processor list —
+// twilio was STALE (WhatsApp ships via Meta Cloud API, services/whatsapp.py);
+// added resend (email.py), sentry (lib/api.js), clarity (ClarityScript.jsx,
+// consent-gated). Keep 1:1 with what actually runs.
+const THIRD_PARTY_ITEMS = ["cloudinary", "google", "anthropic", "meta", "resend", "sentry", "clarity", "infra"];
 const RIGHTS_ITEMS = ["access", "rectify", "erase", "object", "portability"];
 
 function MailLink({ email }) {
@@ -90,14 +94,19 @@ function renderBody(id, t) {
       return t("sections.who.body");
     case "data":
       return (
-        <ul className="list-disc ps-6 space-y-2">
-          {DATA_ITEMS.map((k) => (
-            <li key={k}>
-              <strong>{t(`sections.data.items.${k}.label`)}</strong>{" "}
-              {t(`sections.data.items.${k}.value`)}
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="list-disc ps-6 space-y-2">
+            {DATA_ITEMS.map((k) => (
+              <li key={k}>
+                <strong>{t(`sections.data.items.${k}.label`)}</strong>{" "}
+                {t(`sections.data.items.${k}.value`)}
+              </li>
+            ))}
+          </ul>
+          {/* MEH-1058: Amendment-13 disclosure duty — voluntary provision +
+              consequence of refusal. */}
+          <p className="mt-3">{t("sections.data.voluntary")}</p>
+        </>
       );
     case "why":
       return (
