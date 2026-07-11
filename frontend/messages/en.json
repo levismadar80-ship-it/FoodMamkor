@@ -265,6 +265,8 @@
           "password_label": "Password *",
           "producer_name": "e.g. Ruth's Bakery",
           "producer_name_label": "Business name *",
+          "city": "e.g. Zikhron Ya'akov",
+          "city_label": "City *",
           "address": "e.g. 5 Olive St., Haifa",
           "address_label": "Address",
           "description_label": "Tell us about your business",
