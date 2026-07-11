@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1078: hero-search per-instance ids + spec robustness — PR open (Closes MEH-1078)
+
+- **Authority:** ADR-016 v2 YELLOW single-file — auto-merge on CI green + self-QA showing hero-search resolves to 1. Branch `feature/meh-1078-hero-search-unique-id` off `origin/staging`.
+- **Phase-0 correction (meta-patterns §1):** the ticket premise ("HeroSearch mounts twice — header + hero") is WRONG — **one** mount only (`HomeHero.jsx:129`, `page.js:77`); no header mount; axe `/`→{} clean in CI (no duplicate-id-active firing). Real symptom = a **transient** double-render producing 2 identical inputs momentarily (strict-mode "resolved to 2"). Surfaced to Sapir → chose "repro first, then in-scope fix."
+- **Repro (Sapir-requested):** could NOT reproduce locally — **0/210** loads (sequential clean 50, 6× CPU-throttle 40, 6-way concurrent+4× throttle 120); input testid never >1, role=search never >1. `playwright test` runner can't launch in-sandbox (pins `chromium_headless_shell-1228`, not installed; config has no `executablePath`, out of scope to edit) — synthetic DOM-count harness is the local repro.
+- **Analysis:** the prescribed useId+role-scope fix wouldn't dedupe the strict-mode match anyway — the duplicated element is the combobox INPUT, which lives inside `role="search"` (`HomeHero.jsx:117`), so `getByRole("search").locator(testid)` still matches 2; and useId fixes duplicate-*id* but two transient inputs still share the testid. Sapir chose the in-scope robustness fix.
+- **Shipped (3 files):** (1) `HeroSearch.jsx` — input/listbox/row ids + `htmlFor`/`aria-controls`/`aria-activedescendant` now `useId()`-derived (SSR-stable, per-instance); testids unchanged. (2) `flows/01`+`flows/02` gate on `toHaveCount(1)` (retries to settle → no strict-mode flake). **Robustness, NOT root-cause** — the transient double-render stays undiagnosed (unreproducible) under MEH-1123's non-required-E2E decision.
+- **Verify:** vitest 908 · build 0 · DOM self-QA (local `next start`): hero-search=1 @375+1280, input id `_r_0_-input` (0 hardcoded `#hero-search-input`), aria-controls `_r_0_-listbox`. Playwright runner exec deferred to CI (sandbox browser-version limit, MEH-360 class).
+- **Follow-up (not filed):** the transient double-render root cause (likely HomeHero/page.js hydration or Framer-Motion) remains open — reopen if it recurs and becomes reproducible.
+
 ## 2026-07-11 — MEH-1084: /producers category selection → push (Back cancels filter, DISC-06) — PR open
 
 - **Branch:** `feature/meh-1084-category-push-history` off `origin/staging` (divergence 0; harness cut a `claude/*` branch — recreated as `feature/*` per rule 3, Sapir-approved in-conversation). GREEN, end-to-end authority (Phase 1+2, auto-merge on green + Playwright self-QA). `Closes MEH-1084`.
