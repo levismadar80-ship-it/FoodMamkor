@@ -194,7 +194,7 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
     # so Resend errors must never break the public form.
     _send_contact_email(msg, label)
 
-    return {"detail": "תודה! נחזור אליך בקרוב 🌿"}
+    return {"detail": "תודה! נחזור אליכם בקרוב 🌿"}
 
 
 def _send_contact_email(msg: ContactMessage, label: str) -> None:
