@@ -56,7 +56,7 @@ export default async function GuidesIndexPage({ params }) {
     <section className="min-h-screen bg-background text-text">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
         <header className="mb-10 sm:mb-14">
-          <p className="text-xs sm:text-sm mb-3 text-accent tracking-[0.12em] uppercase">
+          <p className="text-xs sm:text-sm mb-3 text-accent">
             {ti("eyebrow")}
           </p>
           <h1 className="font-headline-lg mb-4 text-primary-dark text-[clamp(28px,6vw,44px)] leading-[1.15] font-black">
@@ -74,7 +74,7 @@ export default async function GuidesIndexPage({ params }) {
                 href={`/about/for-businesses/guides/${g.slug}`}
                 className="block rounded-lg border border-border bg-white p-5 sm:p-6 transition focus-visible:outline-none focus-visible:ring-2"
               >
-                <p className="text-[11px] sm:text-[12px] mb-2 text-accent tracking-[0.1em] uppercase">
+                <p className="text-[11px] sm:text-[12px] mb-2 text-accent">
                   {ti("minutes_label", { minutes: g.readMinutes })}
                 </p>
                 <h2 className="font-headline-md mb-2 text-primary-dark text-[20px] font-bold">

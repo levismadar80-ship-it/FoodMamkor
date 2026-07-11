@@ -43,7 +43,7 @@ export function HomeCategoryGrid({ categoryCards }) {
     <section className="max-w-7xl mx-auto px-4 section-y">
       <FadeInSection className="mb-10">
         {/* MEH-1032 (HOME-17): eyebrow+rule pattern mirrors HomeStaticBlocks §10 — DM-Sans, 32×1px gold rule, start-aligned. */}
-        <span className="flex items-center gap-3 font-medium text-[11px] tracking-[0.18em] text-accent mb-1">
+        <span className="flex items-center gap-3 font-medium text-[11px] text-accent mb-1">
           {t("home.categories.eyebrow")}
           <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
         </span>

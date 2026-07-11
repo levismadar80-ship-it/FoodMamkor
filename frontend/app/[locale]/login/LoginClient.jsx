@@ -159,7 +159,7 @@ function LoginPageBody() {
 
         {/* Head — gold eyebrow rule + Frank Ruhl 900 welcome headline */}
         <div className="grid gap-3 text-start">
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em]">
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("title")}
           </span>

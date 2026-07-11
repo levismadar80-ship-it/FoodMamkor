@@ -67,7 +67,7 @@ export default async function JoinPage({ params }) {
         {/* ── Hero — single CTA of the page (positioning-FINAL order:
                eyebrow → H1 → subhead → CTA → trust hint) ── */}
         <header className="text-center mb-14 sm:mb-20">
-          <p className="text-sm font-medium tracking-[0.14em] text-accent mb-3">{t("eyebrow")}</p>
+          <p className="text-sm font-medium text-accent mb-3">{t("eyebrow")}</p>
           <h1 className="font-headline-lg font-black text-primary-dark leading-[1.15] mb-5 text-[clamp(32px,7vw,52px)]">
             {t("h1")}
           </h1>
@@ -84,7 +84,7 @@ export default async function JoinPage({ params }) {
 
         {/* ── How it works — 4 numbered spreads ── */}
         <section className="mb-14 sm:mb-20" data-testid="join-how">
-          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+          <p className="text-sm font-medium text-fg-muted text-center mb-2">
             {t("how.eyebrow")}
           </p>
           <h2 className="font-headline-lg font-bold text-text text-center mb-10 text-[clamp(26px,3.5vw,38px)]">
@@ -141,7 +141,7 @@ export default async function JoinPage({ params }) {
                pre-launch (MEH-931; COPY_BANK §8 guardrail). ── */}
         <section className="mb-14 sm:mb-20 text-center" data-testid="join-testimonial">
           <Quotes size={28} className="text-accent mx-auto mb-3" aria-hidden="true" />
-          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-3">
+          <p className="text-sm font-medium text-fg-muted mb-3">
             {t("testimonial.eyebrow")}
           </p>
           <blockquote className="font-headline-md text-xl text-text/70 leading-relaxed max-w-xl mx-auto italic">
@@ -152,7 +152,7 @@ export default async function JoinPage({ params }) {
         {/* ── FAQ teaser — the price answer lives here (Etsy pattern), not in
                the hero. Answer string is LOCKED (BRAND no-fees LOCK). ── */}
         <section className="text-center" data-testid="join-faq">
-          <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-2">
+          <p className="text-sm font-medium text-fg-muted mb-2">
             {t("faq.eyebrow")}
           </p>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("faq.q_cost")}</h2>

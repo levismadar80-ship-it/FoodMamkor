@@ -121,7 +121,7 @@ export function HomeFeaturedProducer({ featured }) {
 
         {/* editorial text — end column */}
         <FadeInSection className="md:col-span-7" delay={0.1}>
-          <p className="flex items-center gap-3 text-sm font-medium tracking-[0.14em] text-accent mb-1">
+          <p className="flex items-center gap-3 text-sm font-medium text-accent mb-1">
             {t("eyebrow")}
             <span className="inline-block w-8 h-px bg-accent" aria-hidden="true" />
           </p>
@@ -175,7 +175,7 @@ export function HomeHowItWorks() {
       <FadeInSection>
         {/* MEH-788 copy-Δ: P5-v2 lock split the old heading into eyebrow
             ("איך זה עובד", matches the anchor id) + H2 ("שלושה צעדים"). */}
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted text-center mb-2">
+        <p className="text-sm font-medium text-fg-muted text-center mb-2">
           {t("home.how_it_works.eyebrow")}
         </p>
         <h2 className="font-headline-lg text-headline-lg text-text text-center mb-10">
@@ -210,7 +210,7 @@ export function HomeComparisonTeaser() {
   return (
     <section className="max-w-3xl mx-auto px-4 section-y text-center">
       <FadeInSection>
-        <p className="text-sm font-medium tracking-[0.14em] text-fg-muted mb-2">
+        <p className="text-sm font-medium text-fg-muted mb-2">
           {t("eyebrow")}
         </p>
         <h2
