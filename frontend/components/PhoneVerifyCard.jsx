@@ -87,11 +87,12 @@ export default function PhoneVerifyCard({ onVerified }) {
       </p>
       <p className="text-xs text-fg-muted mb-3">{t("description")}</p>
 
+      {/* MEH-1103: send + confirm gain min-h-[44px] (WCAG 2.5.5). */}
       <button
         type="button"
         onClick={handleSend}
         disabled={sending || cooldown > 0}
-        className="btn-whatsapp-outline text-sm rounded-[8px] px-4 py-2 disabled:opacity-50"
+        className="btn-whatsapp-outline min-h-[44px] text-sm rounded-[8px] px-4 py-2 disabled:opacity-50"
       >
         {sendLabel}
       </button>
@@ -118,7 +119,7 @@ export default function PhoneVerifyCard({ onVerified }) {
               type="button"
               onClick={handleConfirm}
               disabled={confirming || code.length !== OTP_LENGTH}
-              className="bg-primary text-white text-sm rounded-[8px] px-4 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
+              className="bg-primary text-white min-h-[44px] text-sm rounded-[8px] px-4 py-2 font-medium hover:bg-primary-dark transition disabled:opacity-50"
             >
               {confirming ? t("confirming") : t("confirm_cta")}
             </button>

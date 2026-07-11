@@ -3482,6 +3482,11 @@
         "banner": "You have unsaved changes",
         "confirm": "You have unsaved changes. Leave without saving?"
       },
+      "insights_zero_state": {
+        "title": "Your page isn't published yet",
+        "body": "Once it's approved, views and inquiries will appear here.",
+        "cta": "Complete your profile"
+      },
       "nav": {
         "aria": "Dashboard navigation",
         "overview": "Overview",
@@ -3570,10 +3575,6 @@
         "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
-        "settings": {
-          "title": "Edit profile",
-          "sub": "Update business details, deliveries, and photos"
-        },
         "add_event": {
           "title": "Add an event",
           "sub": "Workshop, tour, open days, etc."
@@ -3583,11 +3584,11 @@
           "sub": "This is how customers see it"
         },
         "group_buys": {
-          "title": "My group buys",
+          "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
         },
         "recipes": {
-          "title": "Recipes",
+          "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
         }
       },
@@ -3639,6 +3640,8 @@
         "simple_cards": {
           "followers_label": "Followers",
           "followers_sub_template": "+{count} this week",
+          "followers_zero_prefix": "No followers yet — ",
+          "followers_zero_share": "share your page",
           "rating_label": "Average rating",
           "rating_sub_template": "From {count} reviews"
         },
