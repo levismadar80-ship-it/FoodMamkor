@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { MapPinLine, Rows } from "@phosphor-icons/react";
+import { CaretDown, MapPinLine, Rows } from "@phosphor-icons/react";
 
 import CitySearch from "@/components/CitySearch";
 import LocationModal from "@/components/LocationModal";
@@ -422,16 +422,29 @@ export default function MapPage() {
                   <p className="text-[11px] text-fg-muted mt-0.5">{t("map.client.subhead", { region: mapRegion })}</p>
                 )}
               </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                aria-label={t("map.client.sort.aria_label")}
-                className="text-xs text-fg-muted bg-transparent border border-border rounded-md px-2 py-1 focus:border-primary focus:outline-none"
-              >
-                <option value="default">{t("map.client.sort.nearest")}</option>
-                <option value="rating">{t("map.client.sort.top_rated")}</option>
-                <option value="newest">{t("map.client.sort.newest")}</option>
-              </select>
+              {/* MEH-1110: borderless text+chevron sort control — appearance-none
+                  hides the native arrow (CaretDown is the affordance); min-h-[44px]
+                  is the AA tap floor and -my-2.5 keeps the count row compact
+                  (MEH-825 pattern). Keyboard focus uses a ring (box-shadow),
+                  NOT text-decoration — underline is unreliable on native <select>. */}
+              <div className="relative inline-flex items-center shrink-0 -my-2.5">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  aria-label={t("map.client.sort.aria_label")}
+                  className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                >
+                  <option value="default">{t("map.client.sort.nearest")}</option>
+                  <option value="rating">{t("map.client.sort.top_rated")}</option>
+                  <option value="newest">{t("map.client.sort.newest")}</option>
+                </select>
+                <CaretDown
+                  size={14}
+                  weight="bold"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute end-1 text-primary"
+                />
+              </div>
             </div>
             {cardList}
           </div>
