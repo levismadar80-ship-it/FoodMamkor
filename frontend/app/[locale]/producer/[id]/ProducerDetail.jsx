@@ -75,7 +75,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const vacationReturnLabel = getVacationReturnLabel(producer, t, locale);
   // MEH-815: imageless profiles render the Tinted Masthead hero (name as h1);
   // ProducerHeader omits its own name h1 in that case to keep the name singular.
-  // MEH-1122 (Task D): blank/whitespace image entries are filtered out so a
+  // MEH-1121 (Task D): blank/whitespace image entries are filtered out so a
   // producer with only empty strings is treated as imageless — hasImages and
   // the gallery prop below both derive from this one list (single owner).
   const images = getRenderableImages(producer.images);

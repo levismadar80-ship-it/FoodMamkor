@@ -14,7 +14,7 @@ export function buildShareUrl(producer) {
 }
 
 /**
- * MEH-1122 (MEH-1074 Task D): the renderable image list for the gallery.
+ * MEH-1121 (MEH-1074 Task D): the renderable image list for the gallery.
  *
  * A producer whose `images` array holds only blank/whitespace entries (`[""]`,
  * `[null]`, `["  "]`) is effectively imageless — but `images.length` counted
