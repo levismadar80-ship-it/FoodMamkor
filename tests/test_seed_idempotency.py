@@ -10,10 +10,10 @@ from seed_data import CATEGORIES, seed_categories
 
 from app.models.models import Category
 
-# "קוסמטיקה טבעית" is the 12th entry — id 12 in production (the MEH-1104 row).
+# 12th entry in CATEGORIES == id 12 in production (the MEH-1104 cream row).
 CREAM_ID = 12
-CREAM_NAME = "קוסמטיקה טבעית"
-OLD_CREAM_NAME = "קרמים ושמנים"
+CREAM_NAME = CATEGORIES[CREAM_ID - 1][0]  # tracks the live seed name automatically
+OLD_CREAM_NAME = "pre-meh1098-old-name"   # any string that differs from CREAM_NAME
 
 
 def _rows(db):
