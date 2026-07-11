@@ -70,6 +70,10 @@ describe("Edit page unsaved-changes guard (MEH-1100)", () => {
     // Clean page: no banner.
     expect(screen.queryByTestId("unsaved-banner")).not.toBeInTheDocument();
 
+    // MEH-1116: cards start collapsed inside the accordion — expand the
+    // questions card first (role queries skip hidden panels).
+    fireEvent.click(screen.getByTestId("accordion-questions"));
+
     // Edit a custom question → its derived dirty flag lifts to the page.
     fireEvent.change(screen.getByPlaceholderText(Q.placeholder_1), {
       target: { value: "מה כשר אצלכם?" },
