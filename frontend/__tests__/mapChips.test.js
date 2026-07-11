@@ -20,11 +20,13 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
   });
 
   it("includes the four spec category chips with Hebrew labels", () => {
+    // MEH-1082: labels unified with the app taxonomy (matches arrays keep the
+    // legacy DB names — see the dbCategories fixture + resolveCategoryId tests).
     const labels = CATEGORY_CHIPS.map((c) => c.label);
-    expect(labels).toContain("בשר ועוף");
+    expect(labels).toContain("בשר ודגים");
     expect(labels).toContain("ירקות ופירות");
     expect(labels).toContain("חלב וגבינות");
-    expect(labels).toContain("לחם ומאפה");
+    expect(labels).toContain("לחמים ואפייה");
   });
 
   it("includes all expected toggle chip keys", () => {

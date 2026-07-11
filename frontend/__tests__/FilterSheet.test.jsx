@@ -60,7 +60,7 @@ describe("FilterSheet (MEH-1075)", () => {
       "ללא לקטוז",
       "אורגני",
       "גראס פד",
-      "משלוח אליי",
+      "משלוח",
       "מאומתים",
     ]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();

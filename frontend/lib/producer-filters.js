@@ -1,12 +1,16 @@
 // MEH-657: dietary/trust chips are text-only (Emoji LOCK v2 / a11y) — no icon glyphs.
+// MEH-1082: shared attribute labels come from ATTRIBUTE_LABELS (unified with the
+// /map TOGGLE_CHIPS); `kosher` is /producers-only so its label stays local.
+import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
+
 export const CHIPS_CONFIG = [
   { key: "kosher",        label: "כשר" },
-  { key: "organic",       label: "אורגני" },
-  { key: "gluten_free",   label: "ללא גלוטן" },
-  { key: "vegan",         label: "טבעוני" },
-  { key: "lactose_free",  label: "ללא לקטוז" },
-  { key: "has_delivery",  label: "משלוח" },
-  { key: "verified",      label: "מאומת בלבד" },
+  { key: "organic",       label: ATTRIBUTE_LABELS.organic },
+  { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free },
+  { key: "vegan",         label: ATTRIBUTE_LABELS.vegan },
+  { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free },
+  { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery },
+  { key: "verified",      label: ATTRIBUTE_LABELS.verified },
 ];
 
 export const CHIPS_DEFAULT = {
