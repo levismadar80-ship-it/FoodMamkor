@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
-import { Package } from "@phosphor-icons/react";
-
 import api from "@/lib/api";
+import { optimizeCloudinary } from "@/lib/cloudinary";
 import DeliveryBlock from "@/components/DeliveryBlock";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
@@ -162,44 +161,56 @@ export default function ProducerSections({
       {producer.products?.length > 0 && (
         <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {producer.products.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-md p-4 border border-border flex gap-3 items-start"
-              >
-                {product.image_url ? (
-                  <div className="relative w-16 h-16 shrink-0 rounded-sm overflow-hidden bg-green-50">
-                    <Image
-                      src={product.image_url}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-16 h-16 shrink-0 rounded-sm bg-green-50 flex items-center justify-center">
-                    <Package size={28} className="text-fg-muted/60" aria-hidden="true" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-text">{product.name}</p>
-                  {product.description && (
-                    <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
+          {/* MEH-1126 (Task I): image-first product cards. Equal-height cells
+              (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+            {producer.products.map((product) => {
+              // Cloudinary 4:3 when a photo exists; otherwise a typographic card
+              // (name in Frank Ruhl on a primary tint, mirroring the MEH-815
+              // masthead idiom) — never a generic package icon.
+              const img = product.image_url
+                ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
+                : null;
+              const price =
+                product.price_min != null && product.price_max != null
+                  ? `₪${Number(product.price_min)}–₪${Number(product.price_max)}`
+                  : product.price_min != null
+                    ? `₪${Number(product.price_min)}`
+                    : product.price_range || null;
+              return (
+                <div
+                  key={product.id}
+                  className="bg-white rounded-md border border-border overflow-hidden flex flex-col"
+                >
+                  {img ? (
+                    <div className="relative w-full aspect-[4/3] bg-green-50">
+                      <Image
+                        src={img}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 768px) 50vw, 100vw"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-[4/3] bg-primary/[0.06] flex items-center justify-center p-4">
+                      <p className="font-headline-lg text-xl md:text-2xl font-black text-text text-center leading-tight line-clamp-3">
+                        {product.name}
+                      </p>
+                    </div>
                   )}
-                  {(() => {
-                    if (product.price_min != null && product.price_max != null)
-                      return <p className="text-accent font-medium mt-2">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
-                    if (product.price_min != null)
-                      return <p className="text-accent font-medium mt-2">₪{Number(product.price_min)}</p>;
-                    if (product.price_range)
-                      return <p className="text-accent font-medium mt-2">{product.price_range}</p>;
-                    return null;
-                  })()}
+                  <div className="p-4 flex-1 flex flex-col">
+                    {/* imaged cards carry the name here; the imageless card already
+                        shows it as the typographic hero above, so it's not repeated. */}
+                    {img && <p className="font-medium text-text">{product.name}</p>}
+                    {product.description && (
+                      <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
+                    )}
+                    {price && <p className="text-accent font-medium mt-2">{price}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
