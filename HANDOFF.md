@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1120 (Task B): unify verification badge — TrustBadge recognition-only (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1120-unify-verification-badge` off `origin/staging`. YELLOW (touches central `ProducerCard.jsx`). `Refs MEH-1074 · Closes MEH-1120`.
+- **Root cause:** `ProducerHeader.jsx:50` `<BadgeRow>` (verification_tier seal, ADR-022) + `:52` `<TrustBadge>` both fired; TrustBadge tier-3 = "עסק מאומת" duplicated the BadgeRow "מאומת" seal (same on `ProducerCard.jsx:291`). tier-2 "מספר מאומת" (phone) read as business verification.
+- **Fix:** `TrustBadge.jsx` self-gates to **tier ≥ 4** (recognition-only: 4 community-leader, 5 ambassador); tiers 2/3 → null everywhere. `ProducerCard.jsx` gate `>=3`→`>=4`. `ProducerHeader.jsx` comments updated. `lib/badges.js`/schema untouched. `TrustBadge.test.jsx` rewritten.
+- **Verify:** build exit 0 · TrustBadge+ProducerCard+BadgeRow+ProducerHeaderTrustStrip 68 passed · 0 physical RTL. **Sapir mobile QA gate** (one verification chip in header, ambassador chip still shows for tier-5) — sandbox can't screenshot preview (proxy blocks *.vercel.app CONNECT, MEH-360 class); draft until Sapir QA. Automated adversarial-review + runner E2E gate on the PR.
+
 ## 2026-07-11 — MEH-1113: unify inbound contact routing (audit-fix batch MEH-1112→MEH-1113, ticket 2 of 2) — PR open
 
 - **Branch:** `feature/meh-1113-contact-unify` off `origin/staging` (post-MEH-1112 merge, `fb461dfa`, divergence 0). YELLOW/ADR-016 v2 — backend optional-field + frontend copy/select; no migration/auth/env. Batch authority: auto-merge on CI green + self-QA screenshots. `Closes MEH-1113`.
@@ -13,7 +20,7 @@
 - **Verify:** backend validator/422/label/default unit-checked + ruff clean (full pytest on CI — local Postgres admin is permission-gated in the sandbox) · build exit 0 · lint 0 errors · vitest 8 passed · 0 physical RTL · Playwright self-QA 3 states (screenshots `docs/audits/screenshots/2026-07-meh1113-qa/`): (a) default select = שאלה כללית, (b) `?topic=business` → prefilled פנייה של בית עסק, (c) for-businesses footer = form-link + `contact@mehamakor.co.il`, 0 Instagram in the question line (site footer IG untouched).
 - **Batch complete** after this merges — both audit tickets shipped.
 
-## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — PR open
+## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — MERGED (PR #1614)
 
 - **Branch:** `feature/meh-1117-questionchips-tokens` off `origin/staging` (synced post-E/F merge). GREEN autonomous. `Refs MEH-1074 · Closes MEH-1117`.
 - **Shipped:** `WhatsAppQuestionChips.jsx` — label `#6B6B6B`→`text-fg-muted`; chip `<a>` inline `border/radius/padding/fontSize` → `border border-border rounded-xl px-3 py-1.5 text-sm` (14px interactive floor, MEH-1103; `rounded-xl`=20px token exactly); `minBlockSize:44px` kept. No copy/logic change. MEH-1103 didn't cover this file (verified) — genuine, not a fold.
