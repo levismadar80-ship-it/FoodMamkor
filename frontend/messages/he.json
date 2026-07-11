@@ -3739,7 +3739,7 @@
       "edit_accordion": {
         "bio_present": "יש תיאור לעסק",
         "bio_missing": "עוד אין תיאור",
-        "questions_summary": "{count, plural, =0 {עוד אין שאלות מותאמות} one {שאלה מותאמת אחת} other {# שאלות מותאמות}}",
+        "questions_summary": "{count, plural, =0 {עוד אין שאלות מותאמות} one {שאלה מותאמת אחת} two {שתי שאלות מותאמות} other {# שאלות מותאמות}}",
         "contact_phone_ok": "טלפון ✓",
         "contact_primary": "{channel} ראשי",
         "channel_whatsapp": "וואטסאפ",
@@ -3749,10 +3749,10 @@
         "channel_website": "אתר",
         "channel_facebook": "פייסבוק",
         "channel_external_order": "טופס הזמנות",
-        "categories_summary": "{count, plural, =0 {עוד לא נבחרו קטגוריות} one {קטגוריה אחת} other {# קטגוריות}}",
-        "images_summary": "{count, plural, =0 {עוד אין תמונות} one {תמונה אחת} other {# תמונות}}",
+        "categories_summary": "{count, plural, =0 {עוד לא נבחרו קטגוריות} one {קטגוריה אחת} two {שתי קטגוריות} other {# קטגוריות}}",
+        "images_summary": "{count, plural, =0 {עוד אין תמונות} one {תמונה אחת} two {שתי תמונות} other {# תמונות}}",
         "location_missing": "עוד לא הוגדר מיקום",
-        "products_summary": "{count, plural, =0 {עוד אין מוצרים} one {מוצר אחד} other {# מוצרים}}"
+        "products_summary": "{count, plural, =0 {עוד אין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}"
       },
       "contact_channels": {
         "heading": "ערוצי קשר",
