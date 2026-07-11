@@ -9,7 +9,7 @@ generic SaaS checklist shipped with the workflow.
 
 ## I. Core Design Philosophy
 
-- [ ] **Users first.** Every decision serves a home cook, hungry shopper, or small producer — not a PM dashboard user.
+- [ ] **Users first.** Every decision serves a consumer discovering local food or a licensed business owner (בעלת עסק) — not a PM dashboard user. (Licensed businesses only per CONTEXT.md §2 — no home cooks.)
 - [ ] **Warm, editorial feel.** Think cookbook or farmers-market newsletter, not SaaS admin panel.
 - [ ] **Meticulous craft.** Spacing, alignment, and typography are tight. No stray pixels.
 - [ ] **Fast on a 3G phone in a market.** Images lazy-load, interactions ≤ 100ms, no layout shift.
@@ -131,11 +131,6 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Gallery: horizontal scroll RTL-correct, swipe-able, images `f_auto,q_auto` via Cloudinary.
 - [ ] Sidebar: no `צרי קשר` header — primary CTA speaks for itself.
 - [ ] Vacation banner: slate (`#64748B`), **not amber**.
-
-### /neighbor (home cooks)
-- [ ] Same card pattern as producers but differentiated with subtle accent color or icon.
-- [ ] Moderation status visible to the owner only, never leaked to consumer view.
-- [ ] Empty state explains how to list a home product.
 
 ## VII. Hebrew copy quality
 
