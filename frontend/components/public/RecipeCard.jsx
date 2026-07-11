@@ -65,9 +65,9 @@ export default function RecipeCard({ slug, recipe }) {
         )}
       </div>
       <div className="p-4 flex flex-col gap-1">
-        {/* Eyebrow — uppercase, tracked, gold accent (Assembly v2). Hebrew
+        {/* Eyebrow — gold accent (Assembly v2; tracking dropped per MEH-867). Hebrew
             literal kept hardcoded per MEH-911 constraint (i18n MEH-366 mid-flight). */}
-        <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-accent">
+        <p className="text-[11px] font-medium text-accent">
           מתכון
         </p>
         <h3 className="font-headline-md font-bold text-[20px] text-text leading-snug line-clamp-2">

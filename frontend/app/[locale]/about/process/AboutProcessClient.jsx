@@ -84,7 +84,7 @@ export default function AboutProcessClient() {
       <span aria-hidden className="numeric font-english italic font-semibold text-accent text-[21px]">
         {n}
       </span>
-      <span className="font-body-md font-medium text-[11px] tracking-[0.18em] text-fg-muted uppercase">
+      <span className="font-body-md font-medium text-[11px] text-fg-muted">
         {children}
       </span>
     </div>

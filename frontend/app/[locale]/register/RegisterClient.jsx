@@ -261,7 +261,7 @@ function RegisterPageBody() {
         <div className="mb-6 text-start">
           {/* MEH-929: gold eyebrow rule — exact parity with LoginClient's
               eyebrow (LoginClient.jsx:161-164). */}
-          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium tracking-[0.16em] mb-3">
+          <span className="inline-flex items-center gap-3 text-accent text-[11px] font-medium mb-3">
             <span className="h-px w-7 bg-accent" aria-hidden="true" />
             {t("auth.register.consumer.eyebrow")}
           </span>
