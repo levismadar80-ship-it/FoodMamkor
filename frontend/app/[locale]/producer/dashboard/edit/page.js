@@ -34,6 +34,7 @@ import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
+import WhatsThis from "@/components/WhatsThis";
 import Input from "@/components/ui/Input";
 import AddressSearch from "@/components/AddressSearch";
 import ProductsSection from "@/components/ProductsSection";
@@ -139,26 +140,35 @@ export default function ProducerDashboardEditPage() {
         reportDirty={reportDirty}
       />
 
-      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-      <ContactChannelsCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "contact" step deep-link. */}
+      <div id="profile-contact" className="scroll-mt-24">
+        <ContactChannelsCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
-      {/* Edit-tab chunk A — producer-facing categories editor */}
-      <CategoriesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* Edit-tab chunk A — producer-facing categories editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "categories+location" step. */}
+      <div id="profile-categories" className="scroll-mt-24">
+        <CategoriesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
-      {/* Edit-tab chunk B — producer-facing gallery images editor */}
-      <ImagesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      {/* Edit-tab chunk B — producer-facing gallery images editor.
+          MEH-1106: id anchor = ProfileCompletenessCard "photo" step deep-link. */}
+      <div id="profile-images" className="scroll-mt-24">
+        <ImagesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </div>
 
       {/* Edit-tab chunk C — producer-facing location/coords editor.
           MEH-213: only physical-location producers have a map pin; delivery-only
@@ -175,8 +185,11 @@ export default function ProducerDashboardEditPage() {
       {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
           fetching (no profile prop): full CRUD against /producers/me/products.
           Relocated from settings/page.jsx, where it was defined but never
-          mounted. */}
-      <ProductsSection />
+          mounted.
+          MEH-1106: id anchor = ProfileCompletenessCard "3 products" step deep-link. */}
+      <div id="profile-products" className="scroll-mt-24">
+        <ProductsSection />
+      </div>
     </div>
   );
 }
@@ -298,6 +311,8 @@ const METHOD_FIELD = {
 
 function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.contact_channels");
+  // MEH-1115: point-of-decision explainers (top-level whats_this namespace).
+  const tWhat = useTranslations("whats_this");
   const seed = {
     phone: profile?.phone || "",
     instagram: profile?.instagram || "",
@@ -388,10 +403,14 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
         <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
           onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />
+        {/* MEH-1115: what an external order form is, right under its field. */}
+        <WhatsThis content={tWhat("order_form")} testId="whats-this-order-form" />
       </div>
 
       <fieldset className="mt-5">
-        <legend className="text-sm font-medium text-text mb-2">{t("primary_legend")}</legend>
+        <legend className="text-sm font-medium text-text">{t("primary_legend")}</legend>
+        {/* MEH-1115: what the primary channel means, at the point of choice. */}
+        <WhatsThis content={tWhat("primary_channel")} className="mb-1" testId="whats-this-primary-channel" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PRIMARY_METHODS.map((m) => {
             // MEH-1093 F5: disable a method whose backing field is empty up-front
