@@ -3695,6 +3695,13 @@
         "checklist_aria": "התקדמות השלמת הפרופיל",
         "checklist_done": "הושלם",
         "checklist_todo": "עדיין חסר",
+        "checklist_sub": "עוד כמה צעדים והפרופיל שלכם מוכן לקבל פניות",
+        "steps": {
+          "image": "תמונה ראשית",
+          "location": "קטגוריות ומיקום",
+          "products": "3 מוצרים בקטלוג",
+          "contact": "פרטי קשר"
+        },
         "fields": {
           "city": "עיר",
           "coords": "מיקום על המפה",

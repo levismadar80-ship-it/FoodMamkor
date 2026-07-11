@@ -3669,6 +3669,16 @@
         "cta": "Complete profile",
         "cta_aria": "Complete your profile",
         "ring_aria": "Profile completeness: {percent}%",
+        "checklist_aria": "Profile completion progress",
+        "checklist_done": "Done",
+        "checklist_todo": "Still needed",
+        "checklist_sub": "A few more steps and your profile is ready for inquiries",
+        "steps": {
+          "image": "Main photo",
+          "location": "Categories & location",
+          "products": "3 products in your catalog",
+          "contact": "Contact details"
+        },
         "fields": {
           "city": "City",
           "coords": "Location on the map",
