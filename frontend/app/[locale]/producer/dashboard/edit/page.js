@@ -25,7 +25,7 @@
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PencilSimple, Warning, X } from "@phosphor-icons/react";
@@ -44,6 +44,17 @@ export default function ProducerDashboardEditPage() {
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
 
+  // MEH-1100: page-level unsaved-changes signal. Each card reports its own
+  // (pre-existing) dirty flag up via reportDirty(key, bool); the page only
+  // aggregates — no card save logic changes.
+  const [dirtyMap, setDirtyMap] = useState({});
+  const reportDirty = useCallback((key, isDirty) => {
+    setDirtyMap((m) =>
+      Boolean(m[key]) === Boolean(isDirty) ? m : { ...m, [key]: isDirty }
+    );
+  }, []);
+  const anyDirty = Object.values(dirtyMap).some(Boolean);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== "producer") {
@@ -52,6 +63,42 @@ export default function ProducerDashboardEditPage() {
     }
     api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading, router]);
+
+  // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
+  useEffect(() => {
+    if (!anyDirty) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [anyDirty]);
+
+  // MEH-1100 guard 2: in-app navigation. The App Router exposes no
+  // route-change events, so intercept anchor clicks at capture phase while
+  // dirty — this covers the tab nav, header, and BottomNav links alike.
+  // New-tab clicks (target=_blank / modifier keys) don't leave the page and
+  // pass through; same-path clicks (e.g. anchors) are ignored.
+  useEffect(() => {
+    if (!anyDirty) return;
+    const onClick = (e) => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = e.target.closest?.("a[href]");
+      if (!anchor || anchor.target === "_blank") return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin === window.location.origin && url.pathname === window.location.pathname) return;
+      if (!window.confirm(t("unsaved_guard.confirm"))) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [anyDirty, t]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
@@ -65,31 +112,52 @@ export default function ProducerDashboardEditPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
+      {/* MEH-1100: sticky unsaved-changes banner — sits just under the
+          layout's sticky tab nav (top-0 z-10, ~46px tall). */}
+      {anyDirty && (
+        <div
+          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex items-center gap-2 shadow-sm"
+          role="status"
+          data-testid="unsaved-banner"
+        >
+          <Warning size={16} className="text-primary shrink-0" aria-hidden="true" />
+          {t("unsaved_guard.banner")}
+        </div>
+      )}
+
       {/* MEH-56: AI bio writer panel */}
-      <BioPanelCard profile={profile} onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)} />
+      <BioPanelCard
+        profile={profile}
+        onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)}
+        reportDirty={reportDirty}
+      />
 
       {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
       <CustomQuestionsCard
         profile={profile}
         onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+        reportDirty={reportDirty}
       />
 
       {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
       <ContactChannelsCard
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+        reportDirty={reportDirty}
       />
 
       {/* Edit-tab chunk A — producer-facing categories editor */}
       <CategoriesCard
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+        reportDirty={reportDirty}
       />
 
       {/* Edit-tab chunk B — producer-facing gallery images editor */}
       <ImagesCard
         profile={profile}
         onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+        reportDirty={reportDirty}
       />
 
       {/* Edit-tab chunk C — producer-facing location/coords editor.
@@ -100,6 +168,7 @@ export default function ProducerDashboardEditPage() {
         <LocationCard
           profile={profile}
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
         />
       )}
 
@@ -118,7 +187,7 @@ export default function ProducerDashboardEditPage() {
 
 const MAX_QUESTIONS = 5;
 
-function CustomQuestionsCard({ profile, onSave }) {
+function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.custom_questions");
   const tRoot = useTranslations("dashboard.producer");
   const [questions, setQuestions] = useState(() => {
@@ -127,6 +196,19 @@ function CustomQuestionsCard({ profile, onSave }) {
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // MEH-1100: this card had no dirty flag — derive one by comparing the
+  // trimmed non-empty questions against the saved list (the exact payload
+  // handleSave sends), so a save clears it via the onSave profile patch.
+  const savedQuestions = profile?.custom_questions || [];
+  const currentPayload = questions.filter((q) => q.trim());
+  const dirty =
+    currentPayload.length !== savedQuestions.length ||
+    currentPayload.some((q, i) => q !== savedQuestions[i]);
+  useEffect(() => {
+    reportDirty("questions", dirty);
+    return () => reportDirty("questions", false);
+  }, [dirty, reportDirty]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -214,7 +296,7 @@ const METHOD_FIELD = {
   external_order: "external_order_form",
 };
 
-function ContactChannelsCard({ profile, onSave }) {
+function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.contact_channels");
   const seed = {
     phone: profile?.phone || "",
@@ -232,6 +314,11 @@ function ContactChannelsCard({ profile, onSave }) {
   const [errorMsg, setErrorMsg] = useState(null);
 
   const dirty = Object.keys(seed).some((k) => form[k] !== seed[k]);
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("contact", dirty);
+    return () => reportDirty("contact", false);
+  }, [dirty, reportDirty]);
 
   const upd = (field, value) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -374,7 +461,7 @@ function ContactChannelsCard({ profile, onSave }) {
 // Exported for isolation tests (EditTabCategoriesCard.test.jsx). Mounting the
 // whole page under jsdom hangs the vitest runner, so the cards are tested
 // directly — the default page export is unchanged.
-export function CategoriesCard({ profile, onSave }) {
+export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.categories");
   const [allCategories, setAllCategories] = useState([]);
   const seedIds = (profile?.categories || []).map((c) => c.id);
@@ -416,6 +503,11 @@ export function CategoriesCard({ profile, onSave }) {
   const dirty =
     seedIds.length !== selected.length ||
     seedIds.some((id) => !selected.includes(id));
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("categories", dirty);
+    return () => reportDirty("categories", false);
+  }, [dirty, reportDirty]);
 
   const toggle = (id) => {
     setSaved(false);
@@ -499,7 +591,7 @@ export function CategoriesCard({ profile, onSave }) {
 // ============================================================
 
 // Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
-export function ImagesCard({ profile, onSave }) {
+export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.images");
   const seed = profile?.images || [];
   const [images, setImages] = useState(seed);
@@ -513,6 +605,11 @@ export function ImagesCard({ profile, onSave }) {
   // would count as dirty, but this editor has no reorder — add/remove only).
   const dirty =
     seed.length !== images.length || seed.some((url, i) => url !== images[i]);
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("images", dirty);
+    return () => reportDirty("images", false);
+  }, [dirty, reportDirty]);
 
   // MEH-1099: shared upload path — the file input's onChange and the
   // dropzone's onDrop both feed here, so drag-drop reuses the exact
@@ -685,7 +782,7 @@ export function ImagesCard({ profile, onSave }) {
 // ============================================================
 
 // Exported for isolation tests (EditTabLocationCard.test.jsx) — see CategoriesCard.
-export function LocationCard({ profile, onSave }) {
+export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.location");
   const seedLat = profile?.lat ?? null;
   const seedLng = profile?.lng ?? null;
@@ -698,6 +795,11 @@ export function LocationCard({ profile, onSave }) {
 
   const dirty =
     coords.lat !== seedLat || coords.lng !== seedLng || coords.city !== seedCity;
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("location", dirty);
+    return () => reportDirty("location", false);
+  }, [dirty, reportDirty]);
 
   const handleSelect = (picked) => {
     setSaved(false);
@@ -779,7 +881,7 @@ export function LocationCard({ profile, onSave }) {
 // MEH-56: AI bio writer panel
 // ============================================================
 
-function BioPanelCard({ profile, onSave }) {
+function BioPanelCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.bio");
   const [source, setSource] = useState(profile.instagram || "");
   const [generatedBio, setGeneratedBio] = useState("");
@@ -787,6 +889,14 @@ function BioPanelCard({ profile, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  // MEH-1100: this card had no dirty flag — the losable state is a generated
+  // bio that hasn't been saved yet (typing a source alone costs nothing).
+  const dirty = Boolean(generatedBio) && !saved;
+  useEffect(() => {
+    reportDirty("bio", dirty);
+    return () => reportDirty("bio", false);
+  }, [dirty, reportDirty]);
 
   const generate = async () => {
     if (!source.trim()) return;

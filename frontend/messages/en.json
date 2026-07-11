@@ -3481,6 +3481,10 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "unsaved_guard": {
+        "banner": "You have unsaved changes",
+        "confirm": "You have unsaved changes. Leave without saving?"
+      },
       "insights_zero_state": {
         "title": "Your page isn't published yet",
         "body": "Once it's approved, views and inquiries will appear here.",
