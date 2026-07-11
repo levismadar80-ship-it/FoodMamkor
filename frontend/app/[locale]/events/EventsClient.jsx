@@ -125,20 +125,40 @@ export default function EventsPage() {
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("");
+  // MEH-1085 (DISC-08): city + category are deep-linkable — seeded from the
+  // URL on mount like `tab` above. A URL category is accepted only when it
+  // belongs to the initial tab's vocabulary, so a cross-tab share link can't
+  // silently filter to zero rows.
+  const [city, setCity] = useState(() => search.get("city") || "");
+  const [category, setCategory] = useState(() => {
+    const fromUrl = search.get("category") || "";
+    const vocab = initialTab === "experiences" ? EXPERIENCE_CATEGORIES : EVENT_CATEGORIES;
+    return vocab.some((c) => c.key === fromUrl) ? fromUrl : "";
+  });
 
   // Reset filters when switching tabs — the two tabs have different
   // category vocabularies, so keeping a cross-tab category would
-  // silently filter to zero rows.
+  // silently filter to zero rows. The URL-sync effect below mirrors the
+  // reset into the query string.
   const switchTab = (next) => {
     if (next === tab) return;
     setTab(next);
     setCategory("");
     setCity("");
-    const qs = next === "experiences" ? "?tab=experiences" : "";
-    router.replace(`/events${qs}`, { scroll: false });
   };
+
+  // MEH-1085 (DISC-08): single URL writer — the query string always mirrors
+  // {tab, city, category} (REUSES: lib/use-home-page.js updateURL pattern,
+  // MEH-1083), so filters survive refresh/share and the switchTab reset
+  // clears them from the URL too — a cross-tab category is never resurrected.
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (tab === "experiences") p.set("tab", "experiences");
+    if (city) p.set("city", city);
+    if (category) p.set("category", category);
+    const qs = p.toString();
+    router.replace(qs ? `/events?${qs}` : "/events", { scroll: false });
+  }, [tab, city, category, router]);
 
   useEffect(() => {
     load();

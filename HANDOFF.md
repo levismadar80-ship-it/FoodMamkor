@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1085: homepage empty state cause-aware + /events filters → URL — PR open (Refs MEH-1085; WAIT for Sapir merge)
+
+- **Branch:** `feature/meh-1085-empty-state-events-url` off `origin/staging` (`d03c389b`, clean cut, divergence 0). GREEN end-to-end per ticket; **merge stays Sapir-only per batch instruction** (auto-merge NOT assumed — awaiting Sapir's confirmation it's enabled). Closes audit findings DISC-07 + DISC-08 (MEH-1077).
+- **Phase 0 corrections (meta-patterns §1):** the ticket's DISC-07 evidence cited `he.json` `home.business_count`/`card_list.empty` — those are minimap keys; the real grid empty state is `HomeProducersGrid.jsx:142-160` with `home.producers.empty_heading/empty_subtext/explore_map` (he.json:436-438), single consumer (no cross-surface sharing → scope STOP not triggered). `filters` + `onClearCategory` already flow as props — no new mechanism.
+- **DISC-07:** cause-aware branch inside the existing empty block — `filters.category` active → new category copy + primary `button` on `onClearCategory`; geographic branch byte-identical. i18n ×3 he+en (`empty_heading_category`, `empty_subtext_category`, `clear_category_cta` — "נקו את הסינון", ADR-024 plural; **copy self-authored under GREEN authority — Sapir eyeballs in PR review**).
+- **DISC-08:** `EventsClient.jsx` — city/category seeded from URL on mount (category validated against the initial tab's vocabulary — cross-tab deep-link can't zero-filter); single URL-writer `useEffect([tab, city, category])` with `router.replace {scroll:false}`; `switchTab` keeps its reset but its manual `router.replace` moved into the effect (one URL owner). `?tab=` behavior unchanged.
+- **Verify:** failing-first `HomeEmptyStateCauseAware.test.jsx` 2✓ · full vitest **887 passed**/41 skipped · build exit 0 · 0 physical RTL · en-parity in-suite · live Playwright (375+desktop, local `next start` + seeded Postgres): category-empty → new copy + clear → grid "מציגים 5 מתוך 5"; geo-empty control unchanged; `/events?city=חיפה&category=סדנה` deep-link hydrates + survives refresh; tab switch → URL `?tab=experiences` only, city input cleared; return to events → no category resurrection. QA env note: mid-run Postgres/uvicorn died (earlier pkill cascade) — restarted and re-captured; first-pass frames were state-correct but data-empty.
+- **Sapir pending:** PR review + merge; mobile QA per new MANUAL_TESTING.md section (empty-state both branches, events deep-link, tab-reset).
+
 ## 2026-07-10 — MEH-1080 [T-A]: homepage category cards → links, 1:1 split — PR open (Refs MEH-1080; WAIT for Sapir merge)
 
 - **Branch:** `feature/meh-1080-homepage-category-links` off `origin/staging` (post T-B merge `82e25e9b` — dependency verified live: 14 `categoryFilter` refs in ProducersClient on staging). Card set = Sapir-approved 10 (editorial gate passed in-conversation); Leaf fallback for 4 glyph-less cards approved; labels stay hardcoded (mirror DB).
