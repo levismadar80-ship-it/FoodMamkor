@@ -2353,17 +2353,18 @@
         "explore": "גלו עסקים קרובים"
       },
       "contact": {
-        "heading": "דברי איתנו",
-        "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכן",
+        "heading": "דברו איתנו",
+        "subtitle": "שאלות, רעיונות, או סתם שלום — נשמח לשמוע מכם",
         "name_label": "שם מלא",
         "name_placeholder": "השם המלא שלך",
         "email_label": "אימייל",
         "email_placeholder": "you@example.com",
         "message_label": "איך נוכל לעזור?",
         "message_placeholder": "ספרו לנו על מה את רוצה לדבר...",
-        "submit": "שלחו",
+        "submit": "שליחה",
         "submit_loading": "בשליחה...",
-        "success_toast": "תודה! נחזור אליך בקרוב"
+        "success_toast": "תודה! נחזור אליך בקרוב",
+        "email_direct": "אפשר גם ישירות במייל:"
       }
     }
   },
@@ -4066,7 +4067,7 @@
       "verified": "מאומת",
       "declared": "מוצהר"
     },
-    "crosslink_from_about": "כך אנחנו מכירות כל בית עסק",
+    "crosslink_from_about": "כך אנחנו בודקות כל בית עסק",
     "hero": {
       "eyebrow": "תהליך הקבלה",
       "h1": "כל בית עסק כאן עובר דרכנו — <em>היכרות אישית</em>.",

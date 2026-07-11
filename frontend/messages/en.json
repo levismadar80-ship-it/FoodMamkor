@@ -2340,7 +2340,8 @@
         "message_placeholder": "Tell us what you'd like to talk about...",
         "submit": "Send",
         "submit_loading": "Sending...",
-        "success_toast": "Thanks! We'll get back to you soon"
+        "success_toast": "Thanks! We'll get back to you soon",
+        "email_direct": "Or reach us directly by email:"
       }
     }
   },
@@ -4040,7 +4041,7 @@
       "verified": "Verified",
       "declared": "Declared"
     },
-    "crosslink_from_about": "How we get to know every business",
+    "crosslink_from_about": "How we vet every business",
     "hero": {
       "eyebrow": "Our acceptance process",
       "h1": "Every business here goes through us — <em>a personal introduction</em>.",

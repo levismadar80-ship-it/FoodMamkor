@@ -138,6 +138,10 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-1112: /about polish (pull-quote column narrowed, testimonials section
+  // render-gated off, close-band CTA hierarchy, contact email fallback line)
+  // is an intentional visual change — this touch re-rides vrt-update.yml so the
+  // about-{desktop,mobile}-linux baselines regenerate on the runner (MEH-991 flow).
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");

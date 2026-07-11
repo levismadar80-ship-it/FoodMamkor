@@ -18,9 +18,17 @@ import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1112: visible email fallback next to the contact form (NN/g Contact-Us
+// guideline #1). CONTACT_EMAIL = NEXT_PUBLIC_CONTACT_EMAIL w/ fallback (MEH-653).
+import { CONTACT_EMAIL } from "@/lib/env.client";
 import ButtonSpinner from "@/components/ButtonSpinner";
 // MEH-788: gentle scroll-reveal on the content sections (hero excluded — LCP).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
+
+// MEH-1112: testimonials section render-gated OFF until real testimonials
+// exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
+// JSX + i18n keys kept intact for revival; flip to true when content lands.
+const SHOW_TESTIMONIALS = false;
 
 const TIP_KEYS = ["eggs", "grass_fed", "honey"];
 // gold Cormorant numerals — decorative, aria-hidden
@@ -162,8 +170,10 @@ export default function AboutPage() {
       </FadeInSection>
 
       {/* ======== Pull-quote divider (cream · offset to start edge · upright FRL) ======== */}
+      {/* MEH-1112: container narrowed max-w-6xl → max-w-3xl (matches the comparison
+          block below) so the offset blockquote no longer leaves >50% empty cream at 1440px. */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-6xl mx-auto px-4 md:px-12">
+        <div className="max-w-3xl mx-auto px-4 md:px-12">
           <blockquote className="font-headline-display font-normal text-primary-dark border-s-2 border-accent ps-6 md:ps-8 me-auto max-w-[16ch] md:max-w-[18ch] text-[clamp(28px,7vw,48px)] leading-[1.18] tracking-tight">
             {t("parallax.quote")}
           </blockquote>
@@ -289,26 +299,28 @@ export default function AboutPage() {
         </div>
       </FadeInSection>
 
-      {/* ======== 06 — Testimonials (slim invitation band) ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
-        <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
-          <div className="border-y border-border py-12 md:py-14">
-            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
-              {t("testimonials.heading")}
-            </h2>
-            <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
-              {t("testimonials.subtitle")}
-            </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 mt-6 text-primary font-semibold hover:underline"
-            >
-              {t("testimonials.cta")}
-              <ArrowLeft size={18} aria-hidden="true" />
-            </Link>
+      {/* ======== 06 — Testimonials (slim invitation band) — MEH-1112 render-gated ======== */}
+      {SHOW_TESTIMONIALS && (
+        <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-4 md:px-12 text-center">
+            <div className="border-y border-border py-12 md:py-14">
+              <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight max-w-[18ch] mx-auto">
+                {t("testimonials.heading")}
+              </h2>
+              <p className="font-body-md text-fg-muted text-base md:text-lg mt-4 max-w-[42ch] mx-auto">
+                {t("testimonials.subtitle")}
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 mt-6 text-primary font-semibold hover:underline"
+              >
+                {t("testimonials.cta")}
+                <ArrowLeft size={18} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
-        </div>
-      </FadeInSection>
+        </FadeInSection>
+      )}
 
       {/* ======== 07 — Close (consumer-primary CTA · business demoted) ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-green-50 border-y border-border py-9 md:py-14 scroll-mt-24">
@@ -321,26 +333,28 @@ export default function AboutPage() {
             {t("cta.explore")}
             <ArrowLeft size={20} aria-hidden="true" />
           </Link>
-          {/* demoted business action → business hub (cta.heading kept verbatim) */}
+          {/* business pitch line — muted lead-in for the demoted actions (cta.heading verbatim) */}
           <p className="mt-6 font-body-md text-sm text-fg-muted max-w-[44ch] mx-auto leading-relaxed">
-            {t("cta.heading")}{" "}
+            {t("cta.heading")}
+          </p>
+          {/* MEH-1112: two secondary actions (business hub + MEH-534 acceptance-process
+              cross-link) demoted to one quiet muted row — small, underlined, non-bold —
+              so only "גלו עסקים קרובים" reads as the primary CTA (per MEH-1049/MEH-907). */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 font-body-md text-sm text-fg-muted">
             <Link
               href="/about/for-businesses"
-              className="text-primary font-semibold underline underline-offset-4 hover:text-primary-dark rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {t("cta.register")}
             </Link>
-          </p>
-          {/* MEH-534: cross-link to the S11 acceptance-process page */}
-          <p className="mt-4">
+            <span aria-hidden="true" className="text-border">·</span>
             <Link
               href="/about/process"
-              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               {tProcess("crosslink_from_about")}
-              <ArrowLeft size={18} aria-hidden="true" />
             </Link>
-          </p>
+          </div>
         </div>
       </FadeInSection>
 
@@ -434,6 +448,20 @@ export default function AboutPage() {
               </p>
             )}
           </form>
+
+          {/* MEH-1112: visible email fallback (NN/g Contact-Us guideline #1 — a
+              form-only surface reads as unreachable). break-all + dir="ltr" per the
+              MEH-905 render pattern (ForgotPasswordClient / ContactClient). */}
+          <p className="mt-6 font-body-md text-sm text-fg-muted">
+            {t("contact.email_direct")}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-primary hover:underline break-all"
+              dir="ltr"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </p>
         </div>
       </FadeInSection>
 
