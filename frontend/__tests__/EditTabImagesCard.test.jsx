@@ -7,7 +7,7 @@
  * both), and save.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, createEvent, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -45,6 +45,43 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     const file = new File(["x"], "b.png", { type: "image/png" });
     fireEvent.change(input, { target: { files: [file] } });
 
+    await waitFor(() => expect(container.querySelectorAll("img")).toHaveLength(2));
+    expect(api.post).toHaveBeenCalledWith("/upload/image", expect.anything());
+  });
+
+  // MEH-1099: drag-drop feeds the same uploadFiles → POST /upload/image path.
+  it("uploads a dropped image file and filters out non-images", async () => {
+    const { container } = renderCard(["https://cdn/a.jpg"]);
+    const zone = screen.getByTestId("images-dropzone");
+
+    // Drag-over flips to the drop-state label.
+    fireEvent.dragOver(zone);
+    expect(screen.getByText(I.drop_here)).toBeInTheDocument();
+
+    // dragLeave onto a child node must NOT clear the drop state (flicker
+    // guard) — only a true exit (relatedTarget outside the zone) clears it.
+    // jsdom drops relatedTarget from drag-event init → set it explicitly.
+    const leaveToChild = createEvent.dragLeave(zone);
+    Object.defineProperty(leaveToChild, "relatedTarget", { value: zone.firstChild });
+    fireEvent(zone, leaveToChild);
+    expect(screen.getByText(I.drop_here)).toBeInTheDocument();
+    const leaveOutside = createEvent.dragLeave(zone);
+    Object.defineProperty(leaveOutside, "relatedTarget", { value: document.body });
+    fireEvent(zone, leaveOutside);
+    expect(screen.getByText(I.add_cta)).toBeInTheDocument();
+
+    fireEvent.dragOver(zone);
+    // Non-image drop → filtered silently, no upload call.
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [new File(["%PDF"], "doc.pdf", { type: "application/pdf" })] },
+    });
+    expect(api.post).not.toHaveBeenCalled();
+
+    // Image drop → uploads and joins the grid.
+    fireEvent.dragOver(zone);
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [new File(["x"], "drop.png", { type: "image/png" })] },
+    });
     await waitFor(() => expect(container.querySelectorAll("img")).toHaveLength(2));
     expect(api.post).toHaveBeenCalledWith("/upload/image", expect.anything());
   });
