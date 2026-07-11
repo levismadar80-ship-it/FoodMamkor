@@ -63,15 +63,18 @@ export default function ContactSidebar({
 
         {/* Contact buttons — 2-per-row dynamic grid */}
         <div className="grid grid-cols-2 gap-2 mb-4">
+          {/* MEH-1049 (MEH-1074 Task A): phone is a full-width row (col-span-2)
+              with no truncate — the number must always be fully readable.
+              Long values wrap instead of clipping to an ellipsis. */}
           {producer.phone && (
             <a
               href={`tel:${producer.phone}`}
-              className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
+              className="col-span-2 flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
               dir="ltr"
               onClick={() => trackContactClick(producer.id, "phone")}
             >
               <Phone size={18} className="text-primary shrink-0" />
-              <span className="truncate">{producer.phone}</span>
+              <span dir="ltr">{producer.phone}</span>
             </a>
           )}
           {producer.instagram?.trim() && (() => {
@@ -81,16 +84,19 @@ export default function ContactSidebar({
             // dir override). The URL path also drops the @.
             const handle = producer.instagram.trim().replace(/^@+/, "");
             return (
+              // MEH-1049 (MEH-1074 Task A): full-width row, no truncate — the
+              // handle stays readable; a long handle wraps (break-all) rather
+              // than clipping.
               <a
                 href={`https://instagram.com/${handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm overflow-hidden"
+                className="col-span-2 flex items-center justify-center gap-2 border border-border text-text px-3 py-3 rounded-md hover:bg-green-50 transition text-sm"
                 dir="ltr"
                 onClick={() => trackContactClick(producer.id, "instagram")}
               >
                 <InstagramLogo size={18} className="text-primary shrink-0" />
-                <span className="truncate min-w-0">@{handle}</span>
+                <span className="min-w-0 break-all" dir="ltr">@{handle}</span>
               </a>
             );
           })()}
