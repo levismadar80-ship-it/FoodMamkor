@@ -50,9 +50,8 @@ const BASELINE = new Set([
   "auth.register.producer.story_card.body",
   "auth.register.producer.story_card.title",
   "auth.register.producer.validation.license_required",
-  "dashboard.producer.completeness.checklist_aria",
-  "dashboard.producer.completeness.checklist_done",
-  "dashboard.producer.completeness.checklist_todo",
+  // MEH-1106: completeness.checklist_aria/done/todo translated to en (the
+  // 4-step checklist renders in both locales — the he-only gate is gone).
   // MEH-992 — group-buy form clarity copy (he-first per ADR-024; en wave under MEH-472).
   "group_buys.dashboard.form.concept_intro",
   "group_buys.dashboard.form.price_helper",

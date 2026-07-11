@@ -2341,7 +2341,14 @@
         "submit": "Send",
         "submit_loading": "Sending...",
         "success_toast": "Thanks! We'll get back to you soon",
-        "email_direct": "Or reach us directly by email:"
+        "email_direct": "Or reach us directly by email:",
+        "topic_label": "Inquiry topic",
+        "topic_options": {
+          "general": "General question",
+          "business": "Business inquiry",
+          "correction": "Correcting site info",
+          "other": "Other"
+        }
       }
     }
   },
@@ -2794,8 +2801,8 @@
     },
     "share_button": {
       "default_message": "I found {name} on Mehamakor — {url}",
-      "share_aria": "Share the business on WhatsApp",
-      "share_to_friend": "Send to a friend"
+      "share_aria": "Share with friends on WhatsApp",
+      "share_to_friend": "Share with friends"
     },
     "question_chips": {
       "my_area": "My area",
@@ -2965,8 +2972,25 @@
         "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
       }
     },
-    "footer_intro_prefix": "Still have a question? Write to me on Instagram",
-    "footer_intro_suffix": "or join now:",
+    "showcase": {
+      "label": "Example",
+      "heading": "What a complete profile looks like",
+      "intro": "A complete profile is the difference between a business card and an open shop. These are the six elements customers actually read:",
+      "example_name": "Ruach HaSadeh Bakery",
+      "example_tagline": "Slow-fermented sourdough, stone-milled flour, baked daily in a stone oven.",
+      "items": {
+        "photos": { "title": "Real photos", "desc": "Three real photos — the product, the place, the hands at work." },
+        "story": { "title": "A short story", "desc": "A few personal sentences about your journey. This is what makes customers choose you." },
+        "verified": { "title": "Verified badge", "desc": "A checked, valid license — customers see a clear trust mark next to your name." },
+        "products": { "title": "Products with price ranges", "desc": "What to order and for how much — no surprises in chat." },
+        "delivery": { "title": "Delivery areas", "desc": "Where you deliver, minimum order, and on which day." },
+        "reviews": { "title": "Reviews and your reply", "desc": "Real feedback — and a warm reply from you that shows someone is home." }
+      },
+      "nudge": "After signing up, the profile-completeness meter in your dashboard shows exactly what is still missing on the way to 100%."
+    },
+    "footer_questions_prefix": "Still have questions? Reach us via",
+    "footer_form_link": "the contact form",
+    "footer_or_email": "or by email",
     "cta": "Add your business"
   },
   "privacy": {
@@ -3669,6 +3693,16 @@
         "cta": "Complete profile",
         "cta_aria": "Complete your profile",
         "ring_aria": "Profile completeness: {percent}%",
+        "checklist_aria": "Profile completion progress",
+        "checklist_done": "Done",
+        "checklist_todo": "Still needed",
+        "checklist_sub": "A few more steps and your profile is ready for inquiries",
+        "steps": {
+          "image": "Main photo",
+          "location": "Categories & location",
+          "products": "3 products in your catalog",
+          "contact": "Contact details"
+        },
         "fields": {
           "city": "City",
           "coords": "Location on the map",
@@ -4136,5 +4170,11 @@
       "apply": "Show {count} businesses",
       "clear": "Clear all"
     }
+  },
+  "whats_this": {
+    "trigger": "What's this?",
+    "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
+    "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
+    "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty."
   }
 }

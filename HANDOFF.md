@@ -13,13 +13,39 @@
 - **Verify:** full vitest **893 passed**/41 skipped · `npm run build` exit 0 · Playwright self-QA (local `next start` :3200, mocked `/api/**` — MEH-360; `qa-artifacts/MEH-1084/` 5 screenshots + `evidence.json`): fresh `/producers` history=2 → select דבש → `?category=18` + history=3 (**push**) → Back → `/producers` category-gone + row still mounted (**not exit**) → re-select + 3 chip toggles → history stayed 3 (**replace didn't stack**), `category=18&organic=1&has_delivery=1` all in URL → one Back → `/producers`.
 - **Sapir pending:** merge (auto-merge armed if green); mobile QA — `/producers` select category → Back cancels (not exit), chip toggles don't need multiple Backs.
 
-## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — PR open
+## 2026-07-11 — MEH-1121 (Task D): imageless-hero consistency — masthead fires for blank image arrays (MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1122-imageless-hero` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1121`.
+- **Root cause (file:line):** `ImageGallery.jsx:59` gates the MEH-815 masthead on `!images.length`; `ProducerDetail.jsx:77/106` derived `hasImages` + the gallery prop from the **unfiltered** `producer.images`. A `[""]`/blank array → length 1 → broken single-banner + ProducerHeader's own gray h1 (the ZFFS "small gray title, floating tags, no masthead" symptom). Distinct from PR #1492 audit A1/A2/A7 (that producer had a REAL placeholder PNG — masthead correctly didn't fire).
+- **Fix:** new pure `getRenderableImages()` (`producer-format.js`) filters non-empty trimmed strings; `ProducerDetail.jsx` derives BOTH `hasImages` and the `ImageGallery images` prop from that single list (one owner — MEH-271 Smell #1 avoided). Masthead untouched (LOCK); Latin names keep the Frank Ruhl→David Libre→Georgia h1 fallback (verified). New `ProducerFormatImages.test.js` (5).
+- **Verify:** build exit 0 · 20 gallery/format tests pass · 0 physical RTL. **Sapir QA gate:** live dana-vs-ZFFS DOM comparison deferred (sandbox proxy blocks staging/preview — MEH-360). Draft until Sapir confirms an imageless producer shows the masthead.
+## 2026-07-11 — MEH-1049 (scope-add): contact-card truncation + share disambiguation (Task A of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).
+- **Shipped:** `ContactSidebar.jsx` — phone + Instagram tiles → full-width (`col-span-2`), no `truncate`/`overflow-hidden`, `dir="ltr"` value, `break-all` (values always fully readable). `WhatsAppShareButton.jsx` — `WhatsappLogo`(#25D366)→`ShareNetwork`; `he/en.json` `share_to_friend` "שלחו לחברה"→"שיתוף עם חברים" + `share_aria` in lockstep (WCAG 2.5.3). New `WhatsAppShareButton.test.jsx` (3). WhatsApp single filled primary already true (PrimaryContactButton; FollowButton demoted in merged chunk 1).
+- **Verify:** build exit 0 · WhatsAppShareButton + en-parity 7 passed · canary clean · 0 physical RTL. **Playwright self-QA against Vercel preview pending** (phone value fully visible @375px, no ellipsis on value span) — draft until captured.
+## 2026-07-11 — MEH-1120 (Task B): unify verification badge — TrustBadge recognition-only (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1120-unify-verification-badge` off `origin/staging`. YELLOW (touches central `ProducerCard.jsx`). `Refs MEH-1074 · Closes MEH-1120`.
+- **Root cause:** `ProducerHeader.jsx:50` `<BadgeRow>` (verification_tier seal, ADR-022) + `:52` `<TrustBadge>` both fired; TrustBadge tier-3 = "עסק מאומת" duplicated the BadgeRow "מאומת" seal (same on `ProducerCard.jsx:291`). tier-2 "מספר מאומת" (phone) read as business verification.
+- **Fix:** `TrustBadge.jsx` self-gates to **tier ≥ 4** (recognition-only: 4 community-leader, 5 ambassador); tiers 2/3 → null everywhere. `ProducerCard.jsx` gate `>=3`→`>=4`. `ProducerHeader.jsx` comments updated. `lib/badges.js`/schema untouched. `TrustBadge.test.jsx` rewritten.
+- **Verify:** build exit 0 · TrustBadge+ProducerCard+BadgeRow+ProducerHeaderTrustStrip 68 passed · 0 physical RTL. **Sapir mobile QA gate** (one verification chip in header, ambassador chip still shows for tier-5) — sandbox can't screenshot preview (proxy blocks *.vercel.app CONNECT, MEH-360 class); draft until Sapir QA. Automated adversarial-review + runner E2E gate on the PR.
+
+## 2026-07-11 — MEH-1113: unify inbound contact routing (audit-fix batch MEH-1112→MEH-1113, ticket 2 of 2) — PR open
+
+- **Branch:** `feature/meh-1113-contact-unify` off `origin/staging` (post-MEH-1112 merge, `fb461dfa`, divergence 0). YELLOW/ADR-016 v2 — backend optional-field + frontend copy/select; no migration/auth/env. Batch authority: auto-merge on CI green + self-QA screenshots. `Closes MEH-1113`.
+- **Files (7):** `backend/app/schemas/schemas.py` (`ContactIn.topic` + `CONTACT_TOPIC_LABELS` single-source dict + whitelist validator), `backend/app/routers/marketing.py` (`submit_contact` prepends `נושא: <label>` + subject tag; `_send_contact_email(msg, label)`), `tests/test_api.py` (3 new topic tests + 2 persistence assertions updated for the prefix), `frontend/app/[locale]/about/AboutClient.jsx` (topic `<select>` + `useSearchParams` prefill + `id="contact"`), `frontend/app/[locale]/about/for-businesses/page.js` (Instagram-DM line → form+email), `he.json`/`en.json`.
+- **Phase 0 corrections (meta-patterns §1):** (a) `file_locations` named `backend/tests/` — the contact test module is actually `tests/test_api.py::TestContact` (repo root). (b) `useSearchParams` normally needs a Suspense boundary, but `/[locale]/about` is a dynamic (`ƒ`) route → build passes with no `about/page.js` change (scope held; the file wasn't in `file_locations`). (c) The `נושא:` prefix necessarily changed the stored-message format → the 2 existing persistence tests were updated (not new scope — same module).
+- **Verify:** backend validator/422/label/default unit-checked + ruff clean (full pytest on CI — local Postgres admin is permission-gated in the sandbox) · build exit 0 · lint 0 errors · vitest 8 passed · 0 physical RTL · Playwright self-QA 3 states (screenshots `docs/audits/screenshots/2026-07-meh1113-qa/`): (a) default select = שאלה כללית, (b) `?topic=business` → prefilled פנייה של בית עסק, (c) for-businesses footer = form-link + `contact@mehamakor.co.il`, 0 Instagram in the question line (site footer IG untouched).
+- **Batch complete** after this merges — both audit tickets shipped.
+
+## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — MERGED (PR #1614)
 
 - **Branch:** `feature/meh-1117-questionchips-tokens` off `origin/staging` (synced post-E/F merge). GREEN autonomous. `Refs MEH-1074 · Closes MEH-1117`.
 - **Shipped:** `WhatsAppQuestionChips.jsx` — label `#6B6B6B`→`text-fg-muted`; chip `<a>` inline `border/radius/padding/fontSize` → `border border-border rounded-xl px-3 py-1.5 text-sm` (14px interactive floor, MEH-1103; `rounded-xl`=20px token exactly); `minBlockSize:44px` kept. No copy/logic change. MEH-1103 didn't cover this file (verified) — genuine, not a fold.
 - **Verify:** build exit 0 · 0 residual hex · 0 physical RTL · no test references this component's inline styles.
 
-## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — PR open
+## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — MERGED (PR #1612, squash `fb461dfa`)
 
 - **Branch:** `feature/meh-1112-about-polish` off `origin/staging` (divergence 0). YELLOW/ADR-016 v2 — UI change, Playwright self-QA required + attached. Batch authority: Sapir-approved MEH-1112→MEH-1113 sequential, auto-merge on CI green + self-QA screenshots. `Closes MEH-1112`.
 - **Files (3):** `frontend/app/[locale]/about/AboutClient.jsx` (pull-quote container narrow, `SHOW_TESTIMONIALS=false` gate, close-band CTA demotion, email fallback line + `CONTACT_EMAIL` import), `frontend/messages/he.json` + `en.json` (4 copy changes + new `contact.email_direct`). Scope held — no file outside `file_locations` touched.
