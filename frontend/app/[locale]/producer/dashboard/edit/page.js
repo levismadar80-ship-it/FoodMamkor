@@ -652,7 +652,10 @@ export function ImagesCard({ profile, onSave }) {
       )}
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        // MEH-1099: text-error (ADR-026) — the drag-drop path made this error
+        // display newly reachable; sibling text-red-600 sites in the other
+        // cards stay for the MEH-1086 follow-up sweep.
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-error" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
