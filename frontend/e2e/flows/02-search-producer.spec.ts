@@ -3,7 +3,13 @@ import { test, expect } from "@playwright/test";
 test.describe("Search", () => {
   test("submitting hero search navigates to /producers?q=", async ({ page }) => {
     await page.goto("/");
-    const searchInput = page.locator('[data-testid="hero-search"]');
+    // MEH-1122: scope to the hero's role="search" card + .first() — same
+    // transient-duplicate hardening as 01-home-load, so .fill() targets a
+    // single input and never hits the strict-mode flake.
+    const searchInput = page
+      .getByRole("search")
+      .locator('[data-testid="hero-search"]')
+      .first();
     await expect(searchInput).toBeVisible({ timeout: 15_000 });
 
     await searchInput.fill("חלב");
