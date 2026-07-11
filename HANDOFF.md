@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1128 Wave A (ui/Input adoption): register producer wizard — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-a` off fresh `origin/staging` (incl. the MEH-1127 merge), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave B NOT started — wait gate (Sapir approves next wave).**
+- **Phase 0 (mandatory, done):** input inventory table (14 inputs) + collision check. `git log` on both wave files = only MEH-1127 (#1633) + MEH-1083 (#1569); no open PR touches the register files (dashboard collision tickets MEH-1093/1096/1099/1116 are Wave B). Clean.
+- **Shipped (`RegisterProducerClient.jsx` only, 5 migrations):** account name, account email, business name, address (hint → `helperText` slot), tagline (counter kept sibling) → `<Input>` primitive. Mechanical swap; `...rest` passes value/onChange/required/dir/data-testid/aria through — zero behavior change. Leftovers documented in PR: password, phone (3-state msg), 2× numeric license (`text-right`+multistate), city (CitySearch, Wave D), description textarea, 4 checkboxes.
+- **Key finding:** `RegisterClient.jsx` (consumer) = **0 migrations** — name/email have a persistent success/valid affordance (green border + confirmation) `ui/Input` can't express, and the over-engineering guard forbids adding a success state in Waves A–C → documented leftovers. Surfaced per rule 4.
+- **Verify:** build exit 0 · vitest 18/18 (RegisterProducerClient + ModalFocusReturn) · Playwright 375px: migrated inputs 44px == siblings; screenshots `docs/audits/screenshots/2026-07-meh1128-wave-a-qa/` (steps 1+2; tagline/story shot omitted — sandbox can't populate categories to reach story, migration identical to captured 4).
+- **Next:** open draft PR, auto-merge on CI green. Do NOT start Wave B.
+
 ## 2026-07-11 — MEH-1127 (CitySearch consistency): visible label + height + radius — PR #1633
 
 - **Branch:** `claude/meh-1127-citysearch-li3f5g` off `origin/staging` (harness-designated branch for this task). YELLOW — shared component (3+ surfaces), auto-merge allowed after CI green + Playwright self-QA. `Closes MEH-1127`.
