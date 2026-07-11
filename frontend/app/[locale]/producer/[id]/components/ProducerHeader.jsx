@@ -46,9 +46,13 @@ export default function ProducerHeader({
             {producer.name}
           </h1>
         )}
-        {/* MEH-18: unified badge row (all earned badges on Detail — no limit). */}
+        {/* MEH-18: unified badge row (all earned badges on Detail — no limit).
+            This is the single verification affordance (ADR-022 verification_tier
+            seal), so TrustBadge below no longer emits the verification tiers. */}
         <BadgeRow producer={producer} />
-        {/* MEH-51: trust tier badge */}
+        {/* MEH-51 / MEH-1120: recognition-only trust badge — self-gates to
+            tier ≥ 4 (community-leader / ambassador). Tiers 2/3 (phone / business
+            "מאומת") were removed to stop duplicating the BadgeRow seal. */}
         <TrustBadge tier={producer.trust_tier} />
         {/* MEH-1048: trust strip — rating + review count as an anchor that
             scrolls to the lazy reviews section (#reviews, ProducerSections).

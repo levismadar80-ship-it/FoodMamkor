@@ -288,7 +288,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               +{badgeCount(producer) - 2}
             </span>
           )}
-          {(producer.trust_tier ?? 1) >= 3 && (
+          {/* MEH-1120 (MEH-1074 Task B): gate raised 3 → 4. Verification tiers
+              (2 phone / 3 business) are owned by the BadgeRow seal above
+              (verification_tier / ADR-022) — TrustBadge now only carries the
+              recognition tiers (4 community-leader, 5 ambassador), so it no
+              longer duplicates the "מאומת" seal on the card. */}
+          {(producer.trust_tier ?? 1) >= 4 && (
             <TrustBadge tier={producer.trust_tier} compact />
           )}
           {producer.has_physical_location === false && producer.offers_delivery && (

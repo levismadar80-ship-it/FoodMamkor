@@ -9,17 +9,23 @@ import Tooltip from "@/components/ui/Tooltip";
 // MEH-792: tier 5 binds to the state-selected token (#970; same value as
 // primary-dark/green-700) instead of a raw hex literal — rendered color
 // identical.
+// MEH-1120 (MEH-1074 Task B): TrustBadge now renders ONLY the recognition
+// tiers — 4 ("⭐ מובילת קהילה") and 5 ("🏅 שגרירת מהמקור"). The verification
+// tiers 2 ("✓ מספר מאומת" — phone) and 3 ("✅ עסק מאומת" — business) were
+// dropped from every reader surface: verification is owned by BadgeRow /
+// verification_tier (ADR-022), so rendering tier 3 next to the BadgeRow
+// "מאומת" seal duplicated the same signal in two styles (MEH-602 debt), and
+// "מספר מאומת" read as business verification (ADR-022 gate 1).
 const TIER_CLASSNAME = {
-  2: "bg-gray-100 text-gray-600 border-gray-200",
-  3: "bg-primary/10 text-primary border-primary/20",
   4: "bg-amber-50 text-amber-700 border-amber-200",
   5: "bg-state-selected/10 text-state-selected border-state-selected/20",
 };
 
 export default function TrustBadge({ tier, compact = false }) {
   const t = useTranslations("trust");
-  if (!tier || tier < 2) return null;
-  const tierKey = TIER_CLASSNAME[tier] ? tier : 2;
+  // < 4 → nothing (tiers 2/3 verification live in BadgeRow/ADR-022 now).
+  if (!tier || tier < 4) return null;
+  const tierKey = TIER_CLASSNAME[tier] ? tier : 4;
   const tooltip = t(`tier_${tierKey}.tooltip`);
 
   // MEH-792: explainer routes through the ui/Tooltip primitive (hover/focus/
