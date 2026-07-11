@@ -109,7 +109,13 @@ export default function ProducersClient({
 
   const syncUrl = useCallback(
     // MEH-1081: category rides the same URL sync as chips/city/q.
-    (chipState, city, q, category) => {
+    // MEH-1084 (MEH-1077 DISC-06): `method` picks the history verb — "push"
+    // for a category *selection* (perceived as a new view → Back cancels the
+    // category and returns to the prior view), "replace" (default) for chip /
+    // city / search refinement and category *clear* (transient — a push there
+    // would force a double-Back to escape). The param set written is identical
+    // for both verbs, so the MEH-1081/1083 serializer is untouched.
+    (chipState, city, q, category, method = "replace") => {
       const params = new URLSearchParams();
       if (category) params.set("category", category);
       for (const chip of CHIPS_CONFIG) {
@@ -118,7 +124,9 @@ export default function ProducersClient({
       if (city) params.set("city", city);
       if (q) params.set("q", q);
       const qs = params.toString();
-      router.replace(qs ? `/producers?${qs}` : "/producers", { scroll: false });
+      const url = qs ? `/producers?${qs}` : "/producers";
+      if (method === "push") router.push(url, { scroll: false });
+      else router.replace(url, { scroll: false });
     },
     [router],
   );
@@ -224,7 +232,10 @@ export default function ProducersClient({
   const handleCategorySelect = (key) => {
     const next = key === "all" ? null : key;
     setCategoryFilter(next);
-    syncUrl(chips, cityFilter, searchQ, next);
+    // MEH-1084: selecting a real category pushes a history entry so Back
+    // cancels it and returns to the prior view; "all"/clear returns to the
+    // baseline via replace (a push there would need a double-Back to escape).
+    syncUrl(chips, cityFilter, searchQ, next, next ? "push" : "replace");
     fetchFiltered(chips, cityFilter, searchQ, next);
     trackEvent("producers_category_filter", { category: next });
   };

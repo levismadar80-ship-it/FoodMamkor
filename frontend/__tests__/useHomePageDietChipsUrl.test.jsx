@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
+import api from "@/lib/api";
 
 // MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders all 7 CHIPS_CONFIG
 // chips and buildChipParams sends all 7 to the API, but updateURL serialized
@@ -31,8 +32,6 @@ vi.mock("@/lib/featured-producer", () => ({ selectFeaturedProducer: () => null }
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => Promise.resolve({ data: [] })) },
 }));
-
-import api from "@/lib/api";
 
 beforeEach(() => {
   router.replace.mockClear();
@@ -82,6 +81,7 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     const { result } = renderHook(() => useHomePage());
     expect(result.current.chips.vegan).toBe(true);
     const producersCall = api.get.mock.calls.find(([path]) => path === "/producers");
+    expect(producersCall).toBeDefined();
     expect(producersCall[1].params).toMatchObject({ vegan: true });
   });
 
