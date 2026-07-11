@@ -157,14 +157,14 @@ export function HomeProducersGrid({
                 <button
                   type="button"
                   onClick={onClearCategory}
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
                 >
                   {t("home.producers.clear_category_cta")}
                 </button>
               ) : (
                 <Link
                   href="/map"
-                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
                 >
                   {t("home.producers.explore_map")}
                 </Link>
@@ -175,7 +175,7 @@ export function HomeProducersGrid({
             <div className="text-center mt-8">
               <button
                 onClick={onLoadMore}
-                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-[16px] hover:bg-green-50 transition font-medium"
+                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
               >
                 {t("home.producers.load_more")}
               </button>

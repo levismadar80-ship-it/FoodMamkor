@@ -142,7 +142,7 @@ export function HomeFeaturedProducer({ featured }) {
             {featured.href && (
               <Link
                 href={featured.href}
-                className="inline-block bg-primary text-white px-6 py-2.5 rounded-[8px] hover:bg-primary-dark transition font-medium"
+                className="inline-block bg-primary text-white px-6 py-2.5 rounded-sm hover:bg-primary-dark transition font-medium"
               >
                 {t("cta_meet", { name: featured.name })}
               </Link>
@@ -257,7 +257,7 @@ export function HomeCTA() {
         </p>
         <Link
           href="/register/producer"
-          className="inline-block bg-primary text-white px-8 py-3 rounded-full hover:bg-primary-dark transition font-medium"
+          className="inline-block bg-primary text-white px-8 py-3 rounded-sm hover:bg-primary-dark transition font-medium"
         >
           {t("home.cta.button")}
         </Link>
