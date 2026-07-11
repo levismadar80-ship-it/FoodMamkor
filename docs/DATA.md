@@ -647,11 +647,17 @@ GET  /admin/reports              admin
 GET  /stats                      public — { producers_count, categories_count, cities_count }
 POST /newsletter                 public — { email } → newsletter_subscribers
                                  rate-limited 5/hour per IP
-POST /contact                    public — { name, email, message } → contact_messages row
+POST /contact                    public — { name, email, message, topic? } → contact_messages row
                                  + SMTP email to CONTACT_EMAIL (falls back to
                                  ADMIN_EMAIL). Fail-open: if SMTP is unconfigured
                                  or raises, the submission is still persisted.
                                  rate-limited 5/hour per IP
+                                 topic (MEH-1113): optional, whitelist
+                                 {business, general, correction, other}; invalid → 422
+                                 (Hebrew detail), missing/None → "general". No DB column —
+                                 the Hebrew label is prepended to the stored message
+                                 ("נושא: <label>") and to the email subject. Single source:
+                                 CONTACT_TOPIC_LABELS in schemas.py:2074.
 GET  /cities                     public — deduped producer+listing city list
 ```
 
