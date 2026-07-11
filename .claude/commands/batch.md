@@ -109,7 +109,7 @@ also live legitimately in HOLD backoffice + producer-form namespaces**
 (`admin/settings/dashboard/recipes/experiences`) where they stay feminine by
 policy — a hit there is a false positive, eyeball the namespace and proceed:
 ```bash
-git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צרי|עדכני|שלחי|פתחי|הגישי|נסי|צפי|עקבי|בטלי|סנני|סנן|גלגלי|לחצי|דרגי|השלימי|דברי|שתפי|המשיכי|הוסיפי|כתבי|מצאי|פרסמי|הציעי|הירשמי|הודיעי|חפשי|חיפשי|מרכזי|התחברי|הצגי|הציגי|הסתירי|הסירי|סגרי|בקשי|הקלידי|היכנסי|דלגי|הזיני|המתיני|הגדרי|הגדלי|הודעי|הפעילי)[ \",.<—\)]" && echo "STOP — feminine-singular UI imperative re-introduced (ADR-014, MEH-872)" && exit 1 || true
+git diff --staged | grep -E "^\+.*[ \">](גלי|בחרי|שמרי|חזרי|צרי|עדכני|שלחי|פתחי|הגישי|נסי|צפי|עקבי|בטלי|סנני|סנן|גלגלי|לחצי|דרגי|השלימי|דברי|שתפי|המשיכי|הוסיפי|כתבי|מצאי|פרסמי|הציעי|הירשמי|הודיעי|חפשי|חיפשי|מרכזי|התחברי|הצגי|הציגי|הסתירי|הסירי|סגרי|בקשי|הקלידי|היכנסי|דלגי|הזיני|המתיני|הגדרי|הגדלי|הודעי|הפעילי|שאלי|היי)[ \",.<—\)]" && echo "STOP — feminine-singular UI imperative re-introduced (ADR-014, MEH-872)" && exit 1 || true
 ```
 Any hit on a customer-facing string → switch to plural (`גלו`, `בחרו`, `שלחו`,
 `חזרו`, `צרו`, …) before proceeding.
