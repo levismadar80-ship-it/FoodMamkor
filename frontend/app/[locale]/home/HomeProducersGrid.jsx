@@ -144,18 +144,31 @@ export function HomeProducersGrid({
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-50 mb-4" aria-hidden="true">
                 <Leaf size={36} className="text-primary" />
               </div>
+              {/* MEH-1085 (DISC-07): cause-aware branch — a category-filtered
+                  zero-result names the category as the cause and clears it in
+                  place; only the geographic case escapes to /map. */}
               <h3 className="font-headline-md text-xl font-bold text-text mb-2">
-                {t("home.producers.empty_heading")}
+                {t(filters.category ? "home.producers.empty_heading_category" : "home.producers.empty_heading")}
               </h3>
               <p className="text-fg-muted mb-5 max-w-md mx-auto">
-                {t("home.producers.empty_subtext")}
+                {t(filters.category ? "home.producers.empty_subtext_category" : "home.producers.empty_subtext")}
               </p>
-              <Link
-                href="/map"
-                className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
-              >
-                {t("home.producers.explore_map")}
-              </Link>
+              {filters.category ? (
+                <button
+                  type="button"
+                  onClick={onClearCategory}
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
+                >
+                  {t("home.producers.clear_category_cta")}
+                </button>
+              ) : (
+                <Link
+                  href="/map"
+                  className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-[16px] hover:bg-primary-dark transition font-medium"
+                >
+                  {t("home.producers.explore_map")}
+                </Link>
+              )}
             </div>
           )}
           {hasMore && (
