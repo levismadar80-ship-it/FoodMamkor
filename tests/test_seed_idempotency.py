@@ -41,7 +41,7 @@ def test_reseed_is_idempotent(db):
     assert db.query(Category).count() == len(CATEGORIES)
 
 
-def test_reseed_after_rename_updates_in_place(db):
+def test_reseed_after_rename_updates_in_place(db, capsys):
     """The exact MEH-1104 incident: a renamed row must update, not duplicate."""
     seed_categories(db)
 
@@ -59,3 +59,6 @@ def test_reseed_after_rename_updates_in_place(db):
     assert (
         db.query(Category).filter(Category.name == OLD_CREAM_NAME).first() is None
     )
+    # The in-place name change is surfaced (observability of rename/collision).
+    out = capsys.readouterr().out
+    assert f"id={CREAM_ID}" in out and OLD_CREAM_NAME in out and CREAM_NAME in out

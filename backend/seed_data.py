@@ -258,11 +258,26 @@ def seed_categories(db):
     Postgres sequence — ``admin_extra.py`` creates categories at runtime and
     would collide on a stranded sequence. Running this twice yields identical
     table state (same row count, same ids).
+
+    Observability: id-keying is what makes a rename update in place, but it
+    also means that if ``CATEGORIES`` ever grows and an admin-created row
+    (``admin_extra.py``) already occupies the new positional id, this would
+    silently overwrite that row's name — a drift the old name-keyed loop could
+    not cause. We can't cleanly distinguish "rename" from "collision" at seed
+    time, so any in-place name change is logged (renames are rare + reviewed;
+    an unexpected line here flags the collision case for a human).
     """
     for idx, (name, emoji) in enumerate(CATEGORIES):
         cat_id = idx + 1
         existing = db.get(Category, cat_id)
         if existing:
+            if existing.name != name:
+                # Surfaces both an intended rename and an accidental overwrite
+                # of an admin-created row at this id (MEH-1107 review note).
+                print(
+                    f"seed_categories: category id={cat_id} name "
+                    f"{existing.name!r} -> {name!r} (in-place update)"
+                )
             existing.name = name
             existing.emoji = emoji
         else:
