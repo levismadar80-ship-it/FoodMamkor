@@ -28,22 +28,50 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PencilSimple, Warning, X } from "@phosphor-icons/react";
+import { Warning, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
+import EditAccordionCard from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import AddressSearch from "@/components/AddressSearch";
 import ProductsSection from "@/components/ProductsSection";
 
+// MEH-1116: stable English anchor id per card → the page-local open-state key.
+// The anchor ids are a public deep-link contract (#contact-channels …) —
+// MEH-1106's completeness checklist consumes them next. Do not rename.
+const ANCHOR_TO_KEY = {
+  bio: "bio",
+  questions: "questions",
+  "contact-channels": "contact",
+  categories: "categories",
+  images: "images",
+  location: "location",
+  products: "products",
+};
+
 export default function ProducerDashboardEditPage() {
   const router = useRouter();
   const t = useTranslations("dashboard.producer");
+  // MEH-1116: accordion titles + one-line status summaries.
+  const tAcc = useTranslations("dashboard.producer.edit_accordion");
+  const tProducts = useTranslations("settings.products");
   const { user, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState(null);
+
+  // MEH-1116: accordion state — one card open at a time, all collapsed on load.
+  const [openKey, setOpenKey] = useState(null);
+  const toggleKey = useCallback(
+    (key) => setOpenKey((k) => (k === key ? null : key)),
+    []
+  );
+  // Live product count for the products summary: seeded from the page profile
+  // (/producers/me joins products), then kept live by ProductsSection's
+  // onCountChange as the owner adds/removes inside the card.
+  const [productsCount, setProductsCount] = useState(null);
 
   // MEH-1100: page-level unsaved-changes signal. Each card reports its own
   // (pre-existing) dirty flag up via reportDirty(key, bool); the page only
@@ -101,6 +129,29 @@ export default function ProducerDashboardEditPage() {
     return () => document.removeEventListener("click", onClick, true);
   }, [anyDirty, t]);
 
+  // MEH-1116: URL-hash deep link — #<anchor> auto-expands its card and scrolls
+  // to it, on load (once the profile has rendered the sections) and on every
+  // hashchange. Unknown hashes are ignored; #location on a delivery-only
+  // profile (card not mounted) is a silent no-op.
+  useEffect(() => {
+    if (!profile) return;
+    const applyHash = () => {
+      const anchor = window.location.hash.replace(/^#/, "");
+      const key = ANCHOR_TO_KEY[anchor];
+      if (!key) return;
+      setOpenKey(key);
+      // Wait a frame so the panel un-hides before measuring scroll position.
+      requestAnimationFrame(() => {
+        document
+          .getElementById(anchor)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, [profile]);
+
   if (authLoading || !user || user.role !== "producer") return null;
 
   if (!profile) {
@@ -126,58 +177,140 @@ export default function ProducerDashboardEditPage() {
         </div>
       )}
 
+      {/* MEH-1116: each card collapses to an accordion row — header carries
+          the title + a live one-line status summary computed from the SAME
+          page profile the cards edit (no new API). Cards stay MOUNTED when
+          collapsed (hidden-toggle inside EditAccordionCard) so unsaved state
+          and the MEH-1100 guard survive collapse. One open at a time. */}
+
       {/* MEH-56: AI bio writer panel */}
-      <BioPanelCard
-        profile={profile}
-        onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)}
-        reportDirty={reportDirty}
-      />
+      <EditAccordionCard
+        anchorId="bio"
+        title={t("bio.heading")}
+        summary={
+          (profile.description || "").trim()
+            ? tAcc("bio_present")
+            : tAcc("bio_missing")
+        }
+        open={openKey === "bio"}
+        onToggle={() => toggleKey("bio")}
+      >
+        <BioPanelCard
+          profile={profile}
+          onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
 
       {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
-      <CustomQuestionsCard
-        profile={profile}
-        onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
-        reportDirty={reportDirty}
-      />
+      <EditAccordionCard
+        anchorId="questions"
+        title={t("custom_questions.heading")}
+        summary={tAcc("questions_summary", {
+          count: (profile.custom_questions || []).length,
+        })}
+        open={openKey === "questions"}
+        onToggle={() => toggleKey("questions")}
+      >
+        <CustomQuestionsCard
+          profile={profile}
+          onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
 
       {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-      <ContactChannelsCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      <EditAccordionCard
+        anchorId="contact-channels"
+        title={t("contact_channels.heading")}
+        summary={[
+          profile.phone ? tAcc("contact_phone_ok") : null,
+          tAcc("contact_primary", {
+            channel: tAcc(
+              `channel_${profile.primary_contact_method || "whatsapp"}`
+            ),
+          }),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        open={openKey === "contact"}
+        onToggle={() => toggleKey("contact")}
+      >
+        <ContactChannelsCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
 
       {/* Edit-tab chunk A — producer-facing categories editor */}
-      <CategoriesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      <EditAccordionCard
+        anchorId="categories"
+        title={t("categories.heading")}
+        summary={tAcc("categories_summary", {
+          count: profile.categories?.length ?? 0,
+        })}
+        open={openKey === "categories"}
+        onToggle={() => toggleKey("categories")}
+      >
+        <CategoriesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
 
       {/* Edit-tab chunk B — producer-facing gallery images editor */}
-      <ImagesCard
-        profile={profile}
-        onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-        reportDirty={reportDirty}
-      />
+      <EditAccordionCard
+        anchorId="images"
+        title={t("images.heading")}
+        summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
+        open={openKey === "images"}
+        onToggle={() => toggleKey("images")}
+      >
+        <ImagesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
 
       {/* Edit-tab chunk C — producer-facing location/coords editor.
           MEH-213: only physical-location producers have a map pin; delivery-only
           businesses intentionally have no lat/lng, so the card is hidden for
           them (has_physical_location === false). */}
       {profile.has_physical_location !== false && (
-        <LocationCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
+        <EditAccordionCard
+          anchorId="location"
+          title={t("location.heading")}
+          summary={profile.city || tAcc("location_missing")}
+          open={openKey === "location"}
+          onToggle={() => toggleKey("location")}
+        >
+          <LocationCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
       )}
 
       {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
           fetching (no profile prop): full CRUD against /producers/me/products.
           Relocated from settings/page.jsx, where it was defined but never
-          mounted. */}
-      <ProductsSection />
+          mounted. MEH-1116: summary count seeds from the page profile's joined
+          products and goes live via onCountChange once the card has fetched. */}
+      <EditAccordionCard
+        anchorId="products"
+        title={tProducts("section_heading")}
+        summary={tAcc("products_summary", {
+          count: productsCount ?? profile.products?.length ?? 0,
+        })}
+        open={openKey === "products"}
+        onToggle={() => toggleKey("products")}
+      >
+        <ProductsSection embedded onCountChange={setProductsCount} />
+      </EditAccordionCard>
     </div>
   );
 }
@@ -228,13 +361,12 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
   };
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1">
-        {t("heading")}
-        <InfoTooltip content={t("tooltip")} position="bottom" />
-      </h2>
+    <div>
+      {/* MEH-1116: chrome + heading live in the accordion header; the heading's
+          InfoTooltip moved down to the subtitle so its content isn't lost. */}
       <p className="text-xs text-fg-muted mb-4">
         {t("subtitle")}
+        <InfoTooltip content={t("tooltip")} position="bottom" />
       </p>
       <p className="text-xs text-fg-muted mb-4">
         {t("context_line")}
@@ -374,8 +506,8 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const fieldError = (field) => (hintField === field ? t("hint_empty") : undefined);
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       <div className="space-y-3">
@@ -544,8 +676,8 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
   };
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       {fetchError ? (
@@ -686,8 +818,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   };
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       <label
@@ -842,8 +974,8 @@ export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
   const hasCoords = coords.lat != null && coords.lng != null;
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
       {hasCoords && (
@@ -935,8 +1067,8 @@ function BioPanelCard({ profile, onSave, reportDirty = () => {} }) {
   };
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-5">
-      <h2 className="font-headline-md text-base font-bold mb-1 flex items-center gap-1"><PencilSimple size={16} className="text-current" />{t("heading")}</h2>
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-3">
         {t("intro")}
       </p>
