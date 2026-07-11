@@ -2636,13 +2636,13 @@
     "error_invalid_stars": "בחרו דירוג בין 1 ל-5 כוכבים",
     "error_body_too_short": "הביקורת צריכה לכלול לפחות 10 תווים",
     "saved_toast": "הביקורת שלך נשמרה",
-    "wa_gate_message": "לחצו על כפתור WhatsApp כדי ליצור קשר — ואז תוכלי לכתוב ביקורת",
+    "wa_gate_message": "לחצו על כפתור WhatsApp כדי ליצור קשר — ואז תוכלו לכתוב ביקורת",
     "login_prompt": "<login>התחברו</login> כדי לכתוב ביקורת",
     "loading": "טעינת ביקורות...",
     "owner_empty_title": "ביקורות ראשונות מגיעות אחרי כמה לקוחות",
     "owner_empty_description": "ביקורות נוצרות אוטומטית אחרי שלקוחה שולחת לך הודעת WhatsApp. 24 שעות אחרי הלחיצה — היא מקבלת קישור לדרג אותך. עדיין אין ביקורות כי אף אחת לא לחצה עדיין.",
     "owner_empty_cta": "שתפו את הפרופיל בוואטסאפ",
-    "empty_message": "עדיין אין ביקורות — היי הראשונה!",
+    "empty_message": "עדיין אין ביקורות — היו הראשונים!",
     "pagination": {
       "prev_aria": "עמוד קודם",
       "next_aria": "עמוד הבא"
@@ -2821,7 +2821,7 @@
     "question_chips": {
       "my_area": "האזור שלי",
       "city_placeholder": "[עיר]",
-      "ask_us": "שאלי אותנו",
+      "ask_us": "שאלו אותנו",
       "greeting_template": "שלום {name}, {q}"
     }
   },

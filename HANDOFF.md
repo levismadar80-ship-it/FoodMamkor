@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1111: producer-page voice micro-fixes (Task E of the Producer-Page Trust & Contact sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1111-producer-voice-microfixes` off `origin/staging` (divergence 0). GREEN, autonomous per MEH-1074/ADR-016 v2. First PR of the 9-task producer-page sweep (Tasks A–I). `Refs MEH-1074`.
+- **Shipped (i18n-only):** `he.json` — `reviews.wa_gate_message` `תוכלי`→`תוכלו` (mixed-gender sentence; MEH-885-class but intra-sentence consistency wins), `whatsapp.question_chips.ask_us` `שאלי`→`שאלו` (aligns ChatWidget), `reviews.empty_message` `היי הראשונה`→`היו הראשונים`. `batch.md` MEH-872 canary alternation += `שאלי`, `היי`. en.json untouched (values already correct English — MEH-978 + MEH-840 green).
+- **Verify:** build exit 0 · en-parity + en-locale-guard + I18nNamespaceResolution 8 passed · canaries clean · both JSONs parse.
+- **Sweep context:** Phase 0 findings — no `ProducerContactCard` file (it's ContactSidebar/StickyContactBar/ActionRow); PR #1597 (Task H) already MERGED → Task H becomes a fresh PR; MEH-1049 earlier chunks on staging (Task A = scope-add only); Task D ZFFS masthead needs live `images[]` verification (PR #1492 audit found the *test* producer's no-masthead is an uploaded placeholder PNG, not code — ZFFS is a different, genuinely-imageless producer). Dedup vs `docs/design-audit/PRODUCER-QA-FINDINGS.md` A3 (badge crowding) → Tasks B/C reference it.
+
 ## 2026-07-11 — MEH-1085: homepage empty state cause-aware + /events filters → URL — PR open (Refs MEH-1085; WAIT for Sapir merge)
 
 - **Branch:** `feature/meh-1085-empty-state-events-url` off `origin/staging` (`d03c389b`, clean cut, divergence 0). GREEN end-to-end per ticket; **merge stays Sapir-only per batch instruction** (auto-merge NOT assumed — awaiting Sapir's confirmation it's enabled). Closes audit findings DISC-07 + DISC-08 (MEH-1077).
