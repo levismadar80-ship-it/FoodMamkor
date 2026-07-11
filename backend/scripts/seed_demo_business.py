@@ -317,6 +317,9 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
             ),
             role="producer",
             producer_id=producer.id,
+            # Seed accounts get no verification email — login gates on this
+            # (auth.py rejects unverified users at token issue).
+            email_verified=True,
         )
     )
 
@@ -326,6 +329,7 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
             name=r["user_name"],
             password_hash=hash_password(secrets.token_urlsafe(16)),
             role="consumer",
+            email_verified=True,
         )
         db.add(reviewer)
         db.flush()

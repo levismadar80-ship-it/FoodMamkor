@@ -101,6 +101,8 @@ def test_seed_creates_complete_listing(db, seed_mod, bakery_category):
     owner = db.query(User).filter(User.email == seed_mod.DEMO_OWNER_EMAIL).one()
     assert owner.role == "producer"
     assert owner.producer_id == row.id
+    # Login gates on email_verified (auth.py) — seed accounts get no email.
+    assert owner.email_verified is True
 
 
 def test_seed_skips_when_exists(db, seed_mod, bakery_category):
