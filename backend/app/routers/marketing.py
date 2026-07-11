@@ -185,7 +185,9 @@ def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_
 
     # Always log so the message is visible in Railway logs even if Resend
     # is unconfigured or fails.
-    logger.info("New contact message: name=%s email=%s topic=%s", msg.name, msg.email, label)
+    logger.info(
+        "New contact message: name=%s email=%s topic=%s", msg.name, msg.email, label
+    )
 
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
