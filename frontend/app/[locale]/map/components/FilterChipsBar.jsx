@@ -53,13 +53,8 @@ export default function FilterChipsBar({
         chips={visibleCategoryChips}
         activeKey={chipState.categoryKey}
         onChipClick={onCategoryChipClick}
-        // MEH-1108: /map filter bar sits on the cream `background` token
-        // (#F5F0E8 — globals.css body / mobile bar `bg-background/95`), not the
-        // ChipScrollRow default white. Without this the edge-fade gradients
-        // painted white smears at the scroll edges (reported as "blank white
-        // pills" / a floating white block on a mid-scroll clipped chip). Every
-        // other consumer already passes this same value (ProducersClient /
-        // EventsClient / HomeProducersGrid) — this aligns /map with them.
+        // MEH-1108: ChipScrollRow's default fadeBg is #ffffff, which smears
+        // white at the scroll edges on the cream /map surface (#F5F0E8).
         fadeBg="#F5F0E8"
       />
       <div className="mt-2 flex items-center gap-2 min-w-0">
