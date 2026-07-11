@@ -240,15 +240,56 @@ def _seed_golan_recipe(db):
     db.commit()
 
 
+def seed_categories(db):
+    """Idempotently upsert the category taxonomy, keyed by stable id/position.
+
+    MEH-1107 (root cause of the MEH-1104 duplicate): the old loop checked
+    existence by ``Category.name``. When a category is renamed in ``CATEGORIES``
+    (e.g. MEH-1098's "קרמים ושמנים" → "קוסמטיקה טבעית"), the name query finds
+    nothing, so a re-seed INSERTS a second row with the new name while the
+    old-named row survives — a duplicate that then breaks the production
+    ``UPDATE ... SET name`` on the unique ``categories.name`` constraint.
+
+    The stable identity is the position in ``CATEGORIES`` == the row id (the
+    list order is deliberately append-only so seed ids 1..N stay fixed — see
+    the MEH-743/MEH-927 notes above). Keying on id updates the row in place on
+    rename (no duplicate, no unique-constraint collision). Missing rows are
+    inserted WITHOUT an explicit id so autoincrement keeps advancing the
+    Postgres sequence — ``admin_extra.py`` creates categories at runtime and
+    would collide on a stranded sequence. Running this twice yields identical
+    table state (same row count, same ids).
+
+    Observability: id-keying is what makes a rename update in place, but it
+    also means that if ``CATEGORIES`` ever grows and an admin-created row
+    (``admin_extra.py``) already occupies the new positional id, this would
+    silently overwrite that row's name — a drift the old name-keyed loop could
+    not cause. We can't cleanly distinguish "rename" from "collision" at seed
+    time, so any in-place name change is logged (renames are rare + reviewed;
+    an unexpected line here flags the collision case for a human).
+    """
+    for idx, (name, emoji) in enumerate(CATEGORIES):
+        cat_id = idx + 1
+        existing = db.get(Category, cat_id)
+        if existing:
+            if existing.name != name:
+                # Surfaces both an intended rename and an accidental overwrite
+                # of an admin-created row at this id (MEH-1107 review note).
+                print(
+                    f"seed_categories: category id={cat_id} name "
+                    f"{existing.name!r} -> {name!r} (in-place update)"
+                )
+            existing.name = name
+            existing.emoji = emoji
+        else:
+            db.add(Category(name=name, emoji=emoji))
+    db.commit()
+
+
 def seed():
     db = SessionLocal()
     try:
-        # Seed categories
-        for name, emoji in CATEGORIES:
-            existing = db.query(Category).filter(Category.name == name).first()
-            if not existing:
-                db.add(Category(name=name, emoji=emoji))
-        db.commit()
+        # Seed categories — idempotent upsert by stable id (MEH-1107).
+        seed_categories(db)
 
         # Seed producers
         for p_data in PRODUCERS:
