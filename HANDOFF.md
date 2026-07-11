@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1082 [T-C]: unified attribute-chip taxonomy (/producers ↔ /map) — PR open (do NOT auto-merge — Sapir gates copy on preview)
+
+- **Branch:** `feature/meh-1082-unified-taxonomy` off `origin/staging` (divergence 0). YELLOW — build to PR, **no auto-merge** (Sapir eyeballs the label copy on the Vercel preview). `Refs MEH-1082`.
+- **Phase 0 (reported before edits):** (1) **collision check CLEAR** — no open PR/branch touches `map-chips.js` or `producer-filters.js` (checked all 14 open PRs incl. files of #1628/#1625/#1623/#1633; MEH-1108/1110 already merged; #1633 touches CityPickerModal radius only → left its stale comment alone). (2) **old-label grep TOTAL:** `מאומת בלבד`×1, `משלוח אליי`×5, `לחם ומאפה`×5, `בשר ועוף`×4 — resolved to **4 display labels + 3 test assertions fixed**; retained (by design): `matches` arrays (DB-name resolution axis, spec: UNTOUCHED), DB-name test fixtures, and 3 out-of-scope code comments (`FilterChipsBar:13`/`CityPickerModal:12`/`MapClient:518`). New category labels `בשר ודגים`/`לחמים ואפייה` are already canonical elsewhere in the app.
+- **Shipped:** new `frontend/lib/attribute-labels.js` (`ATTRIBUTE_LABELS`, 6 shared keys); `producer-filters.js` CHIPS_CONFIG + `map-chips.js` TOGGLE_CHIPS import it (`kosher`/`grass_fed` stay local). Net display Δ: /producers verified "מאומת בלבד"→"מאומתים"; /map has_delivery "משלוח אליי"→"משלוח". /map category labels meat→"בשר ודגים", bread→"לחמים ואפייה" (matches/group/order/QUICK_CHIP_KEYS untouched). **Zero behavior change** (keys/params/results identical). New `attributeLabels.test.js` (5); `mapChips.test.js`+`FilterSheet.test.jsx` assertions realigned. No i18n-file change (hardcoded-Hebrew constants, MEH-366 area).
+- **Verify:** build exit 0 · full vitest **914 passed**/41 skipped · 0 physical RTL · Playwright self-QA (`qa-artifacts/MEH-1082/` — 3 shots): /producers "מאומתים" (old gone), /map "בשר ודגים"+"לחמים ואפייה", quick+sheet "משלוח" (old gone).
+- **Sapir pending:** review label copy on preview, then merge (no auto-merge). Mobile QA — compare chip labels /producers vs /map.
+
 ## 2026-07-11 — MEH-1124 (Task C): producer-header tag row information classes (producer-page sweep, MEH-1074) — draft PR
 
 - **Branch:** `feature/meh-1123-tag-row-classes` off `origin/staging` (post-B merge). YELLOW (BadgeRow/ProducerHeader NOT central). `Refs MEH-1074 · Closes MEH-1124`. Continues PR #1492 audit A3.
