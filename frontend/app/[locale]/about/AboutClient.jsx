@@ -13,7 +13,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+// MEH-1113: prefill the contact-form topic from ?topic= (whitelist-guarded).
+import { useSearchParams } from "next/navigation";
 import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -29,6 +31,10 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 // exist (NN/g: real social proof or nothing — no empty-shelf placeholder).
 // JSX + i18n keys kept intact for revival; flip to true when content lands.
 const SHOW_TESTIMONIALS = false;
+
+// MEH-1113: contact-form topic whitelist (mirrors backend CONTACT_TOPIC_LABELS
+// keys). "general" is the default; labels resolve from contact.topic_options.*.
+const CONTACT_TOPICS = ["general", "business", "correction", "other"];
 
 const TIP_KEYS = ["eggs", "grass_fed", "honey"];
 // gold Cormorant numerals — decorative, aria-hidden
@@ -55,7 +61,16 @@ export default function AboutPage() {
   const tCompare = useTranslations("about.comparison");
   // MEH-848: shared generic error copy (collapsed from about.consumer.contact.error_toast).
   const tError = useTranslations("error");
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", message: "", topic: "general" });
+  // MEH-1113: prefill topic from ?topic= when it's a whitelisted value
+  // (e.g. the /about/for-businesses "טופס יצירת הקשר" link → ?topic=business).
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const urlTopic = searchParams.get("topic");
+    if (urlTopic && CONTACT_TOPICS.includes(urlTopic)) {
+      setForm((prev) => ({ ...prev, topic: urlTopic }));
+    }
+  }, [searchParams]);
   const [contactStatus, setContactStatus] = useState(null);
   const [contactMsg, setContactMsg] = useState("");
   // MEH-855: per-submit counter so the status live region remounts on every
@@ -74,7 +89,7 @@ export default function AboutPage() {
       await api.post("/contact", form);
       setContactStatus("success");
       setContactMsg(t("contact.success_toast"));
-      setForm({ name: "", email: "", message: "" });
+      setForm({ name: "", email: "", message: "", topic: "general" });
     } catch (error) {
       setContactStatus("error");
       setContactMsg(detailToMessage(error.response?.data?.detail) || tError("generic"));
@@ -359,7 +374,9 @@ export default function AboutPage() {
       </FadeInSection>
 
       {/* ======== 08 — Contact form ======== */}
-      <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+      {/* MEH-1113: id="contact" — anchor target for /about?topic=business#contact
+          (the for-businesses "טופס יצירת הקשר" link). scroll-mt-24 offsets the sticky header. */}
+      <FadeInSection id="contact" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
         <div className="max-w-2xl mx-auto px-4 md:px-12">
           <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
             {t("contact.heading")}
@@ -399,6 +416,25 @@ export default function AboutPage() {
                 className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
                 dir="ltr"
               />
+            </div>
+            {/* MEH-1113: topic select — whitelisted, prefillable via ?topic=. Sent
+                in the POST body; backend prepends the Hebrew label + tags the subject. */}
+            <div className="grid gap-2 md:col-span-2">
+              <label htmlFor="contact-topic" className="text-sm font-semibold text-text">
+                {t("contact.topic_label")}
+              </label>
+              <select
+                id="contact-topic"
+                value={form.topic}
+                onChange={(event) => setForm({ ...form, topic: event.target.value })}
+                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
+              >
+                {CONTACT_TOPICS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`contact.topic_options.${key}`)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid gap-2 md:col-span-2">
               <label htmlFor="contact-message" className="text-sm font-semibold text-text">

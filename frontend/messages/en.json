@@ -2341,7 +2341,14 @@
         "submit": "Send",
         "submit_loading": "Sending...",
         "success_toast": "Thanks! We'll get back to you soon",
-        "email_direct": "Or reach us directly by email:"
+        "email_direct": "Or reach us directly by email:",
+        "topic_label": "Inquiry topic",
+        "topic_options": {
+          "general": "General question",
+          "business": "Business inquiry",
+          "correction": "Correcting site info",
+          "other": "Other"
+        }
       }
     }
   },
@@ -2981,8 +2988,9 @@
       },
       "nudge": "After signing up, the profile-completeness meter in your dashboard shows exactly what is still missing on the way to 100%."
     },
-    "footer_intro_prefix": "Still have a question? Write to me on Instagram",
-    "footer_intro_suffix": "or join now:",
+    "footer_questions_prefix": "Still have questions? Reach us via",
+    "footer_form_link": "the contact form",
+    "footer_or_email": "or by email",
     "cta": "Add your business"
   },
   "privacy": {

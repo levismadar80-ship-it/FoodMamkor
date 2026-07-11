@@ -142,6 +142,9 @@ test.describe("Visual parity — MEH-991", () => {
   // render-gated off, close-band CTA hierarchy, contact email fallback line)
   // is an intentional visual change — this touch re-rides vrt-update.yml so the
   // about-{desktop,mobile}-linux baselines regenerate on the runner (MEH-991 flow).
+  // MEH-1113: the contact form gains a "נושא הפנייה" topic select above the
+  // message field — another intentional /about visual change, so the baselines
+  // regenerate again on this branch via the same vrt-update re-ride.
   test("about", async ({ page }) => {
     await preparePage(page);
     await page.goto("/about");
