@@ -13,6 +13,7 @@ import CategorySelector from "@/components/CategorySelector";
 import CitySearch from "@/components/CitySearch";
 import PasswordStrength from "@/components/PasswordStrength";
 import ProducerOAuthButtons from "@/components/ProducerOAuthButtons";
+import Input from "@/components/ui/Input";
 import RegisterPreflight from "./RegisterPreflight";
 import { passwordValid, validateIsraeliPhone, validateEmail } from "@/lib/validators";
 import { useAuth } from "@/lib/auth-context";
@@ -477,37 +478,27 @@ function RegisterProducerPageBody() {
                 key is repurposed as an example placeholder. required attr added.
                 (F3): min-h-[44px] enforces the WCAG 2.5.5 touch-target floor,
                 matching CitySearch.jsx:118. */}
-            <div>
-              <label htmlFor="producer-account-name" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.name_label")}
-              </label>
-              <input
-                id="producer-account-name"
-                data-testid="register-account-name"
-                placeholder={t("auth.register.producer.fields.name")}
-                value={form.name}
-                onChange={set("name")}
-                required
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-            </div>
-            <div>
-              <label htmlFor="producer-account-email" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.email_label")}
-              </label>
-              <input
-                id="producer-account-email"
-                type="email"
-                data-testid="register-account-email"
-                placeholder={t("auth.register.producer.fields.email")}
-                value={form.email}
-                onChange={set("email")}
-                required
-                className="w-full border rounded-md px-3 py-2 min-h-[44px]"
-                dir="ltr"
-              />
-            </div>
+            <Input
+              id="producer-account-name"
+              label={t("auth.register.producer.fields.name_label")}
+              data-testid="register-account-name"
+              placeholder={t("auth.register.producer.fields.name")}
+              value={form.name}
+              onChange={set("name")}
+              required
+              dir="rtl"
+            />
+            <Input
+              id="producer-account-email"
+              type="email"
+              label={t("auth.register.producer.fields.email_label")}
+              data-testid="register-account-email"
+              placeholder={t("auth.register.producer.fields.email")}
+              value={form.email}
+              onChange={set("email")}
+              required
+              dir="ltr"
+            />
             {/* MEH-328 Chunk C: emailExistsWarning render block removed
                 with handleEmailBlur. emailExistsSubmitError block below
                 (rendered on 409 from submit) is preserved by Chunk D. */}
@@ -563,21 +554,16 @@ function RegisterProducerPageBody() {
               {t("auth.register.producer.steps.business.subtitle")}
             </p>
 
-            <div>
-              <label htmlFor="producer-business-name" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.producer_name_label")}
-              </label>
-              <input
-                id="producer-business-name"
-                data-testid="register-details-name"
-                placeholder={t("auth.register.producer.fields.producer_name")}
-                value={form.producer_name}
-                onChange={set("producer_name")}
-                required
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-            </div>
+            <Input
+              id="producer-business-name"
+              label={t("auth.register.producer.fields.producer_name_label")}
+              data-testid="register-details-name"
+              placeholder={t("auth.register.producer.fields.producer_name")}
+              value={form.producer_name}
+              onChange={set("producer_name")}
+              required
+              dir="rtl"
+            />
 
             <div>
               <label htmlFor="producer-phone" className="block text-sm font-medium text-text mb-1 text-start">
@@ -628,24 +614,17 @@ function RegisterProducerPageBody() {
 
             {/* address is optional (no "*", not gated at submit) — label carries
                 no asterisk and the input gets no required attr. */}
-            <div>
-              <label htmlFor="producer-address" className="block text-sm font-medium text-text mb-1 text-start">
-                {t("auth.register.producer.fields.address_label")}
-              </label>
-              <input
-                id="producer-address"
-                data-testid="register-details-address"
-                placeholder={t("auth.register.producer.fields.address")}
-                value={form.address}
-                onChange={set("address")}
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
-                dir="rtl"
-              />
-              {/* MEH-951: map-privacy reassurance under the address field. */}
-              <p className="text-xs text-fg-muted mt-1 text-start">
-                {t("auth.register.producer.fields.address_map_privacy_hint")}
-              </p>
-            </div>
+            {/* MEH-951 map-privacy reassurance now rides the Input helperText slot. */}
+            <Input
+              id="producer-address"
+              label={t("auth.register.producer.fields.address_label")}
+              data-testid="register-details-address"
+              placeholder={t("auth.register.producer.fields.address")}
+              value={form.address}
+              onChange={set("address")}
+              helperText={t("auth.register.producer.fields.address_map_privacy_hint")}
+              dir="rtl"
+            />
 
             <div className="flex gap-3">
               {!isUpgrade && (
@@ -836,20 +815,14 @@ function RegisterProducerPageBody() {
                 "dek" above the long story. Plain text input (event-based
                 set(), like address); the long description below is byte-identical. */}
             <div>
-              <label
-                htmlFor="producer-tagline"
-                className="block text-sm font-medium text-text mb-1 text-start"
-              >
-                {t("auth.register.producer.fields.tagline_label")}
-              </label>
-              <input
+              <Input
                 id="producer-tagline"
+                label={t("auth.register.producer.fields.tagline_label")}
                 data-testid="register-story-tagline"
                 value={form.short_description}
                 onChange={set("short_description")}
                 maxLength={160}
                 placeholder={t("auth.register.producer.fields.tagline_placeholder")}
-                className="w-full border rounded-md ps-3 pe-3 py-2 min-h-[44px] text-start"
                 dir="rtl"
               />
               <p className="text-xs text-fg-muted mt-1">{form.short_description.length}/160</p>
