@@ -26,6 +26,9 @@ import * as path from "path";
  * differ). MEH-1103: header sizing recalibration (nav text-base, pill
  * py-1.5/px-6, logo 111×42) intentionally invalidated every header-bearing
  * baseline — this edit rides the vrt-update push trigger to refresh them.
+ * MEH-1103 PR-5: refreshed again from post-sweep staging — PR #1595's footer
+ * recalibration (utility links 13px + 44px targets) merged without a baseline
+ * refresh, so the fullPage trio (/about /login /register) was stale.
  * After an intentional visual change: run vrt-update on the branch,
  * review the committed baseline diff, merge. Staging-data drift that alters
  * a masked region's size (e.g. producer count changes the grid height) is
