@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MagnifyingGlass, ClockCounterClockwise, Fire } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -60,6 +60,14 @@ function deleteRecent(query) {
 export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   const t = useTranslations("search.hero");
   const router = useRouter();
+  // MEH-1078: per-instance ids (useId is SSR-stable) so a transient double-
+  // mount of HeroSearch can't collide id="hero-search-input" (duplicate-id-
+  // active) or its aria wiring. data-testid stays stable — the specs gate on
+  // toHaveCount(1) instead of relying on a unique testid.
+  const uid = useId();
+  const inputId = `${uid}-input`;
+  const listboxId = `${uid}-listbox`;
+  const rowId = (i) => `${uid}-row-${i}`;
   const [value, setValue] = useState("");
   const [results, setResults] = useState(EMPTY_RESULT);
   const [isOpen, setIsOpen] = useState(false);
@@ -237,13 +245,13 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
   return (
     <div ref={containerRef} className={`relative flex items-center gap-2 min-w-0 ${className}`}>
       {srLabel && (
-        <label htmlFor="hero-search-input" className="sr-only">
+        <label htmlFor={inputId} className="sr-only">
           {srLabel}
         </label>
       )}
       <input
         ref={inputRef}
-        id="hero-search-input"
+        id={inputId}
         data-testid="hero-search"
         type="text"
         value={value}
@@ -260,10 +268,10 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
         role="combobox"
         aria-expanded={showAutocomplete || showEmpty}
         aria-autocomplete="list"
-        aria-controls="hero-search-listbox"
+        aria-controls={listboxId}
         aria-activedescendant={
           isOpen && navRows.length > 0
-            ? `hero-search-row-${Math.min(highlightIdx, navRows.length - 1)}`
+            ? rowId(Math.min(highlightIdx, navRows.length - 1))
             : undefined
         }
       />
@@ -283,7 +291,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {/* ---- Autocomplete dropdown (≥2 chars) ---- */}
       {showAutocomplete && (
         <div
-          id="hero-search-listbox"
+          id={listboxId}
           role="listbox"
           data-testid="hero-search-dropdown"
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl max-h-[70vh] overflow-auto text-start"
@@ -305,7 +313,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`prod-${p.id}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "producer", data: p })}
                     onHover={() => setHighlightIdx(i)}
@@ -327,7 +335,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`cat-${c.id}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "category", data: c })}
                     onHover={() => setHighlightIdx(i)}
@@ -346,7 +354,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
                 return (
                   <Row
                     key={`city-${city}`}
-                    id={`hero-search-row-${i}`}
+                    id={rowId(i)}
                     active={i === highlightIdx}
                     onSelect={() => navigate({ kind: "city", data: city })}
                     onHover={() => setHighlightIdx(i)}
@@ -363,7 +371,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
       {/* ---- Empty-input dropdown (recent or trending) ---- */}
       {showEmpty && (
         <div
-          id="hero-search-listbox"
+          id={listboxId}
           role="listbox"
           data-testid="hero-search-history"
           className="absolute z-[1000] top-full mt-2 inset-x-0 bg-white border border-border rounded-[12px] shadow-xl text-start"
@@ -374,7 +382,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {recentSearches.map((q, i) => (
                 <li
                   key={q}
-                  id={`hero-search-row-${i}`}
+                  id={rowId(i)}
                   role="option"
                   aria-selected={i === highlightIdx}
                   className={`flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${
@@ -417,7 +425,7 @@ export default function HeroSearch({ placeholder, srLabel, className = "" }) {
               {trending.map((q, i) => (
                 <li
                   key={q}
-                  id={`hero-search-row-${i}`}
+                  id={rowId(i)}
                   role="option"
                   aria-selected={i === highlightIdx}
                   className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer min-h-[44px] ${

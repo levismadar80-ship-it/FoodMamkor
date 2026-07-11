@@ -12,7 +12,9 @@ import api from "@/lib/api";
  *   - value (string)
  *   - onChange (fn(newValue))
  *   - placeholder
- *   - label (visible or sr-only, always required for a11y)
+ *   - label (always required for a11y; sr-only unless labelVisible)
+ *   - labelVisible (boolean, default false) — when true the label renders
+ *     visible above the field with the sibling recipe; MEH-1127
  *   - id (required for <label htmlFor>)
  *   - onSubmit (fn, called when user hits Enter)
  *   - useBackend (boolean) — if true, also merges results from GET /cities
@@ -24,6 +26,7 @@ export default function CitySearch({
   onChange,
   placeholder,
   label,
+  labelVisible = false,
   id,
   onSubmit,
   useBackend = true,
@@ -106,11 +109,16 @@ export default function CitySearch({
   return (
     <div ref={containerRef} className={`relative min-w-0 ${className}`}>
       {label && (
-        <label htmlFor={id} className="sr-only">
+        <label
+          htmlFor={id}
+          className={labelVisible ? "block text-sm font-medium text-text mb-1 text-start" : "sr-only"}
+        >
           {label}
         </label>
       )}
-      <div className="flex items-center gap-2 bg-white border border-border rounded-[8px] px-3 py-2 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
+      {/* MEH-1127: wrapper py-2 removed (input min-h-[44px] alone sets the ~44px
+          field height, aligning with sibling register inputs); rounded-md matches. */}
+      <div className="flex items-center gap-2 bg-white border border-border rounded-md px-3 min-w-0 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 transition">
         <svg className="w-4 h-4 text-fg-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1 1 0 01-1.414 0l-4.243-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -153,7 +161,7 @@ export default function CitySearch({
         <ul
           id={`${id}-listbox`}
           role="listbox"
-          className="absolute z-[1000] mt-1 w-full bg-white border border-border rounded-[8px] shadow-lg max-h-72 overflow-auto"
+          className="absolute z-[1000] mt-1 w-full bg-white border border-border rounded-md shadow-lg max-h-72 overflow-auto"
         >
           {matches.map((city, idx) => (
             <li
