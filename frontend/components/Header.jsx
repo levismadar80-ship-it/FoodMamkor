@@ -55,7 +55,8 @@ import { BRAND_NAME } from "@/lib/constants";
  *     family, different weight). Layout (MEH-890 chunk 1 + MEH-896 chunk 2):
  *     compact centered pill at ~50px effective height — lead group
  *     [logo + links] · inter-group gap · action cluster. MEH-1072: pill
- *     geometry is now FIXED (end-cap px-4, inter-group gap-8, lead-group
+ *     geometry is now FIXED (end-cap px-6 since MEH-1103, was px-4;
+ *     inter-group gap-8, lead-group
  *     intra-gap gap-9) at every scroll position — supersedes MEH-899's
  *     rest-wide→compact width switching (was px-11/gap-14/gap-11 at rest,
  *     snapping to px-4/gap-8/gap-9 at y=60) per Sapir 09/07 + NAV-01. Geometry
@@ -229,7 +230,7 @@ export default function Header() {
             // together with the inter-group air gap — no central void.
             // Supersedes the MEH-732 w-full/max-w-[940px]/justify-between
             // spread (itself a replacement for the MEH-643 grid layout).
-            // MEH-1072: the gap/px are FIXED (gap-8 px-4) — see the geometry
+            // MEH-1072: the gap/px are FIXED (gap-8 px-6 since MEH-1103) — see the geometry
             // note below; pill stays w-auto. (MEH-899's state-dependent gap-14
             // at rest / gap-8 scrolled is retired per Sapir 09/07 + NAV-01.)
             "w-auto max-w-[92vw] flex items-center rounded-full border",
@@ -251,12 +252,15 @@ export default function Header() {
             // were the reported victims — they read as "clipped behind the
             // header"). Opaque bg-background blocks the bleed-through; backdrop-
             // blur is dropped on this branch since nothing shows through to blur.
+            // MEH-1103: py-0.5 → py-1.5 on all three surface branches — grows
+            // the pill toward the ~58px reach target. Padding is NOT animated
+            // (stays out of the transition allowlist — MEH-732 guardrail).
             !isHomepage
-              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
+              ? "bg-background border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
               : transparent
-                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5"
-                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-0.5",
-            // MEH-1072: WIDTH is now FIXED geometry (gap-8 px-4) at every
+                ? "bg-background supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5"
+                : "bg-background supports-[backdrop-filter]:bg-background/60 supports-[backdrop-filter]:backdrop-blur-md border-border shadow-[0_8px_30px_rgba(46,104,83,0.12)] py-1.5",
+            // MEH-1072: WIDTH is now FIXED geometry (gap-8, end-cap px-6 since MEH-1103) at every
             // scroll position — supersedes MEH-899 width switching per Sapir
             // 09/07 + NAV-01. The rest-wide→compact snap (gap-14/px-11 →
             // gap-8/px-4 at y=60) is retired; the pill reads at one consistent
@@ -264,7 +268,9 @@ export default function Header() {
             // animated — gap/px stay out of the transition allowlist above
             // (MEH-732 guardrail upheld). Surface still varies on scroll
             // (MEH-890/896/947 branch above) — only the geometry is frozen.
-            "gap-8 px-4",
+            // MEH-1103: end-cap padding px-4 → px-6 (still FIXED geometry, not
+            // animated — the MEH-1072 frozen-geometry lock is preserved).
+            "gap-8 px-6",
           ].join(" ")}
         >
           {/* LEAD GROUP — logo + nav links together. MEH-1072: the intra-group
@@ -281,8 +287,11 @@ export default function Header() {
                 // 2.652 → 2.658, ~0.2% off — visually identical). Pairs with
                 // the slim pill (~50px); tap target preserved by the wrapper
                 // Link's min-h-[44px] above.
-                width={101}
-                height={38}
+                // MEH-1103: 101×38 → 111×42 for legibility (aspect 2.643,
+                // ~0.4% off — visually identical); pairs with the taller
+                // py-1.5 pill.
+                width={111}
+                height={42}
                 priority
               />{/* MEH-890 chunk 2: logo no longer inverted — it sits on the
                    at-rest glass pill now, not a bare/scrimmed hero. */}
@@ -373,7 +382,7 @@ function NavLink({ href, label, active, onClick }) {
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
-        "inline-flex items-center min-h-[44px] px-3 rounded-full text-sm transition-colors duration-fast ease-quart focus-ring",
+        "inline-flex items-center min-h-[44px] px-3 rounded-full text-base transition-colors duration-fast ease-quart focus-ring",
         active
           // MEH-896 polish: neutral warm tint (text-token at 7%) instead of
           // green so the active chip no longer echoes the green CTA. Text
@@ -399,7 +408,7 @@ function LoginAccount({ label }) {
   return (
     <Link
       href="/login"
-      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-sm font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
+      className="hidden md:inline-flex items-center justify-center min-h-[44px] px-2 rounded-full text-base font-medium transition-colors duration-fast ease-quart focus-ring text-primary hover:text-primary-dark"
     >
       {label}
     </Link>

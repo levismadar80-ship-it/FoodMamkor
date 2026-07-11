@@ -134,10 +134,11 @@ export default function Footer() {
             <ul className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <li key={link.href + link.label}>
+                  {/* MEH-1103: inline fontSize → utility class (13px unchanged)
+                      — interactive text carries no inline font sizing. */}
                   <Link
                     href={link.href}
-                    className="text-green-100 hover:text-white transition"
-                    style={{ fontSize: "13px" }}
+                    className="text-[13px] text-green-100 hover:text-white transition"
                   >
                     {link.label}
                   </Link>
@@ -221,10 +222,14 @@ export default function Footer() {
               { href: "/accessibility", label: t("nav.footer.accessibility") },
             ].map((link) => (
               <li key={link.href}>
+                {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
+                    default-16px; 13px is the footer-utility compromise Sapir
+                    locked in the sweep spec) + min-h-[44px] inline-flex so the
+                    tap target meets WCAG 2.5.5 without growing the visual bar
+                    (the extra hit area is vertical padding, not layout). */}
                 <Link
                   href={link.href}
-                  className="text-green-100 hover:text-white transition"
-                  style={{ fontSize: "11px" }}
+                  className="inline-flex items-center min-h-[44px] text-[13px] text-green-100 hover:text-white transition"
                 >
                   {link.label}
                 </Link>
