@@ -1187,7 +1187,8 @@ class TestContact:
         assert row is not None
         assert row.name == "רות כהן"
         assert row.email == "ruth@example.com"
-        assert row.message == "היי, יש לכן אפשרות להוסיף יצרן חדש?"
+        # MEH-1113: no topic → "general" label prepended as the first line.
+        assert row.message == "נושא: שאלה כללית\n\nהיי, יש לכן אפשרות להוסיף יצרן חדש?"
 
     def test_submit_contact_trims_and_lowercases_email(self, client, db):
         resp = client.post(
@@ -1202,7 +1203,8 @@ class TestContact:
         row = db.query(ContactMessage).first()
         assert row.name == "רות כהן"
         assert row.email == "ruth@example.com"
-        assert row.message == "שלום"
+        # MEH-1113: message trimmed, then prefixed with the default topic label.
+        assert row.message == "נושא: שאלה כללית\n\nשלום"
 
     # ----- Validation -----
 
@@ -1241,6 +1243,49 @@ class TestContact:
         resp = client.post("/contact", json=self.VALID_PAYLOAD)
         assert resp.status_code == 200
         assert db.query(ContactMessage).count() == 1
+
+    # ----- Topic (MEH-1113 — unified inbound routing, no DB column) -----
+
+    def test_submit_contact_valid_topic_prepends_label_and_subject(
+        self, client, db, monkeypatch
+    ):
+        """A whitelisted topic prepends its Hebrew label to the stored message
+        and tags the email subject."""
+        from app import config
+        from unittest.mock import patch
+
+        monkeypatch.setattr(config.settings, "resend_api_key", "re_test_key")
+        monkeypatch.setattr(config.settings, "contact_email", "inbox@example.com")
+
+        payload = dict(self.VALID_PAYLOAD)
+        payload["topic"] = "business"
+        with patch("app.routers.marketing.send_email") as mock_send:
+            resp = client.post("/contact", json=payload)
+
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row.message.startswith("נושא: פנייה של בית עסק\n\n")
+        assert "להוסיף יצרן חדש" in row.message
+        _to, subject, _body = mock_send.call_args[0]
+        assert subject == "מהמקור — פנייה חדשה (פנייה של בית עסק) מ-רות כהן"
+
+    def test_submit_contact_invalid_topic_returns_422(self, client, db):
+        """An off-whitelist topic is rejected with a Hebrew 422 detail."""
+        payload = dict(self.VALID_PAYLOAD)
+        payload["topic"] = "spam"
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 422
+        assert "נושא הפנייה אינו תקין" in resp.text
+        assert db.query(ContactMessage).count() == 0
+
+    def test_submit_contact_missing_topic_defaults_to_general(self, client, db):
+        """Missing/None topic is treated as the 'general' label."""
+        payload = dict(self.VALID_PAYLOAD)
+        payload.pop("topic", None)
+        resp = client.post("/contact", json=payload)
+        assert resp.status_code == 200
+        row = db.query(ContactMessage).first()
+        assert row.message.startswith("נושא: שאלה כללית\n\n")
 
     # ----- Email delivery (Resend) -----
 

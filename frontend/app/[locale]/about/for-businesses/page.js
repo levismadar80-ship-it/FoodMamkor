@@ -2,6 +2,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
+// MEH-1113: unify inbound routing — the bottom line points business owners at
+// the contact form + email instead of an Instagram DM (untracked, no record).
+import { CONTACT_EMAIL } from "@/lib/env.client";
 
 // MEH-475 PR-C4b/chunk-4: for-businesses FAQ i18n. First production
 // pattern for JSON-LD that consumes translation keys via a t() pass.
@@ -161,17 +164,25 @@ export default async function FaqForBusinessesPage({ params }) {
         </div>
 
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
+          {/* MEH-1113: Instagram-DM routing replaced with the form + visible email
+              (every inbound path → ContactMessage + notification). Neutral-plural
+              voice per ADR-024. Site-wide footer Instagram link is untouched. */}
           <p className="text-base mb-4 text-text/90">
-            {t("footer_intro_prefix")}{" "}
+            {t("footer_questions_prefix")}{" "}
             <a
-              href="https://www.instagram.com/meha_makor"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/about?topic=business#contact"
               className="underline text-primary"
             >
-              @meha_makor
+              {t("footer_form_link")}
             </a>{" "}
-            {t("footer_intro_suffix")}
+            {t("footer_or_email")}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="underline text-primary break-all"
+              dir="ltr"
+            >
+              <bdi>{CONTACT_EMAIL}</bdi>
+            </a>
           </p>
           <a
             href="/register/producer"

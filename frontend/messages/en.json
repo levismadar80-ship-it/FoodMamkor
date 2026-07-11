@@ -2341,7 +2341,14 @@
         "submit": "Send",
         "submit_loading": "Sending...",
         "success_toast": "Thanks! We'll get back to you soon",
-        "email_direct": "Or reach us directly by email:"
+        "email_direct": "Or reach us directly by email:",
+        "topic_label": "Inquiry topic",
+        "topic_options": {
+          "general": "General question",
+          "business": "Business inquiry",
+          "correction": "Correcting site info",
+          "other": "Other"
+        }
       }
     }
   },
@@ -2965,8 +2972,9 @@
         "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
       }
     },
-    "footer_intro_prefix": "Still have a question? Write to me on Instagram",
-    "footer_intro_suffix": "or join now:",
+    "footer_questions_prefix": "Still have questions? Reach us via",
+    "footer_form_link": "the contact form",
+    "footer_or_email": "or by email",
     "cta": "Add your business"
   },
   "privacy": {

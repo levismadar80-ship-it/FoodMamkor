@@ -23,7 +23,7 @@ from app.models import (
 from app.rate_limit import limiter
 
 # MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
-from app.schemas.schemas import ContactIn, NewsletterIn, StatsOut
+from app.schemas.schemas import CONTACT_TOPIC_LABELS, ContactIn, NewsletterIn, StatsOut
 
 logger = logging.getLogger(__name__)
 
@@ -169,35 +169,42 @@ def list_cities(db: Session = Depends(get_db)):
 @router.post("/contact", status_code=200)
 @limiter.limit("5/hour")  # SECURITY FIX #2: cap contact form abuse
 def submit_contact(request: Request, data: ContactIn, db: Session = Depends(get_db)):
+    # MEH-1113: unify inbound routing — every submission carries a topic
+    # (None → "general"). No DB column: the Hebrew label is prepended to the
+    # stored message and used in the email subject so admins can eyeball the
+    # topic without a schema migration.
+    label = CONTACT_TOPIC_LABELS[data.topic or "general"]
+    stored_message = f"נושא: {label}\n\n{data.message.strip()}"
     msg = ContactMessage(
         name=data.name.strip(),
         email=data.email.lower().strip(),
-        message=data.message.strip(),
+        message=stored_message,
     )
     db.add(msg)
     db.commit()
 
     # Always log so the message is visible in Railway logs even if Resend
     # is unconfigured or fails.
-    logger.info("New contact message: name=%s email=%s", msg.name, msg.email)
+    logger.info("New contact message: name=%s email=%s topic=%s", msg.name, msg.email, label)
 
     # Send an email to CONTACT_EMAIL (or fall back to ADMIN_EMAIL when
     # unset). Fail-open per CLAUDE.md: the DB row is the source of truth,
     # so Resend errors must never break the public form.
-    _send_contact_email(msg)
+    _send_contact_email(msg, label)
 
     return {"detail": "תודה! נחזור אליך בקרוב 🌿"}
 
 
-def _send_contact_email(msg: ContactMessage) -> None:
+def _send_contact_email(msg: ContactMessage, label: str) -> None:
     """Deliver a contact-form submission to the admin inbox.
 
     The DB row is the source of truth — email failure must never break the
-    public form (fail-open contract from send_email).
+    public form (fail-open contract from send_email). `label` is the Hebrew
+    topic label (MEH-1113) surfaced in the subject line.
     """
     recipient = settings.contact_email or settings.admin_email
     if not recipient:
         logger.info("[CONTACT EMAIL] No recipient configured — skipping send")
         return
     body = f"שם: {msg.name}\nאימייל: {msg.email}\n\n{msg.message}"
-    send_email(recipient, f"מהמקור — פנייה חדשה מ-{msg.name}", body)
+    send_email(recipient, f"מהמקור — פנייה חדשה ({label}) מ-{msg.name}", body)
