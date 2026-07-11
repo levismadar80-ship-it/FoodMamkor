@@ -3716,6 +3716,12 @@
         "heading": "Images",
         "subtitle": "Upload photos of your business and products — they appear in the gallery on your business page.",
         "add_cta": "Add images · JPG / PNG / WebP",
+        "drop_here": "Drop here to upload",
+        "tips": {
+          "light": "Natural light, no flash",
+          "real": "Real produce as it is — not over-styled",
+          "no_stock": "No stock photos — only real photos from your business"
+        },
         "uploading": "Uploading image…",
         "remove_aria": "Remove image",
         "save_cta": "Save images",
