@@ -68,7 +68,9 @@ export const CATEGORY_QUESTIONS = {
     "איך מזמינים?",
     "יש משלוח?",
   ],
-  "קרמים ושמנים": [
+  // MEH-1104: key tracks the DB category name, renamed from the old cream value
+  // to "קוסמטיקה טבעית" (getProducerQuestions looks up by categories[0].name).
+  "קוסמטיקה טבעית": [
     "מה חדש אצלך?",
     "איך מזמינים?",
     "יש משלוח?",
