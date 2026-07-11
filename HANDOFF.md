@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1117-questionchips-tokens` off `origin/staging` (synced post-E/F merge). GREEN autonomous. `Refs MEH-1074 · Closes MEH-1117`.
+- **Shipped:** `WhatsAppQuestionChips.jsx` — label `#6B6B6B`→`text-fg-muted`; chip `<a>` inline `border/radius/padding/fontSize` → `border border-border rounded-xl px-3 py-1.5 text-sm` (14px interactive floor, MEH-1103; `rounded-xl`=20px token exactly); `minBlockSize:44px` kept. No copy/logic change. MEH-1103 didn't cover this file (verified) — genuine, not a fold.
+- **Verify:** build exit 0 · 0 residual hex · 0 physical RTL · no test references this component's inline styles.
+
 ## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — PR open
 
 - **Branch:** `feature/meh-1112-about-polish` off `origin/staging` (divergence 0). YELLOW/ADR-016 v2 — UI change, Playwright self-QA required + attached. Batch authority: Sapir-approved MEH-1112→MEH-1113 sequential, auto-merge on CI green + self-QA screenshots. `Closes MEH-1112`.
