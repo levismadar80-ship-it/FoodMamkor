@@ -15,7 +15,9 @@
  * Related:  app/[locale]/producer/dashboard/layout.js (tab nav + UX gate);
  *           app/[locale]/producer/dashboard/page.js (Overview — KPI strip);
  *           backend/app/routers/producer_me.py:489 (analytics endpoint).
- * History:  MEH-964 (relocation, chunk 1B).
+ * History:  MEH-964 (relocation, chunk 1B); MEH-1090 (chart Y-axis + tokens);
+ *           MEH-1101 (pre-publish zero-state + small-n cities list +
+ *           followers-zero CTA).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -23,8 +25,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -34,6 +38,10 @@ export default function ProducerDashboardInsightsPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
   const [analytics, setAnalytics] = useState(null);
+  // MEH-1101: the analytics payload has no approved/published flag — the
+  // status signal comes from /producers/me (same source as the Overview's
+  // isApproved, page.js). null = unknown → banner stays hidden (fail-quiet).
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -42,6 +50,7 @@ export default function ProducerDashboardInsightsPage() {
       return;
     }
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
+    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading, router]);
 
   if (authLoading || !user || user.role !== "producer") return null;
@@ -54,9 +63,30 @@ export default function ProducerDashboardInsightsPage() {
     );
   }
 
+  const isApproved = profile?.status === "approved";
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <DeepAnalyticsSection analytics={analytics} />
+      {/* MEH-1101: pre-publish zero-state — all-zero KPIs read as failure
+          without the context that data starts flowing after approval
+          (Site Kit hasZeroData pattern). KPI cards still render below. */}
+      {profile && !isApproved && (
+        <div
+          className="bg-white border border-border rounded-[16px] p-4 mb-6 text-sm"
+          role="status"
+          data-testid="insights-zero-state"
+        >
+          <p className="font-semibold text-text mb-1">{t("insights_zero_state.title")}</p>
+          <p className="text-fg-muted mb-3">{t("insights_zero_state.body")}</p>
+          <Link
+            href="/producer/dashboard/edit"
+            className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition"
+          >
+            {t("insights_zero_state.cta")}
+          </Link>
+        </div>
+      )}
+      <DeepAnalyticsSection analytics={analytics} profile={profile} />
     </div>
   );
 }
@@ -67,7 +97,7 @@ export default function ProducerDashboardInsightsPage() {
 // the Overview; the top-line KPI strip stays on the Overview (MEH-964 1B).
 // ============================================================
 
-function DeepAnalyticsSection({ analytics }) {
+function DeepAnalyticsSection({ analytics, profile }) {
   const t = useTranslations("dashboard.producer.analytics");
   const {
     profile_views,
@@ -117,6 +147,26 @@ function DeepAnalyticsSection({ analytics }) {
           icon={Leaf}
           value={follower_count}
           sub={t("simple_cards.followers_sub_template", { count: new_followers_this_week })}
+          // MEH-1101: 0 followers rendered "0 · 0+ השבוע" — a double-zero that
+          // reads as failure. Replace with a share invitation; the share text
+          // links to the public page when one exists (approved + slug).
+          empty={
+            follower_count === 0 ? (
+              <p className="text-sm text-fg-muted" data-testid="followers-zero-cta">
+                {t("simple_cards.followers_zero_prefix")}
+                {profile?.status === "approved" && profile?.slug ? (
+                  <LocaleLink
+                    href={`/${profile.slug}`}
+                    className="text-primary hover:underline"
+                  >
+                    {t("simple_cards.followers_zero_share")}
+                  </LocaleLink>
+                ) : (
+                  t("simple_cards.followers_zero_share")
+                )}
+              </p>
+            ) : null
+          }
         />
         <SimpleCard
           label={t("simple_cards.rating_label")}
@@ -173,15 +223,22 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
   );
 }
 
-function SimpleCard({ label, icon: Icon, value, sub }) {
+function SimpleCard({ label, icon: Icon, value, sub, empty }) {
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
         <Icon size={24} className="text-primary" aria-hidden="true" />
       </div>
       <p className="text-sm text-fg-muted mb-2">{label}</p>
-      <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
-      <p className="text-xs text-fg-muted mt-1">{sub}</p>
+      {empty ? (
+        // MEH-1101: zero-state replacement — CTA line instead of value + sub.
+        empty
+      ) : (
+        <>
+          <p className="font-headline-lg text-4xl font-bold text-primary">{value}</p>
+          <p className="text-xs text-fg-muted mt-1">{sub}</p>
+        </>
+      )}
     </div>
   );
 }
@@ -303,6 +360,21 @@ function TopCitiesBarChart({ data }) {
       <p className="text-sm text-fg-muted">
         {t("top_cities_empty")}
       </p>
+    );
+  }
+  // MEH-1101: with fewer than 3 cities, maxV normalization renders the top
+  // city as a full-width bar — "100% of nothing". A plain text list carries
+  // the same information without the misleading proportion.
+  if (data.length < 3) {
+    return (
+      <ul className="space-y-2" data-testid="top-cities-list">
+        {data.map((row) => (
+          <li key={row.city} className="flex items-center justify-between text-sm">
+            <span className="text-text">{row.city}</span>
+            <span className="text-fg-muted">{row.count}</span>
+          </li>
+        ))}
+      </ul>
     );
   }
   const maxV = Math.max(1, ...data.map((d) => d.count));

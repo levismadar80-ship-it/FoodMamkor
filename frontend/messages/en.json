@@ -3474,6 +3474,11 @@
     "producer": {
       "loading_data": "Loading…",
       "loading_analytics": "Loading analytics…",
+      "insights_zero_state": {
+        "title": "Your page isn't published yet",
+        "body": "Once it's approved, views and inquiries will appear here.",
+        "cta": "Complete your profile"
+      },
       "nav": {
         "aria": "Dashboard navigation",
         "overview": "Overview",
@@ -3631,6 +3636,8 @@
         "simple_cards": {
           "followers_label": "Followers",
           "followers_sub_template": "+{count} this week",
+          "followers_zero_prefix": "No followers yet — ",
+          "followers_zero_share": "share your page",
           "rating_label": "Average rating",
           "rating_sub_template": "From {count} reviews"
         },
