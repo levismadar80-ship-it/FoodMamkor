@@ -3571,10 +3571,6 @@
         "vacation_date_required": "Pick a return date to switch to on break"
       },
       "quick_links": {
-        "settings": {
-          "title": "Edit profile",
-          "sub": "Update business details, deliveries, and photos"
-        },
         "add_event": {
           "title": "Add an event",
           "sub": "Workshop, tour, open days, etc."
@@ -3584,11 +3580,11 @@
           "sub": "This is how customers see it"
         },
         "group_buys": {
-          "title": "My group buys",
+          "title": "Manage group buys",
           "sub": "Manage group buys and open new ones"
         },
         "recipes": {
-          "title": "Recipes",
+          "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
         }
       },
