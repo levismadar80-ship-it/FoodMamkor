@@ -125,18 +125,19 @@ function ReviewReply({ review, isOwner, onSaved }) {
           <p className="text-sm text-error mt-1" role="alert">{error}</p>
         )}
         <div className="flex items-center gap-4 mt-2">
+          {/* MEH-1103: action buttons carry min-h-[44px] (WCAG 2.5.5). */}
           <button
             type="button"
             onClick={save}
             disabled={saving || draft.trim().length < 2}
-            className="bg-primary-dark text-white px-5 py-1.5 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+            className="min-h-[44px] bg-primary-dark text-white px-5 py-1.5 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
           >
             {saving ? t("submit_saving") : t("reply_save")}
           </button>
           <button
             type="button"
             onClick={() => { setDraft(reply || ""); setEditing(false); setError(""); }}
-            className="text-sm text-fg-muted hover:text-text transition"
+            className="min-h-[44px] inline-flex items-center text-sm text-fg-muted hover:text-text transition"
           >
             {t("cancel")}
           </button>
@@ -160,11 +161,12 @@ function ReviewReply({ review, isOwner, onSaved }) {
           )}
         </div>
       )}
+      {/* MEH-1103: 44px hit area (text stays 13px — secondary owner action). */}
       {isOwner && (
         <button
           type="button"
           onClick={() => { setDraft(reply || ""); setEditing(true); }}
-          className="mt-2 text-[13px] text-primary hover:underline"
+          className="mt-2 min-h-[44px] inline-flex items-center text-[13px] text-primary hover:underline"
         >
           {reply ? t("reply_edit") : t("reply_add")}
         </button>
@@ -333,7 +335,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
           !showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="mb-6 border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
+              className="mb-6 min-h-[44px] border border-text text-text px-5 py-2 rounded-[6px] text-sm font-medium hover:bg-green-50 transition"
             >
               {t("write_cta")}
             </button>
@@ -375,14 +377,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-primary-dark text-white px-6 py-2 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
+                  className="min-h-[44px] bg-primary-dark text-white px-6 py-2 rounded-[8px] hover:opacity-90 transition disabled:opacity-60 text-sm font-medium"
                 >
                   {submitting ? t("submit_saving") : t("submit")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="text-sm text-fg-muted hover:text-text transition"
+                  className="min-h-[44px] inline-flex items-center text-sm text-fg-muted hover:text-text transition"
                 >
                   {t("cancel")}
                 </button>
