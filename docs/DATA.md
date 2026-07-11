@@ -657,7 +657,7 @@ POST /contact                    public — { name, email, message, topic? } →
                                  (Hebrew detail), missing/None → "general". No DB column —
                                  the Hebrew label is prepended to the stored message
                                  ("נושא: <label>") and to the email subject. Single source:
-                                 CONTACT_TOPIC_LABELS in schemas.py:2069.
+                                 CONTACT_TOPIC_LABELS in schemas.py:2074.
 GET  /cities                     public — deduped producer+listing city list
 ```
 
