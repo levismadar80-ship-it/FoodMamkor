@@ -3501,6 +3501,11 @@
     "producer": {
       "loading_data": "טעינת נתונים...",
       "loading_analytics": "טעינת סטטיסטיקות...",
+      "insights_zero_state": {
+        "title": "העמוד עדיין לא פורסם",
+        "body": "ברגע שיאושר, כאן יופיעו צפיות ופניות.",
+        "cta": "להשלמת הפרופיל"
+      },
       "nav": {
         "aria": "ניווט בלוח הניהול",
         "overview": "סקירה",
@@ -3658,6 +3663,8 @@
         "simple_cards": {
           "followers_label": "עוקבות",
           "followers_sub_template": "+{count} השבוע",
+          "followers_zero_prefix": "עדיין אין עוקבות — ",
+          "followers_zero_share": "שתפו את העמוד",
           "rating_label": "דירוג ממוצע",
           "rating_sub_template": "מתוך {count} ביקורות"
         },
@@ -3746,6 +3753,12 @@
         "heading": "תמונות",
         "subtitle": "העלו תמונות של העסק והמוצרים — הן מופיעות בגלריה בעמוד העסק שלכם.",
         "add_cta": "הוספת תמונות · JPG / PNG / WebP",
+        "drop_here": "שחררו כאן להעלאה",
+        "tips": {
+          "light": "אור טבעי, בלי פלאש",
+          "real": "תוצרת אמיתית כמו שהיא — לא מסוגננת יתר",
+          "no_stock": "בלי תמונות סטוק — רק תמונות אמיתיות מהעסק שלכם"
+        },
         "uploading": "מעלה תמונה…",
         "remove_aria": "הסרת התמונה",
         "save_cta": "שמירת תמונות",
