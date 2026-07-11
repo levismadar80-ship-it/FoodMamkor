@@ -34,6 +34,7 @@ import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
+import WhatsThis from "@/components/WhatsThis";
 import Input from "@/components/ui/Input";
 import AddressSearch from "@/components/AddressSearch";
 import ProductsSection from "@/components/ProductsSection";
@@ -310,6 +311,8 @@ const METHOD_FIELD = {
 
 function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.contact_channels");
+  // MEH-1115: point-of-decision explainers (top-level whats_this namespace).
+  const tWhat = useTranslations("whats_this");
   const seed = {
     phone: profile?.phone || "",
     instagram: profile?.instagram || "",
@@ -400,10 +403,14 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={(e) => upd("facebook", e.target.value)} error={fieldError("facebook")} />
         <Input type="url" dir="ltr" label={t("field_external_order")} value={form.external_order_form}
           onChange={(e) => upd("external_order_form", e.target.value)} error={fieldError("external_order_form")} />
+        {/* MEH-1115: what an external order form is, right under its field. */}
+        <WhatsThis content={tWhat("order_form")} testId="whats-this-order-form" />
       </div>
 
       <fieldset className="mt-5">
-        <legend className="text-sm font-medium text-text mb-2">{t("primary_legend")}</legend>
+        <legend className="text-sm font-medium text-text">{t("primary_legend")}</legend>
+        {/* MEH-1115: what the primary channel means, at the point of choice. */}
+        <WhatsThis content={tWhat("primary_channel")} className="mb-1" testId="whats-this-primary-channel" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PRIMARY_METHODS.map((m) => {
             // MEH-1093 F5: disable a method whose backing field is empty up-front
