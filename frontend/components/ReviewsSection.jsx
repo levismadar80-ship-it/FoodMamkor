@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Leaf, Star } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
@@ -412,13 +412,25 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         <p className="text-sm text-fg-muted">{t("loading")}</p>
       ) : reviews.length === 0 ? (
         isOwner ? (
-          <EmptyState
-            icon={Star}
-            title={t("owner_empty_title")}
-            description={t("owner_empty_description")}
-            ctaLabel={t("owner_empty_cta")}
-            ctaHref="/producer/dashboard/followers"
-          />
+          <>
+            {/* MEH-1114: owner-only marker — this empty state renders only for
+                the producer owner (isOwner), never for readers. The eyebrow chip
+                makes that explicit so the owner doesn't mistake this internal
+                coaching copy for something customers see. */}
+            <div className="mb-4 flex justify-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background-alt px-3 py-1 text-xs font-label-md text-fg-muted">
+                <EyeSlash size={14} weight="regular" aria-hidden="true" />
+                {t("owner_only_eyebrow")}
+              </span>
+            </div>
+            <EmptyState
+              icon={Star}
+              title={t("owner_empty_title")}
+              description={t("owner_empty_description")}
+              ctaLabel={t("owner_empty_cta")}
+              ctaHref="/producer/dashboard/followers"
+            />
+          </>
         ) : (
           <div className="text-center py-8">
             <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />

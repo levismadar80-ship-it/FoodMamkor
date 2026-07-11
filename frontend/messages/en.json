@@ -2616,8 +2616,9 @@
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
     "login_prompt": "<login>Sign in</login> to write a review",
     "loading": "Loading reviews...",
+    "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come after a few customers",
-    "owner_empty_description": "Reviews are created automatically after a customer sends you a WhatsApp message. 24 hours after the click, she gets a link to rate you. No reviews yet because no one has clicked yet.",
+    "owner_empty_description": "Reviews are created automatically after customers send you a WhatsApp message. 24 hours after the click they get a link to rate you. No reviews yet because no one has clicked yet.",
     "owner_empty_cta": "Share your profile on WhatsApp",
     "empty_message": "No reviews yet — be the first!",
     "pagination": {

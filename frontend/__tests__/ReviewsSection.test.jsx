@@ -17,6 +17,7 @@ vi.mock("next-intl", () => ({
       reply_save: "שמירה",
       cancel: "ביטול",
       submit_saving: "בשמירה...",
+      owner_only_eyebrow: "מוצג רק לך",
     };
     const t = (key) => flat[key] || key;
     t.rich = (key) => key; // guest login-prompt path
@@ -39,6 +40,7 @@ vi.mock("@/components/ui/EmptyState", () => ({ default: () => <div data-testid="
 vi.mock("@phosphor-icons/react", () => ({
   Star: (props) => <span data-testid="icon-star" {...props} />,
   Leaf: (props) => <span data-testid="icon-leaf" {...props} />,
+  EyeSlash: (props) => <span data-testid="icon-eyeslash" {...props} />,
   ArrowLeft: (props) => <span {...props} />,
   ArrowRight: (props) => <span {...props} />,
 }));
@@ -133,5 +135,22 @@ describe("ReviewsSection — business reply (MEH-1039)", () => {
     expect(saveBtn).toBeDisabled();
     fireEvent.change(screen.getByPlaceholderText("כתבו תגובה ללקוח…"), { target: { value: "ok" } });
     expect(saveBtn).not.toBeDisabled();
+  });
+});
+
+describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
+  it("shows the 'מוצג רק לך' eyebrow above the owner empty state", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={true} />);
+    expect(await screen.findByText("מוצג רק לך")).toBeInTheDocument();
+    expect(screen.getByTestId("empty-state")).toBeInTheDocument();
+  });
+
+  it("does NOT show the owner eyebrow on the consumer empty state", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    // consumer path renders the Leaf empty message, never the owner eyebrow
+    await waitFor(() => expect(screen.queryByTestId("empty-state")).not.toBeInTheDocument());
+    expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
   });
 });
