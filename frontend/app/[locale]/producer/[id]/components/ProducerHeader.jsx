@@ -57,11 +57,11 @@ export default function ProducerHeader({
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit).
             This is the single verification affordance (ADR-022 verification_tier
             seal), so TrustBadge below no longer emits the verification tiers.
-            MEH-1124 (Task C): "מוצרים" is dropped here (meaningless next to the
-            page's own products section; cards keep it), and "משלוח" is dropped
-            from the pill row so delivery renders exactly once — in the
-            capability strip below (broadened to the union of every delivery
-            signal so no producer loses the indicator). */}
+            MEH-1124 (Task C): the products badge is dropped here (meaningless
+            next to the page's own products section; cards keep it), and the
+            delivery badge is dropped from the pill row so delivery renders
+            exactly once — in the capability strip below (broadened to the union
+            of every delivery signal so no producer loses the indicator). */}
         <BadgeRow producer={producer} hideKeys={["products", "delivery"]} />
         {/* MEH-51 / MEH-1120: recognition-only trust badge — self-gates to
             tier ≥ 4 (community-leader / ambassador). Tiers 2/3 (phone / business
@@ -130,7 +130,11 @@ export default function ProducerHeader({
 
       {/* MEH-1124 (Task C): availability is its OWN status line (dot + text)
           under the meta row — one place, aligned, never inside the trust/
-          capability chip row above. */}
+          capability chip row above.
+          MEH-291: the `|| availability_status` fallback is intentional — the
+          backend dual-writes the legacy field during the overlap, so the badge
+          reads it when a stale row hasn't picked up availability_state yet.
+          Do not drop the fallback. */}
       <div className="mb-3">
         <AvailabilityBadge
           status={producer.availability_state || producer.availability_status}
