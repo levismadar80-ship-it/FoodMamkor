@@ -40,7 +40,8 @@ const BASELINE = new Set([
   "auth.register.consumer.eyebrow",
   "auth.register.producer.account_reassurance",
   "auth.register.producer.fields.address_map_privacy_hint",
-  "auth.register.producer.fields.city",
+  // MEH-1127: auth.register.producer.fields.city translated to en (placeholder
+  // "e.g. Zikhron Ya'akov") — removed from the baseline per the honesty test.
   "auth.register.producer.fields.city_required_marker",
   "auth.register.producer.fields.license_pending_optin_hint",
   "auth.register.producer.fields.license_pending_optin_label",

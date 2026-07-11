@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1127 (CitySearch consistency): visible label + height + radius — draft PR
+
+- **Branch:** `claude/meh-1127-citysearch-li3f5g` off `origin/staging` (harness-designated branch for this task). YELLOW — shared component (3+ surfaces), auto-merge allowed after CI green + Playwright self-QA. `Closes MEH-1127`.
+- **Phase 0 (call-sites grepped):** 10 visual CitySearch consumers — `RegisterProducerClient.jsx:615` (target), `map/MapClient.jsx:412`+`:478`, `map/components/CityPickerModal.jsx:63`, `settings/page.jsx:301`, `LocationModal.jsx:104`, `experiences/ExperiencesClient.jsx:114`, `group-buys/GroupBuysClient.jsx:165`, `experiences/new/NewExperienceClient.jsx:361`, `producer/dashboard/events/new/page.js:167`, `events/EventsClient.jsx:324`. No STOP: none rely on the ~60px height for side-by-side alignment (all vertically stacked / standalone rows). Plus non-visual mocks (`RegisterProducerClient.test.jsx`, `ModalFocusReturn.test.jsx`) + one e2e comment.
+- **Fix:** `CitySearch.jsx` — new `labelVisible` prop (default false → `sr-only`, current behavior); wrapper `py-2` removed (input `min-h-[44px]` sets height); `rounded-[8px]`→`rounded-md` on wrapper + dropdown ul. Register call-site passes `labelVisible` + new `city_label` label + example placeholder. i18n he+en twins (`city_label`, `city` value); en-parity baseline (MEH-978) drops the now-translated `city` line.
+- **Verify:** build exit 0 · vitest 20/20 (en-parity + RegisterProducerClient + ModalFocusReturn) · Playwright 375px measured city input 44px == business-name 44px (wrapper 46px, ±2px OK); screenshots `docs/audits/screenshots/2026-07-meh1127-qa/` (register step-2 label visible + rounded-md; /map + /experiences default surfaces unchanged). Sandbox had no backend — `/api/**` mocked in the screenshot run (fail-open, cosmetic only).
+- **Next:** open draft PR, auto-merge on CI green.
+
 ## 2026-07-11 — MEH-1089 epic (producer-dashboard disclosure): MEH-1115 MERGED (#1615) + MEH-1116 PR open + MEH-1106 Phase-0 report
 
 - **Authority:** Sapir grant 11/07 — tasks 1–2 end-to-end incl. auto-merge on CI green + Playwright self-QA w/ screenshots; task 3 (MEH-1106) Phase-0 READ-ONLY, awaiting Sapir decision.
