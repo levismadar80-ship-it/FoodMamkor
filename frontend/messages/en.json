@@ -2801,8 +2801,8 @@
     },
     "share_button": {
       "default_message": "I found {name} on Mehamakor — {url}",
-      "share_aria": "Share the business on WhatsApp",
-      "share_to_friend": "Send to a friend"
+      "share_aria": "Share with friends on WhatsApp",
+      "share_to_friend": "Share with friends"
     },
     "question_chips": {
       "my_area": "My area",
@@ -3727,6 +3727,24 @@
           "review": "First review",
           "phone": "Verified phone"
         }
+      },
+      "edit_accordion": {
+        "bio_present": "Description in place",
+        "bio_missing": "No description yet",
+        "questions_summary": "{count, plural, =0 {No custom questions yet} one {1 custom question} other {# custom questions}}",
+        "contact_phone_ok": "Phone ✓",
+        "contact_primary": "{channel} primary",
+        "channel_whatsapp": "WhatsApp",
+        "channel_phone": "Phone",
+        "channel_instagram": "Instagram",
+        "channel_email": "Email",
+        "channel_website": "Website",
+        "channel_facebook": "Facebook",
+        "channel_external_order": "Order form",
+        "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
+        "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
+        "location_missing": "No location set yet",
+        "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}"
       },
       "contact_channels": {
         "heading": "Contact channels",

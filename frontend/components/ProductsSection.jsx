@@ -22,7 +22,11 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import EmptyState from "@/components/ui/EmptyState";
 
-export default function ProductsSection() {
+// MEH-1116: `embedded` drops the card chrome + heading (the edit-tab accordion
+// header owns them); `onCountChange` reports the live product count up for the
+// accordion's one-line summary. Display-only props — save logic untouched.
+// Default (no props) rendering is byte-identical to before.
+export default function ProductsSection({ embedded = false, onCountChange } = {}) {
   const t = useTranslations("settings.products");
   const tForm = useTranslations("settings.products.form");
   const tErr = useTranslations("settings.products.errors");
@@ -48,6 +52,11 @@ export default function ProductsSection() {
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
+
+  // MEH-1116: single reporting point — fires on fetch, add, and delete alike.
+  useEffect(() => {
+    if (products !== null) onCountChange?.(products.length);
+  }, [products, onCountChange]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -209,9 +218,11 @@ export default function ProductsSection() {
   if (loading) return null;
 
   return (
-    <div className="bg-white border border-border rounded-[16px] p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
+    <div className={embedded ? "" : "bg-white border border-border rounded-[16px] p-6"}>
+      <div className={embedded ? "flex items-center justify-end mb-4" : "flex items-center justify-between mb-4"}>
+        {!embedded && (
+          <h3 className="font-headline-md text-lg font-bold text-text">{t("section_heading")}</h3>
+        )}
         {/* MEH-1097 F14: the top add button is redundant with the EmptyState CTA
             while empty — show it only once products exist (or restores after the
             first add). Empty state → the EmptyState CTA is the single button. */}
