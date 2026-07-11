@@ -33,10 +33,15 @@ import Popover from "@/components/ui/Popover";
  * Hebrew explainer. Outside click + Esc closes. Works on mobile
  * without requiring hover.
  */
-export default function BadgeRow({ producer, limit, surface = "hero" }) {
+export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }) {
   const t = useTranslations("producer.badge_row");
   const tTier = useTranslations("producer.badge");
-  const badges = limit != null ? topBadges(producer, limit) : allBadges(producer);
+  const all = limit != null ? topBadges(producer, limit) : allBadges(producer);
+  // MEH-1124 (MEH-1074 Task C): optional per-surface suppression. The producer
+  // detail header passes hideKeys={["products"]} — the "מוצרים" badge is
+  // meaningless next to the page's own products section. Card surfaces omit the
+  // prop, so their badge set is byte-unchanged (lib/badges.js stays the SoT).
+  const badges = hideKeys?.length ? all.filter((b) => !hideKeys.includes(b.key)) : all;
   const showDeclared = producer?.verification_tier === "declared" && surface === "hero";
   if (badges.length === 0 && !showDeclared) return null;
 

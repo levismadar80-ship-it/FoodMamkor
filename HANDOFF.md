@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1124 (Task C): producer-header tag row information classes (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1123-tag-row-classes` off `origin/staging` (post-B merge). YELLOW (BadgeRow/ProducerHeader NOT central). `Refs MEH-1074 · Closes MEH-1124`. Continues PR #1492 audit A3.
+- **Shipped:** `BadgeRow.jsx` — additive `hideKeys` prop (filters badges by key; cards omit it → byte-unchanged). `ProducerHeader.jsx` — (1) `AvailabilityBadge` moved out of the pill flex-row to its own status line under the meta row (fixes the floating orange "busy" dot); (2) `hideKeys={["products","delivery"]}` drops מוצרים + the משלוח pill; (3) new `hasDelivery` union (`delivery_areas` ∪ `has_delivery` ∪ `delivery_count`) gates the single highlights delivery chip so dedup loses no producer (the two surfaces used different fields). `lib/badges.js` untouched (READ-ONLY honored). `BadgeRow.test.jsx` +1 (hideKeys).
+- **Verify:** build exit 0 · BadgeRow + ProducerHeaderTrustStrip + TrustBadge 26 passed · 0 physical RTL. **Sapir QA gate** (availability status line aligned under meta; one משלוח; no מוצרים in header; cards unchanged) — sandbox can't screenshot preview (MEH-360). Draft until Sapir QA. **Task I** (product cards image-first) unblocks after this.
+
 ## 2026-07-11 — MEH-1049 (scope-add): contact-card truncation + share disambiguation (Task A of the producer-page sweep, MEH-1074) — PR open
 
 - **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).

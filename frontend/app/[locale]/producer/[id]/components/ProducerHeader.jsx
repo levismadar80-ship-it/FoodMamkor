@@ -31,6 +31,14 @@ export default function ProducerHeader({
   hasImages = true,
 }) {
   const t = useTranslations();
+  // MEH-1124 (Task C): union of every delivery signal — the pill-row badge
+  // (badges.js: has_delivery / delivery_count) and the old capability chip
+  // (delivery_areas) used different fields, so deduping to a single chip has to
+  // cover all of them or a producer keyed on only one field loses the badge.
+  const hasDelivery =
+    producer.delivery_areas?.length > 0 ||
+    !!producer.has_delivery ||
+    (typeof producer.delivery_count === "number" && producer.delivery_count > 0);
   return (
     <>
       {/* Header: name + trust badges */}
@@ -48,8 +56,13 @@ export default function ProducerHeader({
         )}
         {/* MEH-18: unified badge row (all earned badges on Detail — no limit).
             This is the single verification affordance (ADR-022 verification_tier
-            seal), so TrustBadge below no longer emits the verification tiers. */}
-        <BadgeRow producer={producer} />
+            seal), so TrustBadge below no longer emits the verification tiers.
+            MEH-1124 (Task C): "מוצרים" is dropped here (meaningless next to the
+            page's own products section; cards keep it), and "משלוח" is dropped
+            from the pill row so delivery renders exactly once — in the
+            capability strip below (broadened to the union of every delivery
+            signal so no producer loses the indicator). */}
+        <BadgeRow producer={producer} hideKeys={["products", "delivery"]} />
         {/* MEH-51 / MEH-1120: recognition-only trust badge — self-gates to
             tier ≥ 4 (community-leader / ambassador). Tiers 2/3 (phone / business
             "מאומת") were removed to stop duplicating the BadgeRow seal. */}
@@ -82,14 +95,9 @@ export default function ProducerHeader({
             {t("producer.detail.header.favorites_count", { count: producer.favorites_count })}
           </span>
         )}
-        {/* MEH-291 — unified 4-state availability. Backend dual-writes to the
-            legacy availability_status during the overlap, so the badge
-            falls back to the legacy field if a stale row hasn't picked
-            up availability_state yet. */}
-        <AvailabilityBadge
-          status={producer.availability_state || producer.availability_status}
-          variant="detail"
-        />
+        {/* MEH-1124 (Task C): availability moved OUT of this chip row to its own
+            status line under the meta row (below) — a bare dot+text badge wedged
+            between padded pills left the orange "busy" dot floating misaligned. */}
       </div>
 
       {producer.short_description && (
@@ -109,7 +117,7 @@ export default function ProducerHeader({
         </p>
       )}
 
-      <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-3">
+      <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-1.5">
         <MapPin size={14} />
         {producer.city}
         {primaryCategory && (
@@ -119,6 +127,16 @@ export default function ProducerHeader({
           </>
         )}
       </p>
+
+      {/* MEH-1124 (Task C): availability is its OWN status line (dot + text)
+          under the meta row — one place, aligned, never inside the trust/
+          capability chip row above. */}
+      <div className="mb-3">
+        <AvailabilityBadge
+          status={producer.availability_state || producer.availability_status}
+          variant="detail"
+        />
+      </div>
 
       {(producer.top_product_name || producer.starting_price_label) && (
         <p className="mt-1 text-sm mb-3">
@@ -143,8 +161,10 @@ export default function ProducerHeader({
         </div>
       )}
 
-      {/* Highlights strip — grass_fed / organic / delivery / kosher */}
-      {(producer.grass_fed || producer.organic_certified || producer.delivery_areas?.length > 0 || !!producer.kashrut_verified_at) && (
+      {/* Highlights strip — grass_fed / organic / delivery / kosher.
+          MEH-1124 (Task C): delivery renders ONCE here (dropped from the pill
+          row via hideKeys), gated on the union `hasDelivery`. */}
+      {(producer.grass_fed || producer.organic_certified || hasDelivery || !!producer.kashrut_verified_at) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
@@ -156,7 +176,7 @@ export default function ProducerHeader({
               {t("producer.detail.header.attr.organic")}
             </span>
           )}
-          {producer.delivery_areas?.length > 0 && (
+          {hasDelivery && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>
             </span>
