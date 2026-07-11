@@ -507,14 +507,17 @@ export function ImagesCard({ profile, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
 
   // Dirty when the list differs from the seeded set (order-sensitive: a reorder
   // would count as dirty, but this editor has no reorder — add/remove only).
   const dirty =
     seed.length !== images.length || seed.some((url, i) => url !== images[i]);
 
-  const handleUpload = async (e) => {
-    const files = Array.from(e.target.files || []);
+  // MEH-1099: shared upload path — the file input's onChange and the
+  // dropzone's onDrop both feed here, so drag-drop reuses the exact
+  // POST /upload/image + Cloudinary flow (no parallel mechanism).
+  const uploadFiles = async (files) => {
     if (!files.length) return;
     setSaved(false);
     setErrorMsg(null);
@@ -532,8 +535,25 @@ export function ImagesCard({ profile, onSave }) {
       setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
+  };
+
+  const handleUpload = async (e) => {
+    await uploadFiles(Array.from(e.target.files || []));
+    e.target.value = "";
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (uploading) return;
+    // Only image files — a dropped PDF/zip silently filters out, matching
+    // the input's accept="image/*" gate on the click path.
+    uploadFiles(
+      Array.from(e.dataTransfer?.files || []).filter((f) =>
+        f.type.startsWith("image/")
+      )
+    );
   };
 
   // Remove by index (not by URL value): if images[] ever holds a duplicate
@@ -566,7 +586,22 @@ export function ImagesCard({ profile, onSave }) {
       <h2 className="font-headline-md text-base font-bold mb-1">{t("heading")}</h2>
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
 
-      <label className="inline-flex items-center text-sm border border-dashed border-border rounded-[10px] px-4 py-3 cursor-pointer hover:bg-green-50 transition">
+      <label
+        data-testid="images-dropzone"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={(e) => {
+          // Ignore leave events from moving over child nodes — only clear
+          // the drop state when the cursor truly exits the zone.
+          if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
+        }}
+        onDrop={handleDrop}
+        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 cursor-pointer transition ${
+          dragOver ? "border-primary bg-green-50" : "border-border hover:bg-green-50"
+        }`}
+      >
         <input
           type="file"
           accept="image/*"
@@ -575,8 +610,23 @@ export function ImagesCard({ profile, onSave }) {
           disabled={uploading}
           onChange={handleUpload}
         />
-        {uploading ? t("uploading") : t("add_cta")}
+        {uploading ? t("uploading") : dragOver ? t("drop_here") : t("add_cta")}
       </label>
+
+      {/* MEH-1099: photography tips — wording from Brand Hub 05-photography-style
+          (imagery SoT, MEH-788) + the approved product-photography guide.
+          DO NOT reword here — brand-book-precedes-code. */}
+      <ul className="mt-3 space-y-1 text-xs text-fg-muted">
+        {["light", "real", "no_stock"].map((k) => (
+          <li key={k} className="flex items-start gap-1.5">
+            <span
+              aria-hidden="true"
+              className="mt-[5px] w-1 h-1 rounded-full bg-primary shrink-0"
+            />
+            {t(`tips.${k}`)}
+          </li>
+        ))}
+      </ul>
 
       {images.length > 0 && (
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
@@ -591,7 +641,7 @@ export function ImagesCard({ profile, onSave }) {
               <button
                 type="button"
                 onClick={() => removeImage(i)}
-                className="absolute top-1 start-1 bg-red-500 text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                className="absolute top-1 start-1 bg-error text-white rounded-full w-6 h-6 inline-flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                 aria-label={t("remove_aria")}
               >
                 <X size={14} weight="bold" aria-hidden="true" />
@@ -602,7 +652,10 @@ export function ImagesCard({ profile, onSave }) {
       )}
 
       {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+        // MEH-1099: text-error (ADR-026) — the drag-drop path made this error
+        // display newly reachable; sibling text-red-600 sites in the other
+        // cards stay for the MEH-1086 follow-up sweep.
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-error" role="alert">
           <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
           {errorMsg}
         </p>
