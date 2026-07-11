@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1049 (scope-add): contact-card truncation + share disambiguation (Task A of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1049-contact-truncation` off `origin/staging`. YELLOW autonomous. `Refs MEH-1074` (MEH-1049 already carries earlier merged chunks — scope-add recorded as a comment on MEH-1049).
+- **Shipped:** `ContactSidebar.jsx` — phone + Instagram tiles → full-width (`col-span-2`), no `truncate`/`overflow-hidden`, `dir="ltr"` value, `break-all` (values always fully readable). `WhatsAppShareButton.jsx` — `WhatsappLogo`(#25D366)→`ShareNetwork`; `he/en.json` `share_to_friend` "שלחו לחברה"→"שיתוף עם חברים" + `share_aria` in lockstep (WCAG 2.5.3). New `WhatsAppShareButton.test.jsx` (3). WhatsApp single filled primary already true (PrimaryContactButton; FollowButton demoted in merged chunk 1).
+- **Verify:** build exit 0 · WhatsAppShareButton + en-parity 7 passed · canary clean · 0 physical RTL. **Playwright self-QA against Vercel preview pending** (phone value fully visible @375px, no ellipsis on value span) — draft until captured.
+
 ## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — PR open
 
 - **Branch:** `feature/meh-1112-about-polish` off `origin/staging` (divergence 0). YELLOW/ADR-016 v2 — UI change, Playwright self-QA required + attached. Batch authority: Sapir-approved MEH-1112→MEH-1113 sequential, auto-merge on CI green + self-QA screenshots. `Closes MEH-1112`.

@@ -2817,8 +2817,8 @@
     },
     "share_button": {
       "default_message": "גיליתי את {name} במהמקור — {url}",
-      "share_aria": "שתפו את העסק בוואטסאפ",
-      "share_to_friend": "שלחו לחברה"
+      "share_aria": "שיתוף עם חברים בוואטסאפ",
+      "share_to_friend": "שיתוף עם חברים"
     },
     "question_chips": {
       "my_area": "האזור שלי",
