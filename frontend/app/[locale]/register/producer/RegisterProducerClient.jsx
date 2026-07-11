@@ -614,7 +614,8 @@ function RegisterProducerPageBody() {
             <div data-testid="register-details-city">
             <CitySearch
               id="producer-city"
-              label={t("auth.register.producer.fields.city")}
+              labelVisible
+              label={t("auth.register.producer.fields.city_label")}
               placeholder={t("auth.register.producer.fields.city")}
               value={form.city}
               onChange={(v) => setAndSave((prev) => ({ ...prev, city: v }))}
