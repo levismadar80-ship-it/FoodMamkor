@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1126 (Task I): producer products section image-first cards (producer-page sweep, MEH-1074) — draft PR
+
+- **Branch:** `feature/meh-1125-product-cards-image-first` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1126`. (Ticket landed MEH-1126; branch label says 1125 — refs corrected in-tree.)
+- **Shipped:** `ProducerSections.jsx` products block — horizontal icon-left cards → **image-first vertical cards**: Cloudinary 4:3 (`optimizeCloudinary`) → name → price; no-photo → typographic card (name in Frank Ruhl on `bg-primary/[0.06]`, MEH-815 idiom; price below; no Package icon; body omits the repeated name). Grid `items-stretch` + card `flex-col` = equal-height cells (no 2+1 jump). `Package` import removed (unused). Display-only, no backend.
+- **Verify:** build exit 0 · 0 physical RTL · no ProducerSections product-card test existed to update. **Sapir QA gate** (image-first cards; typographic no-photo card; equal columns) — sandbox can't screenshot preview (MEH-360). Draft until Sapir QA. **Completes the MEH-1074 producer-page sweep (Tasks A–I).**
+
 ## 2026-07-11 — MEH-1121 (Task D): imageless-hero consistency — masthead fires for blank image arrays (MEH-1074) — draft PR
 
 - **Branch:** `feature/meh-1122-imageless-hero` off `origin/staging`. YELLOW. `Refs MEH-1074 · Closes MEH-1121`.
