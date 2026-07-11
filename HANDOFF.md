@@ -13,6 +13,12 @@
 - **Verify:** backend validator/422/label/default unit-checked + ruff clean (full pytest on CI — local Postgres admin is permission-gated in the sandbox) · build exit 0 · lint 0 errors · vitest 8 passed · 0 physical RTL · Playwright self-QA 3 states (screenshots `docs/audits/screenshots/2026-07-meh1113-qa/`): (a) default select = שאלה כללית, (b) `?topic=business` → prefilled פנייה של בית עסק, (c) for-businesses footer = form-link + `contact@mehamakor.co.il`, 0 Instagram in the question line (site footer IG untouched).
 - **Batch complete** after this merges — both audit tickets shipped.
 
+## 2026-07-11 — MEH-1117: WhatsAppQuestionChips token sweep (Task G of the producer-page sweep, MEH-1074) — PR open
+
+- **Branch:** `feature/meh-1117-questionchips-tokens` off `origin/staging` (synced post-E/F merge). GREEN autonomous. `Refs MEH-1074 · Closes MEH-1117`.
+- **Shipped:** `WhatsAppQuestionChips.jsx` — label `#6B6B6B`→`text-fg-muted`; chip `<a>` inline `border/radius/padding/fontSize` → `border border-border rounded-xl px-3 py-1.5 text-sm` (14px interactive floor, MEH-1103; `rounded-xl`=20px token exactly); `minBlockSize:44px` kept. No copy/logic change. MEH-1103 didn't cover this file (verified) — genuine, not a fold.
+- **Verify:** build exit 0 · 0 residual hex · 0 physical RTL · no test references this component's inline styles.
+
 ## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — MERGED (PR #1612, squash `fb461dfa`)
 
 - **Branch:** `feature/meh-1112-about-polish` off `origin/staging` (divergence 0). YELLOW/ADR-016 v2 — UI change, Playwright self-QA required + attached. Batch authority: Sapir-approved MEH-1112→MEH-1113 sequential, auto-merge on CI green + self-QA screenshots. `Closes MEH-1112`.
