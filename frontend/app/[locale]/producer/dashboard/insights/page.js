@@ -25,7 +25,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
@@ -41,7 +40,10 @@ export default function ProducerDashboardInsightsPage() {
   // MEH-1101: the analytics payload has no approved/published flag — the
   // status signal comes from /producers/me (same source as the Overview's
   // isApproved, page.js). null = unknown → banner stays hidden (fail-quiet).
+  // profileSettled gates render so the banner doesn't pop in after an
+  // analytics-only first paint (layout shift on every pending producer).
   const [profile, setProfile] = useState(null);
+  const [profileSettled, setProfileSettled] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -50,12 +52,16 @@ export default function ProducerDashboardInsightsPage() {
       return;
     }
     api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
-    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
+    api
+      .get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch(() => setProfile(null))
+      .finally(() => setProfileSettled(true));
   }, [user, authLoading, router]);
 
   if (authLoading || !user || user.role !== "producer") return null;
 
-  if (!analytics) {
+  if (!analytics || !profileSettled) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16 text-center text-fg-muted">
         {t("loading_analytics")}
@@ -78,12 +84,14 @@ export default function ProducerDashboardInsightsPage() {
         >
           <p className="font-semibold text-text mb-1">{t("insights_zero_state.title")}</p>
           <p className="text-fg-muted mb-3">{t("insights_zero_state.body")}</p>
-          <Link
+          {/* LocaleLink (not bare next/link): keeps the /en prefix under
+              as-needed locale routing (MEH-956 precedent). */}
+          <LocaleLink
             href="/producer/dashboard/edit"
             className="inline-block bg-primary text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-primary-dark transition"
           >
             {t("insights_zero_state.cta")}
-          </Link>
+          </LocaleLink>
         </div>
       )}
       <DeepAnalyticsSection analytics={analytics} profile={profile} />
