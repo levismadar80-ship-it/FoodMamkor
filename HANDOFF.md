@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1112: /about polish (audit-fix batch MEH-1112→MEH-1113, ticket 1 of 2) — PR open
+
+- **Branch:** `feature/meh-1112-about-polish` off `origin/staging` (divergence 0). YELLOW/ADR-016 v2 — UI change, Playwright self-QA required + attached. Batch authority: Sapir-approved MEH-1112→MEH-1113 sequential, auto-merge on CI green + self-QA screenshots. `Closes MEH-1112`.
+- **Files (3):** `frontend/app/[locale]/about/AboutClient.jsx` (pull-quote container narrow, `SHOW_TESTIMONIALS=false` gate, close-band CTA demotion, email fallback line + `CONTACT_EMAIL` import), `frontend/messages/he.json` + `en.json` (4 copy changes + new `contact.email_direct`). Scope held — no file outside `file_locations` touched.
+- **Phase 0 correction (meta-patterns §1):** the audit copy table named submit `שלחי`→`שליחה`, but the live `about.consumer.contact.submit` value was already the plural `שלחו` (0 occurrences of `שלחי`; `שלחו` is app-wide × 20 but the target key is unique in context). Applied the intended gerund end-state `שליחה` — identical destination, so proceeded rather than STOP; documented in PR + Linear.
+- **VRT note (MEH-991 flow):** /about visual change → `parity.spec.ts` about baselines stale → touched the spec to re-ride `vrt-update.yml` (regenerates `about-{desktop,mobile}-linux` on the runner). The bot's `GITHUB_TOKEN` baseline push doesn't re-trigger checks, so an empty commit + a staging re-merge re-ran pr-checks/deploy/e2e against the fresh baselines.
+- **Verify:** build exit 0 (/about compiles) · lint 0 errors (warnings only, MEH-443) · en-parity + en-locale-guard + I18nNamespaceResolution 8 passed · 0 new physical RTL props · Playwright self-QA 1440×900 + 390×844 (`docs/audits/screenshots/2026-07-meh1112-qa/`): testimonials 0-rendered in DOM (gated, keys retained in messages blob), single primary CTA, "דברו איתנו" + "אפשר גם ישירות במייל: contact@mehamakor.co.il" visible, secondary links muted/underline on one row.
+- **Next in batch:** MEH-1113 (contact topic-field unify) off POST-merge staging head.
+
 ## 2026-07-11 — /map QA batch: MEH-1108 + MEH-1109 + MEH-1110 — ALL MERGED (PRs #1606 / #1608 / #1611)
 
 - **Authority:** autonomous batch (ADR-016 v2 YELLOW + Rule 23) — full auto-merge to staging, confirmed with Sapir at session start. Sequential merge-then-next; each branch cut fresh off `origin/staging` as `feature/*` (not the harness `claude/*`). Pre-flight collision check clear (no open PR touched `FilterChipsBar`/`ChipScrollRow`/`MapClient`/`Header`; MEH-1081/1083/1085 had no open PRs).
