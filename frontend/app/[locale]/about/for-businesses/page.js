@@ -1,4 +1,12 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  Camera,
+  BookOpen,
+  SealCheck,
+  Basket,
+  Truck,
+  ChatCircleText,
+} from "@phosphor-icons/react/ssr";
 import { BRAND_NAME } from "@/lib/constants";
 import { SITE_URL, serializeJsonLd } from "@/lib/seo";
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
@@ -159,6 +167,70 @@ export default async function FaqForBusinessesPage({ params }) {
             </section>
           ))}
         </div>
+
+        {/* MEH-1074 Wave 3: "sample perfect listing" showcase — annotated
+            anatomy of a complete profile, clearly labeled as an example
+            (no live-profile link on purpose: MEH-409 swaps the demo for a
+            real business after first-10, and a hardcoded slug would rot). */}
+        <section aria-labelledby="showcase-heading" className="mt-14 sm:mt-16">
+          <div className="flex items-center gap-3 mb-4">
+            <h2
+              id="showcase-heading"
+              className="font-headline-md text-primary text-[20px] font-bold"
+            >
+              {t("showcase.heading")}
+            </h2>
+            <span className="shrink-0 rounded-full border border-accent/50 bg-accent/10 px-3 py-0.5 text-xs font-semibold text-primary-dark">
+              {t("showcase.label")}
+            </span>
+          </div>
+          <p className="text-[15px] leading-relaxed text-text/90 mb-6">
+            {t("showcase.intro")}
+          </p>
+          <figure className="rounded-[16px] border border-border bg-white p-6 sm:p-7">
+            <figcaption className="mb-5">
+              <p className="font-headline-md text-[17px] font-bold text-text">
+                {t("showcase.example_name")}{" "}
+                <span className="ms-1 align-middle rounded-full bg-surface px-2 py-0.5 text-[11px] font-semibold text-fg-muted">
+                  {t("showcase.label")}
+                </span>
+              </p>
+              <p className="text-[14px] text-fg-muted">
+                {t("showcase.example_tagline")}
+              </p>
+            </figcaption>
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {[
+                ["photos", Camera],
+                ["story", BookOpen],
+                ["verified", SealCheck],
+                ["products", Basket],
+                ["delivery", Truck],
+                ["reviews", ChatCircleText],
+              ].map(([key, Icon]) => (
+                <li key={key} className="flex items-start gap-3">
+                  <Icon
+                    size={22}
+                    weight="duotone"
+                    className="mt-0.5 shrink-0 text-primary"
+                    aria-hidden="true"
+                  />
+                  <div>
+                    <p className="text-[15px] font-semibold text-text">
+                      {t(`showcase.items.${key}.title`)}
+                    </p>
+                    <p className="text-[14px] leading-relaxed text-text/80">
+                      {t(`showcase.items.${key}.desc`)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 border-t border-border pt-4 text-[14px] text-fg-muted">
+              {t("showcase.nudge")}
+            </p>
+          </figure>
+        </section>
 
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
           <p className="text-base mb-4 text-text/90">

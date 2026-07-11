@@ -2965,6 +2965,22 @@
         "a": "You decide when you're open. One button — \"Taking orders,\" \"Busy right now,\" \"On a break\" — you pick. No one ranks you by how fast you replied. You reply on WhatsApp only when you want to. And if a customer isn't right for you — you don't have to. There's no rating that drops if you say \"Sorry, not this time.\""
       }
     },
+    "showcase": {
+      "label": "Example",
+      "heading": "What a complete profile looks like",
+      "intro": "A complete profile is the difference between a business card and an open shop. These are the six elements customers actually read:",
+      "example_name": "Ruach HaSadeh Bakery",
+      "example_tagline": "Slow-fermented sourdough, stone-milled flour, baked daily in a stone oven.",
+      "items": {
+        "photos": { "title": "Real photos", "desc": "Three real photos — the product, the place, the hands at work." },
+        "story": { "title": "A short story", "desc": "A few personal sentences about your journey. This is what makes customers choose you." },
+        "verified": { "title": "Verified badge", "desc": "A checked, valid license — customers see a clear trust mark next to your name." },
+        "products": { "title": "Products with price ranges", "desc": "What to order and for how much — no surprises in chat." },
+        "delivery": { "title": "Delivery areas", "desc": "Where you deliver, minimum order, and on which day." },
+        "reviews": { "title": "Reviews and your reply", "desc": "Real feedback — and a warm reply from you that shows someone is home." }
+      },
+      "nudge": "After signing up, the profile-completeness meter in your dashboard shows exactly what is still missing on the way to 100%."
+    },
     "footer_intro_prefix": "Still have a question? Write to me on Instagram",
     "footer_intro_suffix": "or join now:",
     "cta": "Add your business"
