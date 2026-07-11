@@ -592,7 +592,11 @@ export function ImagesCard({ profile, onSave }) {
           e.preventDefault();
           setDragOver(true);
         }}
-        onDragLeave={() => setDragOver(false)}
+        onDragLeave={(e) => {
+          // Ignore leave events from moving over child nodes — only clear
+          // the drop state when the cursor truly exits the zone.
+          if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
+        }}
         onDrop={handleDrop}
         className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 cursor-pointer transition ${
           dragOver ? "border-primary bg-green-50" : "border-border hover:bg-green-50"

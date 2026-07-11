@@ -49,6 +49,30 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     expect(api.post).toHaveBeenCalledWith("/upload/image", expect.anything());
   });
 
+  // MEH-1099: drag-drop feeds the same uploadFiles → POST /upload/image path.
+  it("uploads a dropped image file and filters out non-images", async () => {
+    const { container } = renderCard(["https://cdn/a.jpg"]);
+    const zone = screen.getByTestId("images-dropzone");
+
+    // Drag-over flips to the drop-state label.
+    fireEvent.dragOver(zone);
+    expect(screen.getByText(I.drop_here)).toBeInTheDocument();
+
+    // Non-image drop → filtered silently, no upload call.
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [new File(["%PDF"], "doc.pdf", { type: "application/pdf" })] },
+    });
+    expect(api.post).not.toHaveBeenCalled();
+
+    // Image drop → uploads and joins the grid.
+    fireEvent.dragOver(zone);
+    fireEvent.drop(zone, {
+      dataTransfer: { files: [new File(["x"], "drop.png", { type: "image/png" })] },
+    });
+    await waitFor(() => expect(container.querySelectorAll("img")).toHaveLength(2));
+    expect(api.post).toHaveBeenCalledWith("/upload/image", expect.anything());
+  });
+
   it("removes by index — a duplicate URL deletes only the clicked thumbnail", async () => {
     const { container } = renderCard(["https://cdn/dup.jpg", "https://cdn/dup.jpg"]);
     expect(container.querySelectorAll("img")).toHaveLength(2);
