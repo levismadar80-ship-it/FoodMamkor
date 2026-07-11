@@ -7,6 +7,10 @@ import ProducersClient from "@/components/ProducersClient";
 // (backend: producers.py:56 `category: int`, join on ProducerCategory.category_id).
 // These tests pin the four contracts: chip click → URL + fetch param,
 // deep-link hydration, compose with a toggle chip, and clear-all reset.
+// MEH-1084 (MEH-1077 DISC-06): category *selection* now uses router.push
+// (Back cancels the category → prior view); "all"/clear + chip/city/search
+// refinement stay router.replace. The assertions below check the verb, not
+// just the URL string.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 let params = {}; // drives useSearchParams().get(key)
@@ -72,21 +76,25 @@ import api from "@/lib/api";
 const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
 
 const lastReplaceUrl = () => router.replace.mock.calls.at(-1)?.[0] ?? "";
+const lastPushUrl = () => router.push.mock.calls.at(-1)?.[0] ?? "";
 const producersCalls = () =>
   api.get.mock.calls.filter(([path]) => path === "/producers").map(([, opts]) => opts?.params ?? {});
 
 beforeEach(() => {
   router.replace.mockClear();
+  router.push.mockClear();
   api.get.mockClear();
   params = {};
 });
 
 describe("/producers category axis (MEH-1081)", () => {
-  it("clicking a category chip writes ?category=<id> and fetches with the id", async () => {
+  it("clicking a category chip pushes ?category=<id> (Back cancels) and fetches with the id", async () => {
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
     fireEvent.click(within(row).getByText("דבש"));
-    expect(lastReplaceUrl()).toContain("category=18");
+    // MEH-1084: category selection is a push (new view), not a replace.
+    expect(lastPushUrl()).toContain("category=18");
+    expect(lastReplaceUrl()).not.toContain("category=18");
     await waitFor(() => {
       expect(producersCalls().some((p) => String(p.category) === "18")).toBe(true);
     });
@@ -120,15 +128,17 @@ describe("/producers category axis (MEH-1081)", () => {
     });
   });
 
-  it("the 'all' sentinel and clear-all both drop the category", async () => {
+  it("the 'all' sentinel + clear-all drop the category via replace; re-select pushes", async () => {
     params = { category: "18" };
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
+    // "all" returns to baseline → replace (no history push → no double-Back).
     fireEvent.click(within(row).getByText("producers.filters.category_all"));
     expect(lastReplaceUrl()).not.toContain("category=");
-    // re-select, then clear everything via the active-strip clear-all
+    // re-select a real category → push carries the id.
     fireEvent.click(within(row).getByText("דבש"));
-    expect(lastReplaceUrl()).toContain("category=18");
+    expect(lastPushUrl()).toContain("category=18");
+    // clear everything via the active-strip clear-all → replace, category gone.
     fireEvent.click(screen.getByText("producers.filters.clear_all"));
     expect(lastReplaceUrl()).not.toContain("category=");
   });
