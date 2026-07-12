@@ -5,6 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1165 batch (7 audit fixes, one small PR each) — in progress
+
+- **Batch context:** Task 5 of the 5-task batch (MEH-1161 #1688 armed · MEH-1162 #1690 MERGED · MEH-1163 #1691 MERGED · MEH-1164 Chunk 1 = diagnosis-only, checklist in final report, no code bug → no PR). Each item: own `feature/meh-1165-*` branch, `Refs MEH-1165`; final item's PR carries `Closes MEH-1165`.
+- **Item 1 — group-buys pre-form approval gate (`feature/meh-1165-group-buys-pregate`):** re-verified — creation 403 at `group_buys.py:187`, error only shown post-submit at the cited (moved) error line; fix = producerStatus from the already-fetched `/producers/me/dashboard`, disabled "+ קבוצת רכש חדשה" + aria-describedby hint (availability idiom), empty-state CTA self-hides, `role="alert"` on the submit error. New key `group_buys.dashboard.approval_required_hint` he+en. Verify: build 0 · vitest 979 · Playwright 390px (`qa-artifacts/MEH-1165/item1-*`).
+
 ## 2026-07-12 — MEH-1163: bio card manual textarea always visible — PR open
 
 - **Branch:** `feature/meh-1163-bio-manual-field` off `origin/staging` (post-#1690). YELLOW — CI green → auto-merge per batch authority (ADR-016 v2). `Closes MEH-1163`. Task 3 of the 5-task batch (Task 1 MEH-1161 = PR #1688 auto-merge armed · Task 2 MEH-1162 = **MERGED #1690**).
