@@ -134,8 +134,11 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
         )}
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4">
+      {/* Scrollable content — MEH-1133: `pt-1` gives the first card a little
+          breathing room under the peek header (the header's `pb-2` alone left the
+          first card's top edge visually touching the count row). Small so it
+          doesn't eat the already-short PEEK content area. */}
+      <div className="flex-1 overflow-y-auto px-4 pt-1">
         {loading ? <SheetListSkeleton label={tSkeleton("loading_businesses")} /> : children}
       </div>
     </div>
