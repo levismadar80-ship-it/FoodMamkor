@@ -24,7 +24,8 @@ vi.mock("@/lib/auth-context", () => ({
   useAuth: () => authStub,
 }));
 const routerStub = { push: vi.fn() };
-vi.mock("next/navigation", () => ({
+// MEH-1157: the page's login redirect moved to the locale-aware router.
+vi.mock("@/i18n/navigation", () => ({
   useRouter: () => routerStub,
 }));
 // ProductsSection is self-fetching CRUD, irrelevant to the guard.

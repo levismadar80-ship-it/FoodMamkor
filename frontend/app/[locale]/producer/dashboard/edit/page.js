@@ -19,14 +19,19 @@
  * History:  MEH-964 (relocation, chunk 1A); edit-tab editor series —
  *           categories (chunk A), gallery images (chunk B), gated map location
  *           via AddressSearch (chunk C); polish + test backfill (fetch-error on
- *           GET /categories, cloudinary thumbnails, component tests).
+ *           GET /categories, cloudinary thumbnails, component tests);
+ *           MEH-1157 — locale-aware login redirect + 401 handling on the
+ *           /producers/me fetch (no half-alive tab); BioPanelCard moved to
+ *           cards.jsx for test export (MEH-1119 pattern).
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+// MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
+// instead of dropping an /en session onto the default-locale page.
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Warning, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
@@ -36,7 +41,7 @@ import WhatsThis from "@/components/WhatsThis";
 import EditAccordionCard from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { BioPanelCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -107,7 +112,19 @@ export default function ProducerDashboardEditPage() {
       router.push("/login");
       return;
     }
-    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
+    api
+      .get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch((err) => {
+        // MEH-1157: a 401 here means the session died between the context
+        // boot and this fetch (stale context user). Redirect like the auth
+        // gate above instead of parking the tab on the loading text forever.
+        if (err?.response?.status === 401) {
+          router.push("/login");
+        } else {
+          setProfile(null);
+        }
+      });
   }, [user, authLoading, router]);
 
   // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
@@ -656,108 +673,6 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
       </button>
-    </div>
-  );
-}
-
-
-// ============================================================
-// MEH-56: AI bio writer panel
-// ============================================================
-
-function BioPanelCard({ profile, onSave, reportDirty = () => {} }) {
-  const t = useTranslations("dashboard.producer.bio");
-  const [source, setSource] = useState(profile.instagram || "");
-  const [generatedBio, setGeneratedBio] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
-  // MEH-1100: this card had no dirty flag — the losable state is a generated
-  // bio that hasn't been saved yet (typing a source alone costs nothing).
-  const dirty = Boolean(generatedBio) && !saved;
-  useEffect(() => {
-    reportDirty("bio", dirty);
-    return () => reportDirty("bio", false);
-  }, [dirty, reportDirty]);
-
-  const generate = async () => {
-    if (!source.trim()) return;
-    setLoading(true);
-    setError("");
-    setGeneratedBio("");
-    setSaved(false);
-    try {
-      const r = await api.post("/producers/me/bio/generate", { source: source.trim() });
-      setGeneratedBio(r.data.bio || "");
-      if (!r.data.bio) setError(t("error_empty_bio"));
-    } catch {
-      setError(t("error_generate"));
-    }
-    setLoading(false);
-  };
-
-  const saveBio = async () => {
-    if (!generatedBio) return;
-    setSaving(true);
-    try {
-      await api.put("/producers/me", { description: generatedBio });
-      onSave(generatedBio);
-      setSaved(true);
-    } catch {
-      setError(t("error_save"));
-    }
-    setSaving(false);
-  };
-
-  return (
-    <div>
-      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
-      <p className="text-xs text-fg-muted mb-3">
-        {t("intro")}
-      </p>
-
-      <textarea
-        value={source}
-        onChange={(e) => { setSource(e.target.value); setSaved(false); setGeneratedBio(""); }}
-        placeholder={t("source_placeholder")}
-        className="w-full border border-border rounded-[10px] px-3 py-2 text-sm resize-none h-16"
-        dir="ltr"
-        maxLength={500}
-      />
-
-      <button
-        onClick={generate}
-        disabled={loading || !source.trim()}
-        className="w-full mt-2 bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition"
-      >
-        {loading ? t("generating") : t("generate_cta")}
-      </button>
-
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-
-      {generatedBio && (
-        <div className="mt-3 space-y-2">
-          <textarea
-            value={generatedBio}
-            onChange={(e) => setGeneratedBio(e.target.value.slice(0, 150))}
-            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-16"
-            dir="rtl"
-            maxLength={150}
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-fg-muted">{generatedBio.length}/150</span>
-            <button
-              onClick={saveBio}
-              disabled={saving}
-              className="bg-primary text-white px-4 py-1.5 rounded-[8px] text-xs font-medium disabled:opacity-50 hover:bg-primary-dark transition"
-            >
-              {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
