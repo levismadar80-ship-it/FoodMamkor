@@ -392,11 +392,15 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
               </div>
             </form>
           )
-        ) : (
+        ) : reviews.length > 0 ? (
+          // MEH-1139: standalone gate-instruction box only renders when reviews
+          // exist — the empty state below carries the gate hint itself, so the
+          // empty section shows ONE box instead of two. Gate logic (MEH-103)
+          // itself is untouched.
           <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
             {t("wa_gate_message")}
           </div>
-        )
+        ) : null
       ) : (
         <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
@@ -434,7 +438,14 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         ) : (
           <div className="text-center py-8">
             <Leaf size={48} className="text-primary/70 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-fg-muted">{t("empty_message")}</p>
+            <p className="text-fg-muted">
+              {t("empty_message")}
+              {/* MEH-1139: WhatsApp-gate hint shown only to viewers the gate
+                  actually applies to (logged in, not the owner, not yet gated). */}
+              {user && user.producer_id !== producerId && !hasClickedWa && (
+                <> {t("empty_gate_hint")}</>
+              )}
+            </p>
           </div>
         )
       ) : (

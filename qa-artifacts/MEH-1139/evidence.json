@@ -1,0 +1,35 @@
+[
+  {
+    "viewport": "375",
+    "newEmptyMessage": true,
+    "oldEmptyMessage": false,
+    "oldGateBox": false,
+    "gateHintVisibleToGuest": false,
+    "reportLinkNew": false,
+    "reportLinkOldEmoji": false,
+    "mapsButtonNew": true,
+    "mapsButtonOldSuffix": false,
+    "greenBoxesInReviewsSection": 1
+  },
+  {
+    "viewport": "1280",
+    "newEmptyMessage": true,
+    "oldEmptyMessage": false,
+    "oldGateBox": false,
+    "gateHintVisibleToGuest": false,
+    "reportLinkNew": false,
+    "reportLinkOldEmoji": false,
+    "mapsButtonNew": true,
+    "mapsButtonOldSuffix": false,
+    "greenBoxesInReviewsSection": 1
+  },
+  {
+    "loggedIn": true,
+    "newEmptyMessage": true,
+    "gateHintShown": true,
+    "oldGateBox": false,
+    "standaloneBoxesInReviewsSection": 0,
+    "reportLinkNew": true,
+    "reportLinkOldForm": false
+  }
+]
