@@ -21,8 +21,10 @@
  */
 
 import { useEffect } from "react";
-import { usePathname, Link } from "@/i18n/navigation";
-import { useRouter } from "next/navigation";
+// MEH-1165 item 6 (MEH-1157 residual): useRouter comes from the locale-aware
+// wrapper too — the boot-401 push("/login") was dropping an /en session onto
+// the default-locale page (same fix as edit/page.js:37).
+import { usePathname, Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { SquaresFour, PencilSimple, ChartLine, Wrench } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
