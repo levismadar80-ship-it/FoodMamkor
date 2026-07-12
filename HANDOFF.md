@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1131: /events city+category URL-sync unit test (test-only) — PR open
+
+- **Branch:** `feature/meh-1131-events-url-sync-test` off `origin/staging` (divergence 0). LOW-RISK test-only. `Refs MEH-1131`.
+- **Shipped:** new `frontend/__tests__/EventsUrlSync.test.jsx` (4 jsdom cases) for the MEH-1085/DISC-08 URL sync — mount seeding from `?city=&category=`, cross-tab vocab guard, change→`replaceState` updated query, `switchTab`→clears city+category. **EventsClient.jsx source untouched** (per constraint). All 4 green → live behavior matches contract, **no bug surfaced** (STOP condition not triggered). Mocks next/navigation + children; real `event-categories.js` for the vocab check; pattern per `useHomePageDietChipsUrl.test.jsx`.
+- **Verify:** full vitest **918 passed**/41 skipped. Folded PR #1636 review minors (test-only, `Refs`-per-spec kept): category keys now sourced from `event-categories.js` SoT, inline comments → English.
+
 ## 2026-07-11 — MEH-1128 Wave A (ui/Input adoption): register producer wizard — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-a` off fresh `origin/staging` (incl. the MEH-1127 merge), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave B NOT started — wait gate (Sapir approves next wave).**
