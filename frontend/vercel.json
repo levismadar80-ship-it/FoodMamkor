@@ -3,5 +3,9 @@
   "framework": "nextjs",
   "regions": [
     "fra1"
-  ]
+  ],
+  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in staging|main) exit 1 ;; *) echo \"skip: preview builds disabled for non-production branches (MEH-1044)\" && exit 0 ;; esac",
+  "github": {
+    "autoJobCancelation": true
+  }
 }
