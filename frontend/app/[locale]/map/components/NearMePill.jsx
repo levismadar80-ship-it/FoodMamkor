@@ -19,16 +19,12 @@ import { Crosshair } from "@phosphor-icons/react";
  *
  * Z-index 1000 = controls tier (above bottom-sheet:600), below cookie:1100.
  * Positioned at bottom-[16vh] to clear the PEEK=14vh collapsed bottom sheet.
- * MEH-1133: moved start-4 → end-4 (RTL: right → left). The chat FAB is pinned
- * to the physical RIGHT (ChatWidget.jsx `right:16`, z-9999), so `start-4`
- * (=right in RTL) stacked the pill under the FAB; `end-4` (=left) clears it.
- * CAVEAT — RTL-only: `end-4` clears the FAB only while the locale is RTL. In an
- * LTR locale `end-4` resolves to the physical right and would re-collide with the
- * physical-right FAB (roles reversed). The direction-agnostic fix is migrating
- * the FAB from physical `right:16` to `inset-inline-end` — owned by MEH-1135
- * (ChatWidget is out of scope for MEH-1133). Acceptable meanwhile: the site is
- * he/RTL-first and the EN wave (MEH-472) hasn't shipped a mobile LTR /map.
- * RTL: end-4 / ps / pe logical props only.
+ * MEH-1133: moved start-4 → end-4. MEH-1135 then migrated the chat FAB itself
+ * to logical `insetInlineEnd` (was physical `right:16`), resolving end-4's
+ * LTR-fragility — the FAB and this pill now track the SAME inline-END corner in
+ * BOTH locales. The MEH-1135 convention assigns the bottom-end corner to the
+ * FAB; the two are offset on the vertical axis (pill bottom-[16vh] · FAB
+ * safe-area+88px). RTL: end-4 / ps / pe logical props only.
  */
 export default function NearMePill({ onClick }) {
   const t = useTranslations();
