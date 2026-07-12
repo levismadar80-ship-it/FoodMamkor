@@ -5,7 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-12 — MEH-1128 Wave C (ui/Input adoption): admin forms — draft PR
+## 2026-07-12 — MEH-1141: branch-name guard (hook + CI snippet, mechanism > memory) — PR open
+
+- **Branch:** `feature/meh-1141-branch-name-guard` off `origin/staging` (`6b035d17`, incl. MEH-1132 + Wave C). GREEN — full autonomous authority. `Closes MEH-1141`. (This ticket's own branch conforms to the locked pattern — the irony is intentional; the trigger was MEH-1132 on `claude/*`.)
+- **Phase 0 (READ-ONLY, done):** hook mechanism confirmed = PreToolUse:Bash matcher in `.claude/settings.json:38-46` calling `bash .../.claude/hooks/<name>.sh` (precedent `check-bash-safety.sh`; ticket's assumed `check-path-exists.sh` doesn't exist here). **KEY FINDING:** both `.claude/hooks/**` (perm deny-list `Edit(.claude/hooks/**)` + Write blocked) **and** `.claude/settings.json` (deny-list + `protect-lint-config.sh`, MEH-442) are mechanically write-protected for CC → CC **cannot commit the hook or its wiring**. Per the ticket's A2 fallback (extended from settings→hook), **both ship verbatim in the PR body** for Sapir to apply.
+- **Delivered:** (1) `.claude/hooks/check-branch-name.sh` — full script in PR body (A2). Locked `ALLOWED_BRANCH_RE`, blocks non-conforming push + branch-create (checkout -b/-B, switch -c, branch <name>), zero friction on read paths, fail-open on jq. Validated in scratchpad: `bash -n` clean; self-test 4 required cases + push/switch/branch/5 read-path forms all correct (table in PR). (2) settings.json wiring block (A2, PR body). (3) `pr-checks.yml` `Branch name gate` CI snippet (A2, PR body — `.github/workflows/**` is CC-deny). (4) **in-repo:** `.claude/rules/workflow.md` rule-3 one-liner (locked pattern + hook pointer) + CHANGELOG + HANDOFF.
+- **In-repo diff = docs-only** (workflow.md + CHANGELOG + HANDOFF) since the executable artifacts are A2. Build+vitest unaffected (sanity green via Stop hook).
+- **Next:** open draft PR → ready → auto-merge (squash) on green required gates. **Sapir follow-up:** apply the hook file + settings.json wiring + pr-checks.yml snippet from the PR body (CC is write-blocked on all three).
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-c` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D NOT started — wait gate.** (Waves A #1635 + B #1641 merged; Sapir approved Wave C in-conversation 12/07.)
 - **Phase 0:** collision CLEAR — all 11 admin candidate files last touched by merged #1569; open-PR scan: #1640 (ProducerCard+seed) file-list verified, no admin files; #1639 touches the merged Wave B file only; rest dependabot/skills/docs. Inventory: 30 migratable fields / 3 files; filter toolbars + moderation textareas + content inline editors declared not-forms.

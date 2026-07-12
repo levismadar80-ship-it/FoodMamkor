@@ -77,6 +77,7 @@ and MEH-374 (62 commits)._
 2. **Branch from `staging`** — never from `main`. See
    [.claude/rules/deployment.md](./deployment.md).
 3. **Name branches `feature/*`** — no `claude/*` or other prefixes.
+   Locked pattern (MEH-1141): `^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*` — mechanically enforced by `.claude/hooks/check-branch-name.sh` (blocks non-conforming push / branch-create) + the `Branch name gate` CI job in `pr-checks.yml`.
 4. **Plan before coding + interview mode.** Propose the approach in
    plain text before touching files; wait for explicit `go` before
    editing. **If the task is ambiguous** — missing spec, unclear
