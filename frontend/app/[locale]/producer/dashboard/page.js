@@ -227,6 +227,14 @@ export default function ProducerDashboardPage() {
     (analytics?.whatsapp_clicks?.total ?? 0) > 0;
   const isApproved = producer.status === "approved";
 
+  // MEH-1134: state-aware card order. While the business is pending OR the
+  // completeness heuristic still reports missing fields, the completeness
+  // card is the owner's only actionable surface — it mounts directly below
+  // the status banners, ABOVE the (pre-approval disabled) availability card
+  // (GBP Profile Strength pattern). Once approved AND complete, today's
+  // order stands — availability first, the daily action of a live business.
+  const completenessFirst = !isApproved || !isComplete;
+
   return (
     <div
       className="max-w-5xl mx-auto px-4 py-12"
@@ -317,6 +325,11 @@ export default function ProducerDashboardPage() {
           />
         </div>
       )}
+
+      {/* MEH-1134: completeness-first while pending/incomplete — the single
+          mount for that state (the mirror-gated mount below covers the
+          approved+complete state, so the card renders exactly once). */}
+      {completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
 
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
       {(() => {
@@ -495,8 +508,10 @@ export default function ProducerDashboardPage() {
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics
           stats. Guarded on `profile` (the full /producers/me record carries
-          the fields the heuristic reads). */}
-      {profile && <ProfileCompletenessCard producer={profile} />}
+          the fields the heuristic reads). MEH-1134: this slot serves only the
+          approved+complete state — otherwise the card mounts above the
+          availability card instead (see completenessFirst). */}
+      {!completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
 
       {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
           Deep analytics (windowed cards + charts) live in the insights tab

@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1134: Overview state-aware card order (completeness above availability while pending/incomplete) — PR open
+
+- **Branch:** `claude/meh-1134-implementation-u2wkf7` off `origin/staging` (divergence 0; harness-designated branch, same precedent as MEH-1132). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1134`.
+- **Phase 0 (done):** ticket line refs verified against live file — PhoneVerifyCard :309, VanityLinkCard :349, availability :361-365 (`disabled={!isApproved}` :407, `opacity-50` :423), ProfileCompletenessCard :499, `producerCompleteness` import :19 — **no drift**. No open PR touches `dashboard/page.js` (#1639/MEH-1132 touches `dashboard/edit/page.js` only; expect append-only-log merge on CHANGELOG/HANDOFF).
+- **Shipped (2 files):** `dashboard/page.js` — new `completenessFirst = !isApproved || !isComplete` + two mirror-gated single mounts of ProfileCompletenessCard (below status banners while pending/incomplete; today's slot once approved+complete). New `frontend/__tests__/DashboardConditionalCardOrder.test.jsx` (3 cases, written first per rule 5): pending+incomplete / approved+incomplete → completeness precedes availability; approved+complete → order preserved; single mount each.
+- **Verify:** build exit 0 · vitest **921 passed**/41 skipped · Playwright self-QA local `next start` + route-mocked /api: both states × 375/1280 all PASS (DOM `compareDocumentPosition` + radios-disabled assertions), screenshots `qa-artifacts/MEH-1134/`.
+
 ## 2026-07-12 — MEH-1128 Wave D1 (primitive extension): startAdornment + success — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-d1` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D2 NOT started — wait gate.** Pre-flight verified: #1641 (`4d82641`) + #1645 (`6b035d1`) both on origin/staging.
