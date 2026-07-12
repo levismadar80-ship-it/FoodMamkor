@@ -671,6 +671,9 @@
           "heading": "עסקים דומים",
           "in_area": "{category} · באזור שלך"
         },
+        "nearby": {
+          "heading": "עוד בתי עסק באזור"
+        },
         "events": {
           "heading": "אירועים קרובים",
           "free": "חינם",

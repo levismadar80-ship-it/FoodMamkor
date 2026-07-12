@@ -676,6 +676,9 @@
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
         },
+        "nearby": {
+          "heading": "More businesses in the area"
+        },
         "events": {
           "heading": "Upcoming events",
           "free": "Free",

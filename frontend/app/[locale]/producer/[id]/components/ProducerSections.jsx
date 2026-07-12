@@ -20,6 +20,12 @@ import ReviewsSection from "@/components/ReviewsSection";
 
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
+// MEH-1146 chunk C: the discovery loop ("עוד בתי עסק באזור") renders only when
+// at least this many same-city businesses (excluding the current one) come
+// back — below it the section hides entirely so it never shows a thin 1-2 card
+// row. Documented const per the spec.
+const MIN_NEARBY_BUSINESSES = 4;
+
 /**
  * The middle of the main column. MEH-1146 chunk B reorders the sections to
  * the editorial IA: about → products → recipes → events → delivery →
@@ -43,6 +49,7 @@ export default function ProducerSections({
   producer,
   events,
   similarProducers,
+  nearbyProducers = [],
   sectionRefs,
   reviewsContainerRef,
   reviewsVisible,
@@ -362,7 +369,26 @@ export default function ProducerSections({
           products and licensing; the platform is just a directory. */}
       <DirectoryDisclaimer className="mt-8" />
 
-      {/* Report */}
+      {/* MEH-1146 chunk C: discovery loop — more businesses in the same area
+          (city). Frontend-only (reuses GET /producers with city+exclude via
+          useProducerData). Hidden entirely below MIN_NEARBY_BUSINESSES so a
+          thin 1-2 card row never shows; the report link stays below it. */}
+      {nearbyProducers.length >= MIN_NEARBY_BUSINESSES && (
+        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+            {t("producer.detail.sections.nearby.heading")}
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
+            {nearbyProducers.slice(0, 6).map((p) => (
+              <div key={p.id} className="flex-shrink-0 w-72 md:w-auto">
+                <ProducerCard producer={p} referrer="nearby" />
+              </div>
+            ))}
+          </div>
+        </FadeInSection>
+      )}
+
+      {/* Report — stays at the page end, below the discovery loop. */}
       <div className="mt-6 pt-6 border-t border-border">
         <ReportButton producerId={producer.id} />
       </div>

@@ -336,6 +336,22 @@ front matter for the normative token bindings.
   "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
   excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
 
+## Action hierarchy
+
+**Exactly one primary-styled action per viewport; new page actions enter as
+tertiary by default and may be promoted only by explicit design decision.**
+
+A "primary-styled action" is the filled/green CTA (`button-primary`,
+`btn-whatsapp`) — the dominant call to action. On any screen, at any scroll
+position, only one may be visible at a time; competing primaries flatten the
+hierarchy and read as clutter. When a page grows a new action (an order button
+in a section, a share affordance, a nav-out link), it enters as a **tertiary**
+treatment (neutral outline / quiet link) unless a specific design decision
+promotes it. Established on the producer detail page (MEH-1146): the single
+primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
+the delivery section's WhatsApp order button is tertiary; follow + share are
+tertiary. Verified per-viewport, not just per-section.
+
 ## Do's and Don'ts
 
 - **Do** keep pure white (`surface`) only on top of the cream page — cards,
