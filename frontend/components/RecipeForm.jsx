@@ -28,7 +28,10 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
+import Input from "@/components/ui/Input";
 
+// MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
+// for the textareas only (no textarea primitive yet — epic Wave D+).
 const baseInput =
   "w-full border border-border rounded-[10px] px-3 py-2 bg-white text-right focus-visible:ring-2 focus-visible:ring-primary/40 outline-none";
 
@@ -160,21 +163,16 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         {mode === "edit" ? t("heading_edit") : t("heading_create")}
       </h2>
 
-      <div>
-        <label htmlFor={`${uid}recipe-title`} className="block text-sm font-medium mb-1">
-          {t("title_label")} <span className="text-red-500">*</span>
-        </label>
-        <input
-          id={`${uid}recipe-title`}
-          required
-          minLength={3}
-          maxLength={200}
-          value={form.title}
-          onChange={set("title")}
-          className={baseInput}
-          dir="rtl"
-        />
-      </div>
+      <Input
+        id={`${uid}recipe-title`}
+        label={<>{t("title_label")} <span className="text-red-500">*</span></>}
+        required
+        minLength={3}
+        maxLength={200}
+        value={form.title}
+        onChange={set("title")}
+        dir="rtl"
+      />
 
       <div>
         <label htmlFor={`${uid}recipe-description`} className="block text-sm font-medium mb-1">{t("description_label")}</label>
@@ -223,45 +221,41 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label htmlFor={`${uid}recipe-prep-time`} className="block text-sm font-medium mb-1">{t("prep_time_label")}</label>
-          <input
-            id={`${uid}recipe-prep-time`}
-            type="number"
-            min={0}
-            max={1440}
-            value={form.prep_time_min}
-            onChange={set("prep_time_min")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
-        <div>
-          <label htmlFor={`${uid}recipe-cook-time`} className="block text-sm font-medium mb-1">{t("cook_time_label")}</label>
-          <input
-            id={`${uid}recipe-cook-time`}
-            type="number"
-            min={0}
-            max={1440}
-            value={form.cook_time_min}
-            onChange={set("cook_time_min")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
-        <div>
-          <label htmlFor={`${uid}recipe-servings`} className="block text-sm font-medium mb-1">{t("servings_label")}</label>
-          <input
-            id={`${uid}recipe-servings`}
-            type="number"
-            min={1}
-            max={100}
-            value={form.servings}
-            onChange={set("servings")}
-            className={baseInput}
-            dir="ltr"
-          />
-        </div>
+        {/* text-end keeps the digit alignment of the old baseInput inside
+            these dir="ltr" fields (end resolves to the same side in LTR). */}
+        <Input
+          id={`${uid}recipe-prep-time`}
+          label={t("prep_time_label")}
+          type="number"
+          min={0}
+          max={1440}
+          value={form.prep_time_min}
+          onChange={set("prep_time_min")}
+          className="text-end"
+          dir="ltr"
+        />
+        <Input
+          id={`${uid}recipe-cook-time`}
+          label={t("cook_time_label")}
+          type="number"
+          min={0}
+          max={1440}
+          value={form.cook_time_min}
+          onChange={set("cook_time_min")}
+          className="text-end"
+          dir="ltr"
+        />
+        <Input
+          id={`${uid}recipe-servings`}
+          label={t("servings_label")}
+          type="number"
+          min={1}
+          max={100}
+          value={form.servings}
+          onChange={set("servings")}
+          className="text-end"
+          dir="ltr"
+        />
       </div>
 
       <div>

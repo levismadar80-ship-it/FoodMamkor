@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
+import Input from "@/components/ui/Input";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
 
@@ -78,12 +79,13 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium mb-1">{t("title_label")}{t("required_marker")}</label>
-          <input
+          {/* MEH-1128 Wave B: single-line fields via ui/Input — labels gain the
+              canon htmlFor/id wiring these bare <label>s never had (MEH-1096 class). */}
+          <Input
+            label={`${t("title_label")}${t("required_marker")}`}
             value={form.title}
             onChange={set("title")}
             required
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
             dir="rtl"
           />
         </div>
@@ -99,26 +101,20 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("product_name_label")}{t("required_marker")}</label>
-          <input
-            value={form.product_name}
-            onChange={set("product_name")}
-            required
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
-            dir="rtl"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("unit_label")}</label>
-          <input
-            value={form.unit}
-            onChange={set("unit")}
-            placeholder={t("unit_placeholder")}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
-            dir="rtl"
-          />
-        </div>
+        <Input
+          label={`${t("product_name_label")}${t("required_marker")}`}
+          value={form.product_name}
+          onChange={set("product_name")}
+          required
+          dir="rtl"
+        />
+        <Input
+          label={t("unit_label")}
+          value={form.unit}
+          onChange={set("unit")}
+          placeholder={t("unit_placeholder")}
+          dir="rtl"
+        />
 
         <div>
           <label className="block text-sm font-medium mb-1">{t("price_regular_label")}{t("required_marker")}</label>
@@ -158,55 +154,41 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           </p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            {t("min_label")}{t("required_marker")}
-            <InfoTooltip content={t("min_tooltip")} />
-          </label>
-          <input
-            type="number"
-            min={2}
-            value={form.min_participants}
-            onChange={set("min_participants")}
-            required
-            className="w-full border border-border rounded-[10px] px-3 py-2"
-            dir="ltr"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("max_label")}</label>
-          <input
-            type="number"
-            min={2}
-            value={form.max_participants}
-            onChange={set("max_participants")}
-            className="w-full border border-border rounded-[10px] px-3 py-2"
-            dir="ltr"
-          />
-        </div>
+        <Input
+          label={<>{t("min_label")}{t("required_marker")} <InfoTooltip content={t("min_tooltip")} /></>}
+          type="number"
+          min={2}
+          value={form.min_participants}
+          onChange={set("min_participants")}
+          required
+          dir="ltr"
+        />
+        <Input
+          label={t("max_label")}
+          type="number"
+          min={2}
+          value={form.max_participants}
+          onChange={set("max_participants")}
+          dir="ltr"
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("deadline_label")}{t("required_marker")}</label>
-          <input
-            type="datetime-local"
-            value={form.deadline}
-            onChange={set("deadline")}
-            required
-            className="w-full border border-border rounded-[10px] px-3 py-2"
-            dir="ltr"
-          />
-          {/* MEH-992: deadline helper — clarify what the date means + Israel time */}
-          <p className="text-xs text-fg-muted mt-1">{t("deadline_helper")}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("city_label")}</label>
-          <input
-            value={form.city}
-            onChange={set("city")}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-start"
-            dir="rtl"
-          />
-        </div>
+        {/* MEH-992 deadline helper (what the date means + Israel time) rides the
+            Input helperText slot. */}
+        <Input
+          label={`${t("deadline_label")}${t("required_marker")}`}
+          type="datetime-local"
+          value={form.deadline}
+          onChange={set("deadline")}
+          required
+          helperText={t("deadline_helper")}
+          dir="ltr"
+        />
+        <Input
+          label={t("city_label")}
+          value={form.city}
+          onChange={set("city")}
+          dir="rtl"
+        />
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}

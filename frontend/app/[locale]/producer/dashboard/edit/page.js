@@ -393,7 +393,7 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       </p>
       <div className="space-y-2">
         {questions.map((q, i) => (
-          <input
+          <Input
             key={i}
             type="text"
             value={q}
@@ -404,7 +404,7 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
               setQuestions(updated);
             }}
             placeholder={t(`placeholder_${i + 1}`)}
-            className="w-full border border-border rounded-[10px] px-3 py-2 text-sm focus:outline-none focus:border-primary transition"
+            className="text-sm"
             dir="rtl"
           />
         ))}
