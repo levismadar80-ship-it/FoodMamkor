@@ -17,8 +17,14 @@ function FavoriteCardWrapper({ fav }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="relative">
-      <ProducerCard producer={fav.producer} />
+    // MEH-1142: h-full + flex-col so the card fills the grid cell (equal row
+    // heights) while the conditional AlertPrefsPanel below stays in-flow. The
+    // card sits in a flex-1 box so it fills the remaining height when the panel
+    // is closed and yields room (no overflow/clipping) when it's open.
+    <div className="relative h-full flex flex-col">
+      <div className="flex-1">
+        <ProducerCard producer={fav.producer} />
+      </div>
       <button
         onClick={() => setOpen((v) => !v)}
         title={t("alerts_aria")}

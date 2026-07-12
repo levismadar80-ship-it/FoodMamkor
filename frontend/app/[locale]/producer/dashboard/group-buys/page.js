@@ -8,6 +8,8 @@ import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
@@ -116,38 +118,36 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
           dir="rtl"
         />
 
+        {/* MEH-1128 D2: MEH-992 ₪ absolute-span → Input startAdornment (D1).
+            Behavior identical — ₪ sits at the start (right in RTL) and the
+            dir=ltr digits keep their text-end alignment. The price_group soft
+            price-rule helper (muted→red, NOT a field error) stays a sibling —
+            routing it through Input's error would wrongly add a border-error. */}
+        <Input
+          type="number"
+          min={1}
+          step={0.01}
+          label={`${t("price_regular_label")}${t("required_marker")}`}
+          value={form.price_per_unit_regular}
+          onChange={set("price_per_unit_regular")}
+          required
+          startAdornment="₪"
+          className="text-end"
+          dir="ltr"
+        />
         <div>
-          <label className="block text-sm font-medium mb-1">{t("price_regular_label")}{t("required_marker")}</label>
-          <div className="relative">
-            {/* MEH-992: ₪ adornment — start-3 = right in RTL; input is dir=ltr so pe-7/text-end reserve+align the right side */}
-            <span className="absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted pointer-events-none" aria-hidden="true">₪</span>
-            <input
-              type="number"
-              min={1}
-              step={0.01}
-              value={form.price_per_unit_regular}
-              onChange={set("price_per_unit_regular")}
-              required
-              className="w-full border border-border rounded-[10px] px-3 py-2 pe-7 text-end"
-              dir="ltr"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">{t("price_group_label")}{t("required_marker")}</label>
-          <div className="relative">
-            <span className="absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted pointer-events-none" aria-hidden="true">₪</span>
-            <input
-              type="number"
-              min={1}
-              step={0.01}
-              value={form.price_per_unit_group}
-              onChange={set("price_per_unit_group")}
-              required
-              className="w-full border border-border rounded-[10px] px-3 py-2 pe-7 text-end"
-              dir="ltr"
-            />
-          </div>
+          <Input
+            type="number"
+            min={1}
+            step={0.01}
+            label={`${t("price_group_label")}${t("required_marker")}`}
+            value={form.price_per_unit_group}
+            onChange={set("price_per_unit_group")}
+            required
+            startAdornment="₪"
+            className="text-end"
+            dir="ltr"
+          />
           {/* MEH-992: pre-submit price-rule helper — muted hint, turns red on violation (pre-400) */}
           <p className={`text-xs mt-1 ${priceInvalid ? "text-red-500" : "text-fg-muted"}`}>
             {t("price_helper")}
@@ -325,8 +325,8 @@ export default function ProducerGroupBuysPage() {
                 </div>
 
                 <div className="flex items-center gap-4 text-sm mb-3">
-                  <span className="font-bold text-primary">₪{Number(gb.price_per_unit_group).toFixed(0)}</span>
-                  <span className="text-fg-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
+                  <span className="font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
+                  <span className="text-fg-muted line-through">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
                 </div>
 
                 <div className="mb-2">

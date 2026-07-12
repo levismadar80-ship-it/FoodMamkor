@@ -6,6 +6,8 @@ import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
+// MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
+import { formatPrice, formatPriceRange } from "@/lib/utils";
 import DeliveryBlock from "@/components/DeliveryBlock";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
@@ -128,7 +130,7 @@ export default function ProducerSections({
                       {ev.city && ` · ${ev.city}`}
                     </p>
                     {ev.price > 0 && (
-                      <p className="text-sm text-accent font-medium mt-1">₪{ev.price}</p>
+                      <p className="text-sm text-accent font-medium mt-1">{formatPrice(ev.price)}</p>
                     )}
                     {ev.price === 0 && (
                       <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
@@ -173,11 +175,9 @@ export default function ProducerSections({
                 ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
                 : null;
               const price =
-                product.price_min != null && product.price_max != null
-                  ? `₪${Number(product.price_min)}–₪${Number(product.price_max)}`
-                  : product.price_min != null
-                    ? `₪${Number(product.price_min)}`
-                    : product.price_range || null;
+                product.price_min != null
+                  ? formatPriceRange(product.price_min, product.price_max)
+                  : product.price_range || null;
               return (
                 <div
                   key={product.id}
@@ -275,7 +275,7 @@ export default function ProducerSections({
                   <tr key={da.id} className="border-t border-border">
                     <td className="px-4 py-3 text-text">{da.city}</td>
                     <td className="px-4 py-3 text-text">
-                      {da.min_order ? `₪${da.min_order}` : "—"}
+                      {da.min_order ? formatPrice(da.min_order) : "—"}
                     </td>
                     <td className="px-4 py-3 text-text">{da.delivery_day || "—"}</td>
                   </tr>
