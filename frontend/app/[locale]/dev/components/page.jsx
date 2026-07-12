@@ -95,6 +95,11 @@ export default function DevComponentsPage() {
           <Input type="search" label="חיפוש" placeholder="מה בא לך לאכול?" />
           <Input type="text" label="שדה שגוי" defaultValue="??" error="יש להזין לפחות 3 אותיות" />
           <Input type="text" label="מושבת" placeholder="לא ניתן לעריכה" disabled />
+          {/* MEH-1128 D1: startAdornment (currency + icon) and success state. */}
+          <Input type="number" dir="ltr" className="text-end" label="מחיר" placeholder="49" startAdornment="₪" />
+          <Input type="search" label="יישוב" placeholder="חפשו עיר…" startAdornment={<MagnifyingGlass size={16} aria-hidden="true" />} />
+          <Input type="text" label="שדה תקין" defaultValue="רות לוי" success successText="נראה מצוין" />
+          <Input type="text" label="תקין בלי הודעה" defaultValue="זכרון יעקב" success helperText="ה-helper נשאר" />
         </div>
       </Section>
 
