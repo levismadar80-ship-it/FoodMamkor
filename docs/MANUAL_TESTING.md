@@ -3,6 +3,12 @@
 
 ---
 
+## MEH-435 chunk A — funnel events ב-/register/producer (PostHog)
+
+- [ ] **step_viewed בקונסול (dev)** — פתחי DevTools → Console ב-`/register/producer`, לחצי "בואו נתחיל" ואז עברי בין השלבים — **תוצאה מצופה:** על כל מעבר שלב מודפס `[track] producer_register_step_viewed { step: "account"|"details"|"category"|"story"|"confirm" }` (רק אחרי אישור עוגיות "all"; אם דחית עוגיות — אין לוג).
+- [ ] **submitted + error** — השלימי טופס תקין ושלחי — **תוצאה מצופה:** `[track] producer_register_submitted`. בכשל שליחה (למשל שרת מחזיר שגיאה) — `[track] producer_register_error { step: "story" }`.
+- [ ] **no-op בלי מפתח** — בלי `NEXT_PUBLIC_POSTHOG_KEY` ב-production build — **תוצאה מצופה:** אפס בקשות רשת ל-PostHog (posthog-js לא נטען כלל); ההתנהגות זהה למצב שלפני ה-PR.
+
 ## MEH-1142 — יישור גבהי כרטיסים ב-grids + הסרת method-hint
 
 - [ ] **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל הכרטיסים באותה שורה בגובה זהה (בלי "מדרגות"), גם כשלכרטיס אין מחיר/דירוג/תיאור. שורת המחיר צמודה לתחתית הכרטיס.
