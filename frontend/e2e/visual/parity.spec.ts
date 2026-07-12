@@ -114,6 +114,10 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-1146: the producer detail page IA was rebuilt across PRs #1670/#1673/#1676
+  // (editorial contact card, two-tier header, section reorder, discovery loop).
+  // This touch re-triggers vrt-update.yml so the producer-detail-*-linux.png
+  // baselines are regenerated on-runner against the final design.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
