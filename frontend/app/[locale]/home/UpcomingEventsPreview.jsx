@@ -8,6 +8,8 @@ import api from "@/lib/api";
 // MEH-785: locale-aware dates via the shared helper — replaces the local
 // formatEventDate that hardcoded "he-IL" (escaped the MEH-753/MEH-777 sweeps).
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
 
@@ -77,7 +79,7 @@ export function UpcomingEventsPreview() {
               </p>
               <p className="text-sm text-accent font-semibold">
                 {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-                {ev.price > 0 ? <span dir="ltr">{`₪${ev.price}`}</span> : t("home.events.free")}
+                {ev.price > 0 ? <span dir="ltr">{formatPrice(ev.price)}</span> : t("home.events.free")}
               </p>
             </div>
           </Link>

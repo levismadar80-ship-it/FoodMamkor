@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
 
@@ -28,9 +30,10 @@ export default function ExperienceCard({ experience: ex }) {
   const t = useTranslations("experiences.card");
   const locale = useLocale();
 
-  const formatPrice = (p) => {
+  // MEH-1140: free semantics stay here; numeric formatting is lib/utils canon.
+  const priceDisplay = (p) => {
     if (p == null || Number(p) === 0) return t("free");
-    return <span dir="ltr">{`₪${Number(p).toLocaleString("he-IL")}`}</span>;
+    return <span dir="ltr">{formatPrice(p)}</span>;
   };
 
   const spotsBadge =
@@ -111,7 +114,7 @@ export default function ExperienceCard({ experience: ex }) {
             </span>
           )}
           <span className="text-accent font-semibold text-sm">
-            {formatPrice(ex.price_per_person)}
+            {priceDisplay(ex.price_per_person)}
           </span>
         </div>
       </div>
