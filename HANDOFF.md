@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1163: bio card manual textarea always visible — PR open
+
+- **Branch:** `feature/meh-1163-bio-manual-field` off `origin/staging` (post-#1690). YELLOW — CI green → auto-merge per batch authority (ADR-016 v2). `Closes MEH-1163`. Task 3 of the 5-task batch (Task 1 MEH-1161 = PR #1688 auto-merge armed · Task 2 MEH-1162 = **MERGED #1690**).
+- **Phase 0 (read-only, verified):** BioPanelCard `edit/cards.jsx:468-568` — bio textarea rendered only when `generatedBio` truthy (:545), never prefilled with saved bio; save path `PUT /producers/me {description}` via `saveBio` (:506-517) + `onSave` callback; 150-counter (:555, MEH-1093); MEH-1157 error split (:494-501) — its `error_unavailable` copy ("אפשר לכתוב תיאור ידנית") pointed at a field that didn't exist. Audit F2 confirmed.
+- **Shipped (cards.jsx + test + 2 msg files):** textarea always rendered, prefilled `profile.description`; AI generate fills/replaces (fail-open empty result preserves owner text); source typing no longer wipes the bio; dirty = bio ≠ last-saved; save disabled when empty/unchanged; counter + error split + save idiom untouched. New key `dashboard.producer.bio.bio_placeholder` (he+en, ADR-024 neutral plural). Tests: 5 new MEH-1163 cases in `EditTabBioPanel.test.jsx`.
+- **Verify:** vitest 982 passed/41 skipped · build exit 0 · Playwright 390px localhost (`qa-artifacts/MEH-1163/`): no-bio textarea + counter, mocked generate fills, manual-only save persists across reload.
+
 ## 2026-07-12 — MEH-1159 (ROADMAP reader-income, MERGED #1687) + MEH-1160 (/share page) — batch, full ADR-016 v2 authority
 
 - **Task 1 — MEH-1159 (GREEN, doc-only, `Closes MEH-1159`): MERGED.** `feature/meh-1159-roadmap-reader-income` off staging → PR #1687 → auto-merge (squash, `11c397a`). Verbatim v2 block appended to **`docs/ROADMAP.md`** end, after the "Marketing AI Agents (v3 — post-launch)" item (no dedicated post-launch section exists; spec's fallback clause). **Premise correction (meta-patterns §1):** spec said "ROADMAP.md (repo root)" — no such file; canonical is `docs/ROADMAP.md` per CLAUDE.md doc map. Single file, +20 additions. **CI note:** first `CI gate` failure webhook was the MEH-1049 superseded-run pattern (draft→ready flip concurrency-cancelled the draft run); fresh run green, auto-merged. Vercel bot deploy failure = known 100/day free-tier cap, non-blocking (required gates unaffected).
