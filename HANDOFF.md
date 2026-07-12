@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1145 Wave E3 (ui/Input adoption II — heavy forms, FINAL wave) — draft PR
+
+- **Branch:** `feature/meh-1145-input-adoption-wave-e3` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px per form. `Refs MEH-1145`. **Epic's final wave** — epic-close grep runs post-merge. Pre-flight: E2 `deda2359` on staging.
+- **Phase 0 (re-verified the 12/07 clone from scratch — mandated):** clone 4+9=13 → **11 migrations across 2 files** (settings over-counted by 2). Both files last touched by merged work; #1674 (account-delete, auth.py) + #1669 (HEIC, upload.py) touch neither. Clean. Frozen `ui/Input.jsx` had every capability (className→input, native type, node label/helperText) — no STOP.
+- **Migrated (11):** settings name (text-right) + phone (hint→helperText); experiences title, image_url, event_date, event_time, duration, address, price, max_participants, recurring_schedule. **Date/time (flagged risk) render cleanly in the canon box** at 375px — stayed migrated.
+- **Leftovers (surfaced):** settings email (readOnly disabled locked-display), danger-email (persistent red), current+confirm password + PasswordInput (composed), CitySearch ×2; experiences textareas/select/checkbox (non-eligible types).
+- **Verify:** build exit 0 · full vitest **959 passed**/41 skipped · Playwright 375px both forms — all migrated fields 44px+canon, value-binding confirmed, 0 page errors (`docs/audits/screenshots/2026-07-meh1145-wave-e3-qa/`).
+
 ## 2026-07-12 — MEH-1146 Chunk B: two-tier header + section reorder + delivery/pickup + demoted CTA — PR open
 
 - **Branch:** `feature/meh-1146-producer-ia-b` off fresh `origin/staging` (incl. merged Chunk A #1670). Second of 3 chunks. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137`.
