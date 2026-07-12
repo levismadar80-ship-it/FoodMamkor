@@ -264,7 +264,7 @@ export default function EventsPage() {
         {/* Text — bottom-anchored on the scrim; start-aligned (RTL right). */}
         <div className="absolute inset-x-0 bottom-0 px-4 pb-6 md:px-14 md:pb-10 text-background">
           <div className="max-w-5xl mx-auto">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-100">
+            <p className="text-xs font-semibold text-green-100">
               {isExp ? t("eyebrow_experiences") : t("eyebrow_events")}
             </p>
             <h1 className="font-headline-display font-black text-3xl md:text-6xl leading-tight text-background mt-1.5 md:mt-3">
