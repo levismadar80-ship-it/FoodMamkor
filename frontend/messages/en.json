@@ -2429,7 +2429,7 @@
     },
     "cookie_banner": {
       "aria_label": "Cookie consent",
-      "message": "🍪 We use cookies to improve the experience — <link>privacy policy</link>",
+      "message": "We use cookies to improve the experience — <link>privacy policy</link>",
       "accept_all": "Accept all",
       "essential_only": "Essential only"
     },
