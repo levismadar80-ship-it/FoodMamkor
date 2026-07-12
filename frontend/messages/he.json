@@ -719,6 +719,18 @@
       "contact_sidebar": {
         "join_whatsapp_group": "הצטרפו לקבוצת וואטסאפ"
       },
+      "contact_card": {
+        "status_open": "פתוח להזמנות",
+        "aria": {
+          "phone": "התקשרו",
+          "instagram": "אינסטגרם",
+          "website": "אתר",
+          "email": "אימייל",
+          "facebook": "פייסבוק",
+          "external_order": "טופס הזמנות",
+          "whatsapp_group": "קבוצת וואטסאפ"
+        }
+      },
       "sticky_bar": {
         "vacation_msg": "שלחו הודעה"
       }
@@ -2830,7 +2842,8 @@
       "my_area": "האזור שלי",
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
-      "greeting_template": "שלום {name}, {q}"
+      "greeting_template": "שלום {name}, {q}",
+      "delivery_to_city": "אפשר משלוח ל-{city}?"
     }
   },
   "directory": {
