@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Star } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+// MEH-1140: canonical shekel format ("0₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import api from "@/lib/api";
 
 export default function UpgradeClient() {
@@ -37,7 +39,7 @@ export default function UpgradeClient() {
           {/* Free Plan */}
           <div className="border border-border rounded-[16px] p-6">
             <h3 className="font-semibold text-lg text-text mb-1">{t("free_plan.name")}</h3>
-            <p className="text-3xl font-bold text-primary mb-4">₪0</p>
+            <p className="text-3xl font-bold text-primary mb-4">{formatPrice(0)}</p>
             <ul className="text-start text-sm space-y-2 text-fg-muted">
               <li>{t("free_plan.feature_map")}</li>
               <li>{t("free_plan.feature_3_images")}</li>

@@ -8,6 +8,8 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import api from "@/lib/api";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
@@ -268,10 +270,10 @@ export default function GroupBuyDetailClient({ id }) {
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-primary">
-                  ₪{Number(gb.price_per_unit_group).toFixed(0)}
+                  {formatPrice(Number(gb.price_per_unit_group).toFixed(0))}
                 </span>
                 <span className="text-fg-muted line-through text-lg">
-                  ₪{Number(gb.price_per_unit_regular).toFixed(0)}
+                  {formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}
                 </span>
                 {gb.unit && <span className="text-sm text-fg-muted">{t("unit_suffix", { unit: gb.unit })}</span>}
               </div>

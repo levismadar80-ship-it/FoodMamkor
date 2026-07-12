@@ -1,0 +1,20 @@
+[
+  {
+    "viewport": "375",
+    "productRange_35_60": true,
+    "productSingle_28": true,
+    "eventPrice_45": true,
+    "deliveryMinOrder_100": true,
+    "headerLabel_from28_dataPassthrough": true,
+    "anyShekelFirstLeft": false
+  },
+  {
+    "viewport": "1280",
+    "productRange_35_60": true,
+    "productSingle_28": true,
+    "eventPrice_45": true,
+    "deliveryMinOrder_100": true,
+    "headerLabel_from28_dataPassthrough": true,
+    "anyShekelFirstLeft": false
+  }
+]

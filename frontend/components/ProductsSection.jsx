@@ -20,6 +20,8 @@ import { useTranslations } from "next-intl";
 import { Carrot, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPriceRange } from "@/lib/utils";
 import EmptyState from "@/components/ui/EmptyState";
 
 // MEH-1116: `embedded` drops the card chrome + heading (the edit-tab accordion
@@ -424,10 +426,8 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-text truncate">{product.name}</p>
                 {(() => {
-                  if (product.price_min != null && product.price_max != null)
-                    return <p className="text-xs text-accent">₪{Number(product.price_min)}–₪{Number(product.price_max)}</p>;
                   if (product.price_min != null)
-                    return <p className="text-xs text-accent">₪{Number(product.price_min)}</p>;
+                    return <p className="text-xs text-accent">{formatPriceRange(product.price_min, product.price_max)}</p>;
                   if (product.price_range)
                     return <p className="text-xs text-accent">{product.price_range}</p>;
                   return null;

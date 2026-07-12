@@ -2,7 +2,7 @@
 // Follows the same pattern as lib/producer-completeness.test.mjs.
 //   $ node frontend/lib/utils.test.mjs
 import assert from "node:assert/strict";
-import { normalizePhone } from "./utils.js";
+import { normalizePhone, formatPrice, formatPriceRange } from "./utils.js";
 
 let passed = 0;
 let failed = 0;
@@ -105,6 +105,80 @@ it("integration: 052-123-4567 → https://wa.me/972521234567", () => {
 it("integration: +972501234567 → https://wa.me/972501234567", () => {
   const url = `https://wa.me/${normalizePhone("+972501234567")}`;
   assert.equal(url, "https://wa.me/972501234567");
+});
+
+// ─── formatPrice (MEH-1140 canonical shekel format) ───────────────────────────
+
+console.log("\nformatPrice");
+
+it("null → null (caller renders nothing)", () => {
+  assert.equal(formatPrice(null), null);
+});
+
+it("undefined → null", () => {
+  assert.equal(formatPrice(undefined), null);
+});
+
+it("empty string → null", () => {
+  assert.equal(formatPrice(""), null);
+});
+
+it("non-numeric string → null", () => {
+  assert.equal(formatPrice("מ-35"), null);
+});
+
+it("integer → amount then shekel, no space", () => {
+  assert.equal(formatPrice(35), "35₪");
+});
+
+it("numeric string coerces", () => {
+  assert.equal(formatPrice("35"), "35₪");
+});
+
+it("0 → '0₪' (gift/free wording stays at the call site)", () => {
+  assert.equal(formatPrice(0), "0₪");
+});
+
+it("from prefix → מ-35₪", () => {
+  assert.equal(formatPrice(35, { from: true }), "מ-35₪");
+});
+
+it("unit suffix → 35₪ / יחידה", () => {
+  assert.equal(formatPrice(35, { unit: "יחידה" }), "35₪ / יחידה");
+});
+
+it("from + unit compose", () => {
+  assert.equal(formatPrice(35, { from: true, unit: "ק\"ג" }), "מ-35₪ / ק\"ג");
+});
+
+it("thousands use he-IL grouping", () => {
+  assert.equal(formatPrice(1234), "1,234₪");
+});
+
+it("decimals capped at 2", () => {
+  assert.equal(formatPrice(35.567), "35.57₪");
+});
+
+console.log("\nformatPriceRange");
+
+it("min+max → 35₪–60₪", () => {
+  assert.equal(formatPriceRange(35, 60), "35₪–60₪");
+});
+
+it("min only → 35₪", () => {
+  assert.equal(formatPriceRange(35, null), "35₪");
+});
+
+it("max only → 60₪", () => {
+  assert.equal(formatPriceRange(null, 60), "60₪");
+});
+
+it("equal min/max collapse to one value", () => {
+  assert.equal(formatPriceRange(35, 35), "35₪");
+});
+
+it("neither → null", () => {
+  assert.equal(formatPriceRange(null, null), null);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

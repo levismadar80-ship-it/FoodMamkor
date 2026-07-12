@@ -7,6 +7,8 @@ import { Calendar, Coins, Leaf, MapPin, UsersThree } from "@phosphor-icons/react
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -119,7 +121,7 @@ export default function EventDetailClient() {
                 leading its row in text-primary at :96. */}
             <Coins size={16} className="text-accent inline align-[-3px]" aria-hidden="true" />
             {/* MEH-1031: bidi-isolate the price (currency+number) so it can't flip in RTL */}
-            {event.price > 0 ? <span dir="ltr">{`₪${event.price}`}</span> : t("free")}
+            {event.price > 0 ? <span dir="ltr">{formatPrice(event.price)}</span> : t("free")}
           </p>
           {event.max_participants && (
             <p className="flex items-center gap-2">

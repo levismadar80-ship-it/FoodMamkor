@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
 
@@ -39,9 +41,10 @@ export default function ExperienceDetailClient() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const formatPrice = (p) => {
+  // MEH-1140: free semantics stay here; numeric formatting is lib/utils canon.
+  const priceDisplay = (p) => {
     if (p == null || Number(p) === 0) return t("free");
-    return `₪${Number(p).toLocaleString("he-IL")}`;
+    return formatPrice(p);
   };
 
   if (loading) {
@@ -153,7 +156,7 @@ export default function ExperienceDetailClient() {
           )}
           <p className="flex items-center gap-2 text-accent font-semibold">
             <CurrencyCircleDollar size={16} aria-hidden="true" />
-            {formatPrice(ex.price_per_person)}
+            {priceDisplay(ex.price_per_person)}
           </p>
           {ex.max_participants != null && (
             <p className="flex items-center gap-2">

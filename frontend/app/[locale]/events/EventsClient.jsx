@@ -22,6 +22,8 @@ import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { formatEventDate } from "@/lib/format-date";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import CitySearch from "@/components/CitySearch";
 import Breadcrumb from "@/components/Breadcrumb";
 import ChipScrollRow from "@/components/ChipScrollRow";
@@ -474,7 +476,7 @@ function EntryRow({ entry, freeLabel }) {
             <span className={`ms-auto text-sm font-semibold ${accentText}`}>{freeLabel}</span>
           ) : (
             <span dir="ltr" className={`ms-auto font-english italic font-semibold numeric ${accentText}`}>
-              {`₪${entry.price}`}
+              {formatPrice(entry.price)}
             </span>
           )}
         </div>

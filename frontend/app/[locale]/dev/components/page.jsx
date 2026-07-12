@@ -153,7 +153,8 @@ export default function DevComponentsPage() {
               }
               footer={
                 <>
-                  <span className="text-sm font-semibold text-accent">₪45</span>
+                  {/* MEH-1140: keeps the gallery honest to the price canon (amount then ₪) */}
+                  <span className="text-sm font-semibold text-accent">45₪</span>
                   <Heart size={18} weight="regular" className="text-primary" aria-hidden="true" />
                 </>
               }
