@@ -41,6 +41,13 @@
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
 
+## 2026-07-12 — MEH-1151: slug→slug producer-page stale state (from MEH-1148 audit D7) — PR open
+
+- **Branch:** `feature/meh-1151-slug-nav-stale-state` off `origin/staging` (`5cfc370`). YELLOW — auto-merge after CI green + the required Playwright self-QA passing (per batch instruction). `Closes MEH-1151`.
+- **Phase 0 re-verify (mandatory — audit ran on an older base):** current `[slug]/page.js` is shorter (92 lines) only due to the MEH-1119 `isSlugShaped`→`lib/slug.js` extraction; the bug is intact — `<ProducerDetail initialProducer=… fetchPath=…>` at :85-88 with no `key`, and `useProducerData.js:25,31` still seed-once + guard. No `template.js` anywhere in `frontend/app` (would force remount) — confirmed.
+- **Shipped (2 files):** `[slug]/page.js` — `key={params.slug}` on `<ProducerDetail>` (approach A, ticket default; scroll-restoration checked — only in-page `useTabScroll`, no single-mount dependency). New `__tests__/SlugNavRemount.test.jsx` (2 cases: bare-prop-change stays stale = root cause; keyed remount re-seeds = fix). id route untouched (self-heals).
+- **Verify:** `npm run build` exit 0 · vitest new test 2/2 · **live Playwright** (local prod `next start` + FastAPI + Postgres, 4 seeded same-category producers): `/ora`→click "עסקים דומים" card→`/dvash?from=similar`, h1 מאפיית אורה → דבש הגליל = PASS (screenshots `qa-artifacts/MEH-1151/`).
+
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
 - **Branch:** `feature/meh-1142-card-grid-heights` off `origin/staging` (the ticket-specified name). **Branch note:** work started on the harness-designated `claude/meh-1142-producercard-review-vh88my` (draft PR #1661), but MEH-1141's **Branch name gate is now LIVE on staging** and hard-fails `claude/*` (locked pattern `^(feature|levismadar80)/meh-…`) — the MEH-1134/MEH-1132 `claude/*` precedent predates the gate. Smadar approved recreating on the conforming ticket name; same commits re-pushed, #1661 closed, PR **#1662** opened. YELLOW — full autonomous authority: implement → PR → CI green → `/adversarial-review` (central component, rule 20) → Playwright self-QA → auto-merge. `Closes MEH-1142`.
