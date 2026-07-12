@@ -5,6 +5,116 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-11 — MEH-1074 Producer-Page sweep closeout + MEH-1044 Vercel preview-build gate
+
+### MEH-1044 — Vercel preview-build gate ✅ SHIPPED (PR #1642, merged to staging)
+
+**Incident:** 4 Vercel Hobby quotas blown simultaneously (Edge Requests 3.3M/1M, Function
+Invocations 2M/1M, Fluid Active CPU 10h/4h, Fast Origin Transfer 13.3GB/10GB).
+
+**Root cause (verified, Vercel `list_deployments` live):** 20 preview deployments in a ~6-minute
+window, almost all `githubCommitAuthorName: Claude` on `feature/meh-*` branches. Every push to
+every non-production branch built a full SSR preview. ADR-016 v2 (autonomous CC auto-merge)
+multiplied push frequency → the latent gap exploded.
+
+**The gap MEH-1044/MEH-1076 had NOT closed:** they fixed *E2E running against previews*
+(e2e.yml → localhost ✅ still correct). They did not stop *preview builds themselves*.
+
+**🔴 Root-Directory shadowing (the real discovery — CC Phase 0, independently verified):**
+Vercel's Root Directory is `frontend/`, so Vercel reads **`frontend/vercel.json` ONLY**.
+The repo-root `vercel.json` + `scripts/vercel-skip-build.sh` (MEH-494) were **never executed in
+production** — for ~2 months. CHANGELOG:3117 said "Verified locally" (the script was run by hand;
+nobody confirmed Vercel invoked it). Decisive evidence: `regions: ["fra1"]` exists only in
+`frontend/vercel.json` and the live deploy ran in fra1.
+⇒ The MEH-494 docs/backend-only skip also never fired — it contributed to the burn.
+
+**Fix (Sapir applied the bytes; CC is policy-blocked on `Edit(vercel.json)` — guardrail held,
+CC correctly refused to route around it via the GitHub API):**
+- `frontend/vercel.json`: inline `ignoreCommand` branch-gate —
+  `case "$VERCEL_GIT_COMMIT_REF" in staging|main) exit 1 ;; *) echo "skip..." && exit 0 ;; esac`
+  (exit 1 = BUILD, exit 0 = SKIP) + `"github": { "autoJobCancelation": true }`.
+- Deleted root `vercel.json` + `scripts/vercel-skip-build.sh` (dead since birth, no live refs).
+- docs/backend skip logic NOT ported (it never ran → nothing regresses). Possible future
+  staging-side optimization.
+
+**Rejected alternatives (documented so they don't get re-proposed):**
+- `git.deploymentEnabled: {"feature/*": false}` — Vercel has no reliable wildcard support
+  (vercel/vercel#4307), and it would be a 2nd parallel mechanism (MEH-271 anti-pattern).
+- External bash script — may not resolve from a non-root Root Directory.
+- Dashboard "Ignored Build Step" — **Pro-only**. The `ignoreCommand` *field* in vercel.json is not.
+
+**Verified live:** `feature/meh-1044-preview-build-gate` → CANCELED. Post-merge, PR #1640 and
+#1643 → **Canceled** ✅. Gate confirmed working.
+
+**⚠️ Gate scope caveat:** the gate lives in each branch's own `vercel.json`, so it only applies to
+branches cut/rebased **after** the merge. Pre-existing branches (e.g. #1644) keep building until
+rebased onto staging. Not a bug.
+
+**Hobby-tier reality check:** Spend Management does **not exist** on Hobby (it manages billing;
+Hobby has none — Vercel just pauses the project). The branch gate *is* the safety net.
+
+**Open / Sapir:**
+- [ ] Monitor Usage 48h — Edge Requests / Function Invocations should stop climbing (they won't
+      *drop*; they're cumulative per billing period. Flat = success).
+- [ ] Close MEH-1044 once flat. (PR was `Refs`, not `Closes`.)
+
+**⚠️ Process flag:** CC is cutting `claude/*` branches (e.g. `claude/meh-1132-implementation-xrlw17`,
+`claude/meh-1074-closeout-duukw2`) — violates CLAUDE.md rule 3 (`feature/meh-XXX-slug` only).
+CC flagged this itself. Worth enforcing in the prompt template.
+
+---
+
+### MEH-1074 — Producer-Page Trust & Contact sweep ✅ COMPLETE (8 PRs merged, 1 no-op)
+
+Root-cause sweep of the public business-profile page, driven by a screenshot audit.
+
+| Task | Ticket | PR | Fix |
+|---|---|---|---|
+| E | MEH-1111 | #1607 | voice micro-fixes (שאלו / היו / תוכלו) + canary verbs added |
+| F | MEH-1114 | #1609 | owner-only "מוצג רק לך" eyebrow + ADR-024 voice |
+| G | MEH-1117 | #1614 | QuestionChips hex→tokens + 14px interactive-text floor |
+| A | MEH-1049 | #1617 | contact truncation fix + share/contact disambiguation |
+| B | MEH-1120 | #1619 | TrustBadge recognition-only — killed the duplicate verification badge |
+| D | MEH-1121 | #1620 | masthead now fires for blank image arrays (ZFFS root cause) |
+| C | MEH-1124 | #1624 | header tag-row information classes (availability status line, drop מוצרים, dedup משלוח) |
+| I | MEH-1126 | #1627 | products section → image-first cards + typographic no-photo card |
+| H | — | — | verified no-op (demo seed already correct on staging) |
+
+**Root causes found (worth remembering as bug *classes*, not one-offs):**
+
+1. **Two parallel badge systems** (MEH-271 class) — `BadgeRow` (verification_tier, ADR-022) and
+   `TrustBadge` (trust_tier ≥ 3, MEH-51) both rendered on ProducerDetail → reader saw "מאומת" +
+   "עסק מאומת ✅" twice, in two styles. `Badge.jsx` documented this as MEH-602 known debt.
+   Fixed at the root: TrustBadge is now recognition-only (`tier < 4 → null`).
+2. **Value-as-label in a fixed-width button** — phone/Instagram were truncated ("054-5551…",
+   "@dana_so…") because the *data value* was the button label. **Class:** any button whose label is
+   user data needs full-width rows + `dir="ltr"` + no ellipsis.
+3. **Gender-split canary gap** — MEH-872 moved imperatives to plural but deferred the
+   pronoun/future class to MEH-885 → mixed-gender sentences ("לחצו…תוכלי"). Worse: the verbs
+   `שאלי` and `היי` were **missing from the canary list** in `.claude/commands/batch.md`, so they
+   escaped entirely. Now added.
+4. **Blank-string array ≠ empty array** — ZFFS's images array contained empty strings, so
+   `images.length > 0` was true and the MEH-815 Tinted Masthead never fired. Fixed by filtering
+   blank/whitespace entries (`ProducerDetail.jsx:78`).
+5. **Unmarked owner-view** — the MEH-554 owner-only reviews block read as a public block (even
+   Sapir misread it). Now carries an explicit "מוצג רק לך" eyebrow.
+6. **Delivery data-model quirk (open follow-up, MEH-271 class):** the delivery *pill* and the
+   delivery *chip* were driven by **different fields** (`has_delivery`/`delivery_count` vs
+   `delivery_areas`). Task C gated the single chip on the **union** so no producer loses the badge —
+   correct as a display fix, but the underlying two-field split remains. → Worth a follow-up ticket
+   to reconcile at the data layer, or the gap reappears on every new surface.
+
+**Reviewer Should-Consider items on merged code (low-risk, Sapir's call whether to ticket):**
+- ProducerHeader test covering the two new `hasDelivery` union fields (`delivery_areas` path is
+  covered; `has_delivery` / `delivery_count` are not).
+- `ProducerSections.products` test for the image/no-image branch + price ladder.
+
+**Still open from the audit (not in the sweep):**
+- Legal disclaimer wording — "מהמקור היא **פלטפורמה** בלבד" sits oddly against the
+  "מגזין, לא marketplace" DNA. Hard gate — Sapir decides, never CC.
+- Content gate: businesses can go live with stub bios ("בית עסק מקומי. עוד פרטים בקרוב.") — a
+  process gap in the approval flow, not a code bug.
+
 ## 2026-07-12 — MEH-1128 Wave C (ui/Input adoption): admin forms — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-c` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D NOT started — wait gate.** (Waves A #1635 + B #1641 merged; Sapir approved Wave C in-conversation 12/07.)
