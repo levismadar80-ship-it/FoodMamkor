@@ -11,6 +11,7 @@ import GoogleAuthButton from "@/components/GoogleAuthButton";
 import AppleAuthButton from "@/components/AppleAuthButton";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import PasswordInput from "@/components/PasswordInput";
+import Input from "@/components/ui/Input";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { PASSWORD_MIN_LENGTH, validateEmail } from "@/lib/validators";
 import api from "@/lib/api";
@@ -281,58 +282,39 @@ function RegisterPageBody() {
             referralCode state + /referral/claim call below stay live; copy only. */}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="register-name" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.name")}</label>
-            <input
-              id="register-name"
-              value={form.name}
-              onChange={set("name")}
-              onBlur={() => setNameTouched(true)}
-              required
-              aria-invalid={nameInvalid || undefined}
-              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-start transition ${
-                nameInvalid
-                  ? "border-error"
-                  : nameValid
-                    ? "border-primary"
-                    : ""
-              }`}
-              dir="rtl"
-            />
-            {nameInvalid && (
-              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.name_required")}</p>
-            )}
-            {nameValid && (
-              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="register-email" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.email")}</label>
-            <input
-              id="register-email"
-              type="email"
-              value={form.email}
-              onChange={set("email")}
-              onBlur={() => setEmailTouched(true)}
-              required
-              aria-invalid={emailInvalid || undefined}
-              // text-right kept: email input is dir="ltr"; physical right = start side in the RTL form; logical text-start would follow the field's own ltr direction instead
-              className={`w-full border rounded-md px-3 py-2 min-h-[44px] text-right transition ${
-                emailInvalid
-                  ? "border-error"
-                  : emailValid
-                    ? "border-primary"
-                    : ""
-              }`}
-              dir="ltr"
-            />
-            {emailInvalid && (
-              <p className="text-xs text-error mt-1 text-start" role="alert">{t("auth.register.consumer.validation.email_invalid")}</p>
-            )}
-            {emailValid && (
-              <p className="text-xs text-primary mt-1 text-start">{t("auth.register.consumer.validation.valid_hint")}</p>
-            )}
-          </div>
+          {/* MEH-1128 D2: name + email adopt ui/Input with the D1 success state —
+              this closes Wave A's "0 migrations" gap (the consumer valid-state
+              affordance the primitive couldn't express pre-D1). Same
+              nameTouched/emailTouched trigger logic + i18n keys; error wins over
+              success inside the primitive, mirroring the mutually-exclusive
+              invalid/valid derivations. text-end on the ltr email = right (its
+              own end), preserving the old physical text-right. */}
+          <Input
+            id="register-name"
+            label={t("auth.register.consumer.fields.name")}
+            value={form.name}
+            onChange={set("name")}
+            onBlur={() => setNameTouched(true)}
+            required
+            error={nameInvalid ? t("auth.register.consumer.validation.name_required") : undefined}
+            success={nameValid}
+            successText={nameValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
+            dir="rtl"
+          />
+          <Input
+            id="register-email"
+            type="email"
+            label={t("auth.register.consumer.fields.email")}
+            value={form.email}
+            onChange={set("email")}
+            onBlur={() => setEmailTouched(true)}
+            required
+            error={emailInvalid ? t("auth.register.consumer.validation.email_invalid") : undefined}
+            success={emailValid}
+            successText={emailValid ? t("auth.register.consumer.validation.valid_hint") : undefined}
+            className="text-end"
+            dir="ltr"
+          />
           <div>
             <label htmlFor="pw-password" className="block text-sm font-medium mb-1">{t("auth.register.consumer.fields.password")}</label>
             {/* MEH-306: PasswordInput owns input + eye toggle + live policy
