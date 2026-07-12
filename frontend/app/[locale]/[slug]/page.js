@@ -4,39 +4,10 @@ import { buildProducerMetadata, buildJsonLd, serializeJsonLd } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
-
-// Reserved root paths that must NOT be treated as a slug.
-// Next.js static routes already win at routing, but this guards
-// fetch attempts in case of edge cases / direct calls.
-const RESERVED = new Set([
-  "about", "admin", "favorites", "login", "map",
-  "p", "producer", "rate", "register", "settings", "terms",
-  "upgrade", "messages", "discover", "publish",
-  "api", "_next", "favicon.ico", "manifest.json",
-  "robots.txt", "sitemap.xml", "sw.js",
-]);
-
-// MEH-1045: fast-404 for scanner probes. This route is a root-level
-// catch-all, so every bot probe (/wp-admin, /.env, /xmlrpc.php…) used to
-// cost a dynamic render + a Railway fetch with a per-slug revalidate:60
-// cache entry. Real slugs are produced by backend _slugify
-// (backend/app/services/producer_import.py:34-41 — lowercase, charset
-// [\w \u0590-\u05FF -], max 100 chars, never contains a dot), so anything
-// outside that shape can be rejected BEFORE the backend fetch.
-const SLUG_SHAPE = /^[a-z0-9_\u0590-\u05FF-]{1,100}$/;
-// Well-known scanner path prefixes that ARE slug-shaped (wp-admin etc.).
-const SCANNER_PREFIXES = ["wp-", "wordpress", "xmlrpc", "phpmyadmin", "cgi-"];
-
-// Exported for unit tests (frontend/__tests__/SlugPageBotHardening.test.jsx).
-export function isSlugShaped(slug) {
-  if (!slug) return false;
-  const s = slug.toLowerCase();
-  if (RESERVED.has(s)) return false;
-  // Dots never appear in generated slugs — kills /.env, /foo.php, /a.txt.
-  if (s.includes(".")) return false;
-  if (SCANNER_PREFIXES.some((p) => s.startsWith(p))) return false;
-  return SLUG_SHAPE.test(s);
-}
+// MEH-1119: isSlugShaped (+ its RESERVED / SLUG_SHAPE / SCANNER_PREFIXES) moved
+// to lib/slug.js — a non-Page `export` in a page.js file breaks the Next Page
+// type contract under `next build --webpack`. The test imports it from there.
+import { isSlugShaped } from "@/lib/slug";
 
 async function getProducerBySlug(slug) {
   if (!isSlugShaped(slug)) return null;
