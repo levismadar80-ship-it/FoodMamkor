@@ -178,7 +178,11 @@ export default function BottomNav() {
     [
       "relative w-full min-w-[64px] flex flex-col items-center justify-center gap-[4px]",
       isCompact ? "min-h-[40px]" : "min-h-[44px]",
-      "rounded-full px-1 py-1.5 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
+      // NAV — label-clip fix: py-1.5 → py-1. The 22px icon + 4px gap + label
+      // wrapper overflowed the expanded pill's inner box; trimming the tab's
+      // own vertical padding (min-h-[44px] still guarantees the ≥44px tap
+      // target) recovers the room so all four labels sit fully inside.
+      "rounded-full px-1 py-1 transition-colors duration-fast ease-quart motion-reduce:transition-none focus-ring",
       // MEH-919: inactive label darkened from fg-muted (#5c584f → 3.53 on the
       // sage nav capsule) to #4b4841 (4.55) for WCAG AA; active stays text-primary.
       active ? "text-primary" : "text-[#4b4841]",
@@ -189,10 +193,17 @@ export default function BottomNav() {
   // max-height animates to 0; opacity fades it in tandem. Only height/opacity/
   // max-height transition — the pill's backdrop-filter (nav-pill-glass) is
   // never animated. motion-reduce → instant.
+  // NAV — label-clip fix: `leading-none` collapses the wrapper's OWN line-box
+  // strut (it otherwise inherited the 24px base line-height, seating the 10.5px
+  // glyphs at the bottom of a tall strut where `overflow-hidden` clipped their
+  // descenders); `shrink-0` stops the flex column from compressing the wrapper
+  // when the tab is tight (the compression re-introduced the clip); `max-h-4`
+  // → `max-h-5` gives the expanded label a hair of headroom. The collapsed
+  // state (`max-h-0`) is unchanged so MEH-1014 minimize still fully hides labels.
   const labelWrapCls = [
-    "relative z-10 block overflow-hidden text-center",
+    "relative z-10 block shrink-0 overflow-hidden text-center leading-none",
     "transition-[opacity,max-height] duration-base ease-quart motion-reduce:transition-none",
-    isCompact ? "opacity-0 max-h-0" : "opacity-100 max-h-4",
+    isCompact ? "opacity-0 max-h-0" : "opacity-100 max-h-5",
   ].join(" ");
 
   // Static tint capsule for the account tab (not on the route track — the route
