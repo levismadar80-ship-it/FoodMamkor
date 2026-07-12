@@ -724,6 +724,18 @@
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
       },
+      "contact_card": {
+        "status_open": "Open for orders",
+        "aria": {
+          "phone": "Call",
+          "instagram": "Instagram",
+          "website": "Website",
+          "email": "Email",
+          "facebook": "Facebook",
+          "external_order": "Order form",
+          "whatsapp_group": "WhatsApp group"
+        }
+      },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
       }
@@ -2810,7 +2822,8 @@
       "my_area": "My area",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
-      "greeting_template": "Hi {name}, {q}"
+      "greeting_template": "Hi {name}, {q}",
+      "delivery_to_city": "Delivery to {city}?"
     }
   },
   "directory": {
