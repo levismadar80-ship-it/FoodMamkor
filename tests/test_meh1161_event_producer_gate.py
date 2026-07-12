@@ -82,6 +82,17 @@ class TestListEventsProducerGate:
         assert resp.status_code == 200
         assert any(e["id"] == str(event.id) for e in resp.json())
 
+    def test_admin_sees_pending_producer_events_in_list(self, client, db):
+        # Covers the list-path admin bypass branch specifically — the detail
+        # tests below exercise a different code path (adversarial-review gap).
+        pending, _ = _make_producer_user(db, email="p9@example.com", status="pending")
+        admin = make_user(db, role="admin", email="admin9@example.com")
+        event = _make_event(db, pending.id)
+
+        resp = client.get("/events", headers=auth_header(admin))
+        assert resp.status_code == 200
+        assert any(e["id"] == str(event.id) for e in resp.json())
+
     def test_stranger_filtering_by_pending_producer_sees_nothing(self, client, db):
         pending, _ = _make_producer_user(db, email="p2@example.com", status="pending")
         _, stranger = _make_producer_user(db, email="s@example.com")
