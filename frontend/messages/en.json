@@ -2817,7 +2817,7 @@
   "directory": {
     "disclaimer": {
       "brand_is_prefix": "presents",
-      "directory_only": "business information only. The seller bears full responsibility for products and licensing.",
+      "directory_only": "business information only. The business bears full responsibility for products and licensing.",
       "prices_set_by_businesses": "Prices are set by the businesses themselves."
     }
   },
@@ -2850,7 +2850,7 @@
     "meta_title": "Accessibility Statement | Mehamakor",
     "meta_description": "Mehamakor's accessibility statement — we are committed to making the site usable for all users, including people with disabilities.",
     "heading": "Accessibility Statement",
-    "date_label": "Last reviewed: April 2026",
+    "date_label": "The site has been tested using automated tools and manual checks. A formal accessibility audit by an external certified accessibility examiner has not yet been performed.",
     "statement_date": "Statement last updated: July 2026",
     "sections": {
       "commitment": {
@@ -2879,7 +2879,8 @@
         "title": "Contact the accessibility coordinator",
         "intro": "Encountered an accessibility issue? We would be glad to help and fix it. You can reach the site's accessibility coordinator:",
         "coordinator_label": "Accessibility coordinator:",
-        "coordinator_value": "The Mehamakor team",
+        "coordinator_value": "Sapir Shnap",
+        "phone_label": "Phone:",
         "footnote": "When contacting us, please describe the issue, the page where it appeared, and the assistive technology in use. We aim to respond within 3 business days."
       },
       "authority": {
@@ -3071,7 +3072,7 @@
         "items": {
           "cloudinary": "<b>Cloudinary</b> — storage and processing of images uploaded by users.",
           "google": "<b>Google</b> — Google OAuth for sign-in and Google Fonts.",
-          "anthropic": "<b>Anthropic</b> — AI models for support, content moderation, and experience improvements.",
+          "anthropic": "<b>Anthropic</b> — artificial-intelligence services (Claude). Some of the content you provide is sent to Anthropic's models in order to operate the service: (1) messages you write in the support chat — to provide a response; (2) content you submit for publication (product, recipe, and experience listings, and reviews) — for automated content moderation before publication; (3) business-registration details — for automated risk screening and to generate a business description (if you requested it). The content is sent solely to operate the service, is not sold, and is not used to train Anthropic's models.",
           "meta": "<b>Meta (WhatsApp Cloud API)</b> — operational WhatsApp messages (signup confirmations, status updates, notifications).",
           "resend": "<b>Resend</b> — operational email (account verification, password reset, updates).",
           "sentry": "<b>Sentry</b> — technical error monitoring for fixing issues.",
@@ -3082,7 +3083,7 @@
       },
       "rights": {
         "title": "5. Your rights (under Amendment 13, 2025)",
-        "intro": "The Protection of Privacy Law grants you the following rights. You can exercise any of them at no cost by contacting <email>contact@mehamakor.co.il</email>:",
+        "intro": "The Protection of Privacy Law grants you the following rights. You can exercise any of them at no cost by contacting <email>our email address</email>:",
         "items": {
           "access": {
             "label": "Right of access:",
