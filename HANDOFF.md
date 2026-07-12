@@ -13,6 +13,23 @@
 - **Verify:** `npm run build` exit 0 · full vitest **936 passed**/41 skipped (5 CookieConsent consent-gate tests unchanged) · `scripts/check_env_drift.sh` ✅ no missing vars · `/adversarial-review` FINDER→ADVERSARY→REFEREE = 0 real must-fix (rejected-promise stickiness is a no-worse-than-baseline fail-silent tradeoff).
 - **Next:** draft PR → subscribe. Remaining MEH-435 scope (other funnels — home product form, business signup, etc.) is separate chunks; ticket stays open. Env vars are documented, not set — no live PostHog capture until Sapir adds `NEXT_PUBLIC_POSTHOG_KEY` in Vercel.
 
+## 2026-07-12 — MEH-1143: events (home) + experiences cards → v4 idiom + canonical imageless placeholder — PR #1658 open
+
+- **Branch:** `feature/meh-1143-events-cards-v4` off `origin/staging`. GREEN tier (neither `UpcomingEventsPreview.jsx` nor `ExperienceCard.jsx` is central) → auto-merge on green required gates. `Closes MEH-1143`. Direct continuation of MEH-911 (RecipeCard → v2) / MEH-643 v4 idiom — applying an existing pattern, not new design.
+- **Shipped (2 code files + tests):** `UpcomingEventsPreview.jsx` (home "אירועים קרובים") — root → v4 (`bg-surface-card border-border rounded-none hover:border-primary`, no shadow-lift); `{ev.image_url && …}` → ternary so a fixed `h-40` image area ALWAYS renders → imageless events show the canonical placeholder (cream `bg-background` + Phosphor `Leaf` light + `BRAND_NAME`, `data-testid="event-image-missing"`), ending the "stairs" height mismatch. `ExperienceCard.jsx` (/experiences) — same root alignment; imageless placeholder MEH-862 `CookingPot`/`bg-green-50` → canonical `Leaf`+brand/`bg-background` (issue's stated default — cross-surface consistency; `data-testid="experience-image-missing"`). Zero data/routing/i18n change; tokens only; Phosphor only. Added `ExperienceCard.test.jsx` + `UpcomingEventsPreview.test.jsx` (imageless-placeholder render) + ExperienceCard focus-ring parity (per PR review) + `BRAND_NAME` used in tests.
+- **Verify:** build exit 0 · vitest green · Playwright self-QA local `next start` + route-mocked `/api` — home events + /experiences × 375/1280 mixed image/imageless rows → identical heights, 0 page errors (`qa-artifacts/MEH-1143/` — KEEP, established convention) · `grep rounded-\[16px\]` both files → 0 · 0 physical RTL.
+- **CI state (head `58a69cb`):** required gates `CI gate` + `Deploy gate` GREEN; build/vitest/tsc/lint/parity/adversarial/branch-name all green. **Only non-green:** `Playwright E2E (Vercel preview)` (non-required) = fail from **2 flaky** specs (`01-home-load`, `02-search-producer`) — a pre-existing **HeroSearch double-mount** flake (`data-testid="hero-search"` resolved to 2 elements; `--fail-on-flaky-tests` gate → exit 1 though both passed on retry; 103 passed/13 skipped). **Unrelated to this PR** (touches events/experiences cards, not HeroSearch); NOT the MEH-1142 concurrency-cancel noise. Vercel deploy separately rate-limited (100/day).
+- **Next:** land this HANDOFF entry (DoD), then auto-merge on green required gates per GREEN tier.
+
+## 2026-07-12 — MEH-1145 Wave E1 (ui/Input adoption II — auth surfaces) — draft PR
+
+- **Branch:** `feature/meh-1145-input-adoption-wave-e1` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px. `Refs MEH-1145`. **Wave E2 NOT started — wait gate.** Pre-flight: MEH-1128 D2 (`dfc47cd9`) on staging.
+- **Phase 0 (re-verified the 12/07 clone from scratch — mandated):** 1 migration, 3 leftovers. All 4 files last touched by merged work; #1658/#1660 file-lists verified (none touch the 4). Clean.
+- **Migrated (1):** forgot-password email — plain standalone field → `<Input type="email">` (canon convergence, no label invented).
+- **Leftovers surfaced (not forced):** login email = bespoke S9 composed pair (icon + 54px rhythm + matched with non-migratable eye-toggle password) — **deviates from the clone's "login=1"**, migrating email alone breaks the pair; PhoneVerifyCard OTP = dedicated OTP UX (w-40/text-center/tracking/one-time-code); reset-password = 0 confirmed (passwords only). ui/Input.jsx FROZEN, no STOP hit.
+- **Verify:** build exit 0 · full vitest 936/41-skip · Playwright 375px /forgot-password email 44px + canon classes (`docs/audits/screenshots/2026-07-meh1145-wave-e1-qa/`).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start E2.
+
 ## 2026-07-12 — ADR-027: Revenue model locked (Council + Sapir ✓) — base page free forever, no transaction fees, trigger-gated premium. BRAND.md LOCK line updated. Drive brand-book + Project Instructions = manual Sapir follow-up.
 
 ## 2026-07-12 — MEH-1135 chat-FAB logical corner + NearMePill opposite + z-ledger · ADR-016 amendment — BOTH MERGED
