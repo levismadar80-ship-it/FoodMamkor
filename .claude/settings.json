@@ -99,6 +99,17 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-webfetch-allowlist.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-1141 branch-name guard — enforces workflow rule 3. Blocks git push / branch-create when the branch name doesn't match the locked pattern. Exit 2 = block. Fail-open if jq missing.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-branch-name.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
