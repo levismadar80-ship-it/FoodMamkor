@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1143: events (home) + experiences cards → Assembly v2 (canonical imageless placeholder + v4 alignment) — PR open
+
+- **Branch:** `feature/meh-1143-events-cards-v4` off `origin/staging` (divergence 0). GREEN — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1143`. (Harness designated a `claude/*` branch; overridden to the issue's explicit `feature/*` name, which also conforms to the MEH-1141 locked pattern.)
+- **Phase 0 (READ-ONLY, done):** ticket line refs verified against live files — `UpcomingEventsPreview.jsx:47` pre-v4 root + `:49` image-only (no else); `ExperienceCard.jsx:45` pre-v4 root + `:72-76` CookingPot placeholder. Canon confirmed: ProducerCard:262-271, RecipeCard:38-64 (both use `bg-surface-card rounded-none hover:border-primary` + Leaf+`BRAND_NAME`). `BRAND_NAME` exported at `lib/constants.js:1`. No open PR touches either file (last commit #1598/MEH-1103).
+- **Shipped (2 files):** `UpcomingEventsPreview.jsx` — v4 root classes + `{ev.image_url ? … : <canonical placeholder>}` (fixed `h-40` always renders; Leaf `weight="light"` + brand, `data-testid="event-image-missing"`); imports `Leaf` + `BRAND_NAME`. `ExperienceCard.jsx` — v4 root classes; placeholder CookingPot→Leaf+brand on `bg-background` (`data-testid="experience-image-missing"`); `CookingPot` import → `Leaf` + `BRAND_NAME`. Anatomy content (spotsBadge, price bidi MEH-1031, dates, category chip, host fallback) untouched; no new i18n keys; tokens only.
+- **Verify:** build exit 0 · Playwright self-QA local `next start` + route-mocked `/api` — homepage events + /experiences × 375/1280 with mixed image/imageless rows: identical heights, 0 page errors (`qa-artifacts/MEH-1143/`) · `grep rounded-\[16px\]` both files → 0 hits · 0 physical RTL.
+- **Next:** draft PR → auto-merge (squash) on green required gates.
+
 ## 2026-07-12 — MEH-1134: Overview state-aware card order (completeness above availability while pending/incomplete) — PR open
 
 - **Branch:** `claude/meh-1134-implementation-u2wkf7` off `origin/staging` (divergence 0; harness-designated branch, same precedent as MEH-1132). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1134`.

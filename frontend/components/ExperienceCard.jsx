@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CookingPot } from "@phosphor-icons/react";
+import { Leaf } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * Card for an experience (community workshop). Rendered by the
@@ -42,7 +43,9 @@ export default function ExperienceCard({ experience: ex }) {
   return (
     <Link
       href={`/experiences/${ex.id}`}
-      className="bg-background border border-border rounded-[16px] overflow-hidden transition flex flex-col"
+      // MEH-1143 (Assembly v2): flat surface-card, 1px border, sharp corners,
+      // NO shadow-lift — hover = border color shift only. Mirrors RecipeCard:42.
+      className="bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary flex flex-col"
     >
       {ex.image_url ? (
         <div className="relative">
@@ -69,10 +72,17 @@ export default function ExperienceCard({ experience: ex }) {
           )}
         </div>
       ) : (
-        <div className="h-44 bg-green-50 flex items-center justify-center">
-          {/* MEH-862: Phosphor placeholder replaces the no-image emoji (LOCK v2).
-              CookingPot mirrors EventsClient category icon for cooking/workshop. */}
-          <CookingPot size={48} className="text-primary/50" aria-hidden="true" />
+        <div
+          className="h-44 flex flex-col items-center justify-center bg-background gap-2"
+          data-testid="experience-image-missing"
+        >
+          {/* MEH-1143: canonical no-photo state — cream surface + Leaf glyph +
+              brand name (replaces the MEH-862 CookingPot; default per issue note,
+              cross-surface consistency with ProducerCard/RecipeCard). */}
+          <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
+          <span className="font-headline-md text-sm font-bold text-primary/80">
+            {BRAND_NAME}
+          </span>
         </div>
       )}
       <div className="p-4 flex-1 flex flex-col">
