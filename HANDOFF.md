@@ -14,6 +14,14 @@
 - **Sapir follow-up (CC-deny — MEH-671):** apply the two workflow gate snippets from the PR body (DNM marker gate + qa-artifacts 2 MB cap). Until wired, the DNM override + 2 MB cap are honored by discipline only.
 - **Next:** push → draft PR (discrepancy + gate snippets in body) → GREEN auto-merge on green CI. My own qa-artifacts add = 92 KB (well under the intended cap — the point).
 
+## 2026-07-12 — MEH-1145 Wave E3 (ui/Input adoption II — heavy forms, FINAL wave) — draft PR
+
+- **Branch:** `feature/meh-1145-input-adoption-wave-e3` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px per form. `Refs MEH-1145`. **Epic's final wave** — epic-close grep runs post-merge. Pre-flight: E2 `deda2359` on staging.
+- **Phase 0 (re-verified the 12/07 clone from scratch — mandated):** clone 4+9=13 → **11 migrations across 2 files** (settings over-counted by 2). Both files last touched by merged work; #1674 (account-delete, auth.py) + #1669 (HEIC, upload.py) touch neither. Clean. Frozen `ui/Input.jsx` had every capability (className→input, native type, node label/helperText) — no STOP.
+- **Migrated (11):** settings name (text-right) + phone (hint→helperText); experiences title, image_url, event_date, event_time, duration, address, price, max_participants, recurring_schedule. **Date/time (flagged risk) render cleanly in the canon box** at 375px — stayed migrated.
+- **Leftovers (surfaced):** settings email (readOnly disabled locked-display), danger-email (persistent red), current+confirm password + PasswordInput (composed), CitySearch ×2; experiences textareas/select/checkbox (non-eligible types).
+- **Verify:** build exit 0 · full vitest **959 passed**/41 skipped · Playwright 375px both forms — all migrated fields 44px+canon, value-binding confirmed, 0 page errors (`docs/audits/screenshots/2026-07-meh1145-wave-e3-qa/`).
+
 ## 2026-07-12 — MEH-1158: edit-tab accordion content previews — PR open
 
 - **Branch:** `feature/meh-1158-edit-card-previews` off `origin/staging` 27b58e1d (incl. merged MEH-1157 #1678 — shared edit/page.js, sequenced per batch). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1158`. Task B of the 3-task batch; Task C (MEH-999 dogfood audit, read-only, chat-only) runs next against the post-merge build.
