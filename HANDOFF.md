@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1158: edit-tab accordion content previews — PR open
+
+- **Branch:** `feature/meh-1158-edit-card-previews` off `origin/staging` 27b58e1d (incl. merged MEH-1157 #1678 — shared edit/page.js, sequenced per batch). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1158`. Task B of the 3-task batch; Task C (MEH-999 dogfood audit, read-only, chat-only) runs next against the post-merge build.
+- **Phase 0 (read-only, verified):** every preview source exists on the fetched `/producers/me` (ProducerOwnerOut⊃DetailOut⊃ListOut): images/categories/city/has_physical_location/description (ListOut), products+custom_questions (DetailOut, ProductOut.name schemas.py:391-393), primary_contact_method + page-local METHOD_FIELD backing map. **Nothing needs a new fetch — no preview dropped.** Cloudinary helper `{aspectRatio:"1:1", width:80}` ≡ spec's w_80,h_80,c_fill (transforms never hardcoded).
+- **Shipped (2 files + 1 test):** `EditAccordionCard.jsx` — additive default-off `preview` prop (marker-prop pattern) + exported `PreviewThumbs`/`PreviewChips`/`PreviewEmpty` primitives (phrasing-content-only: they render inside the header `<button>`; aria untouched). `edit/page.js` — per-card preview composition from profile + `CHANNEL_ICONS` Phosphor map; zero new i18n keys (reuses `channel_*`; "+N" numeric; empty placeholder is copy-free). Unused `X` import dropped (MEH-1157 leftover — declared). New `EditAccordionCardPreview.test.jsx` (8 tests).
+- **Layout judgments (flagged for review):** products/questions counts stay on the summary line only (previews add content, not duplicate counts); products' first name is payload-static — live in-card CRUD updates the count, not the name.
+- **Verify:** build exit 0 · vitest **974 passed**/41 skipped · Playwright 390+1280 self-QA green (`qa-artifacts/MEH-1158/`): 3-thumb "+2", 3-chip "+1", collapsed default, 0 h-overflow @390, ≥44px headers, open/close, `#images` deep-link, 7 empty placeholders.
+
 ## 2026-07-12 — MEH-1157: edit-tab 401 half-alive + bio error split — PR open
 
 - **Branch:** `feature/meh-1157-edit-401-bio-errors` off `origin/staging` tip (divergence 0). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1157`. First of a 3-task batch (A: this · B: MEH-1158 accordion previews, branches AFTER this merges — shared edit/page.js · C: MEH-999 dogfood audit, read-only).
