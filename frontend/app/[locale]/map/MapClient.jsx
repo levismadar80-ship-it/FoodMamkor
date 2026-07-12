@@ -467,8 +467,13 @@ export default function MapPage() {
             height above — MEH-1019 now measures the real top offset, ~64px with no
             banner) so the city-search pill clears the logo/search header instead of
             colliding with it. top-16 = 64px; the map pt below is bumped by the
-            same 64px to keep the bar→content gap unchanged (no collision, no gap). */}
-        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background/95 backdrop-blur border-b border-border">
+            same 64px to keep the bar→content gap unchanged (no collision, no gap).
+            MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
+            bleed-through behind the category chips read as the chips "floating"
+            over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
+            the bar is a solid band the map starts cleanly below (the blur becomes
+            moot once nothing shows through). z-[50] unchanged (ledger-neutral). */}
+        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search
