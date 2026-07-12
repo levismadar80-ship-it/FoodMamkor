@@ -843,6 +843,7 @@
       "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
+      "pending_eta": "Usually approved within 24 hours",
       "published": "Published on the site",
       "not_published": "Not yet published",
       "edit": "Edit",

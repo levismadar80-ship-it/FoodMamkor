@@ -154,6 +154,13 @@ export default function ProducerRecipesPage() {
                 <RecipeStatusBadge status={r.moderation_status} />
               </div>
 
+              {/* MEH-1165 item 3: expectation line under the pending badge so
+                  the owner knows the typical review turnaround. */}
+              {r.moderation_status === "pending" && (
+                <p className="text-xs text-fg-muted mb-3" data-testid="recipe-pending-eta">
+                  {t("pending_eta")}
+                </p>
+              )}
               {r.moderation_status === "needs_revision" && r.moderation_notes && (
                 <div className="rounded-[10px] p-3 text-sm mb-3 bg-orange-50 border border-orange-200 text-orange-800">
                   <strong>{t("notes_needs_revision")}</strong> {r.moderation_notes}
