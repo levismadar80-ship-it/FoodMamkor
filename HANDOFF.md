@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1074 FINAL CLOSEOUT (parked needs-sapir items resolved) — PR open
+
+- **Branch:** `claude/meh-1074-closeout-duukw2` off `origin/staging` (divergence 0, harness-designated). Sapir approved the remaining closeout decisions; same ADR-016 v2 authority matrix. `Refs MEH-1074`.
+- **Item 1 — ProducerCard eyebrow (YELLOW, central):** `ProducerCard.jsx:312` — removed `uppercase` + `tracking-[0.15em]` from the Hebrew category eyebrow (the last tracked eyebrow, deliberately parked out of the #1628 T10 sweep as a central component). Same MEH-1073 T10 / MEH-867 treatment as the 19 site-wide edits; no `font-english` Latin here to exempt. className-only, zero logic risk.
+- **Item 4 — demo-business identity (APPROVED):** `seed_demo_business.py` DEMO IDENTITY block — removed the `needs-sapir` checkpoint framing (Sapir approved "מאפיית רוח השדה" / "נועה לביא" / לחמים ואפייה + product set); **kept** the STAGING-ONLY guard comments + `_assert_not_production()` gate. Seed script itself already merged (#1597). **Staging seed RUN is Sapir's one command** — sandbox cannot reach Railway (MEH-360) and there is no `seed-demo-business` dispatch workflow: `railway run python backend/scripts/seed_demo_business.py` (skip-if-exists; `--refresh` recreates). Full 375px render of the demo (profile/products/recipe/reviews+owner-reply) already captured + merged in Wave 3 (#1610, `qa-artifacts/MEH-1074-wave3/`); staging-render confirmation follows her run.
+- **Item 2 — MEH-215:** obsolete checklist item "אימייל כבר קיים → error" retired in-ticket (struck + MEH-328 anti-enumeration rationale). Ticket stays Backlog (real device/OAuth QA remains Sapir's).
+- **Item 3 — MEH-1106:** verified **Done** (completed 11/07, Option-B recorded, PR #1621 merged) — nothing pending; dropped from the needs-sapir list.
+- **Item 5 — legal wording (CORRECTION, meta-patterns §1):** the parked "MEH-1118/1119 legal-wording" line was **mislabeled**. MEH-1118 (dashboard conversion stat >100%) + MEH-1119 (stray page.js exports) are **GREEN code bugs** from the W3 friction report, not legal wording. The actual legal wording — **MEH-1058 (privacy, תיקון 13) #1585 + MEH-1059 (a11y statement, תקנה 35) #1584 — is already merged + Done** (Sapir's wording review was the whole point of those draft PRs). **No pending legal gate remains.** Surfaced to Sapir for her call on whether to fold 1118/1119 into this closeout as GREEN fixes.
+- **Verify:** ProducerCard + seed diffs reviewed (scope-clean, `git diff`); build gated on CI (className removal = zero build risk; #1628 T10 precedent self-QA'd). Screenshot for the 2-class removal not regenerated (no local stack; deterministic + T10-precedented) — noted honestly.
+- **staging→main:** unchanged — the single remaining gate is Sapir's (smoke dispatch → mobile spot-check → merge). Checklist posted to MEH-1074.
+
 ## 2026-07-11 — MEH-1131: /events city+category URL-sync unit test (test-only) — PR open
 
 - **Branch:** `feature/meh-1131-events-url-sync-test` off `origin/staging` (divergence 0). LOW-RISK test-only. `Refs MEH-1131`.
