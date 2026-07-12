@@ -8,6 +8,8 @@ import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
@@ -323,8 +325,8 @@ export default function ProducerGroupBuysPage() {
                 </div>
 
                 <div className="flex items-center gap-4 text-sm mb-3">
-                  <span className="font-bold text-primary">₪{Number(gb.price_per_unit_group).toFixed(0)}</span>
-                  <span className="text-fg-muted line-through">₪{Number(gb.price_per_unit_regular).toFixed(0)}</span>
+                  <span className="font-bold text-primary">{formatPrice(Number(gb.price_per_unit_group).toFixed(0))}</span>
+                  <span className="text-fg-muted line-through">{formatPrice(Number(gb.price_per_unit_regular).toFixed(0))}</span>
                 </div>
 
                 <div className="mb-2">

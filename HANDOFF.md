@@ -16,6 +16,15 @@
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
 
 
+## 2026-07-12 — MEH-1136 producer-page batch: MEH-1138 + MEH-1139(1-4) + MEH-1140 MERGED · item 5 legal-gated
+
+- **Authority:** ADR-016 YELLOW batch, sequential (shared he.json/en.json + producer components). Per ticket: Phase 0 → build → PR → CI green → Playwright self-QA w/ evidence → auto-merge (squash). All three merged unattended on green; the ONLY human gate left is item 5 below.
+- **MEH-1138 (#1648, merged):** imageless product cards in `ProducerSections.jsx` → MEH-643 canon (cream + Leaf light + brand name), replacing MEH-1126's typographic card; name → body; imaged cards byte-identical. Stray-dot premise was stale — pre-#1627 Package glyph, already gone; `ImageGallery.jsx:59` guards empty arrays. +`ProducerSectionsProducts.test.jsx` (4).
+- **MEH-1139 items 1-4 (#1652, merged):** reviews empty state = ONE box (gate box only when reviews exist; gate hint targeted: user && !owner && !hasClickedWa); "דיווח על עסק"; "פתיחה במפות Google" (MiniMap suffix killed). en twins; +3 ReviewsSection cases. **Interpretation flagged in PR:** gate box kept for the reviews-exist case (sole unlock affordance); `report.form_heading` untouched (not in ticket — MEH-579 rule).
+- **MEH-1140 (#1654, merged):** `formatPrice`/`formatPriceRange` in `lib/utils.js` + 17 tests; 14 call sites converted (audit table in PR body); free/gift gates + toFixed(0) + price_range fallbacks preserved; free-text DB labels NOT routed (data). **Premise correction: `HomeProductCard` doesn't exist** — no "₪X / unit" drift anywhere; `unit` option tested, no live call site. Pre-existing: 2 stale normalizePhone cases in standalone `utils.test.mjs` fail on baseline (not vitest CI) — untouched, candidate cleanup ticket.
+- **MEH-1139 item 5 — disclaimer (LEGAL GATE, awaiting Sapir):** draft PR with the proposed sentence left UNMERGED (auto-merge NOT armed). Current he.json:2840-2842 concatenation verified == the ticket's quoted current text. Approve with "מאשרת" (or reply with an edited sentence — it will be used verbatim), then: CI green → text-probe QA → merge.
+- **QA basis:** all self-QA on local `next start` + mocked `/api/**` (MEH-360 — sandbox can't reach Vercel preview/Railway); evidence per ticket in `qa-artifacts/MEH-113{8,9}/`, `qa-artifacts/MEH-1140/`. CI hit the rule-21 superseded-run false-FAIL on every draft→ready flip (3×) — each verified stale via run-list before ignoring.
+
 ## 2026-07-12 — MEH-1074 FINAL CLOSEOUT (parked needs-sapir items resolved) — PR #1640 + follow-up
 
 - **Branch:** `claude/meh-1074-closeout-duukw2` off `origin/staging` (harness-designated; note: `claude/*` violates rule 3 `feature/*`-only — imposed by the harness, cannot rename without breaking the "never push to a different branch" instruction; flagged to Sapir). Sapir approved the remaining closeout decisions in-session; same ADR-016 v2 authority matrix. `Refs MEH-1074`.

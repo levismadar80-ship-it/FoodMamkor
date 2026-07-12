@@ -502,6 +502,11 @@ turn-by-turn output.
 If the task doesn't clearly fit a tier, ask Smadar before starting.
 See [ADR-016](../../docs/decisions/ADR-016-risk-tier-nomenclature.md) for current GREEN/YELLOW/RED tier definitions.
 
+**Override (ADR-016 amendment, 2026-07-12):** an explicit per-batch
+DO-NOT-MERGE / Sapir-merges instruction from the orchestrator OVERRIDES
+tier-level auto-merge authority — the batch-specific instruction is the
+specific rule and wins over the default tier authority.
+
 _Source: MEH-450 (2026-05-04). Evidence: MEH-326 auth refactor (chunked
 review justified), MEH-331/348 email transport — chunked review caught
 Content-Transfer-Encoding regression, MEH-429 psycopg2 (chunked review
