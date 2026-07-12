@@ -62,14 +62,44 @@ describe("allBadges", () => {
 
   // MEH-531: license badge — Ministry of Health producer license trust signal.
   // Field source: ProducerListOut.has_producer_license (schemas.py:547).
-  it("license — when has_producer_license is true", () => {
-    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([
-      "license",
-    ]);
+  // MEH-1162 (audit F10): the license number is SELF-DECLARED at registration,
+  // so the chip additionally requires verification_tier === "verified" (an
+  // admin actually checked the document). declared/null tiers → no chip.
+  it("license — verified tier + has_producer_license → earned", () => {
+    expect(
+      allBadges({
+        verification_tier: "verified",
+        has_producer_license: true,
+      }).map((b) => b.key),
+    ).toEqual(["verified", "license"]);
   });
 
-  it("license — when has_producer_license is false → not earned", () => {
-    expect(allBadges({ has_producer_license: false }).map((b) => b.key)).toEqual([]);
+  it("license — declared tier with self-declared license → NOT earned", () => {
+    expect(
+      allBadges({
+        verification_tier: "declared",
+        has_producer_license: true,
+      }).map((b) => b.key),
+    ).toEqual([]);
+  });
+
+  it("license — null tier (pending review) with license number → NOT earned", () => {
+    expect(
+      allBadges({
+        verification_tier: null,
+        has_producer_license: true,
+      }).map((b) => b.key),
+    ).toEqual([]);
+    expect(allBadges({ has_producer_license: true }).map((b) => b.key)).toEqual([]);
+  });
+
+  it("license — when has_producer_license is false → not earned even when verified", () => {
+    expect(
+      allBadges({
+        verification_tier: "verified",
+        has_producer_license: false,
+      }).map((b) => b.key),
+    ).toEqual(["verified"]);
   });
 
   it("license — when has_producer_license is null/undefined → not earned", () => {
@@ -244,19 +274,27 @@ describe("topBadges", () => {
   });
 
   // MEH-531: license sits between recommended and new.
+  // MEH-1162: fixture must be verified-tier — an unverified license no longer
+  // earns the chip, so the verified badge (priority 0) leads the expectation.
   it("license priority — sits between recommended and new", () => {
     const p = {
+      verification_tier: "verified",
       is_recommended: true,
       has_producer_license: true,
       days_since_created: 5,
     };
-    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
+    expect(topBadges(p, 4).map((b) => b.key)).toEqual([
+      "verified",
       "recommended",
       "license",
       "new",
     ]);
-    // limit=2 → recommended + license, new gets truncated
-    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["recommended", "license"]);
+    // limit=3 → verified + recommended + license, new gets truncated
+    expect(topBadges(p, 3).map((b) => b.key)).toEqual([
+      "verified",
+      "recommended",
+      "license",
+    ]);
   });
 });
 

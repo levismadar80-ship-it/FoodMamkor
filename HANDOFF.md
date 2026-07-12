@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1162: license chip gated on verified tier — PR open
+
+- **Branch:** `feature/meh-1162-license-chip-verified-only` off `origin/staging`. YELLOW — CI green → auto-merge per batch authority. `Closes MEH-1162`. Task 2 of the 5-task batch (Task 1 MEH-1161 = PR #1688, auto-merge armed).
+- **Phase 0 (re-verified — code moved since audit):** the cited ProducerHeader.jsx:187-192 is now the kashrut strip; the chip's real gate is `lib/badges.js:139-142` (`earnsBadge("license")` ← `has_producer_license`, a computed boolean from the SELF-declared `producer_license_number`, schemas.py:794). `verification_tier` is already on the public payload (schemas.py:803, computed :836-856 — "verified" iff admin-stamped `verified_at`) → **no serializer change**. `has_producer_license` consumers: badges.js + its test only.
+- **Shipped:** one condition in `earnsBadge` — `verification_tier === "verified" && !!has_producer_license` (covers BadgeRow + ProducerCard through the single gate; mirrors the MEH-986 kosher verified-gate). Tests updated + 3 new cases (declared→none, null-tier→none, verified-without-license→seal only).
+- **Verify:** vitest 979 passed/41 skipped · build exit 0 · Playwright localhost: verified producer chip ×1, declared ×0 (`qa-artifacts/MEH-1162/`). QA gotcha worth remembering: `textContent("body")` false-positives on the RSC/i18n script payload — assert with visible-element locators.
+
 ## 2026-07-12 — MEH-1155 + MEH-1156: DNM marker override (ADR-016) + qa-artifacts screenshot compression — PR open
 
 - **Branch:** `feature/meh-1155-adr-dnm-qa-compress` off `origin/staging`. GREEN (docs + one script). `Closes MEH-1155, MEH-1156`.
