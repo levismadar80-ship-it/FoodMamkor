@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1157: edit-tab 401 half-alive + bio error split — PR open
+
+- **Branch:** `feature/meh-1157-edit-401-bio-errors` off `origin/staging` tip (divergence 0). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1157`. First of a 3-task batch (A: this · B: MEH-1158 accordion previews, branches AFTER this merges — shared edit/page.js · C: MEH-999 dogfood audit, read-only).
+- **Phase 0 (read-only, verified):** canonical guard = `layout.js:48-55` (context-state gate, duplicated at `edit/page.js:104-111,173`); half-alive hole = `edit/page.js:110` swallowing the /producers/me 401 (`catch → setProfile(null)` → eternal "טוען נתונים"); both guards pushed unprefixed `/login` via next/navigation. **The `/producers/{uuid}` 404 = backend-by-design** (MEH-254 anti-enumeration, `producers.py:210-215`; no edit-tab fetch uses a UUID) — STOP+reported per spec, no backend change. No `?redirect` added (canonical guard pattern doesn't carry one; expiry toast auth-context.js:83 already does).
+- **Shipped (5 files + 1 test):** `edit/page.js` (i18n-aware router + 401→login on /producers/me catch; BioPanelCard moved out), `edit/cards.jsx` (BioPanelCard relocated verbatim + generate() cause-split 401/429/fail-open-empty/other; `role="alert"` on error line), he+en `dashboard.producer.bio.error_{session_expired,rate_limit,unavailable}` (+`error_empty_bio` removed), `EditUnsavedGuard.test.jsx` mock updated, new `EditTabBioPanel.test.jsx` (5 tests).
+- **Verify:** build exit 0 · vitest **964 passed**/41 skipped · Playwright self-QA 390px (`qa-artifacts/MEH-1157/`): 401 → /login 0 forms; 429 + fail-open copies exact.
+- **Known residual (not filed):** `layout.js:51` still pushes unprefixed `/login` (loses /en locale at boot-401) — same pattern, file out of task scope; candidate follow-up ticket.
+
 ## 2026-07-12 — MEH-1146 Chunk C: nearby-businesses discovery loop + action-hierarchy design rule — PR open (Closes MEH-1146)
 
 - **Branch:** `feature/meh-1146-producer-ia-c` off fresh `origin/staging` (incl. merged A #1670 + B #1673). Final chunk. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137` + **`Closes MEH-1146`**.

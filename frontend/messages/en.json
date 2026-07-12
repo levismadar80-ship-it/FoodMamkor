@@ -3853,7 +3853,9 @@
         "save_cta": "Save bio",
         "saving": "Saving…",
         "saved": "✓ Saved",
-        "error_empty_bio": "We couldn't generate a bio — try again with different text",
+        "error_session_expired": "Your session has expired. Log in again to continue.",
+        "error_rate_limit": "Too many requests were sent. Try again in about an hour.",
+        "error_unavailable": "The service is unavailable right now. You can write a description manually or try again later.",
         "error_generate": "Bio generation error — try again",
         "error_save": "Bio save error"
       }
