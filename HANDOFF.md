@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1128 Wave C (ui/Input adoption): admin forms — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-c` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D NOT started — wait gate.** (Waves A #1635 + B #1641 merged; Sapir approved Wave C in-conversation 12/07.)
+- **Phase 0:** collision CLEAR — all 11 admin candidate files last touched by merged #1569; open-PR scan: #1640 (ProducerCard+seed) file-list verified, no admin files; #1639 touches the merged Wave B file only; rest dependabot/skills/docs. Inventory: 30 migratable fields / 3 files; filter toolbars + moderation textareas + content inline editors declared not-forms.
+- **Shipped (30):** ProducerForm 19 (incl. license input label-less inside `ProducerLicenseField`; its `inputClass` prop dropped) · settings 5 · outreach add-modal 6 (label-less, placeholder parity). **`inputClass` NOT deleted — still feeds 2 selects + 2 textareas (no primitive); comment documents the residual role.** Label typography converges to the canon slot. CitiesAutocomplete untouched (Wave D). No capability STOP; primitive untouched.
+- **Verify:** build exit 0 · full vitest 918/41-skip · Playwright 375px w/ mocked admin auth: producers/new + settings + outreach modal, all migrated inputs 44px (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-c-qa/`; settings vacation-return behind its toggle — migrated same as the visible date field).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start Wave D.
+
 ## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-b` off fresh `origin/staging` (`0896224`, incl. Wave A merge `cc16a63`), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave C NOT started — wait gate.** (Sapir approved Wave B in-conversation 12/07; Wave A merged as #1635.)

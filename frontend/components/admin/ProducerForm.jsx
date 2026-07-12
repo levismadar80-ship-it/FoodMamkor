@@ -9,6 +9,7 @@ import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import InfoTooltip from "@/components/InfoTooltip";
+import Input from "@/components/ui/Input";
 import {
   hasLicenseFormatWarning,
   requiresProducerLicense,
@@ -35,7 +36,7 @@ const KOSHER_LABEL_KEYS = {
  * Format check is inline + non-blocking — backend deliberately doesn't
  * enforce the regex (manual-approval flow per MEH-530 spec).
  */
-function ProducerLicenseField({ form, categories, update, inputClass }) {
+function ProducerLicenseField({ form, categories, update }) {
   const t = useTranslations("admin");
   const [optionalExpanded, setOptionalExpanded] = useState(false);
   const required = requiresProducerLicense(categories, form.category_ids);
@@ -73,13 +74,14 @@ function ProducerLicenseField({ form, categories, update, inputClass }) {
           {t("producers.form.fields.license_required_hint")}
         </p>
       )}
-      <input
+      {/* label-less Input — the htmlFor label + hint above keep their
+          layout (Input's own label slot would move the hint below). */}
+      <Input
         id="admin-producer-license"
         value={form.producer_license_number}
         onChange={(e) => update("producer_license_number", e.target.value)}
         maxLength={20}
         inputMode="numeric"
-        className={inputClass}
         dir="ltr"
       />
       {warning && (
@@ -290,6 +292,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     </label>
   );
 
+  // MEH-1128 Wave C: single-line inputs migrated to ui/Input — this recipe
+  // now feeds ONLY the selects + textareas (no primitive for them until the
+  // epic's later waves). Delete when those migrate.
   const inputClass =
     "w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus:border-primary bg-white";
 
@@ -303,53 +308,43 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("producers.form.fields.name")}>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.contact_name")}>
-            <input
-              value={form.contact_name}
-              onChange={(e) => update("contact_name", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.phone")}>
-            <input
-              value={form.phone}
-              onChange={(e) => update("phone", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.phone_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.instagram")}>
-            <input
-              value={form.instagram}
-              onChange={(e) => update("instagram", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.instagram_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.website")}>
-            <input
-              value={form.website}
-              onChange={(e) => update("website", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.website_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.whatsapp_group")}>
-            <input
-              value={form.whatsapp_group}
-              onChange={(e) => update("whatsapp_group", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
-            />
-          </Field>
+          {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
+              the primitive's htmlFor slot). Field stays for the selects. */}
+          <Input
+            label={t("producers.form.fields.name")}
+            required
+            value={form.name}
+            onChange={(e) => update("name", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.contact_name")}
+            value={form.contact_name}
+            onChange={(e) => update("contact_name", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.phone")}
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+            placeholder={t("producers.form.fields.phone_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.instagram")}
+            value={form.instagram}
+            onChange={(e) => update("instagram", e.target.value)}
+            placeholder={t("producers.form.fields.instagram_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.website")}
+            value={form.website}
+            onChange={(e) => update("website", e.target.value)}
+            placeholder={t("producers.form.fields.website_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.whatsapp_group")}
+            value={form.whatsapp_group}
+            onChange={(e) => update("whatsapp_group", e.target.value)}
+            placeholder={t("producers.form.fields.whatsapp_group_placeholder")}
+          />
           {/* MEH-17 — primary contact method + business email. */}
           <Field label={t("producers.form.fields.primary_contact")}>
             <select
@@ -366,68 +361,54 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               <option value="external_order">{t("producers.form.fields.primary_contact_external_order")}</option>
             </select>
           </Field>
-          <Field label={t("producers.form.fields.contact_email")}>
-            <input
-              type="email"
-              value={form.contact_email}
-              onChange={(e) => update("contact_email", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.contact_email_placeholder")}
-              dir="ltr"
-            />
-          </Field>
+          <Input
+            type="email"
+            label={t("producers.form.fields.contact_email")}
+            value={form.contact_email}
+            onChange={(e) => update("contact_email", e.target.value)}
+            placeholder={t("producers.form.fields.contact_email_placeholder")}
+            dir="ltr"
+          />
           {/* MEH-296 3d — new contact channels */}
-          <Field label={t("producers.form.fields.facebook")}>
-            <input
-              value={form.facebook}
-              onChange={(e) => update("facebook", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.facebook_placeholder")}
-              dir="ltr"
-            />
-          </Field>
-          <Field label={t("producers.form.fields.external_order_form")}>
-            <input
-              value={form.external_order_form}
-              onChange={(e) => update("external_order_form", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.external_order_form_placeholder")}
-              dir="ltr"
-            />
-          </Field>
-          <Field label={t("producers.form.fields.city")}>
-            <input
-              value={form.city}
-              onChange={(e) => update("city", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.slug")}>
-            <input
-              value={form.slug}
-              onChange={(e) => update("slug", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.slug_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.lat")}>
-            <input
-              type="number"
-              step="any"
-              value={form.lat}
-              onChange={(e) => update("lat", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.lng")}>
-            <input
-              type="number"
-              step="any"
-              value={form.lng}
-              onChange={(e) => update("lng", e.target.value)}
-              className={inputClass}
-            />
-          </Field>
+          <Input
+            label={t("producers.form.fields.facebook")}
+            value={form.facebook}
+            onChange={(e) => update("facebook", e.target.value)}
+            placeholder={t("producers.form.fields.facebook_placeholder")}
+            dir="ltr"
+          />
+          <Input
+            label={t("producers.form.fields.external_order_form")}
+            value={form.external_order_form}
+            onChange={(e) => update("external_order_form", e.target.value)}
+            placeholder={t("producers.form.fields.external_order_form_placeholder")}
+            dir="ltr"
+          />
+          <Input
+            label={t("producers.form.fields.city")}
+            value={form.city}
+            onChange={(e) => update("city", e.target.value)}
+          />
+          <Input
+            label={t("producers.form.fields.slug")}
+            value={form.slug}
+            onChange={(e) => update("slug", e.target.value)}
+            placeholder={t("producers.form.fields.slug_placeholder")}
+          />
+          <Input
+            type="number"
+            step="any"
+            label={t("producers.form.fields.lat")}
+            value={form.lat}
+            onChange={(e) => update("lat", e.target.value)}
+          />
+          <Input
+            type="number"
+            step="any"
+            label={t("producers.form.fields.lng")}
+            value={form.lng}
+            onChange={(e) => update("lng", e.target.value)}
+          />
         </div>
       </Section>
 
@@ -503,7 +484,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           form={form}
           categories={categories}
           update={update}
-          inputClass={inputClass}
         />
       </Section>
 
@@ -590,13 +570,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
       <Section title={t("producers.form.sections.description_price")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("producers.form.fields.short_description")} full>
-            <input
+          <div className="md:col-span-2">
+            <Input
+              label={t("producers.form.fields.short_description")}
               value={form.short_description}
               onChange={(e) => update("short_description", e.target.value)}
-              className={inputClass}
             />
-          </Field>
+          </div>
           <Field label={t("producers.form.fields.description_full")} full>
             <textarea
               value={form.description}
@@ -604,22 +584,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
               className={`${inputClass} h-28 resize-none`}
             />
           </Field>
-          <Field label={t("producers.form.fields.top_product")}>
-            <input
-              value={form.top_product_name}
-              onChange={(e) => update("top_product_name", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.top_product_placeholder")}
-            />
-          </Field>
-          <Field label={t("producers.form.fields.price_range")}>
-            <input
-              value={form.price_range}
-              onChange={(e) => update("price_range", e.target.value)}
-              className={inputClass}
-              placeholder={t("producers.form.fields.price_range_placeholder")}
-            />
-          </Field>
+          <Input
+            label={t("producers.form.fields.top_product")}
+            value={form.top_product_name}
+            onChange={(e) => update("top_product_name", e.target.value)}
+            placeholder={t("producers.form.fields.top_product_placeholder")}
+          />
+          <Input
+            label={t("producers.form.fields.price_range")}
+            value={form.price_range}
+            onChange={(e) => update("price_range", e.target.value)}
+            placeholder={t("producers.form.fields.price_range_placeholder")}
+          />
         </div>
       </Section>
 
@@ -658,15 +634,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       <Section title={t("producers.form.sections.hours")}>
-        <Field label={t("producers.form.fields.opening_hours_label")} full>
-          <input
-            value={form.opening_hours}
-            onChange={(e) => update("opening_hours", e.target.value)}
-            className={inputClass}
-            placeholder={t("producers.form.fields.opening_hours_placeholder")}
-            dir="ltr"
-          />
-        </Field>
+        <Input
+          label={t("producers.form.fields.opening_hours_label")}
+          value={form.opening_hours}
+          onChange={(e) => update("opening_hours", e.target.value)}
+          placeholder={t("producers.form.fields.opening_hours_placeholder")}
+          dir="ltr"
+        />
       </Section>
 
       <Section title={<>{t("producers.form.sections.availability")} <InfoTooltip content={t("producers.form.sections.availability_tooltip")} label={t("producers.form.sections.availability_tooltip_label")} position="bottom" /></>}>
@@ -692,16 +666,14 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           ))}
         </div>
         {form.availability_state === "on_vacation" && (
-          <Field label={t("producers.form.fields.vacation_until")}>
-            <input
-              type="date"
-              value={form.vacation_until}
-              min={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => update("vacation_until", e.target.value)}
-              className={inputClass}
-              dir="ltr"
-            />
-          </Field>
+          <Input
+            type="date"
+            label={t("producers.form.fields.vacation_until")}
+            value={form.vacation_until}
+            min={new Date().toISOString().slice(0, 10)}
+            onChange={(e) => update("vacation_until", e.target.value)}
+            dir="ltr"
+          />
         )}
       </Section>
 
