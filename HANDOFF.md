@@ -5,6 +5,8 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — ADR-027: Revenue model locked (Council + Sapir ✓) — base page free forever, no transaction fees, trigger-gated premium. BRAND.md LOCK line updated. Drive brand-book + Project Instructions = manual Sapir follow-up.
+
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
 - **Branch:** `feature/meh-1142-card-grid-heights` off `origin/staging` (the ticket-specified name). **Branch note:** work started on the harness-designated `claude/meh-1142-producercard-review-vh88my` (draft PR #1661), but MEH-1141's **Branch name gate is now LIVE on staging** and hard-fails `claude/*` (locked pattern `^(feature|levismadar80)/meh-…`) — the MEH-1134/MEH-1132 `claude/*` precedent predates the gate. Smadar approved recreating on the conforming ticket name; same commits re-pushed, #1661 closed, PR **#1662** opened. YELLOW — full autonomous authority: implement → PR → CI green → `/adversarial-review` (central component, rule 20) → Playwright self-QA → auto-merge. `Closes MEH-1142`.
