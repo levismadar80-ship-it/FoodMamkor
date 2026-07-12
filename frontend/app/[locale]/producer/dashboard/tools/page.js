@@ -28,7 +28,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { CalendarPlus, Storefront, UsersThree, CookingPot } from "@phosphor-icons/react";
+import { CalendarPlus, Storefront, UsersThree, CookingPot, Star } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
@@ -97,6 +97,17 @@ export default function ProducerDashboardToolsPage() {
           <CookingPot size={24} className="text-primary mb-2" aria-hidden="true" />
           <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.recipes.title")}</p>
           <p className="text-sm text-fg-muted">{t("quick_links.recipes.sub")}</p>
+        </Link>
+        {/* MEH-1165 item 2: direct route to the public-page reviews section
+            (id="reviews", ProducerSections.jsx:320) — the reply UI lives there
+            and previously took 3+ taps via "הצגת העסק" + scroll. */}
+        <Link
+          href={`/producer/${producer.id}#reviews`}
+          className="bg-white border border-border rounded-[16px] p-5 hover:border-primary transition"
+        >
+          <Star size={24} className="text-primary mb-2" aria-hidden="true" />
+          <p className="font-headline-md text-lg font-bold mb-1">{t("quick_links.reviews.title")}</p>
+          <p className="text-sm text-fg-muted">{t("quick_links.reviews.sub")}</p>
         </Link>
       </div>
     </div>

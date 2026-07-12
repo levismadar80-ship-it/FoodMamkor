@@ -8,6 +8,7 @@
 ## 2026-07-12 — MEH-1165 batch (7 audit fixes, one small PR each) — in progress
 
 - **Batch context:** Task 5 of the 5-task batch (MEH-1161 #1688 armed · MEH-1162 #1690 MERGED · MEH-1163 #1691 MERGED · MEH-1164 Chunk 1 = diagnosis-only, checklist in final report, no code bug → no PR). Each item: own `feature/meh-1165-*` branch, `Refs MEH-1165`; final item's PR carries `Closes MEH-1165`.
+- **Item 2 — Tools tab "ביקורות" deep-link (`feature/meh-1165-tools-reviews-row`):** quick-link card → `/producer/{id}#reviews` (anchor verified at ProducerSections.jsx:320); keys `quick_links.reviews.*` he+en. Verify: build 0 · vitest 984 · Playwright 390px (`qa-artifacts/MEH-1165/item2-*`). Item 1 = MERGED #1692.
 - **Item 1 — group-buys pre-form approval gate (`feature/meh-1165-group-buys-pregate`):** re-verified — creation 403 at `group_buys.py:187`, error only shown post-submit at the cited (moved) error line; fix = producerStatus from the already-fetched `/producers/me/dashboard`, disabled "+ קבוצת רכש חדשה" + aria-describedby hint (availability idiom), empty-state CTA self-hides, `role="alert"` on the submit error. New key `group_buys.dashboard.approval_required_hint` he+en. Verify: build 0 · vitest 979 · Playwright 390px (`qa-artifacts/MEH-1165/item1-*`).
 
 ## 2026-07-12 — MEH-1163: bio card manual textarea always visible — PR open
