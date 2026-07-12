@@ -5,22 +5,13 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  HeartStraight,
-  Leaf,
-  WhatsappLogo,
-  Phone,
-  Globe,
-  EnvelopeSimple,
-  Star,
-} from "@phosphor-icons/react";
+import { HeartStraight, Leaf, Star } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
-import { getPrimaryMethod } from "@/lib/contact-method";
 import { badgeCount } from "@/lib/badges";
 import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
@@ -33,22 +24,6 @@ import {
   subscribeFavorites,
 } from "@/lib/favorites-cache";
 import api from "@/lib/api";
-
-// Decorative footer hint for the producer's preferred contact channel.
-const METHOD_ICON = {
-  whatsapp: WhatsappLogo,
-  phone: Phone,
-  website: Globe,
-  email: EnvelopeSimple,
-};
-
-// MEH-473: METHOD_LABEL maps to translation keys so the labels resolve per locale.
-const METHOD_LABEL_KEY = {
-  whatsapp: null, // literal "WhatsApp"
-  phone: "producer.card.contact.phone",
-  website: "producer.card.contact.website",
-  email: "producer.card.contact.email",
-};
 
 // MEH-643 (Assembly v2): availability dot is fully tokenized — no raw hex.
 // available_today → primary (brand green); on_vacation / full_this_week →
@@ -217,8 +192,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       : rawDescription;
 
   const { cls: dotClass, status: dotStatus } = availabilityDot(producer);
-  const primaryMethod = getPrimaryMethod(producer);
-  const MethodIcon = METHOD_ICON[primaryMethod];
 
   const handleRootClick = (e) => {
     if (e.target.closest("a, button")) return;
@@ -237,7 +210,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
         // MEH-643 (Assembly v2): flat surface-card, 1px border, sharp corners,
         // NO shadow-lift on hover — hover = border color shift only.
         // MEH-991 (CARD-22): pressed feedback per v4 spec — opacity .95 + scale .98.
-        "bg-surface-card overflow-hidden border flex flex-col rounded-none group transition-colors duration-base ease-quart active:opacity-95 active:scale-[0.98]",
+        "bg-surface-card overflow-hidden border flex flex-col h-full rounded-none group transition-colors duration-base ease-quart active:opacity-95 active:scale-[0.98]",
         active ? "border-primary ring-2 ring-primary" : "border-border hover:border-primary",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
@@ -385,30 +358,20 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
-          {priceLabel ? (
+        {/* MEH-1142: footer is price-only — the decorative primary-contact-method
+            hint was removed (it read as a broken button; live contact CTAs are on
+            /producer). mt-auto keeps the footer pinned to the card bottom; the
+            row always renders so layout stays stable when priceLabel is absent. */}
+        <div className="mt-auto pt-3">
+          {priceLabel && (
             // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
-            // so it can't flip inside RTL — mirrors the ProducerCard.jsx:345
-            // distance-pill and ProducerCard.jsx:320 rating idiom (the only
-            // prior unwrapped numeric span).
+            // so it can't flip inside RTL — mirrors the ProducerCard.jsx
+            // distance-pill and rating idiom (the only prior unwrapped numeric span).
             <span
-              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px]"
+              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px] inline-block"
               dir="ltr"
             >
               {priceLabel}
-            </span>
-          ) : (
-            <span />
-          )}
-          {MethodIcon && (
-            <span
-              role="img"
-              className="inline-flex items-center text-primary shrink-0"
-              aria-label={t("producer.card.aria.primary_contact", { method: METHOD_LABEL_KEY[primaryMethod] ? t(METHOD_LABEL_KEY[primaryMethod]) : "WhatsApp" })}
-              data-testid="primary-method-hint"
-              data-method={primaryMethod}
-            >
-              <MethodIcon size={18} aria-hidden="true" />
             </span>
           )}
         </div>
