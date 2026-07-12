@@ -47,6 +47,52 @@ jobs:
           fi
           echo "Branch '$BRANCH' OK."
 
+  do-not-merge-gate:
+    name: DO-NOT-MERGE marker gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Fail if the PR carries a DO-NOT-MERGE marker (MEH-1155, ADR-016 amendment)
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          if printf '%s\n%s' "$PR_TITLE" "$PR_BODY" | grep -Eiq '(^|[^A-Za-z0-9_-])do[ _-]?not[ _-]?merge([^A-Za-z0-9_-]|$)|DNM-LOCK'; then
+            echo "::error::This PR carries a DO-NOT-MERGE marker. Per ADR-016 (amendment, MEH-1155) auto-merge authority is VOID regardless of risk tier. Only Sapir may remove the marker."
+            exit 1
+          fi
+          echo "No DO-NOT-MERGE marker. OK."
+
+  qa-artifacts-size:
+    name: qa-artifacts size cap
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cap qa-artifacts growth (MEH-1156)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MAX_BYTES: "2097152"
+        run: |
+          set -euo pipefail
+          total=0
+          while read -r f; do
+            [ -n "$f" ] || continue
+            sz=$(git cat-file -s "$HEAD_SHA:$f" 2>/dev/null || echo 0)
+            total=$((total + sz))
+          done < <(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- qa-artifacts/)
+          mb=$(awk -v t="$total" 'BEGIN{printf "%.2f", t/1048576}')
+          echo "qa-artifacts added/modified in this PR: ${total} bytes (${mb} MB)"
+          if [ "$total" -gt "$MAX_BYTES" ]; then
+            echo "::error::qa-artifacts grew by ${mb} MB (cap: 2.00 MB). Compress the screenshots (pngquant / WebP / JPEG q80) before committing. See MEH-1156."
+            exit 1
+          fi
+          echo "qa-artifacts size cap OK."
+
   # ─────────────────────────────────────────────
   # JOB 0: paths-filter (MEH-485)
   # Gates downstream jobs so frontend-only PRs skip
@@ -478,6 +524,8 @@ jobs:
     if: always()
     needs:
       - changes
+      - do-not-merge-gate
+      - qa-artifacts-size
       - build
       - pytest
       - lint-backend
@@ -494,6 +542,8 @@ jobs:
           FRONTEND_TOUCHED: ${{ needs.changes.outputs.frontend }}
           BACKEND_TOUCHED: ${{ needs.changes.outputs.backend }}
           R_CHANGES: ${{ needs.changes.result }}
+          R_DNM: ${{ needs.do-not-merge-gate.result }}
+          R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
           R_BUILD: ${{ needs.build.result }}
           R_PYTEST: ${{ needs.pytest.result }}
           R_LINT_BACKEND: ${{ needs.lint-backend.result }}
@@ -529,7 +579,9 @@ jobs:
             exit 1
           fi
 
-          echo "env-drift (always required):"
+          echo "Always required (stack-independent):"
+          check "DO-NOT-MERGE marker gate" "$R_DNM"
+          check "qa-artifacts size cap" "$R_QA_SIZE"
           check "Env drift (.env.example)" "$R_ENV_DRIFT"
 
           if [ "$BACKEND_TOUCHED" = "true" ]; then
