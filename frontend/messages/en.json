@@ -3660,6 +3660,10 @@
         "recipes": {
           "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
+        },
+        "reviews": {
+          "title": "Reviews",
+          "sub": "View reviews and reply to customers"
         }
       },
       "pulse": {
