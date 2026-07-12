@@ -9,6 +9,8 @@ function loadPosthog(key) {
   if (!posthogPromise) {
     posthogPromise = import("posthog-js").then(({ default: posthog }) => {
       posthog.init(key, {
+        // EU ingestion host by default (data residency); override per-env
+        // with NEXT_PUBLIC_POSTHOG_HOST.
         api_host:
           process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com",
         // Consent is already enforced by the cookieConsent gate in
