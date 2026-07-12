@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { getWhatsAppHref } from "@/lib/utils";
+import Input from "@/components/ui/Input";
 
 /**
  * /admin/outreach — manual lead pipeline (MEH-22).
@@ -363,46 +364,42 @@ function AddLeadModal({ onClose, onCreated }) {
         className="bg-white rounded-[16px] p-6 max-w-md w-full space-y-3"
       >
         <h2 className="font-headline-md text-xl font-bold">{t("outreach.modal_add.title")}</h2>
-        <input
+        {/* MEH-1128 Wave C: label-less ui/Input — placeholder-only parity
+            with the old inputs (no labels invented; notes textarea stays). */}
+        <Input
           placeholder={t("outreach.modal_add.name_placeholder")}
           value={form.name}
           onChange={set("name")}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
           required
         />
         <div className="grid grid-cols-2 gap-2">
-          <input
+          <Input
             placeholder={t("outreach.modal_add.city_placeholder")}
             value={form.city}
             onChange={set("city")}
-            className="border border-border rounded-[12px] px-3 py-2"
           />
-          <input
+          <Input
             placeholder={t("outreach.modal_add.category_placeholder")}
             value={form.category}
             onChange={set("category")}
-            className="border border-border rounded-[12px] px-3 py-2"
           />
         </div>
-        <input
+        <Input
           placeholder={t("outreach.modal_add.phone_placeholder")}
           value={form.phone}
           onChange={set("phone")}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
-        <input
+        <Input
           placeholder={t("outreach.modal_add.instagram_placeholder")}
           value={form.instagram}
           onChange={set("instagram")}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
-        <input
+        <Input
           placeholder={t("outreach.modal_add.website_placeholder")}
           value={form.website}
           onChange={set("website")}
-          className="w-full border border-border rounded-[12px] px-3 py-2"
           dir="ltr"
         />
         <textarea
