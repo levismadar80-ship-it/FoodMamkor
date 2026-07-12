@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import Input from "@/components/ui/Input";
 import { CONTACT_EMAIL } from "@/lib/env.client";
 
 export default function ForgotPasswordClient() {
@@ -54,14 +55,15 @@ export default function ForgotPasswordClient() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 text-start">
-            <input
+            {/* MEH-1145 Wave E1: plain email field → ui/Input (placeholder-only,
+                no label invented; recipe converges to the canon). */}
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("auth.passwordRecovery.forgot.email_placeholder")}
               required
               dir="ltr"
-              className="w-full border border-border rounded-[10px] px-4 py-3 bg-white focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition focus:border-primary"
             />
             {error && (
               <p className="text-red-600 text-sm text-center" role="alert">{error}</p>

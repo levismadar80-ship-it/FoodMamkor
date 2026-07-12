@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1145 Wave E1 (ui/Input adoption II — auth surfaces) — draft PR
+
+- **Branch:** `feature/meh-1145-input-adoption-wave-e1` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px. `Refs MEH-1145`. **Wave E2 NOT started — wait gate.** Pre-flight: MEH-1128 D2 (`dfc47cd9`) on staging.
+- **Phase 0 (re-verified the 12/07 clone from scratch — mandated):** 1 migration, 3 leftovers. All 4 files last touched by merged work; #1658/#1660 file-lists verified (none touch the 4). Clean.
+- **Migrated (1):** forgot-password email — plain standalone field → `<Input type="email">` (canon convergence, no label invented).
+- **Leftovers surfaced (not forced):** login email = bespoke S9 composed pair (icon + 54px rhythm + matched with non-migratable eye-toggle password) — **deviates from the clone's "login=1"**, migrating email alone breaks the pair; PhoneVerifyCard OTP = dedicated OTP UX (w-40/text-center/tracking/one-time-code); reset-password = 0 confirmed (passwords only). ui/Input.jsx FROZEN, no STOP hit.
+- **Verify:** build exit 0 · full vitest 936/41-skip · Playwright 375px /forgot-password email 44px + canon classes (`docs/audits/screenshots/2026-07-meh1145-wave-e1-qa/`).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start E2.
+
 ## 2026-07-12 — ADR-027: Revenue model locked (Council + Sapir ✓) — base page free forever, no transaction fees, trigger-gated premium. BRAND.md LOCK line updated. Drive brand-book + Project Instructions = manual Sapir follow-up.
 
 ## 2026-07-12 — MEH-1135 chat-FAB logical corner + NearMePill opposite + z-ledger · ADR-016 amendment — BOTH MERGED
