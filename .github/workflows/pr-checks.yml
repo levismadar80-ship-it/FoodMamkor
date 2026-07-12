@@ -32,6 +32,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  branch-name-gate:
+    name: Branch name gate
+    runs-on: ubuntu-latest
+    if: github.head_ref
+    steps:
+      - name: Assert branch name matches the locked convention (MEH-1141)
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if ! printf '%s' "$BRANCH" | grep -Eq '^(feature|levismadar80)/meh-[0-9]+(-[a-z0-9]+)*$|^dependabot/.*'; then
+            echo "::error::Branch '$BRANCH' violates the locked naming convention (workflow rule 3, MEH-1141)."
+            echo "Allowed: feature/meh-{N}-{slug} | levismadar80/meh-{N}-{slug} | dependabot/*"
+            exit 1
+          fi
+          echo "Branch '$BRANCH' OK."
+
   # ─────────────────────────────────────────────
   # JOB 0: paths-filter (MEH-485)
   # Gates downstream jobs so frontend-only PRs skip
