@@ -1074,7 +1074,7 @@
     "mini": {
       "default_label": "Location",
       "open_in_waze": "Open in",
-      "open_in_google": "Open in"
+      "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
@@ -2630,7 +2630,8 @@
     "owner_empty_title": "First reviews come after a few customers",
     "owner_empty_description": "Reviews are created automatically after customers send you a WhatsApp message. 24 hours after the click they get a link to rate you. No reviews yet because no one has clicked yet.",
     "owner_empty_cta": "Share your profile on WhatsApp",
-    "empty_message": "No reviews yet — be the first!",
+    "empty_message": "No reviews here yet.",
+    "empty_gate_hint": "Ordered something? We'd love to hear — writing a review opens after you reach out on WhatsApp.",
     "pagination": {
       "prev_aria": "Previous page",
       "next_aria": "Next page"
@@ -2769,7 +2770,7 @@
     "submit": "Send rating"
   },
   "report": {
-    "trigger": "🚩 Report business",
+    "trigger": "Report business",
     "form_heading": "Report business",
     "reason_placeholder": "Tell us what the issue is...",
     "submit": "Send report",
