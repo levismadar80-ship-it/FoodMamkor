@@ -56,9 +56,9 @@ def _sniff_image_type(header: bytes) -> str | None:
     if header[:6] in (b"GIF87a", b"GIF89a"):
         return "gif"
     # MEH-1152: HEIC/HEIF (iPhone default) — ISO-BMFF `ftyp` box + brand.
-    if header[4:8] == b"ftyp" and header[8:12] in _HEIF_BRANDS:
-        return "heic"
-    return None
+    # Single trailing return keeps the function under PLR0911 (max 6).
+    is_heif = header[4:8] == b"ftyp" and header[8:12] in _HEIF_BRANDS
+    return "heic" if is_heif else None
 
 
 @router.post("/image")
