@@ -119,7 +119,8 @@ describe("ProfileCompletenessCard (MEH-1106 4-step checklist)", () => {
     expect(hrefs(container)).toEqual(
       expect.arrayContaining([
         `${EDIT}#profile-images`,
-        `${EDIT}#profile-categories`,
+        // MEH-1165 item 4: the location row lands on the location card.
+        `${EDIT}#location`,
         `${EDIT}#profile-products`,
         `${EDIT}#profile-contact`,
       ]),
@@ -188,6 +189,7 @@ describe("ProfileCompletenessCard (MEH-1106 4-step checklist)", () => {
     // location todo → 3/4 → 75%, and the location step is the top remaining.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
     const cta = screen.getByRole("link", { name: "השלימו את הפרופיל שלך" });
-    expect(cta).toHaveAttribute("href", `${EDIT}#profile-categories`);
+    // MEH-1165 item 4: the location step's CTA lands on the location card.
+    expect(cta).toHaveAttribute("href", `${EDIT}#location`);
   });
 });

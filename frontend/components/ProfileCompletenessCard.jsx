@@ -144,7 +144,10 @@ function buildSteps(producer, missingLabels) {
       // "Categories + location" = category filled AND the location pair
       // (city + coords/delivery) filled.
       done: has("category") && has("city") && has(locationSlug),
-      href: `${EDIT_HUB}#profile-categories`,
+      // MEH-1165 item 4: was #profile-categories — the location row must land
+      // on the location card (#location, edit/page.js KEY_TO_ANCHOR), not the
+      // categories card.
+      href: `${EDIT_HUB}#location`,
     },
     {
       key: "products",
