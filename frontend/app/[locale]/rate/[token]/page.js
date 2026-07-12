@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { SmileyMeh, HandsPraying } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import StarSelector from "@/components/StarSelector";
+import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 
@@ -91,13 +92,16 @@ export default function RatingPage() {
           <StarSelector value={stars} onChange={setStars} />
 
           <div>
-            <input
+            {/* MEH-1145 Wave E2: plain comment field → ui/Input; centered text via
+                className, the live char-counter kept as a sibling (placeholder-only,
+                no label — helperText slot left for a static hint, not the counter). */}
+            <Input
               type="text"
               placeholder={t("comment_placeholder")}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={100}
-              className="w-full border rounded-[12px] px-3 py-2 text-center"
+              className="text-center"
             />
             <p className="text-xs text-muted text-center mt-1">{comment.length}/100</p>
           </div>
