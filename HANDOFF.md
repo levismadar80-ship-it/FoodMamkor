@@ -12,6 +12,15 @@
 - **Shipped (2 files):** `dashboard/page.js` — new `completenessFirst = !isApproved || !isComplete` + two mirror-gated single mounts of ProfileCompletenessCard (below status banners while pending/incomplete; today's slot once approved+complete). New `frontend/__tests__/DashboardConditionalCardOrder.test.jsx` (3 cases, written first per rule 5): pending+incomplete / approved+incomplete → completeness precedes availability; approved+complete → order preserved; single mount each.
 - **Verify:** build exit 0 · vitest **921 passed**/41 skipped · Playwright self-QA local `next start` + route-mocked /api: both states × 375/1280 all PASS (DOM `compareDocumentPosition` + radios-disabled assertions), screenshots `qa-artifacts/MEH-1134/`.
 
+## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-b` off fresh `origin/staging` (`0896224`, incl. Wave A merge `cc16a63`), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave C NOT started — wait gate.** (Sapir approved Wave B in-conversation 12/07; Wave A merged as #1635.)
+- **Phase 0 (mandatory, done):** collision check CLEAR — git log on all 4 files shows only merged work (MEH-1116/1106/1115/1100/1099/1096/1083); fresh open-PR scan: #1636 (events URL-sync test) touches only HANDOFF/CHANGELOG/a new test — none of the 4 wave files; rest dependabot/skills/docs. Inventory: 21 migratable fields / 19 sites + leftovers per file (table in PR).
+- **Shipped (21 fields):** edit questions ×3 · RecipeForm title+3 numbers (`text-end` keeps digit alignment) · group-buys title/product/unit/min/max/deadline(helper→`helperText`)/city · events/new title/date/time/location/price/max/url (kills the styled-jsx `input-base` hardcoded-hex recipe for single-line fields). Leftovers: ₪-adornment prices (Wave D icon-slot — primitive untouched), selects, textareas, checkboxes/radios/files, CitySearch.
+- **Surfaced:** (1) events/new required asterisk double-rendered on live (`*_label` values already carry "*" + Field's red span) — migrated labels now render it once (Wave A convention); leftover category select keeps the pre-existing double. (2) Type-scope: template says text/email/tel; operative rule = any plain single-line native input (see CHANGELOG). (3) `input-base` is a styled-jsx block in events/new (NOT dead CSS — earlier in-session note corrected).
+- **Verify:** build exit 0 · full vitest 914/41-skip · Playwright 375px all 4 forms w/ mocked producer auth (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-b-qa/`), migrated inputs all 44px. No known screenshot gaps this wave.
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start Wave C.
+
 ## 2026-07-11 — MEH-1131: /events city+category URL-sync unit test (test-only) — PR open
 
 - **Branch:** `feature/meh-1131-events-url-sync-test` off `origin/staging` (divergence 0). LOW-RISK test-only. `Refs MEH-1131`.
