@@ -8,7 +8,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
 import { useAuth } from "@/lib/auth-context";
 
-import ActionRow from "./components/ActionRow";
+import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -19,7 +19,6 @@ import { useStickyBar } from "./hooks/useStickyBar";
 import { useTabScroll } from "./hooks/useTabScroll";
 import {
   buildShareUrl,
-  buildShowOnMapHandler,
   getRenderableImages,
   getVacationReturnLabel,
 } from "./lib/producer-format";
@@ -81,7 +80,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const images = getRenderableImages(producer.images);
   const hasImages = images.length > 0;
   const primaryCategory = producer.categories?.[0];
-  const handleShowOnMap = buildShowOnMapHandler(producer, router);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
@@ -154,12 +152,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
           />
-          <ActionRow
-            producer={producer}
-            inlineCTARef={inlineCTARef}
-            shareUrl={shareUrl}
-            onShowOnMap={handleShowOnMap}
-          />
+          {/* Mobile/tablet inline contact card — the IntersectionObserver
+              target for useStickyBar. Must stay the first child after
+              ProducerHeader so the sticky bar fires at the same scroll
+              boundary as the pre-1146 inline CTA. Desktop renders the card
+              in the sticky sidebar instead (ContactSidebar, hidden below lg),
+              so exactly one primary CTA is visible per viewport. */}
+          <div ref={inlineCTARef} className="lg:hidden mt-4">
+            <ContactCard
+              producer={producer}
+              isVacation={isVacation}
+              primaryCategory={primaryCategory}
+              shareUrl={shareUrl}
+            />
+          </div>
           <ProducerSections
             producer={producer}
             events={events}
