@@ -13,6 +13,15 @@ import * as path from "path";
  * it from bottom-right to bottom-left in RTL — an approved visual change. This
  * touch re-triggers the vrt-update bot to regenerate the affected baselines
  * (map + producer-detail chrome capture the FAB corner). Not a regression.
+ * MEH-991 baseline regen (2026-07-12): two baselines drifted from already-merged
+ * work and were never refreshed, so `about` + `producer-detail` red-line the
+ * (non-required) E2E on every PR. `about-*` shifted when MEH-1145 Wave E2
+ * (#1671) adopted ui/Input on the /about contact form (name+email:
+ * rounded-sm→rounded-md + label weight); `producer-detail-*` shifted when
+ * MEH-1146-b (#1646) rebuilt the /producer/[id] IA (two-tier header + section
+ * reorder). Both are approved, already-shipped visual changes — this touch
+ * re-rides the vrt-update push trigger to regenerate the 4 stale baselines
+ * (about/producer-detail × desktop/mobile) on the runner. Not a regression.
  *
  * Locks the design-parity sweep (Groups 1-5, gold #896714, header pill,
  * hero CTA, footer, static pages) against silent drift. One screenshot per
