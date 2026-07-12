@@ -191,7 +191,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
         />
       </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
+      {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
       <button
         type="submit"
         disabled={submitting || priceInvalid}
@@ -213,6 +214,12 @@ export default function ProducerGroupBuysPage() {
   const [items, setItems] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [producerCity, setProducerCity] = useState("");
+  // MEH-1165 (audit item 1): the backend 403-gates creation on approval
+  // (group_buys.py:187), but the form surfaced that only AFTER filling
+  // everything. Track status so a pending producer sees a pre-form disabled
+  // state + hint instead (availability-card idiom, dashboard/page.js:457).
+  // null = unknown (fetch failed) → fail-open to enabled; backend still gates.
+  const [producerStatus, setProducerStatus] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -233,6 +240,7 @@ export default function ProducerGroupBuysPage() {
       // Filter to only this producer's group buys
       const producerId = dashRes.data?.producer?.id;
       setProducerCity(dashRes.data?.producer?.city || "");
+      setProducerStatus(dashRes.data?.producer?.status || null);
       const mine = gbRes.data.filter((gb) => gb.producer_id === producerId);
       // Also fetch funded/cancelled
       const [fundedRes, cancelledRes, fulfilledRes] = await Promise.all([
@@ -255,6 +263,8 @@ export default function ProducerGroupBuysPage() {
 
   if (authLoading || !user) return null;
 
+  const notApproved = producerStatus !== null && producerStatus !== "approved";
+
   const statusLabel = (status) => {
     const key = STATUS_CLS[status] ? `status.${status}` : null;
     return key ? t(key) : status;
@@ -275,11 +285,25 @@ export default function ProducerGroupBuysPage() {
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition"
+          disabled={notApproved}
+          aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
+          className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {showForm ? t("btn_close_form") : t("btn_open_form")}
         </button>
       </div>
+
+      {/* MEH-1165: why-locked hint, aria-describedby-linked so it's announced
+          (availability-card idiom, dashboard/page.js:457-461). */}
+      {notApproved && (
+        <p
+          id="group-buy-approval-hint"
+          data-testid="group-buy-approval-hint"
+          className="text-xs text-fg-muted -mt-3 mb-6"
+        >
+          {t("approval_required_hint")}
+        </p>
+      )}
 
       {showForm && (
         <div className="mb-8">
@@ -304,7 +328,9 @@ export default function ProducerGroupBuysPage() {
             title={t("empty_title")}
             description={t("empty_description")}
             ctaLabel={t("empty_cta")}
-            ctaOnClick={() => setShowForm(true)}
+            // MEH-1165: no CTA while unapproved — EmptyState self-hides the
+            // button when the handler is absent; the hint above carries why.
+            ctaOnClick={notApproved ? undefined : () => setShowForm(true)}
           />
         )
       ) : (
