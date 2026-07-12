@@ -69,6 +69,29 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     expect(before(reviews, minimap)).toBe(true); // location is last
   });
 
+  const nearbyProps = (n) => ({
+    producer: { id: 3, name: "חוות", city: "עיר", products: [] },
+    events: [],
+    similarProducers: [],
+    nearbyProducers: Array.from({ length: n }, (_, i) => ({ id: `n${i}`, name: `עסק ${i}` })),
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("hides the discovery loop when fewer than MIN_NEARBY_BUSINESSES (4) nearby", () => {
+    render(<ProducerSections {...nearbyProps(3)} />);
+    expect(screen.queryByText("producer.detail.sections.nearby.heading")).not.toBeInTheDocument();
+  });
+
+  it("shows the discovery loop at >= 4 nearby businesses, with the report below it", () => {
+    render(<ProducerSections {...nearbyProps(4)} />);
+    const loop = screen.getByText("producer.detail.sections.nearby.heading");
+    const report = screen.getByTestId("report");
+    expect(loop).toBeInTheDocument();
+    expect(before(loop, report)).toBe(true); // report stays at the page end, below the loop
+  });
+
   it("shows the signature product at the top of the products section even with no product entries", () => {
     render(
       <ProducerSections
