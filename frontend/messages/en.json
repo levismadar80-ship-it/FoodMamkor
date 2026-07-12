@@ -587,6 +587,12 @@
       "og_title": "Your business. A page of its own. | Mehamakor",
       "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
     },
+    "share": {
+      "title": "Spread the word — Mehamakor",
+      "description": "Help more people discover personally vetted local food businesses — share Mehamakor.",
+      "og_title": "Spread the word — Mehamakor",
+      "og_description": "Help more people discover personally vetted local food businesses — share Mehamakor."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -2804,6 +2810,18 @@
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
     "copied_toast": "Link copied"
+  },
+  "share_page": {
+    "h1": "Spread the word",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — and another business owner find their home.",
+    "whatsapp": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copy_toast": "Link copied",
+    "native": "More ways to share",
+    "email": "Share by email",
+    "email_subject": "Have you heard of Mehamakor?",
+    "message": "Discover Mehamakor — a magazine of local food businesses, all personally vetted. Worth a look: {url}",
+    "footer_link": "Spread the word"
   },
   "gallery": {
     "open_aria": "Enlarge image {current}",

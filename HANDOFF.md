@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1159 (ROADMAP reader-income, MERGED #1687) + MEH-1160 (/share page) — batch, full ADR-016 v2 authority
+
+- **Task 1 — MEH-1159 (GREEN, doc-only, `Closes MEH-1159`): MERGED.** `feature/meh-1159-roadmap-reader-income` off staging → PR #1687 → auto-merge (squash, `11c397a`). Verbatim v2 block appended to **`docs/ROADMAP.md`** end, after the "Marketing AI Agents (v3 — post-launch)" item (no dedicated post-launch section exists; spec's fallback clause). **Premise correction (meta-patterns §1):** spec said "ROADMAP.md (repo root)" — no such file; canonical is `docs/ROADMAP.md` per CLAUDE.md doc map. Single file, +20 additions. **CI note:** first `CI gate` failure webhook was the MEH-1049 superseded-run pattern (draft→ready flip concurrency-cancelled the draft run); fresh run green, auto-merged. Vercel bot deploy failure = known 100/day free-tier cap, non-blocking (required gates unaffected).
+- **Task 2 — MEH-1160 (YELLOW, UI, `Closes MEH-1160`): PR open.** `feature/meh-1160-share-page` off post-merge staging tip (`11c397a`), divergence 0. New `/[locale]/share` ("ספרו עלינו"): `page.js` (generateMetadata REUSES /about pattern — title.absolute + og url/siteName/locale + buildAlternates) + `ShareClient.jsx` (4 actions: wa.me prefilled · clipboard+toast · navigator.share→copy fallback · mailto; message = `share_page.message` with `{url}`=`SITE_URL` from lib/env — no hardcoded host). Footer navLinks +1 ("ספרו עלינו" → /share, label under `share_page.footer_link` — new namespace per spec, nav.footer untouched). i18n: `share_page.*` (10 keys) + `seo.share.*` (4) he+en twins. **Share only — zero donation/payment elements (MEH-1159 boundary).**
+- **Phase 0 (read-only, verified):** all spec file_locations exist as stated — about/page.js metadata pattern, Footer navLinks array, `share.*` namespace taken (→ `share_page.*` clean), `SITE_URL` centralized `env.client.js:50`. No STOP.
+- **Adversarial catch (self):** ShareClient originally rendered `<main>` — the `[locale]` layout already owns `<main id="main-content">` (`layout.js:221`); nested landmark fixed to `<div>` pre-PR.
+- **Verify:** build exit 0 · full vitest **977 passed**/41 skipped (post-fix re-run) · eslint 0 errors · Playwright self-QA 390+1280 (`qa-artifacts/MEH-1160/`, 50 KB WebP per MEH-1156): 4 actions ≥44px, hrefs prefilled, copy→toast visible, Footer link ×1, 0 h-overflow, 0 page errors · i18n parity ✓ · 0 emoji ✓ · 0 physical RTL ✓. Docs: CHANGELOG + MANUAL_TESTING (/share section) + COPY_BANK §10 (final strings, shipped as drafted).
+- **Next:** MEH-1160 PR → CI green → auto-merge (YELLOW, per batch authority). Sapir: mobile QA on staging (`/he/share`) per DoD.
+
 ## 2026-07-12 — MEH-1155 + MEH-1156: DNM marker override (ADR-016) + qa-artifacts screenshot compression — PR open
 
 - **Branch:** `feature/meh-1155-adr-dnm-qa-compress` off `origin/staging`. GREEN (docs + one script). `Closes MEH-1155, MEH-1156`.
