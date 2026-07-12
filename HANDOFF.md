@@ -8,6 +8,7 @@
 ## 2026-07-12 — MEH-1165 batch (7 audit fixes, one small PR each) — in progress
 
 - **Batch context:** Task 5 of the 5-task batch (MEH-1161 #1688 armed · MEH-1162 #1690 MERGED · MEH-1163 #1691 MERGED · MEH-1164 Chunk 1 = diagnosis-only, checklist in final report, no code bug → no PR). Each item: own `feature/meh-1165-*` branch, `Refs MEH-1165`; final item's PR carries `Closes MEH-1165`.
+- **Item 5 — PR #1682 nits (`feature/meh-1165-preview-nits`):** products preview in-session edge → PreviewEmpty (was undefined); METHOD_FIELD moved above first use (next to CHANNEL_ICONS). Verify: build 0 · vitest 984. Item 4 = MERGED #1695.
 - **Item 4 — completeness location deep-link (`feature/meh-1165-completeness-location-anchor`):** ProfileCompletenessCard location row `#profile-categories` → `#location` (canonical hash, lands+expands the location card); tests updated. Verify: build 0 · vitest 984 · Playwright 390px (`qa-artifacts/MEH-1165/item4-*`). Item 3 = MERGED #1694.
 - **Item 3 — recipes pending ETA line (`feature/meh-1165-recipes-pending-eta`):** `recipes.dashboard.pending_eta` he+en under the pending badge (recipes/page.js). Verify: build 0 · vitest 984 · Playwright 390px (`qa-artifacts/MEH-1165/item3-*`). Items 1+2 = MERGED #1692, #1693.
 - **Item 2 — Tools tab "ביקורות" deep-link (`feature/meh-1165-tools-reviews-row`):** quick-link card → `/producer/{id}#reviews` (anchor verified at ProducerSections.jsx:320); keys `quick_links.reviews.*` he+en. Verify: build 0 · vitest 984 · Playwright 390px (`qa-artifacts/MEH-1165/item2-*`). Item 1 = MERGED #1692.
