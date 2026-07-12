@@ -960,7 +960,9 @@
     "delivery": {
       "heading": "Delivery",
       "nationwide": "Nationwide delivery",
-      "arranged": "Delivery by arrangement — contact for details"
+      "arranged": "Delivery by arrangement — contact for details",
+      "min_order": "Minimum",
+      "pickup": "Self pickup"
     },
     "follow": {
       "following": "Following",
