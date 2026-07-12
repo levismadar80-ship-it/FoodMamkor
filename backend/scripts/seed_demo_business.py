@@ -47,13 +47,14 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
 from app.models.models import ProducerReview, Event, User  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
-# DEMO IDENTITY — ⚠️ needs-sapir checkpoint (MEH-1074 authority matrix §3).
-# Everything in this block is a FICTIONAL draft: business name, person name,
-# story, phone, license number, and photo URLs (Cloudinary public demo-cloud
-# assets as placeholders — swap for real uploads on the mehamakor cloud).
-# Sapir approves/edits this block, then runs the script against staging —
-# the run itself is the approval act. Never promote this row to production
-# (DNA: licensed-only, trust) — MEH-409 swaps it for a real profile.
+# DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
+# (business name, contact name, category, product set) live in the dict below
+# and in the MEH-1074 Linear description. Photo URLs are Cloudinary public
+# demo-cloud placeholders — swap for real uploads on the mehamakor cloud when
+# available (edit this block + re-run with --refresh).
+# GUARD — STAGING ONLY: never promote/import this row to production (DNA:
+# licensed-only, trust); MEH-409 swaps it for the best real profile after
+# first-10. The _assert_not_production() gate below enforces staging-only.
 # ============================================================================
 DEMO_SLUG = "ruach-hasadeh"
 DEMO_CATEGORY_NAME = "לחמים ואפייה"

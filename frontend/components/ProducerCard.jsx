@@ -307,9 +307,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
       </div>
 
       <div className="p-4 flex flex-col gap-2">
-        {/* Eyebrow = CATEGORY (uppercase, tracked) — Assembly v2. */}
+        {/* Eyebrow = CATEGORY. MEH-1073 T10 / MEH-867: no uppercase, no
+            letter-spacing — harms RTL legibility and Hebrew has no case. */}
         {category && (
-          <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-fg-muted truncate">
+          <p className="text-[11px] font-medium text-fg-muted truncate">
             {category}
           </p>
         )}
