@@ -3,6 +3,10 @@ import * as path from "path";
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
+ * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
+ * /register name + email fields adopted ui/Input (label slot + success
+ * state), so register-*.png shifts; this touch retriggers the vrt-update
+ * bot to regenerate the baseline on the runner (sandbox fonts differ).
  * Baselines refreshed 2026-07-11 after MEH-1103 (#1592/#1595 header/footer
  * accessibility sizing) landed — the footer grew 20px on every fullPage route.
  *

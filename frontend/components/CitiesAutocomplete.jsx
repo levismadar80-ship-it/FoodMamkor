@@ -13,6 +13,14 @@ import api from "@/lib/api";
  *
  * RTL-aware: uses start-* and end-* logical classes. Never left-* or right-*.
  * Keyboard nav: ArrowUp/Down to move, Enter to add, Backspace to remove last.
+ *
+ * MEH-1128 D2 — token-recipe fallback (NOT ui/Input): a multi-select chip
+ * input — selected-city chips + a flex-1 text input share one `focus-within`
+ * bordered box, above an absolutely-positioned dropdown. There is no single
+ * value and no endAdornment slot, so the ui/Input primitive can't wrap it.
+ * D2 converges only the field radius to the canon (`rounded-[12px]`→
+ * `rounded-md`); the composed structure + debounce/fetch/keyboard nav are
+ * untouched (over-engineering guard: no autocomplete refactor).
  */
 export default function CitiesAutocomplete({ value = [], onChange }) {
   const t = useTranslations("search.cities_autocomplete");
@@ -100,7 +108,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
     <div className="relative">
       {/* Selected chips + input */}
       <div
-        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-[12px] px-3 py-2 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
+        className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((city) => (
@@ -144,7 +152,7 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           ref={listRef}
           id={listboxId}
           role="listbox"
-          className="absolute z-50 start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-[12px] shadow-md text-sm"
+          className="absolute z-50 start-0 end-0 mt-1 max-h-48 overflow-y-auto bg-white border border-border rounded-md shadow-md text-sm"
         >
           {suggestions.map((city, i) => (
             <li
