@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1161: public event visibility gated on producer approval — PR open
+
+- **Branch:** `feature/meh-1161-gate-pending-producer-events` off `origin/staging` 85ad89c6 (divergence 0). YELLOW — CI green → auto-merge per batch authority (ADR-016 v2). `Closes MEH-1161`. Task 1 of a 5-task batch (2: MEH-1162 license chip · 3: MEH-1163 bio textarea · 4: MEH-1164 Chunk 1 email diagnosis · 5: MEH-1165 7-item batch).
+- **Phase 0 (read-only, verified):** events public reads had NO producer-status filter (`events.py:59/87/103` — detail had no gate at all). **Experiences need no producer gate** — hosts are Users, not Producers (`models.py:706-730` docstring), per-item admin approval already gates public reads (`experiences.py:126-127,180-181`); recipes conform (`producer_recipes.py:340`), group-buys conform via creation gate (`group_buys.py:187`). All frontend event surfaces (home cards, /events, producer page, sitemap) go through the 3 gated endpoints — no extra surface found.
+- **Shipped:** `events.py` — list+upcoming join-filter `Producer.status=='approved'`; detail 404s pending-producer events for strangers (MEH-254/MEH-1001 idiom, REUSES producers.py:210-217) with owner/admin bypass; owner's own `?producer_id=` list bypasses too (public producer page owner-view keeps events). `events/new/page.js` — pending producer gets in-page success state with "האירוע יוצג לציבור לאחר אישור העסק" (he+en `sweep_tail.event_new.pending_success_*`) instead of redirect to a detail that 404s publicly. POST /events intentionally unchanged (pending producers may create; visibility is the gate). New `tests/test_meh1161_event_producer_gate.py` (10 tests).
+- **Verify:** pytest 10 new + test_api.py/events suites 211 passed · build exit 0 · vitest 977 passed/41 skipped · Playwright localhost QA: public list hides pending event, pending detail → 404 page, owner create → hint shown (`qa-artifacts/MEH-1161/`, compressed 81 KB total).
+- **Docs note:** DATA.md's old claim "POST /events — only approved producers" was inaccurate (require_producer checks role only — that's how audit F1 happened); corrected to describe the visibility gate.
+
 ## 2026-07-12 — MEH-1155 + MEH-1156: DNM marker override (ADR-016) + qa-artifacts screenshot compression — PR open
 
 - **Branch:** `feature/meh-1155-adr-dnm-qa-compress` off `origin/staging`. GREEN (docs + one script). `Closes MEH-1155, MEH-1156`.
