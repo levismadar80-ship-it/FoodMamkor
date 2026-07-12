@@ -14,7 +14,9 @@ import api from "@/lib/api";
  *     pill when dismissed. z-9999.
  *   Desktop: pill with text on first visit, icon-only after user has opened
  *     once (chatWasOpened in localStorage). Inline style — 24px bottom, 24px
- *     inline-end. (rtl-ok: comment-only)
+ *     inline-end. MEH-1135: positioned with logical `insetInlineEnd` (was
+ *     physical `right`) so the FAB owns the bottom-END corner in every locale
+ *     (RTL → physical left, LTR → physical right).
  *   Clean: no X, no badge, no dot. Tap to toggle open/close.
  *
  * Panel:
@@ -170,16 +172,22 @@ export default function ChatWidget() {
   // sitting above the pill when the banner is gone — no fixed-px banner guess.
   const MOBILE_LAUNCHER_BOTTOM =
     "calc(env(safe-area-inset-bottom) + 88px + var(--cookie-banner-h, 0px))";
+  // MEH-1135: logical inline-end (was physical `right`). Distances (16/24) and
+  // the MEH-850 vertical calc are unchanged — only the horizontal axis flips
+  // from physical to logical, so the FAB tracks the inline-END corner per locale.
   const launcherStyle = {
     position: "fixed", zIndex: 9999,
-    right: isDesktop ? 24 : 16,
+    insetInlineEnd: isDesktop ? 24 : 16,
     bottom: isDesktop ? 24 : MOBILE_LAUNCHER_BOTTOM,
   };
+  // MEH-1135: desktop 360px box anchors to the same bottom-END corner as the
+  // launcher (insetInlineEnd:24, insetInlineStart:auto); mobile stays full-width
+  // (both inline insets 0 → spans edge-to-edge in either direction).
   const panelStyle = {
     position: "fixed", zIndex: 9999,
     bottom: isDesktop ? 24 : 0,
-    right: isDesktop ? 24 : 0,
-    left: isDesktop ? "auto" : 0,
+    insetInlineEnd: isDesktop ? 24 : 0,
+    insetInlineStart: isDesktop ? "auto" : 0,
     width: isDesktop ? 360 : "100%",
     maxHeight: isDesktop ? "min(560px, 80vh)" : "80vh",
     borderRadius: isDesktop ? 16 : "16px 16px 0 0",
