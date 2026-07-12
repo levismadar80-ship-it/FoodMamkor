@@ -17,6 +17,7 @@ vi.mock("next-intl", () => ({
 }));
 
 import ExperienceCard from "@/components/ExperienceCard";
+import { BRAND_NAME } from "@/lib/constants";
 
 const BASE = {
   id: "exp-7",
@@ -52,6 +53,6 @@ describe("ExperienceCard", () => {
     // name (replaces the MEH-862 CookingPot). No CSS-background <img>.
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByTestId("experience-image-missing")).toBeInTheDocument();
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
   });
 });

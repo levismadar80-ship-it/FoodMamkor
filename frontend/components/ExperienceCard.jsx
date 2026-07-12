@@ -48,7 +48,8 @@ export default function ExperienceCard({ experience: ex }) {
       href={`/experiences/${ex.id}`}
       // MEH-1143 (Assembly v2): flat surface-card, 1px border, sharp corners,
       // NO shadow-lift — hover = border color shift only. Mirrors RecipeCard:42.
-      className="bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary flex flex-col"
+      // focus-visible ring matches UpcomingEventsPreview (cross-surface a11y parity).
+      className="bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40 flex flex-col"
     >
       {ex.image_url ? (
         <div className="relative">

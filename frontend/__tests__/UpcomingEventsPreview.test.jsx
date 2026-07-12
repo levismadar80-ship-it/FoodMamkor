@@ -24,6 +24,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
+import { BRAND_NAME } from "@/lib/constants";
 
 const IMAGED = {
   id: 1,
@@ -69,6 +70,6 @@ describe("UpcomingEventsPreview", () => {
     // canonical Leaf + "מהמקור" placeholder — exactly one, for the single
     // imageless event (the imaged one shows a CSS-background div, no testid).
     expect(screen.getAllByTestId("event-image-missing")).toHaveLength(1);
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    expect(screen.getByText(BRAND_NAME)).toBeInTheDocument();
   });
 });
