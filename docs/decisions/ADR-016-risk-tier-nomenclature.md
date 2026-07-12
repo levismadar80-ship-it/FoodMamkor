@@ -45,3 +45,11 @@ Claude Code defaults to asking Sapir for tier assignment before granting itself 
 - **(b) Keep 2-tier (LOW/HIGH), retire YELLOW work classification.** Rejected: forces 143 issues into the wrong buckets, recreates the original drift problem, and ignores 6 weeks of real workflow evidence that the middle tier exists.
 - **(c) Keep tier numbers (1/2/3) instead of colors.** Rejected: less mnemonic; "tier 2" reads as "lower quality" rather than "medium risk" (anti-pattern from cloud provider SLA tiers).
 - **(d) Per-domain tiers (auth-tier, schema-tier, frontend-tier).** Rejected: combinatorial explosion; the risk axis is "blast radius if wrong", which is domain-orthogonal.
+
+## Amendment (2026-07-12)
+
+An explicit per-batch DO-NOT-MERGE / Sapir-merges instruction from the
+orchestrator OVERRIDES tier-level auto-merge authority. Tier authority is the
+default; a batch-specific instruction is the specific rule and wins. Context:
+PR #1644 (MEH-1133) was auto-merged under YELLOW authority despite an explicit
+DO-NOT-MERGE in the batch prompt.
