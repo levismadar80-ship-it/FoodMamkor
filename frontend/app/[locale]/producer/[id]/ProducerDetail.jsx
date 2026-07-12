@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Info, Package, Truck, Star } from "@phosphor-icons/react";
 
@@ -8,7 +8,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
 import { useAuth } from "@/lib/auth-context";
 
-import ActionRow from "./components/ActionRow";
+import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -19,7 +19,6 @@ import { useStickyBar } from "./hooks/useStickyBar";
 import { useTabScroll } from "./hooks/useTabScroll";
 import {
   buildShareUrl,
-  buildShowOnMapHandler,
   getRenderableImages,
   getVacationReturnLabel,
 } from "./lib/producer-format";
@@ -37,7 +36,6 @@ import {
  */
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
-  const router = useRouter();
   const { user } = useAuth();
   const t = useTranslations();
   const locale = useLocale();
@@ -81,12 +79,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const images = getRenderableImages(producer.images);
   const hasImages = images.length > 0;
   const primaryCategory = producer.categories?.[0];
-  const handleShowOnMap = buildShowOnMapHandler(producer, router);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Breadcrumb + back button */}
-      <div className="flex items-center justify-between mb-4">
+      {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
+          removed (the breadcrumb already provides the home/category path). */}
+      <div className="mb-4">
         <Breadcrumb
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
@@ -96,14 +94,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { label: producer.name },
           ]}
         />
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-1"
-          aria-label={t("producer.detail.aria.back")}
-        >
-          {t("producer.detail.back_label")}
-        </button>
       </div>
 
       {/* Gallery */}
@@ -154,12 +144,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
           />
-          <ActionRow
-            producer={producer}
-            inlineCTARef={inlineCTARef}
-            shareUrl={shareUrl}
-            onShowOnMap={handleShowOnMap}
-          />
+          {/* Mobile/tablet inline contact card — the IntersectionObserver
+              target for useStickyBar. Must stay the first child after
+              ProducerHeader so the sticky bar fires at the same scroll
+              boundary as the pre-1146 inline CTA. Desktop renders the card
+              in the sticky sidebar instead (ContactSidebar, hidden below lg),
+              so exactly one primary CTA is visible per viewport. */}
+          <div ref={inlineCTARef} className="lg:hidden mt-4">
+            <ContactCard
+              producer={producer}
+              isVacation={isVacation}
+              primaryCategory={primaryCategory}
+              shareUrl={shareUrl}
+            />
+          </div>
           <ProducerSections
             producer={producer}
             events={events}

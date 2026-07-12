@@ -21,24 +21,23 @@ import ReviewsSection from "@/components/ReviewsSection";
 const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 /**
- * The middle of the main column: description, opening hours, mini-map,
- * similar producers, events, products, delivery, disclaimer, report,
- * lazy-mounted reviews. Verbatim move from ProducerDetail.jsx:482-690.
+ * The middle of the main column. MEH-1146 chunk B reorders the sections to
+ * the editorial IA: about → products → recipes → events → delivery →
+ * reviews → similar → location (OpeningHours + MiniMap, LAST) → disclaimer →
+ * report. The signature product (top_product_name / starting_price_label)
+ * moved OUT of ProducerHeader to the top of the products section here.
  *
- * Two delivery branches are PRESERVED VERBATIM (per Phase 1 risk
- * note + REFACTOR_PLAN.md §File 2 risk-d item):
- *   - New: <DeliveryBlock> when producer.offers_delivery is truthy
- *     (:621-631).
- *   - Legacy: an `<aזורי משלוח>` table when !offers_delivery and
- *     delivery_areas[].length > 0 (:633-663).
- * The legacy branch is kept because some producers still have
- * delivery_areas rows from the pre-MEH-213 model. Do NOT delete it
- * without a separate migration plan.
+ * Two delivery branches are PRESERVED (per Phase 1 risk note):
+ *   - New: <DeliveryBlock> when producer.offers_delivery is truthy, now fed
+ *     the full delivery_areas (city · min order · day, fix 4) + pickup_points
+ *     (fix 6) + a demoted tertiary CTA.
+ *   - Legacy: the delivery_areas table when !offers_delivery and
+ *     delivery_areas[].length > 0.
+ * Do NOT delete the legacy branch without a separate migration plan.
  *
- * showAllEvents state lives here as local UI state — no consumer
- * needs it. The reviews wrapper accepts reviewsContainerRef and
- * reviewsVisible from useLazyReviews so the IO observation point
- * remains identical to the source.
+ * showAllEvents state lives here as local UI state. The reviews wrapper
+ * accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
+ * IO observation point remains identical to the source.
  */
 export default function ProducerSections({
   producer,
@@ -73,6 +72,8 @@ export default function ProducerSections({
     };
   }, [producer?.slug]);
 
+  const hasSignature = !!(producer.top_product_name || producer.starting_price_label);
+
   return (
     <>
       {/* Description — MEH-788: scroll-reveal (motion.section keeps the
@@ -86,12 +87,103 @@ export default function ProducerSections({
         </FadeInSection>
       )}
 
-      {/* MEH-102: Opening hours */}
-      <OpeningHours opening_hours={producer.opening_hours} />
+      {/* Products (premium only) + the signature product at the top.
+          MEH-1146 chunk B: the section also renders when only the signature
+          product exists (no product entries) so the moved-out header
+          signature never vanishes. */}
+      {(producer.products?.length > 0 || hasSignature) && (
+        <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
 
-      {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
-      {producer.has_physical_location !== false && producer.lat && producer.lng && (
-        <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+          {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
+              starting_price_label is a free-text DB label (NOT routed through
+              formatPrice per MEH-1140 — it is data, not a numeric amount). */}
+          {hasSignature && (
+            <div className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 bg-background border border-border rounded-md px-4 py-3">
+              {producer.top_product_name && (
+                <span className="font-medium text-text">{producer.top_product_name}</span>
+              )}
+              {producer.top_product_name && producer.starting_price_label && (
+                <span className="text-fg-muted" aria-hidden="true">·</span>
+              )}
+              {producer.starting_price_label && (
+                <span className="text-accent font-semibold">{producer.starting_price_label}</span>
+              )}
+            </div>
+          )}
+
+          {/* MEH-1126 (Task I): image-first product cards. Equal-height cells
+              (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
+          {producer.products?.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+              {producer.products.map((product) => {
+                // Cloudinary 4:3 when a photo exists; otherwise the canonical
+                // no-photo state (MEH-1138) — never a generic package icon.
+                const img = product.image_url
+                  ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
+                  : null;
+                const price =
+                  product.price_min != null
+                    ? formatPriceRange(product.price_min, product.price_max)
+                    : product.price_range || null;
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-md border border-border overflow-hidden flex flex-col"
+                  >
+                    {img ? (
+                      <div className="relative w-full aspect-[4/3] bg-green-50">
+                        <Image
+                          src={img}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="(min-width: 768px) 50vw, 100vw"
+                        />
+                      </div>
+                    ) : (
+                      // MEH-1138: canonical no-photo state — cream surface + leaf
+                      // glyph + brand name. REUSES: frontend/components/ProducerCard.jsx:262
+                      <div
+                        className="w-full aspect-[4/3] bg-background flex flex-col items-center justify-center gap-2"
+                        aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                      >
+                        <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                        <span className="font-headline-md text-base font-bold text-primary/50">
+                          {BRAND_NAME}
+                        </span>
+                      </div>
+                    )}
+                    <div className="p-4 flex-1 flex flex-col">
+                      <p className="font-medium text-text">{product.name}</p>
+                      {product.description && (
+                        <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
+                      )}
+                      {price && <p className="text-accent font-medium mt-2">{price}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* MEH-591: Producer recipes (chunk 4/4). Section is hidden entirely
+          when the producer has no published+approved recipes — empty state
+          is silent per spec. Anchor id matches the breadcrumb in
+          RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
+      {producer.slug && recipes.length > 0 && (
+        <section className="mt-8" id="recipes">
+          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+            {t("producer.detail.sections.recipes.cta")}
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {recipes.map((r) => (
+              <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Events section */}
@@ -161,94 +253,15 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* Products (premium only) */}
-      {producer.products?.length > 0 && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
-          {/* MEH-1126 (Task I): image-first product cards. Equal-height cells
-              (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
-            {producer.products.map((product) => {
-              // Cloudinary 4:3 when a photo exists; otherwise the canonical
-              // no-photo state (MEH-1138) — never a generic package icon.
-              const img = product.image_url
-                ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
-                : null;
-              const price =
-                product.price_min != null
-                  ? formatPriceRange(product.price_min, product.price_max)
-                  : product.price_range || null;
-              return (
-                <div
-                  key={product.id}
-                  className="bg-white rounded-md border border-border overflow-hidden flex flex-col"
-                >
-                  {img ? (
-                    <div className="relative w-full aspect-[4/3] bg-green-50">
-                      <Image
-                        src={img}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        sizes="(min-width: 768px) 50vw, 100vw"
-                      />
-                    </div>
-                  ) : (
-                    // MEH-1138: canonical no-photo state — cream surface + leaf
-                    // glyph + brand name. REUSES: frontend/components/ProducerCard.jsx:262
-                    <div
-                      className="w-full aspect-[4/3] bg-background flex flex-col items-center justify-center gap-2"
-                      aria-label={t("producer.card.aria.image_missing", { name: product.name })}
-                    >
-                      <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                      <span className="font-headline-md text-base font-bold text-primary/50">
-                        {BRAND_NAME}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-4 flex-1 flex flex-col">
-                    <p className="font-medium text-text">{product.name}</p>
-                    {product.description && (
-                      <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
-                    )}
-                    {price && <p className="text-accent font-medium mt-2">{price}</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* MEH-591: Producer recipes (chunk 4/4). Section is hidden entirely
-          when the producer has no published+approved recipes — empty state
-          is silent per spec. Anchor id matches the breadcrumb in
-          RecipeDetail.jsx ("חזרה לדף בית העסק > מתכונים"). */}
-      {producer.slug && recipes.length > 0 && (
-        <section className="mt-8" id="recipes">
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
-            {t("producer.detail.sections.recipes.cta")}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {recipes.map((r) => (
-              <RecipeCard key={r.id} slug={producer.slug} recipe={r} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* MEH-213: DeliveryBlock — shown when offers_delivery=true.
-          Replaces the old delivery_areas table for the new location model.
-          MEH-904: cities derived from the delivery_areas relation (the only
-          path the public POST /producers writer populates — the flat
-          delivery_cities column is empty for registration-created producers). */}
+      {/* MEH-213 / MEH-1146 chunk B: DeliveryBlock — shown when offers_delivery.
+          Now fed the full delivery_areas (city · min order · day, fix 4) and
+          pickup_points (fix 6); the CTA is demoted to tertiary. */}
       {producer.offers_delivery && (
         <div ref={(el) => { sectionRefs.current.delivery = el; }}>
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
-            cities={[...new Set(
-              (producer.delivery_areas || []).map((da) => da.city).filter(Boolean),
-            )]}
+            areas={producer.delivery_areas || []}
+            pickup={!!producer.pickup_points}
             producer={producer}
           />
         </div>
@@ -283,6 +296,10 @@ export default function ProducerSections({
               </tbody>
             </table>
           </div>
+          {/* Self-pickup (fix 6) also surfaces in the legacy branch. */}
+          {producer.pickup_points && (
+            <p className="text-sm text-text mt-3">{t("group_buys.delivery.pickup")}</p>
+          )}
         </section>
       )}
 
@@ -310,16 +327,6 @@ export default function ProducerSections({
         )}
       </div>
 
-      {/* Directory-only disclaimer — required by Israeli consumer
-          protection law. The seller bears legal responsibility for
-          products and licensing; the platform is just a directory. */}
-      <DirectoryDisclaimer className="mt-8" />
-
-      {/* Report */}
-      <div className="mt-6 pt-6 border-t border-border">
-        <ReportButton producerId={producer.id} />
-      </div>
-
       {/* MEH-102: Similar producers — MEH-788: scroll-reveal (below fold). */}
       {similarProducers.length >= 3 && (
         <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8 border-t border-border pt-8">
@@ -338,6 +345,27 @@ export default function ProducerSections({
           </div>
         </FadeInSection>
       )}
+
+      {/* MEH-1146 chunk B: location is the LAST content section — opening hours
+          + the Leaflet MiniMap (never a Google embed, fix 1) with the
+          "פתיחה במפות Google" navigation link inside MiniMap. */}
+      {/* MEH-102: Opening hours */}
+      <OpeningHours opening_hours={producer.opening_hours} />
+
+      {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
+      {producer.has_physical_location !== false && producer.lat && producer.lng && (
+        <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+      )}
+
+      {/* Directory-only disclaimer — required by Israeli consumer
+          protection law. The seller bears legal responsibility for
+          products and licensing; the platform is just a directory. */}
+      <DirectoryDisclaimer className="mt-8" />
+
+      {/* Report */}
+      <div className="mt-6 pt-6 border-t border-border">
+        <ReportButton producerId={producer.id} />
+      </div>
     </>
   );
 }
