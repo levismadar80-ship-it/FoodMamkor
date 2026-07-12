@@ -3746,7 +3746,9 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
-        "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}"
+        "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
+        "more_group": "More options",
+        "next_step_aria": "Next step to complete"
       },
       "contact_channels": {
         "heading": "Contact channels",

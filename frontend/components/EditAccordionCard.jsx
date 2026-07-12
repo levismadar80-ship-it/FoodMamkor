@@ -26,6 +26,10 @@ export default function EditAccordionCard({
   anchorId,
   title,
   summary,
+  // MEH-1132: optional next-step marker node (gold dot) rendered beside the
+  // title. Additive + default-off — omit it and the header is byte-identical
+  // to before. The page passes it to at most one card at a time.
+  marker,
   open,
   onToggle,
   children,
@@ -48,7 +52,10 @@ export default function EditAccordionCard({
           className="w-full min-h-[44px] flex items-center justify-between gap-3 p-5 text-start rounded-[16px] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition"
         >
           <span className="min-w-0">
-            <span className="block text-base font-bold text-text">{title}</span>
+            <span className="block text-base font-bold text-text">
+              {title}
+              {marker}
+            </span>
             {/* Live status summary — calm idiom (ADR-019): muted, never red. */}
             {summary && (
               <span className="block mt-0.5 text-xs font-normal text-fg-muted truncate">
