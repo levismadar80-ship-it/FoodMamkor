@@ -730,9 +730,7 @@
     },
     "card": {
       "contact": {
-        "phone": "Phone",
         "website": "Website",
-        "email": "Email",
         "facebook": "Facebook",
         "external_order": "Order form"
       },
@@ -744,8 +742,7 @@
         "aria": "Save"
       },
       "aria": {
-        "image_missing": "{name} — image missing",
-        "primary_contact": "Primary contact channel: {method}"
+        "image_missing": "{name} — image missing"
       },
       "badges": {
         "delivery_only": "🚚 Delivery only",
