@@ -97,7 +97,8 @@ graph TD
     NeighborList --> HPClick[POST /home-products/{id}/whatsapp-click<br/>🔑 schedules Twilio follow-up]
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
-    Events[/events + /experiences] --> EventCreate[POST /events<br/>👤]
+    Events[/events + /experiences] --> EventCreate[POST /events<br/>👤 any producer role — MEH-1161:<br/>pending producer's events stay hidden]
+    Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
 ```
 
