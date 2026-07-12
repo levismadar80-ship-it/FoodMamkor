@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { Leaf } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BRAND_NAME } from "@/lib/constants";
 import DeliveryBlock from "@/components/DeliveryBlock";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
@@ -165,9 +167,8 @@ export default function ProducerSections({
               (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
             {producer.products.map((product) => {
-              // Cloudinary 4:3 when a photo exists; otherwise a typographic card
-              // (name in Frank Ruhl on a primary tint, mirroring the MEH-815
-              // masthead idiom) — never a generic package icon.
+              // Cloudinary 4:3 when a photo exists; otherwise the canonical
+              // no-photo state (MEH-1138) — never a generic package icon.
               const img = product.image_url
                 ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
                 : null;
@@ -193,16 +194,20 @@ export default function ProducerSections({
                       />
                     </div>
                   ) : (
-                    <div className="w-full aspect-[4/3] bg-primary/[0.06] flex items-center justify-center p-4">
-                      <p className="font-headline-lg text-xl md:text-2xl font-black text-text text-center leading-tight line-clamp-3">
-                        {product.name}
-                      </p>
+                    // MEH-1138: canonical no-photo state — cream surface + leaf
+                    // glyph + brand name. REUSES: frontend/components/ProducerCard.jsx:262
+                    <div
+                      className="w-full aspect-[4/3] bg-background flex flex-col items-center justify-center gap-2"
+                      aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                    >
+                      <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                      <span className="font-headline-md text-base font-bold text-primary/50">
+                        {BRAND_NAME}
+                      </span>
                     </div>
                   )}
                   <div className="p-4 flex-1 flex flex-col">
-                    {/* imaged cards carry the name here; the imageless card already
-                        shows it as the typographic hero above, so it's not repeated. */}
-                    {img && <p className="font-medium text-text">{product.name}</p>}
+                    <p className="font-medium text-text">{product.name}</p>
                     {product.description && (
                       <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
                     )}
