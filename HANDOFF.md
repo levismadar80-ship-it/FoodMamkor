@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1145 Wave E2 (ui/Input adoption II — public touchpoints) — draft PR
+
+- **Branch:** `feature/meh-1145-input-adoption-wave-e2` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px per form. `Refs MEH-1145`. **Wave E3 NOT started — wait gate.** Pre-flight: E1 `c3bdb079` on staging.
+- **Phase 0 (re-verified the 12/07 clone from scratch — mandated):** 8 migrations across 5 files; Footer = leftover. All 5 files last touched by merged work; #1667 (only frontend-capable open PR) touches RegisterProducerClient/analytics/logs — none of the 5. Clean. Frozen `ui/Input.jsx` had every capability (className→input merge covers text-center/text-right; native type passes through) — no STOP.
+- **Migrated (8):** contact name+email · about contact-form name+email · rate comment (text-center via className, counter kept sibling) · upgrade email (flex-1/max-w-xs moved to wrapper) · group-buys quantity (number+text-right+clamp) + phone.
+- **Leftover (surfaced):** Footer newsletter email — dark-surface inline underline + overlaid arrow; boxed light `<Input>` incompatible, token fallback empty. Textareas/select non-eligible.
+- **Verify:** build exit 0 · full vitest **942 passed**/41 skipped · Playwright 375px all forms 44px+canon (`docs/audits/screenshots/2026-07-meh1145-wave-e2-qa/`); /upgrade prod-gated (MEH-1057) → QA'd on dev server.
 ## 2026-07-12 — MEH-1146 Chunk A: editorial contact card + one-primary hierarchy — PR open
 
 - **Branch:** `feature/meh-1146-producer-ia-a` off fresh `origin/staging` (incl. staging merge). First of 3 sequential chunks (A→B→C, each its own PR off fresh staging after the prior merges) rebuilding `/producer/[id]` action hierarchy (direction 1b). YELLOW — CI green + Playwright self-QA → auto-merge per ADR-016. PR body: `Refs MEH-1136` + `Refs MEH-1137` (only Chunk C says `Closes MEH-1146`).
