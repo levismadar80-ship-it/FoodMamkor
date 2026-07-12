@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — /map mobile round 2 (Refs MEH-933 / MEH-970 / MEH-1133) — MERGED (PRs #1675 + #1679)
+
+- **Branches:** `feature/meh-933-map-sticky-bar-pill` (PR #1675, fixes 1+2) + `feature/meh-1133-map-card-thumbnail` (PR #1679, fix 3), both off `origin/staging`. Sapir-authorized full-autonomy batch incl. auto-merge (ADR-016 amendment). **Both squash-merged to staging** (13e91aae, 49774d72). No `Closes` (no ticket — batch dispatch).
+- **Phase 0 (measured, not assumed):** live Playwright geometry @390 proved the mobile shell starts at 82 (BELOW the 82px header, via flow) — so the bar's `top-16` was a **64px dead-gap double-count** and `pt-[174px]` under-reserved the real **171px** bar → 61px map overlap. This CONTRADICTED the batch's "keep a header offset / 64+measured" framing (meta-pattern §1 — surfaced + corrected): the bar needs NO offset of its own.
+- **Shipped:** (1) `MapClient.jsx` — bar `top-0` + map `paddingTop` = ResizeObserver-measured bar height (killed `pt-[174px]` + the ~10px spill + the dead gap). (2) `MapBottomSheet.jsx` publishes `--map-sheet-h` + `--map-sheet-anim`; `NearMePill.jsx` anchors `calc(var(--map-sheet-h)+12px)`, animates in lockstep (rides PEEK+HALF, no card overlap — REFEREE caught + fixed the button-collapse teleport). (3) `MapProducerCard.jsx` — `onLoad` aspect check → `object-contain` for logo-like (≥2:1) sources, `object-cover` otherwise (+3 tests).
+- **Verify:** build exit 0 · vitest 962 passed · eslint 0 errors · RTL logical props only · required gates (CI gate + Deploy gate) green on the ready runs · `qa-artifacts/MEH-933-r2/` + `qa-artifacts/MEH-1133-thumb/`.
+- **Dep note:** staging added `posthog-js` mid-session (MEH-435, b0d4999d) → local `node_modules` needed a re-`npm ci` for the build; CI unaffected.
+- **PENDING (Sapir-approved, separate):** VRT hygiene pass — vrt-update on a feature branch (touch `frontend/e2e/visual/**`) to regen the mobile-map baseline (this change) + the pre-existing MEH-1135 FAB-move drift on producer-detail/about. E2E (Vercel preview) is NON-required, so both PRs merged on the 2 required gates with the VRT check red (expected).
+
 ## 2026-07-12 — MEH-1157: edit-tab 401 half-alive + bio error split — PR open
 
 - **Branch:** `feature/meh-1157-edit-401-bio-errors` off `origin/staging` tip (divergence 0). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1157`. First of a 3-task batch (A: this · B: MEH-1158 accordion previews, branches AFTER this merges — shared edit/page.js · C: MEH-999 dogfood audit, read-only).
