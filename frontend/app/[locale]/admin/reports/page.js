@@ -5,6 +5,8 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 import { CheckCircle, Warning, Lightbulb } from "@phosphor-icons/react";
 import api from "@/lib/api";
+// MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
+import { formatPrice } from "@/lib/utils";
 import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminReportsPage() {
@@ -150,7 +152,7 @@ export default function AdminReportsPage() {
                       <h3 className="font-semibold text-text">{hp.title}</h3>
                       <p className="text-xs text-fg-muted mt-1">
                         {hp.seller_name} · {hp.city}
-                        {hp.price != null && <> · ₪{hp.price}</>}
+                        {hp.price != null && <> · {formatPrice(hp.price)}</>}
                       </p>
                       {hp.description && (
                         <p className="text-sm text-text/85 mt-2 whitespace-pre-line">{hp.description}</p>

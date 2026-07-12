@@ -154,3 +154,36 @@ describe("ReviewsSection — owner-only eyebrow (MEH-1114)", () => {
     expect(screen.queryByText("מוצג רק לך")).not.toBeInTheDocument();
   });
 });
+
+describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1139)", () => {
+  // Unmapped keys fall through the next-intl mock as raw key strings, so
+  // assertions below target key names (wa_gate_message / empty_message / …).
+  it("empty + logged-in non-gated viewer: ONE box — gate box gone, hint merged into empty state", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
+    expect(screen.getByText(/empty_gate_hint/)).toBeInTheDocument();
+    expect(screen.queryByText("wa_gate_message")).not.toBeInTheDocument();
+  });
+
+  it("reviews exist + logged-in non-gated viewer: standalone gate box still renders", async () => {
+    authState.user = { id: "u-9", producer_id: null };
+    mockReviews([
+      {
+        id: "rev-9", user_id: "u-2", user_name: "לקוח", stars: 4, body: "טעים",
+        created_at: "2026-07-01T11:00:00", reply: null, reply_at: null,
+      },
+    ]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    expect(await screen.findByText("wa_gate_message")).toBeInTheDocument();
+    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
+  });
+
+  it("empty + guest: empty message only, no gate hint", async () => {
+    mockReviews([]);
+    render(<ReviewsSection producerId="p-1" isOwner={false} />);
+    expect(await screen.findByText(/empty_message/)).toBeInTheDocument();
+    expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
+  });
+});
