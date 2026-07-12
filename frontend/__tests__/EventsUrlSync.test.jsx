@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import EventsClient from "@/app/[locale]/events/EventsClient";
+import { EVENT_CATEGORIES, EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 // MEH-1131 (MEH-1085 / DISC-08): /events city + category are deep-linkable and
 // mirrored back to the URL via a single shallow history.replaceState writer
@@ -73,6 +74,13 @@ vi.mock("@/components/ChipScrollRow", () => ({
 
 const EXPERIENCES_TAB = "events.list.tab_experiences";
 
+// Category wire values sourced from the SoT so the test survives key renames.
+const EVENT_CAT = EVENT_CATEGORIES.find((c) => c.labelKey === "workshop").key; // in the events vocab
+const EVENT_CAT_ALT = EVENT_CATEGORIES.find((c) => c.labelKey === "market").key; // in the events vocab
+const CROSS_TAB_CAT = EXPERIENCE_CATEGORIES.find((c) => c.labelKey === "cooking").key; // experiences-only
+const CITY = "חיפה";
+const CITY_ALT = "תל אביב";
+
 const setUrl = (url) => window.history.replaceState(null, "", url);
 const cityInput = () => screen.getByTestId("city-input");
 const chipRow = () => screen.getByTestId("chip-row");
@@ -99,47 +107,47 @@ afterEach(() => {
 
 describe("/events city + category URL sync (MEH-1131 / DISC-08)", () => {
   it("mount with ?city=&category= seeds state from the URL params", () => {
-    params = { city: "חיפה", category: "סדנה" }; // סדנה ∈ EVENT_CATEGORIES
-    setUrl("/events?city=חיפה&category=סדנה");
+    params = { city: CITY, category: EVENT_CAT };
+    setUrl(`/events?city=${CITY}&category=${EVENT_CAT}`);
     render(<EventsClient />);
 
-    expect(cityInput()).toHaveValue("חיפה");
+    expect(cityInput()).toHaveValue(CITY);
     // active category chip mirrors the URL category
-    expect(chipRow().querySelector('[data-key="סדנה"]').dataset.active).toBe("true");
+    expect(chipRow().querySelector(`[data-key="${EVENT_CAT}"]`).dataset.active).toBe("true");
   });
 
   it("rejects a category outside the initial tab's vocabulary (cross-tab guard)", () => {
-    // בישול ∈ EXPERIENCE_CATEGORIES only — on the events tab it must NOT seed.
-    params = { city: "חיפה", category: "בישול" };
-    setUrl("/events?city=חיפה&category=בישול");
+    // An experiences-only category must NOT seed on the events tab.
+    params = { city: CITY, category: CROSS_TAB_CAT };
+    setUrl(`/events?city=${CITY}&category=${CROSS_TAB_CAT}`);
     render(<EventsClient />);
 
-    expect(cityInput()).toHaveValue("חיפה"); // city still seeds
-    // category rejected → the "all" sentinel chip is active, not בישול
+    expect(cityInput()).toHaveValue(CITY); // city still seeds
+    // category rejected → the "all" sentinel chip is active, not the cross-tab one
     expect(chipRow().querySelector('[data-key="all"]').dataset.active).toBe("true");
-    expect(chipRow().querySelector('[data-key="בישול"]')).toBeNull();
+    expect(chipRow().querySelector(`[data-key="${CROSS_TAB_CAT}"]`)).toBeNull();
   });
 
   it("changing category then city writes the updated query via replaceState", async () => {
     render(<EventsClient />);
     replaceSpy.mockClear();
 
-    fireEvent.click(chip("שוק"));
+    fireEvent.click(chip(EVENT_CAT_ALT));
     await waitFor(() => {
-      expect(lastReplaceParams(replaceSpy)?.get("category")).toBe("שוק");
+      expect(lastReplaceParams(replaceSpy)?.get("category")).toBe(EVENT_CAT_ALT);
     });
 
-    fireEvent.change(cityInput(), { target: { value: "תל אביב" } });
+    fireEvent.change(cityInput(), { target: { value: CITY_ALT } });
     await waitFor(() => {
       const p = lastReplaceParams(replaceSpy);
-      expect(p?.get("city")).toBe("תל אביב");
-      expect(p?.get("category")).toBe("שוק"); // category preserved alongside city
+      expect(p?.get("city")).toBe(CITY_ALT);
+      expect(p?.get("category")).toBe(EVENT_CAT_ALT); // category preserved alongside city
     });
   });
 
   it("switchTab clears city + category from the URL (intentional reset)", async () => {
-    params = { city: "חיפה", category: "סדנה" };
-    setUrl("/events?city=חיפה&category=סדנה");
+    params = { city: CITY, category: EVENT_CAT };
+    setUrl(`/events?city=${CITY}&category=${EVENT_CAT}`);
     render(<EventsClient />);
     replaceSpy.mockClear();
 
