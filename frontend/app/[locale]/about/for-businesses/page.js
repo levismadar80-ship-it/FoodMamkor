@@ -131,7 +131,8 @@ export default async function FaqForBusinessesPage({ params }) {
           {/* MEH-923: surface the existing footer register CTA here in the header,
               above the FAQ, so the primary action isn't gated behind 8 accordion
               items. Same string t("cta") + markup as the footer CTA below — no
-              new he.json key (MEH-840 freeze). Footer CTA stays as-is. */}
+              new he.json key (MEH-840 freeze). Footer CTA also updated to the
+              next-intl Link + focus-ring in this PR (IMP-21). */}
           <Link
             href="/register/producer"
             className="inline-flex items-center gap-2 font-medium transition hover:opacity-90 bg-primary text-white rounded-sm px-6 py-3 focus-ring"
