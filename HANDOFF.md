@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1128 Wave D1 (primitive extension): startAdornment + success — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-d1` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D2 NOT started — wait gate.** Pre-flight verified: #1641 (`4d82641`) + #1645 (`6b035d1`) both on origin/staging.
+- **Phase 0:** current prop list pasted (type/label/helperText/error/id/className/disabled/...rest) — no collision with startAdornment/success/successText. ADR-019 + `DESIGN.md:161` ("success = primary") verified aligned — no STOP.
+- **Shipped (3 files, ZERO call-sites):** `ui/Input.jsx` — startAdornment (conditional `relative` wrapper, `start-3` span, aria-hidden/pointer-events-none; clearing pad `ps-10`, or **`pe-10` for `dir="ltr"`** — MEH-992 ₪ parity, corrected against the spec's literal "ps-" after the gallery shot exposed the ltr mismatch) + success/successText (`border-primary` tint, Phosphor Check message, error>success precedence, helper kept when no successText). Gallery +4 examples. `ui-Input.test.jsx` 8→16 (2 snapshot locks captured PRE-change and passing unchanged POST-change = the byte-identical proof).
+- **Verify:** build exit 0 · full vitest 926/41-skip · Playwright 375px gallery (dev server — page is prod-gated `notFound`) + register step 2 on the prod build: default class string dumped and matched the pre-D1 string verbatim (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-d1-qa/`).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start D2.
+
 ## 2026-07-12 — MEH-1141: branch-name guard (hook + CI snippet, mechanism > memory) — PR open
 
 - **Branch:** `feature/meh-1141-branch-name-guard` off `origin/staging` (`6b035d17`, incl. MEH-1132 + Wave C). GREEN — full autonomous authority. `Closes MEH-1141`. (This ticket's own branch conforms to the locked pattern — the irony is intentional; the trigger was MEH-1132 on `claude/*`.)
