@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1128 Wave D2 (final adoption) + epic adoption-scope close — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-d2` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Epic adoption scope COMPLETE after this merge.** Pre-flight: D1 (`ce85039`) on staging.
+- **Phase 0:** all 4 files last touched by merged work (RegisterClient #1628/#1569, CitySearch #1633, CitiesAutocomplete #1569, group-buys #1641); open-PR scan — #1652/#1651/#1650/#1640 file-lists verified, none touch the 4. Clean. Branch name conforms to the MEH-1141 locked pattern.
+- **Shipped (4 files):** RegisterClient name+email → `<Input success>` (closes Wave A's 0-migrations; D1 success wired to nameValid/emailValid, error to *Invalid); group-buys ₪ ×2 → `startAdornment="₪"` (MEH-992 spans removed, price_group soft helper kept sibling); CitySearch — **token-recipe fallback documented** (composed combobox, can't be `<Input>`; already canon via MEH-1127; magnifier kept over a location-pin, surfaced per meta-patterns §1); CitiesAutocomplete — radius `rounded-[12px]`→`rounded-md` + fallback doc.
+- **ui/Input FROZEN this wave** (D2 constraint) — no primitive change. No STOP hit (fallback clause covered the composed comboboxes).
+- **Epic-close grep:** 15+ (11/07) → canon everywhere in-scope; **66 `<Input>` tags**; ≤3 residual families in-scope (canon / textareas+selects no-primitive / composed comboboxes); out-of-scope surfaces (login, pw-reset, contact, rate, gb-detail, experiences, search, upgrade) = next-epic backlog.
+- **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
+- **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
+
+
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
 - **Branch:** `feature/meh-1142-card-grid-heights` off `origin/staging` (the ticket-specified name). **Branch note:** work started on the harness-designated `claude/meh-1142-producercard-review-vh88my` (draft PR #1661), but MEH-1141's **Branch name gate is now LIVE on staging** and hard-fails `claude/*` (locked pattern `^(feature|levismadar80)/meh-…`) — the MEH-1134/MEH-1132 `claude/*` precedent predates the gate. Smadar approved recreating on the conforming ticket name; same commits re-pushed, #1661 closed, PR **#1662** opened. YELLOW — full autonomous authority: implement → PR → CI green → `/adversarial-review` (central component, rule 20) → Playwright self-QA → auto-merge. `Closes MEH-1142`.
