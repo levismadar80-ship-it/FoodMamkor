@@ -5,6 +5,8 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — ADR-027: Revenue model locked (Council + Sapir ✓) — base page free forever, no transaction fees, trigger-gated premium. BRAND.md LOCK line updated. Drive brand-book + Project Instructions = manual Sapir follow-up.
+
 ## 2026-07-12 — MEH-1135 chat-FAB logical corner + NearMePill opposite + z-ledger · ADR-016 amendment — BOTH MERGED
 
 - **MEH-1135 (#1653, merged `d2592601`, Closes MEH-1135):** YELLOW auto-merge on green. Chat FAB migrated from physical `right`/`left` to logical `insetInlineEnd`/`insetInlineStart` (launcher + panel; distances 16/24 + MEH-850 vertical calc unchanged) → /he FAB bottom-LEFT (approved), /en bottom-right. **Fold-in Option 2:** NearMePill `end-4`→`start-4` so the two floats sit in opposite corners every locale (resolves the FAB-on-pill overlap the migration first created — measured 29–34px @360/375, surfaced + STOP before repositioning). z-ledger synced in `rtl.md` + `frontend.md` (registered `Toaster z-[2000]`, header-1050 verified `Header.jsx:220`) + corner-ownership convention. Attribution now fully exposed on /he. **VRT:** vrt-update bot regenerated exactly `map-desktop` + `producer-detail-desktop` baselines (approved visual change) → E2E 105/105 green; drove it via a parity.spec.ts trigger-touch + a follow-up self-push (bot's GITHUB_TOKEN push doesn't re-fire gates). Verify: build/vitest/E2E green · grep right:/left: in ChatWidget = 0 · grep end-4 in NearMePill = 0 · harness @360/375/390 both locales all-clear.
@@ -21,7 +23,6 @@
 - **Epic-close grep:** 15+ (11/07) → canon everywhere in-scope; **66 `<Input>` tags**; ≤3 residual families in-scope (canon / textareas+selects no-primitive / composed comboboxes); out-of-scope surfaces (login, pw-reset, contact, rate, gb-detail, experiences, search, upgrade) = next-epic backlog.
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
-
 
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
