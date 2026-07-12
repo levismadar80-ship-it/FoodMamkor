@@ -12,6 +12,148 @@
 - **Shipped (2 files):** `dashboard/page.js` — new `completenessFirst = !isApproved || !isComplete` + two mirror-gated single mounts of ProfileCompletenessCard (below status banners while pending/incomplete; today's slot once approved+complete). New `frontend/__tests__/DashboardConditionalCardOrder.test.jsx` (3 cases, written first per rule 5): pending+incomplete / approved+incomplete → completeness precedes availability; approved+complete → order preserved; single mount each.
 - **Verify:** build exit 0 · vitest **921 passed**/41 skipped · Playwright self-QA local `next start` + route-mocked /api: both states × 375/1280 all PASS (DOM `compareDocumentPosition` + radios-disabled assertions), screenshots `qa-artifacts/MEH-1134/`.
 
+## 2026-07-12 — MEH-1128 Wave D1 (primitive extension): startAdornment + success — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-d1` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D2 NOT started — wait gate.** Pre-flight verified: #1641 (`4d82641`) + #1645 (`6b035d1`) both on origin/staging.
+- **Phase 0:** current prop list pasted (type/label/helperText/error/id/className/disabled/...rest) — no collision with startAdornment/success/successText. ADR-019 + `DESIGN.md:161` ("success = primary") verified aligned — no STOP.
+- **Shipped (3 files, ZERO call-sites):** `ui/Input.jsx` — startAdornment (conditional `relative` wrapper, `start-3` span, aria-hidden/pointer-events-none; clearing pad `ps-10`, or **`pe-10` for `dir="ltr"`** — MEH-992 ₪ parity, corrected against the spec's literal "ps-" after the gallery shot exposed the ltr mismatch) + success/successText (`border-primary` tint, Phosphor Check message, error>success precedence, helper kept when no successText). Gallery +4 examples. `ui-Input.test.jsx` 8→16 (2 snapshot locks captured PRE-change and passing unchanged POST-change = the byte-identical proof).
+- **Verify:** build exit 0 · full vitest 926/41-skip · Playwright 375px gallery (dev server — page is prod-gated `notFound`) + register step 2 on the prod build: default class string dumped and matched the pre-D1 string verbatim (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-d1-qa/`).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start D2.
+
+## 2026-07-12 — MEH-1141: branch-name guard (hook + CI snippet, mechanism > memory) — PR open
+
+- **Branch:** `feature/meh-1141-branch-name-guard` off `origin/staging` (`6b035d17`, incl. MEH-1132 + Wave C). GREEN — full autonomous authority. `Closes MEH-1141`. (This ticket's own branch conforms to the locked pattern — the irony is intentional; the trigger was MEH-1132 on `claude/*`.)
+- **Phase 0 (READ-ONLY, done):** hook mechanism confirmed = PreToolUse:Bash matcher in `.claude/settings.json:38-46` calling `bash .../.claude/hooks/<name>.sh` (precedent `check-bash-safety.sh`; ticket's assumed `check-path-exists.sh` doesn't exist here). **KEY FINDING:** both `.claude/hooks/**` (perm deny-list `Edit(.claude/hooks/**)` + Write blocked) **and** `.claude/settings.json` (deny-list + `protect-lint-config.sh`, MEH-442) are mechanically write-protected for CC → CC **cannot commit the hook or its wiring**. Per the ticket's A2 fallback (extended from settings→hook), **both ship verbatim in the PR body** for Sapir to apply.
+- **Delivered:** (1) `.claude/hooks/check-branch-name.sh` — full script in PR body (A2). Locked `ALLOWED_BRANCH_RE`, blocks non-conforming push + branch-create (checkout -b/-B, switch -c, branch <name>), zero friction on read paths, fail-open on jq. Validated in scratchpad: `bash -n` clean; self-test 4 required cases + push/switch/branch/5 read-path forms all correct (table in PR). (2) settings.json wiring block (A2, PR body). (3) `pr-checks.yml` `Branch name gate` CI snippet (A2, PR body — `.github/workflows/**` is CC-deny). (4) **in-repo:** `.claude/rules/workflow.md` rule-3 one-liner (locked pattern + hook pointer) + CHANGELOG + HANDOFF.
+- **In-repo diff = docs-only** (workflow.md + CHANGELOG + HANDOFF) since the executable artifacts are A2. Build+vitest unaffected (sanity green via Stop hook).
+- **Next:** open draft PR → ready → auto-merge (squash) on green required gates. **Sapir follow-up:** apply the hook file + settings.json wiring + pr-checks.yml snippet from the PR body (CC is write-blocked on all three).
+
+## 2026-07-11 — MEH-1074 Producer-Page sweep closeout + MEH-1044 Vercel preview-build gate
+
+### MEH-1044 — Vercel preview-build gate ✅ SHIPPED (PR #1642, merged to staging)
+
+**Incident:** 4 Vercel Hobby quotas blown simultaneously (Edge Requests 3.3M/1M, Function
+Invocations 2M/1M, Fluid Active CPU 10h/4h, Fast Origin Transfer 13.3GB/10GB).
+
+**Root cause (verified, Vercel `list_deployments` live):** 20 preview deployments in a ~6-minute
+window, almost all `githubCommitAuthorName: Claude` on `feature/meh-*` branches. Every push to
+every non-production branch built a full SSR preview. ADR-016 v2 (autonomous CC auto-merge)
+multiplied push frequency → the latent gap exploded.
+
+**The gap MEH-1044/MEH-1076 had NOT closed:** they fixed *E2E running against previews*
+(e2e.yml → localhost ✅ still correct). They did not stop *preview builds themselves*.
+
+**🔴 Root-Directory shadowing (the real discovery — CC Phase 0, independently verified):**
+Vercel's Root Directory is `frontend/`, so Vercel reads **`frontend/vercel.json` ONLY**.
+The repo-root `vercel.json` + `scripts/vercel-skip-build.sh` (MEH-494) were **never executed in
+production** — for ~2 months. CHANGELOG:3117 said "Verified locally" (the script was run by hand;
+nobody confirmed Vercel invoked it). Decisive evidence: `regions: ["fra1"]` exists only in
+`frontend/vercel.json` and the live deploy ran in fra1.
+⇒ The MEH-494 docs/backend-only skip also never fired — it contributed to the burn.
+
+**Fix (Sapir applied the bytes; CC is policy-blocked on `Edit(vercel.json)` — guardrail held,
+CC correctly refused to route around it via the GitHub API):**
+- `frontend/vercel.json`: inline `ignoreCommand` branch-gate —
+  `case "$VERCEL_GIT_COMMIT_REF" in staging|main) exit 1 ;; *) echo "skip..." && exit 0 ;; esac`
+  (exit 1 = BUILD, exit 0 = SKIP) + `"github": { "autoJobCancelation": true }`.
+- Deleted root `vercel.json` + `scripts/vercel-skip-build.sh` (dead since birth, no live refs).
+- docs/backend skip logic NOT ported (it never ran → nothing regresses). Possible future
+  staging-side optimization.
+
+**Rejected alternatives (documented so they don't get re-proposed):**
+- `git.deploymentEnabled: {"feature/*": false}` — Vercel has no reliable wildcard support
+  (vercel/vercel#4307), and it would be a 2nd parallel mechanism (MEH-271 anti-pattern).
+- External bash script — may not resolve from a non-root Root Directory.
+- Dashboard "Ignored Build Step" — **Pro-only**. The `ignoreCommand` *field* in vercel.json is not.
+
+**Verified live:** `feature/meh-1044-preview-build-gate` → CANCELED. Post-merge, PR #1640 and
+#1643 → **Canceled** ✅. Gate confirmed working.
+
+**⚠️ Gate scope caveat:** the gate lives in each branch's own `vercel.json`, so it only applies to
+branches cut/rebased **after** the merge. Pre-existing branches (e.g. #1644) keep building until
+rebased onto staging. Not a bug.
+
+**Hobby-tier reality check:** Spend Management does **not exist** on Hobby (it manages billing;
+Hobby has none — Vercel just pauses the project). The branch gate *is* the safety net.
+
+**Open / Sapir:**
+- [ ] Monitor Usage 48h — Edge Requests / Function Invocations should stop climbing (they won't
+      *drop*; they're cumulative per billing period. Flat = success).
+- [ ] Close MEH-1044 once flat. (PR was `Refs`, not `Closes`.)
+
+**⚠️ Process flag:** CC is cutting `claude/*` branches (e.g. `claude/meh-1132-implementation-xrlw17`,
+`claude/meh-1074-closeout-duukw2`) — violates CLAUDE.md rule 3 (`feature/meh-XXX-slug` only).
+CC flagged this itself. Worth enforcing in the prompt template.
+
+---
+
+### MEH-1074 — Producer-Page Trust & Contact sweep ✅ COMPLETE (8 PRs merged, 1 no-op)
+
+Root-cause sweep of the public business-profile page, driven by a screenshot audit.
+
+| Task | Ticket | PR | Fix |
+|---|---|---|---|
+| E | MEH-1111 | #1607 | voice micro-fixes (שאלו / היו / תוכלו) + canary verbs added |
+| F | MEH-1114 | #1609 | owner-only "מוצג רק לך" eyebrow + ADR-024 voice |
+| G | MEH-1117 | #1614 | QuestionChips hex→tokens + 14px interactive-text floor |
+| A | MEH-1049 | #1617 | contact truncation fix + share/contact disambiguation |
+| B | MEH-1120 | #1619 | TrustBadge recognition-only — killed the duplicate verification badge |
+| D | MEH-1121 | #1620 | masthead now fires for blank image arrays (ZFFS root cause) |
+| C | MEH-1124 | #1624 | header tag-row information classes (availability status line, drop מוצרים, dedup משלוח) |
+| I | MEH-1126 | #1627 | products section → image-first cards + typographic no-photo card |
+| H | — | — | verified no-op (demo seed already correct on staging) |
+
+**Root causes found (worth remembering as bug *classes*, not one-offs):**
+
+1. **Two parallel badge systems** (MEH-271 class) — `BadgeRow` (verification_tier, ADR-022) and
+   `TrustBadge` (trust_tier ≥ 3, MEH-51) both rendered on ProducerDetail → reader saw "מאומת" +
+   "עסק מאומת ✅" twice, in two styles. `Badge.jsx` documented this as MEH-602 known debt.
+   Fixed at the root: TrustBadge is now recognition-only (`tier < 4 → null`).
+2. **Value-as-label in a fixed-width button** — phone/Instagram were truncated ("054-5551…",
+   "@dana_so…") because the *data value* was the button label. **Class:** any button whose label is
+   user data needs full-width rows + `dir="ltr"` + no ellipsis.
+3. **Gender-split canary gap** — MEH-872 moved imperatives to plural but deferred the
+   pronoun/future class to MEH-885 → mixed-gender sentences ("לחצו…תוכלי"). Worse: the verbs
+   `שאלי` and `היי` were **missing from the canary list** in `.claude/commands/batch.md`, so they
+   escaped entirely. Now added.
+4. **Blank-string array ≠ empty array** — ZFFS's images array contained empty strings, so
+   `images.length > 0` was true and the MEH-815 Tinted Masthead never fired. Fixed by filtering
+   blank/whitespace entries (`ProducerDetail.jsx:78`).
+5. **Unmarked owner-view** — the MEH-554 owner-only reviews block read as a public block (even
+   Sapir misread it). Now carries an explicit "מוצג רק לך" eyebrow.
+6. **Delivery data-model quirk (open follow-up, MEH-271 class):** the delivery *pill* and the
+   delivery *chip* were driven by **different fields** (`has_delivery`/`delivery_count` vs
+   `delivery_areas`). Task C gated the single chip on the **union** so no producer loses the badge —
+   correct as a display fix, but the underlying two-field split remains. → Worth a follow-up ticket
+   to reconcile at the data layer, or the gap reappears on every new surface.
+
+**Reviewer Should-Consider items on merged code (low-risk, Sapir's call whether to ticket):**
+- ProducerHeader test covering the two new `hasDelivery` union fields (`delivery_areas` path is
+  covered; `has_delivery` / `delivery_count` are not).
+- `ProducerSections.products` test for the image/no-image branch + price ladder.
+
+**Still open from the audit (not in the sweep):**
+- Legal disclaimer wording — "מהמקור היא **פלטפורמה** בלבד" sits oddly against the
+  "מגזין, לא marketplace" DNA. Hard gate — Sapir decides, never CC.
+- Content gate: businesses can go live with stub bios ("בית עסק מקומי. עוד פרטים בקרוב.") — a
+  process gap in the approval flow, not a code bug.
+
+## 2026-07-12 — MEH-1128 Wave C (ui/Input adoption): admin forms — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-c` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave D NOT started — wait gate.** (Waves A #1635 + B #1641 merged; Sapir approved Wave C in-conversation 12/07.)
+- **Phase 0:** collision CLEAR — all 11 admin candidate files last touched by merged #1569; open-PR scan: #1640 (ProducerCard+seed) file-list verified, no admin files; #1639 touches the merged Wave B file only; rest dependabot/skills/docs. Inventory: 30 migratable fields / 3 files; filter toolbars + moderation textareas + content inline editors declared not-forms.
+- **Shipped (30):** ProducerForm 19 (incl. license input label-less inside `ProducerLicenseField`; its `inputClass` prop dropped) · settings 5 · outreach add-modal 6 (label-less, placeholder parity). **`inputClass` NOT deleted — still feeds 2 selects + 2 textareas (no primitive); comment documents the residual role.** Label typography converges to the canon slot. CitiesAutocomplete untouched (Wave D). No capability STOP; primitive untouched.
+- **Verify:** build exit 0 · full vitest 918/41-skip · Playwright 375px w/ mocked admin auth: producers/new + settings + outreach modal, all migrated inputs 44px (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-c-qa/`; settings vacation-return behind its toggle — migrated same as the visible date field).
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start Wave D.
+
+## 2026-07-12 — MEH-1132: edit-tab accordion → funnel order + "עוד אפשרויות" group + next-step marker (YELLOW) — MERGED
+
+- **Branch:** `claude/meh-1132-implementation-xrlw17` off `origin/staging` (divergence 0). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1132`. PR #1639.
+- **Phase 0 (mandatory, done — `edit/page.js` collision-hot):** at branch time no open PR touched `edit/page.js` (MEH-1128 Wave B had no open PR yet); current accordion order confirmed matching the ticket. **Wave B merged into staging during my work window** — its input-migration on `edit/page.js` (questions ×3) auto-merged cleanly against my reorder (disjoint regions: it swapped the questions-card `<input>`s to the `Input` primitive; I moved the whole card + added markers). Re-verified build+vitest post-merge.
+- **Shipped:** 3 files. `edit/page.js` — reordered 7 cards to **תמונות→קטגוריות→מיקום→ביו→מוצרים→ערוצי קשר→[divider]→שאלות**, added the `nextStepKey` derivation (first empty summary signal, location skipped for delivery-only) + `nextStepDot` (8px `bg-accent`, `role=img`, aria-label), presentational group divider. `EditAccordionCard.jsx` — one additive `marker` prop (default off). `he.json`+`en.json` — `more_group` + `next_step_aria` twins. **Anchor contract fully preserved** (ANCHOR_TO_KEY/KEY_TO_ANCHOR/applyHash untouched).
+- **Verify:** build exit 0 · full vitest **918 passed**/41 skipped (incl. EditAccordionCard/EditUnsavedGuard/ProfileCompletenessCard) · 0 physical RTL · Playwright self-QA (local `next start`, sandbox blocks Vercel preview per MEH-360): order + single marker on images + divider + all 4 deep-links expanding + unsaved-guard, desktop+mobile all PASS; CI `Playwright E2E (Vercel preview)` also green.
+- **Merged:** squash to staging on green `CI gate` + `Deploy gate` (post-merge-conflict resync against Wave B).
+
 ## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-b` off fresh `origin/staging` (`0896224`, incl. Wave A merge `cc16a63`), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave C NOT started — wait gate.** (Sapir approved Wave B in-conversation 12/07; Wave A merged as #1635.)

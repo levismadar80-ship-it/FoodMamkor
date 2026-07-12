@@ -3768,7 +3768,9 @@
         "categories_summary": "{count, plural, =0 {עוד לא נבחרו קטגוריות} one {קטגוריה אחת} two {שתי קטגוריות} other {# קטגוריות}}",
         "images_summary": "{count, plural, =0 {עוד אין תמונות} one {תמונה אחת} two {שתי תמונות} other {# תמונות}}",
         "location_missing": "עוד לא הוגדר מיקום",
-        "products_summary": "{count, plural, =0 {עוד אין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}"
+        "products_summary": "{count, plural, =0 {עוד אין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}",
+        "more_group": "עוד אפשרויות",
+        "next_step_aria": "השלב הבא להשלמה"
       },
       "contact_channels": {
         "heading": "ערוצי קשר",
