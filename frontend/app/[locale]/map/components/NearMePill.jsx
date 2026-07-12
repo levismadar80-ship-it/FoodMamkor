@@ -19,7 +19,10 @@ import { Crosshair } from "@phosphor-icons/react";
  *
  * Z-index 1000 = controls tier (above bottom-sheet:600), below cookie:1100.
  * Positioned at bottom-[16vh] to clear the PEEK=14vh collapsed bottom sheet.
- * RTL: start-4 / ps / pe logical props only.
+ * MEH-1133: moved start-4 → end-4 (RTL: right → left). The chat FAB is pinned
+ * to the physical RIGHT (ChatWidget.jsx `right:16`, z-9999), so `start-4`
+ * (=right in RTL) stacked the pill under the FAB; `end-4` (=left) clears it.
+ * RTL: end-4 / ps / pe logical props only.
  */
 export default function NearMePill({ onClick }) {
   const t = useTranslations();
@@ -28,7 +31,7 @@ export default function NearMePill({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label={t("map.near_me_pill.aria")}
-      className="lg:hidden absolute bottom-[16vh] start-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="lg:hidden absolute bottom-[16vh] end-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <Crosshair size={16} weight="bold" className="text-primary" aria-hidden="true" />
       {t("map.near_me_pill.label")}
