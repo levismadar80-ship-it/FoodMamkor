@@ -18,6 +18,10 @@ from conftest import auth_header, make_user
 # Minimal valid JPEG magic bytes (+ padding to pass size check)
 JPEG_HEADER = b"\xff\xd8\xff\xe0" + b"\x00" * 20
 PNG_HEADER = b"\x89PNG\r\n\x1a\n" + b"\x00" * 20
+# MEH-1152: ISO-BMFF `ftyp` box (4-byte size + "ftyp" + brand) — iPhone HEIC.
+HEIC_HEADER = b"\x00\x00\x00\x18ftypheic" + b"\x00" * 20
+# HEIF still-image brand (also emitted by iOS / Android).
+HEIF_MIF1_HEADER = b"\x00\x00\x00\x18ftypmif1" + b"\x00" * 20
 NOT_IMAGE = b"hello, this is not an image at all"
 
 
@@ -55,6 +59,35 @@ class TestAvatarUpload:
         with patch("app.routers.upload.settings") as mock_settings:
             mock_settings.cloudinary_cloud_name = None
             resp = _upload(client, auth_header(user), data=PNG_HEADER, filename="photo.png", content_type="image/png")
+        assert resp.status_code == 200
+
+    def test_heic_upload_accepted(self, client, db):
+        # MEH-1152: iPhone-default HEIC must pass the sniff gate (Cloudinary
+        # transcodes it natively via resource_type="image").
+        user = make_user(db)
+        with patch("app.routers.upload.settings") as mock_settings:
+            mock_settings.cloudinary_cloud_name = None
+            resp = _upload(
+                client,
+                auth_header(user),
+                data=HEIC_HEADER,
+                filename="photo.heic",
+                content_type="image/heic",
+            )
+        assert resp.status_code == 200
+
+    def test_heif_mif1_brand_accepted(self, client, db):
+        # MEH-1152: the `mif1` HEIF brand is also a valid still-image container.
+        user = make_user(db)
+        with patch("app.routers.upload.settings") as mock_settings:
+            mock_settings.cloudinary_cloud_name = None
+            resp = _upload(
+                client,
+                auth_header(user),
+                data=HEIF_MIF1_HEADER,
+                filename="photo.heif",
+                content_type="image/heif",
+            )
         assert resp.status_code == 200
 
     def test_non_image_rejected_400(self, client, db):

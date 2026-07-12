@@ -31,7 +31,19 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB — matches docs/SECURITY.md fix 6
 
 # Magic-byte signatures for the image formats we allow. Much cheaper and
 # less dependency-heavy than python-magic (which requires libmagic on the
-# host). These covers the three formats the frontend lets users upload.
+# host). Covers the formats the frontend lets users upload; Cloudinary
+# (resource_type="image") does the heavy transcode server-side.
+#
+# MEH-1152: HEIC/HEIF is the iPhone default (since iOS 11). It's an
+# ISO-BMFF container — bytes 4-8 are b"ftyp" and bytes 8-12 carry the
+# brand code. We accept the common still-image brands; Cloudinary ingests
+# HEIC natively so no client/server transcode is needed here (the sniff
+# gate was the only thing rejecting it).
+_HEIF_BRANDS = frozenset(
+    {b"heic", b"heix", b"hevc", b"hevx", b"heim", b"heis", b"mif1", b"msf1"}
+)
+
+
 def _sniff_image_type(header: bytes) -> str | None:
     if len(header) < 12:
         return None
@@ -43,6 +55,9 @@ def _sniff_image_type(header: bytes) -> str | None:
         return "webp"
     if header[:6] in (b"GIF87a", b"GIF89a"):
         return "gif"
+    # MEH-1152: HEIC/HEIF (iPhone default) — ISO-BMFF `ftyp` box + brand.
+    if header[4:8] == b"ftyp" and header[8:12] in _HEIF_BRANDS:
+        return "heic"
     return None
 
 
@@ -75,7 +90,7 @@ async def upload_image(
     if detected is None:
         raise HTTPException(
             status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF מותרות",
+            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
         )
 
     # Check freemium limit for producers
@@ -155,7 +170,7 @@ async def upload_avatar(
     if detected is None:
         raise HTTPException(
             status_code=400,
-            detail="רק תמונות JPG/PNG/WebP/GIF מותרות",
+            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
         )
 
     if not settings.cloudinary_cloud_name:

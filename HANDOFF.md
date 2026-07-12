@@ -41,6 +41,12 @@
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
 
+## 2026-07-12 — MEH-1152: HEIC/HEIF upload support (from MEH-1148 audit E9) — PR open
+
+- **Branch:** `feature/meh-1152-heic-upload-support` off `origin/staging` (`5cfc370`). GREEN — full autonomous authority: implement → PR → auto-merge on green build + tests. `Closes MEH-1152`.
+- **Shipped (2 files):** `backend/app/routers/upload.py` — `_sniff_image_type()` gains a HEIC/HEIF branch (`ftyp` box + `_HEIF_BRANDS` set) returning `"heic"`; both `/upload/image` + `/upload/avatar` error strings now list HEIC. No new dep, no change to the Cloudinary `resource_type="image"` call (it transcodes HEIC natively). `tests/test_avatar_upload.py` +2 (heic + mif1 brands → 200).
+- **Verify:** `test_avatar_upload.py` 9/9 · `test_api.py` upload subset 10/10 (uv run pytest). Manual iPhone-HEIC-on-preview deferred to Sapir (sandbox has no Cloudinary/device).
+
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
 - **Branch:** `feature/meh-1142-card-grid-heights` off `origin/staging` (the ticket-specified name). **Branch note:** work started on the harness-designated `claude/meh-1142-producercard-review-vh88my` (draft PR #1661), but MEH-1141's **Branch name gate is now LIVE on staging** and hard-fails `claude/*` (locked pattern `^(feature|levismadar80)/meh-…`) — the MEH-1134/MEH-1132 `claude/*` precedent predates the gate. Smadar approved recreating on the conforming ticket name; same commits re-pushed, #1661 closed, PR **#1662** opened. YELLOW — full autonomous authority: implement → PR → CI green → `/adversarial-review` (central component, rule 20) → Playwright self-QA → auto-merge. `Closes MEH-1142`.
