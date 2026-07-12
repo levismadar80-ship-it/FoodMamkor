@@ -13,6 +13,15 @@
 - **Verify:** build exit 0 · vitest **964 passed**/41 skipped · Playwright self-QA 390px (`qa-artifacts/MEH-1157/`): 401 → /login 0 forms; 429 + fail-open copies exact.
 - **Known residual (not filed):** `layout.js:51` still pushes unprefixed `/login` (loses /en locale at boot-401) — same pattern, file out of task scope; candidate follow-up ticket.
 
+## 2026-07-12 — MEH-1146 Chunk C: nearby-businesses discovery loop + action-hierarchy design rule — PR open (Closes MEH-1146)
+
+- **Branch:** `feature/meh-1146-producer-ia-c` off fresh `origin/staging` (incl. merged A #1670 + B #1673). Final chunk. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137` + **`Closes MEH-1146`**.
+- **Phase 0 (read-only, verified):** `GET /producers` supports `city`/`category`/`exclude`/`limit` (`producers.py:49-88`) → discovery-loop filter OK, **no STOP** (backend untouched). ReportButton auth-gated (returns null anonymous).
+- **Shipped (5 files + docs):** `useProducerData.js` (+`nearbyProducers` fetch by city, exclude self, limit 12). `ProducerDetail.jsx` (wire prop). `ProducerSections.jsx` (`MIN_NEARBY_BUSINESSES=4` const; discovery loop "עוד בתי עסק באזור" gated ≥4, page-end below location+disclaimer, **report stays below the loop**). i18n `sections.nearby.heading` he+en. **docs/DESIGN.md § Action hierarchy** added (the one-primary-per-viewport rule). Tests: `ProducerSectionsOrder.test.jsx` +3 (hidden@3, shown@4, report-below-loop DOM order).
+- **Design note (flagged):** kept the existing category "עסקים דומים" (≥3, mid-page) alongside the new city "עוד בתי עסק באזור" (≥4, page-end) — distinct dimensions, both reuse the producers-list API. Reviewer may consolidate.
+- **Verify:** build exit 0 · full vitest **961 passed**/41 skipped · Playwright self-QA (`qa-artifacts/MEH-1146-c/`): loop shown@6 / hidden@3, one primary/viewport 375+1280, 0 errors.
+- **Next:** PR (Closes MEH-1146) → CI green → auto-merge. **THEN: VRT baseline regen** — trigger `vrt-update.yml` (workflow_dispatch, or a push touching `frontend/e2e/visual/**`) on a follow-up so the `producer-detail-*-linux.png` baselines reflect the final A+B+C design (deferred from every chunk to avoid 3× regen; sandbox can't regen — font-stack mismatch). MEH-1146 epic complete after C merges + baselines regen.
+
 ## 2026-07-12 — MEH-1146 Chunk B: two-tier header + section reorder + delivery/pickup + demoted CTA — PR open
 
 - **Branch:** `feature/meh-1146-producer-ia-b` off fresh `origin/staging` (incl. merged Chunk A #1670). Second of 3 chunks. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137`.
@@ -82,6 +91,13 @@
 - **Epic-close grep:** 15+ (11/07) → canon everywhere in-scope; **66 `<Input>` tags**; ≤3 residual families in-scope (canon / textareas+selects no-primitive / composed comboboxes); out-of-scope surfaces (login, pw-reset, contact, rate, gb-detail, experiences, search, upgrade) = next-epic backlog.
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
+
+## 2026-07-12 — MEH-1150: account-delete recomputes 3rd-party ratings (from MEH-1148 audit A2) — PR ready, AWAITING SAPIR
+
+- **Branch:** `feature/meh-1150-account-delete-rating-recompute` off `origin/staging` (`5cfc370`). RED (central `auth.py`, irreversible delete path) — **DO NOT auto-merge; awaiting Sapir review** (per batch instruction). `Closes MEH-1150`.
+- **Shipped (2 files):** `auth.py::delete_account` — (a) before deletion, collect `reviewed_producer_ids` = distinct `ProducerReview.producer_id` where `user_id==user.id`, excluding the user's own producer; (b) after the existing cascade `db.commit()`, `_recompute_producer_rating(pid, db)` per id (local import — reviews.py imports auth). `+ProducerReview` to the models import; docstring extended. `tests/test_account_deletion_cascade.py` +2 (two-producer recompute proof + no-reviews path); removed a pre-existing unused `ProducerCategory` import the diff-lint surfaced.
+- **Which producer_ids / when (for review):** exactly the businesses the deleted user had reviewed, minus their own; recompute runs once per such id, AFTER the deletion commits (reviews already gone → recompute reads surviving reviews). No reviews → empty set → no-op.
+- **Verify:** ruff clean · cascade file 10/10 · `test_auth.py`+`test_api.py` **228 passed** (1 flaky rerun) — no regression to the delete path. Backend-only.
 
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
