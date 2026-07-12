@@ -13,6 +13,12 @@ import * as path from "path";
  * it from bottom-right to bottom-left in RTL — an approved visual change. This
  * touch re-triggers the vrt-update bot to regenerate the affected baselines
  * (map + producer-detail chrome capture the FAB corner). Not a regression.
+ * MEH-933 R2 (2026-07-12): /map mobile sticky-bar + near-me-pill fixes (PRs
+ * #1675/#1679) intentionally changed the mobile-map layout, and the MEH-1135
+ * FAB-move baselines above were never regenerated on staging (producer-detail +
+ * about still drift on the FAB corner). This touch re-triggers the vrt-update
+ * bot to regenerate ALL of them together in one hygiene pass. Approved visual
+ * changes, not regressions.
  *
  * Locks the design-parity sweep (Groups 1-5, gold #896714, header pill,
  * hero CTA, footer, static pages) against silent drift. One screenshot per
