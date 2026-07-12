@@ -73,6 +73,8 @@ export default function Footer() {
     { href: "/about", label: t("nav.footer.about") },
     { href: "/about/process", label: t("nav.footer.process") },
     { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
+    // MEH-1160: reader-facing share page — the site-level viral loop.
+    { href: "/share", label: t("share_page.footer_link") },
     // MEH-721: quiet replacement for the removed global-footer pitch CTA.
     // MEH-995: repointed to /join — the canonical recruitment door; the
     // wizard stays one tap away via /join's single CTA.

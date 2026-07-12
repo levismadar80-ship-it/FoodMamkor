@@ -760,3 +760,21 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 
 ### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
 The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.
+
+## Section 10 — /share "ספרו עלינו" (MEH-1160)
+
+> **Source:** MEH-1160 in-ticket Hebrew copy draft (dispatched 13/07/2026), shipped as drafted — no rewording needed. Share only, zero donation/payment copy (MEH-1159 track is separate). All keys under `share_page.*` + `seo.share.*` (he + en twins, MEH-978/840). Voice per ADR-024: functional UI = gender-neutral plural; intro narrative = brand-we.
+
+| Field | Value |
+|---|---|
+| **H1** | `ספרו עלינו` |
+| **Intro** | `מהמקור גדל מפה לאוזן. כל שיתוף עוזר לעוד קוראת לגלות בתי עסק שנבדקו אישית — ולעוד בעלת עסק למצוא את הבית שלה.` |
+| **WhatsApp** | `שתפו בוואטסאפ` |
+| **Copy** | `העתיקו קישור` · Toast: `הקישור הועתק` |
+| **Native** | `עוד דרכים לשתף` |
+| **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
+| **Prefilled message (WA + email body)** | `הכירו את מהמקור — מגזין של בתי עסק מקומיים לאוכל, כולם נבדקו אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`) |
+| **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
+| **seo.share.title** | `ספרו עלינו — מהמקור` |
+| **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
+| **Status** | ✅ MEH-1160 |
