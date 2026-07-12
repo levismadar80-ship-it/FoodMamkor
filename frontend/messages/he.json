@@ -725,9 +725,7 @@
     },
     "card": {
       "contact": {
-        "phone": "טלפון",
         "website": "אתר",
-        "email": "אימייל",
         "facebook": "פייסבוק",
         "external_order": "טופס הזמנות"
       },
@@ -739,8 +737,7 @@
       "aria": "שמירה"
       },
       "aria": {
-        "image_missing": "{name} — תמונה חסרה",
-        "primary_contact": "ערוץ קשר עיקרי: {method}"
+        "image_missing": "{name} — תמונה חסרה"
       },
       "badges": {
         "delivery_only": "🚚 משלוחים בלבד",

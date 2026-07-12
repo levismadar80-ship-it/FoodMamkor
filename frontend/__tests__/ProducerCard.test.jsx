@@ -9,9 +9,6 @@ import ProducerCard from "@/components/ProducerCard";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, values = {}) => {
     const flat = {
-      "producer.card.contact.phone": "טלפון",
-      "producer.card.contact.website": "אתר",
-      "producer.card.contact.email": "אימייל",
       "producer.card.favorites.saved_login_prompt": "שמרתי — התחברי לראות את כל המועדפים שלך",
       "producer.card.favorites.login_cta": "התחברי",
       "error.generic": "משהו השתבש, נסו שוב",
@@ -29,7 +26,6 @@ vi.mock("next-intl", () => ({
     };
     if (flat[key]) return flat[key];
     if (key === "producer.card.aria.image_missing") return `${values.name} — תמונה חסרה`;
-    if (key === "producer.card.aria.primary_contact") return `ערוץ קשר עיקרי: ${values.method}`;
     if (key === "producer.card.favorites_count_short") {
       // Match the HE plural rendering for `{count} שמרו` (one/two/other).
       return `${values.count} שמרו`;
@@ -209,20 +205,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByText(/גלי עוד/)).not.toBeInTheDocument();
   });
 
-  it("renders a single primary-method hint icon on the footer end", () => {
+  // MEH-1142: the decorative primary-contact-method hint was removed from the
+  // card footer (it read as a broken button; live contact CTAs live on
+  // /producer). The footer now renders price only.
+  it("never renders the decorative primary-method hint", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const hint = screen.getByTestId("primary-method-hint");
-    expect(hint).toHaveAttribute("data-method", "whatsapp");
-    expect(hint.querySelector('[data-testid="icon-whatsapp"]')).toBeTruthy();
+    expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("switches the primary-method icon when the method changes", () => {
+  it("keeps the hint absent regardless of primary_contact_method", () => {
     render(
       <ProducerCard producer={{ ...fullProducer, primary_contact_method: "phone" }} />,
     );
-    const hint = screen.getByTestId("primary-method-hint");
-    expect(hint).toHaveAttribute("data-method", "phone");
-    expect(hint.querySelector('[data-testid="icon-phone"]')).toBeTruthy();
+    expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
   it("truncates the price label (narrow max-width)", () => {
