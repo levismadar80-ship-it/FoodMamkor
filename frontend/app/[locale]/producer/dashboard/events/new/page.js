@@ -10,6 +10,7 @@ import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
+import Input from "@/components/ui/Input";
 // MEH-869: shared category set — aliased on import (no transform; the
 // create-form select reads the base {key,labelKey} shape directly, no "all").
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
@@ -106,17 +107,21 @@ export default function NewEventPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Field id="title" label={t("field_title_label")} required>
-          <input
-            id="title"
-            type="text"
-            required
-            value={form.title}
-            onChange={update("title")}
-            className="input-base"
-            placeholder={t("field_title_placeholder")}
-          />
-        </Field>
+        {/* MEH-1128 Wave B: single-line fields via ui/Input. The old
+            "input-base" recipe is this file's styled-jsx block below —
+            hardcoded hex tokens (#e5dfd3 / #2e6853) now converge to the
+            canon. The block + Field stay for the textarea/select leftovers.
+            No extra required-asterisk span: the *_label i18n values already
+            end with "*" (Field's appended span double-rendered it — "כותרת * *"). */}
+        <Input
+          id="title"
+          type="text"
+          label={t("field_title_label")}
+          required
+          value={form.title}
+          onChange={update("title")}
+          placeholder={t("field_title_placeholder")}
+        />
 
         <Field id="description" label={t("field_description_label")}>
           <textarea
@@ -130,37 +135,31 @@ export default function NewEventPage() {
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field id="event_date" label={t("field_date_label")} required>
-            <input
-              id="event_date"
-              type="date"
-              required
-              value={form.event_date}
-              onChange={update("event_date")}
-              className="input-base"
-            />
-          </Field>
-          <Field id="event_time" label={t("field_time_label")}>
-            <input
-              id="event_time"
-              type="time"
-              value={form.event_time}
-              onChange={update("event_time")}
-              className="input-base"
-            />
-          </Field>
+          <Input
+            id="event_date"
+            type="date"
+            label={t("field_date_label")}
+            required
+            value={form.event_date}
+            onChange={update("event_date")}
+          />
+          <Input
+            id="event_time"
+            type="time"
+            label={t("field_time_label")}
+            value={form.event_time}
+            onChange={update("event_time")}
+          />
         </div>
 
-        <Field id="location" label={t("field_location_label")}>
-          <input
-            id="location"
-            type="text"
-            value={form.location}
-            onChange={update("location")}
-            className="input-base"
-            placeholder={t("field_location_simple_placeholder")}
-          />
-        </Field>
+        <Input
+          id="location"
+          type="text"
+          label={t("field_location_label")}
+          value={form.location}
+          onChange={update("location")}
+          placeholder={t("field_location_simple_placeholder")}
+        />
 
         <div>
           <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>
@@ -190,27 +189,23 @@ export default function NewEventPage() {
         </Field>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <Field id="price" label={t("field_price_label_full")}>
-            <input
-              id="price"
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={update("price")}
-              className="input-base"
-            />
-          </Field>
-          <Field id="max_participants" label={t("field_max_participants_label_full")}>
-            <input
-              id="max_participants"
-              type="number"
-              min="1"
-              value={form.max_participants}
-              onChange={update("max_participants")}
-              className="input-base"
-              placeholder={t("field_max_participants_hint")}
-            />
-          </Field>
+          <Input
+            id="price"
+            type="number"
+            min="0"
+            label={t("field_price_label_full")}
+            value={form.price}
+            onChange={update("price")}
+          />
+          <Input
+            id="max_participants"
+            type="number"
+            min="1"
+            label={t("field_max_participants_label_full")}
+            value={form.max_participants}
+            onChange={update("max_participants")}
+            placeholder={t("field_max_participants_hint")}
+          />
         </div>
 
         <div>
@@ -252,17 +247,15 @@ export default function NewEventPage() {
           )}
         </div>
 
-        <Field id="registration_url" label={t("field_registration_url_label")}>
-          <input
-            id="registration_url"
-            type="url"
-            value={form.registration_url}
-            onChange={update("registration_url")}
-            className="input-base"
-            placeholder={t("field_registration_url_placeholder")}
-            dir="ltr"
-          />
-        </Field>
+        <Input
+          id="registration_url"
+          type="url"
+          label={t("field_registration_url_label")}
+          value={form.registration_url}
+          onChange={update("registration_url")}
+          placeholder={t("field_registration_url_placeholder")}
+          dir="ltr"
+        />
 
         <div className="flex gap-3 pt-4">
           <button
