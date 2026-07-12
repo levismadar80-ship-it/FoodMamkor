@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CaretDown, ArrowLeft, PaperPlaneTilt } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 // MEH-1112: visible email fallback next to the contact form (NN/g Contact-Us
@@ -386,37 +387,30 @@ export default function AboutPage() {
           </p>
 
           <form onSubmit={handleContact} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-6 max-w-[560px]">
-            <div className="grid gap-2">
-              <label htmlFor="contact-name" className="text-sm font-semibold text-text">
-                {t("contact.name_label")}
-              </label>
-              <input
-                id="contact-name"
-                type="text"
-                autoComplete="name"
-                required
-                placeholder={t("contact.name_placeholder")}
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="contact-email" className="text-sm font-semibold text-text">
-                {t("contact.email_label")}
-              </label>
-              <input
-                id="contact-email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder={t("contact.email_placeholder")}
-                value={form.email}
-                onChange={(event) => setForm({ ...form, email: event.target.value })}
-                className="w-full bg-surface-card border border-border rounded-sm px-4 py-3 outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/40 transition"
-                dir="ltr"
-              />
-            </div>
+            {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon). Each
+                Input's flex-col root replaces the grid cell; label weight lands
+                on the canon font-medium, matching /contact's form. */}
+            <Input
+              id="contact-name"
+              type="text"
+              label={t("contact.name_label")}
+              autoComplete="name"
+              required
+              placeholder={t("contact.name_placeholder")}
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+            <Input
+              id="contact-email"
+              type="email"
+              label={t("contact.email_label")}
+              autoComplete="email"
+              required
+              placeholder={t("contact.email_placeholder")}
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              dir="ltr"
+            />
             {/* MEH-1113: topic select — whitelisted, prefillable via ?topic=. Sent
                 in the POST body; backend prepends the Hebrew label + tags the subject. */}
             <div className="grid gap-2 md:col-span-2">

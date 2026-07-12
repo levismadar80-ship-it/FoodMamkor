@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { detailToMessage } from "@/lib/errors";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
+import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 
 // MEH-975: schema bounds for GroupBuyCommitRequest.quantity
@@ -312,29 +313,27 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Commit form */}
           {open && !expired && !gb.user_committed && (
             <form onSubmit={handleCommit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">{t("quantity_label")}</label>
-                <input
-                  type="number"
-                  min={QTY_MIN}
-                  max={QTY_MAX}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
-                  className="w-full border border-border rounded-[10px] px-3 py-2 text-right"
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">{t("phone_label")}</label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t("phone_placeholder")}
-                  className="w-full border border-border rounded-[10px] px-3 py-2"
-                  dir="ltr"
-                />
-              </div>
+              {/* MEH-1145 Wave E2: number + phone fields → ui/Input; the clamp-on-
+                  blur and the ltr end-anchored digits (a text-align via className,
+                  not a physical inset) pass through ...rest + className unchanged. */}
+              <Input
+                type="number"
+                label={t("quantity_label")}
+                min={QTY_MIN}
+                max={QTY_MAX}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                onBlur={(e) => setQuantity(clampQuantity(e.target.value))}
+                className="text-right"
+                dir="ltr"
+              />
+              <Input
+                label={t("phone_label")}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={t("phone_placeholder")}
+                dir="ltr"
+              />
               {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
               <button
                 type="submit"
