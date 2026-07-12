@@ -825,7 +825,11 @@ class TestProducers:
         "phone": "0501234567",
         "instagram": None,
         "website": None,
-        "category_ids": [],
+        # MEH-1153: ProducerCreate now requires ≥1 category. The guard tests
+        # below (401 / 403 / overlong-name-422) never reach the DB insert, so a
+        # non-empty placeholder id keeps them schema-valid (Regression rule 6);
+        # the 201-success test overrides this with a real seeded category id.
+        "category_ids": [1],
         "delivery_areas": [],
     }
 
@@ -848,9 +852,13 @@ class TestProducers:
         """Authenticated user → 201, producer created with status=pending
         (pre-existing behavior, now gated behind auth)."""
         user = make_user(db, email="creator@test.com")
+        # MEH-1153: this path inserts ProducerCategory rows, so the category
+        # must actually exist — override the placeholder id with a real one.
+        cat = make_category(db)
+        payload = {**self.VALID_PRODUCER_PAYLOAD, "category_ids": [cat.id]}
         resp = client.post(
             "/producers",
-            json=self.VALID_PRODUCER_PAYLOAD,
+            json=payload,
             headers=auth_header(user),
         )
         assert resp.status_code == 201
