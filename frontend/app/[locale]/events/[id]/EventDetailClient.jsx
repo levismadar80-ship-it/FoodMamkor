@@ -142,21 +142,21 @@ export default function EventDetailClient() {
               href={event.registration_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
             >
               {t("register")}
             </a>
           ) : (
             <Link
               href={`/producer/${event.producer_id}`}
-              className="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-primary-dark transition"
+              className="bg-primary text-white px-6 py-3 rounded-sm font-medium hover:bg-primary-dark transition"
             >
               {t("contact_producer")}
             </Link>
           )}
           <Link
             href="/events"
-            className="border border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-green-50 transition"
+            className="border border-primary text-primary px-6 py-3 rounded-sm font-medium hover:bg-green-50 transition"
           >
             {t("all_events")}
           </Link>
