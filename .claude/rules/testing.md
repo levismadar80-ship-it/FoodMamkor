@@ -157,3 +157,30 @@ over TLS 1.2.
 
 _Source: 2026-06-25 /map UX batch (handoff note) — surfaced while
 verifying MEH-942's GPS-button screenshot against live staging._
+
+---
+
+## QA-artifacts screenshot size discipline (MEH-1156)
+
+CC self-QA screenshots committed under `qa-artifacts/MEH-XXXX/` must fit a
+**2 MB-per-PR** budget. Raw Playwright PNGs (`fullPage` + `deviceScaleFactor: 2`)
+routinely land at 1–5 MB **each** — e.g. `qa-artifacts/MEH-1143/home-events-1280.png`
+= 4.75 MB, which busts the budget on its own.
+
+**Compress every screenshot on write, before committing.** Run the sharp-based
+helper from `frontend/` (where sharp is installed):
+
+```
+node scripts/compress-qa-screenshots.mjs qa-artifacts/MEH-XXXX/
+```
+
+Default = WebP q80 + downscale to ≤ 1440 px wide (undoes retina bloat). It
+replaces each `.png` with a `.webp` and prints the before/after. Proven on the
+4.75 MB capture above: **4.75 MB → 92 KB (-98%)**, hero/search/nav/buttons all
+still legible (`qa-artifacts/MEH-1156/home-1280-compressed.webp`). `--jpeg` gives
+a JPEG q80 fallback; `--keep` preserves the source PNG.
+
+**Status:** the 2 MB cap is a **convention**, not yet a CI gate — no size-check
+job exists in `.github/workflows/**` as of 2026-07-12 (`.github/workflows/**` is
+CC-deny, MEH-671). The gate YAML ships in the MEH-1156 PR body for Sapir to wire;
+until then, honor the cap by running the helper.
