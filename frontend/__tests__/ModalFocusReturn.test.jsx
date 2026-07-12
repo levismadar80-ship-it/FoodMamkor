@@ -36,7 +36,7 @@ vi.mock("next-intl", () => ({
       "modals.login_prompt.login_cta": "היכנסו",
       "modals.login_prompt.dismiss_cta": "אולי אחר כך",
       // report.* — ReportButton mounts via ModalFocusReturn tests (PR-C4a chunk 4a)
-      "report.trigger": "🚩 דווח על עסק",
+      "report.trigger": "דיווח על עסק",
       "report.form_heading": "דווח על עסק",
       "report.reason_placeholder": "ספר/י מה הבעיה...",
       "report.submit": "שלח דיווח",
@@ -144,7 +144,7 @@ describe("LoginPromptModal focus return (MEH-158)", () => {
 describe("ReportButton focus return + dialog semantics (MEH-158)", () => {
   it("returns focus to trigger button when modal is cancelled", async () => {
     render(<ReportButton producerId={1} />);
-    const trigger = screen.getByText("🚩 דווח על עסק");
+    const trigger = screen.getByText("דיווח על עסק");
     trigger.focus();
     expect(document.activeElement).toBe(trigger);
 
@@ -157,7 +157,7 @@ describe("ReportButton focus return + dialog semantics (MEH-158)", () => {
   it("modal has role=dialog and aria-modal", async () => {
     render(<ReportButton producerId={1} />);
     await act(async () => {
-      fireEvent.click(screen.getByText("🚩 דווח על עסק"));
+      fireEvent.click(screen.getByText("דיווח על עסק"));
     });
     const dialog = screen.getByRole("dialog");
     expect(dialog).toBeInTheDocument();

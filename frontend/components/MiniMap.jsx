@@ -85,7 +85,9 @@ export default function MiniMap({ lat, lng, name }) {
             className="flex items-center gap-1.5 border border-text text-text px-4 py-2 min-h-[44px] rounded-sm text-sm hover:bg-green-50 transition"
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-            {t("open_in_google")}-Google Maps
+            {/* MEH-1139: full label lives in the i18n value ("פתיחה במפות Google") —
+                no hardcoded "-Google Maps" suffix. Waze keeps the prefix pattern. */}
+            {t("open_in_google")}
           </a>
         </div>
       )}
