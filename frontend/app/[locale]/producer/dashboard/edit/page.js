@@ -22,7 +22,10 @@
  *           GET /categories, cloudinary thumbnails, component tests);
  *           MEH-1157 — locale-aware login redirect + 401 handling on the
  *           /producers/me fetch (no half-alive tab); BioPanelCard moved to
- *           cards.jsx for test export (MEH-1119 pattern).
+ *           cards.jsx for test export (MEH-1119 pattern);
+ *           MEH-1158 — accordion headers gained content previews (thumbs /
+ *           chips / first line / channel glyph) built from the same fetched
+ *           profile, via EditAccordionCard's additive `preview` prop.
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
@@ -33,12 +36,28 @@ import { useCallback, useEffect, useState } from "react";
 // instead of dropping an /en session onto the default-locale page.
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Warning, X } from "@phosphor-icons/react";
+// MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
+import {
+  Warning,
+  MapPin,
+  WhatsappLogo,
+  Phone,
+  InstagramLogo,
+  EnvelopeSimple,
+  Globe,
+  FacebookLogo,
+  ClipboardText,
+} from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
-import EditAccordionCard from "@/components/EditAccordionCard";
+import EditAccordionCard, {
+  PreviewThumbs,
+  PreviewChips,
+  PreviewEmpty,
+} from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
 import { BioPanelCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
@@ -61,6 +80,18 @@ const ANCHOR_TO_KEY = {
   "profile-categories": "categories",
   "profile-images": "images",
   "profile-products": "products",
+};
+
+// MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
+// card's header preview (icon + existing channel_* label, no new i18n).
+const CHANNEL_ICONS = {
+  whatsapp: WhatsappLogo,
+  phone: Phone,
+  instagram: InstagramLogo,
+  email: EnvelopeSimple,
+  website: Globe,
+  facebook: FacebookLogo,
+  external_order: ClipboardText,
 };
 
 // Canonical section id per open-state key — hash aliases above scroll to the
@@ -230,6 +261,69 @@ export default function ProducerDashboardEditPage() {
     />
   );
 
+  // MEH-1158: per-card header content previews (Airbnb Listings-tab peek),
+  // built from the SAME already-fetched profile the summaries read — no new
+  // API calls. Counts stay on the existing summary line (ICU plurals); the
+  // preview adds the content itself. Empty card → dashed muted placeholder,
+  // no copy. Products' first name comes from the initial payload join — the
+  // live in-card CRUD only feeds the count (payload-only constraint).
+  const categoryNames = (profile.categories || []).map((c) => c.name);
+  const bioFirstLine = (profile.description || "").trim().split("\n")[0];
+  const firstProductName = profile.products?.[0]?.name || "";
+  const primaryMethod = profile.primary_contact_method || "whatsapp";
+  const contactBacking = METHOD_FIELD[primaryMethod];
+  const contactFilled = contactBacking
+    ? Boolean((profile[contactBacking] || "").trim())
+    : true;
+  const ChannelIcon = CHANNEL_ICONS[primaryMethod] || WhatsappLogo;
+  const previews = {
+    images:
+      (profile.images?.length ?? 0) > 0 ? (
+        <PreviewThumbs urls={profile.images} />
+      ) : (
+        <PreviewEmpty />
+      ),
+    categories:
+      categoryNames.length > 0 ? (
+        <PreviewChips items={categoryNames} />
+      ) : (
+        <PreviewEmpty />
+      ),
+    location: (profile.city || "").trim() ? (
+      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
+        <MapPin size={16} aria-hidden="true" className="shrink-0" />
+        <span className="truncate">{profile.city}</span>
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    bio: bioFirstLine ? (
+      <span className="block text-xs font-normal text-fg-muted truncate">
+        {bioFirstLine}
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    products:
+      productsForMarker > 0 ? (
+        firstProductName ? (
+          <PreviewChips items={[firstProductName]} />
+        ) : undefined
+      ) : (
+        <PreviewEmpty />
+      ),
+    contact: contactFilled ? (
+      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
+        <ChannelIcon size={16} aria-hidden="true" className="shrink-0" />
+        <span className="truncate">{tAcc(`channel_${primaryMethod}`)}</span>
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    questions:
+      (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100: sticky unsaved-changes banner — sits just under the
@@ -262,6 +356,7 @@ export default function ProducerDashboardEditPage() {
         anchorId="images"
         title={t("images.heading")}
         summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
+        preview={previews.images}
         marker={nextStepKey === "images" ? nextStepDot : undefined}
         open={openKey === "images"}
         onToggle={() => toggleKey("images")}
@@ -280,6 +375,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("categories_summary", {
           count: profile.categories?.length ?? 0,
         })}
+        preview={previews.categories}
         marker={nextStepKey === "categories" ? nextStepDot : undefined}
         open={openKey === "categories"}
         onToggle={() => toggleKey("categories")}
@@ -300,6 +396,7 @@ export default function ProducerDashboardEditPage() {
           anchorId="location"
           title={t("location.heading")}
           summary={profile.city || tAcc("location_missing")}
+          preview={previews.location}
           marker={nextStepKey === "location" ? nextStepDot : undefined}
           open={openKey === "location"}
           onToggle={() => toggleKey("location")}
@@ -321,6 +418,7 @@ export default function ProducerDashboardEditPage() {
             ? tAcc("bio_present")
             : tAcc("bio_missing")
         }
+        preview={previews.bio}
         marker={nextStepKey === "bio" ? nextStepDot : undefined}
         open={openKey === "bio"}
         onToggle={() => toggleKey("bio")}
@@ -343,6 +441,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("products_summary", {
           count: productsCount ?? profile.products?.length ?? 0,
         })}
+        preview={previews.products}
         marker={nextStepKey === "products" ? nextStepDot : undefined}
         open={openKey === "products"}
         onToggle={() => toggleKey("products")}
@@ -364,6 +463,7 @@ export default function ProducerDashboardEditPage() {
         ]
           .filter(Boolean)
           .join(" · ")}
+        preview={previews.contact}
         marker={nextStepKey === "contact" ? nextStepDot : undefined}
         open={openKey === "contact"}
         onToggle={() => toggleKey("contact")}
@@ -393,6 +493,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("questions_summary", {
           count: (profile.custom_questions || []).length,
         })}
+        preview={previews.questions}
         open={openKey === "questions"}
         onToggle={() => toggleKey("questions")}
       >
