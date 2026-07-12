@@ -11,7 +11,7 @@ import { render, screen, fireEvent, createEvent, waitFor } from "@testing-librar
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
-import { ImagesCard } from "@/app/[locale]/producer/dashboard/edit/page";
+import { ImagesCard } from "@/app/[locale]/producer/dashboard/edit/cards";
 
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn() },

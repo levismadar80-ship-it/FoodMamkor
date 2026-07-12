@@ -25,8 +25,9 @@ vi.mock("@/app/[locale]/producer/[id]/ProducerDetail", () => ({
 
 import ProducerSlugPage, {
   generateMetadata,
-  isSlugShaped,
 } from "@/app/[locale]/[slug]/page";
+// MEH-1119: isSlugShaped moved to lib/slug.js (out of the page's export surface).
+import { isSlugShaped } from "@/lib/slug";
 import { serverFetch } from "@/lib/server-fetch";
 
 beforeEach(() => {

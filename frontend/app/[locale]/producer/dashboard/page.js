@@ -17,6 +17,7 @@ import PhoneVerifyCard from "@/components/PhoneVerifyCard";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
+import { clampPercent } from "@/lib/percent";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
@@ -687,7 +688,10 @@ function OverviewStatsHero({ analytics }) {
           conversion_rate (producer_me.py:634), whatsapp-only. Secondary,
           tinted, not a card. */}
       <p className="text-sm text-fg-muted text-center">
-        {t("kpi.conversion_line", { rate: conversion_rate })}
+        {/* MEH-1118: clamp to ≤100% — WhatsApp clicks aren't a strict subset of
+            page views (card/map CTAs count without a view), so the raw ratio
+            could read "133.3% מהצופות פנו אלייך". */}
+        {t("kpi.conversion_line", { rate: clampPercent(conversion_rate) })}
       </p>
 
       {/* "Business of the week" eligibility badge — kept on the Overview
