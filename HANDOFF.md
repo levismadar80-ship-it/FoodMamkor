@@ -5,13 +5,22 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-12 — MEH-1132: edit-tab accordion → funnel order + "עוד אפשרויות" group + next-step marker (YELLOW) — PR open
+## 2026-07-12 — MEH-1132: edit-tab accordion → funnel order + "עוד אפשרויות" group + next-step marker (YELLOW) — MERGED
 
-- **Branch:** `claude/meh-1132-implementation-xrlw17` off `origin/staging` (divergence 0). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1132`.
-- **Phase 0 (mandatory, done — `edit/page.js` collision-hot):** `git log` on the file = only MEH-1116 (#1622)/MEH-1106 (#1621)/MEH-1115 (#1615)/MEH-1100 (#1602)/MEH-1099 (#1593); **no open PR touches it** (10 open PRs listed, none edit/accordion/input — MEH-1128 Wave B has no open PR yet). Current accordion order confirmed matching the ticket (bio→questions→contact→categories→images→location→products). Clean — no race.
+- **Branch:** `claude/meh-1132-implementation-xrlw17` off `origin/staging` (divergence 0). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1132`. PR #1639.
+- **Phase 0 (mandatory, done — `edit/page.js` collision-hot):** at branch time no open PR touched `edit/page.js` (MEH-1128 Wave B had no open PR yet); current accordion order confirmed matching the ticket. **Wave B merged into staging during my work window** — its input-migration on `edit/page.js` (questions ×3) auto-merged cleanly against my reorder (disjoint regions: it swapped the questions-card `<input>`s to the `Input` primitive; I moved the whole card + added markers). Re-verified build+vitest post-merge.
 - **Shipped:** 3 files. `edit/page.js` — reordered 7 cards to **תמונות→קטגוריות→מיקום→ביו→מוצרים→ערוצי קשר→[divider]→שאלות**, added the `nextStepKey` derivation (first empty summary signal, location skipped for delivery-only) + `nextStepDot` (8px `bg-accent`, `role=img`, aria-label), presentational group divider. `EditAccordionCard.jsx` — one additive `marker` prop (default off). `he.json`+`en.json` — `more_group` + `next_step_aria` twins. **Anchor contract fully preserved** (ANCHOR_TO_KEY/KEY_TO_ANCHOR/applyHash untouched).
-- **Verify:** build exit 0 · full vitest **918 passed**/41 skipped (incl. EditAccordionCard/EditUnsavedGuard/ProfileCompletenessCard) · 0 physical RTL.
-- **Next:** open draft PR, Playwright self-QA (order + deep-links + unsaved guard, 375+desktop), auto-merge on CI green.
+- **Verify:** build exit 0 · full vitest **918 passed**/41 skipped (incl. EditAccordionCard/EditUnsavedGuard/ProfileCompletenessCard) · 0 physical RTL · Playwright self-QA (local `next start`, sandbox blocks Vercel preview per MEH-360): order + single marker on images + divider + all 4 deep-links expanding + unsaved-guard, desktop+mobile all PASS; CI `Playwright E2E (Vercel preview)` also green.
+- **Merged:** squash to staging on green `CI gate` + `Deploy gate` (post-merge-conflict resync against Wave B).
+
+## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-b` off fresh `origin/staging` (`0896224`, incl. Wave A merge `cc16a63`), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave C NOT started — wait gate.** (Sapir approved Wave B in-conversation 12/07; Wave A merged as #1635.)
+- **Phase 0 (mandatory, done):** collision check CLEAR — git log on all 4 files shows only merged work (MEH-1116/1106/1115/1100/1099/1096/1083); fresh open-PR scan: #1636 (events URL-sync test) touches only HANDOFF/CHANGELOG/a new test — none of the 4 wave files; rest dependabot/skills/docs. Inventory: 21 migratable fields / 19 sites + leftovers per file (table in PR).
+- **Shipped (21 fields):** edit questions ×3 · RecipeForm title+3 numbers (`text-end` keeps digit alignment) · group-buys title/product/unit/min/max/deadline(helper→`helperText`)/city · events/new title/date/time/location/price/max/url (kills the styled-jsx `input-base` hardcoded-hex recipe for single-line fields). Leftovers: ₪-adornment prices (Wave D icon-slot — primitive untouched), selects, textareas, checkboxes/radios/files, CitySearch.
+- **Surfaced:** (1) events/new required asterisk double-rendered on live (`*_label` values already carry "*" + Field's red span) — migrated labels now render it once (Wave A convention); leftover category select keeps the pre-existing double. (2) Type-scope: template says text/email/tel; operative rule = any plain single-line native input (see CHANGELOG). (3) `input-base` is a styled-jsx block in events/new (NOT dead CSS — earlier in-session note corrected).
+- **Verify:** build exit 0 · full vitest 914/41-skip · Playwright 375px all 4 forms w/ mocked producer auth (screenshots `docs/audits/screenshots/2026-07-meh1128-wave-b-qa/`), migrated inputs all 44px. No known screenshot gaps this wave.
+- **Next:** draft PR → ready → auto-merge (squash) on green. Do NOT start Wave C.
 
 ## 2026-07-11 — MEH-1131: /events city+category URL-sync unit test (test-only) — PR open
 
