@@ -41,6 +41,13 @@
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
 
+## 2026-07-12 — MEH-1150: account-delete recomputes 3rd-party ratings (from MEH-1148 audit A2) — PR ready, AWAITING SAPIR
+
+- **Branch:** `feature/meh-1150-account-delete-rating-recompute` off `origin/staging` (`5cfc370`). RED (central `auth.py`, irreversible delete path) — **DO NOT auto-merge; awaiting Sapir review** (per batch instruction). `Closes MEH-1150`.
+- **Shipped (2 files):** `auth.py::delete_account` — (a) before deletion, collect `reviewed_producer_ids` = distinct `ProducerReview.producer_id` where `user_id==user.id`, excluding the user's own producer; (b) after the existing cascade `db.commit()`, `_recompute_producer_rating(pid, db)` per id (local import — reviews.py imports auth). `+ProducerReview` to the models import; docstring extended. `tests/test_account_deletion_cascade.py` +2 (two-producer recompute proof + no-reviews path); removed a pre-existing unused `ProducerCategory` import the diff-lint surfaced.
+- **Which producer_ids / when (for review):** exactly the businesses the deleted user had reviewed, minus their own; recompute runs once per such id, AFTER the deletion commits (reviews already gone → recompute reads surviving reviews). No reviews → empty set → no-op.
+- **Verify:** ruff clean · cascade file 10/10 · `test_auth.py`+`test_api.py` **228 passed** (1 flaky rerun) — no regression to the delete path. Backend-only.
+
 ## 2026-07-12 — MEH-1142: card grid heights (home + favorites) + decorative method-hint removal — PR open
 
 - **Branch:** `feature/meh-1142-card-grid-heights` off `origin/staging` (the ticket-specified name). **Branch note:** work started on the harness-designated `claude/meh-1142-producercard-review-vh88my` (draft PR #1661), but MEH-1141's **Branch name gate is now LIVE on staging** and hard-fails `claude/*` (locked pattern `^(feature|levismadar80)/meh-…`) — the MEH-1134/MEH-1132 `claude/*` precedent predates the gate. Smadar approved recreating on the conforming ticket name; same commits re-pushed, #1661 closed, PR **#1662** opened. YELLOW — full autonomous authority: implement → PR → CI green → `/adversarial-review` (central component, rule 20) → Playwright self-QA → auto-merge. `Closes MEH-1142`.

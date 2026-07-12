@@ -18,7 +18,6 @@ from app.models.models import (
     Favorite,
     PhoneOtpToken,
     Producer,
-    ProducerCategory,
     ProducerFollower,
     ProducerReview,
 )
@@ -67,6 +66,58 @@ def test_delete_account_cascades_producer_children(client, db):
 
 def test_delete_account_without_producer_still_works(client, db):
     """Regression: consumer account deletion unchanged by the cascade."""
+    user = make_user(db, role="consumer")
+    r = client.delete("/auth/me", headers=auth_header(user))
+    assert r.status_code == 200
+
+
+# --- MEH-1150: recompute third-party ratings after a reviewer deletes ---
+
+
+def _seed_review(db, producer_id, user_id, stars):
+    db.add(ProducerReview(producer_id=producer_id, user_id=user_id, stars=stars))
+    db.commit()
+
+
+def test_delete_account_recomputes_third_party_ratings(client, db):
+    """MEH-1150: deleting a reviewer refreshes avg_rating / reviews_count on the
+    OTHER businesses they reviewed — recomputed from the SURVIVING reviews, not
+    just left counting the (now-deleted) review.
+    """
+    reviewer = make_user(db, role="consumer")
+    other = make_user(db, role="consumer")
+
+    # P1: reviewed by both reviewer (4*) and other (2*). After the reviewer is
+    # deleted, only other's 2* survives → count 1, avg 2.0.
+    p1 = make_producer(db, name="Recompute P1", status="approved")
+    _seed_review(db, p1.id, reviewer.id, 4)
+    _seed_review(db, p1.id, other.id, 2)
+    # P2: reviewed ONLY by the reviewer (5*). After deletion → count 0, avg 0.0.
+    p2 = make_producer(db, name="Recompute P2", status="approved")
+    _seed_review(db, p2.id, reviewer.id, 5)
+
+    # Stale aggregates as the live review flow would have left them.
+    p1.avg_rating, p1.reviews_count = 3.0, 2
+    p2.avg_rating, p2.reviews_count = 5.0, 1
+    db.commit()
+    p1_id, p2_id = p1.id, p2.id
+
+    r = client.delete("/auth/me", headers=auth_header(reviewer))
+    assert r.status_code == 200
+
+    db.expire_all()  # drop the identity-map cache; reread the committed values
+    p1 = db.query(Producer).filter(Producer.id == p1_id).first()
+    p2 = db.query(Producer).filter(Producer.id == p2_id).first()
+    # BOTH producers must be recomputed (the manual-trace concern in the ticket).
+    assert p1.reviews_count == 1
+    assert p1.avg_rating == 2.0
+    assert p2.reviews_count == 0
+    assert p2.avg_rating == 0.0
+
+
+def test_delete_account_no_reviews_no_error(client, db):
+    """MEH-1150: a user who never reviewed anything still deletes cleanly
+    (empty producer-id set → no recompute work, no error)."""
     user = make_user(db, role="consumer")
     r = client.delete("/auth/me", headers=auth_header(user))
     assert r.status_code == 200
