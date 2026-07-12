@@ -3867,6 +3867,7 @@
         "heading": "AI bio",
         "intro": "Enter an Instagram handle, a link, or a free-form description — we'll create a Hebrew bio of up to 150 characters.",
         "source_placeholder": "@handle / Instagram link / free description",
+        "bio_placeholder": "Write your business description here — up to 150 characters",
         "generate_cta": "Create bio",
         "generating": "Creating…",
         "save_cta": "Save bio",
