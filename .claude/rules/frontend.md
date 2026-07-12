@@ -56,15 +56,18 @@ All RTL rules, logical properties, and exceptions:
 
 ## Map z-index tokens
 
-Quick reference (full context in [.claude/rules/rtl.md](./rtl.md)):
+Quick reference (canonical ledger + full context in [.claude/rules/rtl.md](./rtl.md)
+— keep these two in sync):
 
 ```
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
-legend:800 → controls/zoom/search:1000 → cookie:1100 →
-filter-sheet:1200 → chat:9999
+legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
+global header/nav (+ account dropdown):1050 →
+cookie:1100 → filter-sheet:1200 → Toaster:2000 → chat:9999
 ```
 
-Do not use arbitrary z-index values on `/map`.
+Do not use arbitrary z-index values on `/map`. Floating elements use logical
+props only; the bottom-end corner belongs to the chat FAB (MEH-1135 — see rtl.md).
 
 ---
 

@@ -67,13 +67,17 @@ cases, always use logical properties.
 tiles:0 → markers:400 → tooltips:500 → bottom-sheet:600 →
 legend:800 → controls/zoom/search:1000 → BottomNav pill:1000 →
 global header/nav (+ account dropdown):1050 →
-cookie banner:1100 → filter-sheet:1200 → chat FAB:9999
+cookie banner:1100 → filter-sheet:1200 → Toaster (toast stack):2000 → chat FAB:9999
 ```
 
 Code is the source of truth; this ledger mirrors it — update the table
 when a component's z-index changes (grep'd MEH-861: `BottomNav.jsx:152`
-`z-[1000]`, `CookieBanner.jsx:68` `z-[1100]`, `ChatWidget.jsx:174`
-`zIndex: 9999`; MEH-1075: `FilterSheet.jsx` `z-[1200]` — above
+`z-[1000]`, `CookieBanner.jsx:68` `z-[1100]`, `ChatWidget.jsx`
+`zIndex: 9999`; MEH-1135: `Toaster.jsx:36` `z-[2000]` — the toast stack
+sat above filter-sheet/cookie but was previously unrecorded in this
+ledger; and the chat FAB moved from physical `right` to logical
+`insetInlineEnd` (launcher + panel), so it now owns the bottom-END corner
+per locale — z unchanged at 9999; MEH-1075: `FilterSheet.jsx` `z-[1200]` — above
 controls/cookie, below chat; portaled to `<body>` below lg; MEH-1109:
 the global `Header.jsx:213` `<header>` moved `z-[1000]` → `z-[1050]` —
 `sticky`+`z-index` makes it a stacking context, so the UserMenu dropdown
@@ -85,6 +89,17 @@ cookie:1100).
 Bottom sheets must ALWAYS sit below map controls. See `globals.css` for
 CSS overrides and `MapClient.jsx` for the Tailwind classes that reference
 these tokens.
+
+### Floating-elements corner ownership (MEH-1135)
+
+Floating elements position with **logical props only** (`insetInlineStart` /
+`insetInlineEnd`, `start-*` / `end-*`) — never physical `right` / `left`. **The
+bottom-end corner belongs to the chat FAB** (`ChatWidget.jsx`, `insetInlineEnd`).
+A physical-`right` FAB caused three repeat collisions with logical `start-*`/`end-*`
+floats (MEH-979 · MEH-970 · MEH-1133) because in RTL physical-right == the inline
+start; MEH-1135 made the FAB logical so the whole system shares one axis. Any new
+bottom-corner float must clear the FAB's corner (or the near-me pill's) on the
+**vertical** axis rather than contend for the same horizontal edge.
 
 ---
 
