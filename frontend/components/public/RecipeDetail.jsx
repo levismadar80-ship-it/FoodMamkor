@@ -12,10 +12,14 @@
  *   5. Instructions (split by newline → numbered list)
  *   6. Related products (links to existing product surfaces) — hidden
  *      entirely when no products are linked (silent, per spec).
- *   7. Back link to the producer page
+ *   7. Producer contact CTA — PrimaryContactButton + profile link.
+ *   8. Back link to the producer page
  *
  * Pure render — no fetching. The parent page does both fetches and
  * passes hydrated objects.
+ *
+ * History: MEH-591 (creation); MEH-1149 (contact CTA — closes the
+ * conversion dead-end found in audit MEH-1144 G7).
  */
 
 import Link from "next/link";
@@ -23,6 +27,7 @@ import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import PrimaryContactButton from "@/components/PrimaryContactButton";
 
 function splitLines(text) {
   if (!text) return [];
@@ -187,10 +192,30 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
         </section>
       )}
 
+      {/* Producer contact CTA (MEH-1149; audit MEH-1144 G7) — closes the
+          recipe conversion dead-end. PrimaryContactButton self-collapses to
+          null for a contactless producer, so the profile link renders alone. */}
+      <section className="mt-8 border-t border-border pt-8">
+        <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
+          {t("producer_cta_heading", { name: producer.name })}
+        </h2>
+        <div className="flex flex-col items-start gap-1 w-full sm:max-w-xs">
+          <div className="w-full">
+            <PrimaryContactButton producer={producer} />
+          </div>
+          <Link
+            href={`/${producer.slug}`}
+            className="text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            {t("producer_cta_link", { name: producer.name })}
+          </Link>
+        </div>
+      </section>
+
       {/* Back link */}
       <Link
         href={`/${producer.slug}`}
-        className="text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="mt-8 inline-block text-sm text-primary hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         {t("back_to_producer")}
       </Link>
