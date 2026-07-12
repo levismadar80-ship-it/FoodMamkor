@@ -9,7 +9,16 @@
 
 - **Branch:** `feature/meh-1131-events-url-sync-test` off `origin/staging` (divergence 0). LOW-RISK test-only. `Refs MEH-1131`.
 - **Shipped:** new `frontend/__tests__/EventsUrlSync.test.jsx` (4 jsdom cases) for the MEH-1085/DISC-08 URL sync — mount seeding from `?city=&category=`, cross-tab vocab guard, change→`replaceState` updated query, `switchTab`→clears city+category. **EventsClient.jsx source untouched** (per constraint). All 4 green → live behavior matches contract, **no bug surfaced** (STOP condition not triggered). Mocks next/navigation + children; real `event-categories.js` for the vocab check; pattern per `useHomePageDietChipsUrl.test.jsx`.
-- **Verify:** full vitest **918 passed**/41 skipped.
+- **Verify:** full vitest **918 passed**/41 skipped. Folded PR #1636 review minors (test-only, `Refs`-per-spec kept): category keys now sourced from `event-categories.js` SoT, inline comments → English.
+
+## 2026-07-11 — MEH-1128 Wave A (ui/Input adoption): register producer wizard — draft PR
+
+- **Branch:** `feature/meh-1128-input-adoption-wave-a` off fresh `origin/staging` (incl. the MEH-1127 merge), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave B NOT started — wait gate (Sapir approves next wave).**
+- **Phase 0 (mandatory, done):** input inventory table (14 inputs) + collision check. `git log` on both wave files = only MEH-1127 (#1633) + MEH-1083 (#1569); no open PR touches the register files (dashboard collision tickets MEH-1093/1096/1099/1116 are Wave B). Clean.
+- **Shipped (`RegisterProducerClient.jsx` only, 5 migrations):** account name, account email, business name, address (hint → `helperText` slot), tagline (counter kept sibling) → `<Input>` primitive. Mechanical swap; `...rest` passes value/onChange/required/dir/data-testid/aria through — zero behavior change. Leftovers documented in PR: password, phone (3-state msg), 2× numeric license (`text-right`+multistate), city (CitySearch, Wave D), description textarea, 4 checkboxes.
+- **Key finding:** `RegisterClient.jsx` (consumer) = **0 migrations** — name/email have a persistent success/valid affordance (green border + confirmation) `ui/Input` can't express, and the over-engineering guard forbids adding a success state in Waves A–C → documented leftovers. Surfaced per rule 4.
+- **Verify:** build exit 0 · vitest 18/18 (RegisterProducerClient + ModalFocusReturn) · Playwright 375px: migrated inputs 44px == siblings; screenshots `docs/audits/screenshots/2026-07-meh1128-wave-a-qa/` (steps 1+2; tagline/story shot omitted — sandbox can't populate categories to reach story, migration identical to captured 4).
+- **Next:** open draft PR, auto-merge on CI green. Do NOT start Wave B.
 
 ## 2026-07-11 — MEH-1074 LAUNCH SPRINT END-STATE (waves 0–4 complete; 4 PRs merge-ready, blocked on account-level GitHub Actions)
 

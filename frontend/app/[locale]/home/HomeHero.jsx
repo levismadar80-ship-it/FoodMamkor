@@ -148,7 +148,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
         <button
           type="button"
           onClick={onScrollDown}
-          className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-full transition-colors duration-base ease-quart focus-ring"
+          className="bg-action-primary hover:bg-action-primary-hover text-white font-medium text-sm px-6 py-2.5 rounded-sm transition-colors duration-base ease-quart focus-ring"
         >
           {t("home.hero.cta_primary")}
         </button>
@@ -157,7 +157,7 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           type="button"
           onClick={onNearMe}
           disabled={geoLoading}
-          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-full hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
+          className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm disabled:opacity-50 focus-ring"
         >
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}

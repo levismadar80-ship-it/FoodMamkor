@@ -506,7 +506,7 @@ function EmptyState({ tab, t, onReset }) {
         {isExp ? (
           <Link
             href="/experiences/new"
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <Plus size={18} weight="bold" />
             {t("empty_experiences_cta")}
@@ -515,7 +515,7 @@ function EmptyState({ tab, t, onReset }) {
           <button
             type="button"
             onClick={onReset}
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-full"
+            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-5 py-3 rounded-sm"
           >
             <ArrowCounterClockwise size={18} weight="bold" />
             {t("empty_events_cta")}
