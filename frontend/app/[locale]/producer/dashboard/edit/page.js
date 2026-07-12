@@ -182,6 +182,39 @@ export default function ProducerDashboardEditPage() {
     );
   }
 
+  // MEH-1132: next-step gold marker. The FIRST card in the new funnel order
+  // whose summary signal reads empty gets a single 8px accent dot — so the
+  // owner always knows where to start. Derived from the SAME profile fields
+  // the summaries above compute (no producer-completeness import, no fetch);
+  // location is skipped for delivery-only profiles (its card isn't mounted).
+  // Falls through to null when nothing is missing → no marker at all.
+  const productsForMarker = productsCount ?? profile.products?.length ?? 0;
+  const nextStepKey =
+    (profile.images?.length ?? 0) === 0
+      ? "images"
+      : (profile.categories?.length ?? 0) === 0
+        ? "categories"
+        : profile.has_physical_location !== false && !(profile.city || "").trim()
+          ? "location"
+          : !(profile.description || "").trim()
+            ? "bio"
+            : productsForMarker < 3
+              ? "products"
+              : !(profile.phone || "").trim()
+                ? "contact"
+                : null;
+  // ADR-019 / ADR-024: incomplete-affordance is gold (bg-accent = #896714),
+  // never red — a partial profile is progress. role=img + aria-label so the
+  // marker is announced; RTL logical margin-start (ms-*) keeps it beside the
+  // title on both directions.
+  const nextStepDot = (
+    <span
+      role="img"
+      aria-label={tAcc("next_step_aria")}
+      className="inline-block w-2 h-2 rounded-full bg-accent align-middle ms-1.5 shrink-0"
+    />
+  );
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100: sticky unsaved-changes banner — sits just under the
@@ -203,7 +236,68 @@ export default function ProducerDashboardEditPage() {
           collapsed (hidden-toggle inside EditAccordionCard) so unsaved state
           and the MEH-1100 guard survive collapse. One open at a time. */}
 
-      {/* MEH-56: AI bio writer panel */}
+      {/* MEH-1132: accordion cards ordered by discovery/conversion funnel
+          (GBP + Airbnb pattern — photos/categories are the strongest levers;
+          advanced fields drop under "עוד אפשרויות" below). Order source:
+          ProfileCompletenessCard.jsx:140-155 (the 4-step checklist funnel).
+          Anchor ids are UNCHANGED — only the render order moved. */}
+
+      {/* ① Edit-tab chunk B — producer-facing gallery images editor */}
+      <EditAccordionCard
+        anchorId="images"
+        title={t("images.heading")}
+        summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
+        marker={nextStepKey === "images" ? nextStepDot : undefined}
+        open={openKey === "images"}
+        onToggle={() => toggleKey("images")}
+      >
+        <ImagesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* ② Edit-tab chunk A — producer-facing categories editor */}
+      <EditAccordionCard
+        anchorId="categories"
+        title={t("categories.heading")}
+        summary={tAcc("categories_summary", {
+          count: profile.categories?.length ?? 0,
+        })}
+        marker={nextStepKey === "categories" ? nextStepDot : undefined}
+        open={openKey === "categories"}
+        onToggle={() => toggleKey("categories")}
+      >
+        <CategoriesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* ③ Edit-tab chunk C — producer-facing location/coords editor.
+          MEH-213: only physical-location producers have a map pin; delivery-only
+          businesses intentionally have no lat/lng, so the card is hidden for
+          them (has_physical_location === false). */}
+      {profile.has_physical_location !== false && (
+        <EditAccordionCard
+          anchorId="location"
+          title={t("location.heading")}
+          summary={profile.city || tAcc("location_missing")}
+          marker={nextStepKey === "location" ? nextStepDot : undefined}
+          open={openKey === "location"}
+          onToggle={() => toggleKey("location")}
+        >
+          <LocationCard
+            profile={profile}
+            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+            reportDirty={reportDirty}
+          />
+        </EditAccordionCard>
+      )}
+
+      {/* ④ MEH-56: AI bio writer panel */}
       <EditAccordionCard
         anchorId="bio"
         title={t("bio.heading")}
@@ -212,6 +306,7 @@ export default function ProducerDashboardEditPage() {
             ? tAcc("bio_present")
             : tAcc("bio_missing")
         }
+        marker={nextStepKey === "bio" ? nextStepDot : undefined}
         open={openKey === "bio"}
         onToggle={() => toggleKey("bio")}
       >
@@ -222,7 +317,61 @@ export default function ProducerDashboardEditPage() {
         />
       </EditAccordionCard>
 
-      {/* MEH-210 Phase 2 — custom WhatsApp question chips */}
+      {/* ⑤ MEH-999 follow-up — producer-facing product-catalog editor. Self-
+          fetching (no profile prop): full CRUD against /producers/me/products.
+          Relocated from settings/page.jsx, where it was defined but never
+          mounted. MEH-1116: summary count seeds from the page profile's joined
+          products and goes live via onCountChange once the card has fetched. */}
+      <EditAccordionCard
+        anchorId="products"
+        title={tProducts("section_heading")}
+        summary={tAcc("products_summary", {
+          count: productsCount ?? profile.products?.length ?? 0,
+        })}
+        marker={nextStepKey === "products" ? nextStepDot : undefined}
+        open={openKey === "products"}
+        onToggle={() => toggleKey("products")}
+      >
+        <ProductsSection embedded onCountChange={setProductsCount} />
+      </EditAccordionCard>
+
+      {/* ⑥ MEH-296 Chunk 3b — producer-facing contact-channel editor */}
+      <EditAccordionCard
+        anchorId="contact-channels"
+        title={t("contact_channels.heading")}
+        summary={[
+          profile.phone ? tAcc("contact_phone_ok") : null,
+          tAcc("contact_primary", {
+            channel: tAcc(
+              `channel_${profile.primary_contact_method || "whatsapp"}`
+            ),
+          }),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        marker={nextStepKey === "contact" ? nextStepDot : undefined}
+        open={openKey === "contact"}
+        onToggle={() => toggleKey("contact")}
+      >
+        <ContactChannelsCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1132: quiet "more options" group divider — presentational only
+          (muted label + hairline), NOT a nested accordion. Advanced/optional
+          fields (custom questions) live below the funnel-critical cards, the
+          GBP "More" idiom. */}
+      <div className="flex items-center gap-3 pt-2">
+        <span className="text-xs font-medium text-fg-muted">
+          {tAcc("more_group")}
+        </span>
+        <span className="flex-1 h-px bg-border" aria-hidden="true" />
+      </div>
+
+      {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
       <EditAccordionCard
         anchorId="questions"
         title={t("custom_questions.heading")}
@@ -237,99 +386,6 @@ export default function ProducerDashboardEditPage() {
           onSave={(q) => setProfile((p) => p ? { ...p, custom_questions: q } : p)}
           reportDirty={reportDirty}
         />
-      </EditAccordionCard>
-
-      {/* MEH-296 Chunk 3b — producer-facing contact-channel editor */}
-      <EditAccordionCard
-        anchorId="contact-channels"
-        title={t("contact_channels.heading")}
-        summary={[
-          profile.phone ? tAcc("contact_phone_ok") : null,
-          tAcc("contact_primary", {
-            channel: tAcc(
-              `channel_${profile.primary_contact_method || "whatsapp"}`
-            ),
-          }),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        open={openKey === "contact"}
-        onToggle={() => toggleKey("contact")}
-      >
-        <ContactChannelsCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* Edit-tab chunk A — producer-facing categories editor */}
-      <EditAccordionCard
-        anchorId="categories"
-        title={t("categories.heading")}
-        summary={tAcc("categories_summary", {
-          count: profile.categories?.length ?? 0,
-        })}
-        open={openKey === "categories"}
-        onToggle={() => toggleKey("categories")}
-      >
-        <CategoriesCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* Edit-tab chunk B — producer-facing gallery images editor */}
-      <EditAccordionCard
-        anchorId="images"
-        title={t("images.heading")}
-        summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
-        open={openKey === "images"}
-        onToggle={() => toggleKey("images")}
-      >
-        <ImagesCard
-          profile={profile}
-          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-          reportDirty={reportDirty}
-        />
-      </EditAccordionCard>
-
-      {/* Edit-tab chunk C — producer-facing location/coords editor.
-          MEH-213: only physical-location producers have a map pin; delivery-only
-          businesses intentionally have no lat/lng, so the card is hidden for
-          them (has_physical_location === false). */}
-      {profile.has_physical_location !== false && (
-        <EditAccordionCard
-          anchorId="location"
-          title={t("location.heading")}
-          summary={profile.city || tAcc("location_missing")}
-          open={openKey === "location"}
-          onToggle={() => toggleKey("location")}
-        >
-          <LocationCard
-            profile={profile}
-            onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
-            reportDirty={reportDirty}
-          />
-        </EditAccordionCard>
-      )}
-
-      {/* MEH-999 follow-up — producer-facing product-catalog editor. Self-
-          fetching (no profile prop): full CRUD against /producers/me/products.
-          Relocated from settings/page.jsx, where it was defined but never
-          mounted. MEH-1116: summary count seeds from the page profile's joined
-          products and goes live via onCountChange once the card has fetched. */}
-      <EditAccordionCard
-        anchorId="products"
-        title={tProducts("section_heading")}
-        summary={tAcc("products_summary", {
-          count: productsCount ?? profile.products?.length ?? 0,
-        })}
-        open={openKey === "products"}
-        onToggle={() => toggleKey("products")}
-      >
-        <ProductsSection embedded onCountChange={setProductsCount} />
       </EditAccordionCard>
     </div>
   );

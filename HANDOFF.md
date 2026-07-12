@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1132: edit-tab accordion → funnel order + "עוד אפשרויות" group + next-step marker (YELLOW) — MERGED
+
+- **Branch:** `claude/meh-1132-implementation-xrlw17` off `origin/staging` (divergence 0). YELLOW — full autonomous authority: implement → PR → CI green → Playwright self-QA → auto-merge. `Closes MEH-1132`. PR #1639.
+- **Phase 0 (mandatory, done — `edit/page.js` collision-hot):** at branch time no open PR touched `edit/page.js` (MEH-1128 Wave B had no open PR yet); current accordion order confirmed matching the ticket. **Wave B merged into staging during my work window** — its input-migration on `edit/page.js` (questions ×3) auto-merged cleanly against my reorder (disjoint regions: it swapped the questions-card `<input>`s to the `Input` primitive; I moved the whole card + added markers). Re-verified build+vitest post-merge.
+- **Shipped:** 3 files. `edit/page.js` — reordered 7 cards to **תמונות→קטגוריות→מיקום→ביו→מוצרים→ערוצי קשר→[divider]→שאלות**, added the `nextStepKey` derivation (first empty summary signal, location skipped for delivery-only) + `nextStepDot` (8px `bg-accent`, `role=img`, aria-label), presentational group divider. `EditAccordionCard.jsx` — one additive `marker` prop (default off). `he.json`+`en.json` — `more_group` + `next_step_aria` twins. **Anchor contract fully preserved** (ANCHOR_TO_KEY/KEY_TO_ANCHOR/applyHash untouched).
+- **Verify:** build exit 0 · full vitest **918 passed**/41 skipped (incl. EditAccordionCard/EditUnsavedGuard/ProfileCompletenessCard) · 0 physical RTL · Playwright self-QA (local `next start`, sandbox blocks Vercel preview per MEH-360): order + single marker on images + divider + all 4 deep-links expanding + unsaved-guard, desktop+mobile all PASS; CI `Playwright E2E (Vercel preview)` also green.
+- **Merged:** squash to staging on green `CI gate` + `Deploy gate` (post-merge-conflict resync against Wave B).
+
 ## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
 
 - **Branch:** `feature/meh-1128-input-adoption-wave-b` off fresh `origin/staging` (`0896224`, incl. Wave A merge `cc16a63`), divergence 0. YELLOW — auto-merge after CI green + Playwright self-QA. `Refs MEH-1128`. **Wave C NOT started — wait gate.** (Sapir approved Wave B in-conversation 12/07; Wave A merged as #1635.)
