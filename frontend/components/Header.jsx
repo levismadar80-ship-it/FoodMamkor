@@ -240,7 +240,16 @@ export default function Header() {
             // MEH-1072: the gap/px are FIXED (gap-8 px-6 since MEH-1103) — see the geometry
             // note below; pill stays w-auto. (MEH-899's state-dependent gap-14
             // at rest / gap-8 scrolled is retired per Sapir 09/07 + NAV-01.)
-            "w-auto max-w-[92vw] flex items-center rounded-full border",
+            // MOBILE-WIDTH FIX (Sapir direction A): on mobile the only pill
+            // occupants are the logo + the search circle (nav links, UserMenu &
+            // LoginAccount are all `md:`-gated), so `w-auto` hugged them into an
+            // undersized pill. Below md the pill now spans the shell gutters
+            // (`w-full`, still capped by max-w-[92vw]) with `justify-between` so
+            // logo sits at the start and search at the end — a balanced app-bar
+            // spread. This intentionally REVERSES MEH-890's mobile content-hug
+            // for mobile ONLY. Desktop keeps `md:w-auto md:justify-normal` →
+            // the MEH-890/MEH-1072 content-hug geometry is untouched at md+.
+            "w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
