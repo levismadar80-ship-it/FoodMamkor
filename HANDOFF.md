@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1146 Chunk B: two-tier header + section reorder + delivery/pickup + demoted CTA — PR open
+
+- **Branch:** `feature/meh-1146-producer-ia-b` off fresh `origin/staging` (incl. merged Chunk A #1670). Second of 3 chunks. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137`.
+- **Phase 0 (read-only, verified):** `ProductOut` has **NO `unit` field** (schemas.py:391) → unit label omitted (confidence-calibration); `pickup_points` exposed (schemas 468/579/730) → fix 6 OK; `delivery_areas[].min_order/city/delivery_day` → fix 4 OK; ReviewsSection already shows count (heading `({total})`) + avg summary (≥3) + single MEH-1139 empty box → fixes 5+7 need NO change; MiniMap already has "פתיחה במפות Google" (Leaflet, fix 1) → just moved last; MEH-683 = category glyphs (don't duplicate category chip).
+- **Shipped (6 files + 2 tests):** `ProducerHeader.jsx` (merged logistics line `city·category·status`; removed signature block). `ProducerDetail.jsx` (breadcrumb-only; dropped `useRouter`). `ProducerSections.jsx` (full verbatim-preserving reorder: about→products→recipes→events→delivery→reviews→similar→location(hours+MiniMap LAST)→disclaimer→report; signature product at products top). `DeliveryBlock.jsx` (rewritten: per-city `city·מינימום{price}·day` from delivery_areas, pickup line, **tertiary CTA**). `WhatsAppButton.jsx` (+`tone` prop, default primary unchanged). i18n `group_buys.delivery.min_order/.pickup` he+en. Tests: `DeliveryBlock.test.jsx`(3) + `ProducerSectionsOrder.test.jsx`(2). Adversarial: fixed `min_order=0` edge (truthy vs !=null).
+- **RESOLVES Chunk A deferral:** DeliveryBlock CTA demoted → **one primary per viewport now holds PAGE-WIDE** (Playwright swept 375+1280, all =1).
+- **Verify:** build exit 0 · full vitest **959 passed**/41 skipped · Playwright self-QA (`qa-artifacts/MEH-1146-b/`): one-primary page-wide, section order (about 511<products 639<delivery 1182<minimap 1936), tertiary CTA, min_order+pickup+signature rendered, 0 errors.
+- **Next:** PR → CI green → auto-merge. Then Chunk C (discovery loop "עוד בתי עסק באזור/בקטגוריה" frontend-only reusing producers list API filtered by city/category excl. current id, render only when ≥ MIN_NEARBY_BUSINESSES=4 else hide — STOP+report if no filter API; report link below the loop; DESIGN.md § Action hierarchy addition; **VRT baseline regen** via vrt-update.yml at the end) off fresh staging. `Closes MEH-1146` on Chunk C only.
+
 ## 2026-07-12 — MEH-1146 Chunk A: editorial contact card + one-primary hierarchy — PR open
 
 - **Branch:** `feature/meh-1146-producer-ia-a` off fresh `origin/staging` (incl. staging merge). First of 3 sequential chunks (A→B→C, each its own PR off fresh staging after the prior merges) rebuilding `/producer/[id]` action hierarchy (direction 1b). YELLOW — CI green + Playwright self-QA → auto-merge per ADR-016. PR body: `Refs MEH-1136` + `Refs MEH-1137` (only Chunk C says `Closes MEH-1146`).
