@@ -47,10 +47,11 @@ from app.models import (  # noqa: E402  # imports must follow sys.path.insert (s
 from app.models.models import ProducerReview, Event, User  # noqa: E402  # imports must follow sys.path.insert (script shim)
 
 # ============================================================================
-# DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout): "מאפיית רוח השדה" /
-# "נועה לביא", לחמים ואפייה, with the product set below. Photo URLs are
-# Cloudinary public demo-cloud placeholders — swap for real uploads on the
-# mehamakor cloud when available (edit this block + re-run with --refresh).
+# DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
+# (business name, contact name, category, product set) live in the dict below
+# and in the MEH-1074 Linear description. Photo URLs are Cloudinary public
+# demo-cloud placeholders — swap for real uploads on the mehamakor cloud when
+# available (edit this block + re-run with --refresh).
 # GUARD — STAGING ONLY: never promote/import this row to production (DNA:
 # licensed-only, trust); MEH-409 swaps it for the best real profile after
 # first-10. The _assert_not_production() gate below enforces staging-only.
