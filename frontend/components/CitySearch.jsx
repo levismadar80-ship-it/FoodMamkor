@@ -20,6 +20,17 @@ import api from "@/lib/api";
  *   - useBackend (boolean) — if true, also merges results from GET /cities
  *
  * Shows dropdown after 2 characters. Keyboard navigation: ArrowUp/Down/Enter/Escape.
+ *
+ * MEH-1128 D2 — token-recipe fallback (NOT ui/Input): this is a composed
+ * combobox — a transparent input inside a `focus-within` bordered wrapper, an
+ * interactive `×` clear button as an end-element, and an absolutely-positioned
+ * `role=listbox` dropdown. The ui/Input primitive can't express it (no
+ * endAdornment — D1 excluded it by the over-engineering guard; and its border/
+ * focus live on the input, not a focus-within wrapper). MEH-1127 already
+ * converged the field recipe to the canon (`rounded-md` · `border-border` ·
+ * `min-h-[44px]` · focus ring), and the leading magnifier is the same
+ * search-adornment the D1 gallery uses for its "יישוב" example — so no render
+ * change here (a literal location-*pin* would misread on a city *search* field).
  */
 export default function CitySearch({
   value,

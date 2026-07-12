@@ -3,8 +3,16 @@ import * as path from "path";
 
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
+ * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
+ * /register name + email fields adopted ui/Input (label slot + success
+ * state), so register-*.png shifts; this touch retriggers the vrt-update
+ * bot to regenerate the baseline on the runner (sandbox fonts differ).
  * Baselines refreshed 2026-07-11 after MEH-1103 (#1592/#1595 header/footer
  * accessibility sizing) landed — the footer grew 20px on every fullPage route.
+ * MEH-1135 (2026-07-12): chat FAB migrated to logical `insetInlineEnd`, moving
+ * it from bottom-right to bottom-left in RTL — an approved visual change. This
+ * touch re-triggers the vrt-update bot to regenerate the affected baselines
+ * (map + producer-detail chrome capture the FAB corner). Not a regression.
  *
  * Locks the design-parity sweep (Groups 1-5, gold #896714, header pill,
  * hero CTA, footer, static pages) against silent drift. One screenshot per
