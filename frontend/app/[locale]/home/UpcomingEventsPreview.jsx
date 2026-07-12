@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar } from "@phosphor-icons/react";
+import { Calendar, Leaf } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
 import api from "@/lib/api";
 // MEH-785: locale-aware dates via the shared helper — replaces the local
@@ -11,6 +11,7 @@ import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BRAND_NAME } from "@/lib/constants";
 
 /**
  * Small inline component for "upcoming events" homepage preview.
@@ -46,13 +47,27 @@ export function UpcomingEventsPreview() {
           <Link
             key={ev.id}
             href={`/events/${ev.id}`}
-            className="bg-background border border-border rounded-[16px] overflow-hidden transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+            // MEH-1143 (Assembly v2): flat surface-card, 1px border, sharp corners,
+            // NO shadow-lift — hover = border color shift only. Mirrors RecipeCard:42.
+            className="bg-surface-card border border-border rounded-none overflow-hidden transition-colors duration-base ease-quart hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
           >
-            {ev.image_url && (
+            {ev.image_url ? (
               <div
                 className="h-40 bg-cover bg-center"
                 style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url)})` }}
               />
+            ) : (
+              // MEH-1143: canonical no-photo state — fixed h-40 area always renders;
+              // cream surface + Leaf glyph + brand name. Mirrors RecipeCard:56-64.
+              <div
+                className="h-40 flex flex-col items-center justify-center bg-background gap-2"
+                data-testid="event-image-missing"
+              >
+                <Leaf size={40} weight="light" className="text-primary/70" aria-hidden="true" />
+                <span className="font-headline-md text-sm font-bold text-primary/80">
+                  {BRAND_NAME}
+                </span>
+              </div>
             )}
             <div className="p-4">
               <p className="text-primary text-sm font-semibold mb-1">
