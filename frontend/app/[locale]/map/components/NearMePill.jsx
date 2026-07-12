@@ -19,12 +19,13 @@ import { Crosshair } from "@phosphor-icons/react";
  *
  * Z-index 1000 = controls tier (above bottom-sheet:600), below cookie:1100.
  * Positioned at bottom-[16vh] to clear the PEEK=14vh collapsed bottom sheet.
- * MEH-1133: moved start-4 → end-4. MEH-1135 then migrated the chat FAB itself
- * to logical `insetInlineEnd` (was physical `right:16`), resolving end-4's
- * LTR-fragility — the FAB and this pill now track the SAME inline-END corner in
- * BOTH locales. The MEH-1135 convention assigns the bottom-end corner to the
- * FAB; the two are offset on the vertical axis (pill bottom-[16vh] · FAB
- * safe-area+88px). RTL: end-4 / ps / pe logical props only.
+ * MEH-1135 corner ownership: this pill sits on the START corner (`start-4`) —
+ * the bottom-END corner belongs to the chat FAB (now logical `insetInlineEnd`;
+ * convention in .claude/rules/rtl.md). With both elements logical they occupy
+ * OPPOSITE corners in every locale (/he: FAB left, near-me right; /en:
+ * mirrored), so there is no shared-corner collision. This supersedes the
+ * MEH-1133 move to the FAB's corner, which was only needed while the FAB was
+ * physical-right. RTL: start-4 / ps / pe logical props only.
  */
 export default function NearMePill({ onClick }) {
   const t = useTranslations();
@@ -33,7 +34,7 @@ export default function NearMePill({ onClick }) {
       type="button"
       onClick={onClick}
       aria-label={t("map.near_me_pill.aria")}
-      className="lg:hidden absolute bottom-[16vh] end-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="lg:hidden absolute bottom-[16vh] start-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <Crosshair size={16} weight="bold" className="text-primary" aria-hidden="true" />
       {t("map.near_me_pill.label")}
