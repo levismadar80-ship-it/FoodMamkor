@@ -10,6 +10,7 @@ import { Leaf, Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
+import Input from "@/components/ui/Input";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 /**
@@ -235,16 +236,17 @@ export default function NewExperienceClient() {
           </div>
         )}
 
-        <Field label={t("field_title")}>
-          <input
-            type="text"
-            value={form.title}
-            onChange={setField("title")}
-            placeholder={t("field_title_placeholder")}
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-            required
-          />
-        </Field>
+        {/* MEH-1145 Wave E3: single-line inputs → ui/Input (canon); Input owns
+            the label the <Field> wrapper used to render. Textareas/select/
+            CitySearch/checkbox stay in <Field> (no primitive / composite). */}
+        <Input
+          label={t("field_title")}
+          type="text"
+          value={form.title}
+          onChange={setField("title")}
+          placeholder={t("field_title_placeholder")}
+          required
+        />
 
         <Field label={t("field_description")}>
           <textarea
@@ -292,48 +294,40 @@ export default function NewExperienceClient() {
           </select>
         </Field>
 
-        <Field label={t("field_image")}>
-          <input
-            type="url"
-            dir="ltr"
-            value={form.image_url}
-            onChange={setField("image_url")}
-            placeholder="https://res.cloudinary.com/..."
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-          />
-        </Field>
+        <Input
+          label={t("field_image")}
+          type="url"
+          dir="ltr"
+          value={form.image_url}
+          onChange={setField("image_url")}
+          placeholder="https://res.cloudinary.com/..."
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("field_date")}>
-            <input
-              type="date"
-              value={form.event_date}
-              onChange={setField("event_date")}
-              className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-              required
-            />
-          </Field>
-          <Field label={t("field_time")}>
-            <input
-              type="time"
-              value={form.event_time}
-              onChange={setField("event_time")}
-              className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-            />
-          </Field>
+          <Input
+            label={t("field_date")}
+            type="date"
+            value={form.event_date}
+            onChange={setField("event_date")}
+            required
+          />
+          <Input
+            label={t("field_time")}
+            type="time"
+            value={form.event_time}
+            onChange={setField("event_time")}
+          />
         </div>
 
-        <Field label={t("field_duration")}>
-          <input
-            type="number"
-            min="15"
-            max="1440"
-            value={form.duration_minutes}
-            onChange={setField("duration_minutes")}
-            placeholder={t("field_duration_placeholder")}
-            className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-          />
-        </Field>
+        <Input
+          label={t("field_duration")}
+          type="number"
+          min="15"
+          max="1440"
+          value={form.duration_minutes}
+          onChange={setField("duration_minutes")}
+          placeholder={t("field_duration_placeholder")}
+        />
 
         <Field label={t("field_location_type")}>
           <div className="flex flex-wrap gap-2">
@@ -365,39 +359,33 @@ export default function NewExperienceClient() {
               placeholder={t("field_city_placeholder")}
             />
           </Field>
-          <Field label={t("field_address")}>
-            <input
-              type="text"
-              value={form.address}
-              onChange={setField("address")}
-              placeholder={t("field_address_placeholder")}
-              className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-            />
-          </Field>
+          <Input
+            label={t("field_address")}
+            type="text"
+            value={form.address}
+            onChange={setField("address")}
+            placeholder={t("field_address_placeholder")}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label={t("field_price")}>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={form.price_per_person}
-              onChange={setField("price_per_person")}
-              placeholder={t("field_price_placeholder")}
-              className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-            />
-          </Field>
-          <Field label={t("field_max_participants")}>
-            <input
-              type="number"
-              min="1"
-              value={form.max_participants}
-              onChange={setField("max_participants")}
-              placeholder={t("field_max_participants_placeholder")}
-              className="w-full border border-border rounded-[12px] px-3 py-2 bg-white"
-            />
-          </Field>
+          <Input
+            label={t("field_price")}
+            type="number"
+            min="0"
+            step="1"
+            value={form.price_per_person}
+            onChange={setField("price_per_person")}
+            placeholder={t("field_price_placeholder")}
+          />
+          <Input
+            label={t("field_max_participants")}
+            type="number"
+            min="1"
+            value={form.max_participants}
+            onChange={setField("max_participants")}
+            placeholder={t("field_max_participants_placeholder")}
+          />
         </div>
 
         <Field label={t("field_requirements")}>
@@ -421,13 +409,15 @@ export default function NewExperienceClient() {
             <span className="text-sm">{t("is_recurring")}</span>
           </label>
           {form.is_recurring && (
-            <input
-              type="text"
-              value={form.recurring_schedule}
-              onChange={setField("recurring_schedule")}
-              placeholder={t("recurring_placeholder")}
-              className="mt-2 w-full border border-border rounded-[12px] px-3 py-2 bg-white text-sm"
-            />
+            <div className="mt-2">
+              <Input
+                type="text"
+                value={form.recurring_schedule}
+                onChange={setField("recurring_schedule")}
+                placeholder={t("recurring_placeholder")}
+                className="text-sm"
+              />
+            </div>
           )}
         </div>
 

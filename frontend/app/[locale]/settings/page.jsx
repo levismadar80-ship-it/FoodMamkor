@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import CitySearch from "@/components/CitySearch";
+import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
 import { env } from "@/lib/env";
@@ -282,18 +283,18 @@ function ProfileTab() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="profile-name" className="block text-sm font-medium mb-1">{t("field_name_label")} *</label>
-          <input
-            id="profile-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full border border-border rounded-[12px] px-3 py-2 text-right"
-            dir="rtl"
-          />
-        </div>
+        {/* MEH-1145 Wave E3: plain labeled field → ui/Input (canon; text-align
+            via className, dir via ...rest — both pass through unchanged). */}
+        <Input
+          id="profile-name"
+          type="text"
+          label={`${t("field_name_label")} *`}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="text-right"
+          dir="rtl"
+        />
         <div>
           <label htmlFor="profile-city" className="block text-sm font-medium mb-1">
             {t("field_city_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
@@ -325,23 +326,24 @@ function ProfileTab() {
               : t("email_change_hint")}
           </p>
         </div>
-        <div>
-          <label htmlFor="profile-phone" className="block text-sm font-medium mb-1">
-            {t("field_phone_label")} <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
-          </label>
-          <input
-            id="profile-phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="050-1234567"
-            className="w-full border border-border rounded-[12px] px-3 py-2"
-            dir="ltr"
-          />
-          <p className="text-xs text-fg-muted mt-1 text-right">
-            {t("field_phone_hint")}
-          </p>
-        </div>
+        {/* MEH-1145 Wave E3: plain tel field → ui/Input; the optional-suffix
+            label passes as a node and the hint folds into helperText (wired to
+            aria-describedby, start-aligned = right in RTL — same as before). */}
+        <Input
+          id="profile-phone"
+          type="tel"
+          label={
+            <>
+              {t("field_phone_label")}{" "}
+              <span className="text-fg-muted font-normal">{tCommon("optional_suffix")}</span>
+            </>
+          }
+          helperText={t("field_phone_hint")}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="050-1234567"
+          dir="ltr"
+        />
 
         {message && (
           <p className="text-sm text-primary inline-flex items-center gap-1" role="status">
