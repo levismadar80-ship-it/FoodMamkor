@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import MapProducerCard from "@/components/MapProducerCard";
 
 // MEH-826: covers the client-side distance block. useUserLocation + lib/distance
@@ -10,6 +10,15 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }) => <a href={href}>{children}</a>,
+}));
+// next/image doesn't forward onLoad reliably under jsdom — render a plain <img>
+// that forwards onLoad + className so the MEH-1133 aspect flip is testable
+// (real-browser behavior verified separately in qa-artifacts).
+vi.mock("next/image", () => ({
+  default: ({ onLoad, className, alt, src }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} />
+  ),
 }));
 vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (u) => u || "",
@@ -126,5 +135,34 @@ describe("MapProducerCard — price RTL split (MEH-934)", () => {
   it("renders no price element when the producer has no price", () => {
     const { container } = render(<MapProducerCard producer={producer} />);
     expect(container.querySelector("bdi")).toBeNull();
+  });
+});
+
+describe("MapProducerCard — thumbnail letterbox (MEH-1133)", () => {
+  const withImage = { ...producer, images: ["/logo.png"] };
+
+  // jsdom never loads images (naturalWidth = 0), so stub the intrinsic
+  // dimensions on the rendered <img> and fire its load event to drive the
+  // onLoad aspect check exactly as a real load would.
+  function loadImageWith(w, h) {
+    const { container } = render(<MapProducerCard producer={withImage} />);
+    const img = container.querySelector("img");
+    Object.defineProperty(img, "naturalWidth", { value: w, configurable: true });
+    Object.defineProperty(img, "naturalHeight", { value: h, configurable: true });
+    fireEvent.load(img);
+    return img;
+  }
+
+  it("letterboxes a logo-like wide image (aspect ≥ 2) with object-contain", () => {
+    expect(loadImageWith(600, 200)).toHaveClass("object-contain"); // 3:1 wordmark
+  });
+
+  it("keeps a normal-aspect photo full-bleed with object-cover", () => {
+    expect(loadImageWith(1200, 800)).toHaveClass("object-cover"); // 3:2 photo
+  });
+
+  it("defaults to object-cover before the image loads", () => {
+    const { container } = render(<MapProducerCard producer={withImage} />);
+    expect(container.querySelector("img")).toHaveClass("object-cover");
   });
 });
