@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1146 Chunk C: nearby-businesses discovery loop + action-hierarchy design rule — PR open (Closes MEH-1146)
+
+- **Branch:** `feature/meh-1146-producer-ia-c` off fresh `origin/staging` (incl. merged A #1670 + B #1673). Final chunk. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137` + **`Closes MEH-1146`**.
+- **Phase 0 (read-only, verified):** `GET /producers` supports `city`/`category`/`exclude`/`limit` (`producers.py:49-88`) → discovery-loop filter OK, **no STOP** (backend untouched). ReportButton auth-gated (returns null anonymous).
+- **Shipped (5 files + docs):** `useProducerData.js` (+`nearbyProducers` fetch by city, exclude self, limit 12). `ProducerDetail.jsx` (wire prop). `ProducerSections.jsx` (`MIN_NEARBY_BUSINESSES=4` const; discovery loop "עוד בתי עסק באזור" gated ≥4, page-end below location+disclaimer, **report stays below the loop**). i18n `sections.nearby.heading` he+en. **docs/DESIGN.md § Action hierarchy** added (the one-primary-per-viewport rule). Tests: `ProducerSectionsOrder.test.jsx` +3 (hidden@3, shown@4, report-below-loop DOM order).
+- **Design note (flagged):** kept the existing category "עסקים דומים" (≥3, mid-page) alongside the new city "עוד בתי עסק באזור" (≥4, page-end) — distinct dimensions, both reuse the producers-list API. Reviewer may consolidate.
+- **Verify:** build exit 0 · full vitest **961 passed**/41 skipped · Playwright self-QA (`qa-artifacts/MEH-1146-c/`): loop shown@6 / hidden@3, one primary/viewport 375+1280, 0 errors.
+- **Next:** PR (Closes MEH-1146) → CI green → auto-merge. **THEN: VRT baseline regen** — trigger `vrt-update.yml` (workflow_dispatch, or a push touching `frontend/e2e/visual/**`) on a follow-up so the `producer-detail-*-linux.png` baselines reflect the final A+B+C design (deferred from every chunk to avoid 3× regen; sandbox can't regen — font-stack mismatch). MEH-1146 epic complete after C merges + baselines regen.
+
 ## 2026-07-12 — MEH-1146 Chunk B: two-tier header + section reorder + delivery/pickup + demoted CTA — PR open
 
 - **Branch:** `feature/meh-1146-producer-ia-b` off fresh `origin/staging` (incl. merged Chunk A #1670). Second of 3 chunks. YELLOW — CI green + Playwright self-QA → auto-merge. `Refs MEH-1136` + `Refs MEH-1137`.

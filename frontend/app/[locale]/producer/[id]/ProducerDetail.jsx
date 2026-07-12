@@ -40,7 +40,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const t = useTranslations();
   const locale = useLocale();
 
-  const { producer, loading, events, similarProducers } = useProducerData({
+  const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
     params,
     fetchPath,
     initialProducer,
@@ -162,6 +162,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             producer={producer}
             events={events}
             similarProducers={similarProducers}
+            nearbyProducers={nearbyProducers}
             sectionRefs={sectionRefs}
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}

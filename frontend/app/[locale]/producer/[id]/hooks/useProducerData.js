@@ -26,6 +26,8 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
   const [loading, setLoading] = useState(!initialProducer);
   const [events, setEvents] = useState([]);
   const [similarProducers, setSimilarProducers] = useState([]);
+  // MEH-1146 chunk C: discovery loop — more businesses in the same area (city).
+  const [nearbyProducers, setNearbyProducers] = useState([]);
 
   useEffect(() => {
     if (initialProducer) return;
@@ -67,5 +69,17 @@ export function useProducerData({ params, fetchPath, initialProducer }) {
       .catch(() => setSimilarProducers([]));
   }, [producer?.id, producer?.categories]);
 
-  return { producer, loading, events, similarProducers };
+  // MEH-1146 chunk C: discovery loop — fetch more businesses in the same city
+  // (the "area" dimension, distinct from the category-based similarProducers).
+  // REUSES: backend/app/routers/producers.py:49 (GET /producers city+exclude
+  // params). The >= MIN_NEARBY_BUSINESSES render gate lives in ProducerSections.
+  useEffect(() => {
+    if (!producer?.id || !producer?.city) return;
+    api
+      .get("/producers", { params: { city: producer.city, exclude: producer.id, limit: 12 } })
+      .then((r) => setNearbyProducers(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setNearbyProducers([]));
+  }, [producer?.id, producer?.city]);
+
+  return { producer, loading, events, similarProducers, nearbyProducers };
 }
