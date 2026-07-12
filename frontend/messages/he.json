@@ -2839,8 +2839,8 @@
   "directory": {
     "disclaimer": {
       "brand_is_prefix": "היא פלטפורמה",
-      "directory_only": "בלבד. האחריות על המוצרים ורישוי המוכר חלה על המוכר בלבד.",
-      "prices_set_by_businesses": "מחירים נקבעים על ידי בתי העסק."
+      "directory_only": "בלבד. האחריות על המוצרים והרישוי חלה על בית העסק בלבד.",
+      "prices_set_by_businesses": "המחירים נקבעים על ידי בתי העסק."
     }
   },
   "location": {
