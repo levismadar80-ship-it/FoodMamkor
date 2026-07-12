@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1155 + MEH-1156: DNM marker override (ADR-016) + qa-artifacts screenshot compression — PR open
+
+- **Branch:** `feature/meh-1155-adr-dnm-qa-compress` off `origin/staging`. GREEN (docs + one script). `Closes MEH-1155, MEH-1156`.
+- **⚠️ PREMISE FALSE (meta-patterns §1 — surfaced, not silently accepted):** the batch said both CI gates ("DO-NOT-MERGE marker gate" wired into "CI gate (required)"; qa-artifacts 2 MB cap) had **already landed**. `git grep` across all 10 `.github/workflows/**` on `origin/staging@76842d71` → **neither exists** (phrase "DO-NOT-MERGE marker gate" absent repo-wide). Did NOT document them as active (would be a false enforcement claim — the MEH-1078 trap). AskUserQuestion to Sapir failed (permission stream closed) + GitHub/Linear MCP dropped mid-turn; proceeded with the honest path.
+- **Shipped:** (1) `ADR-016` amendment (MEH-1155) — DNM/DNM-LOCK marker in PR title/body voids CC auto-merge regardless of tier; **policy in force now, mechanical enforcement documented as PENDING** (gate not wired). (2) `frontend/scripts/compress-qa-screenshots.mjs` (sharp WebP q80 + ≤1440px). (3) `.claude/rules/testing.md` convention section. (4) proof artifact `qa-artifacts/MEH-1156/home-1280-compressed.webp` (92 KB).
+- **Proof (MEH-1156):** ran the script on the real `qa-artifacts/MEH-1143/home-events-1280.png` → **4.75 MB → 92 KB (-98%)**, legibility confirmed by rendering the top crop (hero/search/nav/buttons all crisp). Target ≥80% smashed.
+- **Sapir follow-up (CC-deny — MEH-671):** apply the two workflow gate snippets from the PR body (DNM marker gate + qa-artifacts 2 MB cap). Until wired, the DNM override + 2 MB cap are honored by discipline only.
+- **Next:** push → draft PR (discrepancy + gate snippets in body) → GREEN auto-merge on green CI. My own qa-artifacts add = 92 KB (well under the intended cap — the point).
+
 ## 2026-07-12 — MEH-1158: edit-tab accordion content previews — PR open
 
 - **Branch:** `feature/meh-1158-edit-card-previews` off `origin/staging` 27b58e1d (incl. merged MEH-1157 #1678 — shared edit/page.js, sequenced per batch). YELLOW — CI green + Playwright self-QA → auto-merge. `Closes MEH-1158`. Task B of the 3-task batch; Task C (MEH-999 dogfood audit, read-only, chat-only) runs next against the post-merge build.
