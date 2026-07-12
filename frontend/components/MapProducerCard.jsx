@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -12,11 +13,22 @@ import { parseHours, computeStatus } from "@/lib/hours";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 
+// MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
+// (wide banner/logo) and letterboxed (object-contain) instead of cropped
+// (object-cover). 2.0 (≥2:1) catches wide logos like the MEHA MEKOR wordmark
+// (~3:1, which object-cover cropped to "NEHA MEK") while leaving normal
+// landscape food photos (≤16:9 ≈ 1.78) filling the box as before.
+const LOGO_ASPECT_MIN = 2;
+
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
   const { city: userCity } = useUserCity();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
+  // MEH-1133: default to cover (SSR/first paint) and flip to contain only once
+  // the loaded image proves logo-like — so wide logos letterbox on the green-50
+  // box instead of cropping, while photos keep the full-bleed cover look.
+  const [thumbIsWide, setThumbIsWide] = useState(false);
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
   const priceLabel = p.starting_price_label || p.price_range;
@@ -97,7 +109,14 @@ export default function MapProducerCard({ producer, active, onClick }) {
             alt={p.name || ""}
             fill
             sizes="(max-width: 1179px) 72px, 88px"
-            className="object-cover"
+            // MEH-1133: measure the loaded source's intrinsic aspect; a logo-like
+            // wide image letterboxes (object-contain) on the green-50 box so the
+            // full wordmark shows, a normal photo keeps object-cover (full bleed).
+            onLoad={(e) => {
+              const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+              if (w && h) setThumbIsWide(w / h >= LOGO_ASPECT_MIN);
+            }}
+            className={thumbIsWide ? "object-contain" : "object-cover"}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} className="text-primary/40" /></div>
