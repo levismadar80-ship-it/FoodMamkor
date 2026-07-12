@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Info, Package, Truck, Star } from "@phosphor-icons/react";
 
@@ -36,7 +36,6 @@ import {
  */
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
-  const router = useRouter();
   const { user } = useAuth();
   const t = useTranslations();
   const locale = useLocale();
@@ -83,8 +82,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Breadcrumb + back button */}
-      <div className="flex items-center justify-between mb-4">
+      {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
+          removed (the breadcrumb already provides the home/category path). */}
+      <div className="mb-4">
         <Breadcrumb
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
@@ -94,14 +94,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { label: producer.name },
           ]}
         />
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-1"
-          aria-label={t("producer.detail.aria.back")}
-        >
-          {t("producer.detail.back_label")}
-        </button>
       </div>
 
       {/* Gallery */}

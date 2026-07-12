@@ -117,44 +117,31 @@ export default function ProducerHeader({
         </p>
       )}
 
-      <p className="text-fg-muted text-sm flex items-center gap-1.5 mt-2 mb-1.5">
-        <MapPin size={14} />
-        {producer.city}
-        {primaryCategory && (
-          <>
-            <span className="mx-1">·</span>
-            {primaryCategory.name}
-          </>
-        )}
-      </p>
-
-      {/* MEH-1124 (Task C): availability is its OWN status line (dot + text)
-          under the meta row — one place, aligned, never inside the trust/
-          capability chip row above.
+      {/* MEH-1146 chunk B: two-tier header — the logistics line consolidates
+          city · category · status onto one row (the meta line + the separate
+          AvailabilityBadge line were merged). The signature product moved OUT
+          of the header to the top of the products list.
           MEH-291: the `|| availability_status` fallback is intentional — the
           backend dual-writes the legacy field during the overlap, so the badge
           reads it when a stale row hasn't picked up availability_state yet.
           Do not drop the fallback. */}
-      <div className="mb-3">
+      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-fg-muted text-sm mt-2 mb-3">
+        <span className="inline-flex items-center gap-1.5">
+          <MapPin size={14} aria-hidden="true" />
+          {producer.city}
+        </span>
+        {primaryCategory && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{primaryCategory.name}</span>
+          </>
+        )}
+        <span aria-hidden="true">·</span>
         <AvailabilityBadge
           status={producer.availability_state || producer.availability_status}
           variant="detail"
         />
       </div>
-
-      {(producer.top_product_name || producer.starting_price_label) && (
-        <p className="mt-1 text-sm mb-3">
-          {producer.top_product_name && (
-            <span className="text-text">{producer.top_product_name}</span>
-          )}
-          {producer.top_product_name && producer.starting_price_label && (
-            <span className="text-fg-muted"> · </span>
-          )}
-          {producer.starting_price_label && (
-            <span className="text-accent font-semibold">{producer.starting_price_label}</span>
-          )}
-        </p>
-      )}
 
       {/* Categories */}
       {producer.categories?.length > 1 && (

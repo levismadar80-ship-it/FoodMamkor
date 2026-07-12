@@ -20,7 +20,13 @@ import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
  * block the window.open, unlike fetch(). Gracefully no-ops on servers
  * or environments without sendBeacon.
  */
-export default function WhatsAppButton({ phone, productTitle, onClick, producerId }) {
+/**
+ * tone: "primary" (default, green `btn-whatsapp` fill — unchanged legacy
+ * behavior) | "tertiary" (neutral outline). MEH-1146 chunk B demotes the
+ * DeliveryBlock CTA to tertiary so the delivery section stops competing with
+ * the contact card's single primary CTA (one-primary-per-viewport).
+ */
+export default function WhatsAppButton({ phone, productTitle, onClick, producerId, tone = "primary" }) {
   const t = useTranslations("whatsapp.button");
   const [pending, setPending] = useState(false);
   const firedRef = useRef(false);
@@ -68,10 +74,13 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       rel="noopener noreferrer"
       onClick={handleClick}
       data-testid="whatsapp-cta"
+      data-tone={tone}
       aria-disabled={pending || undefined}
-      className={`btn-whatsapp inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm w-full justify-center font-medium ${
-        pending ? "opacity-70 pointer-events-none" : ""
-      }`}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm w-full justify-center font-medium transition ${
+        tone === "tertiary"
+          ? "border border-border text-primary-dark hover:border-primary focus-visible:ring-2 focus-visible:ring-primary/40"
+          : "btn-whatsapp"
+      } ${pending ? "opacity-70 pointer-events-none" : ""}`}
     >
       <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
       {pending ? t("opening") : "WhatsApp"}
