@@ -22,7 +22,6 @@
 - **Shipped:** 3 files. `edit/page.js` — reordered 7 cards to **תמונות→קטגוריות→מיקום→ביו→מוצרים→ערוצי קשר→[divider]→שאלות**, added the `nextStepKey` derivation (first empty summary signal, location skipped for delivery-only) + `nextStepDot` (8px `bg-accent`, `role=img`, aria-label), presentational group divider. `EditAccordionCard.jsx` — one additive `marker` prop (default off). `he.json`+`en.json` — `more_group` + `next_step_aria` twins. **Anchor contract fully preserved** (ANCHOR_TO_KEY/KEY_TO_ANCHOR/applyHash untouched).
 - **Verify:** build exit 0 · full vitest **918 passed**/41 skipped (incl. EditAccordionCard/EditUnsavedGuard/ProfileCompletenessCard) · 0 physical RTL · Playwright self-QA (local `next start`, sandbox blocks Vercel preview per MEH-360): order + single marker on images + divider + all 4 deep-links expanding + unsaved-guard, desktop+mobile all PASS; CI `Playwright E2E (Vercel preview)` also green.
 - **Merged:** squash to staging on green `CI gate` + `Deploy gate` (post-merge-conflict resync against Wave B).
->>>>>>> origin/staging
 
 ## 2026-07-12 — MEH-1128 Wave B (ui/Input adoption): producer dashboard — draft PR
 
