@@ -74,7 +74,7 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(leaf).toBeInTheDocument();
     expect(leaf.dataset.weight).toBe("light");
     expect(leaf.className).toMatch(/text-primary\/\[0\.32\]/);
-    // MEH-1168 P1: the "מהמקור" wordmark is gone from the product placeholder.
+    // MEH-1168 P1: the brand wordmark is gone from the product placeholder.
     expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
     // Cream surface token, not a gray/tint box.
     const placeholder = leaf.closest("div");

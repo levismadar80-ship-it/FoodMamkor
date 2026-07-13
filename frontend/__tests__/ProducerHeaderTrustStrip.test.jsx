@@ -64,6 +64,14 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
     render(<ProducerHeader producer={{ ...baseProducer, reviews_count: 0 }} primaryCategory={null} hasImages />);
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
+
+  // MEH-1168 P1: availability moved OUT of the header logistics line into the
+  // contact-card status line / vacation+slow-response banners — it must not
+  // render in the header anymore (closes the calibration-review coverage gap).
+  it("does not render the availability badge in the header", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
+    expect(screen.queryByTestId("availability")).not.toBeInTheDocument();
+  });
 });
 
 // MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
