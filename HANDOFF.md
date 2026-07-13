@@ -5,6 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep — MEH-1196 done (GREEN) — SWEEP COMPLETE
+
+- **MEH-1196 (Low · GREEN):** `feature/meh-1196-account-sheet-language-row-align` off `origin/staging`. Removed the stale `ms-auto` wrapper span on the AccountSheet language row (a MEH-908 relic) + reordered so `LanguageToggle` (Globe) leads and "עב / EN" follows, reusing `staticRowCls` flex/gap-3 → aligns with Heart/Gear/SignOut by construction. Business-row `ms-auto` (ArrowUpLeft) left intact. build green · AccountSheet vitest 6/6 · PW QA /he+/en (`qa-artifacts/MEH-1196/`) — Globe in the shared icon column, toggle preserves pathname+query. `Closes MEH-1196`.
+- **SWEEP MERGE ORDER (Sapir — bot can't merge, E2E-vs-preview required-check blocker):** #1735 (1192) · #1736 (1190) → #1739 (1191, stacked) · #1740 (1193) → #1742 (1194, stacked) · #1743 (1195, 🔒 DO-NOT-MERGE Sapir-review) · #1751-ish (1196). Retarget the stacked PRs (#1739→staging after #1736; #1742→staging after #1740) on merge.
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
