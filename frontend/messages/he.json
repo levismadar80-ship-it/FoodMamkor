@@ -2603,7 +2603,8 @@
     "filters": {
       "city_chip": "בעיר שלי",
       "category_all": "כל הקטגוריות",
-      "filter_by": "מסנן לפי:",
+      "category_label": "קטגוריה",
+      "filter_label": "סינון",
       "clear_all": "נקו הכל"
     },
     "empty": {
