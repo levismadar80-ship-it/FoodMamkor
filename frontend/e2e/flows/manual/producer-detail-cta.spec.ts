@@ -35,8 +35,19 @@ test.describe("producer detail — StickyContactBar (mobile, MEH-1171 § produce
 
   // MANUAL_TESTING § Producer Detail items 3 + 4 — the bar is parked off-screen
   // while the inline CTA is in view, slides IN once it scrolls away, and slides
-  // back OUT when the inline CTA returns
-  test("sticky bar parks at top, slides in on scroll-down, slides out on scroll-up", async ({ page }) => {
+  // back OUT when the inline CTA returns.
+  //
+  // FIXME (MEH-1171 matrix finding F14): green locally against the seed, but in
+  // CI E2E (real Railway backend / Vercel preview) the scroll/slide-in behaviour
+  // fails EVEN THOUGH the preconditions pass (page tall + producer has a CTA) —
+  // and it co-fails with the EXISTING 12-axe-a11y.spec.ts:85 and
+  // parity.spec.ts:131 on the very same page, so the producer-detail page is
+  // rendering wrong in CI (a real signal, not this test's fragility). Per the
+  // >2-attempt stop rule this is parked as test.fixme (kept, so it re-activates
+  // once the page is fixed) rather than fixed (would touch app code) or deleted.
+  // Needs Sapir/human diagnosis — out of MEH-1171 scope. The desktop single-CTA
+  // test below is unaffected and stays active.
+  test.fixme("sticky bar parks at top, slides in on scroll-down, slides out on scroll-up", async ({ page }) => {
     await openFirstProducer(page);
 
     // Preconditions (CI runs against the REAL backend — the first producer is

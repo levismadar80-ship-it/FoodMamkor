@@ -42,6 +42,33 @@ const paramsAfter = async (page: Page, urls: string[], since: number, action: ()
   return new URL(urls[urls.length - 1]).searchParams;
 };
 
+// like paramsAfter, but wait until a request whose params SATISFY `pred` shows
+// up among the new ones — robust against a trailing re-fetch landing last
+// (used for multi-select where two params must co-occur in one request)
+const paramsMatching = async (
+  page: Page,
+  urls: string[],
+  since: number,
+  action: () => Promise<void>,
+  pred: (p: URLSearchParams) => boolean,
+) => {
+  await action();
+  let match: URLSearchParams | undefined;
+  await expect
+    .poll(
+      () => {
+        match = urls
+          .slice(since)
+          .map((u) => new URL(u).searchParams)
+          .find(pred);
+        return !!match;
+      },
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+  return match!;
+};
+
 const gotoHome = async (page: Page) => {
   await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
   await page.goto("/");
@@ -93,7 +120,15 @@ test.describe("homepage filter chips (MEH-1171 § advanced filter chips)", () =>
     // else the organic handler reads stale chips and omits kosher (React batch)
     await expect(chip(page, KOSHER)).toHaveAttribute("aria-pressed", "true");
 
-    const params = await paramsAfter(page, urls, urls.length, () => chip(page, ORGANIC).click());
+    // wait for the request that carries BOTH params (a trailing single-param
+    // re-fetch could otherwise land last and flake the "last request" capture)
+    const params = await paramsMatching(
+      page,
+      urls,
+      urls.length,
+      () => chip(page, ORGANIC).click(),
+      (p) => p.get("kosher") === "true" && p.get("organic") === "true",
+    );
     expect(params.get("kosher")).toBe("true");
     expect(params.get("organic")).toBe("true");
     await expect(chip(page, KOSHER)).toHaveAttribute("aria-pressed", "true");
