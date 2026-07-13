@@ -4,7 +4,7 @@
 > Matrix approved by Sapir 13/07 (incl. 138 STALE deletions, KEEP-RUNBOOK, 6 UNCLEAR resolutions).
 > Ticket B (MEH-1176) ran first: F1-F10 → 8 fixed/merged, F6+F7 stopped (see matrix § Ticket B execution status).
 
-## Status: 🚧 CONVERTING — checkpoint 6 (pytest cluster) done; checkpoints 1-5 CI-verified
+## Status: 🚧 CONVERTING — checkpoint 7 (MEH-853 upgrade path) done; checkpoints 1-6 CI-verified
 
 - [x] Phase 0 report + full triage matrix (`docs/qa/manual-testing-matrix.md`, 1,074 rows) — merged in PR #1710
 - [x] **Sapir approved matrix** (13/07)
@@ -20,9 +20,9 @@
 2. MEH-722 map legend (live feature, zero coverage)
 3. Mobile /map near-me (07-gps-button skips mobile entirely; PW geolocation mocks)
 4. CitySearch autocomplete (stubbed everywhere, no dedicated test)
-5. MEH-853 upgrade-path submit body (vitest gap → PW or pytest per item)
-6. CONVERT-PYTEST cluster (23 items) against the local backend
-7. Remaining CONVERT-PW sections in matrix order; destructive ones via scripts/local-backend.sh
+5. MEH-853 upgrade-path submit body (vitest gap → PW or pytest per item) ✅ checkpoint 7
+6. CONVERT-PYTEST cluster (23 items) against the local backend ✅ checkpoint 6
+7. Remaining CONVERT-PW sections in matrix order; destructive ones via scripts/local-backend.sh ⬅ next
 
 ## Per-section log
 
@@ -34,6 +34,7 @@
 | /map near-me mobile (MEH-970 2-lite) | 4 of 4 items → PW (mocked geolocation: grant-near / grant-far-25km / deny) | `frontend/e2e/flows/manual/map-near-me.spec.ts` | ✅ **green ×2 locally (20 passed / 20 passed suite-wide)** after the CI FAIL was root-caused. **Correction of the earlier note:** the "sandbox can't mount mobile /map" claim was WRONG — the real causes were (1) the MEH-549 two-instance race (hidden desktop + visible mobile MapPane both mount; visibility-waits on `.leaflet-container` resolve to the hidden one — the race-free mount signal is `window.__MAP_CENTER__`, REUSES 05-map-navigation) and (2) the pill's accessible name is its aria-label "הצגת בתי עסק קרובים למיקום שלי", not the visible "קרוב אליי". **CI-VERIFIED ✅** — run 29249887485 (commit 5473b86): all 4 near-me mobile tests passed on the runner; that run's only failure is the pre-existing producer-detail VRT baseline drift (non-required, baseline-regen follow-up, untouched by this branch). |
 | /map legend (MEH-722) | 3 of 4 items → PW (items 2,4 live; items 1+3 = test.fixme) | `frontend/e2e/flows/manual/map-legend.spec.ts` | ✅ suite green ×2 (16 passed / 16 passed incl. legal-pages). **Runtime-verified semantics documented in the spec header:** the legend is a MULTI-TOGGLE (neutral = all rows aria-pressed=true; a click EXCLUDES a category), map interaction collapses the legend, and counts key off committedBounds (the "חפשו באזור זה" pill commits). **Deferred (fixme):** items 1+3 need a deterministically empty committed viewport — mouse-drag panning kept catching seeded businesses in the sandbox (stopped after 2 attempts per the stop rule); needs a map test hook or geo URL params. **UX quirk noted (not fixed — zero-app-fixes):** excluding an EMPTY category disables its own row, so it can only be recovered via "הציגו הכל". |
 | Legal pages (אפריל 2026) | 8 of 14 → PW (items 1,2,3,8,9,10,11,13) | `frontend/e2e/flows/manual/legal-pages.spec.ts` | ✅ green ×2 (14 passed / 14 passed, desktop+mobile) vs live local stack. Items 4-7 = pytest/Tier-3 (email inbox = Tier-3; DB row + 429 + fail-open = existing pytest, cite in the MANUAL_TESTING stub). Item 12 = pending coverage check vs 18-producer-register-wizard. Item 14 = STALE (approved). **Doc-stale notes:** contact toast copy is now `contact.success_title` "תודה! קיבלנו את הפנייה." (emoji removed, Emoji LOCK v2); footer ships 3 legal links — the checklist's 4th (קשר) was dropped in the footer redesign; accessibility date line is "עודכנה לאחרונה", not "עדכון". |
+| MEH-853 — /register/producer frame 01 (DETAILS): city+address (upgrade path) | 3 PW tests covering items 1 (city ✕ clear), 4 (upgrade submit body), 5 (auth lands on DETAILS). Items 2,3 = COVERED (RegisterProducerClient.test.jsx submit-body vitest); item 5's other two freeze legs (declaration gate :199, license field :253) = COVERED vitest; the OAuth/authenticated-lands-on-DETAILS leg was the untested one → converted here. | `frontend/e2e/flows/manual/register-wizard-upgrade.spec.ts` | ✅ green ×2 (34 passed / 34 passed suite-wide incl. all prior checkpoints, 8 documented skips: map-legend fixmes ×2 projects + desktop/mobile-only guards). Closes the matrix gap: the shared-submit-body-above-!isUpgrade claim (item 4) was trust-the-code; now the UPGRADE POST is captured and asserted to carry city+address AND to OMIT email/name/password (MEH-143). **Mock note:** auth (`/auth/me`), `/categories`, and the register POST are route-mocked for WRITE avoidance (destructive registration → local-only per Sapir 13/07; same precedent as spec 18); `/users/me/favorites` also mocked empty so the MEH-156 401-interceptor can't null the mocked session mid-test. `/cities` reads stay real. **Zero-app-edits caveat:** the didUpgrade success screen carries no `data-testid` (the confirm testid is the non-upgrade branch only), so the upgrade branch is asserted by its heading "קיבלנו את הפרטים שלך" — which is the STRONGER check (proves the access_token→didUpgrade branch rendered, not just any confirm). |
 
 ## Runtime notes for the next checkpoint
 
