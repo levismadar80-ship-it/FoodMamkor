@@ -6,6 +6,7 @@ against the shared test DB. They also pin the documented false-positive
 behaviour of the "תסס" fermentation marker so a future edit can't silently
 drop it (ADR-029 §False-positive analysis).
 """
+
 import importlib.util
 import os
 

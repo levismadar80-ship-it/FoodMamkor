@@ -60,9 +60,7 @@ EXAMPLE_EMAIL_SUFFIX = "@example.com"
 def _db_host() -> str:
     """Best-effort hostname of the configured DB, for the report header."""
     return (
-        urlparse(
-            str(engine.url).replace("postgresql+psycopg2", "postgresql")
-        ).hostname
+        urlparse(str(engine.url).replace("postgresql+psycopg2", "postgresql")).hostname
         or "?"
     ).lower()
 
@@ -143,7 +141,9 @@ def _print_table(result: dict) -> None:
     print()
 
     admin_hits = result["hits"]["producers_admin_notes_demo"]
-    print(f"Producers — admin_notes contains '{ADMIN_NOTE_MARKER}' ({len(admin_hits)}):")
+    print(
+        f"Producers — admin_notes contains '{ADMIN_NOTE_MARKER}' ({len(admin_hits)}):"
+    )
     if admin_hits:
         for h in admin_hits:
             note = h["admin_notes"].replace("\n", " ")
