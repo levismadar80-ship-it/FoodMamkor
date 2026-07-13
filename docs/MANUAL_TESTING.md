@@ -3,6 +3,17 @@
 
 ---
 
+## MEH-1174 — seam גילוי בבית (טיפ מעל הכותרת + כותרת דינמית + תג קטגוריה נשלף)
+
+- [ ] **טיפ ההדרכה מעל הכותרת** — נקי localStorage (גלישה ראשונה) ופתחי `/` בנייד, גללי לסקציית בתי העסק והמתיני ~2 שניות — **תוצאה מצופה:** בועת ההדרכה (step 0) מופיעה **מעל** כותרת הסקציה "בתי עסק מקומיים", לא בין הכותרת לשורת הצ'יפים. לחיצה על "הבנתי" מקדמת את הסיור לשלב 1 (הבועה הבאה מופיעה ליד הצ'יפים).
+- [ ] **כותרת ברירת מחדל** — בבית ללא קטגוריה פעילה — **תוצאה מצופה:** הכותרת = "בתי עסק מקומיים" (he) / "Local businesses" (en).
+- [ ] **כותרת דינמית לפי קטגוריה** — פתחי `/?category=<id>` של קטגוריה קיימת — **תוצאה מצופה:** הכותרת = "בתי עסק · <שם הקטגוריה>" עם שם הקטגוריה בעברית בשני ה-locales.
+- [ ] **תג קטגוריה נשלף** — עם קטגוריה פעילה — **תוצאה מצופה:** בשורת "מסנן לפי:" מופיע תג ירוק נשלף "<שם הקטגוריה> ×"; לחיצה על ה-× מנקה את הקטגוריה (הכותרת חוזרת לברירת המחדל והתג נעלם). שורת "מציג:" הנפרדת הישנה כבר לא קיימת.
+- [ ] **צ'יפים לצד קטגוריה** — עם קטגוריה + צ'יפ (למשל `?category=<id>&kosher=1`) — **תוצאה מצופה:** שורת "מסנן לפי:" מציגה גם את תווית הצ'יפ וגם את תג הקטגוריה; החלפת צ'יפ ממשיכה לעבוד. המונה "מציגים X מתוך Y" ללא שינוי.
+- [ ] **RTL** — 375px + 1440px — **תוצאה מצופה:** הכותרת מיושרת לימין, ה-× בתג יושב בקצה ההתחלתי-נגדי (שמאל ב-RTL), אין גלישה אופקית.
+
+---
+
 ## map-quality batch PR 3 — הסתרת צ'אט FAB ב-/map
 
 - [ ] **אין FAB על המפה (דסקטופ)** — פתחי `/map` ב-1440px — **תוצאה מצופה:** אין כפתור "שאלה? שאלו אותי" בפינה השמאלית-תחתונה; כפתור מקרא הקטגוריות נראה ולחיץ (לחיצה פותחת את רשימת הקטגוריות).
@@ -1059,7 +1070,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
 - [ ] /admin/kashrut: filter by status (pending/approved/rejected)
 - [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
-- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 5 confirms per minute
+- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; code always enforced 3/min — stricter wins, pinned by tests/test_meh1176_otp_confirm_rate_limit.py)
 
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.
 פורמט: `[ ] Test — איך לבדוק — תוצאה מצופה`
@@ -1316,7 +1327,7 @@ Test on a **real iOS device** (iPhone Safari + Chrome iOS preferred) — simulat
 - [ ] iOS Settings → Accessibility → Motion → **Reduce Motion: ON** — טוענים את הדף מחדש — אנימציות ה-Ken Burns נעצרות, התמונות סטטיות (זה התנהגות מכוונת לפי `@media (prefers-reduced-motion: reduce)` ב-globals.css:161)
 - [ ] iOS Settings → Reduce Motion: OFF — אנימציות חוזרות לפעול אחרי רענון
 - [ ] iPad בלנדסקייפ (lot > 768px) — אנימציות עדיין פעילות, אין regression מהסרת `.parallax-bg` המיותר
-- [ ] `grep -rn 'background-attachment' frontend/` → רק הערות בקוד, אין שימוש פעיל (regression check — לוודא שה-class המת לא חזר)
+- [ ] `grep -rn 'background-attachment' frontend/` → שימוש פעיל **יחיד ומכוון**: `.hero-parallax` ב-`globals.css` (`background-attachment: fixed` לדסקטופ + fallback `scroll` ב-`@media (pointer: coarse)` — iOS Safari מתעלם מ-fixed). ה-guard הישן ("רק הערות, אין שימוש פעיל") התהפך בכוונה כשה-hero-parallax חזר עם ה-fallback; אל תסירו את הכלל בלי לבדוק את שני הענפים. (MEH-1176 F9)
 
 ---
 
