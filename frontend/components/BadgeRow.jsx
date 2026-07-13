@@ -2,7 +2,7 @@
 
 import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
-import { Note, SealCheck } from "@phosphor-icons/react";
+import { SealCheck } from "@phosphor-icons/react";
 import { allBadges, topBadges } from "@/lib/badges";
 import Popover from "@/components/ui/Popover";
 
@@ -17,11 +17,14 @@ import Popover from "@/components/ui/Popover";
  *   verified + cosmetics → gold seal chip, NO tooltip (key not yet locked —
  *                          MEH-758 micro; flip to verified_tooltip_registration
  *                          once Sapir locks it)
- *   declared             → calm chip + declared_explainer (hero surface only)
+ *   declared             → NO chip on any surface (MEH-1170: the S12 "מוצהר"
+ *                          chip contradicted ADR-022 "tier 2 = no badge"; the
+ *                          declared_explainer moved to ProducerHeader as quiet
+ *                          visible copy — ADR-022 gate 1 "affirmatively explained")
  *   null                 → no badge, no negative tag (ADR-022 gate 1)
  *
  * `surface` (S12 §04): "hero" (default — full chip with the word) or "card"
- * (icon-only seal; declared renders NOTHING on cards — no placeholder).
+ * (icon-only seal). Declared renders nothing on either surface.
  * {date} renders d.m.yyyy LTR-isolated (LRI/PDI) inside the RTL strings.
  *
  * Props:
@@ -43,8 +46,7 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
   // is rendered once in the header's capability strip instead. Card surfaces
   // omit the prop, so their badge set is byte-unchanged (lib/badges.js is SoT).
   const badges = hideKeys?.length ? all.filter((b) => !hideKeys.includes(b.key)) : all;
-  const showDeclared = producer?.verification_tier === "declared" && surface === "hero";
-  if (badges.length === 0 && !showDeclared) return null;
+  if (badges.length === 0) return null;
 
   return (
     <div
@@ -59,7 +61,6 @@ export default function BadgeRow({ producer, limit, surface = "hero", hideKeys }
           <Badge key={b.key} badge={b} />
         ),
       )}
-      {showDeclared && <DeclaredTierBadge t={tTier} />}
     </div>
   );
 }
@@ -157,38 +158,6 @@ function VerifiedTierBadge({ producer, surface, t }) {
           })}
         </span>
       )}
-    </span>
-  );
-}
-
-/**
- * S12 state 3 — declared. A calm affirmative chip (never a negative marker),
- * hero surface only; cards and map show nothing for declared businesses.
- */
-function DeclaredTierBadge({ t }) {
-  return (
-    <span role="listitem" className="inline-block">
-      <Popover
-        contentTestId="badge-tooltip-declared"
-        contentClassName="w-60"
-        trigger={
-          // MEH-813: outer button = ≥24×24 hit-area (WCAG 2.5.8 AA); visible
-          // pill in inner span keeps byte-identical bg/border/padding.
-          <button
-            type="button"
-            aria-label={t("aria_declared")}
-            data-badge="declared"
-            className="group inline-flex items-center justify-center min-h-[24px] min-w-[24px] focus:outline-none"
-          >
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-card text-primary-dark text-xs px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-primary/40 transition">
-              <Note size={14} aria-hidden="true" />
-              {t("declared_label")}
-            </span>
-          </button>
-        }
-      >
-        {t("declared_explainer")}
-      </Popover>
     </span>
   );
 }

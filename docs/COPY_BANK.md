@@ -617,7 +617,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | 🕐 key-only — badge UI port consumes |
+| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)

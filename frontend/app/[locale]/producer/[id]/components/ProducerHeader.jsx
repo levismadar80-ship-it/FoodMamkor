@@ -143,6 +143,20 @@ export default function ProducerHeader({
         />
       </div>
 
+      {/* MEH-1170: declared (tier 2) carries NO chip — the S12 "מוצהר" chip
+          contradicted ADR-022 ("tier 2 = no document, no badge") and was
+          removed from BadgeRow. ADR-022 gate 1 still requires the badge
+          absence to be "affirmatively explained in consumer copy": the locked
+          declared_explainer (its only prior surface was the removed chip
+          tooltip) now renders here as quiet visible copy — verbatim, not new
+          wording. Gated on the declared tier only (verified keeps the seal;
+          null stays silent). */}
+      {producer.verification_tier === "declared" && (
+        <p className="text-xs text-fg-muted leading-relaxed mt-2 max-w-prose">
+          {t("producer.badge.declared_explainer")}
+        </p>
+      )}
+
       {/* Categories */}
       {producer.categories?.length > 1 && (
         <div className="flex flex-wrap gap-2 mt-4">
