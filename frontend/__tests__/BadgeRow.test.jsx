@@ -9,13 +9,10 @@ vi.mock("next-intl", () => ({
     const flat = {
       aria: "תגיות בית עסק",
       verified_label: "מאומת",
-      declared_label: "מוצהר",
       verified_tooltip_license: "רישיון הוגש ונבדק בתאריך {date}",
       verified_tooltip_exemption: "אישור פטור הוגש ונבדק בתאריך {date}",
-      declared_explainer: "העסק חתם על הצהרה מחייבת שהוא פועל כדין.",
       aria_verified: "בית עסק מאומת. {tooltip}",
       aria_verified_plain: "בית עסק מאומת",
-      aria_declared: "בית עסק מוצהר",
     };
     let s = flat[key] ?? key;
     for (const [k, v] of Object.entries(values)) s = s.replaceAll(`{${k}}`, v);
@@ -176,11 +173,15 @@ describe("BadgeRow", () => {
       expect(btn.textContent).toBe(""); // seal glyph only — the name stays the hero
     });
 
-    it("declared renders the calm chip + explainer on the hero surface", () => {
-      render(<BadgeRow producer={{ verification_tier: "declared" }} />);
-      const chip = screen.getByText("מוצהר");
-      fireEvent.click(chip);
-      expect(screen.getByTestId("badge-tooltip-declared")).toBeInTheDocument();
+    // MEH-1170: the S12 "מוצהר" chip contradicted ADR-022 ("tier 2 = no
+    // badge") and was removed. Declared renders no tier badge on ANY surface;
+    // the affirmative declared_explainer moved to ProducerHeader as visible copy.
+    it("declared renders no tier badge on the hero surface (ADR-022 no-badge)", () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: "declared" }} />,
+      );
+      expect(container.innerHTML).toBe("");
+      expect(screen.queryByText("מוצהר")).not.toBeInTheDocument();
     });
 
     it("declared renders NOTHING on the card surface (no negative tag)", () => {

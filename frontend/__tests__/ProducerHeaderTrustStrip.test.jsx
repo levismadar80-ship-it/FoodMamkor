@@ -73,3 +73,39 @@ describe("ProducerHeader trust strip (MEH-1048)", () => {
     expect(screen.queryByTestId("availability")).not.toBeInTheDocument();
   });
 });
+
+// MEH-1170: the removed BadgeRow "מוצהר" chip's tooltip was the only surface of
+// declared_explainer; Option 1 relocated it here as quiet visible copy so the
+// tier-2 badge absence stays "affirmatively explained" (ADR-022 gate 1). The
+// next-intl mock echoes the key, so we assert on the key path.
+describe("ProducerHeader declared explainer (MEH-1170)", () => {
+  it("renders declared_explainer copy for the declared tier", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, verification_tier: "declared" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByText("producer.badge.declared_explainer")).toBeInTheDocument();
+  });
+
+  it("does not render the explainer for verified or null tiers", () => {
+    const { rerender } = render(
+      <ProducerHeader
+        producer={{ ...baseProducer, verification_tier: "verified" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+    rerender(
+      <ProducerHeader
+        producer={{ ...baseProducer, verification_tier: null }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+  });
+});
