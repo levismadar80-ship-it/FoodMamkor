@@ -18,18 +18,18 @@ the background task never attempts a real Meta Graph call during tests.
 """
 from unittest.mock import MagicMock
 
-from tests.conftest import auth_header, make_user
+from tests.conftest import auth_header, make_user, valid_producer_register_payload
 
 
-VALID_PRODUCER_UPGRADE_REG = {
-    # Upgrade path ignores email/name/password from the body — it uses the
-    # authenticated user's identity. Only producer fields are required.
-    "producer_name": "חוות MEH-287",
-    "phone": "0501234567",
-    "category_ids": [],
-    "primary_contact_method": "whatsapp",
-    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-}
+def _upgrade_payload(**overrides):
+    # MEH-1153: derive from the shared registration helper (it seeds a real
+    # non-license-required category, now required by ProducerRegister) and drop
+    # the fields the upgrade path ignores — it uses the authenticated user's
+    # identity, not the body email/name/password.
+    base = valid_producer_register_payload()
+    for field in ("email", "name", "password"):
+        base.pop(field, None)
+    return {**base, "producer_name": "חוות MEH-287", "phone": "0501234567", **overrides}
 
 
 def test_whatsapp_sent_false_when_whatsapp_env_missing(client, db):
@@ -37,7 +37,7 @@ def test_whatsapp_sent_false_when_whatsapp_env_missing(client, db):
     user = make_user(db, email="upgrade287a@test.com")
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
     assert resp.status_code == 200
@@ -65,7 +65,7 @@ def test_whatsapp_sent_true_when_whatsapp_env_present(client, db, monkeypatch):
     user = make_user(db, email="upgrade287b@test.com")
     resp = client.post(
         "/auth/register/producer",
-        json=VALID_PRODUCER_UPGRADE_REG,
+        json=_upgrade_payload(),
         headers=auth_header(user),
     )
     assert resp.status_code == 200
@@ -85,11 +85,10 @@ def test_whatsapp_sent_false_when_phone_missing(client, db, monkeypatch):
     monkeypatch.setattr(auth_module.settings, "whatsapp_phone_number_id", "PNID_fake")
     monkeypatch.setattr(auth_module.settings, "whatsapp_access_token", "token_fake")
     user = make_user(db, email="upgrade287c@test.com")
-    payload = {
-        **VALID_PRODUCER_UPGRADE_REG,
-        "primary_contact_method": "email",
-        "contact_email": "nophone-contact@test.com",
-    }
+    payload = _upgrade_payload(
+        primary_contact_method="email",
+        contact_email="nophone-contact@test.com",
+    )
     payload.pop("phone", None)
     resp = client.post(
         "/auth/register/producer",

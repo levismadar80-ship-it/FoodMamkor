@@ -10,7 +10,14 @@ Coverage:
 """
 import pytest
 from app.models.models import AdminSetting, ContactClick, ContactMessage, Producer, ProducerReview, ProducerWhatsAppClick, StaticPage, User
-from conftest import auth_header, make_category, make_producer, make_user, valid_review_payload
+from conftest import (
+    auth_header,
+    make_category,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+    valid_review_payload,
+)
 
 
 # ---------- Auth ----------
@@ -238,16 +245,26 @@ class TestAuth:
 
     # --- Producer registration (MEH-144 regression tests) ---
 
-    VALID_PRODUCER_REG = {
-        "email": "producer@test.com",
-        "name": "שרה ישראלית",
-        "password": "Zx7Yp9Mq2Lr4",
-        "producer_name": "חוות שרה",
-        "phone": "0501234567",
-        "category_ids": [],
-        "primary_contact_method": "whatsapp",
-        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-    }
+    @property
+    def VALID_PRODUCER_REG(self):
+        # MEH-1153: derive from the shared helper (it seeds a real category, now
+        # required by ProducerRegister) rather than a static dict; a property so
+        # the many `{**self.VALID_PRODUCER_REG, ...}` spreads below are unchanged.
+        # Pins the email/name/producer_name this suite's assertions look up.
+        return valid_producer_register_payload() | {
+            "email": "producer@test.com",
+            "name": "שרה ישראלית",
+            "producer_name": "חוות שרה",
+            "phone": "0501234567",
+        }
+
+    def _upgrade_reg(self, **overrides):
+        # Upgrade-path variant: drop the email/name/password the upgrade flow
+        # ignores (it uses the authenticated identity).
+        base = valid_producer_register_payload()
+        for field in ("email", "name", "password"):
+            base.pop(field, None)
+        return {**base, "phone": "0521234567", **overrides}
 
     def test_register_producer_new_email_returns_ack(self, client, db):
         """MEH-328 Chunk B: non-upgrade signup → 200 + generic ack (no
@@ -487,13 +504,7 @@ class TestAuth:
         user = make_user(db, email="consumer@upgrade.com", role="consumer")
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות השדרוג",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: mandatory declaration
-            },
+            json=self._upgrade_reg(),
             headers=auth_header(user),
         )
         assert resp.status_code == 200
@@ -516,13 +527,7 @@ class TestAuth:
         db.commit()
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות שנייה",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: passes guard → 409
-            },
+            json=self._upgrade_reg(),
             headers=auth_header(user),
         )
         assert resp.status_code == 409
@@ -541,13 +546,7 @@ class TestAuth:
         """Unauthenticated POST without email/name/password → 422."""
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "חוות אנונימית",
-                "phone": "0521234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: isolates account-field 422
-            },
+            json=self._upgrade_reg(),
         )
         assert resp.status_code == 422
 
@@ -619,15 +618,11 @@ class TestRegisterPerEmailRateLimit:
             "app.routers.auth.notify_producer_registered",
             lambda *a, **kw: None,
         )
-        payload = {
+        payload = valid_producer_register_payload() | {
             "email": "rl_victim_producer@test.com",
             "name": "שרה",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות שרה",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         statuses = [
             client.post(
@@ -825,7 +820,11 @@ class TestProducers:
         "phone": "0501234567",
         "instagram": None,
         "website": None,
-        "category_ids": [],
+        # MEH-1153: ProducerCreate now requires ≥1 category. The guard tests
+        # below (401 / 403 / overlong-name-422) never reach the DB insert, so a
+        # non-empty placeholder id keeps them schema-valid (Regression rule 6);
+        # the 201-success test overrides this with a real seeded category id.
+        "category_ids": [1],
         "delivery_areas": [],
     }
 
@@ -848,9 +847,13 @@ class TestProducers:
         """Authenticated user → 201, producer created with status=pending
         (pre-existing behavior, now gated behind auth)."""
         user = make_user(db, email="creator@test.com")
+        # MEH-1153: this path inserts ProducerCategory rows, so the category
+        # must actually exist — override the placeholder id with a real one.
+        cat = make_category(db)
+        payload = {**self.VALID_PRODUCER_PAYLOAD, "category_ids": [cat.id]}
         resp = client.post(
             "/producers",
-            json=self.VALID_PRODUCER_PAYLOAD,
+            json=payload,
             headers=auth_header(user),
         )
         assert resp.status_code == 201
@@ -1075,15 +1078,11 @@ class TestMeh56WhatsAppOnboarding:
         monkeypatch.setattr(auth_mod, "notify_producer_registered", lambda *a, **k: None)
         monkeypatch.setattr(auth_mod, "_send_welcome_email", lambda *a, **k: None)
 
-        resp = client.post("/auth/register/producer", json={
+        resp = client.post("/auth/register/producer", json=valid_producer_register_payload() | {
             "email": "farm56@test.com",
             "name": "Farmer",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הבדיקה",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         })
         assert resp.status_code == 200
         from app.models.models import Producer
@@ -3031,16 +3030,12 @@ class TestSanitizationIntegration:
 
     def test_producer_description_sanitized(self, client, db):
         from app.models.models import Producer
-        payload = {
+        payload = valid_producer_register_payload() | {
             "email": "xss-producer@test.com",
             "name": "ניסוי",
-            "password": "Zx7Yp9Mq2Lr4",
             "producer_name": "חוות הסקריפט",
             "description": "<script>alert(1)</script>טקסט נקי",
             "phone": "0501234567",
-            "category_ids": [],
-            "primary_contact_method": "whatsapp",
-            "declaration_accepted": True,  # MEH-759: mandatory binding declaration
         }
         resp = client.post("/auth/register/producer", json=payload)
         assert resp.status_code == 200, resp.text
