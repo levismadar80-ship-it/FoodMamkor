@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+// MEH-1176 F4: this was the last audited admin page NOT riding the MEH-228
+// double-submit hook — create/update/delete/page-save all lacked an
+// in-flight lock (and create/update/page-save swallowed errors silently).
+import { useAdminAction } from "@/lib/use-admin-action";
 
 export default function AdminContentPage() {
   const t = useTranslations("admin");
@@ -39,44 +43,49 @@ export default function AdminContentPage() {
 
 function CategoriesEditor() {
   const t = useTranslations("admin");
+  const { run, isBusy } = useAdminAction();
   const [items, setItems] = useState([]);
   const [name, setName] = useState("");
   // MEH-1023 Chunk B: replaces the native browser confirm with a modal dialog showing
   // the category name. { id, name } while a delete is pending; null otherwise.
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  // MEH-1176 F4: the ad-hoc `deleting` state became the hook's per-key busy
+  // flag — same UI contract (disabled buttons, Escape gate, dialog stays
+  // open on failure), plus a genuine synchronous double-fire lock.
+  const deleting = confirmDelete ? isBusy(`category-delete-${confirmDelete.id}`) : false;
 
   useEffect(() => { load(); }, []);
   const load = () => api.get("/admin/categories").then((r) => setItems(r.data));
 
-  const create = async (e) => {
+  const create = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await api.post("/admin/categories", { name });
-    setName("");
-    load();
+    run("category-create", async () => {
+      await api.post("/admin/categories", { name });
+      setName("");
+      load();
+    });
   };
-  const update = async (id, name) => {
-    await api.put(`/admin/categories/${id}`, { name });
-    load();
-  };
+  const update = (id, newName) =>
+    run(`category-save-${id}`, async () => {
+      await api.put(`/admin/categories/${id}`, { name: newName });
+      load();
+    });
   // Open the confirm dialog; the DELETE call only fires from confirmRemove.
   // MEH-1034: carry producer_count so the dialog can show the blast radius.
   const remove = (cat) =>
     setConfirmDelete({ id: cat.id, name: cat.name, producer_count: cat.producer_count ?? 0 });
-  const confirmRemove = async () => {
-    setDeleting(true);
-    try {
-      await api.delete(`/admin/categories/${confirmDelete.id}`);
-      load();
-      setConfirmDelete(null); // close only on success
-    } catch {
+  const confirmRemove = () =>
+    run(
+      `category-delete-${confirmDelete.id}`,
+      async () => {
+        await api.delete(`/admin/categories/${confirmDelete.id}`);
+        load();
+        setConfirmDelete(null); // close only on success
+      },
       // Keep the dialog open on failure so the admin can retry or cancel.
-      showToast.error(t("content.categories.delete_error"));
-    } finally {
-      setDeleting(false);
-    }
-  };
+      () => showToast.error(t("content.categories.delete_error")),
+    );
 
   // Escape closes the dialog (unless a delete is mid-flight). Mirrors the
   // AdminRowMenu (Chunk A) dismissal contract; the users/page.js modal we
@@ -99,7 +108,11 @@ function CategoriesEditor() {
           onChange={(e) => setName(e.target.value)}
           className="flex-1 border border-border rounded-[12px] px-3 py-2"
         />
-        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm">
+        <button
+          type="submit"
+          disabled={isBusy("category-create")}
+          className="bg-primary text-white px-4 py-2 rounded-[12px] text-sm disabled:opacity-50"
+        >
           {t("content.categories.add")}
         </button>
       </form>
@@ -109,7 +122,13 @@ function CategoriesEditor() {
           <li className="text-sm text-muted text-center py-4">{t("content.categories.empty")}</li>
         ) : (
           items.map((c) => (
-            <CategoryRow key={c.id} cat={c} onSave={update} onDelete={remove} />
+            <CategoryRow
+              key={c.id}
+              cat={c}
+              onSave={update}
+              onDelete={remove}
+              saving={isBusy(`category-save-${c.id}`)}
+            />
           ))
         )}
       </ul>
@@ -152,7 +171,7 @@ function CategoriesEditor() {
   );
 }
 
-function CategoryRow({ cat, onSave, onDelete }) {
+function CategoryRow({ cat, onSave, onDelete, saving }) {
   const t = useTranslations("admin");
   const [name, setName] = useState(cat.name);
   const dirty = name !== cat.name;
@@ -166,7 +185,7 @@ function CategoryRow({ cat, onSave, onDelete }) {
       </span>
       <button
         onClick={() => onSave(cat.id, name)}
-        disabled={!dirty}
+        disabled={!dirty || saving}
         className="text-xs bg-primary text-white px-3 py-1 rounded-lg disabled:opacity-30"
       >
         {t("content.categories.save")}
@@ -178,24 +197,23 @@ function CategoryRow({ cat, onSave, onDelete }) {
 
 function PageEditor({ slug }) {
   const t = useTranslations("admin");
+  const { run, isBusy } = useAdminAction();
   const [page, setPage] = useState({ title: "", body: "" });
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // MEH-1176 F4: hook-keyed busy state — the old try/finally had no catch,
+  // so a failed save was silent; run() now surfaces the central error toast.
+  const saving = isBusy(`page-save-${slug}`);
 
   useEffect(() => {
     setSaved(false);
     api.get(`/admin/pages/${slug}`).then((r) => setPage(r.data));
   }, [slug]);
 
-  const save = async () => {
-    setSaving(true);
-    try {
+  const save = () =>
+    run(`page-save-${slug}`, async () => {
       await api.put(`/admin/pages/${slug}`, { title: page.title, body: page.body });
       setSaved(true);
-    } finally {
-      setSaving(false);
-    }
-  };
+    });
 
   return (
     <div className="bg-white border border-border rounded-[12px] p-5 space-y-3">

@@ -413,7 +413,8 @@
       "aria": "Show category: {name}"
     },
     "producers": {
-      "heading": "Recommended businesses",
+      "heading": "Local businesses",
+      "heading_category": "Businesses · {name}",
       "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
@@ -656,10 +657,8 @@
       "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
-      "declared_label": "Declared",
       "aria_verified": "Verified business. {tooltip}",
-      "aria_verified_plain": "Verified business",
-      "aria_declared": "Declared business"
+      "aria_verified_plain": "Verified business"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
@@ -2815,7 +2814,7 @@
     "native": "More ways to share",
     "email": "Share by email",
     "email_subject": "Have you heard of Mehamakor?",
-    "message": "Discover Mehamakor — a magazine of local food businesses, all personally vetted. Worth a look: {url}",
+    "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
   "gallery": {
