@@ -1,22 +1,38 @@
 # MEH-1171 — Conversion progress (checkpoint file)
 
 > Updated after EVERY converted section (checkpoint-and-continue, per ticket).
-> Conversion has NOT started — blocked on the wait gate below.
+> Matrix approved by Sapir 13/07 (incl. 138 STALE deletions, KEEP-RUNBOOK, 6 UNCLEAR resolutions).
+> Ticket B (MEH-1176) ran first: F1-F10 → 8 fixed/merged, F6+F7 stopped (see matrix § Ticket B execution status).
 
-## Status: 🔒 WAIT GATE — matrix awaiting Sapir approval
+## Status: 🚧 CONVERTING — checkpoint 1 (infra) done
 
-- [x] Phase 0 report + full triage matrix (`docs/qa/manual-testing-matrix.md`, 1,068 rows)
-- [ ] **Sapir approves matrix (incl. STALE deletions)** ← blocking everything below
-- [ ] `scripts/local-backend.sh` (uvicorn + ephemeral Postgres + alembic upgrade head + seed)
-- [ ] Conversion, section by section (CONVERT-PW → `frontend/e2e/flows/manual/`, CONVERT-PYTEST → `tests/test_manual_*.py`)
-- [ ] MANUAL_TESTING.md rewrite: pointer stubs (MEH-671 pattern) + unified Tier-3 checklist + STALE sections deleted
-- [ ] New suite green ×2 consecutive runs (anti-flake), output pasted here
-- [ ] FINDINGS handed to Ticket B
+- [x] Phase 0 report + full triage matrix (`docs/qa/manual-testing-matrix.md`, 1,074 rows) — merged in PR #1710
+- [x] **Sapir approved matrix** (13/07)
+- [x] `scripts/local-backend.sh` — VERIFIED WORKING in the sandbox: system Postgres 16 → ephemeral `mehamakor_local` → `alembic upgrade head` (full chain) → `seed_data.py` + `create_admin.py` → uvicorn; `GET /health` = `{"status":"ok","db_init":"ready"}`, seeded `/producers` served. `SKIP_UVICORN=1` = DB-prep-only mode for CI/runner-managed processes.
+- [ ] Conversion, section by section (CONVERT-PW → `frontend/e2e/flows/manual/`, CONVERT-PYTEST → `tests/test_manual_*.py`) — **next: checkpoint 2**
+- [ ] MANUAL_TESTING.md rewrite: pointer stubs (MEH-671 pattern) + unified Tier-3 checklist at top + STALE sections deleted + KEEP-RUNBOOK verbatim
+- [ ] New suite green ×2 consecutive SCOPED runs (`npx playwright test e2e/flows/manual`), output pasted here
+- [x] FINDINGS handed to Ticket B (F1-F12; F13 added during Ticket B)
+
+## Conversion order (checkpoint 2+ plan, highest-value first per matrix)
+
+1. Legal pages + static pages (/privacy /terms /accessibility content — spec 13 covers only /about+/events)
+2. MEH-722 map legend (live feature, zero coverage)
+3. Mobile /map near-me (07-gps-button skips mobile entirely; PW geolocation mocks)
+4. CitySearch autocomplete (stubbed everywhere, no dedicated test)
+5. MEH-853 upgrade-path submit body (vitest gap → PW or pytest per item)
+6. CONVERT-PYTEST cluster (23 items) against the local backend
+7. Remaining CONVERT-PW sections in matrix order; destructive ones via scripts/local-backend.sh
 
 ## Per-section log
 
-_(populated during conversion; one line per section: section name · items converted · spec file · run result)_
-
 | Section | Items | Target file | Status |
 |---|---|---|---|
-| — | — | — | not started |
+| (infra) local backend runbook | — | `scripts/local-backend.sh` | ✅ verified (health 200 + seeded reads) |
+
+## Runtime notes for the next checkpoint
+
+- Sandbox Playwright: launch with `executablePath: "/opt/pw-browsers/chromium"` (project pin wants a browser build absent from the sandbox cache; do NOT `playwright install`).
+- Playwright route-mocks: catch-all route must be registered FIRST (last registered wins).
+- Frontend for live checks: `npm run build && npm run start` (`/api/*` proxies to `http://localhost:8000` by default — pairs with local-backend.sh).
+- Verbatim-copy caution: several checklist strings predate later copy changes (e.g. Emoji LOCK removals) — runtime-verify each assertion string against the live app; checklist-vs-app copy mismatch = doc-stale note in the section log, not a test weakening.
