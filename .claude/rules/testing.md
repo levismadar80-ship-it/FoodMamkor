@@ -81,10 +81,23 @@ are needed — an earlier version of this note claimed MEH-736 added them to sat
 ruleset only ever gated on the 2 aggregators). Full mechanism:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Required checks".
 
-**`Playwright E2E (Vercel preview)` is NOT a required check.** It lives in
-`e2e.yml`, triggered by `deployment_status` (after the Vercel preview deploys),
-and job-skips on docs diffs (`e2e.yml:54-60`). **Docs-only PRs: don't poll E2E.**
-Merge when the **2 required aggregator gates** are green.
+**`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
+non-docs PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` +
+`push` on `staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was
+dropped when MEH-1044 moved E2E to a local `next start` target), and job-skips on
+docs diffs via the `filter` job's paths-filter (`e2e.yml:59-74,89-91`). The E2E
+job itself is **not yet** wired into the required-check set — the sanctioned way
+to make it block merge is the `E2E gate (required)` aggregator (job id `e2e-gate`,
+`always()` + `needs: [filter, e2e]`) whose YAML is staged in
+[docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
+(`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
+ruleset was tried on 2026-07-13 and reverted the same day because it re-introduced
+MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
+docs-only). Governance + gate matrix:
+[ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
+amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
+aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+Sapir applies the patch + adds the context to ruleset 15240090).
 
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then

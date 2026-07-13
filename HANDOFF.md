@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1201: E2E gate (required) aggregator + doc corrections — PR (GREEN, docs-only, auto-merge)
+
+- **Branch:** `feature/meh-1201-e2e-gate` off `origin/staging` (divergence 0 at cut). GREEN tier, docs-only (DoD exception: mobile/preview N/A). `Closes MEH-1201`. **Branch note (same as MEH-1185):** the harness-designated branch was `claude/e2e-gate-aggregator-mychzr`, cut off `main` (54-commit divergence) AND rejected by the MEH-1141 branch-name gate + `check-branch-name.sh` (no `claude/*`); reset onto `origin/staging` with the issue-specified `feature/*` name.
+- **Goal:** make E2E (mobile Pixel 5 + VRT) block merge without breaking docs-only, via an `always()` aggregator mirroring `ci-gate`/`deploy-gate` — the correct completion of ADR-028 Appendix A after option 1 (direct job as required) was applied 13/07 & reverted same day (re-introduced MEH-892).
+- **Phase 0 (read-only, file:line):** e2e.yml job ids `filter` (`:50`, "Paths filter") + `e2e` (`:76`, "Playwright E2E (Vercel preview)", `needs: filter` `:83`, job-`if:` `:89-91`). e2e.yml has **NO** workflow-level paths filter — `on:` = `pull_request`+`push` on `[staging]` (`:33-37`); only the `filter` job path-gates. `ci-gate` (`pr-checks.yml:522-616`) evaluates each need with `ok(){ case "$1" in success|skipped) return 0;; *) return 1;; esac; }` + guards `R_CHANGES` separately → the E2E gate mirrors this (guards `R_FILTER`, then `check`s `R_E2E`).
+- **Shipped:** NEW `docs/ci/e2e-gate.patch.md` (YAML for Sapir to paste — job `e2e-gate` / `E2E gate (required)` / `if: always()` / `needs: [filter, e2e]`; MEH-892 comment inline; `safe_load`-valid). UPDATE `.claude/rules/testing.md` (killed the "NOT a required check" + `deployment_status` staleness; current state + patch/ADR pointers). UPDATE `docs/decisions/ADR-028` (amendment 2026-07-13: option 1 applied→reverted; aggregator = sanctioned path). CHANGELOG + HANDOFF.
+- **Verify:** `git diff --stat` = 5 files, **zero under `.github/`**; YAML block inside the patch `.md` parses via `yaml.safe_load`; `grep "NOT a required check" .claude/rules/testing.md` → empty.
+- **Sapir follow-ups (in the patch `.md`):** paste YAML into `e2e.yml`; after it runs once on staging, add context `E2E gate (required)` to ruleset 15240090 required checks; final verify — docs-only PR merges clean + a frontend PR with red E2E is blocked.
+
 ## 2026-07-13 — MEH-1200: design benchmark reference doc — PR (GREEN, auto-merge)
 
 - **Branch:** `feature/meh-1200-design-benchmarks` off `origin/staging` (divergence 0 at cut). GREEN tier (docs only, zero code) → auto-merge on CI green, Sapir pre-approved. `Closes MEH-1200`.
