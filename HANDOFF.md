@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1171 Ticket A stage 1: manual-testing triage matrix — matrix APPROVED, PR #1710 un-gated
+
+- **Branch:** `feature/meh-1171-manual-testing-conversion` off `origin/staging` (divergence 0 at cut). **PR #1710** initially carried the merge-block marker in its title **by design** (self-block until matrix review, ADR-016 amendment authority). **Sapir approved the matrix 13/07** — all 138 STALE deletions, KEEP-RUNBOOK, and the 6 UNCLEAR resolutions (/neighbor→redirect via MEH-1176 F7 · phone-guard + admin text-right→MEH-1176 · 2× bundle-budget→KEEP-RUNBOOK); marker lifted, un-drafted, auto-merge armed. `Refs MEH-1171`.
+- **Shipped (docs only, zero app code):** `docs/qa/manual-testing-matrix.md` — all 1,060 MANUAL_TESTING.md items classified with per-row evidence (CONVERT-PW 508 · COVERED 322 · STALE 138 · KEEP-RUNBOOK 51 · DEVICE-ONLY 26 · CONVERT-PYTEST 23 · UNCLEAR 6 · destructive 183) + Phase 0 report + 12 findings for Ticket B. `docs/qa/conversion-progress.md` scaffold. Triage ran as 8 parallel read-only agents over line ranges; row totals machine-verified (1,074 = 1,060 items + 14 section rows; the map-quality section that merged to staging mid-triage is classified in the last 6 rows).
+- **Premise corrections:** pytest root is `tests/` not `backend/tests/`; `testMatch` already covers `e2e/flows/manual/`; E2E currently proxies to REAL staging backend → destructive specs must ride `scripts/local-backend.sh` (conversion stage). Two extra verdicts (KEEP-RUNBOOK, UNCLEAR) proposed for approval.
+- **Next (post-approval, same session):** MEH-1176 findings fixes (GREEN batch F2/F3/F5/F8/F9/F10 then YELLOW F1/F4/F6/F7, one PR each) → then the MEH-1171 conversion stage (local-backend.sh → section-by-section with checkpoint file → MANUAL_TESTING.md pointer-stub rewrite → suite green ×2).
+
 ## 2026-07-13 — MEH-1174: homepage discovery seam (tip relocation + dynamic heading + removable category tag) — PR open
 
 - **Branch:** `feature/meh-1174-discovery-seam` off `origin/staging` (divergence 0). YELLOW — Phase 0+1+2 end-to-end, self-QA, auto-merge on CI green (Sapir approved autonomous QA+merge 13/07). `Closes MEH-1174`.
