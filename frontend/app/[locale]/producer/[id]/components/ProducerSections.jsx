@@ -118,15 +118,20 @@ export default function ProducerSections({
             </div>
           )}
 
-          {/* MEH-1126 (Task I): image-first product cards. Equal-height cells
-              (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
+          {/* MEH-1168 P2: compact product ROWS (approved 1b anatomy), replacing
+              the giant image-first cards. Each row = a square thumbnail at the
+              inline-start + name/price beside it, ~96px tall, hairline-separated.
+              Desktop lays the rows out in two columns (fixes the old 2+1
+              asymmetric card grid). Prices via formatPriceRange (MEH-1140) with
+              dir="ltr" bidi isolation (regression baseline:
+              qa-artifacts/MEH-1168-p1/price-cell-zoom.webp). */}
           {producer.products?.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
               {producer.products.map((product) => {
-                // Cloudinary 4:3 when a photo exists; otherwise the canonical
-                // no-photo state (MEH-1138) — never a generic package icon.
+                // Cloudinary 1:1 square when a photo exists; otherwise the
+                // canonical no-photo state (MEH-1138) — never a package icon.
                 const img = product.image_url
-                  ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
+                  ? optimizeCloudinary(product.image_url, { aspectRatio: "1:1", width: 160 })
                   : null;
                 const price =
                   product.price_min != null
@@ -135,39 +140,36 @@ export default function ProducerSections({
                 return (
                   <div
                     key={product.id}
-                    className="bg-white rounded-md border border-border overflow-hidden flex flex-col"
+                    className="flex items-center gap-3 py-2 min-h-[96px] border-b border-border"
                   >
-                    {img ? (
-                      <div className="relative w-full aspect-[4/3] bg-green-50">
+                    <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
+                      {img ? (
                         <Image
                           src={img}
                           alt={product.name}
                           fill
                           className="object-cover"
-                          sizes="(min-width: 768px) 50vw, 100vw"
+                          sizes="80px"
                         />
-                      </div>
-                    ) : (
-                      // MEH-1138: canonical no-photo state — cream surface + leaf
-                      // glyph. MEH-1168 P1: the "מהמקור" wordmark is dropped from
-                      // the product placeholder — the platform logo inside a
-                      // business's own products was confusing, and the product
-                      // name already sits directly below the card.
-                      <div
-                        className="w-full aspect-[4/3] bg-background flex items-center justify-center"
-                        aria-label={t("producer.card.aria.image_missing", { name: product.name })}
-                      >
-                        <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                      </div>
-                    )}
-                    <div className="p-4 flex-1 flex flex-col">
+                      ) : (
+                        // MEH-1138 / MEH-1168 P1: cream surface + leaf glyph only
+                        // (no "מהמקור" wordmark inside a business's own products).
+                        <div
+                          className="w-full h-full bg-background flex items-center justify-center"
+                          aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                        >
+                          <Leaf size={32} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
                       {product.description && (
-                        <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">{product.description}</p>
                       )}
                       {/* MEH-1168 P1 (bidi): the ₪-suffixed amount is bidi-
                           isolated so RTL flow can't render "35₪" as "₪35". */}
-                      {price && <p className="text-accent font-medium mt-2"><span dir="ltr">{price}</span></p>}
+                      {price && <p className="text-accent font-medium mt-1"><span dir="ltr">{price}</span></p>}
                     </div>
                   </div>
                 );
@@ -322,7 +324,10 @@ export default function ProducerSections({
           observation point), so the anchor is valid before reviews mount. */}
       <div
         id="reviews"
-        className="scroll-mt-24"
+        // MEH-1168 P2: on mobile the anchor must clear BOTH the sticky header
+        // and the now-visible section tab bar (which sticks below it); desktop
+        // has no tab bar so it keeps the header-only offset.
+        className="scroll-mt-[150px] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
           reviewsContainerRef.current = el;
