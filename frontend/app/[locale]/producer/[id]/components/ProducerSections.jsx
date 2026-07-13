@@ -32,13 +32,10 @@ const MIN_NEARBY_BUSINESSES = 4;
  * report. The signature product (top_product_name / starting_price_label)
  * moved OUT of ProducerHeader to the top of the products section here.
  *
- * Two delivery branches are PRESERVED (per Phase 1 risk note):
- *   - New: <DeliveryBlock> when producer.offers_delivery is truthy, now fed
- *     the full delivery_areas (city · min order · day, fix 4) + pickup_points
- *     (fix 6) + a demoted tertiary CTA.
- *   - Legacy: the delivery_areas table when !offers_delivery and
- *     delivery_areas[].length > 0.
- * Do NOT delete the legacy branch without a separate migration plan.
+ * Delivery (MEH-1168 P3, decision A): a single editorial <DeliveryBlock> serves
+ * ALL producers — fed delivery_areas (city · min order · day) + pickup_points +
+ * a demoted tertiary CTA. It renders whenever the producer has any delivery or
+ * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * showAllEvents state lives here as local UI state. The reviews wrapper
  * accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
@@ -263,10 +260,16 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* MEH-213 / MEH-1146 chunk B: DeliveryBlock — shown when offers_delivery.
-          Now fed the full delivery_areas (city · min order · day, fix 4) and
-          pickup_points (fix 6); the CTA is demoted to tertiary. */}
-      {producer.offers_delivery && (
+      {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
+          producers — the legacy delivery_areas table retired from this page. It
+          is fed the full delivery_areas (city · min order · day) + pickup_points
+          and renders whenever the producer has any delivery/pickup signal
+          (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
+          order CTA stays tone="tertiary" so it never competes with the contact
+          card's single primary CTA. */}
+      {(producer.offers_delivery ||
+        producer.delivery_areas?.length > 0 ||
+        producer.pickup_points) && (
         <div ref={(el) => { sectionRefs.current.delivery = el; }}>
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
@@ -275,45 +278,6 @@ export default function ProducerSections({
             producer={producer}
           />
         </div>
-      )}
-
-      {/* Legacy delivery_areas table — shown for producers with the old model
-          (has delivery_areas rows but no delivery_cities set yet). */}
-      {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
-            {t("producer.detail.sections.delivery.heading")}
-          </h2>
-          <div className="bg-white rounded-md overflow-hidden border border-border">
-            <table className="w-full">
-              <thead className="bg-green-50">
-                <tr>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.city")}</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.min_order")}</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.day")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {producer.delivery_areas.map((da) => (
-                  <tr key={da.id} className="border-t border-border">
-                    <td className="px-4 py-3 text-text">{da.city}</td>
-                    <td className="px-4 py-3 text-text">
-                      {/* MEH-1168 P1 (bidi, top priority): the price cell renders
-                          visually as "₪150" in the RTL table without isolation —
-                          dir="ltr" pins it to the canonical "150₪" (MEH-1140). */}
-                      {da.min_order ? <span dir="ltr">{formatPrice(da.min_order)}</span> : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-text">{da.delivery_day || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* Self-pickup (fix 6) also surfaces in the legacy branch. */}
-          {producer.pickup_points && (
-            <p className="text-sm text-text mt-3">{t("group_buys.delivery.pickup")}</p>
-          )}
-        </section>
       )}
 
       {/* Reviews — IO-lazy: only mounts the fetch when the section
