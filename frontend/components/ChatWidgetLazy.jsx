@@ -13,9 +13,22 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
   ssr: false,
 });
 
+// MEH-1168 P3: the global chat FAB is suppressed on the public producer detail
+// page (/producer/[id]) ONLY — that page already carries a primary contact CTA
+// + a sticky contact bar, so the FAB was a second green action that overlapped
+// the contact card at 375px. The widget stays mounted everywhere else (this is
+// a conditional render by route, NOT a global removal). usePathname comes from
+// @/i18n/navigation, so it is locale-stripped ("/producer/123", not "/he/...").
+// The dashboard subtree (/producer/dashboard/...) keeps the FAB.
+function isProducerDetail(pathname) {
+  // `$` anchor: match the /producer/[id] leaf exactly (no public sub-routes),
+  // so a hypothetical future nested route wouldn't accidentally lose the FAB.
+  return /^\/producer\/(?!dashboard(\/|$))[^/]+$/.test(pathname || "");
+}
+
 export default function ChatWidgetLazy() {
   const pathname = usePathname();
-  // /map is the one page where the FAB does damage instead of good: the
+  // /map is the second page where the FAB does damage instead of good: the
   // launcher owns the bottom-END corner at z-9999 (ChatWidget.jsx:178-182,
   // insetInlineEnd — bottom-LEFT in RTL) and sits on top of the desktop
   // category-legend toggle in the same corner at z-[800] (MapPane.jsx:149,
@@ -28,5 +41,6 @@ export default function ChatWidgetLazy() {
   // chat chunk; ChatWidget internals and its positioning on every other page
   // are untouched.
   if (pathname === "/map" || pathname.startsWith("/map/")) return null;
+  if (isProducerDetail(pathname)) return null;
   return <ChatWidget />;
 }
