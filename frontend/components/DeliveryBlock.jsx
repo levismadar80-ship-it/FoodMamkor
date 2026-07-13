@@ -45,7 +45,9 @@ export default function DeliveryBlock({ nationwide, areas = [], pickup = false, 
               <span className="text-fg-muted flex items-center gap-2">
                 {da.min_order ? (
                   <span>
-                    {t("min_order")} {formatPrice(da.min_order)}
+                    {/* MEH-1168 P1 (bidi): isolate the ₪ amount so RTL flow keeps
+                        it as "150₪", never "₪150" (MEH-1140 canon). */}
+                    {t("min_order")} <span dir="ltr">{formatPrice(da.min_order)}</span>
                   </span>
                 ) : null}
                 {da.delivery_day && (

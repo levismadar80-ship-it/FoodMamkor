@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Info, Package, Truck, Star } from "@phosphor-icons/react";
+import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
@@ -114,7 +114,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
             { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
             { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
-            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: Star },
+            // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
+            // star implies a rating system the reviews section doesn't provide.
+            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText },
           ].map((tab) => (
             <button
               key={tab.key}

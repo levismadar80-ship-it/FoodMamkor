@@ -1,7 +1,6 @@
 import { useTranslations } from "next-intl";
 import { MapPin, Heart, Star, Truck, StarOfDavid } from "@phosphor-icons/react";
 
-import AvailabilityBadge from "@/components/AvailabilityBadge";
 import BadgeRow from "@/components/BadgeRow";
 import CategoryTag from "@/components/CategoryTag";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
@@ -39,6 +38,10 @@ export default function ProducerHeader({
     producer.delivery_areas?.length > 0 ||
     !!producer.has_delivery ||
     (typeof producer.delivery_count === "number" && producer.delivery_count > 0);
+  // MEH-1168 P1 (dedup): secondary categories only — the primary category is
+  // already named in the logistics line, so it's excluded from the chip row.
+  const extraCats =
+    producer.categories?.filter((cat) => cat.id !== primaryCategory?.id) ?? [];
   return (
     <>
       {/* Header: name + trust badges */}
@@ -118,13 +121,11 @@ export default function ProducerHeader({
       )}
 
       {/* MEH-1146 chunk B: two-tier header — the logistics line consolidates
-          city · category · status onto one row (the meta line + the separate
-          AvailabilityBadge line were merged). The signature product moved OUT
-          of the header to the top of the products list.
-          MEH-291: the `|| availability_status` fallback is intentional — the
-          backend dual-writes the legacy field during the overlap, so the badge
-          reads it when a stale row hasn't picked up availability_state yet.
-          Do not drop the fallback. */}
+          city · category onto one row. MEH-1168 P1 (dedup): the availability
+          status ("פתוח להזמנות") was removed from here — it now lives ONLY in
+          the contact-card status line (open states) / the header vacation +
+          slow-response banners below (full/vacation), so it never renders
+          twice on the page. */}
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-fg-muted text-sm mt-2 mb-3">
         <span className="inline-flex items-center gap-1.5">
           <MapPin size={14} aria-hidden="true" />
@@ -136,17 +137,15 @@ export default function ProducerHeader({
             <span>{primaryCategory.name}</span>
           </>
         )}
-        <span aria-hidden="true">·</span>
-        <AvailabilityBadge
-          status={producer.availability_state || producer.availability_status}
-          variant="detail"
-        />
       </div>
 
-      {/* Categories */}
-      {producer.categories?.length > 1 && (
+      {/* Secondary categories — MEH-1168 P1 (dedup): the primary category is
+          already named in the logistics line above, so it is excluded here to
+          avoid the same chip appearing twice. Only the additional categories
+          render as tags. */}
+      {extraCats.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-4">
-          {producer.categories.map((cat) => (
+          {extraCats.map((cat) => (
             <CategoryTag key={cat.id} category={cat} />
           ))}
         </div>

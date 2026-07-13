@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ChatCircle } from "@phosphor-icons/react";
 import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
 import { getProducerQuestions } from "@/lib/categoryQuestions";
 
@@ -45,8 +46,11 @@ export default function WhatsAppQuestionChips({ producer }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="question-link"
-                className="flex items-center min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+                className="flex items-center gap-2 min-h-[44px] font-body-md text-sm text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
               >
+                {/* MEH-1168 P1: chat-bubble glyph carries the "ask" affordance
+                    before each ready-made question (icon + color, no border). */}
+                <ChatCircle size={16} weight="regular" className="flex-shrink-0" aria-hidden="true" />
                 {q}
               </a>
             </li>

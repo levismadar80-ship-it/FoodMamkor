@@ -51,6 +51,9 @@ vi.mock("@phosphor-icons/react", () => {
     Phone: Stub,
     Receipt: Stub,
     WhatsappLogo: Stub,
+    // MEH-1168 P1: WhatsAppQuestionChips (a real child here) now renders a
+    // ChatCircle glyph before each question link.
+    ChatCircle: Stub,
   };
 });
 
