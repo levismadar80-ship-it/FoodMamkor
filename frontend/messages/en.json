@@ -413,7 +413,8 @@
       "aria": "Show category: {name}"
     },
     "producers": {
-      "heading": "Recommended businesses",
+      "heading": "Local businesses",
+      "heading_category": "Businesses · {name}",
       "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
@@ -656,10 +657,8 @@
       "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
-      "declared_label": "Declared",
       "aria_verified": "Verified business. {tooltip}",
-      "aria_verified_plain": "Verified business",
-      "aria_declared": "Declared business"
+      "aria_verified_plain": "Verified business"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
@@ -696,14 +695,6 @@
         },
         "recipes": {
           "cta": "Our recipes"
-        },
-        "delivery": {
-          "heading": "Delivery areas",
-          "col": {
-            "city": "City",
-            "min_order": "Minimum order",
-            "day": "Delivery day"
-          }
         }
       },
       "header": {
@@ -1013,10 +1004,11 @@
         "placeholder": "Search city..."
       },
       "business_count": "{count, plural, =0 {No local businesses in your area} one {1 local business in your area} other {# local businesses in your area}}",
-      "subhead": "Near you · {region}",
+      "subhead": "{region}",
       "sort": {
         "aria_label": "Sort businesses",
-        "nearest": "Nearest",
+        "label": "Sort:",
+        "nearest": "Distance",
         "top_rated": "Top rated",
         "newest": "Newest"
       }
@@ -2648,7 +2640,7 @@
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
-    "login_prompt": "<login>Sign in</login> to write a review",
+    "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come after a few customers",
@@ -2822,7 +2814,7 @@
     "native": "More ways to share",
     "email": "Share by email",
     "email_subject": "Have you heard of Mehamakor?",
-    "message": "Discover Mehamakor — a magazine of local food businesses, all personally vetted. Worth a look: {url}",
+    "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
   "gallery": {

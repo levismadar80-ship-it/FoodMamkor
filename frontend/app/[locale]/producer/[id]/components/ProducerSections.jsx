@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { BRAND_NAME } from "@/lib/constants";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -33,13 +32,10 @@ const MIN_NEARBY_BUSINESSES = 4;
  * report. The signature product (top_product_name / starting_price_label)
  * moved OUT of ProducerHeader to the top of the products section here.
  *
- * Two delivery branches are PRESERVED (per Phase 1 risk note):
- *   - New: <DeliveryBlock> when producer.offers_delivery is truthy, now fed
- *     the full delivery_areas (city · min order · day, fix 4) + pickup_points
- *     (fix 6) + a demoted tertiary CTA.
- *   - Legacy: the delivery_areas table when !offers_delivery and
- *     delivery_areas[].length > 0.
- * Do NOT delete the legacy branch without a separate migration plan.
+ * Delivery (MEH-1168 P3, decision A): a single editorial <DeliveryBlock> serves
+ * ALL producers — fed delivery_areas (city · min order · day) + pickup_points +
+ * a demoted tertiary CTA. It renders whenever the producer has any delivery or
+ * pickup signal. The legacy delivery_areas table was retired from this page.
  *
  * showAllEvents state lives here as local UI state. The reviews wrapper
  * accepts reviewsContainerRef and reviewsVisible from useLazyReviews so the
@@ -119,15 +115,20 @@ export default function ProducerSections({
             </div>
           )}
 
-          {/* MEH-1126 (Task I): image-first product cards. Equal-height cells
-              (grid items-stretch + card flex-col) so a 2+1 row never jumps. */}
+          {/* MEH-1168 P2: compact product ROWS (approved 1b anatomy), replacing
+              the giant image-first cards. Each row = a square thumbnail at the
+              inline-start + name/price beside it, ~96px tall, hairline-separated.
+              Desktop lays the rows out in two columns (fixes the old 2+1
+              asymmetric card grid). Prices via formatPriceRange (MEH-1140) with
+              dir="ltr" bidi isolation (regression baseline:
+              qa-artifacts/MEH-1168-p1/price-cell-zoom.webp). */}
           {producer.products?.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
               {producer.products.map((product) => {
-                // Cloudinary 4:3 when a photo exists; otherwise the canonical
-                // no-photo state (MEH-1138) — never a generic package icon.
+                // Cloudinary 1:1 square when a photo exists; otherwise the
+                // canonical no-photo state (MEH-1138) — never a package icon.
                 const img = product.image_url
-                  ? optimizeCloudinary(product.image_url, { aspectRatio: "4:3" })
+                  ? optimizeCloudinary(product.image_url, { aspectRatio: "1:1", width: 160 })
                   : null;
                 const price =
                   product.price_min != null
@@ -136,37 +137,36 @@ export default function ProducerSections({
                 return (
                   <div
                     key={product.id}
-                    className="bg-white rounded-md border border-border overflow-hidden flex flex-col"
+                    className="flex items-center gap-3 py-2 min-h-[96px] border-b border-border"
                   >
-                    {img ? (
-                      <div className="relative w-full aspect-[4/3] bg-green-50">
+                    <div className="relative w-20 h-20 flex-shrink-0 rounded-md overflow-hidden bg-background">
+                      {img ? (
                         <Image
                           src={img}
                           alt={product.name}
                           fill
                           className="object-cover"
-                          sizes="(min-width: 768px) 50vw, 100vw"
+                          sizes="80px"
                         />
-                      </div>
-                    ) : (
-                      // MEH-1138: canonical no-photo state — cream surface + leaf
-                      // glyph + brand name. REUSES: frontend/components/ProducerCard.jsx:262
-                      <div
-                        className="w-full aspect-[4/3] bg-background flex flex-col items-center justify-center gap-2"
-                        aria-label={t("producer.card.aria.image_missing", { name: product.name })}
-                      >
-                        <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                        <span className="font-headline-md text-base font-bold text-primary/50">
-                          {BRAND_NAME}
-                        </span>
-                      </div>
-                    )}
-                    <div className="p-4 flex-1 flex flex-col">
+                      ) : (
+                        // MEH-1138 / MEH-1168 P1: cream surface + leaf glyph only
+                        // (no "מהמקור" wordmark inside a business's own products).
+                        <div
+                          className="w-full h-full bg-background flex items-center justify-center"
+                          aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                        >
+                          <Leaf size={32} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-text">{product.name}</p>
                       {product.description && (
-                        <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
+                        <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">{product.description}</p>
                       )}
-                      {price && <p className="text-accent font-medium mt-2">{price}</p>}
+                      {/* MEH-1168 P1 (bidi): the ₪-suffixed amount is bidi-
+                          isolated so RTL flow can't render "35₪" as "₪35". */}
+                      {price && <p className="text-accent font-medium mt-1"><span dir="ltr">{price}</span></p>}
                     </div>
                   </div>
                 );
@@ -229,7 +229,7 @@ export default function ProducerSections({
                       {ev.city && ` · ${ev.city}`}
                     </p>
                     {ev.price > 0 && (
-                      <p className="text-sm text-accent font-medium mt-1">{formatPrice(ev.price)}</p>
+                      <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
                     )}
                     {ev.price === 0 && (
                       <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
@@ -260,10 +260,16 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* MEH-213 / MEH-1146 chunk B: DeliveryBlock — shown when offers_delivery.
-          Now fed the full delivery_areas (city · min order · day, fix 4) and
-          pickup_points (fix 6); the CTA is demoted to tertiary. */}
-      {producer.offers_delivery && (
+      {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
+          producers — the legacy delivery_areas table retired from this page. It
+          is fed the full delivery_areas (city · min order · day) + pickup_points
+          and renders whenever the producer has any delivery/pickup signal
+          (offers_delivery, delivery_areas rows, or pickup_points). Its WhatsApp
+          order CTA stays tone="tertiary" so it never competes with the contact
+          card's single primary CTA. */}
+      {(producer.offers_delivery ||
+        producer.delivery_areas?.length > 0 ||
+        producer.pickup_points) && (
         <div ref={(el) => { sectionRefs.current.delivery = el; }}>
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
@@ -274,42 +280,6 @@ export default function ProducerSections({
         </div>
       )}
 
-      {/* Legacy delivery_areas table — shown for producers with the old model
-          (has delivery_areas rows but no delivery_cities set yet). */}
-      {!producer.offers_delivery && producer.delivery_areas?.length > 0 && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.delivery = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">
-            {t("producer.detail.sections.delivery.heading")}
-          </h2>
-          <div className="bg-white rounded-md overflow-hidden border border-border">
-            <table className="w-full">
-              <thead className="bg-green-50">
-                <tr>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.city")}</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.min_order")}</th>
-                  <th className="text-end px-4 py-3 text-sm font-medium text-primary">{t("producer.detail.sections.delivery.col.day")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {producer.delivery_areas.map((da) => (
-                  <tr key={da.id} className="border-t border-border">
-                    <td className="px-4 py-3 text-text">{da.city}</td>
-                    <td className="px-4 py-3 text-text">
-                      {da.min_order ? formatPrice(da.min_order) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-text">{da.delivery_day || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* Self-pickup (fix 6) also surfaces in the legacy branch. */}
-          {producer.pickup_points && (
-            <p className="text-sm text-text mt-3">{t("group_buys.delivery.pickup")}</p>
-          )}
-        </section>
-      )}
-
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
           MEH-1048: id="reviews" is the anchor target for the header trust
@@ -318,7 +288,10 @@ export default function ProducerSections({
           observation point), so the anchor is valid before reviews mount. */}
       <div
         id="reviews"
-        className="scroll-mt-24"
+        // MEH-1168 P2: on mobile the anchor must clear BOTH the sticky header
+        // and the now-visible section tab bar (which sticks below it); desktop
+        // has no tab bar so it keeps the header-only offset.
+        className="scroll-mt-[150px] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
           reviewsContainerRef.current = el;

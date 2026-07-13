@@ -335,6 +335,15 @@ front matter for the normative token bindings.
   also linking to `#reviews`. **Zero reviews → the whole strip is absent** (no
   "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
   excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
+- **Producer section tab bar (`ProducerDetail`, MEH-1168 P2 — ADOPTED):** the
+  **mobile-only** (`md:hidden`) section nav on `/producer/[id]` — a sticky row of
+  four tabs (about · products · delivery · reviews) with Phosphor icons
+  (`Info`/`Package`/`Truck`/`ChatCircleText`, fill weight when active); the active
+  tab is marked by `border-b-2 border-primary text-primary`. It sticks at
+  `top-[82px]`, **below** the global header (82px, `z-[1050]`) so it stays visible
+  page-long — at `top-0` it was occluded behind the header once scrolled into a
+  deep section. Tapping a tab smooth-scrolls the section clear of both the header
+  and the bar (`useTabScroll`). RTL logical props only.
 
 ## Action hierarchy
 

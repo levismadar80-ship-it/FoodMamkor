@@ -52,8 +52,11 @@ export const BADGE_CONFIG = {
     label: "חדש",
     tooltip: "העסק הצטרף אלינו בחודש האחרון.",
     // MEH-792: was "secondary" — an alias of primary ever since MEH-703
-    // collapsed brand-secondary into primary. Named for what it renders.
-    color: "primary",
+    // collapsed brand-secondary into primary.
+    // MEH-1168 P1: demoted primary → muted (tonal cream/hairline). Solid green
+    // is reserved for the single primary CTA (the WhatsApp action) per
+    // DESIGN.md § Action hierarchy — a solid-green "חדש" chip competed with it.
+    color: "muted",
   },
   organic: {
     key: "organic",

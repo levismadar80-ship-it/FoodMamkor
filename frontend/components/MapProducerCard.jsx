@@ -4,12 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Star, Truck, Leaf, Clock, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
+import { Star, Truck, Leaf, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
 import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
-import { parseHours, computeStatus } from "@/lib/hours";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 
@@ -32,24 +31,26 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
   const priceLabel = p.starting_price_label || p.price_range;
-  // MEH-934: split the leading Hebrew word prefix (e.g. "מ-") from the numeric
-  // run so the prefix renders in the Hebrew body font while the number stays
-  // Cormorant italic, bidi-isolated — fixes "מ-35₪" reversing in RTL. The ₪ is
-  // excluded from the prefix class so a shekel-first label ("₪35") keeps the
-  // currency with the number in Cormorant rather than splitting it off.
-  const priceMatch = priceLabel ? priceLabel.match(/^([^\d₪]*)(.*)$/) : null;
-  const pricePrefix = priceMatch?.[1] ?? "";
+  // MEH-934: split the price so only the numeric run renders Cormorant italic,
+  // bidi-isolated — fixes "מ-35₪" reversing in RTL. The ₪ is excluded from the
+  // prefix class so a shekel-first label ("₪35") keeps the currency with the
+  // number in Cormorant rather than splitting it off.
+  // 3-part split (prefix)(digitRun)(suffix): the old 2-part regex sent
+  // everything after the first digit — including Hebrew unit words ("/בקבוק")
+  // — into the Cormorant <bdi>; Cormorant has no Hebrew glyphs → fallback
+  // garble. Brand LOCK: Cormorant = Latin/numerals ONLY. The digit run keeps
+  // . , ₪ and - (ranges like "35-50") with the numerals; prefix + suffix stay
+  // in the Hebrew body font. A label with no digits at all renders whole in
+  // the body font (priceMatch null → prefix fallback).
+  const priceMatch = priceLabel ? priceLabel.match(/^([^\d₪]*)([\d.,₪-]+)(.*)$/) : null;
+  const pricePrefix = priceMatch ? priceMatch[1] : priceLabel || "";
   const priceNumber = priceMatch?.[2] ?? "";
+  const priceSuffix = priceMatch?.[3] ?? "";
   const isVerified = p.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
   // MEH-798: also pull the Phosphor `icon` for the category chip below.
   const { color: categoryColor, textColor: categoryTextColor, icon: CategoryIcon } = styleForProducer(p);
-
-  // MEH-826: open/closed-now status from the shared lib/hours parser.
-  const th = useTranslations("opening_hours");
-  const hoursMap = parseHours(p.opening_hours);
-  const hoursStatus = hoursMap ? computeStatus(hoursMap) : null;
 
   // MEH-826: client-side distance — haversine(user GPS, producer lat/lng).
   // GPS is read from sessionStorage (useUserLocation); no fetch, no radius
@@ -93,7 +94,9 @@ export default function MapProducerCard({ producer, active, onClick }) {
       // nested-interactive button — those two links are the keyboard targets. The keyboard
       // path to select-on-map from the list is tracked in MEH-765.
       className={[
-        "flex gap-3 bg-white border rounded-md overflow-hidden transition",
+        // min-h keeps sparse cards (no chip / no meta) the same height as fully
+        // populated ones — the uniform template's equal-height guarantee.
+        "flex gap-3 bg-white border rounded-md overflow-hidden transition min-h-[128px]",
         active ? "border-primary border-2" : "border-border",
         onClick ? "cursor-pointer" : "",
       ].join(" ")}
@@ -121,12 +124,6 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} className="text-primary/40" /></div>
         )}
-        {/* Category color dot — bottom-end corner of thumbnail */}
-        <span
-          className="absolute bottom-1 end-1 w-2.5 h-2.5 rounded-full border-[1.5px] border-white pointer-events-none"
-          style={{ background: categoryColor }}
-          aria-hidden="true"
-        />
       </div>
 
       {/* Text content — LEFT in RTL */}
@@ -138,79 +135,69 @@ export default function MapProducerCard({ producer, active, onClick }) {
           {/* MEH-798 */}
           {/* REUSES: frontend/app/[locale]/map/components/MapPane.jsx:170-176
               — 20px wash + 12px icon, F1 flat (no shadow). */}
-          {category?.name && (
-            <div className="mt-0.5">
-              <span
-                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs max-w-full"
-                style={{ backgroundColor: `${categoryColor}1A`, color: categoryTextColor || categoryColor }}
-              >
-                <CategoryIcon size={12} weight="fill" aria-hidden="true" />
-                <span className="line-clamp-1">{category.name}</span>
-              </span>
+          {/* Uniform-template slot 3 — category chip · rating · verified seal on ONE
+              line. The separate trust strip is gone: rating (Star + LTR-isolated
+              number) and the SealCheck (icon-only, aria-label carries t("verified"))
+              moved up here so every card stacks the same slots. */}
+          {(category?.name || rating > 0 || isVerified) && (
+            <div className="mt-0.5 flex h-6 items-center gap-1.5 min-w-0">
+              {category?.name && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs min-w-0"
+                  style={{ backgroundColor: `${categoryColor}1A`, color: categoryTextColor || categoryColor }}
+                >
+                  <CategoryIcon size={12} weight="fill" aria-hidden="true" />
+                  <span className="line-clamp-1">{category.name}</span>
+                </span>
+              )}
+              {rating > 0 && (
+                <span className="inline-flex items-center gap-0.5 text-[12px] text-fg-muted shrink-0">
+                  <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
+                  <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
+                </span>
+              )}
+              {/* MEH-938: ✓ dingbat → Phosphor SealCheck (glyph-LOCK) */}
+              {isVerified && (
+                <SealCheck size={13} className="text-fg-muted shrink-0" role="img" aria-label={t("verified")} />
+              )}
             </div>
           )}
-          {priceLabel && (
-            <p className="line-clamp-1 mt-0.5 text-accent" style={{ fontSize: "13px" }}>
-              {pricePrefix && <span className="font-body-md">{pricePrefix}</span>}
-              {priceNumber && <bdi className="font-english italic numeric">{priceNumber}</bdi>}
+          {/* Uniform-template slot 4 — ONE meta line: {city} · {distance} · {price}.
+              Replaces the old standalone distance <p> and the separate price line. */}
+          {(p.city || distanceLabel || priceLabel) && (
+            <p className="text-[13px] leading-5 text-fg-muted line-clamp-1 mt-0.5" data-testid="map-meta-line">
+              {p.city}
+              {distanceLabel && (
+                <>
+                  {p.city ? " · " : ""}
+                  <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
+                </>
+              )}
+              {priceLabel && (
+                <>
+                  {p.city || distanceLabel ? " · " : ""}
+                  {pricePrefix && <span className="font-body-md">{pricePrefix}</span>}
+                  {priceNumber && <bdi className="font-english italic numeric">{priceNumber}</bdi>}
+                  {priceSuffix && <span className="font-body-md">{priceSuffix}</span>}
+                </>
+              )}
             </p>
           )}
         </div>
 
-        {/* MEH-826: open/closed-now line with clock — numerals LTR-isolated */}
-        {hoursStatus && (
-          <p className={`text-[12px] mt-1 inline-flex items-center gap-1 flex-wrap ${hoursStatus.isOpen ? "text-primary" : "text-fg-muted"}`}>
-            <Clock size={12} weight="regular" aria-hidden="true" />
-            {hoursStatus.isOpen ? (
-              <>
-                <span>{th("open_now")}</span>
-                <span aria-hidden="true">·</span>
-                <span dir="ltr">{hoursStatus.openTime}–{hoursStatus.closeTime}</span>
-              </>
-            ) : (
-              <span>
-                {th("closed_now")}
-                {hoursStatus.nextDayKey
-                  ? ` ${th("opens_at", { day: hoursStatus.nextIsTomorrow ? th("tomorrow") : th(`weekdays.${hoursStatus.nextDayKey}`), time: hoursStatus.nextTime })}`
-                  : ""}
-              </span>
-            )}
-          </p>
-        )}
-
-        {/* MEH-826: distance from the GPS user — full label LTR-isolated (bidi) */}
-        {distanceLabel && (
-          <p className="text-[12px] text-fg-muted mt-1">
-            <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
-          </p>
-        )}
-
-        {/* Pills row */}
-        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-          {deliveryMatch && (
+        {/* Delivery pill — the only conditional slot (user-relevant: renders
+            solely when the producer delivers to the visitor's own city) */}
+        {deliveryMatch && (
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-1">
               <Truck size={12} className="text-current" aria-hidden="true" />{t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
             </span>
-          )}
-        </div>
-
-        {/* Trust strip — verified + rating (Star icon; number LTR-isolated) */}
-        {(isVerified || rating > 0) && (
-          <p className="text-[12px] text-fg-muted mt-1 inline-flex items-center gap-1 flex-wrap">
-            {/* MEH-938: ✓ dingbat → Phosphor SealCheck (glyph-LOCK); no weight/color → inherits the muted strip color */}
-            {isVerified && <span className="inline-flex items-center gap-0.5"><SealCheck size={13} aria-hidden="true" />{t("verified")}</span>}
-            {isVerified && rating > 0 && <span aria-hidden="true">·</span>}
-            {rating > 0 && (
-              <span className="inline-flex items-center gap-0.5">
-                <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
-                <span dir="ltr">{rating.toFixed(1)} ({reviewsCount})</span>
-              </span>
-            )}
-          </p>
+          </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-1.5">
+        {/* Actions — min-h reserves the 28px contact-button slot even when the
+            producer has no primary CTA, so link-only cards stay the same height */}
+        <div className="flex items-center gap-2 mt-1.5 min-h-[28px]">
           {primaryHref && (
             <a
               href={primaryHref}
