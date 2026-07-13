@@ -180,7 +180,11 @@ replaces each `.png` with a `.webp` and prints the before/after. Proven on the
 still legible (`qa-artifacts/MEH-1156/home-1280-compressed.webp`). `--jpeg` gives
 a JPEG q80 fallback; `--keep` preserves the source PNG.
 
-**Status:** the 2 MB cap is a **convention**, not yet a CI gate — no size-check
-job exists in `.github/workflows/**` as of 2026-07-12 (`.github/workflows/**` is
-CC-deny, MEH-671). The gate YAML ships in the MEH-1156 PR body for Sapir to wire;
-until then, honor the cap by running the helper.
+**Status:** the 2 MB cap is a **live CI gate**, not just a convention — the
+**"qa-artifacts size cap"** job (`qa-artifacts-size` in
+`.github/workflows/pr-checks.yml`) sums the bytes added/modified under
+`qa-artifacts/` in the PR diff and fails at > 2,097,152 bytes; it's wired into
+**"CI gate (required)"** (`ci-gate` `needs:` + the `R_QA_SIZE` result check, an
+always-required aggregator leg), so an over-cap PR cannot go green. Sapir applied
+it in PR #1684; `.github/workflows/**` is CC-deny (MEH-671). Running the helper
+above is how you **comply** — compress every screenshot before committing.
