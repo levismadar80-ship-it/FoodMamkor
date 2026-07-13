@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1183: category-card bridge photos + glyph fallback — DRAFT PR (held for preview legibility)
+
+- **Branch:** `feature/meh-1183-category-image-fallback` off `origin/staging` (divergence 0 at cut; harness-designated `claude/*` name rejected by the MEH-1141 branch-name gate → used the issue `feature/*` name). **YELLOW + visual.** `Refs MEH-1175` (parent) BEFORE `Closes MEH-1183` (child).
+- **Phase 0 (read-only, file:line):** CATEGORY_CARDS = exactly 10, keys meat/veg/dairy/bread/oil/care/fish/fruit/drinks/cream ✓ (`lib/home-categories.js:17-31`). **`next.config.js` already carries `images.unsplash.com`** (remotePatterns L113 + CSP img-src L83, MEH-1182) on `origin/staging` → **Phase 1 step 1 was a no-op, config untouched.** No open-PR collision on the 3 files (19 open, all unrelated). **Zero overlay/scrim residue** — only a History *comment* mentions PREMIUM_DESIGN; not reintroduced.
+- **Shipped (2 files):** `lib/home-categories.js` — `unsplash(id)` helper + `image` on all 10 cards (bridge placeholders, MEH-1182 license, → MEH-1184). `HomeCategoryGrid.jsx` — `card.image ? <Image fill object-cover priority={isHero}> : glyph/Leaf` (fallback byte-identical); card `relative overflow-hidden`; photo flat, **no scrim**; numeral+name `z-10` over the photo, tokens/position unchanged; aspect spacer locks CLS.
+- **Verify:** build exit 0 · 0 physical RTL / 0 raw hex / 0 emoji / 0 overlay in card · route-mocked Playwright 375+1440 (`qa-artifacts/MEH-1183/`) — 10 photos, hero 2+8, RTL, zero-CLS, focus ring over photo, glyph+Leaf fallback all ✓.
+- **⚠ STOP condition (c) + sandbox block — NOT auto-merged:** `images.unsplash.com` is egress-policy-denied from the CC sandbox (403, MEH-360 class); `next/image` optimizes server-side, so **real photos can't load here**. Synthetic dark-image test → numeral/name illegible over a dark lower photo region (no scrim). Reported, **no overlay added** (per spec). **Sapir:** open the Vercel preview (loads real photos), eyeball legibility on all 10; if any real photo has a dark lower region, decide the fix (re-crop / swap / approved treatment). Then un-draft + merge.
+- **Next (Sapir):** preview legibility check → merge. `Refs MEH-1175` · `Closes MEH-1183`.
+
 ## 2026-07-13 — MEH-1200: design benchmark reference doc — PR (GREEN, auto-merge)
 
 - **Branch:** `feature/meh-1200-design-benchmarks` off `origin/staging` (divergence 0 at cut). GREEN tier (docs only, zero code) → auto-merge on CI green, Sapir pre-approved. `Closes MEH-1200`.
