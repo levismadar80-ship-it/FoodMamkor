@@ -6,13 +6,13 @@
 
 ## Phase 0 report
 
-**Source doc:** `docs/MANUAL_TESTING.md` @ `origin/staging` (2,295 lines).
+**Source doc:** `docs/MANUAL_TESTING.md` @ `origin/staging` (2,295 lines at triage start; +1 section — "map-quality batch PR 1", 6 items — landed mid-triage via the eb7ff655 staging merge and is classified in the last 6 rows).
 
 | Stat | Value |
 |---|---|
-| `##` sections | 119 (+140 `###` subsections) |
-| Checklist items (`- [ ]`) | 1,054 |
-| Matrix rows | 1,068 (1,054 items + 14 section-level rows for checkbox-less sections) |
+| `##` sections | 120 (+140 `###` subsections) |
+| Checklist items (`- [ ]`) | 1,060 |
+| Matrix rows | 1,074 (1,060 items + 14 section-level rows for checkbox-less sections) |
 
 **Existing automation inventory (what COVERED verdicts cite):**
 
@@ -35,16 +35,16 @@
 
 | Verdict | Count | Meaning / next step |
 |---|---|---|
-| CONVERT-PW | 506 | → Playwright spec in `frontend/e2e/flows/manual/` |
-| COVERED | 318 | Already automated — file:line evidence in row; section becomes pointer stub |
+| CONVERT-PW | 508 | → Playwright spec in `frontend/e2e/flows/manual/` |
+| COVERED | 322 | Already automated — file:line evidence in row; section becomes pointer stub |
 | STALE | 138 | Surface gone / superseded — **delete on approval** (evidence in row) |
 | KEEP-RUNBOOK | 51 | Ops runbook / process doc — stays in doc, not converted |
 | DEVICE-ONLY | 26 | Real device/human required — consolidated Tier-3 checklist |
 | CONVERT-PYTEST | 23 | → `tests/test_manual_*.py` |
 | UNCLEAR | 6 | Needs a human call — flagged per row |
-| **Destructive** | **183 of 1,068** | Local backend + ephemeral Postgres ONLY (Sapir 13/07) |
+| **Destructive** | **183 of 1,074** | Local backend + ephemeral Postgres ONLY (Sapir 13/07) |
 
-Note on volume: 506 CONVERT-PW items ≠ 506 specs. Items cluster into per-section scenarios; the conversion stage groups each section's items into one spec file with one traceability comment per item ("MANUAL_TESTING § {section} item {n}"). Realistic estimate: ~45–60 spec files.
+Note on volume: 508 CONVERT-PW items ≠ 506 specs. Items cluster into per-section scenarios; the conversion stage groups each section's items into one spec file with one traceability comment per item ("MANUAL_TESTING § {section} item {n}"). Realistic estimate: ~45–60 spec files.
 
 ## Findings — suspected app bugs / live regressions (Ticket B input)
 
@@ -71,7 +71,7 @@ Logged only — **no app code touched** in Ticket A.
 
 Columns: **Section** (heading verbatim from MANUAL_TESTING.md) · **#** (item ordinal within section) · **Item** (Hebrew verbatim, trimmed) · **Verdict** · **Destructive** (yes = local-backend-only) · **Evidence** (file:line for COVERED/STALE) · **Notes**.
 
-## Full matrix (1,068 rows)
+## Full matrix (1,074 rows)
 
 | Section | # | Item | Verdict | Destructive | Evidence | Notes |
 |---|---|---|---|---|---|---|
@@ -1143,3 +1143,9 @@ Columns: **Section** (heading verbatim from MANUAL_TESTING.md) · **#** (item or
 | MEH-1116 — טאב עריכה כאקורדיון + עוגני URL | 5 | **עוגן URL** — `/producer/dashboard/edit#categories` → הכרטיס נפתח אוטומטית ונגלל אליו; גם ב-hashchange | CONVERT-PW | no | Implementation at edit/page.js:213-232 (hash apply + hashchange listener); anchor-id contract only partially tested (EditAccordionCard.test.jsx:41-44 asserts id on section) | Deep-link open+scroll and live hashchange untested — natural PW spec |
 | MEH-1116 — טאב עריכה כאקורדיון + עוגני URL | 6 | **מקלדת** — Tab מגיע לכותרות; Enter/רווח פותח וסוגר; חץ (CaretDown) מתהפך כשפתוח | CONVERT-PW | no | Header is a real <button> (native Enter/Space) and click-toggle is tested (EditAccordionCard.test.jsx:46-52), but no keyboard-event or caret-rotation assertion (CaretDown is mocked, :10) | PW keyboard.press("Tab"/"Enter"/"Space") + aria-expanded + caret class check |
 | MEH-1116 — טאב עריכה כאקורדיון + עוגני URL | 7 | **מובייל 375px** — הכותרות + הסיכומים נקראים בלי חיתוך; אין גלילה אופקית | CONVERT-PW | no | No mobile-viewport test for the edit tab | PW 375px: no horizontal page scroll + text truncation check; "readable" partially subjective |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 1 | גבהים אחידים — כל הכרטיסים ברשימה באותו גובה בדיוק; אין כרטיס "מקוצר" (375px + 1440px) | CONVERT-PW | no | — | PW: boundingBox().height equality across list cards, both viewports; vitest asserts template but not rendered heights |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 2 | טיפוגרפיית מחיר — רק הספרות ב-Cormorant נטוי; "מ-" ו-"/בקבוק" בפונט העברי; אין ג'יבריש | COVERED | no | frontend/__tests__/MapProducerCard.test.jsx:165-216 (incl. :190 "keeps a Hebrew unit suffix (מ-25/בקבוק) OUT of the Cormorant <bdi>") | landed with the same staging merge (MEH-934) |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 3 | שורת מטא אחת: עיר · מרחק · מחיר; אין שורת שעות פתיחה ואין שורת מרחק נפרדת | COVERED | no | frontend/__tests__/MapProducerCard.test.jsx:146 (ONE meta line) + :122 (no hours/open-now block) | — |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 4 | שורת קטגוריה משולבת — צ'יפ + כוכב "4.8 (12)" + חותם אימות באותה שורה; אין פס אמון נפרד | COVERED | no | frontend/__tests__/MapProducerCard.test.jsx:132 (rating in chip line, not trust strip) + :96 (seal icon+aria only) | — |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 5 | נקודת צבע הוסרה — אין עיגול צבע קטן בפינת התמונה הממוזערת | COVERED | no | frontend/__tests__/MapProducerCard.test.jsx:112 (no category color dot) | — |
+| map-quality batch PR 1 — כרטיס עסק אחיד ב-/map | 6 | פס משלוח נשאר — משתמשת עם עיר שמורה שעסק עושה אליה משלוח → פס "משלוח ל..." מופיע | CONVERT-PW | no | slot exists MapProducerCard.jsx:190-193 (deliveryMatch from userCity); zero test coverage | needs saved-city state (localStorage) + producer with matching delivery_areas |
