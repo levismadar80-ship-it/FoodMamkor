@@ -22,6 +22,7 @@ from app.database import get_db
 from app.models import Category, DeliveryArea, Producer, Product
 from app.rate_limit import limiter
 from app.schemas.schemas import CategoryHit, ProducerHit, ProductHit, SearchOut
+from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
 
@@ -69,7 +70,7 @@ def smart_search(
     # is too aggressive and over-matches.
     if " " not in q_clean:
         q_clean = _strip_hebrew_prefix(q_clean)
-    like = f"%{q_clean}%"
+    like = f"%{escape_like(q_clean)}%"
 
     # -------- Producers (approved only, name + description) --------
     producer_rows = (
@@ -77,8 +78,8 @@ def smart_search(
         .filter(Producer.status == "approved")
         .filter(
             or_(
-                Producer.name.ilike(like),
-                Producer.description.ilike(like),
+                Producer.name.ilike(like, escape=LIKE_ESCAPE),
+                Producer.description.ilike(like, escape=LIKE_ESCAPE),
             )
         )
         # Exact-name match first, then alphabetically. SQLite doesn't
@@ -108,8 +109,8 @@ def smart_search(
         .filter(Producer.status == "approved")
         .filter(
             or_(
-                Product.name.ilike(like),
-                Product.description.ilike(like),
+                Product.name.ilike(like, escape=LIKE_ESCAPE),
+                Product.description.ilike(like, escape=LIKE_ESCAPE),
             )
         )
         .order_by((Product.name != q_clean), Product.name.asc())
@@ -132,14 +133,14 @@ def smart_search(
     city_rows = (
         db.query(Producer.city)
         .filter(Producer.status == "approved")
-        .filter(Producer.city.ilike(like))
+        .filter(Producer.city.ilike(like, escape=LIKE_ESCAPE))
         .distinct()
         .limit(limit)
         .all()
     )
     delivery_city_rows = (
         db.query(DeliveryArea.city)
-        .filter(DeliveryArea.city.ilike(like))
+        .filter(DeliveryArea.city.ilike(like, escape=LIKE_ESCAPE))
         .distinct()
         .limit(limit)
         .all()
@@ -152,7 +153,7 @@ def smart_search(
     # -------- Categories --------
     category_rows = (
         db.query(Category)
-        .filter(Category.name.ilike(like))
+        .filter(Category.name.ilike(like, escape=LIKE_ESCAPE))
         .order_by(Category.name.asc())
         .limit(limit)
         .all()
