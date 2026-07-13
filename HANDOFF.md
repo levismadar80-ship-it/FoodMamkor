@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep (7 tickets) — MEH-1190 done (blocks MEH-1191)
+
+- **MEH-1190 (High · YELLOW):** `feature/meh-1190-settings-phone-editable` off `origin/staging`. `/settings` phone field was inert across 3 layers — `dirty`+`patch` ignored it and `ProfileUpdate` had no `phone`. **Phase-0 confirmed** `users.phone` exists (`models.py:55`) → no migration. Wired: frontend dirty/patch include phone + `validateIsraeliPhone` inline (empty allowed, invalid blocks save on blur); backend `ProfileUpdate.phone: str|None Field(max_length=20)` + `user.phone = data.phone.strip() or None`. Copy `field_phone_hint` (dead Heb/Eng promise) → locked WhatsApp copy + new `field_phone_error` (he+en). pytest `TestProfilePhone` ×3 (set/clear-to-NULL/>20→422). **pytest deferred to CI** (no backend deps/Postgres in sandbox; py_compile clean). Build green · parity green · 0 alembic files. Route-mocked PW QA 375+1440 (`qa-artifacts/MEH-1190/`): invalid→disabled+error, valid→enabled+hint. **Branch note:** harness branch was `claude/meh-1190-1196-sweep-jdnsjz` (rejected by MEH-1141 gate); using per-ticket `feature/*`. `Closes MEH-1190`.
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
