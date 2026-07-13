@@ -24,6 +24,4 @@ def escape_like(value: str) -> str:
     The result is only meaningful when the query also declares
     ESCAPE '\\' — SQLAlchemy: `.ilike(pattern, escape=LIKE_ESCAPE)`.
     """
-    return (
-        value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-    )
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
