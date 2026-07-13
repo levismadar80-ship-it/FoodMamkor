@@ -105,6 +105,37 @@ else:
     print("fewer than 3 producers seeded — skipped state fixtures")
 PYEOF
 
+# 4d — status fixtures for the MEH-1171 admin-status-labels suite (MEH-294):
+#      the admin table must show all 5 status chips. The default seed producers
+#      are all 'approved' AND are needed approved by §4c (CP12 detail pages only
+#      serve approved producers) — so create SEPARATE minimal producers for the
+#      4 non-approved statuses ('approved' is already covered by the seed).
+"$PY" - << 'PYEOF'
+import sys
+sys.path.insert(0, "backend")
+from app.database import SessionLocal
+from app.models.models import Producer
+
+db = SessionLocal()
+FIXTURES = [
+    ("status-fixture-pending-whatsapp", "ממתין וואטסאפ", "pending_whatsapp"),
+    ("status-fixture-pending", "ממתין אדמין", "pending"),
+    ("status-fixture-rejected", "נדחה בדיקה", "rejected"),
+    ("status-fixture-inactive", "לא פעיל בדיקה", "inactive"),
+]
+made = []
+for slug, name, status in FIXTURES:
+    if db.query(Producer).filter(Producer.slug == slug).first():
+        continue
+    db.add(Producer(
+        name=name, description="פרופיל בדיקה לסטטוסים באדמין", city="תל אביב",
+        lat=32.08, lng=34.78, slug=slug, status=status,
+    ))
+    made.append((slug, status))
+db.commit()
+print(f"status fixtures created: {made or 'already present'}")
+PYEOF
+
 echo "local backend DB ready: ${DATABASE_URL}"
 echo "admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
 
