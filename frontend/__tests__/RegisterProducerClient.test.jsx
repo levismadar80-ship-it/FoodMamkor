@@ -245,6 +245,69 @@ describe("RegisterProducerClient — pre-flight entry screen (MEH-994)", () => {
   });
 });
 
+// MEH-1176 F10 — the MEH-328 didUpgrade CONFIRM split had zero coverage,
+// exactly the branch the anti-enumeration smoke checklist calls LOAD-BEARING
+// (Test D failure signal). didUpgrade is derived from the RESPONSE SHAPE
+// ("access_token" in res.data), not the frontend isUpgrade flag — the third
+// test pins that guard (token expired between mount and submit → backend
+// takes the non-upgrade path → inbox screen, never a false "הצטרפת!").
+describe("RegisterProducerClient — didUpgrade CONFIRM split (MEH-328 chunk D)", () => {
+  async function fillStoryAndSubmit() {
+    fireEvent.change(screen.getByPlaceholderText(`${K}.fields.tagline_placeholder`), {
+      target: { value: "הכי טרי שיש" },
+    });
+    screen.getAllByRole("checkbox").forEach((cb) => fireEvent.click(cb));
+    fireEvent.click(screen.getByText(`${K}.actions.submit`));
+    await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+  }
+
+  it("non-upgrade ack (no access_token) renders the inbox-check screen, not הצטרפת!", async () => {
+    api.post.mockResolvedValue({ data: {} }); // RegisterAck — anti-enumeration
+    await renderWizard();
+    await fillAccountToDetails();
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.inbox_title`)).toBeInTheDocument();
+    // The upgrade success UI must NOT leak into the anonymous path.
+    expect(screen.queryByText(`${K}.success.heading`)).not.toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.dashboard_cta`)).not.toBeInTheDocument();
+    // No token was returned, so none may be stored and auth isn't refreshed.
+    expect(localStorage.getItem("token")).toBeNull();
+    expect(refreshUser).not.toHaveBeenCalled();
+  });
+
+  it("upgrade response (access_token present) renders הצטרפת! with the dashboard CTA and stores the token", async () => {
+    authState.user = { email: "p@example.com" }; // upgrade path skips ACCOUNT
+    api.post.mockResolvedValue({ data: { access_token: "tok-123", whatsapp_sent: true } });
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`); // auto-advanced to DETAILS
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByText(`${K}.success.heading`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.dashboard_cta`)).toBeInTheDocument();
+    expect(screen.getByText(`${K}.success.body_with_whatsapp`)).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.inbox_title`)).not.toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBe("tok-123");
+    expect(refreshUser).toHaveBeenCalled();
+  });
+
+  it("authenticated user whose token lapsed server-side falls back to the inbox screen (response-shape guard)", async () => {
+    authState.user = { email: "p@example.com" }; // frontend thinks upgrade…
+    api.post.mockResolvedValue({ data: {} }); // …backend took the non-upgrade path
+    await renderWizard();
+    await screen.findByText(`${K}.steps.business.title`);
+    await fillDetailsToStory();
+    await fillStoryAndSubmit();
+
+    expect(await screen.findByTestId("register-frame-confirm")).toBeInTheDocument();
+    expect(screen.queryByText(`${K}.success.heading`)).not.toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+});
+
 // MEH-952: the producer-license required-error must surface next to the field on
 // CATEGORY (not only as the generic backend-422 line two frames later on STORY).
 // These tests use an OVERRIDING /categories mock with a license-required name
