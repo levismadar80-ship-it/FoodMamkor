@@ -19,24 +19,48 @@
  * History:  MEH-964 (relocation, chunk 1A); edit-tab editor series —
  *           categories (chunk A), gallery images (chunk B), gated map location
  *           via AddressSearch (chunk C); polish + test backfill (fetch-error on
- *           GET /categories, cloudinary thumbnails, component tests).
+ *           GET /categories, cloudinary thumbnails, component tests);
+ *           MEH-1157 — locale-aware login redirect + 401 handling on the
+ *           /producers/me fetch (no half-alive tab); BioPanelCard moved to
+ *           cards.jsx for test export (MEH-1119 pattern);
+ *           MEH-1158 — accordion headers gained content previews (thumbs /
+ *           chips / first line / channel glyph) built from the same fetched
+ *           profile, via EditAccordionCard's additive `preview` prop.
  *
  * Auth: producer-role guard via useAuth() — kept per-page until Phase 2.
  * RTL: logical properties only — see .claude/rules/rtl.md.
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+// MEH-1157: locale-aware router — push("/login") lands on /{locale}/login
+// instead of dropping an /en session onto the default-locale page.
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Warning, X } from "@phosphor-icons/react";
+// MEH-1158: MapPin + per-channel glyphs feed the header previews below.
+// (X dropped — unused since MEH-1157 moved BioPanelCard to cards.jsx.)
+import {
+  Warning,
+  MapPin,
+  WhatsappLogo,
+  Phone,
+  InstagramLogo,
+  EnvelopeSimple,
+  Globe,
+  FacebookLogo,
+  ClipboardText,
+} from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
-import EditAccordionCard from "@/components/EditAccordionCard";
+import EditAccordionCard, {
+  PreviewThumbs,
+  PreviewChips,
+  PreviewEmpty,
+} from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { BioPanelCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -56,6 +80,32 @@ const ANCHOR_TO_KEY = {
   "profile-categories": "categories",
   "profile-images": "images",
   "profile-products": "products",
+};
+
+// MEH-1158: Phosphor glyph per primary contact channel — feeds the contact
+// card's header preview (icon + existing channel_* label, no new i18n).
+const CHANNEL_ICONS = {
+  whatsapp: WhatsappLogo,
+  phone: Phone,
+  instagram: InstagramLogo,
+  email: EnvelopeSimple,
+  website: Globe,
+  facebook: FacebookLogo,
+  external_order: ClipboardText,
+};
+
+// Which value field backs each primary method (empty-on-save guard). Shared
+// by the contact preview above and ContactChannelsCard below. MEH-1165 item 5
+// (PR #1682 nit): declared before its first use (the preview composition)
+// instead of after ContactChannelsCard's section banner.
+const METHOD_FIELD = {
+  whatsapp: "phone",
+  phone: "phone",
+  instagram: "instagram",
+  email: "contact_email",
+  website: "website",
+  facebook: "facebook",
+  external_order: "external_order_form",
 };
 
 // Canonical section id per open-state key — hash aliases above scroll to the
@@ -107,7 +157,19 @@ export default function ProducerDashboardEditPage() {
       router.push("/login");
       return;
     }
-    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
+    api
+      .get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch((err) => {
+        // MEH-1157: a 401 here means the session died between the context
+        // boot and this fetch (stale context user). Redirect like the auth
+        // gate above instead of parking the tab on the loading text forever.
+        if (err?.response?.status === 401) {
+          router.push("/login");
+        } else {
+          setProfile(null);
+        }
+      });
   }, [user, authLoading, router]);
 
   // MEH-1100 guard 1: native tab-close / refresh prompt, only while dirty.
@@ -213,6 +275,74 @@ export default function ProducerDashboardEditPage() {
     />
   );
 
+  // MEH-1158: per-card header content previews (Airbnb Listings-tab peek),
+  // built from the SAME already-fetched profile the summaries read — no new
+  // API calls. Counts stay on the existing summary line (ICU plurals); the
+  // preview adds the content itself. Empty card → dashed muted placeholder,
+  // no copy. Products' first name comes from the initial payload join — the
+  // live in-card CRUD only feeds the count (payload-only constraint).
+  const categoryNames = (profile.categories || []).map((c) => c.name);
+  const bioFirstLine = (profile.description || "").trim().split("\n")[0];
+  const firstProductName = profile.products?.[0]?.name || "";
+  const primaryMethod = profile.primary_contact_method || "whatsapp";
+  const contactBacking = METHOD_FIELD[primaryMethod];
+  const contactFilled = contactBacking
+    ? Boolean((profile[contactBacking] || "").trim())
+    : true;
+  const ChannelIcon = CHANNEL_ICONS[primaryMethod] || WhatsappLogo;
+  const previews = {
+    images:
+      (profile.images?.length ?? 0) > 0 ? (
+        <PreviewThumbs urls={profile.images} />
+      ) : (
+        <PreviewEmpty />
+      ),
+    categories:
+      categoryNames.length > 0 ? (
+        <PreviewChips items={categoryNames} />
+      ) : (
+        <PreviewEmpty />
+      ),
+    location: (profile.city || "").trim() ? (
+      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
+        <MapPin size={16} aria-hidden="true" className="shrink-0" />
+        <span className="truncate">{profile.city}</span>
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    bio: bioFirstLine ? (
+      <span className="block text-xs font-normal text-fg-muted truncate">
+        {bioFirstLine}
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    products:
+      productsForMarker > 0 ? (
+        firstProductName ? (
+          <PreviewChips items={[firstProductName]} />
+        ) : (
+          // MEH-1165 item 5 (PR #1682 nit): products added in-session have a
+          // live count but no payload name — render the placeholder instead
+          // of dropping the preview slot entirely (undefined).
+          <PreviewEmpty />
+        )
+      ) : (
+        <PreviewEmpty />
+      ),
+    contact: contactFilled ? (
+      <span className="flex items-center gap-1 text-xs font-normal text-fg-muted min-w-0">
+        <ChannelIcon size={16} aria-hidden="true" className="shrink-0" />
+        <span className="truncate">{tAcc(`channel_${primaryMethod}`)}</span>
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
+    questions:
+      (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
       {/* MEH-1100: sticky unsaved-changes banner — sits just under the
@@ -245,6 +375,7 @@ export default function ProducerDashboardEditPage() {
         anchorId="images"
         title={t("images.heading")}
         summary={tAcc("images_summary", { count: profile.images?.length ?? 0 })}
+        preview={previews.images}
         marker={nextStepKey === "images" ? nextStepDot : undefined}
         open={openKey === "images"}
         onToggle={() => toggleKey("images")}
@@ -263,6 +394,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("categories_summary", {
           count: profile.categories?.length ?? 0,
         })}
+        preview={previews.categories}
         marker={nextStepKey === "categories" ? nextStepDot : undefined}
         open={openKey === "categories"}
         onToggle={() => toggleKey("categories")}
@@ -283,6 +415,7 @@ export default function ProducerDashboardEditPage() {
           anchorId="location"
           title={t("location.heading")}
           summary={profile.city || tAcc("location_missing")}
+          preview={previews.location}
           marker={nextStepKey === "location" ? nextStepDot : undefined}
           open={openKey === "location"}
           onToggle={() => toggleKey("location")}
@@ -304,6 +437,7 @@ export default function ProducerDashboardEditPage() {
             ? tAcc("bio_present")
             : tAcc("bio_missing")
         }
+        preview={previews.bio}
         marker={nextStepKey === "bio" ? nextStepDot : undefined}
         open={openKey === "bio"}
         onToggle={() => toggleKey("bio")}
@@ -326,6 +460,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("products_summary", {
           count: productsCount ?? profile.products?.length ?? 0,
         })}
+        preview={previews.products}
         marker={nextStepKey === "products" ? nextStepDot : undefined}
         open={openKey === "products"}
         onToggle={() => toggleKey("products")}
@@ -347,6 +482,7 @@ export default function ProducerDashboardEditPage() {
         ]
           .filter(Boolean)
           .join(" · ")}
+        preview={previews.contact}
         marker={nextStepKey === "contact" ? nextStepDot : undefined}
         open={openKey === "contact"}
         onToggle={() => toggleKey("contact")}
@@ -376,6 +512,7 @@ export default function ProducerDashboardEditPage() {
         summary={tAcc("questions_summary", {
           count: (profile.custom_questions || []).length,
         })}
+        preview={previews.questions}
         open={openKey === "questions"}
         onToggle={() => toggleKey("questions")}
       >
@@ -491,17 +628,6 @@ const PRIMARY_METHODS = [
   "facebook",
   "external_order",
 ];
-
-// Which value field backs each primary method (empty-on-save guard).
-const METHOD_FIELD = {
-  whatsapp: "phone",
-  phone: "phone",
-  instagram: "instagram",
-  email: "contact_email",
-  website: "website",
-  facebook: "facebook",
-  external_order: "external_order_form",
-};
 
 function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.contact_channels");
@@ -656,108 +782,6 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
       >
         {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
       </button>
-    </div>
-  );
-}
-
-
-// ============================================================
-// MEH-56: AI bio writer panel
-// ============================================================
-
-function BioPanelCard({ profile, onSave, reportDirty = () => {} }) {
-  const t = useTranslations("dashboard.producer.bio");
-  const [source, setSource] = useState(profile.instagram || "");
-  const [generatedBio, setGeneratedBio] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState("");
-
-  // MEH-1100: this card had no dirty flag — the losable state is a generated
-  // bio that hasn't been saved yet (typing a source alone costs nothing).
-  const dirty = Boolean(generatedBio) && !saved;
-  useEffect(() => {
-    reportDirty("bio", dirty);
-    return () => reportDirty("bio", false);
-  }, [dirty, reportDirty]);
-
-  const generate = async () => {
-    if (!source.trim()) return;
-    setLoading(true);
-    setError("");
-    setGeneratedBio("");
-    setSaved(false);
-    try {
-      const r = await api.post("/producers/me/bio/generate", { source: source.trim() });
-      setGeneratedBio(r.data.bio || "");
-      if (!r.data.bio) setError(t("error_empty_bio"));
-    } catch {
-      setError(t("error_generate"));
-    }
-    setLoading(false);
-  };
-
-  const saveBio = async () => {
-    if (!generatedBio) return;
-    setSaving(true);
-    try {
-      await api.put("/producers/me", { description: generatedBio });
-      onSave(generatedBio);
-      setSaved(true);
-    } catch {
-      setError(t("error_save"));
-    }
-    setSaving(false);
-  };
-
-  return (
-    <div>
-      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
-      <p className="text-xs text-fg-muted mb-3">
-        {t("intro")}
-      </p>
-
-      <textarea
-        value={source}
-        onChange={(e) => { setSource(e.target.value); setSaved(false); setGeneratedBio(""); }}
-        placeholder={t("source_placeholder")}
-        className="w-full border border-border rounded-[10px] px-3 py-2 text-sm resize-none h-16"
-        dir="ltr"
-        maxLength={500}
-      />
-
-      <button
-        onClick={generate}
-        disabled={loading || !source.trim()}
-        className="w-full mt-2 bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition"
-      >
-        {loading ? t("generating") : t("generate_cta")}
-      </button>
-
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-
-      {generatedBio && (
-        <div className="mt-3 space-y-2">
-          <textarea
-            value={generatedBio}
-            onChange={(e) => setGeneratedBio(e.target.value.slice(0, 150))}
-            className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-16"
-            dir="rtl"
-            maxLength={150}
-          />
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-fg-muted">{generatedBio.length}/150</span>
-            <button
-              onClick={saveBio}
-              disabled={saving}
-              className="bg-primary text-white px-4 py-1.5 rounded-[8px] text-xs font-medium disabled:opacity-50 hover:bg-primary-dark transition"
-            >
-              {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

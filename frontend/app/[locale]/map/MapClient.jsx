@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { CaretDown, MapPinLine, Rows } from "@phosphor-icons/react";
 
@@ -10,6 +10,7 @@ import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
+import { useUserLocation } from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -18,7 +19,7 @@ import MapPane from "./components/MapPane";
 import MobileSheetSelectedCard from "./components/MobileSheetSelectedCard";
 import NearMePill from "./components/NearMePill";
 import { useFirstVisitHints } from "./state/useFirstVisitHints";
-import { useMapFilters } from "./state/useMapFilters";
+import { sortProducers, useMapFilters } from "./state/useMapFilters";
 import { useMapSync } from "./state/useMapSync";
 import { useProducersFeed } from "./state/useProducersFeed";
 
@@ -42,6 +43,13 @@ const DESKTOP_HEADER_OFFSET_PX = 64;
 // (mobile mirror of the desktop reservation).
 const MOBILE_HEADER_OFFSET_PX = 64;
 
+// MEH-933 R2: SSR/first-paint fallback for the mobile sticky filter bar's
+// height — replaces the old hardcoded `pt-[174px]` reservation on the map
+// wrapper (= a WRONG assumed 110px bar + 64px header). Corrected to the bar's
+// real measured height on mount (ResizeObserver below). Kept generous so the
+// first paint never under-reserves and briefly overlaps the map.
+const MOBILE_BAR_FALLBACK_PX = 174;
+
 /**
  * /map page shell. Compose-only after MEH-407 PR3 — composes 4 hooks
  * + 6 components + a small set of cross-hook handlers/effects that
@@ -63,8 +71,14 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  // Source line 78 — desktop sort dropdown UI state, no consumer outside JSX.
-  const [sortBy, setSortBy] = useState("default");
+  // Sort state for the desktop dropdown — consumed by sortedProducers below
+  // (until this batch the select wrote state nothing read). `null` = "auto":
+  // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
+  // useUserLocation (sessionStorage) — the same source the cards use for their
+  // distance labels, so "מרחק" orders by exactly what the user sees.
+  const [sortBy, setSortBy] = useState(null);
+  const userLoc = useUserLocation();
+  const effectiveSort = sortBy ?? (userLoc ? "nearest" : "newest");
 
   // MEH-945: on mobile the cookie banner is a fixed overlay that covers the
   // bottom strip of the full-bleed map and clips a marker there. Reserve that
@@ -159,6 +173,37 @@ export default function MapPage() {
       window.removeEventListener("resize", measure);
       bannerObserver?.disconnect();
     };
+  }, []);
+
+  // MEH-933 R2: measure the mobile sticky filter bar's REAL height. The bar is
+  // data-driven — category row + quick-toggle row + a CONDITIONAL active-filter-
+  // tags row (FilterChipsBar.jsx:98) that mounts once any filter is active — so
+  // its height swings well past the old hardcoded 110px assumption (measured
+  // 171px with the tags row). The map wrapper's padding-top is driven off THIS
+  // value alone: the mobile shell already begins BELOW the sticky header (it's
+  // in normal flow after <Header>; measured shell top === header height), so the
+  // bar sits at top-0 of the shell and needs NO header offset of its own — the
+  // prior `top-16` + `pt-[174px]`'s baked-in 64 double-counted the header into a
+  // ~64px dead gap between header and city-search (Sapir 12/07 QA). A bar height
+  // change (tags row toggling) resizes the map wrapper → MapComponent's own
+  // ResizeObserver→invalidateSize (MapComponent.jsx:392) reflows Leaflet, so the
+  // toggle-row appear/disappear can't leave a gray band. Mirrors the
+  // measure-don't-hardcode pattern of the MEH-1019/945 offset effects above.
+  const mobileBarRef = useRef(null);
+  const [mobileBarHeight, setMobileBarHeight] = useState(MOBILE_BAR_FALLBACK_PX);
+  useEffect(() => {
+    const el = mobileBarRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      // ceil, not round: under-reserving by a fraction would let the bar's
+      // bottom border overlap the first map pixels; a fraction over is invisible.
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0) setMobileBarHeight(h);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // MEH-1010: Enter-on-marker keyboard activation (MEH-765 AC). Leaflet only
@@ -362,9 +407,17 @@ export default function MapPage() {
     />
   );
 
+  // Client-side ordering of the visible list (pure helper in useMapFilters —
+  // unit-tested there). Applied to the card list ONLY: the count, markers and
+  // legend keep reading filters.visibleProducers (order-insensitive consumers).
+  const sortedProducers = useMemo(
+    () => sortProducers(filters.visibleProducers, effectiveSort, userLoc),
+    [filters.visibleProducers, effectiveSort, userLoc],
+  );
+
   const cardList = (
     <MapCardList
-      visibleProducers={filters.visibleProducers}
+      visibleProducers={sortedProducers}
       hoveredProducerId={filters.hoveredProducerId}
       activeProducerId={filters.activeProducerId}
       cardRefs={sync.cardRefs}
@@ -428,13 +481,18 @@ export default function MapPage() {
                   (MEH-825 pattern). Keyboard focus uses a ring (box-shadow),
                   NOT text-decoration — underline is unreliable on native <select>. */}
               <div className="relative inline-flex items-center shrink-0 -my-2.5">
+                {/* Static label so the control reads as "מיון: <mode>" — the
+                    select's own value alone looked like a caption, not a control */}
+                <span className="text-sm text-fg-muted" aria-hidden="true">{t("map.client.sort.label")}</span>
                 <select
-                  value={sortBy}
+                  value={effectiveSort}
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label={t("map.client.sort.aria_label")}
                   className="appearance-none bg-transparent border-0 text-sm font-medium text-primary min-h-[44px] ps-1 pe-6 cursor-pointer rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
-                  <option value="default">{t("map.client.sort.nearest")}</option>
+                  {/* "מרחק" needs a GPS fix to mean anything — disabled without one
+                      (the auto default then falls back to newest). */}
+                  <option value="nearest" disabled={!userLoc}>{t("map.client.sort.nearest")}</option>
                   <option value="rating">{t("map.client.sort.top_rated")}</option>
                   <option value="newest">{t("map.client.sort.newest")}</option>
                 </select>
@@ -462,18 +520,22 @@ export default function MapPage() {
 
       {/* =================== MOBILE (below lg) — full map + sheet =================== */}
       <div ref={mobileShellRef} className="lg:hidden" style={{ height: `calc(100dvh - ${mobileTopOffset}px)`, position: "relative" }}>
-        {/* Sticky filter bar — MEH-933: offset below the global sticky header
-            band (~64px; mirrors the `calc(100dvh - ${mobileTopOffset}px)` container
-            height above — MEH-1019 now measures the real top offset, ~64px with no
-            banner) so the city-search pill clears the logo/search header instead of
-            colliding with it. top-16 = 64px; the map pt below is bumped by the
-            same 64px to keep the bar→content gap unchanged (no collision, no gap).
+        {/* Sticky filter bar — MEH-933 R2: sits at top-0 of the mobile shell.
+            The shell is in normal flow AFTER the sticky <Header> (layout.js:221),
+            so it already begins below the header band — the bar needs NO header
+            offset of its own. The prior `top-16` (64px) double-counted the header
+            offset (the shell already clears it), opening a ~64px dead gap between
+            the header and the city-search input (Sapir 12/07 QA). The map wrapper
+            below reserves this bar's MEASURED height (mobileBarHeight) instead of
+            the old hardcoded `pt-[174px]` (a wrong 110px bar + a redundant 64px
+            header), which is why the real 171px bar overlapped the map canvas +
+            search-this-area pill + zoom control.
             MEH-1133: surface was `bg-background/95 backdrop-blur` — the 5% map
             bleed-through behind the category chips read as the chips "floating"
             over the tiles. Now fully-opaque cream (`bg-background` = #F5F0E8), so
             the bar is a solid band the map starts cleanly below (the blur becomes
             moot once nothing shows through). z-[50] unchanged (ledger-neutral). */}
-        <div className="absolute top-16 inset-x-0 z-[50] px-3 py-2 bg-background border-b border-border">
+        <div ref={mobileBarRef} className="absolute top-0 inset-x-0 z-[50] px-3 py-2 bg-background border-b border-border">
           {/* MEH-970 chunk 2-lite: the icon-only crosshair near-me button was
               removed here — the labeled "קרוב אליי" NearMePill (floating on the
               map below) is now the SINGLE mobile near-me control. City search
@@ -485,20 +547,27 @@ export default function MapPage() {
           {filterChipsBar}
         </div>
 
-        {/* Map fills the rest — MEH-933: pt = 110 (bar height) + 64 (header offset).
+        {/* Map fills the rest — MEH-933 R2: pt = the bar's live MEASURED height
+            (mobileBarHeight), no hardcoded magic. Because the bar now sits at
+            top-0 of the shell, reserving exactly its height leaves NO gap and NO
+            overlap regardless of the tags row appearing/disappearing (which also
+            kills the documented ~10px spill the old 174 hack carried).
             MEH-945: while the cookie banner shows, reserve its footprint at the
             bottom — its own offset (safe-area + 80px, mirroring CookieBanner.jsx:68)
-            plus its live --cookie-banner-h, plus a 16px clearance for the known
-            ~10px section overflow (the sticky header occupies ~74px but this
-            section subtracts only 64px per MEH-933, spilling ~10px past the
-            viewport bottom) — so the banner no longer overlays the canvas.
-            The map's own `min-h-[500px]` (MapComponent.jsx) would otherwise spill
-            back under the banner on short phones, so relax it to 0 ONLY while we're
-            reserving — the shell always has a definite height + invalidateSize, so
-            the MEH-30 0px guard isn't needed here. Full height restored on dismiss. */}
+            plus its live --cookie-banner-h, plus a 16px clearance — so the banner
+            no longer overlays the canvas. The map's own `min-h-[500px]`
+            (MapComponent.jsx) would otherwise spill back under the banner on short
+            phones, so relax it to 0 ONLY while we're reserving — the shell always
+            has a definite height + invalidateSize, so the MEH-30 0px guard isn't
+            needed here. Full height restored on dismiss. */}
         <div
-          className={`w-full h-full pt-[174px] ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
-          style={cookieBannerVisible ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" } : undefined}
+          className={`w-full h-full ${cookieBannerVisible ? "[&_.leaflet-container]:!min-h-0" : ""}`}
+          style={{
+            paddingTop: `${mobileBarHeight}px`,
+            ...(cookieBannerVisible
+              ? { paddingBottom: "calc(env(safe-area-inset-bottom) + 96px + var(--cookie-banner-h, 0px))" }
+              : {}),
+          }}
         >
           {mapPane}
         </div>

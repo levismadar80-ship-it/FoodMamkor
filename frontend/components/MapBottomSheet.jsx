@@ -50,6 +50,37 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
 
   const heightVh = transient ?? snap;
 
+  // MEH-970 R2: publish the sheet's live visible height as the `--map-sheet-h`
+  // CSS var on <html> — the `--cookie-banner-h` precedent (MEH-850). Map
+  // controls that must ride the sheet edge (the NearMePill) self-position via
+  // calc(var(--map-sheet-h) + gap) instead of guessing a fixed offset. `heightVh`
+  // is `transient ?? snap`, so this updates on every drag frame AND every snap —
+  // the pill tracks the edge continuously through both. Published as a `vh`
+  // string to match the sheet's own `height: ${heightVh}vh`.
+  //
+  // `--map-sheet-anim` publishes the sheet's OWN transition mode (this same
+  // `transient != null ? "none" : 0.3s` split the sheet uses on its height, line
+  // ~110) so the pill animates its `bottom` in LOCKSTEP: 0ms during a drag →
+  // instant finger-tracking, 300ms on a snap → the pill glides with the sheet
+  // instead of teleporting to the target while the sheet is still animating (that
+  // teleport briefly floated the pill over the collapsing cards on a button/marker
+  // HALF→PEEK collapse — the very overlap class this ticket fixes).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--map-sheet-h", `${heightVh}vh`);
+    root.style.setProperty("--map-sheet-anim", transient != null ? "0ms" : "300ms");
+  }, [heightVh, transient]);
+  // Clean up ONLY on unmount so a non-/map page never inherits a stale offset
+  // (mirrors CookieBanner.jsx:50). Kept separate from the publish effect so the
+  // per-frame drag updates don't churn a remove/re-add cycle.
+  useEffect(() => {
+    return () => {
+      const root = document.documentElement;
+      root.style.removeProperty("--map-sheet-h");
+      root.style.removeProperty("--map-sheet-anim");
+    };
+  }, []);
+
   const onTouchStart = useCallback((e) => {
     startY.current = e.touches[0].clientY;
     startSnap.current = snap;

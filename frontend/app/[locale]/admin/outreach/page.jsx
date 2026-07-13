@@ -5,7 +5,7 @@ import { Phone } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
-import { getWhatsAppHref } from "@/lib/utils";
+import { getWhatsAppHref, normalizePhone } from "@/lib/utils";
 import Input from "@/components/ui/Input";
 
 /**
@@ -486,7 +486,7 @@ function WhatsAppModal({ lead, onClose, onPrefillMinted }) {
     const body = t.raw(`outreach.wa_templates.${tpl.key}_body`)
       .replaceAll("{name}", fresh.name)
       .replaceAll("{prefillUrl}", url);
-    const phone = (fresh.phone || "").replace(/\D/g, "").replace(/^0/, "972");
+    const phone = normalizePhone(fresh.phone);
     window.open(getWhatsAppHref(phone, body), "_blank", "noopener,noreferrer");
     onClose();
   };

@@ -2,8 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // MEH-1138: imageless product cards render the canonical no-photo state
-// (cream surface + leaf glyph + brand name — mirrors the MEH-643 block in
-// ProducerCard.jsx), never an empty gray box or a generic package icon.
+// (cream surface + leaf glyph), never an empty gray box or a generic package
+// icon. MEH-1168 P1: the "מהמקור" wordmark was removed from the product
+// placeholder (platform logo inside a business's own products was confusing).
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
@@ -62,7 +63,7 @@ const producerWith = (products) => ({
 });
 
 describe("ProducerSections products — imageless canonical placeholder (MEH-1138)", () => {
-  it("imageless card renders leaf glyph (light) + brand name on the cream token", () => {
+  it("imageless card renders leaf glyph (light) on the cream token, no wordmark", () => {
     render(
       <ProducerSections
         {...baseProps}
@@ -73,7 +74,8 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(leaf).toBeInTheDocument();
     expect(leaf.dataset.weight).toBe("light");
     expect(leaf.className).toMatch(/text-primary\/\[0\.32\]/);
-    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    // MEH-1168 P1: the brand wordmark is gone from the product placeholder.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
     // Cream surface token, not a gray/tint box.
     const placeholder = leaf.closest("div");
     expect(placeholder.className).toMatch(/bg-background/);

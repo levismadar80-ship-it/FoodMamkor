@@ -1,14 +1,14 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Info, Package, Truck, Star } from "@phosphor-icons/react";
+import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
 import { useAuth } from "@/lib/auth-context";
 
-import ActionRow from "./components/ActionRow";
+import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
@@ -19,7 +19,6 @@ import { useStickyBar } from "./hooks/useStickyBar";
 import { useTabScroll } from "./hooks/useTabScroll";
 import {
   buildShareUrl,
-  buildShowOnMapHandler,
   getRenderableImages,
   getVacationReturnLabel,
 } from "./lib/producer-format";
@@ -37,12 +36,11 @@ import {
  */
 export default function ProducerDetail({ initialProducer = null, fetchPath = null }) {
   const params = useParams();
-  const router = useRouter();
   const { user } = useAuth();
   const t = useTranslations();
   const locale = useLocale();
 
-  const { producer, loading, events, similarProducers } = useProducerData({
+  const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
     params,
     fetchPath,
     initialProducer,
@@ -81,12 +79,12 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const images = getRenderableImages(producer.images);
   const hasImages = images.length > 0;
   const primaryCategory = producer.categories?.[0];
-  const handleShowOnMap = buildShowOnMapHandler(producer, router);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Breadcrumb + back button */}
-      <div className="flex items-center justify-between mb-4">
+      {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
+          removed (the breadcrumb already provides the home/category path). */}
+      <div className="mb-4">
         <Breadcrumb
           items={[
             { href: "/", label: t("producer.detail.breadcrumb_home") },
@@ -96,14 +94,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { label: producer.name },
           ]}
         />
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="min-h-[44px] flex items-center text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded-lg px-1"
-          aria-label={t("producer.detail.aria.back")}
-        >
-          {t("producer.detail.back_label")}
-        </button>
       </div>
 
       {/* Gallery */}
@@ -111,12 +101,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         images={images}
         producerId={producer.id}
         producerName={producer.name}
+        verified={producer.verification_tier === "verified"}
       />
 
-      {/* Mobile tab bar */}
+      {/* Mobile tab bar — MEH-1168 P2: sticks at top-[82px], BELOW the global
+          sticky header (82px tall, z-[1050]). At the previous top-0 the bar
+          stuck at the same offset as the header and, being z-30, was fully
+          occluded behind it once scrolled into a deep section (it "vanished").
+          Clearing the header keeps it visible page-long. */}
       <nav
         ref={tabBarRef}
-        className="md:hidden sticky top-0 z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
+        className="md:hidden sticky top-[82px] z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
@@ -124,7 +119,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             { key: "about", label: t("producer.detail.tabs.about"), Icon: Info },
             { key: "products", label: t("producer.detail.tabs.products"), Icon: Package },
             { key: "delivery", label: t("producer.detail.tabs.delivery"), Icon: Truck },
-            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: Star },
+            // MEH-1168 P1: reviews tab uses a chat-bubble glyph, not a star — a
+            // star implies a rating system the reviews section doesn't provide.
+            { key: "reviews", label: t("producer.detail.tabs.reviews_label"), Icon: ChatCircleText },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -154,16 +151,25 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             primaryCategory={primaryCategory}
             hasImages={hasImages}
           />
-          <ActionRow
-            producer={producer}
-            inlineCTARef={inlineCTARef}
-            shareUrl={shareUrl}
-            onShowOnMap={handleShowOnMap}
-          />
+          {/* Mobile/tablet inline contact card — the IntersectionObserver
+              target for useStickyBar. Must stay the first child after
+              ProducerHeader so the sticky bar fires at the same scroll
+              boundary as the pre-1146 inline CTA. Desktop renders the card
+              in the sticky sidebar instead (ContactSidebar, hidden below lg),
+              so exactly one primary CTA is visible per viewport. */}
+          <div ref={inlineCTARef} className="lg:hidden mt-4">
+            <ContactCard
+              producer={producer}
+              isVacation={isVacation}
+              primaryCategory={primaryCategory}
+              shareUrl={shareUrl}
+            />
+          </div>
           <ProducerSections
             producer={producer}
             events={events}
             similarProducers={similarProducers}
+            nearbyProducers={nearbyProducers}
             sectionRefs={sectionRefs}
             reviewsContainerRef={reviewsContainerRef}
             reviewsVisible={reviewsVisible}

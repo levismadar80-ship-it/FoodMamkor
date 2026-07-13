@@ -617,7 +617,7 @@ selling cheese in Tel Aviv. Use "מישהי שמחפשת אוכל מקומי ב�
 | **Current (he)** | `אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.` |
 | **en** | `No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.` (⏳ en pending Sapir review) |
 | **i18n key** | `producer.badge.declared_explainer` |
-| **Status** | 🕐 key-only — badge UI port consumes |
+| **Status** | ✅ MEH-1170 — rendered as quiet **visible copy** on the producer-detail hero (`ProducerHeader.jsx`, declared tier only). Was briefly the tap-tooltip of an S12 "מוצהר" chip (MEH-76/#1051); that chip contradicted ADR-022 ("tier 2 = no badge") and was removed. The sibling keys `declared_label` / `aria_declared` were retired with the chip. |
 | **Why** | template-05 research: absence of a badge needs a **positive** explanation, not silence (Yelp FAQ pattern; Saeedi et al. — relative effect is inherent, only mitigable). Affirms the מוצהר tier without negative labeling. Source MEH-758 / ADR-022 / S11-FINAL. |
 
 ### Gate 3 — /terms §5 two-tier (MEH-760)
@@ -760,3 +760,21 @@ Keys: `join.how.*`. Link out: `לתהליך הקבלה המלא` → `/about/pro
 
 ### Testimonial slot — placeholder ONLY (Section 8 guardrail applies)
 The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה.` + eyebrow `בקרוב — עדות ראשונה`. **Do NOT replace with invented business copy** — the real quote arrives via Template 10 verbatim intake (MEH-931) pre-launch and gets its own Section-8 row.
+
+## Section 10 — /share "ספרו עלינו" (MEH-1160)
+
+> **Source:** MEH-1160 in-ticket Hebrew copy draft (dispatched 13/07/2026), shipped as drafted — no rewording needed. Share only, zero donation/payment copy (MEH-1159 track is separate). All keys under `share_page.*` + `seo.share.*` (he + en twins, MEH-978/840). Voice per ADR-024: functional UI = gender-neutral plural; intro narrative = brand-we.
+
+| Field | Value |
+|---|---|
+| **H1** | `ספרו עלינו` |
+| **Intro** | `מהמקור גדל מפה לאוזן. כל שיתוף עוזר לעוד קוראת לגלות בתי עסק שנבדקו אישית — ולעוד בעלת עסק למצוא את הבית שלה.` |
+| **WhatsApp** | `שתפו בוואטסאפ` |
+| **Copy** | `העתיקו קישור` · Toast: `הקישור הועתק` |
+| **Native** | `עוד דרכים לשתף` |
+| **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
+| **Prefilled message (WA + email body)** | `הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`). _MEH-1170: dropped "מגזין" (forbidden in UI surfaces) + "נבדקו אישית" over-claim → "עברו היכרות אישית" (ADR-022 / MEH-758 locked language)._ |
+| **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
+| **seo.share.title** | `ספרו עלינו — מהמקור` |
+| **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
+| **Status** | ✅ MEH-1160 |

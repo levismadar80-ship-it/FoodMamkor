@@ -413,7 +413,8 @@
       "aria": "Show category: {name}"
     },
     "producers": {
-      "heading": "Recommended businesses",
+      "heading": "Local businesses",
+      "heading_category": "Businesses · {name}",
       "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
@@ -587,6 +588,12 @@
       "og_title": "Your business. A page of its own. | Mehamakor",
       "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
     },
+    "share": {
+      "title": "Spread the word — Mehamakor",
+      "description": "Help more people discover personally vetted local food businesses — share Mehamakor.",
+      "og_title": "Spread the word — Mehamakor",
+      "og_description": "Help more people discover personally vetted local food businesses — share Mehamakor."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -650,10 +657,8 @@
       "verified_tooltip_registration": "Cosmetics registry registration submitted and reviewed on {date}",
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
-      "declared_label": "Declared",
       "aria_verified": "Verified business. {tooltip}",
-      "aria_verified_plain": "Verified business",
-      "aria_declared": "Declared business"
+      "aria_verified_plain": "Verified business"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
@@ -676,6 +681,9 @@
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
         },
+        "nearby": {
+          "heading": "More businesses in the area"
+        },
         "events": {
           "heading": "Upcoming events",
           "free": "Free",
@@ -687,14 +695,6 @@
         },
         "recipes": {
           "cta": "Our recipes"
-        },
-        "delivery": {
-          "heading": "Delivery areas",
-          "col": {
-            "city": "City",
-            "min_order": "Minimum order",
-            "day": "Delivery day"
-          }
         }
       },
       "header": {
@@ -723,6 +723,18 @@
       },
       "contact_sidebar": {
         "join_whatsapp_group": "Join WhatsApp group"
+      },
+      "contact_card": {
+        "status_open": "Open for orders",
+        "aria": {
+          "phone": "Call",
+          "instagram": "Instagram",
+          "website": "Website",
+          "email": "Email",
+          "facebook": "Facebook",
+          "external_order": "Order form",
+          "whatsapp_group": "WhatsApp group"
+        }
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -822,6 +834,7 @@
       "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
+      "pending_eta": "Usually approved within 24 hours",
       "published": "Published on the site",
       "not_published": "Not yet published",
       "edit": "Edit",
@@ -906,6 +919,7 @@
       "heading": "My group buys",
       "btn_close_form": "Close",
       "btn_open_form": "+ New group buy",
+      "approval_required_hint": "Opening a group buy will be available once the business is approved",
       "loading": "Loading...",
       "empty_title": "Group buys = wholesale price for your customers",
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
@@ -948,7 +962,9 @@
     "delivery": {
       "heading": "Delivery",
       "nationwide": "Nationwide delivery",
-      "arranged": "Delivery by arrangement — contact for details"
+      "arranged": "Delivery by arrangement — contact for details",
+      "min_order": "Minimum",
+      "pickup": "Self pickup"
     },
     "follow": {
       "following": "Following",
@@ -988,10 +1004,11 @@
         "placeholder": "Search city..."
       },
       "business_count": "{count, plural, =0 {No local businesses in your area} one {1 local business in your area} other {# local businesses in your area}}",
-      "subhead": "Near you · {region}",
+      "subhead": "{region}",
       "sort": {
         "aria_label": "Sort businesses",
-        "nearest": "Nearest",
+        "label": "Sort:",
+        "nearest": "Distance",
         "top_rated": "Top rated",
         "newest": "Newest"
       }
@@ -2404,7 +2421,7 @@
     },
     "cookie_banner": {
       "aria_label": "Cookie consent",
-      "message": "🍪 We use cookies to improve the experience — <link>privacy policy</link>",
+      "message": "We use cookies to improve the experience — <link>privacy policy</link>",
       "accept_all": "Accept all",
       "essential_only": "Essential only"
     },
@@ -2623,7 +2640,7 @@
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
-    "login_prompt": "<login>Sign in</login> to write a review",
+    "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come after a few customers",
@@ -2788,6 +2805,18 @@
     "wa_meta_separator": " • ",
     "copied_toast": "Link copied"
   },
+  "share_page": {
+    "h1": "Spread the word",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — and another business owner find their home.",
+    "whatsapp": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copy_toast": "Link copied",
+    "native": "More ways to share",
+    "email": "Share by email",
+    "email_subject": "Have you heard of Mehamakor?",
+    "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
+    "footer_link": "Spread the word"
+  },
   "gallery": {
     "open_aria": "Enlarge image {current}",
     "image_alt": "Image {current}",
@@ -2810,7 +2839,8 @@
       "my_area": "My area",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
-      "greeting_template": "Hi {name}, {q}"
+      "greeting_template": "Hi {name}, {q}",
+      "delivery_to_city": "Delivery to {city}?"
     }
   },
   "directory": {
@@ -3622,6 +3652,10 @@
         "recipes": {
           "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
+        },
+        "reviews": {
+          "title": "Reviews",
+          "sub": "View reviews and reply to customers"
         }
       },
       "pulse": {
@@ -3830,12 +3864,15 @@
         "heading": "AI bio",
         "intro": "Enter an Instagram handle, a link, or a free-form description — we'll create a Hebrew bio of up to 150 characters.",
         "source_placeholder": "@handle / Instagram link / free description",
+        "bio_placeholder": "Write your business description here — up to 150 characters",
         "generate_cta": "Create bio",
         "generating": "Creating…",
         "save_cta": "Save bio",
         "saving": "Saving…",
         "saved": "✓ Saved",
-        "error_empty_bio": "We couldn't generate a bio — try again with different text",
+        "error_session_expired": "Your session has expired. Log in again to continue.",
+        "error_rate_limit": "Too many requests were sent. Try again in about an hour.",
+        "error_unavailable": "The service is unavailable right now. You can write a description manually or try again later.",
         "error_generate": "Bio generation error — try again",
         "error_save": "Bio save error"
       }
@@ -3915,6 +3952,9 @@
       "submit": "Publish event",
       "cancel": "Cancel",
       "error_generic": "Error creating the event — please try again.",
+      "pending_success_title": "The event was created successfully",
+      "pending_success_hint": "The event will be shown to the public once the business is approved",
+      "pending_success_dashboard": "Back to business management",
       "crumb_dashboard": "Business management",
       "crumb_current": "New event",
       "subtitle": "Workshop, tour, market, harvest, or open days — publish here",

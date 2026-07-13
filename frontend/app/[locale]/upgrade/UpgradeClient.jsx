@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Star } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import Input from "@/components/ui/Input";
 // MEH-1140: canonical shekel format ("0₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import api from "@/lib/api";
@@ -77,15 +78,19 @@ export default function UpgradeClient() {
           </div>
         ) : (
           <form onSubmit={handleNotify} className="flex flex-col sm:flex-row gap-3 justify-center">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("email_placeholder")}
-              required
-              dir="ltr"
-              className="border border-border rounded-[12px] px-4 py-3 text-sm flex-1 max-w-xs focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white"
-            />
+            {/* MEH-1145 Wave E2: plain email field → ui/Input; the flex-1/max-w-xs
+                row sizing moves to a wrapper since Input's root has no className slot
+                (its w-full input fills the wrapper). */}
+            <div className="flex-1 max-w-xs">
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t("email_placeholder")}
+                required
+                dir="ltr"
+              />
+            </div>
             <button
               type="submit"
               disabled={submitting}

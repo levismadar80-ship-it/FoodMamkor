@@ -4,7 +4,7 @@
  * Badges (Phase B fold, April 2026; license added MEH-531):
  *   verified     (manual)  — producer.verification_tier === "verified"   (MEH-762; ADR-022 tier — replaced the legacy admin-verified flag)
  *   recommended  (manual)  — producer.is_recommended
- *   license      (manual)  — producer.has_producer_license       (MEH-531)
+ *   license      (manual)  — producer.has_producer_license AND verification_tier === "verified" (MEH-531; verified-gate MEH-1162)
  *   new          (auto)    — producer.days_since_created <= 30
  *   organic      (manual)  — producer.organic_certified
  *   grass_fed    (manual)  — producer.grass_fed
@@ -52,8 +52,11 @@ export const BADGE_CONFIG = {
     label: "חדש",
     tooltip: "העסק הצטרף אלינו בחודש האחרון.",
     // MEH-792: was "secondary" — an alias of primary ever since MEH-703
-    // collapsed brand-secondary into primary. Named for what it renders.
-    color: "primary",
+    // collapsed brand-secondary into primary.
+    // MEH-1168 P1: demoted primary → muted (tonal cream/hairline). Solid green
+    // is reserved for the single primary CTA (the WhatsApp action) per
+    // DESIGN.md § Action hierarchy — a solid-green "חדש" chip competed with it.
+    color: "muted",
   },
   organic: {
     key: "organic",
@@ -139,7 +142,15 @@ function earnsBadge(producer, key) {
     case "license":
       // MEH-531: ProducerListOut.has_producer_license (computed in
       // attach_badge_fields, schemas.py:547).
-      return !!producer.has_producer_license;
+      // MEH-1162 (audit F10): has_producer_license alone is SELF-DECLARED —
+      // a fresh producer typing 000000000 got the chip. Gate on the ADR-022
+      // verification_tier like the verified badge at :136: "verified" means
+      // an admin actually checked the document (MEH-766 model). declared/
+      // null tiers render nothing.
+      return (
+        producer.verification_tier === "verified" &&
+        !!producer.has_producer_license
+      );
     case "new":
       return (
         typeof producer.days_since_created === "number" &&

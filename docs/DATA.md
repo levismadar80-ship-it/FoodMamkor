@@ -459,15 +459,17 @@ POST   /home-products/rate/{token}        public — submit rating
 ### Events (producer farm events — `app/routers/events.py`)
 
 ```
-GET    /events                    public — filter: city, category, from_date, to_date
-GET    /events/upcoming            public — limit=N next events
-GET    /events/{event_id}          public
-POST   /events                     producer — only approved producers
+GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all)
+GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
+GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
+POST   /events                     producer — any producer role (a pending producer's event stays hidden until the business is approved — MEH-1161)
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
 DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
 
-No moderation. Producer publishes, it's live. Designed for the
+No per-event moderation. An **approved** producer publishes and it's live;
+a **pending** producer's events exist but are invisible to the public until
+the business is approved (MEH-1161, audit F1). Designed for the
 "יום קטיף / סיור בחווה" calendar on producer pages. Category enum:
 `סדנה | סיור | שוק | קטיף | טעימות | אחר`.
 

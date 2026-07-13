@@ -41,6 +41,12 @@ import * as path from "path";
  * review the committed baseline diff, merge. Staging-data drift that alters
  * a masked region's size (e.g. producer count changes the grid height) is
  * refreshed the same way.
+ * MEH-991 (2026-07-13): refresh the fullPage trio (/about /login /register)
+ * after MEH-1160 (#1689) added the "ספרו עלינו" → /share footer link — the
+ * 8th footer nav entry grows every fullPage route; /login + /register also
+ * carry the MEH-1145/MEH-1128 ui/Input adoption (resting-state invisible).
+ * Classified intended drift, no regression. This touch re-triggers the
+ * vrt-update bot to regenerate the baselines on the runner.
  */
 
 const STYLE_PATH = path.join(__dirname, "parity.css");
@@ -114,6 +120,10 @@ test.describe("Visual parity — MEH-991", () => {
     });
   });
 
+  // MEH-1146: the producer detail page IA was rebuilt across PRs #1670/#1673/#1676
+  // (editorial contact card, two-tier header, section reorder, discovery loop).
+  // This touch re-triggers vrt-update.yml so the producer-detail-*-linux.png
+  // baselines are regenerated on-runner against the final design.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
