@@ -5,6 +5,18 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — /map quality batch (3 PRs) — ALL MERGED + docs closeout
+
+- **Batch:** 3 sequential PRs off fresh `origin/staging`, YELLOW auto-merge on green required gates (CI gate + Deploy gate). Branch names carry a `meh-0` placeholder (batch spec's `feature/map-*` names are rejected by the MEH-1141 branch-name gate; real retro tickets **MEH-1178/1179/1180** opened post-hoc). No `Closes` footers — tickets already Done. All 3 verified against staging HEAD by the orchestrator.
+- **PR #1708 (MEH-1178) — uniform card + price fix:** every `MapProducerCard` renders the same slot stack at a fixed **128px** height (removed category dot / hours block / standalone distance line / separate trust strip; rating + verified seal folded into the chip line; one `city · distance · price` meta line). 3-part price regex `(prefix)(digitRun)(suffix)` keeps Hebrew unit words out of Cormorant (brand LOCK = Latin/numerals only).
+- **PR #1712 (MEH-1179) — functional sort:** `sortProducers` now orders the card list — nearest (haversine ASC, GPS-gated) / rating (avg DESC + reviews tiebreak, nulls last) / newest (feed order); GPS-aware default. Copy: "קרוב אליי"→"מרחק" (kills NearMePill collision), "מיון:" prefix, subhead "קרוב · {region}"→"{region}", single-yod "קרוב אלי"→"קרוב אליי".
+- **PR #1714 (MEH-1180) — chat FAB hidden on /map:** FAB (z-9999, bottom-END) covered the desktop category legend toggle (z-[800], same corner); `ChatWidgetLazy` pathname-gates it off `/map` (all locales, both breakpoints). Merged after #1713's independent producer-detail FAB gate landed on the same wrapper → **Accept-Both** (both route gates coexist; 6 wrapper tests pass).
+- **Documented deviation:** "newest" sort = feed order — `created_at` isn't serialized on `ProducerListOut` (Zod strips it) and the backend default order IS `created_at desc`, so feed order == newest-first (the spec's UUID `id desc` fallback would be random).
+- **Verify (per-PR):** build exit 0 · vitest 990→999→1006 passed · Playwright self-QA 10/10, 11/11, 9/9 (`qa-artifacts/map-quality-batch/`, WebP-compressed).
+- **Known debt (NOT caused by this batch):** 6× `visual/parity.spec.ts` failing pre-batch (about/login/register, +32px global-chrome drift) → **MEH-991 baseline-regen flow** (same VRT drift the MEH-1168 batch flagged; E2E is non-required).
+- **Follow-up:** **MEH-1181** — chip radio/toggle differentiation (design-first, backlog).
+- **Note:** the `vrt-update` bot committed regenerated producer-detail VRT baselines onto this docs-closeout branch (MEH-991 flow); accepted here (clears the debt) — PR re-labeled to reflect the 2 baseline PNGs alongside the 2 doc files.
+
 ## 2026-07-13 — MEH-1171 Ticket A stage 1: manual-testing triage matrix — matrix APPROVED, PR #1710 un-gated
 
 - **Branch:** `feature/meh-1171-manual-testing-conversion` off `origin/staging` (divergence 0 at cut). **PR #1710** initially carried the merge-block marker in its title **by design** (self-block until matrix review, ADR-016 amendment authority). **Sapir approved the matrix 13/07** — all 138 STALE deletions, KEEP-RUNBOOK, and the 6 UNCLEAR resolutions (/neighbor→redirect via MEH-1176 F7 · phone-guard + admin text-right→MEH-1176 · 2× bundle-budget→KEEP-RUNBOOK); marker lifted, un-drafted, auto-merge armed. `Refs MEH-1171`.
