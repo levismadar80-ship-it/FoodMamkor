@@ -65,6 +65,23 @@ Logged only — **no app code touched** in Ticket A.
 | F11 | Doc-structure bugs in MANUAL_TESTING.md: MEH-551 status-table row orphaned at :2215; MAP-16 item mis-homed under MEH-997 (:2273); items :784-788 sit under MEH-1011 heading but belong to MEH-530 | fixed automatically by the conversion rewrite |
 | F12 | MEH-1100 nav-guard dialogs have no repeatable test (jsdom limitation documented in test header) — closable via PW `page.on("dialog")` | `frontend/__tests__/EditUnsavedGuard.test.jsx:1-8` |
 
+### Ticket B execution status (MEH-1176, 13/07)
+
+| F# | Outcome | PR |
+|---|---|---|
+| F1 | FIXED — `escape_like` + ESCAPE on all 13 search patterns | #1725 |
+| F2 | FIXED — outreach → `normalizePhone` (4 test mocks + docblock are not violations) | #1716 |
+| F3 | FIXED — suite un-skipped, re-asserted to shipped chrome | #1719 |
+| F4 | FIXED — `/admin/content` on `useAdminAction`, 4 new tests | #1726 |
+| F5 | FIXED — doc corrected to 3/min; 429 pytest added; route untouched | #1720 |
+| F6 | **STOPPED** — premise contradicted by MEH-745 (OTP card deliberately replaced the dead /settings CTA; profile editing now lives at the edit tab). Options for Sapir: (a) delete the dead export + checklist item as STALE, or (b) re-spec the line under the OTP card pointing at `/producer/dashboard/edit` with fresh approved copy | — |
+| F7 | **STOPPED** — both fix surfaces (`next.config.js`, `middleware.js`) are CC Edit-denied (L1). Snippet handed to Sapir in the MEH-1176 close-PR body | — |
+| F8 | FIXED — 4 email call sites + fail-open guard pytest-pinned | #1722 |
+| F9 | FIXED — guard doc un-inverted (code was correct) | #1723 |
+| F10 | FIXED (coverage) — all 3 branches pass; no app bug | #1724 |
+| F11/F12 | Fold into the MEH-1171 conversion stage (as planned) | — |
+| **F13 (new)** | `admin.py:127` + `admin_extra.py:65` — same unescaped LIKE pattern class as F1, admin-only surface; found by the F1 sibling grep, not folded (no-drive-by) | follow-up |
+
 **Highest-value conversion targets surfaced by triage:** mobile `/map` near-me (`07-gps-button.spec.ts:12` skips mobile entirely); MEH-722 map legend (zero coverage, live feature); `CitySearch` autocomplete (reused 3+ surfaces, stubbed everywhere); static pages `/privacy` `/terms` `/accessibility` (spec 13 covers only `/about`+`/events`); MEH-853 upgrade-path submit body (vitest gap).
 
 ## How to read the table
