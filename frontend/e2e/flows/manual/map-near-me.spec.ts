@@ -25,16 +25,22 @@ test.describe("/map near-me pill (MEH-970 chunk 2-lite)", () => {
   const openMap = async (page: Page) => {
     await page.addInitScript(() => localStorage.setItem("cookieConsent", "essential"));
     await page.goto("/map");
-    // mobile: the Leaflet chunk is a dynamic import behind a טוען… status —
-    // give the low-power emulated device time to hydrate it
-    await page.locator(".leaflet-container").first().waitFor({ timeout: 45_000 });
-    await page.locator(".leaflet-marker-icon").first().waitFor({ timeout: 20_000 });
+    await page.waitForLoadState("domcontentloaded");
+    // MEH-549 gotcha (REUSES 05-map-navigation.spec.ts:14-27): TWO MapPane
+    // instances mount (hidden desktop lg:grid + visible mobile lg:hidden) —
+    // visibility-waits on .leaflet-container race/resolve to the hidden one.
+    // window.__MAP_CENTER__ is the race-free mounted signal.
+    await page.waitForFunction(
+      () => (window as unknown as { __MAP_CENTER__?: [number, number] }).__MAP_CENTER__ !== undefined,
+      { timeout: 45_000 },
+    );
+    await page.waitForTimeout(2000); // tile + marker loading
   };
 
   // MANUAL_TESTING § MEH-970 chunk 2-lite item 1 — single pill, no extra crosshair
   test("exactly one קרוב אליי pill floats on the mobile map", async ({ page }) => {
     await openMap(page);
-    await expect(page.getByRole("button", { name: "קרוב אליי" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "הצגת בתי עסק קרובים למיקום שלי" })).toHaveCount(1);
   });
 
   // MANUAL_TESTING § MEH-970 chunk 2-lite item 2 — grant near businesses → fly, no toast
@@ -42,10 +48,15 @@ test.describe("/map near-me pill (MEH-970 chunk 2-lite)", () => {
     await context.grantPermissions(["geolocation"]);
     await context.setGeolocation(TEL_AVIV);
     await openMap(page);
-    await page.getByRole("button", { name: "קרוב אליי" }).click();
+    await page.getByRole("button", { name: "הצגת בתי עסק קרובים למיקום שלי" }).click();
     await page.waitForTimeout(2000); // flyTo duration 1.2s
     await expect(page.getByText(EMPTY_TOAST)).toBeHidden(); // no empty toast
-    await expect(page.locator(".leaflet-marker-icon").first()).toBeVisible(); // map alive
+    // map alive — markers may cluster (REUSES 15-map-markers selector set)
+    await expect
+      .poll(async () =>
+        page.locator(".leaflet-marker-icon, .mehamakor-marker-wrap, .marker-cluster").count(),
+      )
+      .toBeGreaterThan(0);
   });
 
   // MANUAL_TESTING § MEH-970 chunk 2-lite item 3 — empty 25km radius → toast + default view, never an empty map
@@ -53,11 +64,15 @@ test.describe("/map near-me pill (MEH-970 chunk 2-lite)", () => {
     await context.grantPermissions(["geolocation"]);
     await context.setGeolocation(EILAT);
     await openMap(page);
-    await page.getByRole("button", { name: "קרוב אליי" }).click();
+    await page.getByRole("button", { name: "הצגת בתי עסק קרובים למיקום שלי" }).click();
     await expect(page.getByText(EMPTY_TOAST)).toBeVisible();
     // zoomed back out to the default view → businesses visible, never an empty map
     await expect
-      .poll(async () => page.locator(".leaflet-marker-icon").count(), { timeout: 15_000 })
+      .poll(
+        async () =>
+          page.locator(".leaflet-marker-icon, .mehamakor-marker-wrap, .marker-cluster").count(),
+        { timeout: 15_000 },
+      )
       .toBeGreaterThan(0);
   });
 
@@ -65,7 +80,7 @@ test.describe("/map near-me pill (MEH-970 chunk 2-lite)", () => {
   test("denying location opens the city-search modal instead of a dead toast", async ({ page }) => {
     // no grantPermissions → getCurrentPosition rejects with PERMISSION_DENIED
     await openMap(page);
-    await page.getByRole("button", { name: "קרוב אליי" }).click();
+    await page.getByRole("button", { name: "הצגת בתי עסק קרובים למיקום שלי" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText(EMPTY_TOAST)).toBeHidden();
   });
