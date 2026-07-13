@@ -174,7 +174,7 @@ jobs:
       # false-failure class, observed live on PR #1568 within an hour of the
       # step landing). The fresh run upserts the real verdict.
       - name: Post QA report comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         if: >-
           always() && github.event_name == 'pull_request' &&
           steps.e2e-run.outcome != 'cancelled'
