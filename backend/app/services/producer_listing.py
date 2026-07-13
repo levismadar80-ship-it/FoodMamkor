@@ -38,6 +38,7 @@ from app.services.producer_queries import (
     attach_favorites_counts,
     haversine_km,
 )
+from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = structlog.get_logger(__name__)
 
@@ -244,14 +245,14 @@ def _apply_search_filter(
         return q, count_q
 
     clean = search_q.strip()
-    like = f"%{clean}%"
+    like = f"%{escape_like(clean)}%"
 
     has_category = (
         db.query(ProducerCategory)
         .join(Category, Category.id == ProducerCategory.category_id)
         .filter(
             ProducerCategory.producer_id == Producer.id,
-            Category.name.ilike(like),
+            Category.name.ilike(like, escape=LIKE_ESCAPE),
         )
         .exists()
     )
@@ -259,14 +260,14 @@ def _apply_search_filter(
         db.query(Product)
         .filter(
             Product.producer_id == Producer.id,
-            Product.name.ilike(like),
+            Product.name.ilike(like, escape=LIKE_ESCAPE),
         )
         .exists()
     )
     search_filter = (
-        Producer.name.ilike(like)
-        | Producer.description.ilike(like)
-        | Producer.city.ilike(like)
+        Producer.name.ilike(like, escape=LIKE_ESCAPE)
+        | Producer.description.ilike(like, escape=LIKE_ESCAPE)
+        | Producer.city.ilike(like, escape=LIKE_ESCAPE)
         | has_category
         | has_product
     )
@@ -276,7 +277,7 @@ def _apply_search_filter(
     if not geo_search:
         q = q.order_by(False).order_by(
             (func.lower(Producer.name) == clean.lower()).desc(),
-            Producer.name.ilike(f"{clean}%").desc(),
+            Producer.name.ilike(f"{escape_like(clean)}%", escape=LIKE_ESCAPE).desc(),
             Producer.avg_rating.desc(),
             Producer.created_at.desc(),
         )
