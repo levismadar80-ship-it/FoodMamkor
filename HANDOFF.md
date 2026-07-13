@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep — MEH-1194 done (stacked on MEH-1193)
+
+- **MEH-1194 (Med · YELLOW):** `feature/meh-1194-near-me-icon-button` **branched off `feature/meh-1193-...`** (same /map layering surface; merge 1193 first). Mobile near-me pill → circular Crosshair icon button (44×44, icon-only), reusing the desktop GPS circle tokens (`MapPane.jsx`), moved `start-4`→`end-4` (FAB gone from /map per MEH-1180). Kept the load-bearing `style` sheet-edge block, `z-[1000]`, `aria`, and `handleGoToMyLocation` wiring — geometry + a11y only. Deleted orphan `map.near_me_pill.label` (he-only). **Phase-0 correction (asked+approved):** removed the now-stale `map.near_me_pill.label` line from `en-parity-guard.test.js` BASELINE (out-of-scope test, but the guard's own "else remove it" path). grep 0 · 0 physical props · build+parity+en-parity-guard green · PW QA @360/375/390 PEEK+HALF + @1440 desktop (`qa-artifacts/MEH-1194/`). `Closes MEH-1194`.
+
 ## 2026-07-13 — MEH-1190…1196 sweep — MEH-1193 done (GREEN, pure deletion)
 
 - **MEH-1193 (Med · GREEN):** `feature/meh-1193-map-chrome-declutter` off `origin/staging`. Deleted the redundant "הצג מפה" bottom-sheet button (drag-handle dup; FULL no longer a snap) + the first-visit hint (covered by the higher-z search-area pill; desktop-only copy on mobile) across `MapBottomSheet.jsx` / `MapPane.jsx` / `useFirstVisitHints.js` / `MapClient.jsx` + orphan keys `map.pane.hint`/`map.bottom_sheet.show_map` (he+en). **Phase-0 scope correction (asked + approved):** `useMapSync.js` (out of the ticket's file list) also carried the hint's dismiss-on-pan + the `setShowMapHint` param from `MapClient.jsx:252` — deleting the hint without it breaks at runtime + fails the 0-grep gate, so it was folded in (`handleMapMove` → `setMapMoved(true)`). `grep → 0` · build green · full vitest 1058 passed · parity green · PW QA 375+1440 (`qa-artifacts/MEH-1193/`) shows 0 button, 0 hint, search-area pill fully visible. **1194 rebases on this.** `Closes MEH-1193`.
