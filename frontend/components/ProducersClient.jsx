@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { MagnifyingGlass, MapPin, Plant, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -15,6 +16,8 @@ import { useUserCity } from "@/lib/use-user-city";
 import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
+import { optimizeCloudinary } from "@/lib/cloudinary";
+import { BRAND_NAME } from "@/lib/constants";
 import api from "@/lib/api";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 
@@ -338,7 +341,7 @@ export default function ProducersClient({
       <form
         role="search"
         onSubmit={handleSearchSubmit}
-        className="flex items-center gap-2 mb-3 max-w-xl"
+        className="flex items-center gap-2 mb-3"
       >
         <label htmlFor="producers-search-input" className="sr-only">
           {t("search_input.label")}
@@ -364,34 +367,50 @@ export default function ProducersClient({
       </form>
 
       {/* MEH-1081: category radio row — the canonical ?category=<id> axis.
-          Self-hides while /categories hasn't resolved (or failed). */}
+          Self-hides while /categories hasn't resolved (or failed).
+          MEH-1186: micro-label above the row names the behavior (category
+          selection) vs the toggle row below (attribute filtering). */}
       {categories.length > 0 && (
-        <ChipScrollRow
-          variant="category"
-          chips={categoryChips}
-          activeKey={categoryFilter ?? "all"}
-          onChipClick={handleCategorySelect}
-          fadeBg="#F5F0E8"
-          className="mb-2"
-        />
+        <div className="mb-3">
+          <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.category_label")}</p>
+          <ChipScrollRow
+            variant="category"
+            chips={categoryChips}
+            activeKey={categoryFilter ?? "all"}
+            onChipClick={handleCategorySelect}
+            fadeBg="#F5F0E8"
+          />
+        </div>
       )}
 
-      {/* Chip row */}
-      <ChipScrollRow
-        variant="toggle"
-        chips={allChips}
-        activeKeys={activeKeys}
-        onChipClick={handleChipClick}
-        fadeBg="#F5F0E8"
-        className="mb-3"
-      />
+      {/* Toggle/attribute chip row — MEH-1186 micro-label "סינון". */}
+      <div className="mb-3">
+        <p className="text-xs text-fg-muted ms-1 mb-1">{t("filters.filter_label")}</p>
+        <ChipScrollRow
+          variant="toggle"
+          chips={allChips}
+          activeKeys={activeKeys}
+          onChipClick={handleChipClick}
+          fadeBg="#F5F0E8"
+        />
+      </div>
 
-      {/* Active filter strip */}
-      {hasActiveChips && (
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto scrollbar-hide -mx-1 px-1 py-2 bg-green-50 border-y border-border">
-          <span className="text-xs text-primary font-semibold whitespace-nowrap shrink-0">
-            {t("filters.filter_by")}
-          </span>
+      {/* Recently viewed strip — MEH-922: moved below the search box + filter
+          chips (was above them, between the H1 and the search) so the browse
+          tools lead the page; self-hides when there's no view history. */}
+      <RecentlyViewedStrip />
+
+      {/* Results counter + active filters — MEH-1186: one control line.
+          The removable chips (category ×, toggle ×, city ×, search ×) and
+          "נקו הכל" sit beside the counter, replacing the full-bleed green
+          filter strip. In the zero-result state counterText is null but the
+          chips still render so the user can escape the empty state. */}
+      {(counterText || hasActiveChips) && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 text-sm" aria-live="polite">
+          {counterText && <span className="text-fg-muted">{counterText}</span>}
+          {counterText && hasActiveChips && (
+            <span aria-hidden="true" className="text-border">·</span>
+          )}
           {/* MEH-1081: removable category chip — mirrors the city/search chips. */}
           {activeCategory && (
             <button
@@ -444,26 +463,16 @@ export default function ProducersClient({
               <MagnifyingGlass size={13} weight="bold" aria-hidden="true" />{searchQ}
             </button>
           )}
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs text-primary underline whitespace-nowrap shrink-0 ms-1"
-          >
-            {t("filters.clear_all")}
-          </button>
+          {hasActiveChips && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-xs text-primary underline whitespace-nowrap shrink-0 ms-1"
+            >
+              {t("filters.clear_all")}
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Recently viewed strip — MEH-922: moved below the search box + filter
-          chips (was above them, between the H1 and the search) so the browse
-          tools lead the page; self-hides when there's no view history. */}
-      <RecentlyViewedStrip />
-
-      {/* Counter */}
-      {counterText && (
-        <p className="text-sm text-fg-muted mb-4" aria-live="polite">
-          {counterText}
-        </p>
       )}
 
       {/* Content area */}
@@ -545,19 +554,49 @@ function RecentlyViewedStrip() {
 
   if (!producers.length) return null;
 
+  // MEH-1186: mini-cards (thumb + name + city) matching the homepage
+  // recently-viewed pattern (HomeStaticBlocks.jsx HomeRecentlyViewed,
+  // MEH-912/913) — replaces the old text-pill list. Imageless producers
+  // get the ProducerCard.jsx Leaf + BRAND_NAME placeholder. Same data
+  // source (getRecentlyViewedIds → /producers/:id), links, and self-hide.
   return (
     <section aria-label={t("aria")} className="mb-5">
       <p className="text-xs font-semibold text-fg-muted mb-2 px-0.5">{t("label")}</p>
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-        {producers.map((p) => (
-          <Link
-            key={p.id}
-            href={p.slug ? `/${p.slug}` : `/producer/${p.id}`}
-            className="shrink-0 flex items-center bg-white border border-border rounded-full px-3 py-1.5 text-sm text-text hover:border-primary hover:text-primary transition whitespace-nowrap"
-          >
-            {p.name}
-          </Link>
-        ))}
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
+        {producers.map((p) => {
+          const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
+          const imgSrc = optimizeCloudinary(p.images?.[0]);
+          return (
+            <Link
+              key={p.id}
+              href={href}
+              className="shrink-0 w-[160px] bg-white border border-border rounded-[12px] overflow-hidden transition group hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
+            >
+              <div className="relative w-full h-[100px] bg-background overflow-hidden">
+                {imgSrc ? (
+                  <Image
+                    src={imgSrc}
+                    alt={p.name}
+                    fill
+                    sizes="160px"
+                    className="object-cover group-hover:scale-105 transition duration-300"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-1" aria-hidden="true">
+                    <Leaf size={28} weight="light" className="text-primary/[0.32]" />
+                    <span className="font-headline-md text-xs font-bold text-primary/50">
+                      {BRAND_NAME}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="p-2.5">
+                <p className="font-headline-md font-bold text-sm text-text truncate">{p.name}</p>
+                {p.city && <p className="text-xs text-fg-muted truncate">{p.city}</p>}
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
