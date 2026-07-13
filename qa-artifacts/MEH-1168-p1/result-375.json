@@ -1,0 +1,23 @@
+{
+  "label": "375",
+  "width": 375,
+  "errors": [],
+  "priceText": [
+    "150₪",
+    "200₪"
+  ],
+  "reviewsTab": "has-icon",
+  "wordmarkInProducts": false,
+  "questionIcons": {
+    "count": 6,
+    "withIcon": 6
+  },
+  "newChip": {
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(28, 26, 23)",
+    "cls": "inline-block"
+  },
+  "categoryChips": [
+    "סבונים טבעיים"
+  ]
+}
