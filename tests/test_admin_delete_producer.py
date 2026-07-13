@@ -14,20 +14,26 @@ and that path must not regress.
 
 from app.models import User
 
-from tests.conftest import auth_header, make_producer, make_user
+from tests.conftest import (
+    auth_header,
+    make_producer,
+    make_user,
+    valid_producer_register_payload,
+)
 
 
-# Mirrors tests/test_admin_producer_lockout.py UPGRADE_BODY shape.
-_REGISTER_BODY = {
-    "producer_name": "חוות הניסוי",
-    "phone": "0501234567",
-    "category_ids": [],
-    "primary_contact_method": "whatsapp",
-    "email": "selfreg@example.com",
-    "name": "בעלת עסק",
-    "password": "Zx7Yp9Mq2Lr4",
-    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-}
+_SELFREG_EMAIL = "selfreg@example.com"
+
+
+def _register_body(**overrides):
+    # MEH-1153: derive from the shared registration helper (it seeds a real
+    # category, now required). Full new-registration path — keep email/name/
+    # password; pin the email that the DB assertion below looks up.
+    return valid_producer_register_payload() | {
+        "email": _SELFREG_EMAIL,
+        "phone": "0501234567",
+        **overrides,
+    }
 
 
 def test_admin_delete_self_registered_producer_unlinks_fk(client, db, monkeypatch):
@@ -37,10 +43,10 @@ def test_admin_delete_self_registered_producer_unlinks_fk(client, db, monkeypatc
 
     monkeypatch.setattr(cloudinary_utils, "destroy_image", lambda *a, **k: True)
 
-    resp = client.post("/auth/register/producer", json=_REGISTER_BODY)
+    resp = client.post("/auth/register/producer", json=_register_body())
     assert resp.status_code == 200, resp.json()
 
-    user = db.query(User).filter(User.email == _REGISTER_BODY["email"]).one()
+    user = db.query(User).filter(User.email == _SELFREG_EMAIL).one()
     assert user.producer_id is not None, "self-registered user must be linked"
     assert user.is_producer is True
     producer_id = str(user.producer_id)
