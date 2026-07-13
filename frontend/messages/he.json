@@ -12,7 +12,7 @@
     "favorites": "מועדפים",
     "admin": "אדמין",
     "login": "כניסה",
-    "add_business": "הוסיפו את העסק שלך",
+    "add_business": "הוסיפו את העסק שלכם",
     "mobile_label": "ניווט מובייל",
     "profile": "פרופיל",
     "account": "חשבון",
@@ -36,7 +36,7 @@
       "about": "אודות",
       "process": "תהליך הקבלה",
       "faq_businesses": "FAQ לבתי עסק",
-      "add_business": "הוסיפו את העסק שלך",
+      "add_business": "הוסיפו את העסק שלכם",
       "login": "כניסה לחשבון",
       "terms": "תנאי שימוש",
       "privacy_short": "פרטיות",
@@ -48,7 +48,7 @@
       "instagram_aria": "עמוד האינסטגרם של מהמקור — נפתח בחלון חדש",
       "nav_aria": "ניווט ראשי בפוטר",
       "nav_heading": "ניווט",
-      "nav_discover": "גלה עסקים",
+      "nav_discover": "גלו עסקים",
       "newsletter_heading": "אוכל טוב לא שומרים לעצמנו",
       "newsletter_label": "אימייל לניוזלטר",
       "newsletter_placeholder": "האימייל שלך, בבקשה",
@@ -133,7 +133,7 @@
       "hero_overlay": "טרי · מקומי · מהמקור",
       "value_save": "שמרו עסקים",
       "value_rate": "כתבו ביקורות",
-      "value_publish": "הוסיפו את העסק שלך",
+      "value_publish": "הוסיפו את העסק שלכם",
       "email_label": "אימייל",
       "email_invalid": "האימייל לא תקין",
       "valid": "✓ תקין",
@@ -152,7 +152,7 @@
     "oauth": {
       "google_error": "שגיאה בהתחברות עם Google",
       "apple_error": "שגיאה בהתחברות עם Apple",
-      "apple_continue": "המשך עם Apple",
+      "apple_continue": "המשיכו עם Apple",
       "apple_continue_f": "המשיכי עם Apple",
       "producer_quick_signup": "הרשמה מהירה",
       "producer_only_email_name": "נקבל רק את השם והאימייל שלך",
@@ -233,7 +233,7 @@
         },
         "draft": {
           "prompt": "שמרנו טיוטה ממילוי קודם — רוצה להמשיך?",
-          "continue": "כן, המשך",
+          "continue": "כן, המשיכו",
           "dismiss": "לא"
         },
         "steps": {
@@ -463,7 +463,7 @@
       "body_l1": "מהמקור הוא הבית של בתי עסק מקומיים בישראל — כל עסק נבחר אישית.",
       "body_l2": "תקבלו עמוד משלכם: תמונות, סיפור, וקו ישיר ללקוחות.",
       "body_l3": "חינם, בלי עמלות. נשמח להכיר.",
-      "button": "הוסיפו את העסק שלך"
+      "button": "הוסיפו את העסק שלכם"
     },
     "new_businesses": {
       "heading": "עסקים חדשים"
@@ -2366,7 +2366,7 @@
       },
       "cta": {
         "heading": "בנית עסק שמגיע לו בית? אנחנו רוצות להכיר.",
-        "register": "הוסיפו את העסק שלך",
+        "register": "הוסיפו את העסק שלכם",
         "explore": "גלו עסקים קרובים"
       },
       "contact": {
@@ -2624,7 +2624,7 @@
     "catalog_empty": {
       "title": "הרשימה בדרך",
       "subtitle": "הציעו עסק שאת אוהבת, או הירשמו לעדכונים כשמצטרפות חדשות",
-      "add_cta": "הוסיפו את העסק שלך",
+      "add_cta": "הוסיפו את העסק שלכם",
       "notify_cta": "הודיעו לי כשמצטרפות חדשות"
     },
     "page_overflow": {
@@ -2819,9 +2819,9 @@
     "success_close": "סגור"
   },
   "share": {
-    "trigger": "שתף",
-    "modal_title": "שתף לינק לעסק",
-    "copy_link": "שתף לינק",
+    "trigger": "שתפו",
+    "modal_title": "שתפו לינק לעסק",
+    "copy_link": "שתפו לינק",
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
     "wa_meta_separator": " • ",
@@ -3046,7 +3046,7 @@
     "footer_questions_prefix": "עדיין יש שאלות? כתבו לנו דרך",
     "footer_form_link": "טופס יצירת הקשר",
     "footer_or_email": "או במייל",
-    "cta": "הוסיפו את העסק שלך"
+    "cta": "הוסיפו את העסק שלכם"
   },
   "privacy": {
     "meta_title": "מדיניות פרטיות | מהמקור",
