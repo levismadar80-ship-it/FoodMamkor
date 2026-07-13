@@ -90,8 +90,10 @@ def scan(db, markers: list[str] | None = None) -> dict:
 
     name_hits = []
     # ilike per marker; a producer can match more than one marker, so collect
-    # matched markers per row and de-duplicate by producer id.
-    seen_ids: dict[int, dict] = {}
+    # matched markers per row and de-duplicate by producer id. Keyed by the
+    # stringified UUID (Producer.id is a UUID) so the annotation is truthful and
+    # the key matches the JSON-safe "id" stored in the row.
+    seen_ids: dict[str, dict] = {}
     for marker in markers:
         for p in (
             db.query(Producer)
@@ -100,7 +102,7 @@ def scan(db, markers: list[str] | None = None) -> dict:
             .all()
         ):
             row = seen_ids.setdefault(
-                p.id,
+                str(p.id),
                 {
                     "id": str(p.id),
                     "name": p.name,
