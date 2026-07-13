@@ -124,6 +124,10 @@ test.describe("Visual parity — MEH-991", () => {
   // (editorial contact card, two-tier header, section reorder, discovery loop).
   // This touch re-triggers vrt-update.yml so the producer-detail-*-linux.png
   // baselines are regenerated on-runner against the final design.
+  // MEH-1197 follow-up (2026-07-13): the /producers visual language changed again
+  // after the 13:37 baseline — MEH-1186 (#1732, one visual language per behavior)
+  // and MEH-1173 (#1727) — red-lining producer-detail-mobile against a now-stale
+  // snapshot. This touch re-triggers vrt-update.yml to refresh the baselines.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
