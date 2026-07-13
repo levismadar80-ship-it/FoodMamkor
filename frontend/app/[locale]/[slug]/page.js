@@ -82,7 +82,17 @@ export default async function ProducerSlugPage(props) {
   return (
     <>
       <ProducerJsonLd producer={producer} locale={params.locale} />
+      {/*
+        MEH-1151: `key={params.slug}` forces a full remount on slug→slug
+        navigation within this same [slug] route segment. Without it, React
+        reuses the ProducerDetail instance, so useProducerData's
+        `useState(initialProducer)` (seed-once) keeps the previous producer
+        and its fetch effect short-circuits on `if (initialProducer) return`
+        — the page stays stuck on business A while the URL is already B
+        (e.g. via a "similar producers" card). Remount re-seeds state fresh.
+      */}
       <ProducerDetail
+        key={params.slug}
         initialProducer={producer}
         fetchPath={`/producers/by-slug/${encodeURIComponent(params.slug)}`}
       />
