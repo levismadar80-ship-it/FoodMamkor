@@ -21,6 +21,22 @@ export const COMPLETENESS_FIELDS = {
   short_desc: "תיאור קצר",
 };
 
+// MEH-1173: the MEH-532 seed description, written at registration from the
+// localized i18n value `auth.register.producer.default_description` (he + en,
+// RegisterProducerClient.jsx). A description still equal to the seed is a
+// placeholder, not a real description — so it counts as MISSING here and in the
+// edit-tab summary. Duplicated from messages/{he,en}.json by necessity: this
+// module is React-free (unit-tested without next-intl) and cannot call t().
+// Keep in sync if the registration default copy changes.
+export const DEFAULT_PRODUCER_DESCRIPTIONS = [
+  "בית עסק מקומי. עוד פרטים בקרוב.",
+  "Local business. More details coming soon.",
+];
+
+export function isDefaultDescription(text) {
+  return DEFAULT_PRODUCER_DESCRIPTIONS.includes((text || "").trim());
+}
+
 export function producerCompleteness(p) {
   const missing = [];
   const isDeliveryOnly = p.has_physical_location === false && p.offers_delivery;
@@ -53,9 +69,12 @@ export function producerCompleteness(p) {
   // to customers — the tagline (short_description: ProducerCard.jsx:208,
   // ProducerHeader.jsx:81) and the long story (description:
   // ProducerSections.jsx:77) — so either one filled satisfies the check.
+  // MEH-1173: the MEH-532 seed description does NOT count — it's a placeholder,
+  // so a producer who never wrote a real description still reads as missing.
   // Yellow-tier only: never part of redCondition below.
-  const noDescription =
-    !(p.short_description || "").trim() && !(p.description || "").trim();
+  const hasRealDescription =
+    !!(p.description || "").trim() && !isDefaultDescription(p.description);
+  const noDescription = !(p.short_description || "").trim() && !hasRealDescription;
   if (noDescription) missing.push(COMPLETENESS_FIELDS.short_desc);
 
   let priority = "green";

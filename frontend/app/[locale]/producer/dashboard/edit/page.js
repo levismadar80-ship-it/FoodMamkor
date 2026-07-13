@@ -60,7 +60,8 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { BioPanelCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
 // The anchor ids are a public deep-link contract (#contact-channels …).
@@ -256,7 +257,7 @@ export default function ProducerDashboardEditPage() {
         ? "categories"
         : profile.has_physical_location !== false && !(profile.city || "").trim()
           ? "location"
-          : !(profile.description || "").trim()
+          : !(profile.description || "").trim() || isDefaultDescription(profile.description)
             ? "bio"
             : productsForMarker < 3
               ? "products"
@@ -282,7 +283,13 @@ export default function ProducerDashboardEditPage() {
   // no copy. Products' first name comes from the initial payload join — the
   // live in-card CRUD only feeds the count (payload-only constraint).
   const categoryNames = (profile.categories || []).map((c) => c.name);
-  const bioFirstLine = (profile.description || "").trim().split("\n")[0];
+  // MEH-1173: the MEH-532 seed description is not a real description — show the
+  // empty-preview placeholder for it, matching the summary + next-step marker.
+  const realDescription =
+    (profile.description || "").trim() && !isDefaultDescription(profile.description)
+      ? profile.description.trim()
+      : "";
+  const bioFirstLine = realDescription.split("\n")[0];
   const firstProductName = profile.products?.[0]?.name || "";
   const primaryMethod = profile.primary_contact_method || "whatsapp";
   const contactBacking = METHOD_FIELD[primaryMethod];
@@ -428,12 +435,12 @@ export default function ProducerDashboardEditPage() {
         </EditAccordionCard>
       )}
 
-      {/* ④ MEH-56: AI bio writer panel */}
+      {/* ④ MEH-1173: business description card (hero description + tagline + AI assist) */}
       <EditAccordionCard
         anchorId="bio"
-        title={t("bio.heading")}
+        title={t("description_card.heading")}
         summary={
-          (profile.description || "").trim()
+          (profile.description || "").trim() && !isDefaultDescription(profile.description)
             ? tAcc("bio_present")
             : tAcc("bio_missing")
         }
@@ -442,9 +449,9 @@ export default function ProducerDashboardEditPage() {
         open={openKey === "bio"}
         onToggle={() => toggleKey("bio")}
       >
-        <BioPanelCard
+        <DescriptionCard
           profile={profile}
-          onSave={(bio) => setProfile((p) => p ? { ...p, description: bio } : p)}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}
         />
       </EditAccordionCard>

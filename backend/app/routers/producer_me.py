@@ -890,13 +890,15 @@ def generate_bio_endpoint(
     body: BioGenerateIn,
     user: User = Depends(require_producer),
 ):
-    """Generate a Hebrew ≤150-char business bio via Claude Haiku.
-    Accepts an Instagram handle, URL, or free text.
-    Fail-open: returns {"bio": ""} when AI is unavailable.
+    """Generate a Hebrew ≤150-char business description via Claude Haiku.
+
+    MEH-1173: accepts structured input (sells + optional area/special/
+    instagram) — the Instagram scrape is gone. Fail-open: returns
+    {"bio": ""} when AI is unavailable.
     """
     from app.services.bio_generator import generate_bio
 
-    bio = generate_bio(body.source)
+    bio = generate_bio(body.sells, body.area, body.special, body.instagram)
     return {"bio": bio}
 
 

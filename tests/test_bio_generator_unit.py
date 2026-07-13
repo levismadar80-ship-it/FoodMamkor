@@ -1,8 +1,9 @@
-"""Unit tests for app.services.bio_generator (MEH-56).
+"""Unit tests for app.services.bio_generator (MEH-56; MEH-1173).
 
-Covers the pure handle-extraction helper and generate_bio's fail-open /
-happy / truncation branches. The Instagram scrape and Anthropic call are
-both stubbed, so no network traffic occurs.
+Covers the structured-prompt composer and generate_bio's fail-open /
+happy / truncation branches. The Anthropic call is stubbed, so no network
+traffic occurs. MEH-1173 deleted the Instagram-scrape path — its handle
+helpers and scrape test are gone with it.
 """
 import pytest
 
@@ -24,8 +25,11 @@ class _FakeMessages:
     def __init__(self, blocks, raises=None):
         self._blocks = blocks
         self._raises = raises
+        self.last_content = None
 
     def create(self, **kwargs):
+        # Capture the composed prompt so tests can assert on line-omission.
+        self.last_content = kwargs["messages"][0]["content"]
         if self._raises:
             raise self._raises
         return _FakeMessage(self._blocks)
@@ -42,30 +46,21 @@ def _no_key(monkeypatch):
     monkeypatch.setattr(mod, "_client", None, raising=False)
 
 
-class TestExtractInstagramHandle:
-    def test_full_url(self):
-        assert (
-            mod._extract_instagram_handle("https://instagram.com/cool.bakery/")
-            == "cool.bakery"
-        )
+class TestComposePrompt:
+    def test_all_fields_present(self):
+        p = mod._compose_prompt("ריבות", "הגליל", "מתכון סבתא", "@jam")
+        assert "מה העסק מוכר: ריבות" in p
+        assert "אזור פעילות: הגליל" in p
+        assert "מה מיוחד: מתכון סבתא" in p
+        assert "אינסטגרם (השראה בלבד): @jam" in p
 
-    def test_url_with_www_and_query(self):
-        assert (
-            mod._extract_instagram_handle("instagram.com/my_shop?hl=he")
-            == "my_shop"
-        )
-
-    def test_at_prefixed(self):
-        assert mod._extract_instagram_handle("@bake_house") == "bake_house"
-
-    def test_bare_handle(self):
-        assert mod._extract_instagram_handle("nofar.cakes") == "nofar.cakes"
-
-    def test_free_text_is_not_a_handle(self):
-        assert mod._extract_instagram_handle("עוגות יום הולדת מהבית") is None
-
-    def test_too_long_is_not_a_handle(self):
-        assert mod._extract_instagram_handle("a" * 40) is None
+    def test_empty_optional_fields_drop_their_line(self):
+        p = mod._compose_prompt("ריבות", None, "", "   ")
+        assert "מה העסק מוכר: ריבות" in p
+        # No dangling labels for the empty optionals.
+        assert "אזור פעילות" not in p
+        assert "מה מיוחד" not in p
+        assert "אינסטגרם" not in p
 
 
 class TestGenerateBio:
@@ -74,8 +69,14 @@ class TestGenerateBio:
 
     def test_happy_path_returns_bio(self, monkeypatch):
         monkeypatch.setattr(mod, "_get_client", lambda: _FakeClient([_FakeBlock("ביו נחמד")]))
-        # free text → no Instagram scrape attempted
         assert mod.generate_bio("מאפייה ביתית טרייה") == "ביו נחמד"
+
+    def test_only_sells_reaches_prompt_when_optionals_blank(self, monkeypatch):
+        fake = _FakeClient([_FakeBlock("ok")])
+        monkeypatch.setattr(mod, "_get_client", lambda: fake)
+        mod.generate_bio("ריבות", area=None, special="", instagram=None)
+        assert "מה העסק מוכר: ריבות" in fake.messages.last_content
+        assert "אזור פעילות" not in fake.messages.last_content
 
     def test_bio_truncated_to_150_chars(self, monkeypatch):
         long_text = "א" * 300
@@ -84,8 +85,8 @@ class TestGenerateBio:
         )
         assert len(mod.generate_bio("מאפייה")) == 150
 
-    def test_empty_source_returns_empty(self, monkeypatch):
-        # client present but source strips to empty → early return ""
+    def test_blank_sells_returns_empty(self, monkeypatch):
+        # client present but sells strips to empty → early return ""
         monkeypatch.setattr(
             mod, "_get_client", lambda: _FakeClient([_FakeBlock("x")])
         )
@@ -96,11 +97,3 @@ class TestGenerateBio:
             mod, "_get_client", lambda: _FakeClient(raises=RuntimeError("down"))
         )
         assert mod.generate_bio("מאפייה ביתית") == ""
-
-    def test_uses_scraped_instagram_bio(self, monkeypatch):
-        monkeypatch.setattr(
-            mod, "_get_client", lambda: _FakeClient([_FakeBlock("from-claude")])
-        )
-        monkeypatch.setattr(mod, "_fetch_instagram_bio", lambda h: "scraped bio text")
-        # handle input triggers the scrape branch (stubbed, no network)
-        assert mod.generate_bio("@my_bakery") == "from-claude"
