@@ -54,6 +54,30 @@ su postgres -c "createdb '${DB_NAME}'" 2>/dev/null \
 (cd backend && .venv/bin/python seed_data.py)
 "$PY" scripts/create_admin.py "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
 
+# 4b — minimal cities for the /cities autocomplete (seed_data.py doesn't cover
+#      the cities table; the full loader is POST /admin/seed-cities → data.gov.il,
+#      which needs egress — tests only need a deterministic handful)
+"$PY" - << 'PYEOF'
+import sys
+sys.path.insert(0, "backend")
+from app.database import SessionLocal
+from app.models.models import City
+
+db = SessionLocal()
+for name, lat, lng in [
+    ("תל אביב", 32.08, 34.78),
+    ("זכרון יעקב", 32.57, 34.95),
+    ("חיפה", 32.79, 34.99),
+    ("ירושלים", 31.77, 35.21),
+    ("ראשון לציון", 31.97, 34.79),
+    ("ראש העין", 32.09, 34.95),
+]:
+    if not db.query(City).filter(City.name_he == name).first():
+        db.add(City(name_he=name, lat=lat, lng=lng))
+db.commit()
+print(f"cities seeded: {db.query(City).count()}")
+PYEOF
+
 echo "local backend DB ready: ${DATABASE_URL}"
 echo "admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
 
