@@ -217,7 +217,14 @@ export default function Header() {
         // covered the open dropdown (truncating "לוח הבקרה שלי"). 1050 sits
         // above map controls:1000 and below cookie:1100 — see the /map z-token
         // ledger in .claude/rules/rtl.md.
-        className="sticky top-0 z-[1050]"
+        // MEH-1195: MEH-947 made the PILL opaque on inner pages but the sticky
+        // SHELL around it (px-5 gutters + pt-4/pb-2 strips) stayed transparent,
+        // so page content scrolling under the header bled through beside/above
+        // the pill (single Hebrew letters reading as a render glitch). Give the
+        // shell the same cream surface on inner pages (!isHomepage). Homepage
+        // keeps its float-over-hero transparency (MEH-947-approved) — so the
+        // token is gated, not unconditional. Surface only: no geometry / z / blur.
+        className={`sticky top-0 z-[1050]${isHomepage ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to

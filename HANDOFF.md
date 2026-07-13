@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep — MEH-1195 done (🔒 RED, DO-NOT-MERGE)
+
+- **MEH-1195 (Med · RED · central Header):** `feature/meh-1195-header-shell-opaque` off `origin/staging`. MEH-947 opaqued the pill but left the sticky SHELL transparent → scrolled content bled through the gutters/strips around the pill. Fix = one gated class on the sticky `<header>` (`Header.jsx:220`): `+ bg-background` when `!isHomepage`. Homepage byte-identical (locale-stripped `usePathname` → `/he`+`/en` both `isHomepage`; DOM-asserted className unchanged on `/`). No geometry/z/blur/transition/trust-strip change. Adversarial self-review: en-homepage locale case verified (no regression). build green · Header vitest 30/30 · PW QA 375+1440 (`qa-artifacts/MEH-1195/`): settings+about scrolled opaque/0-bleed, home unchanged. **PR title carries `DO NOT MERGE — Sapir gate`; auto-merge NOT armed. Sapir merges.** `Closes MEH-1195`.
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
