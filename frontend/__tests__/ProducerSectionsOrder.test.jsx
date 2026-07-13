@@ -69,6 +69,35 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     expect(before(reviews, minimap)).toBe(true); // location is last
   });
 
+  // MEH-1168 P3: the editorial DeliveryBlock serves ALL producers (the legacy
+  // table retired). It must render when offers_delivery is FALSE but the
+  // producer still has delivery_areas rows (or pickup_points).
+  const deliveryProps = (overrides) => ({
+    producer: { id: 5, name: "חוות", products: [], ...overrides },
+    events: [],
+    similarProducers: [],
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("renders DeliveryBlock for a !offers_delivery producer that has delivery_areas", () => {
+    render(<ProducerSections {...deliveryProps({ offers_delivery: false, delivery_areas: [{ id: 1, city: "עיר", min_order: 50 }] })} />);
+    expect(screen.getByTestId("delivery")).toBeInTheDocument();
+    // legacy table is gone
+    expect(document.querySelector("table")).toBeNull();
+  });
+
+  it("renders DeliveryBlock for a pickup-only producer (no offers_delivery, no areas)", () => {
+    render(<ProducerSections {...deliveryProps({ offers_delivery: false, delivery_areas: [], pickup_points: "איסוף עצמי" })} />);
+    expect(screen.getByTestId("delivery")).toBeInTheDocument();
+  });
+
+  it("does not render DeliveryBlock when the producer has no delivery/pickup signal", () => {
+    render(<ProducerSections {...deliveryProps({ offers_delivery: false, delivery_areas: [] })} />);
+    expect(screen.queryByTestId("delivery")).not.toBeInTheDocument();
+  });
+
   const nearbyProps = (n) => ({
     producer: { id: 3, name: "חוות", city: "עיר", products: [] },
     events: [],

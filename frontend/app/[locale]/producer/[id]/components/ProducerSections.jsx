@@ -32,7 +32,7 @@ const MIN_NEARBY_BUSINESSES = 4;
  * report. The signature product (top_product_name / starting_price_label)
  * moved OUT of ProducerHeader to the top of the products section here.
  *
- * Delivery (MEH-1168 P3, decision א): a single editorial <DeliveryBlock> serves
+ * Delivery (MEH-1168 P3, decision A): a single editorial <DeliveryBlock> serves
  * ALL producers — fed delivery_areas (city · min order · day) + pickup_points +
  * a demoted tertiary CTA. It renders whenever the producer has any delivery or
  * pickup signal. The legacy delivery_areas table was retired from this page.
@@ -260,7 +260,7 @@ export default function ProducerSections({
         </section>
       )}
 
-      {/* MEH-1168 P3 (decision א): the editorial DeliveryBlock now serves ALL
+      {/* MEH-1168 P3 (decision A): the editorial DeliveryBlock now serves ALL
           producers — the legacy delivery_areas table retired from this page. It
           is fed the full delivery_areas (city · min order · day) + pickup_points
           and renders whenever the producer has any delivery/pickup signal
