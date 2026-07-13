@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1153: server-side category_ids parity (from MEH-1148 audit E10) — PR ready, AWAITING SAPIR
+
+- **Branch:** `feature/meh-1153-server-validation-parity` off `origin/staging`. **NO auto-merge** (batch-wide human-review rule after the #1674 process incident — every PR gets an explicit look). `Closes MEH-1153`.
+- **Phase 0 (confirmed w/ Sapir):** `phone` already conditionally enforced by the register handler (`auth.py:398-414`) for whatsapp/phone methods → E10 phone finding was a false positive; **only `category_ids` fixed, phone untouched.**
+- **Shipped:** `_require_categories_validator` (Hebrew) on `ProducerRegister` + `ProducerCreate`, `category_ids: Field(default_factory=list, validate_default=True)` → rejects absent AND `[]`. Out of scope: `ProducerAdminCreate`, producer-update schema. `tests/test_meh1153_category_required.py` (6).
+- **Fixture ripple (DRY, Sapir's constraint — zero new seeding factories):** `valid_producer_register_payload()` now self-seeds a real category (argument-free); ~30 tests across 6 files re-pointed at it (upgrade variants derive by popping email/name/password; killed `test_admin_producer_lockout`'s documented dup). Every helper delegates to the shared one — no file needed a local copy.
+- **Verify:** full backend suite **1360 passed** / 0 failed (excl. fuzz) · ruff clean (`schemas.py` only CI-linted change).
+
 ## 2026-07-12 — MEH-1145 Wave E3 (ui/Input adoption II — heavy forms, FINAL wave) — draft PR
 
 - **Branch:** `feature/meh-1145-input-adoption-wave-e3` off `origin/staging` tip, divergence 0. YELLOW — auto-merge after CI green + Playwright 375px per form. `Refs MEH-1145`. **Epic's final wave** — epic-close grep runs post-merge. Pre-flight: E2 `deda2359` on staging.
