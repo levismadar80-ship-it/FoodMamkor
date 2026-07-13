@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1171 Ticket A stage 1: manual-testing triage matrix — 🔒 WAIT GATE (draft PR, DO NOT MERGE)
+
+- **Branch:** `feature/meh-1171-manual-testing-conversion` off `origin/staging` (divergence 0 at cut). Draft PR carries the merge-block marker in its title **by design** — the live marker gate self-blocks it until Sapir approves the matrix (ADR-016 amendment authority). `Refs MEH-1171`.
+- **Shipped (docs only, zero app code):** `docs/qa/manual-testing-matrix.md` — all 1,054 MANUAL_TESTING.md items classified with per-row evidence (CONVERT-PW 506 · COVERED 318 · STALE 138 · KEEP-RUNBOOK 51 · DEVICE-ONLY 26 · CONVERT-PYTEST 23 · UNCLEAR 6 · destructive 183) + Phase 0 report + 12 findings for Ticket B. `docs/qa/conversion-progress.md` scaffold. Triage ran as 8 parallel read-only agents over line ranges; row totals machine-verified (1,068 = 1,054 items + 14 section rows).
+- **Premise corrections:** pytest root is `tests/` not `backend/tests/`; `testMatch` already covers `e2e/flows/manual/`; E2E currently proxies to REAL staging backend → destructive specs must ride `scripts/local-backend.sh` (conversion stage). Two extra verdicts (KEEP-RUNBOOK, UNCLEAR) proposed for approval.
+- **Next:** Sapir reviews the matrix (especially the 138 STALE deletions + 6 UNCLEAR). On "go": local-backend runbook script → section-by-section conversion with checkpoint file → MANUAL_TESTING.md pointer-stub rewrite → suite green ×2 → conversion PRs (GREEN tier). Findings F1-F12 → Ticket B.
+
 ## 2026-07-12 — MEH-1155/1156 docs correction: the two CI gates ARE live (my #1686 docs were wrong) — PR open
 
 - **Branch:** `feature/meh-1155-docs-correction` off `origin/staging` (`4803c9d0`). GREEN docs-only. `Refs MEH-1155, MEH-1156`.
