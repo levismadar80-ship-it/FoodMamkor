@@ -35,4 +35,10 @@ describe("ChatWidgetLazy", () => {
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
   });
+
+  it("keeps the FAB on the dashboard root (exact, no trailing slash)", async () => {
+    mockUsePathname.mockReturnValue("/producer/dashboard");
+    render(<ChatWidgetLazy />);
+    expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
+  });
 });

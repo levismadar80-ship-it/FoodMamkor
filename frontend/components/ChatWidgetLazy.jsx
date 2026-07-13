@@ -19,7 +19,9 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 // @/i18n/navigation, so it is locale-stripped ("/producer/123", not "/he/...").
 // The dashboard subtree (/producer/dashboard/...) keeps the FAB.
 function isProducerDetail(pathname) {
-  return /^\/producer\/(?!dashboard(\/|$))[^/]+/.test(pathname || "");
+  // `$` anchor: match the /producer/[id] leaf exactly (no public sub-routes),
+  // so a hypothetical future nested route wouldn't accidentally lose the FAB.
+  return /^\/producer\/(?!dashboard(\/|$))[^/]+$/.test(pathname || "");
 }
 
 export default function ChatWidgetLazy() {
