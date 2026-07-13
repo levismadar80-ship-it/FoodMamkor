@@ -67,11 +67,28 @@ auto-merge a marked PR. **Only Sapir removes the marker.** Precedence: the marke
 overrides GREEN/YELLOW/RED auto-merge authority the same way the batch-prompt
 instruction does, but at the PR layer where the merge actually happens.
 
-**Mechanical enforcement (pending — not yet wired as of this ADR):** the marker
-is meant to be enforced by a **"DO-NOT-MERGE marker gate"** job wired into
-**"CI gate (required)"**, so a marked PR cannot go green. Verified 2026-07-12
-against `origin/staging`: no such job exists in any `.github/workflows/**` file
-yet (`.github/workflows/**` is CC-deny — MEH-671 — so CC cannot add it). The
-gate YAML is delivered in the MEH-1155 PR body for Sapir to apply. **Until it is
-wired, this override is prompt/policy-only** — CC honors it by discipline, not by
-a green-gate block.
+**Mechanical enforcement (LIVE):** the marker is enforced by the
+**"DO-NOT-MERGE marker gate"** job (`do-not-merge-gate` in
+`.github/workflows/pr-checks.yml`), wired into the **"CI gate (required)"**
+aggregator (`ci-gate` `needs:` + the `R_DNM` result check) — so a marked PR
+**cannot go green** and therefore cannot auto-merge. The aggregator check is
+stack-independent (always required), so no branch-protection change was needed.
+Sapir applied it in PR #1684 (RED tier); `.github/workflows/**` is CC-deny
+(MEH-671), so only Sapir maintains the gate.
+
+**Marker semantics — it is NOT a bracketed tag.** The gate scans the PR title
+and body (case-insensitive) with:
+
+```
+(^|[^A-Za-z0-9_-])do[ _-]?not[ _-]?merge([^A-Za-z0-9_-]|$)|DNM-LOCK
+```
+
+i.e. it matches the marker phrase **anywhere in the title or body** — brackets
+or not, with space / underscore / hyphen separators — plus the literal
+`DNM-LOCK`. This breadth is deliberate: the marker must be caught even sitting
+mid-sentence in a PR title (the PR #1659 case), not only as a standalone tag.
+**Consequence:** a PR that merely *discusses* this gate in prose will self-block.
+That trade is accepted — a false positive costs one text edit; a false negative
+could let gated copy reach production. **To write about this gate in any PR
+title/body or comment, call it the "merge-block marker" gate — never spell out
+the literal marker phrase, or your own PR self-blocks.**

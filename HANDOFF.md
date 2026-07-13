@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-12 — MEH-1155/1156 docs correction: the two CI gates ARE live (my #1686 docs were wrong) — PR open
+
+- **Branch:** `feature/meh-1155-docs-correction` off `origin/staging` (`4803c9d0`). GREEN docs-only. `Refs MEH-1155, MEH-1156`.
+- **The error:** #1686 documented both the merge-block marker gate and the qa-artifacts 2 MB cap as "enforcement-pending / absent from all workflows." I had grepped a **stale base (`76842d71`)** taken before Sapir's #1684 (RED tier) added both jobs. Re-verified against live staging: `do-not-merge-gate` (:50) + `qa-artifacts-size` (:67), both in `ci-gate` `needs:` (:527-528) + `R_DNM`/`R_QA_SIZE` (:545-546), enforced in the aggregator (:583-584). **LIVE + BLOCKING** via "CI gate (required)".
+- **Fixed:** ADR-016:70 (pending→LIVE + real marker semantics: matches phrase anywhere in title/body, NOT bracketed; discussing it self-blocks → say "merge-block marker") · `.claude/rules/testing.md` (convention→live gate) · `compress-qa-screenshots.mjs` header. Superseded the dangerous YAML snippets from #1686's body (duplicate job keys) — flagged in this PR body + a comment on #1686.
+- **⚠️ Self-block hazard:** the marker gate scans PR title/body. This PR's title/body deliberately avoid the literal marker phrase (use "merge-block marker"); the docs FILES contain it (files aren't scanned).
+- **Next:** push → PR (clean title/body) → GREEN auto-merge on green CI.
+
 ## 2026-07-12 — MEH-1161: public event visibility gated on producer approval — PR open
 
 - **Branch:** `feature/meh-1161-gate-pending-producer-events` off `origin/staging` 85ad89c6 (divergence 0). YELLOW — CI green → auto-merge per batch authority (ADR-016 v2). `Closes MEH-1161`. Task 1 of a 5-task batch (2: MEH-1162 license chip · 3: MEH-1163 bio textarea · 4: MEH-1164 Chunk 1 email diagnosis · 5: MEH-1165 7-item batch).
