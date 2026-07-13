@@ -1059,7 +1059,7 @@ CC רץ אחרי Tier 1 — לכל מה ש-Tier 1 לא יכול אבל אינו 
 - [ ] /admin/kashrut: דחי button → opens modal with notes input → reject saves notes to DB
 - [ ] /admin/kashrut: filter by status (pending/approved/rejected)
 - [ ] POST /admin/producers/{id}/set-ambassador → ambassador=true → trust_tier=5 in GET /producers response
-- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 5 confirms per minute
+- [ ] Rate limiting: 3 OTP sends per 10 min per producer, 3 confirms per minute (MEH-1176 F5: doc said 5 confirms; code always enforced 3/min — stricter wins, pinned by tests/test_meh1176_otp_confirm_rate_limit.py)
 
 רשימת בדיקות ידניות על הסביבה החיה לפני שחרור לפרודקשן.
 פורמט: `[ ] Test — איך לבדוק — תוצאה מצופה`
