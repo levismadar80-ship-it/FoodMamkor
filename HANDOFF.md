@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1176 Ticket B: triage findings F1-F10 — 8 FIXED (all merged), 2 STOPPED with reasons
+
+- **Batch (one branch+PR per finding, ADR-016 tiers, same session as the MEH-1171 matrix approval):** GREEN F2 #1716 · F3 #1719 · F5 #1720 · F8 #1722 · F9 #1723 · F10 #1724 — all merged. YELLOW F1 #1725 · F4 #1726 — both merged. Full F#→PR# map + per-finding evidence: `docs/qa/manual-testing-matrix.md` § "Ticket B execution status". `Closes MEH-1176` (docs-close PR).
+- **STOPPED (ticket protocol — stale/blocked premise, reported not guessed):** **F6** — the companion-copy checklist premise is contradicted by MEH-745: the dashboard comment says the OTP card "replaces the old dead /settings CTA", and profile editing moved to the edit tab (MEH-1116); rewiring the verbatim copy would resurrect a retired flow. Sapir decides: STALE-delete the dead export + item, or re-spec with fresh copy under the OTP card → `/producer/dashboard/edit`. **F7** — both fix surfaces (`next.config.js` / `middleware.js`) are CC Edit-denied L1 boundaries; the ready-to-apply `redirects()` snippet + its companion vitest are in the MEH-1176 docs-close PR body for Sapir to apply.
+- **New finding F13:** `admin.py:127` + `admin_extra.py:65` — same unescaped-LIKE class as F1 on admin-only search (found by the F1 sibling grep; not folded per no-drive-by). Follow-up ticket candidate.
+- **Ops notes:** F8's branch hit the documented MEH-991 trap (vrt-update bot pushed baselines with GITHUB_TOKEN → zero check runs → auto-merge stuck) — fixed with the documented self-authored re-trigger push. Local sandbox now runs the full backend suite (system Postgres 16 service + `mehamakor_test`; no PostGIS needed — the conftest docstring's PostGIS claim is stale).
+- **Next:** MEH-1171 conversion stage (same session): pull the updated Linear description LIVE → `scripts/local-backend.sh` → section-by-section conversion with checkpoint updates → MANUAL_TESTING.md pointer-stub rewrite → suite green ×2. Findings already fixed here get normal tests, no fixme.
+
 ## 2026-07-13 — /map quality batch (3 PRs) — ALL MERGED + docs closeout
 
 - **Batch:** 3 sequential PRs off fresh `origin/staging`, YELLOW auto-merge on green required gates (CI gate + Deploy gate). Branch names carry a `meh-0` placeholder (batch spec's `feature/map-*` names are rejected by the MEH-1141 branch-name gate; real retro tickets **MEH-1178/1179/1180** opened post-hoc). No `Closes` footers — tickets already Done. All 3 verified against staging HEAD by the orchestrator.
@@ -220,6 +228,12 @@
 - **Phase 0 re-verify (mandatory — audit ran on an older base):** current `[slug]/page.js` is shorter (92 lines) only due to the MEH-1119 `isSlugShaped`→`lib/slug.js` extraction; the bug is intact — `<ProducerDetail initialProducer=… fetchPath=…>` at :85-88 with no `key`, and `useProducerData.js:25,31` still seed-once + guard. No `template.js` anywhere in `frontend/app` (would force remount) — confirmed.
 - **Shipped (2 files):** `[slug]/page.js` — `key={params.slug}` on `<ProducerDetail>` (approach A, ticket default; scroll-restoration checked — only in-page `useTabScroll`, no single-mount dependency). New `__tests__/SlugNavRemount.test.jsx` (2 cases: bare-prop-change stays stale = root cause; keyed remount re-seeds = fix). id route untouched (self-heals).
 - **Verify:** `npm run build` exit 0 · vitest new test 2/2 · **live Playwright** (local prod `next start` + FastAPI + Postgres, 4 seeded same-category producers): `/ora`→click "עסקים דומים" card→`/dvash?from=similar`, h1 מאפיית אורה → דבש הגליל = PASS (screenshots `qa-artifacts/MEH-1151/`).
+
+## 2026-07-12 — MEH-1152: HEIC/HEIF upload support (from MEH-1148 audit E9) — PR open
+
+- **Branch:** `feature/meh-1152-heic-upload-support` off `origin/staging` (`5cfc370`). GREEN — full autonomous authority: implement → PR → auto-merge on green build + tests. `Closes MEH-1152`.
+- **Shipped (2 files):** `backend/app/routers/upload.py` — `_sniff_image_type()` gains a HEIC/HEIF branch (`ftyp` box + `_HEIF_BRANDS` set) returning `"heic"`; both `/upload/image` + `/upload/avatar` error strings now list HEIC. No new dep, no change to the Cloudinary `resource_type="image"` call (it transcodes HEIC natively). `tests/test_avatar_upload.py` +2 (heic + mif1 brands → 200).
+- **Verify:** `test_avatar_upload.py` 9/9 · `test_api.py` upload subset 10/10 (uv run pytest). Manual iPhone-HEIC-on-preview deferred to Sapir (sandbox has no Cloudinary/device).
 
 ## 2026-07-12 — MEH-1150: account-delete recomputes 3rd-party ratings (from MEH-1148 audit A2) — PR ready, AWAITING SAPIR
 
