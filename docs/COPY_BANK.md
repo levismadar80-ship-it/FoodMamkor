@@ -773,7 +773,7 @@ The slot renders a self-describing placeholder (`join.testimonial.*`): `כאן �
 | **Copy** | `העתיקו קישור` · Toast: `הקישור הועתק` |
 | **Native** | `עוד דרכים לשתף` |
 | **Email** | `שתפו במייל` · Subject: `מכירים את מהמקור?` |
-| **Prefilled message (WA + email body)** | `הכירו את מהמקור — מגזין של בתי עסק מקומיים לאוכל, כולם נבדקו אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`) |
+| **Prefilled message (WA + email body)** | `הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}` — `{url}` = site root (`SITE_URL`). _MEH-1170: dropped "מגזין" (forbidden in UI surfaces) + "נבדקו אישית" over-claim → "עברו היכרות אישית" (ADR-022 / MEH-758 locked language)._ |
 | **Footer link** | `ספרו עלינו` (`share_page.footer_link`) |
 | **seo.share.title** | `ספרו עלינו — מהמקור` |
 | **seo.share.description** | `עזרו לעוד אנשים לגלות בתי עסק מקומיים שנבדקו אישית — שתפו את מהמקור.` |
