@@ -10,9 +10,28 @@ vi.mock("@/components/ChatWidget", () => ({
   default: () => <div data-testid="chat-widget-stub" />,
 }));
 
+// Controllable locale-stripped pathname (the wrapper's /map gate reads it).
+let mockPathname = "/";
+vi.mock("@/i18n/navigation", () => ({
+  usePathname: () => mockPathname,
+}));
+
 describe("ChatWidgetLazy", () => {
   it("mounts and resolves the lazy ChatWidget without error", async () => {
+    mockPathname = "/";
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
+  });
+
+  it("does NOT render the widget on /map (FAB vs legend-toggle collision)", () => {
+    mockPathname = "/map";
+    const { container } = render(<ChatWidgetLazy />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("does NOT render on /map subroutes either", () => {
+    mockPathname = "/map/whatever";
+    const { container } = render(<ChatWidgetLazy />);
+    expect(container).toBeEmptyDOMElement();
   });
 });
