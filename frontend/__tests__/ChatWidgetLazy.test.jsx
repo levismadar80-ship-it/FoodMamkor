@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// MEH-1168 P3: ChatWidgetLazy suppresses the FAB on the producer detail route.
-// usePathname (from @/i18n/navigation) is locale-stripped; mock it so the wrapper
-// can be exercised per route without pulling in next-intl navigation internals.
+// MEH-1168 P3 + map-quality PR 3: ChatWidgetLazy suppresses the FAB on the
+// producer detail route AND on /map (all locales). usePathname (from
+// @/i18n/navigation) is locale-stripped; mock it so the wrapper can be
+// exercised per route without pulling in next-intl navigation internals.
 const { mockUsePathname } = vi.hoisted(() => ({ mockUsePathname: vi.fn(() => "/") }));
 vi.mock("@/i18n/navigation", () => ({ usePathname: mockUsePathname }));
 
@@ -22,6 +23,18 @@ describe("ChatWidgetLazy", () => {
   it("mounts and resolves the lazy ChatWidget without error", async () => {
     render(<ChatWidgetLazy />);
     expect(await screen.findByTestId("chat-widget-stub")).toBeInTheDocument();
+  });
+
+  it("does NOT render the widget on /map (FAB vs legend-toggle collision)", () => {
+    mockUsePathname.mockReturnValue("/map");
+    const { container } = render(<ChatWidgetLazy />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("does NOT render on /map subroutes either", () => {
+    mockUsePathname.mockReturnValue("/map/whatever");
+    const { container } = render(<ChatWidgetLazy />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("suppresses the FAB on the producer detail route (/producer/[id])", () => {
