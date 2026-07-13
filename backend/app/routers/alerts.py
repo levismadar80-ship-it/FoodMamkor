@@ -95,6 +95,16 @@ def upsert_alert_prefs(
             status_code=400, detail="יש לשמור את בית העסק במועדפים תחילה"
         )
 
+    # MEH-1191: defense-in-depth. Refuse to persist whatsapp_opt_in=true when the
+    # user has no phone on file — otherwise fire_alerts (:194) skips the WhatsApp
+    # branch silently and the toggle promises a delivery it can never make. The
+    # :194 guard STAYS (correct last-line defense); this is the first line.
+    if data.whatsapp_opt_in and not (user.phone and user.phone.strip()):
+        raise HTTPException(
+            status_code=422,
+            detail="יש להזין מספר טלפון כדי להפעיל עדכונים בוואטסאפ",
+        )
+
     alert = (
         db.query(FavoriteAlert)
         .filter(
