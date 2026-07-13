@@ -2,16 +2,18 @@
 
 /**
  * Module:   producer/dashboard/edit/cards
- * Purpose:  The three self-service editor cards for the producer edit tab —
- *           categories, gallery images, and map location. Extracted VERBATIM
- *           from edit/page.js (MEH-1119).
- * Does NOT: host the page shell, fetch, or the other cards (bio / questions /
+ * Purpose:  The self-service editor cards for the producer edit tab —
+ *           categories, gallery images, map location, and the AI bio panel.
+ *           Extracted VERBATIM from edit/page.js (MEH-1119, MEH-1157).
+ * Does NOT: host the page shell, fetch, or the other cards (questions /
  *           contact channels) — those stay in edit/page.js.
  * Related:  app/[locale]/producer/dashboard/edit/page.js (imports these);
- *           __tests__/EditTab{Categories,Images,Location}Card.test.jsx.
+ *           __tests__/EditTab{Categories,Images,Location,BioPanel}*.test.jsx.
  * History:  MEH-1119 — a non-Page `export` in edit/page.js broke the Next Page
  *           type contract under `next build --webpack`; moving the three
  *           test-exported cards here keeps the page file's export surface valid.
+ *           MEH-1157 — BioPanelCard relocated here (same test-export reason)
+ *           + generate() errors split by cause (401 / 429 / fail-open empty).
  */
 
 import { useState, useEffect } from "react";
@@ -449,6 +451,129 @@ export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
           {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
         </span>
       </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-56: AI bio writer panel. Relocated VERBATIM from edit/page.js
+// (MEH-1157 — same test-export reason as MEH-1119) except generate()'s
+// error mapping, now split by cause: 401 → session expired, 429 → the
+// backend limiter (5/hour, producer_me.py), 200 {"bio": ""} → the
+// fail-open AI-unavailable path. The old catch-all blamed the owner's
+// valid input for all of these.
+// MEH-1163 (audit F2): the bio textarea is ALWAYS visible, prefilled with
+// the saved bio — AI is an assist that fills it, not a gatekeeper that
+// reveals it. Before this, the MEH-1157 error_unavailable copy pointed to
+// manual writing that didn't exist on screen.
+// ============================================================
+
+// Exported for isolation tests (EditTabBioPanel.test.jsx) — see CategoriesCard.
+export function BioPanelCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.bio");
+  const [source, setSource] = useState(profile.instagram || "");
+  const [bio, setBio] = useState(profile.description || "");
+  const [savedBio, setSavedBio] = useState(profile.description || "");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  // MEH-1100: the losable state is an edited/generated bio that hasn't been
+  // saved yet (typing a source alone costs nothing). MEH-1163: compared
+  // against the last saved value now that the field is always editable.
+  const dirty = bio !== savedBio;
+  useEffect(() => {
+    reportDirty("bio", dirty);
+    return () => reportDirty("bio", false);
+  }, [dirty, reportDirty]);
+
+  const generate = async () => {
+    if (!source.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const r = await api.post("/producers/me/bio/generate", { source: source.trim() });
+      // MEH-1157: fail-open backend (MEH-56) returns 200 {"bio": ""} when the
+      // AI is unavailable — say so instead of blaming the owner's input.
+      // MEH-1163: an empty result must NOT wipe the owner's existing text.
+      if (r.data.bio) {
+        setBio(r.data.bio);
+        setSaved(false);
+      } else {
+        setError(t("error_unavailable"));
+      }
+    } catch (err) {
+      const status = err?.response?.status;
+      if (status === 401) setError(t("error_session_expired"));
+      else if (status === 429) setError(t("error_rate_limit"));
+      else setError(t("error_generate"));
+    }
+    setLoading(false);
+  };
+
+  const saveBio = async () => {
+    if (!bio) return;
+    setSaving(true);
+    try {
+      await api.put("/producers/me", { description: bio });
+      onSave(bio);
+      setSavedBio(bio);
+      setSaved(true);
+    } catch {
+      setError(t("error_save"));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
+      <p className="text-xs text-fg-muted mb-3">
+        {t("intro")}
+      </p>
+
+      {/* MEH-1163: always-visible bio field, prefilled with the saved bio.
+          The 150-char counter (MEH-1093) + save idiom are unchanged. */}
+      <div className="space-y-2 mb-3">
+        <textarea
+          value={bio}
+          onChange={(e) => { setBio(e.target.value.slice(0, 150)); setSaved(false); }}
+          placeholder={t("bio_placeholder")}
+          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+          dir="rtl"
+          maxLength={150}
+        />
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-fg-muted">{bio.length}/150</span>
+          <button
+            onClick={saveBio}
+            disabled={saving || !bio || !dirty}
+            className="bg-primary text-white px-4 py-1.5 rounded-[8px] text-xs font-medium disabled:opacity-50 hover:bg-primary-dark transition"
+          >
+            {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+          </button>
+        </div>
+      </div>
+
+      <textarea
+        value={source}
+        onChange={(e) => setSource(e.target.value)}
+        placeholder={t("source_placeholder")}
+        className="w-full border border-border rounded-[10px] px-3 py-2 text-sm resize-none h-16"
+        dir="ltr"
+        maxLength={500}
+      />
+
+      <button
+        onClick={generate}
+        disabled={loading || !source.trim()}
+        className="w-full mt-2 bg-primary text-white py-2 rounded-[10px] text-sm font-medium disabled:opacity-50 hover:bg-primary-dark transition"
+      >
+        {loading ? t("generating") : t("generate_cta")}
+      </button>
+
+      {error && <p className="text-xs text-red-500 mt-2" role="alert">{error}</p>}
     </div>
   );
 }

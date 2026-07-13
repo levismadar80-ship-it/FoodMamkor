@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle, Leaf, Envelope, Timer } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import Input from "@/components/ui/Input";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -97,33 +98,25 @@ export default function ContactClient() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="contact-name" className="block text-sm font-medium mb-1 text-text">
-                  {t("field_name_label")}
-                </label>
-                <input
-                  id="contact-name"
-                  type="text"
-                  value={form.name}
-                  onChange={set("name")}
-                  required
-                  className="w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                />
-              </div>
-              <div>
-                <label htmlFor="contact-email" className="block text-sm font-medium mb-1 text-text">
-                  {t("field_email_label")}
-                </label>
-                <input
-                  id="contact-email"
-                  type="email"
-                  value={form.email}
-                  onChange={set("email")}
-                  required
-                  dir="ltr"
-                  className="w-full border border-border rounded-[12px] px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-                />
-              </div>
+              {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon 44px
+                  boxed recipe; value/onChange/required pass through unchanged). */}
+              <Input
+                id="contact-name"
+                type="text"
+                label={t("field_name_label")}
+                value={form.name}
+                onChange={set("name")}
+                required
+              />
+              <Input
+                id="contact-email"
+                type="email"
+                label={t("field_email_label")}
+                value={form.email}
+                onChange={set("email")}
+                required
+                dir="ltr"
+              />
               <div>
                 <label htmlFor="contact-message" className="block text-sm font-medium mb-1 text-text">
                   {t("field_message_label")}

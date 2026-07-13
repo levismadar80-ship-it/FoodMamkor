@@ -335,6 +335,31 @@ front matter for the normative token bindings.
   also linking to `#reviews`. **Zero reviews → the whole strip is absent** (no
   "0 ביקורות"); a producer with only rating-only reviews shows the pill but no
   excerpt. Numerals stay Latin + bidi-isolated. RTL logical props only.
+- **Producer section tab bar (`ProducerDetail`, MEH-1168 P2 — ADOPTED):** the
+  **mobile-only** (`md:hidden`) section nav on `/producer/[id]` — a sticky row of
+  four tabs (about · products · delivery · reviews) with Phosphor icons
+  (`Info`/`Package`/`Truck`/`ChatCircleText`, fill weight when active); the active
+  tab is marked by `border-b-2 border-primary text-primary`. It sticks at
+  `top-[82px]`, **below** the global header (82px, `z-[1050]`) so it stays visible
+  page-long — at `top-0` it was occluded behind the header once scrolled into a
+  deep section. Tapping a tab smooth-scrolls the section clear of both the header
+  and the bar (`useTabScroll`). RTL logical props only.
+
+## Action hierarchy
+
+**Exactly one primary-styled action per viewport; new page actions enter as
+tertiary by default and may be promoted only by explicit design decision.**
+
+A "primary-styled action" is the filled/green CTA (`button-primary`,
+`btn-whatsapp`) — the dominant call to action. On any screen, at any scroll
+position, only one may be visible at a time; competing primaries flatten the
+hierarchy and read as clutter. When a page grows a new action (an order button
+in a section, a share affordance, a nav-out link), it enters as a **tertiary**
+treatment (neutral outline / quiet link) unless a specific design decision
+promotes it. Established on the producer detail page (MEH-1146): the single
+primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
+the delivery section's WhatsApp order button is tertiary; follow + share are
+tertiary. Verified per-viewport, not just per-section.
 
 ## Do's and Don'ts
 

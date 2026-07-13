@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { CheckCircle, EnvelopeSimple, Leaf, WhatsappLogo, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 import { detailToMessage } from "@/lib/errors";
 import ButtonSpinner from "@/components/ButtonSpinner";
 import CategoryRequestModal from "@/components/CategoryRequestModal";
@@ -26,6 +27,15 @@ import {
 const DRAFT_KEY = "producer_registration_draft";
 // MEH-847 (S7 Chunk B): wizard step enum — single source for the 3→5 re-index.
 const STEP = { ACCOUNT: 1, DETAILS: 2, CATEGORY: 3, STORY: 4, CONFIRM: 5 };
+// MEH-435: readable step labels for funnel events (numeric step is
+// re-index-fragile; the label is stable across the STEP enum).
+const STEP_NAME = {
+  [STEP.ACCOUNT]: "account",
+  [STEP.DETAILS]: "details",
+  [STEP.CATEGORY]: "category",
+  [STEP.STORY]: "story",
+  [STEP.CONFIRM]: "confirm",
+};
 // MEH-532: surfaces a dashboard reminder for sellers who deferred their story.
 const DESCRIPTION_PENDING_KEY = "description_pending";
 // MEH-759 Chunk C (ADR-022 gate 2): agricultural categories that trigger the
@@ -153,6 +163,17 @@ function RegisterProducerPageBody() {
   useEffect(() => {
     if (isUpgrade && step === STEP.ACCOUNT) setStep(STEP.DETAILS);
   }, [isUpgrade]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // MEH-435: funnel instrumentation. One effect covers every step transition
+  // (forward, back, OAuth jump, and the CONFIRM landing) — DRY over
+  // instrumenting each setStep call site. Gated on showPreflight so the first
+  // "step_viewed" fires when the wizard actually opens, not on the pre-flight
+  // intro screen. trackEvent is itself consent-gated + no-op unless a PostHog
+  // key is set, so this is safe to fire unconditionally here.
+  useEffect(() => {
+    if (showPreflight) return;
+    trackEvent("producer_register_step_viewed", { step: STEP_NAME[step] });
+  }, [step, showPreflight]);
 
   // MEH-669: admins cannot register as producers. Backend rejects with
   // 403 at auth.py:432; this redirect prevents them from filling out the
@@ -324,12 +345,17 @@ function RegisterProducerPageBody() {
         // Refresh auth context so user.role reflects the upgrade immediately.
         await refreshUser();
       }
+      // MEH-435: successful submit — the funnel conversion event.
+      trackEvent("producer_register_submitted");
       // Non-upgrade: no token, no refreshUser. Step 3 renders the
       // inbox-check UI keyed on didUpgrade === false.
       setStep(STEP.CONFIRM);
     } catch (err) {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
+      // MEH-435: submit failure — {step} is STORY at submit time (the wizard
+      // step the error surfaced on).
+      trackEvent("producer_register_error", { step: STEP_NAME[step] });
       // MEH-328: only upgrade path can return 409 post-refactor.
       // isUpgrade frontend flag is sufficient for this error branch
       // (non-upgrade 409 was removed in Chunk B).

@@ -1,0 +1,17 @@
+{
+  "width": 375,
+  "errors": [],
+  "fabCount": 0,
+  "delivery": {
+    "cityRows": 4,
+    "prices": [
+      "150₪",
+      "200₪"
+    ],
+    "legacyTablePresent": false
+  },
+  "primaryVisible": [
+    "[data-testid='primary-contact-button']"
+  ],
+  "loginPrompt": "התחברו וצרו קשר ב-WhatsApp כדי לכתוב ביקורת"
+}
