@@ -5,6 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep (7 tickets, one PR each) — MEH-1192 done
+
+- **Sweep branch discipline:** the harness-designated branch was `claude/meh-1190-1196-sweep-jdnsjz`, rejected by the MEH-1141 branch-name gate (no `claude/*`); each ticket runs on its own `feature/meh-XXXX-*` branch off `origin/staging` per the dispatch envelope. Execution order: 1192 → 1190 → 1191(after 1190 merges) → 1193 → 1194(rebase on 1193) → 1195(RED, PR-only) → 1196.
+- **MEH-1192 (URGENT · YELLOW · central):** `feature/meh-1192-location-modal-commit-fix`. LocationModal committed+closed on the first typed char (onChange called handleCityPick per keystroke). Fixed: onChange=setState only, commit on onSubmit(Enter)/chip only (contract from `MapClient.jsx:545`, reads the submitted arg not stale state); removed native `alert()` + silent `"מיקום נוכחי"` filter — inline `geo_denied`/`geo_failure` messages, modal stays open on PERMISSION_DENIED. Deleted orphan `current_location_fallback` (he+en). New `__tests__/LocationModal.test.jsx` (3 typed→0, Enter→1, chip→1). **Phase-0 correction:** PERMISSION_DENIED precedent is `MapClient.jsx:277-308` (`:296`), not the ticket's `:107-121`. Verify: build green · vitest 8/8 · parity green · PW self-QA 375+1440 (`qa-artifacts/MEH-1192/`) shows modal stays open + dropdown on "תל". Adversarial self-pass (fixed: geoError clears on close). `Closes MEH-1192`.
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
