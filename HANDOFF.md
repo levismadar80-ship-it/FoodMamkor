@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1174: homepage discovery seam (tip relocation + dynamic heading + removable category tag) — PR open
+
+- **Branch:** `feature/meh-1174-discovery-seam` off `origin/staging` (divergence 0). YELLOW — Phase 0+1+2 end-to-end, self-QA, auto-merge on CI green (Sapir approved autonomous QA+merge 13/07). `Closes MEH-1174`.
+- **Note on branch:** the harness cut a `claude/meh-1174-discovery-seam-zceath` branch — banned by the `check-branch-name.sh` push hook (rule 3). Re-cut as `feature/meh-1174-discovery-seam` off `origin/staging` (HEAD was == staging, divergence 0) per the ticket's explicit branch name.
+- **Phase 0 (read-only, verified):** heading key `home.producers.heading` is **single-surface** (only `HomeProducersGrid.jsx:48`) → no STOP. Tip step 0 was mounted between the heading and the chips row (`:56-62`, `placement="inline"`), tour state in `lib/use-onboarding.js` (module singleton). `handleCategoryCardClick` was removed in MEH-1080 — homepage category cards are `<Link>`s to `/producers` now; the homepage category-active state (`filters.category`) survives via the `?category=` deep-link, which is exactly what Tasks B/C target. No open PR touches `page.js` / home discovery / chip components (checked `list_pull_requests`) — only `messages/*.json` copy overlap (#1707), a merge-conflict risk handled by pre-push staging sync.
+- **Shipped (`HomeProducersGrid.jsx` + he/en twins + 1 test):** (A) tip step 0 mounted **above** the `<h2>`; handlers preserved (no tour state-machine change). (B) heading = default "בתי עסק מקומיים" / active "בתי עסק · {name}" (new ICU key `home.producers.heading_category`, he+en); branches on the resolved `activeCategory` so it falls back to default until categories load. (C) active category → removable pill "{name} ×" (Phosphor `X`, `aria-label` reuses `clear_filter`, `type="button"`) in the shared "מסנן לפי:" row, replacing the separate "מציג:" row; × reuses `onClearCategory`. Chips / counter / CategoryGrid border untouched. `filter_showing` key now orphaned (left in both files → parity neutral). New `HomeDiscoverySeam.test.jsx` (5 cases).
+- **Verify:** build exit 0 · full vitest **996 passed**/41 skipped · i18n parity guard green · `grep "בתי עסק מומלצים" frontend/messages/` = 0 · 0 physical RTL props on the changed file · Playwright self-QA 375+1440 route-mocked (`qa-artifacts/MEH-1174/`, WebP 185 KB): tip precedes heading (DOM order), CTA→step 1, both headings, removable tag × clears both, chip coexists with category tag.
+- **Next:** push → draft PR (`Closes MEH-1174`) → CI green → auto-merge (squash), delete branch. Sapir: mobile QA on staging `/` per DoD.
+
 ## 2026-07-12 — MEH-1155/1156 docs correction: the two CI gates ARE live (my #1686 docs were wrong) — PR open
 
 - **Branch:** `feature/meh-1155-docs-correction` off `origin/staging` (`4803c9d0`). GREEN docs-only. `Refs MEH-1155, MEH-1156`.
