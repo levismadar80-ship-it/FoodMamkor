@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -36,6 +36,20 @@ export default function NewEventPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // MEH-1161: a pending producer's event is hidden from the public until the
+  // business is approved — the public detail would 404 for anyone else, so
+  // instead of redirecting there, show an in-page success state with the
+  // "visible after approval" hint. null = status unknown → keep the redirect.
+  const [producerStatus, setProducerStatus] = useState(null);
+  const [createdPending, setCreatedPending] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.role !== "producer") return;
+    api
+      .get("/producers/me")
+      .then((r) => setProducerStatus(r.data?.status || null))
+      .catch(() => setProducerStatus(null));
+  }, [user]);
 
   if (!authLoading && (!user || user.role !== "producer")) {
     if (typeof window !== "undefined") router.push("/login");
@@ -77,6 +91,10 @@ export default function NewEventPage() {
         registration_url: form.registration_url || null,
       };
       const r = await api.post("/events", payload);
+      if (producerStatus && producerStatus !== "approved") {
+        setCreatedPending(true);
+        return;
+      }
       router.push(`/events/${r.data.id}`);
     } catch (err) {
       setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
@@ -84,6 +102,28 @@ export default function NewEventPage() {
       setSubmitting(false);
     }
   };
+
+  if (createdPending) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div
+          className="bg-green-50 border border-primary rounded-[12px] p-6 text-center"
+          role="status"
+        >
+          <h1 className="font-headline-lg text-2xl font-bold text-text mb-2">
+            {t("pending_success_title")}
+          </h1>
+          <p className="text-fg-muted mb-6">{t("pending_success_hint")}</p>
+          <Link
+            href="/producer/dashboard"
+            className="inline-block bg-primary text-white px-6 py-3 rounded-[8px] hover:bg-primary-dark transition font-medium"
+          >
+            {t("pending_success_dashboard")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">

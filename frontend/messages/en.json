@@ -587,6 +587,12 @@
       "og_title": "Your business. A page of its own. | Mehamakor",
       "og_description": "How local businesses get their own page on Mehamakor — about 10 minutes."
     },
+    "share": {
+      "title": "Spread the word — Mehamakor",
+      "description": "Help more people discover personally vetted local food businesses — share Mehamakor.",
+      "og_title": "Spread the word — Mehamakor",
+      "og_description": "Help more people discover personally vetted local food businesses — share Mehamakor."
+    },
     "favorites": {
       "title": "My favorites | Mehamakor",
       "description": "All the food businesses and products you've saved on Mehamakor, in one place. Come back anytime and get alerts on what's new.",
@@ -837,6 +843,7 @@
       "sample_meta": "Baking · 30 min",
       "notes_needs_revision": "Reviewer note:",
       "notes_rejected": "Rejection reason:",
+      "pending_eta": "Usually approved within 24 hours",
       "published": "Published on the site",
       "not_published": "Not yet published",
       "edit": "Edit",
@@ -921,6 +928,7 @@
       "heading": "My group buys",
       "btn_close_form": "Close",
       "btn_open_form": "+ New group buy",
+      "approval_required_hint": "Opening a group buy will be available once the business is approved",
       "loading": "Loading...",
       "empty_title": "Group buys = wholesale price for your customers",
       "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
@@ -2421,7 +2429,7 @@
     },
     "cookie_banner": {
       "aria_label": "Cookie consent",
-      "message": "🍪 We use cookies to improve the experience — <link>privacy policy</link>",
+      "message": "We use cookies to improve the experience — <link>privacy policy</link>",
       "accept_all": "Accept all",
       "essential_only": "Essential only"
     },
@@ -2804,6 +2812,18 @@
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
     "copied_toast": "Link copied"
+  },
+  "share_page": {
+    "h1": "Spread the word",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — and another business owner find their home.",
+    "whatsapp": "Share on WhatsApp",
+    "copy": "Copy link",
+    "copy_toast": "Link copied",
+    "native": "More ways to share",
+    "email": "Share by email",
+    "email_subject": "Have you heard of Mehamakor?",
+    "message": "Discover Mehamakor — a magazine of local food businesses, all personally vetted. Worth a look: {url}",
+    "footer_link": "Spread the word"
   },
   "gallery": {
     "open_aria": "Enlarge image {current}",
@@ -3640,6 +3660,10 @@
         "recipes": {
           "title": "Manage recipes",
           "sub": "Publish and manage recipes that promote your products"
+        },
+        "reviews": {
+          "title": "Reviews",
+          "sub": "View reviews and reply to customers"
         }
       },
       "pulse": {
@@ -3848,6 +3872,7 @@
         "heading": "AI bio",
         "intro": "Enter an Instagram handle, a link, or a free-form description — we'll create a Hebrew bio of up to 150 characters.",
         "source_placeholder": "@handle / Instagram link / free description",
+        "bio_placeholder": "Write your business description here — up to 150 characters",
         "generate_cta": "Create bio",
         "generating": "Creating…",
         "save_cta": "Save bio",
@@ -3935,6 +3960,9 @@
       "submit": "Publish event",
       "cancel": "Cancel",
       "error_generic": "Error creating the event — please try again.",
+      "pending_success_title": "The event was created successfully",
+      "pending_success_hint": "The event will be shown to the public once the business is approved",
+      "pending_success_dashboard": "Back to business management",
       "crumb_dashboard": "Business management",
       "crumb_current": "New event",
       "subtitle": "Workshop, tour, market, harvest, or open days — publish here",

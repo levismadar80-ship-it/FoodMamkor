@@ -94,6 +94,20 @@ const CHANNEL_ICONS = {
   external_order: ClipboardText,
 };
 
+// Which value field backs each primary method (empty-on-save guard). Shared
+// by the contact preview above and ContactChannelsCard below. MEH-1165 item 5
+// (PR #1682 nit): declared before its first use (the preview composition)
+// instead of after ContactChannelsCard's section banner.
+const METHOD_FIELD = {
+  whatsapp: "phone",
+  phone: "phone",
+  instagram: "instagram",
+  email: "contact_email",
+  website: "website",
+  facebook: "facebook",
+  external_order: "external_order_form",
+};
+
 // Canonical section id per open-state key — hash aliases above scroll to the
 // section that actually carries the id attribute.
 const KEY_TO_ANCHOR = {
@@ -308,7 +322,12 @@ export default function ProducerDashboardEditPage() {
       productsForMarker > 0 ? (
         firstProductName ? (
           <PreviewChips items={[firstProductName]} />
-        ) : undefined
+        ) : (
+          // MEH-1165 item 5 (PR #1682 nit): products added in-session have a
+          // live count but no payload name — render the placeholder instead
+          // of dropping the preview slot entirely (undefined).
+          <PreviewEmpty />
+        )
       ) : (
         <PreviewEmpty />
       ),
@@ -609,17 +628,6 @@ const PRIMARY_METHODS = [
   "facebook",
   "external_order",
 ];
-
-// Which value field backs each primary method (empty-on-save guard).
-const METHOD_FIELD = {
-  whatsapp: "phone",
-  phone: "phone",
-  instagram: "instagram",
-  email: "contact_email",
-  website: "website",
-  facebook: "facebook",
-  external_order: "external_order_form",
-};
 
 function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.contact_channels");
