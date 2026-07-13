@@ -696,14 +696,6 @@
         },
         "recipes": {
           "cta": "Our recipes"
-        },
-        "delivery": {
-          "heading": "Delivery areas",
-          "col": {
-            "city": "City",
-            "min_order": "Minimum order",
-            "day": "Delivery day"
-          }
         }
       },
       "header": {
@@ -2649,7 +2641,7 @@
     "error_body_too_short": "Reviews need at least 10 characters",
     "saved_toast": "Your review was saved",
     "wa_gate_message": "Tap the WhatsApp button to get in touch — then you can write a review",
-    "login_prompt": "<login>Sign in</login> to write a review",
+    "login_prompt": "<login>Sign in</login> and reach out on WhatsApp to write a review",
     "loading": "Loading reviews...",
     "owner_only_eyebrow": "Only visible to you",
     "owner_empty_title": "First reviews come after a few customers",
