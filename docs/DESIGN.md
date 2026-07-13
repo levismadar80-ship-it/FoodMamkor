@@ -496,6 +496,8 @@ recorded reason — do not "fix" them:
   CTAs, "מגזין" internal-only, brand-name UI vs outbound). Not duplicated here.
 - **Color audit baseline:** `.claude/commands/design-review/design-principles.md`
   (design-review checklist; treated as a cross-check, not canonical).
+- **External benchmarks:** `docs/design/BENCHMARKS.md` (5-site precedent + rationale;
+  reference only — this file wins on any conflict).
 - **Decisions:** ADR-011 (tagline), ADR-013 (iconography — Phosphor only, Lucide
   forbidden), ADR-014 (voice), ADR-019 (component state tokens).
 - **Endpoints / data shapes:** `docs/DATA.md` (not a design concern).
