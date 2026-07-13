@@ -413,7 +413,8 @@
       "aria": "Show category: {name}"
     },
     "producers": {
-      "heading": "Recommended businesses",
+      "heading": "Local businesses",
+      "heading_category": "Businesses · {name}",
       "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",

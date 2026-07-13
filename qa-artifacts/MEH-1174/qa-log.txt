@@ -1,0 +1,18 @@
+
+===== viewport 375 (375x812) =====
+A tip visible=true tipPrecedesHeading(DOM)=true
+A after CTA → onboarding step=1 (expect 1 = tour advanced)
+B default heading = "בתי עסק מקומיים" (expect "בתי עסק מקומיים")
+C category-active heading = "בתי עסק · חלב וגבינות" (expect "בתי עסק · חלב וגבינות")
+C removable tag visible=true text="חלב וגבינות" (expect contains חלב וגבינות)
+C after × → heading="בתי עסק מקומיים" tagGone=true (expect default heading + tag gone)
+C chips+category: filter-row present=true kosherLabelShown=true categoryTagStill=true
+
+===== viewport 1440 (1440x900) =====
+A tip visible=true tipPrecedesHeading(DOM)=true
+A after CTA → onboarding step=1 (expect 1 = tour advanced)
+B default heading = "בתי עסק מקומיים" (expect "בתי עסק מקומיים")
+C category-active heading = "בתי עסק · חלב וגבינות" (expect "בתי עסק · חלב וגבינות")
+C removable tag visible=true text="חלב וגבינות" (expect contains חלב וגבינות)
+C after × → heading="בתי עסק מקומיים" tagGone=true (expect default heading + tag gone)
+C chips+category: filter-row present=true kosherLabelShown=true categoryTagStill=true

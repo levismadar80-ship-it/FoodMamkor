@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Leaf, MapPin } from "@phosphor-icons/react";
+import { Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -41,25 +41,37 @@ export function HomeProducersGrid({
   onLoadMore,
 }) {
   const t = useTranslations();
+  // MEH-1174: derive the active category once — drives both the dynamic
+  // heading and the removable applied-filters tag. `null` when no category
+  // is selected OR the id hasn't resolved against the loaded list yet, so
+  // the heading falls back to the default rather than rendering an empty name.
+  const chipsActive = Object.values(chips).some(Boolean);
+  const activeCategory = filters.category
+    ? categories.find((c) => String(c.id) === filters.category)
+    : null;
   return (
     <section id="producers-grid" className="max-w-7xl mx-auto px-4 pb-20">
-      <div className="flex items-center justify-between mb-8">
-        <h2 className="font-headline-lg text-headline-lg text-text">
-          {t("home.producers.heading")}
-        </h2>
-        <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-          <MapPin size={14} className="text-current" />
-          {t("home.producers.map_link")}
-        </Link>
-      </div>
-
-      {/* Step 0 — producers grid tip (2s delay) */}
+      {/* Step 0 — producers grid tip (2s delay). MEH-1174: mounted ABOVE the
+          heading so the tour opens over the section title, not between the
+          heading and the chips row. Tour state machine unchanged. */}
       <OnboardingTip
         show={step0Visible && onboardStep === 0}
         text={t("home.producers.onboarding0")}
         onDismiss={onboardDismiss}
         onNext={onAdvanceFromStep0}
       />
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="font-headline-lg text-headline-lg text-text">
+          {/* MEH-1174: default vs "בתי עסק · {name}" when a category is active. */}
+          {activeCategory
+            ? t("home.producers.heading_category", { name: activeCategory.name })
+            : t("home.producers.heading")}
+        </h2>
+        <Link href="/map" className="text-primary hover:underline flex items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+          <MapPin size={14} className="text-current" />
+          {t("home.producers.map_link")}
+        </Link>
+      </div>
 
       {/* Filter chips */}
       <ChipScrollRow
@@ -77,29 +89,30 @@ export function HomeProducersGrid({
         onDismiss={onboardDismiss}
         onNext={onboardAdvance}
       />
-      {Object.values(chips).some(Boolean) && (
-        <p className="text-xs text-fg-muted mb-4" aria-live="polite">
-          {t("home.producers.filter_prefix")}{" "}
-          {CHIPS_CONFIG.filter((c) => chips[c.key])
-            .map((c) => c.label)
-            .join(" · ")}
-        </p>
-      )}
-
-      {filters.category && (
-        <div className="mb-6 flex items-center gap-2">
-          <span className="text-sm text-fg-muted">{t("home.producers.filter_showing")}</span>
-          {categories.find((c) => String(c.id) === filters.category) && (
-            <span className="bg-green-50 text-primary px-3 py-1 rounded-full text-sm">
-              {categories.find((c) => String(c.id) === filters.category).name}
+      {/* MEH-1174: single applied-filters summary row — the active category
+          now lives here as a removable "× {name}" tag alongside the chip
+          summary (replacing the old separate "מציג:" row). */}
+      {(chipsActive || activeCategory) && (
+        <div className="mb-6 flex flex-wrap items-center gap-2" aria-live="polite">
+          <span className="text-xs text-fg-muted">{t("home.producers.filter_prefix")}</span>
+          {chipsActive && (
+            <span className="text-xs text-fg-muted">
+              {CHIPS_CONFIG.filter((c) => chips[c.key])
+                .map((c) => c.label)
+                .join(" · ")}
             </span>
           )}
-          <button
-            onClick={onClearCategory}
-            className="text-sm text-primary hover:underline"
-          >
-            {t("home.producers.clear_filter")}
-          </button>
+          {activeCategory && (
+            <button
+              type="button"
+              onClick={onClearCategory}
+              aria-label={t("home.producers.clear_filter")}
+              className="inline-flex items-center gap-1 bg-green-50 text-primary ps-3 pe-2 py-1 rounded-full text-sm hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <span>{activeCategory.name}</span>
+              <X size={12} weight="bold" aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
 

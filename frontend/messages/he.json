@@ -427,7 +427,8 @@
       "aria": "הצג קטגוריה: {name}"
     },
     "producers": {
-      "heading": "בתי עסק מומלצים",
+      "heading": "בתי עסק מקומיים",
+      "heading_category": "בתי עסק · {name}",
       "map_link": "הצגה במפה",
       "filter_prefix": "מסנן לפי:",
       "counter": "מציגים {shown} מתוך {total}",
