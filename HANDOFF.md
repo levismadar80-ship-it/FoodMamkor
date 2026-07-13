@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1200: design benchmark reference doc — PR (GREEN, auto-merge)
+
+- **Branch:** `feature/meh-1200-design-benchmarks` off `origin/staging` (divergence 0 at cut). GREEN tier (docs only, zero code) → auto-merge on CI green, Sapir pre-approved. `Closes MEH-1200`.
+- **Phase 0 (read-only, file:line):** `docs/DESIGN.md` **exists** (25 KB) → link line added to its References section. `docs/design/` did **not** exist → created. Truth Hierarchy statement source = `docs/CONTEXT.md:30-44`.
+- **Shipped:** NEW `docs/design/BENCHMARKS.md` — 5-site table verbatim (Natoora/Airbnb/Faire/USDA/Baymard), reference-only header pointing to BRAND.md/DESIGN.md/Brand Hub as winners, RTL caveat (LTR benchmarks: IA/interaction transfer, typography does NOT), "how to use in a ticket" section. One link line in `docs/DESIGN.md`. CHANGELOG + HANDOFF.
+- **Zero-duplication check:** the doc restates no BRAND.md/DESIGN.md rule — it links. No sixth site, no screenshots, no invented metrics (over-engineering guard honored).
+- **Verify:** markdown table valid (header + separator + 5 rows). Docs only → `npm run build` N/A (stated in PR). No mobile QA (DoD exception).
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
