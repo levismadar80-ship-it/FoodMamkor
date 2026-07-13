@@ -38,6 +38,10 @@ export default function ProducerHeader({
     producer.delivery_areas?.length > 0 ||
     !!producer.has_delivery ||
     (typeof producer.delivery_count === "number" && producer.delivery_count > 0);
+  // MEH-1168 P1 (dedup): secondary categories only — the primary category is
+  // already named in the logistics line, so it's excluded from the chip row.
+  const extraCats =
+    producer.categories?.filter((cat) => cat.id !== primaryCategory?.id) ?? [];
   return (
     <>
       {/* Header: name + trust badges */}
@@ -139,13 +143,11 @@ export default function ProducerHeader({
           already named in the logistics line above, so it is excluded here to
           avoid the same chip appearing twice. Only the additional categories
           render as tags. */}
-      {producer.categories?.filter((cat) => cat.id !== primaryCategory?.id).length > 0 && (
+      {extraCats.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-4">
-          {producer.categories
-            .filter((cat) => cat.id !== primaryCategory?.id)
-            .map((cat) => (
-              <CategoryTag key={cat.id} category={cat} />
-            ))}
+          {extraCats.map((cat) => (
+            <CategoryTag key={cat.id} category={cat} />
+          ))}
         </div>
       )}
 
