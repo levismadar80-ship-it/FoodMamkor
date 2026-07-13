@@ -14,6 +14,14 @@
 - **Verify:** build exit 0 · full vitest **1007 passed**/41 skipped · eslint 0 errors · 0 physical RTL props · 0 emoji · i18n **parity gate green on CI** · Playwright self-QA 375+1440, 7 states, route-mocked against local dev (`qa-artifacts/MEH-1173/`, WebP 535 KB). **pytest deferred to CI** — sandbox can't install backend deps (pip blocked, no Postgres).
 - **CI note (expected, not a bug):** `CI gate (required)` is RED because the `DO-NOT-MERGE marker gate` fails on purpose (PR body carries the marker → mechanically blocks auto-merge for this DO-NOT-MERGE task). Build/vitest/pytest jobs show *skipped* because **draft PRs skip them** (`draft == false` job condition), not a paths-filter miss. Deploy gate + parity + branch-name + qa-size + tsc/mypy/knip + VRT all green. When Sapir un-drafts + removes the marker, the full suite runs.
 - **Next (Sapir):** mobile QA on the preview → un-draft → remove DO-NOT-MERGE marker → full CI green → merge. Review the en.json twins (MEH-978 parity). **Local cruft:** an uncommitted QA harness route (`app/[locale]/qa-harness-1173/`, and a stale `__qa1173/`) + `qa1173-temp.mjs` remain untracked — deletion was blocked by the sandbox permission policy; they are NOT staged and vanish on container reclaim.
+## 2026-07-13 — MEH-1185 Ticket C: QA gates per-tier ADR — DRAFT PR opened (DO-NOT-MERGE, governance review)
+
+- **Branch:** `feature/meh-1185-qa-gates-adr` off `origin/staging` (divergence 0 at cut). Governance-only — **zero app/test/workflow code**. Note: the harness-designated branch was `claude/qa-gates-per-tier-adr-syjhqb`, which the MEH-1141 branch-name gate + `check-branch-name.sh` mechanically reject (no `claude/*`); used the issue-specified `feature/*` name instead.
+- **Deliverable:** new `docs/decisions/ADR-028-qa-gates-per-tier.md` — GREEN/YELLOW DoD "mobile verified" = CI gates (`pytest` + `e2e.yml` mobile/Pixel 5 + VRT); RED + `staging→main` release keep Sapir manual real-device QA (iOS Safari, Tier-3 DEVICE-ONLY). Amends ADR-016's DoD provision only, not the merge-authority tiers.
+- **Phase-0 verdict (file:line in the ADR + CHANGELOG):** VRT specs exist + run unscoped in `e2e.yml` and are **green** on staging (run `29243943410`, commit `167cff27` — post the MEH-991 baseline regen that cleared the pre-batch drift noted below). BUT `Playwright E2E (Vercel preview)` is **NOT a required check** (absent from `ci-gate` + `deploy-gate` needs). So VRT is green-but-not-blocking → ADR marks it "activates on MEH-991 Chunk 3 close" (Appendix A = exact ruleset/YAML change for Sapir). `pytest` IS required and covers `tests/**`. Next free ADR = 028.
+- **Also:** surgical `docs/CONTEXT.md` §14 DoD edit (unconditional mobile-check line → per-tier pointer to ADR-028). CHANGELOG + HANDOFF updated.
+- **Sapir follow-ups (ADR Appendix B):** update template 06 DoD line (templates live outside repo); apply Appendix A if promoting VRT to a required gate; `docs/decisions/README.md` index lags (missing ADR-027 **and** 028 — left out per MEH-1185's 4-file scope lock).
+- **DoD status:** docs-only → build/pytest jobs skip via paths-filter; `do-not-merge-gate` intentionally fails `CI gate` while the marker is on (governance lock, ADR-016/MEH-1155). **WAIT GATE — Sapir reads the ADR verbatim, then removes the marker.** `Closes MEH-1185`.
 
 ## 2026-07-13 — MEH-1176 Ticket B: triage findings F1-F10 — 8 FIXED (all merged), 2 STOPPED with reasons
 
@@ -231,6 +239,12 @@
 - **Epic-close grep:** 15+ (11/07) → canon everywhere in-scope; **66 `<Input>` tags**; ≤3 residual families in-scope (canon / textareas+selects no-primitive / composed comboboxes); out-of-scope surfaces (login, pw-reset, contact, rate, gb-detail, experiences, search, upgrade) = next-epic backlog.
 - **Verify:** build exit 0 · full vitest 933/41-skip · Playwright 375px all 4 DoD surfaces (`docs/audits/screenshots/2026-07-meh1128-wave-d2-qa/`) — success green+✓, CitySearch unchanged ×2, ₪ right-aligned.
 - **Next:** draft PR → ready → auto-merge (squash) on green. **Epic:** adoption waves A–D2 done; the ≤3 residual families + out-of-scope surfaces are documented follow-ups, not this epic.
+
+## 2026-07-12 — MEH-1152: HEIC/HEIF upload support (from MEH-1148 audit E9) — PR open
+
+- **Branch:** `feature/meh-1152-heic-upload-support` off `origin/staging` (`5cfc370`). GREEN — full autonomous authority: implement → PR → auto-merge on green build + tests. `Closes MEH-1152`.
+- **Shipped (2 files):** `backend/app/routers/upload.py` — `_sniff_image_type()` gains a HEIC/HEIF branch (`ftyp` box + `_HEIF_BRANDS` set) returning `"heic"`; both `/upload/image` + `/upload/avatar` error strings now list HEIC. No new dep, no change to the Cloudinary `resource_type="image"` call (it transcodes HEIC natively). `tests/test_avatar_upload.py` +2 (heic + mif1 brands → 200).
+- **Verify:** `test_avatar_upload.py` 9/9 · `test_api.py` upload subset 10/10 (uv run pytest). Manual iPhone-HEIC-on-preview deferred to Sapir (sandbox has no Cloudinary/device).
 
 ## 2026-07-12 — MEH-1150: account-delete recomputes 3rd-party ratings (from MEH-1148 audit A2) — PR ready, AWAITING SAPIR
 
