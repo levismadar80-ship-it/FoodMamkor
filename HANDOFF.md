@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1185 Ticket C: QA gates per-tier ADR — DRAFT PR opened (DO-NOT-MERGE, governance review)
+
+- **Branch:** `feature/meh-1185-qa-gates-adr` off `origin/staging` (divergence 0 at cut). Governance-only — **zero app/test/workflow code**. Note: the harness-designated branch was `claude/qa-gates-per-tier-adr-syjhqb`, which the MEH-1141 branch-name gate + `check-branch-name.sh` mechanically reject (no `claude/*`); used the issue-specified `feature/*` name instead.
+- **Deliverable:** new `docs/decisions/ADR-028-qa-gates-per-tier.md` — GREEN/YELLOW DoD "mobile verified" = CI gates (`pytest` + `e2e.yml` mobile/Pixel 5 + VRT); RED + `staging→main` release keep Sapir manual real-device QA (iOS Safari, Tier-3 DEVICE-ONLY). Amends ADR-016's DoD provision only, not the merge-authority tiers.
+- **Phase-0 verdict (file:line in the ADR + CHANGELOG):** VRT specs exist + run unscoped in `e2e.yml` and are **green** on staging (run `29243943410`, commit `167cff27` — post the MEH-991 baseline regen that cleared the pre-batch drift noted below). BUT `Playwright E2E (Vercel preview)` is **NOT a required check** (absent from `ci-gate` + `deploy-gate` needs). So VRT is green-but-not-blocking → ADR marks it "activates on MEH-991 Chunk 3 close" (Appendix A = exact ruleset/YAML change for Sapir). `pytest` IS required and covers `tests/**`. Next free ADR = 028.
+- **Also:** surgical `docs/CONTEXT.md` §14 DoD edit (unconditional mobile-check line → per-tier pointer to ADR-028). CHANGELOG + HANDOFF updated.
+- **Sapir follow-ups (ADR Appendix B):** update template 06 DoD line (templates live outside repo); apply Appendix A if promoting VRT to a required gate; `docs/decisions/README.md` index lags (missing ADR-027 **and** 028 — left out per MEH-1185's 4-file scope lock).
+- **DoD status:** docs-only → build/pytest jobs skip via paths-filter; `do-not-merge-gate` intentionally fails `CI gate` while the marker is on (governance lock, ADR-016/MEH-1155). **WAIT GATE — Sapir reads the ADR verbatim, then removes the marker.** `Closes MEH-1185`.
+
 ## 2026-07-13 — MEH-1176 Ticket B: triage findings F1-F10 — 8 FIXED (all merged), 2 STOPPED with reasons
 
 - **Batch (one branch+PR per finding, ADR-016 tiers, same session as the MEH-1171 matrix approval):** GREEN F2 #1716 · F3 #1719 · F5 #1720 · F8 #1722 · F9 #1723 · F10 #1724 — all merged. YELLOW F1 #1725 · F4 #1726 — both merged. Full F#→PR# map + per-finding evidence: `docs/qa/manual-testing-matrix.md` § "Ticket B execution status". `Closes MEH-1176` (docs-close PR).
