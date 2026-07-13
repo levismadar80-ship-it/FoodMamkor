@@ -1327,7 +1327,7 @@ Test on a **real iOS device** (iPhone Safari + Chrome iOS preferred) — simulat
 - [ ] iOS Settings → Accessibility → Motion → **Reduce Motion: ON** — טוענים את הדף מחדש — אנימציות ה-Ken Burns נעצרות, התמונות סטטיות (זה התנהגות מכוונת לפי `@media (prefers-reduced-motion: reduce)` ב-globals.css:161)
 - [ ] iOS Settings → Reduce Motion: OFF — אנימציות חוזרות לפעול אחרי רענון
 - [ ] iPad בלנדסקייפ (lot > 768px) — אנימציות עדיין פעילות, אין regression מהסרת `.parallax-bg` המיותר
-- [ ] `grep -rn 'background-attachment' frontend/` → רק הערות בקוד, אין שימוש פעיל (regression check — לוודא שה-class המת לא חזר)
+- [ ] `grep -rn 'background-attachment' frontend/` → שימוש פעיל **יחיד ומכוון**: `.hero-parallax` ב-`globals.css` (`background-attachment: fixed` לדסקטופ + fallback `scroll` ב-`@media (pointer: coarse)` — iOS Safari מתעלם מ-fixed). ה-guard הישן ("רק הערות, אין שימוש פעיל") התהפך בכוונה כשה-hero-parallax חזר עם ה-fallback; אל תסירו את הכלל בלי לבדוק את שני הענפים. (MEH-1176 F9)
 
 ---
 
