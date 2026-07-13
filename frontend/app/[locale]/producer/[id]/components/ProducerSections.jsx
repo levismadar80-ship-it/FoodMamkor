@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { BRAND_NAME } from "@/lib/constants";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -150,15 +149,15 @@ export default function ProducerSections({
                       </div>
                     ) : (
                       // MEH-1138: canonical no-photo state — cream surface + leaf
-                      // glyph + brand name. REUSES: frontend/components/ProducerCard.jsx:262
+                      // glyph. MEH-1168 P1: the "מהמקור" wordmark is dropped from
+                      // the product placeholder — the platform logo inside a
+                      // business's own products was confusing, and the product
+                      // name already sits directly below the card.
                       <div
-                        className="w-full aspect-[4/3] bg-background flex flex-col items-center justify-center gap-2"
+                        className="w-full aspect-[4/3] bg-background flex items-center justify-center"
                         aria-label={t("producer.card.aria.image_missing", { name: product.name })}
                       >
                         <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
-                        <span className="font-headline-md text-base font-bold text-primary/50">
-                          {BRAND_NAME}
-                        </span>
                       </div>
                     )}
                     <div className="p-4 flex-1 flex flex-col">
@@ -166,7 +165,9 @@ export default function ProducerSections({
                       {product.description && (
                         <p className="text-sm text-fg-muted mt-1 line-clamp-2">{product.description}</p>
                       )}
-                      {price && <p className="text-accent font-medium mt-2">{price}</p>}
+                      {/* MEH-1168 P1 (bidi): the ₪-suffixed amount is bidi-
+                          isolated so RTL flow can't render "35₪" as "₪35". */}
+                      {price && <p className="text-accent font-medium mt-2"><span dir="ltr">{price}</span></p>}
                     </div>
                   </div>
                 );
@@ -229,7 +230,7 @@ export default function ProducerSections({
                       {ev.city && ` · ${ev.city}`}
                     </p>
                     {ev.price > 0 && (
-                      <p className="text-sm text-accent font-medium mt-1">{formatPrice(ev.price)}</p>
+                      <p className="text-sm text-accent font-medium mt-1"><span dir="ltr">{formatPrice(ev.price)}</span></p>
                     )}
                     {ev.price === 0 && (
                       <p className="text-sm text-primary font-medium mt-1">{t("producer.detail.sections.events.free")}</p>
@@ -295,7 +296,10 @@ export default function ProducerSections({
                   <tr key={da.id} className="border-t border-border">
                     <td className="px-4 py-3 text-text">{da.city}</td>
                     <td className="px-4 py-3 text-text">
-                      {da.min_order ? formatPrice(da.min_order) : "—"}
+                      {/* MEH-1168 P1 (bidi, top priority): the price cell renders
+                          visually as "₪150" in the RTL table without isolation —
+                          dir="ltr" pins it to the canonical "150₪" (MEH-1140). */}
+                      {da.min_order ? <span dir="ltr">{formatPrice(da.min_order)}</span> : "—"}
                     </td>
                     <td className="px-4 py-3 text-text">{da.delivery_day || "—"}</td>
                   </tr>
