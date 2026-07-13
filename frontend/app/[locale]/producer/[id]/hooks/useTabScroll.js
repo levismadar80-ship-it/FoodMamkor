@@ -19,7 +19,17 @@ export function useTabScroll() {
     const el = sectionRefs.current[key];
     if (el) {
       const tabBarHeight = tabBarRef.current?.offsetHeight || 56;
-      const y = el.getBoundingClientRect().top + window.scrollY - tabBarHeight - 16;
+      // MEH-1168 P2: the tab bar now sticks BELOW the global sticky header, so a
+      // tapped section must land under BOTH. Measure the header (mobile ≈ 82px)
+      // instead of only offsetting by the tab bar, which left headings behind it.
+      const headerHeight =
+        document.querySelector("header")?.getBoundingClientRect().height || 82;
+      const y =
+        el.getBoundingClientRect().top +
+        window.scrollY -
+        headerHeight -
+        tabBarHeight -
+        16;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
   }, []);

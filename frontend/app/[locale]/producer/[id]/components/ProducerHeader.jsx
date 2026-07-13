@@ -42,6 +42,13 @@ export default function ProducerHeader({
   // already named in the logistics line, so it's excluded from the chip row.
   const extraCats =
     producer.categories?.filter((cat) => cat.id !== primaryCategory?.id) ?? [];
+  // MEH-1168 P2: for imageless producers the verified seal is anchored to the
+  // name inside the Tinted Masthead (ImageGallery), so it's hidden from this
+  // header badge row to avoid a duplicate. Imaged producers keep it here — the
+  // h1 lives on this identity line, so the seal is already beside the name.
+  const badgeHideKeys = hasImages
+    ? ["products", "delivery"]
+    : ["products", "delivery", "verified"];
   return (
     <>
       {/* Header: name + trust badges */}
@@ -65,7 +72,7 @@ export default function ProducerHeader({
             delivery badge is dropped from the pill row so delivery renders
             exactly once — in the capability strip below (broadened to the union
             of every delivery signal so no producer loses the indicator). */}
-        <BadgeRow producer={producer} hideKeys={["products", "delivery"]} />
+        <BadgeRow producer={producer} hideKeys={badgeHideKeys} />
         {/* MEH-51 / MEH-1120: recognition-only trust badge — self-gates to
             tier ≥ 4 (community-leader / ambassador). Tiers 2/3 (phone / business
             "מאומת") were removed to stop duplicating the BadgeRow seal. */}

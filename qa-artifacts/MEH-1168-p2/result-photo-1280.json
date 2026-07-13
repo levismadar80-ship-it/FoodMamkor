@@ -1,0 +1,14 @@
+{
+  "width": 1280,
+  "errors": [],
+  "identityBadge": {
+    "verticalGap": 7,
+    "sameRegion": true,
+    "sealText": "מאומת"
+  },
+  "productRows": [
+    97,
+    97,
+    97
+  ]
+}

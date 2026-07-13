@@ -2,13 +2,18 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Images } from "@phosphor-icons/react";
+import { Images, SealCheck } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
 import FavoriteButton from "./FavoriteButton";
 import Lightbox from "./Lightbox";
 
-export default function ImageGallery({ images = [], producerId = null, producerName = "" }) {
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false }) {
   const t = useTranslations("gallery");
+  // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
+  // producers the name lives here in the Tinted Masthead (ProducerHeader omits
+  // its h1), so the seal is rendered beside it here rather than floating alone
+  // in the header badge row below. Label reuses the badge namespace.
+  const tBadge = useTranslations("producer.badge");
   const [current, setCurrent] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const touchStartX = useRef(null);
@@ -78,10 +83,24 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           {/* MEH-815: h1 rendered unconditionally — ProducerHeader always omits
               its own name h1 when imageless, so the masthead must always supply
               the page's single h1 (guarantees exactly-one-h1 even for the
-              backend-impossible empty-name case). */}
-          <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
-            {producerName}
-          </h1>
+              backend-impossible empty-name case).
+              MEH-1168 P2: the verified seal sits inline after the name (anchored
+              to it, not floating in the header badge row). Masthead is otherwise
+              unchanged (MEH-815 LOCK). */}
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-2">
+            <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
+              {producerName}
+            </h1>
+            {verified && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-sm px-2.5 py-0.5 font-medium"
+                data-testid="masthead-verified"
+              >
+                <SealCheck size={16} aria-hidden="true" />
+                {tBadge("verified_label")}
+              </span>
+            )}
+          </div>
         </div>
         {producerId && (
           <div className="absolute top-3 start-3 z-10">

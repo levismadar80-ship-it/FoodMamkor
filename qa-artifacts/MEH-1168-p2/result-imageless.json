@@ -1,0 +1,18 @@
+{
+  "errors": [],
+  "mastheadSeal": {
+    "text": "מאומת",
+    "sameRowIsh": false,
+    "nextToName": true
+  },
+  "headerVerifiedCount": 0,
+  "productRows": [
+    80,
+    80,
+    80
+  ],
+  "tabBarDeep": {
+    "top": 82,
+    "visible": true
+  }
+}

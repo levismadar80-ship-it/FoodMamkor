@@ -101,12 +101,17 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         images={images}
         producerId={producer.id}
         producerName={producer.name}
+        verified={producer.verification_tier === "verified"}
       />
 
-      {/* Mobile tab bar */}
+      {/* Mobile tab bar — MEH-1168 P2: sticks at top-[82px], BELOW the global
+          sticky header (82px tall, z-[1050]). At the previous top-0 the bar
+          stuck at the same offset as the header and, being z-30, was fully
+          occluded behind it once scrolled into a deep section (it "vanished").
+          Clearing the header keeps it visible page-long. */}
       <nav
         ref={tabBarRef}
-        className="md:hidden sticky top-0 z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
+        className="md:hidden sticky top-[82px] z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">
