@@ -1982,7 +1982,14 @@ class AvailabilityStateUpdate(BaseModel):
 
 
 class BioGenerateIn(BaseModel):
-    source: str = Field(..., min_length=1, max_length=500)
+    # MEH-1173: structured input replaces the free-text {source} + Instagram
+    # scrape. `sells` is the one field the "צרו תיאור" button gates on
+    # (required); the rest are optional context. `instagram` is inspiration
+    # only — the scrape path is deleted (services/bio_generator.py).
+    sells: str = Field(..., min_length=1, max_length=200)
+    area: str | None = Field(default=None, max_length=200)
+    special: str | None = Field(default=None, max_length=200)
+    instagram: str | None = Field(default=None, max_length=200)
 
 
 # --- Search (search.py) ---

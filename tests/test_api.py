@@ -1128,17 +1128,18 @@ class TestMeh56BioGenerator:
 
         resp = client.post(
             "/producers/me/bio/generate",
-            json={"source": "organic farm in the Galilee"},
+            json={"sells": "organic farm in the Galilee"},
             headers=auth_header(user),
         )
         assert resp.status_code == 200
         assert resp.json()["bio"] == ""
 
     def test_bio_generate_requires_auth(self, client):
-        resp = client.post("/producers/me/bio/generate", json={"source": "test"})
+        resp = client.post("/producers/me/bio/generate", json={"sells": "test"})
         assert resp.status_code == 401
 
-    def test_bio_generate_rejects_empty_source(self, client, db):
+    def test_bio_generate_rejects_missing_sells(self, client, db):
+        # MEH-1173: sells is the one required structured field.
         from conftest import make_user
         p = make_producer(db, name="ביו2")
         user = make_user(db, email="biouser2@test.com", role="producer")
@@ -1146,7 +1147,7 @@ class TestMeh56BioGenerator:
         db.commit()
         resp = client.post(
             "/producers/me/bio/generate",
-            json={"source": ""},
+            json={"area": "הגליל", "special": "מתכון סבתא"},
             headers=auth_header(user),
         )
         assert resp.status_code == 422

@@ -143,7 +143,7 @@ Trigger phrases: *defer · adopt · abandon · "decision is" · "we'll go with" 
 
 - ✅ Build green (`npm run build` + `pytest`)
 - ✅ Preview URL sent to Sapir
-- ✅ Mobile-checked (exception: tests-only / docs-only / CI YAML)
+- ✅ נבדק בנייד — פר-tier per [ADR-028](./decisions/ADR-028-qa-gates-per-tier.md): GREEN/YELLOW → שערי CI מספקים את ה-DoD (`pytest` + פרויקט `mobile`/Pixel 5 של `e2e.yml` + VRT), אין בדיקה ידנית פר-PR; RED + release `staging→main` → QA ידני של ספיר במכשיר אמיתי (iOS Safari, Tier-3 DEVICE-ONLY). exception: tests-only / docs-only / CI YAML
 - ✅ CHANGELOG.md updated
 - ✅ HANDOFF.md updated
 
