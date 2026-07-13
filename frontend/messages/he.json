@@ -392,7 +392,7 @@
       "friday_subtitle": "שישי הגיע מה הולך על שולחן השבת שלך?",
       "main_label": "דף הבית — גלו בתי עסק מקומיים",
       "search_area_label": "חיפוש בתי עסק",
-      "near_me": "קרוב אלי",
+      "near_me": "קרוב אליי",
       "searching": "בחיפוש...",
       "scroll_down_label": "גלול לרשימת בתי העסק"
     },
@@ -996,17 +996,18 @@
       "aria": {
         "split_50_50": "תצוגה 50/50",
         "split_25_75": "תצוגה 25/75",
-        "my_location": "קרוב אלי"
+        "my_location": "קרוב אליי"
       },
       "city_search": {
         "label": "סננו לפי עיר",
         "placeholder": "חפשו עיר..."
       },
       "business_count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}",
-      "subhead": "קרוב · {region}",
+      "subhead": "{region}",
       "sort": {
         "aria_label": "מיון בתי עסק",
-        "nearest": "קרוב אליי",
+        "label": "מיון:",
+        "nearest": "מרחק",
         "top_rated": "הכי מדורגות",
         "newest": "חדש בשוק"
       }

@@ -1005,10 +1005,11 @@
         "placeholder": "Search city..."
       },
       "business_count": "{count, plural, =0 {No local businesses in your area} one {1 local business in your area} other {# local businesses in your area}}",
-      "subhead": "Near you · {region}",
+      "subhead": "{region}",
       "sort": {
         "aria_label": "Sort businesses",
-        "nearest": "Nearest",
+        "label": "Sort:",
+        "nearest": "Distance",
         "top_rated": "Top rated",
         "newest": "Newest"
       }
