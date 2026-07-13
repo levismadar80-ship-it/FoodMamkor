@@ -5,6 +5,10 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1190…1196 sweep — MEH-1193 done (GREEN, pure deletion)
+
+- **MEH-1193 (Med · GREEN):** `feature/meh-1193-map-chrome-declutter` off `origin/staging`. Deleted the redundant "הצג מפה" bottom-sheet button (drag-handle dup; FULL no longer a snap) + the first-visit hint (covered by the higher-z search-area pill; desktop-only copy on mobile) across `MapBottomSheet.jsx` / `MapPane.jsx` / `useFirstVisitHints.js` / `MapClient.jsx` + orphan keys `map.pane.hint`/`map.bottom_sheet.show_map` (he+en). **Phase-0 scope correction (asked + approved):** `useMapSync.js` (out of the ticket's file list) also carried the hint's dismiss-on-pan + the `setShowMapHint` param from `MapClient.jsx:252` — deleting the hint without it breaks at runtime + fails the 0-grep gate, so it was folded in (`handleMapMove` → `setMapMoved(true)`). `grep → 0` · build green · full vitest 1058 passed · parity green · PW QA 375+1440 (`qa-artifacts/MEH-1193/`) shows 0 button, 0 hint, search-area pill fully visible. **1194 rebases on this.** `Closes MEH-1193`.
+
 ## 2026-07-13 — MEH-1173: "ביו AI" → "תיאור העסק" (Shopify-Magic redesign) — draft PR #1727
 
 - **Branch:** `feature/meh-1173-business-description-panel` off `origin/staging` (merged staging pre-push, divergence clean). **YELLOW + visual: DO-NOT-MERGE — Sapir merges** after mobile QA. `Refs MEH-1089` · `Closes MEH-1173`. Draft PR **#1727**.
