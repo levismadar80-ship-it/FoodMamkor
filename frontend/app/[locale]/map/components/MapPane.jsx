@@ -127,13 +127,21 @@ export default function MapPane({
         </div>
       )}
 
-      {/* GPS center button — desktop only; mobile has one in the filter bar */}
+      {/* GPS center button — desktop only; mobile has one in the filter bar.
+          MEH-1187: moved to the bottom corner OPPOSITE the legend (one corner =
+          one job, Google-Maps model) so the expanded legend can no longer sit on
+          it. Physical `right-4` — NOT logical `end-`/`start-` — because the
+          legend is anchored with physical `left-4`; a logical prop would flip per
+          `dir` and re-collide with the legend in /en (LTR). z-[1000] controls
+          tier + bottom-24 unchanged; the right corner has no growable chrome, so
+          no measured offset is needed (the opposite-corner move removes it). */}
       <button
         type="button"
         onClick={onGpsClick}
         disabled={gpsLoading}
         aria-label={t("map.pane.aria.center_on_me")}
-        className="hidden lg:flex absolute bottom-24 end-4 w-11 h-11 rounded-full bg-background border border-border items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
+        // eslint-disable-next-line no-restricted-syntax -- rtl-ok: geographic map control; physical right keeps it opposite the physical-left legend in every locale
+        className="hidden lg:flex absolute bottom-24 right-4 w-11 h-11 rounded-full bg-background border border-border items-center justify-center text-primary hover:bg-green-50 transition-colors z-[1000] focus-visible:ring-2 focus-visible:ring-primary/40 disabled:opacity-60"
       >
         {gpsLoading
           ? <CircleNotch size={20} className="animate-spin" aria-hidden="true" />
