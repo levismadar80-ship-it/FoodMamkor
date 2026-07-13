@@ -7,6 +7,49 @@ import {
   chipStateToParams,
   resolveCategoryId,
 } from "@/lib/map-chips";
+import { haversineKm } from "@/lib/distance";
+
+/**
+ * Pure client-side ordering for the /map card list — the sort dropdown's
+ * first real consumer (the select previously wrote `sortBy` state that
+ * nothing read). Returns a NEW array; never mutates the input.
+ *
+ *   - "nearest": haversine ASC to userLoc; producers without coords last.
+ *     Callers must only offer this mode when userLoc exists (the option is
+ *     disabled without GPS); with a null userLoc it degrades to feed order.
+ *   - "rating":  avg_rating DESC, tiebreak reviews_count DESC; null-rating
+ *     producers last (a null is "unrated", worse than any real 0-review 0.0).
+ *   - "newest":  the feed's original index order. `created_at` is NOT in the
+ *     serialized list payload (ProducerListOut, schemas/schemas.py:702) and
+ *     the Zod ProducerSchema would strip it anyway — but GET /producers's
+ *     default order IS created_at DESC (producer_listing.py:127), so feed
+ *     order == newest-first. (The id-desc alternative is meaningless on
+ *     UUID4 ids.) Caveat: after a geo re-query ("חפשו באזור זה") the feed
+ *     arrives distance-ordered, and "newest" then reflects that order.
+ */
+export function sortProducers(list, sortBy, userLoc) {
+  if (!Array.isArray(list) || list.length < 2) return list ?? [];
+  if (sortBy === "nearest" && userLoc) {
+    const dist = (p) =>
+      typeof p.lat === "number" && typeof p.lng === "number"
+        ? haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng)
+        : Infinity;
+    return [...list].sort((a, b) => dist(a) - dist(b));
+  }
+  if (sortBy === "rating") {
+    return [...list].sort((a, b) => {
+      const aNull = a.avg_rating == null;
+      const bNull = b.avg_rating == null;
+      if (aNull !== bNull) return aNull ? 1 : -1;
+      return (
+        (b.avg_rating ?? 0) - (a.avg_rating ?? 0) ||
+        (b.reviews_count ?? 0) - (a.reviews_count ?? 0)
+      );
+    });
+  }
+  // "newest" (and any unknown key): feed order — see docblock.
+  return list;
+}
 
 /**
  * Owns all filter / selection state for the /map page and the derived
