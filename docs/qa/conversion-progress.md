@@ -4,7 +4,7 @@
 > Matrix approved by Sapir 13/07 (incl. 138 STALE deletions, KEEP-RUNBOOK, 6 UNCLEAR resolutions).
 > Ticket B (MEH-1176) ran first: F1-F10 → 8 fixed/merged, F6+F7 stopped (see matrix § Ticket B execution status).
 
-## Status: 🚧 CONVERTING — checkpoint 1 (infra) done
+## Status: 🚧 CONVERTING — checkpoint 2 (Legal pages) done
 
 - [x] Phase 0 report + full triage matrix (`docs/qa/manual-testing-matrix.md`, 1,074 rows) — merged in PR #1710
 - [x] **Sapir approved matrix** (13/07)
@@ -29,6 +29,7 @@
 | Section | Items | Target file | Status |
 |---|---|---|---|
 | (infra) local backend runbook | — | `scripts/local-backend.sh` | ✅ verified (health 200 + seeded reads) |
+| Legal pages (אפריל 2026) | 8 of 14 → PW (items 1,2,3,8,9,10,11,13) | `frontend/e2e/flows/manual/legal-pages.spec.ts` | ✅ green ×2 (14 passed / 14 passed, desktop+mobile) vs live local stack. Items 4-7 = pytest/Tier-3 (email inbox = Tier-3; DB row + 429 + fail-open = existing pytest, cite in the MANUAL_TESTING stub). Item 12 = pending coverage check vs 18-producer-register-wizard. Item 14 = STALE (approved). **Doc-stale notes:** contact toast copy is now `contact.success_title` "תודה! קיבלנו את הפנייה." (emoji removed, Emoji LOCK v2); footer ships 3 legal links — the checklist's 4th (קשר) was dropped in the footer redesign; accessibility date line is "עודכנה לאחרונה", not "עדכון". |
 
 ## Runtime notes for the next checkpoint
 
