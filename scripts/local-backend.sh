@@ -78,6 +78,33 @@ db.commit()
 print(f"cities seeded: {db.query(City).count()}")
 PYEOF
 
+# 4c — state fixtures for the MEH-1171 producer-detail-state suite: the default
+#      seed producers are all accepting_orders / unverified / no-kashrut, so the
+#      availability-banner (MEH-291) and kashrut/trust (MEH-51) surfaces never
+#      render. Stamp three of them with the states those tests find-or-skip on.
+"$PY" - << 'PYEOF'
+import sys
+sys.path.insert(0, "backend")
+from datetime import date, datetime, timedelta, timezone
+from app.database import SessionLocal
+from app.models.models import Producer
+
+db = SessionLocal()
+ps = db.query(Producer).order_by(Producer.created_at).all()
+if len(ps) >= 3:
+    ps[0].availability_state = "on_vacation"
+    ps[0].vacation_until = date.today() + timedelta(days=7)
+    ps[1].availability_state = "full_this_week"
+    ps[2].verified_at = datetime.now(timezone.utc)
+    ps[2].kashrut_badges = ["badatz"]  # valid CODE_TO_KEY entry → label בדצ"ה
+    ps[2].kashrut_verified_at = datetime.now(timezone.utc)
+    ps[2].kashrut_expires_at = datetime.now(timezone.utc) + timedelta(days=20)  # <30 → near-expiry warning
+    db.commit()
+    print(f"state fixtures: {ps[0].slug}=on_vacation, {ps[1].slug}=full_this_week, {ps[2].slug}=verified+kashrut")
+else:
+    print("fewer than 3 producers seeded — skipped state fixtures")
+PYEOF
+
 echo "local backend DB ready: ${DATABASE_URL}"
 echo "admin login: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}"
 
