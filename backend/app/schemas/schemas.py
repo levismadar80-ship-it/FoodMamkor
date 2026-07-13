@@ -82,6 +82,18 @@ def _url_scheme_validator(value: str | None) -> str | None:
     return stripped
 
 
+def _require_categories_validator(value: list[int] | None) -> list[int]:
+    """MEH-1153: every business must carry ≥1 category to appear in browsing.
+    The client already gates this, but a direct API POST could omit the field
+    or send `[]` and create an uncategorised producer. Paired with
+    `validate_default=True` on the field so the ABSENT case (default `[]`) is
+    validated too — closing both the missing-field and empty-list bypass.
+    """
+    if not value:
+        raise ValueError("חובה לבחור לפחות קטגוריה אחת")
+    return value
+
+
 # --- Auth ---
 class UserRegister(BaseModel):
     email: EmailStr
@@ -139,7 +151,10 @@ class ProducerRegister(BaseModel):
     # MEH-17: flexible contact methods.
     primary_contact_method: str = "whatsapp"
     contact_email: EmailStr | None = None
-    category_ids: list[int] = []
+    # MEH-1153: server-side parity with the client's ≥1-category gate.
+    # validate_default=True runs _require_categories_validator on the absent
+    # case (default []) too, so both "missing" and "[]" 422.
+    category_ids: list[int] = Field(default_factory=list, validate_default=True)
     # MEH-530: optional at Pydantic level. Router calls
     # ensure_license_for_categories which 422s if license is missing for
     # a category in LICENSE_REQUIRED_CATEGORIES. max_length=20 mirrors the
@@ -225,6 +240,11 @@ class ProducerRegister(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    @field_validator("category_ids")
+    @classmethod
+    def _require_categories(cls, v):
+        return _require_categories_validator(v)
 
 
 class GoogleAuthRequest(BaseModel):
@@ -420,7 +440,8 @@ class ProducerCreate(BaseModel):
     # no primary_contact_method, so only the URL-scheme guard applies below).
     facebook: str | None = None
     external_order_form: str | None = None
-    category_ids: list[int] = []
+    # MEH-1153: same ≥1-category server-side parity as ProducerRegister.
+    category_ids: list[int] = Field(default_factory=list, validate_default=True)
     # MEH-530: see ProducerRegister for the validation rationale.
     producer_license_number: str | None = Field(default=None, max_length=20)
     delivery_areas: list[DeliveryAreaCreate] = []
@@ -435,6 +456,11 @@ class ProducerCreate(BaseModel):
     @classmethod
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
+
+    @field_validator("category_ids")
+    @classmethod
+    def _require_categories(cls, v):
+        return _require_categories_validator(v)
 
 
 class ProducerAdminCreate(BaseModel):

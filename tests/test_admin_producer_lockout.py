@@ -21,22 +21,23 @@ from app.config import settings
 from app.models import User
 from app.routers import auth as auth_router
 
-from tests.conftest import auth_header, make_user
+from tests.conftest import auth_header, make_user, valid_producer_register_payload
 
 
 ADMIN_EMAIL = "admin@example.com"
 CONSUMER_EMAIL = "consumer@example.com"
 NEW_PRODUCER_EMAIL = "newp@example.com"
 
-# Mirrors tests/test_auth.py::TestProducerSignupPolicy.VALID_REG body
-# minus the email/name/password fields the upgrade path ignores.
-UPGRADE_BODY = {
-    "producer_name": "חוות הניסוי",
-    "phone": "0501234567",
-    "category_ids": [],
-    "primary_contact_method": "whatsapp",
-    "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-}
+
+def _upgrade_body(**overrides):
+    # MEH-1153: derive from the shared registration helper (it seeds a real
+    # category, now required by ProducerRegister) and drop the email/name/
+    # password the upgrade path ignores. Replaces the hand-mirrored dict that
+    # duplicated test_auth's VALID_REG (the duplication this comment admitted).
+    base = valid_producer_register_payload()
+    for field in ("email", "name", "password"):
+        base.pop(field, None)
+    return {**base, "producer_name": "חוות הניסוי", "phone": "0501234567", **overrides}
 
 # 12-char SAFE_PASSWORD per MEH-306 PasswordField floor; matches
 # conftest.make_user default + valid_producer_register_payload.
@@ -52,7 +53,7 @@ class TestRegisterProducerAdminLockout:
         admin = make_user(db, email=ADMIN_EMAIL, role="admin")
         resp = client.post(
             "/auth/register/producer",
-            json=UPGRADE_BODY,
+            json=_upgrade_body(),
             headers=auth_header(admin),
         )
         assert resp.status_code == 403, resp.json()
@@ -69,7 +70,7 @@ class TestRegisterProducerAdminLockout:
         consumer = make_user(db, email=CONSUMER_EMAIL, role="consumer")
         resp = client.post(
             "/auth/register/producer",
-            json=UPGRADE_BODY,
+            json=_upgrade_body(),
             headers=auth_header(consumer),
         )
         assert resp.status_code == 200, resp.json()
@@ -80,12 +81,11 @@ class TestRegisterProducerAdminLockout:
 
     def test_anonymous_new_signup_still_succeeds(self, client, db):
         # Regression — non-upgrade path (MEH-328 OWASP anti-enum) unchanged.
-        body = {
-            **UPGRADE_BODY,
-            "email": NEW_PRODUCER_EMAIL,
-            "name": "יצרנית חדשה",
-            "password": SAFE_PASSWORD,
-        }
+        body = _upgrade_body(
+            email=NEW_PRODUCER_EMAIL,
+            name="יצרנית חדשה",
+            password=SAFE_PASSWORD,
+        )
         resp = client.post("/auth/register/producer", json=body)
         assert resp.status_code == 200, resp.json()
         # MEH-328 Chunk B: non-upgrade returns RegisterAck (no access_token).

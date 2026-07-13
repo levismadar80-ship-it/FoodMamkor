@@ -22,7 +22,7 @@ from joserfc.jwk import OctKey
 
 from app.config import settings
 from app.services import password_policy
-from conftest import auth_header, make_user
+from conftest import auth_header, make_user, valid_producer_register_payload
 
 
 # 12-char value vetted in test_password_policy.py — not in deny_list_10k,
@@ -346,22 +346,22 @@ class TestProducerSignupPolicy:
     directly to return True.
     """
 
-    VALID_REG = {
-        "email": "p@x.com",
-        "name": "P",
-        "password": SAFE_PASSWORD,
-        "producer_name": "X",
-        "phone": "0501234567",
-        "category_ids": [],
-        "primary_contact_method": "whatsapp",
-        "declaration_accepted": True,  # MEH-759: mandatory binding declaration
-    }
+    def _valid_reg(self, **overrides):
+        # MEH-1153: derive from the shared helper (it seeds a real category, now
+        # required by ProducerRegister). Pin email — a DB assertion below checks
+        # it — and add the phone the whatsapp-method success path needs. The
+        # helper's password is SAFE_PASSWORD, so the policy tests are unchanged.
+        return valid_producer_register_payload() | {
+            "email": "p@x.com",
+            "phone": "0501234567",
+            **overrides,
+        }
 
     def test_producer_signup_short_password_rejected_422(self, client):
         # 11 chars — PasswordField min_length=12 short-circuits at Pydantic.
         resp = client.post(
             "/auth/register/producer",
-            json={**self.VALID_REG, "password": "short_pass!"},
+            json=self._valid_reg(password="short_pass!"),
         )
         assert resp.status_code == 422
 
@@ -372,14 +372,14 @@ class TestProducerSignupPolicy:
         # cannot mask it.
         resp = client.post(
             "/auth/register/producer",
-            json={**self.VALID_REG, "primary_contact_method": "garbage"},
+            json=self._valid_reg(primary_contact_method="garbage"),
         )
         assert resp.status_code == 422, resp.text
 
     def test_producer_signup_breached_password_rejected(self, client):
         # Override the autouse HIBP=False stub to simulate a breach hit.
         with patch.object(password_policy, "_check_hibp", new=AsyncMock(return_value=True)):
-            resp = client.post("/auth/register/producer", json=self.VALID_REG)
+            resp = client.post("/auth/register/producer", json=self._valid_reg())
         assert resp.status_code == 422
         body = resp.json()
         assert "too_common" in body["detail"]["failures"]
@@ -388,7 +388,7 @@ class TestProducerSignupPolicy:
         # 12-char deny-listed credential — blocked locally, HIBP not called.
         resp = client.post(
             "/auth/register/producer",
-            json={**self.VALID_REG, "password": DENY_LISTED_AT_LENGTH},
+            json=self._valid_reg(password=DENY_LISTED_AT_LENGTH),
         )
         assert resp.status_code == 422
         assert "too_common" in resp.json()["detail"]["failures"]
@@ -397,7 +397,7 @@ class TestProducerSignupPolicy:
         from app.models import User
 
         before = datetime.now(timezone.utc) - timedelta(seconds=1)
-        resp = client.post("/auth/register/producer", json=self.VALID_REG)
+        resp = client.post("/auth/register/producer", json=self._valid_reg())
         assert resp.status_code == 200
         # MEH-328 Chunk B: non-upgrade signup now returns RegisterAck (no
         # access_token — caller must verify via email then login). The
@@ -414,15 +414,14 @@ class TestProducerSignupPolicy:
         # Authenticated consumer → POST without password → 200.
         # PasswordField | None = None must still allow the upgrade flow (MEH-143).
         u = make_user(db, email="upgrade@x.com", password=SAFE_PASSWORD)
+        # MEH-1153: derive from the shared helper (seeds a real category) and
+        # drop the fields the upgrade path ignores (it uses the authed identity).
+        upgrade_payload = valid_producer_register_payload() | {"phone": "0501234567"}
+        for field in ("email", "name", "password"):
+            upgrade_payload.pop(field, None)
         resp = client.post(
             "/auth/register/producer",
-            json={
-                "producer_name": "Y",
-                "phone": "0501234567",
-                "category_ids": [],
-                "primary_contact_method": "whatsapp",
-                "declaration_accepted": True,  # MEH-759: mandatory declaration
-            },
+            json=upgrade_payload,
             headers=auth_header(u),
         )
         assert resp.status_code == 200
