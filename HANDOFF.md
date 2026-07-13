@@ -16,6 +16,15 @@
 - **Decision surfaced to Sapir (not auto-resolved):** whether to (1) keep the filter-fix in the patch as I did [done], (2) split the filter fix + suite-green into a separate ticket, or (3) re-spec MEH-1201. I updated the deliverable to be honest+conditional (safe under all three) and did **NOT** merge — the ruleset go/no-go + which of A/B lands where is Sapir's call. My AskUserQuestion attempt failed on a transport error; captured here instead.
 - **Sapir follow-ups (in the patch `.md`, now conditional):** **A** fix filter → **B** green suite → paste aggregator YAML → add context `E2E gate (required)` to ruleset 15240090 → final verify (docs-only merges clean + frontend PR with red E2E blocked).
 
+## 2026-07-13 — MEH-1199: demo/seed data policy ADR + read-only prod-scan — PR (GREEN, auto-merge)
+
+- **Branch:** `feature/meh-1199-demo-data-policy` off `origin/staging` (divergence 0 at cut). GREEN tier (docs + read-only script, zero UI/schema/auth) → auto-merge on CI green, Sapir pre-approved. `Closes MEH-1199`.
+- **Phase 0 (read-only, file:line):** next free ADR = **029** (README index lags per MEH-1197 — left untouched, out of scope). Release checklist lives at `docs/DEPLOYMENT.md:443` "Sanity checks before promoting staging → main". pytest dir = repo-root `tests/` (NOT `backend/tests/`, confirmed absent). Forward guard = `seed_demo_business.py:203-222` `_assert_not_production()`. `Producer.status` = `models.py:71`, `User.role` = `models.py:279`, `Producer.admin_notes` = `models.py:128`. Producer/User `id` are **UUID** (caught in live run — script stringifies ids for format + JSON safety).
+- **Shipped:** NEW `docs/decisions/ADR-029-demo-data-staging-only.md` (staging-only policy, DNA rationale, seed-guard requirement, prod-scan step, honest false-positive analysis). NEW `backend/scripts/check_no_demo_data.py` — **READ-ONLY** SELECT-only scan (admin_notes `DEMO` · `@example.com` users · name-marker producers, name-not-description), human table + `--json`, exit 0/1, `--markers` override, never deletes. NEW `tests/test_check_no_demo_data.py` (8 cases). `docs/DEPLOYMENT.md` checklist step added. CHANGELOG + HANDOFF.
+- **Documented false-positive (honest, not dropped):** `תסס` = root of תסיסה (fermentation) → flags a real "מאפיית תסס"; kept because that's the exact string that leaked, and the script only flags (human decides). Pinned by a test + documented in ADR-029.
+- **Verify:** pytest **8/8** green (local Postgres 16 + `mehamakor_test`) · ruff clean · live: clean DB → exit 0, seeded DB → exit 1 (table + `--json` both shown). No mobile QA (script + docs only, DoD exception). No CI wiring — `.github/workflows/**` CC-deny (MEH-671); CI-gate YAML left for Sapir in the PR body.
+- **Next (Sapir):** run `railway run python backend/scripts/check_no_demo_data.py` against prod → expect exit 0. Optionally wire the CI gate (YAML in PR body).
+
 ## 2026-07-13 — MEH-1200: design benchmark reference doc — PR (GREEN, auto-merge)
 
 - **Branch:** `feature/meh-1200-design-benchmarks` off `origin/staging` (divergence 0 at cut). GREEN tier (docs only, zero code) → auto-merge on CI green, Sapir pre-approved. `Closes MEH-1200`.
