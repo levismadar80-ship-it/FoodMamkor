@@ -101,6 +101,11 @@ start; MEH-1135 made the FAB logical so the whole system shares one axis. Any ne
 bottom-corner float must clear the FAB's corner (or the near-me pill's) on the
 **vertical** axis rather than contend for the same horizontal edge.
 
+**Exception — `/map`:** the chat FAB is pathname-gated OFF `/map` (MEH-1180), so
+the bottom-END corner there is free and is owned by `NearMePill.jsx` (circular
+near-me icon button, `end-4`, MEH-1194). A new float on `/map` contends with the
+near-me pill (and the search-this-area pill), NOT the FAB.
+
 ---
 
 ## Known RTL bug patterns (cross-ref [docs/BUG_PATTERNS.md](../../docs/BUG_PATTERNS.md))
