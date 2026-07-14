@@ -5,11 +5,13 @@
  * Allows users to choose which notifications to receive and opt in to push.
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Bell, BellSlash, Check, Confetti, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import { useAuth } from "@/lib/auth-context";
+import { validateIsraeliPhone } from "@/lib/validators";
 
 const DEFAULT_PREFS = {
   notify_new_event: true,
@@ -20,10 +22,17 @@ const DEFAULT_PREFS = {
 
 export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   const t = useTranslations("sweep_tail.alert_prefs");
+  const { user, updateProfile } = useAuth();
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pushStatus, setPushStatus] = useState("unknown"); // unknown | granted | denied | unsupported
+  // MEH-1191: just-in-time phone collection when opting into WhatsApp alerts.
+  const [showPhoneField, setShowPhoneField] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneSaving, setPhoneSaving] = useState(false);
+  const hasPhone = !!(user?.phone && user.phone.trim());
+  const phoneValid = validateIsraeliPhone(phoneInput.trim());
 
   useEffect(() => {
     if (!producerId) return;
@@ -51,9 +60,17 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     }
   }, [producerId]);
 
-  const toggle = useCallback((key) => {
+  const toggle = (key) => {
+    // MEH-1191: turning WhatsApp ON without a phone → collect it just-in-time
+    // rather than saving an opt-in that fire_alerts can never deliver. The
+    // toggle does NOT flip until a valid phone is saved.
+    if (key === "whatsapp_opt_in" && !prefs.whatsapp_opt_in && !hasPhone) {
+      setPhoneInput("");
+      setShowPhoneField(true);
+      return;
+    }
     setPrefs((p) => ({ ...p, [key]: !p[key] }));
-  }, []);
+  };
 
   const enablePush = async () => {
     const { requestPushPermission, subscribeToPush } = await import("@/lib/push");
@@ -71,20 +88,23 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     }
   };
 
-  const save = async () => {
+  const save = async (override) => {
     if (!prefs) return;
     setSaving(true);
     try {
+      // MEH-1191: `override` lets savePhoneAndEnable persist whatsapp_opt_in=true
+      // in the same interaction without waiting on the async setPrefs to flush.
+      const effective = { ...prefs, ...(override || {}) };
       let push_subscription = prefs._push_subscription || null;
       if (!push_subscription && pushStatus === "granted") {
         const { subscribeToPush } = await import("@/lib/push");
         push_subscription = await subscribeToPush();
       }
       await api.put(`/users/me/favorites/${producerId}/alerts`, {
-        notify_new_event: prefs.notify_new_event,
-        notify_new_product: prefs.notify_new_product,
-        notify_delivery_area: prefs.notify_delivery_area,
-        whatsapp_opt_in: prefs.whatsapp_opt_in,
+        notify_new_event: effective.notify_new_event,
+        notify_new_product: effective.notify_new_product,
+        notify_delivery_area: effective.notify_delivery_area,
+        whatsapp_opt_in: effective.whatsapp_opt_in,
         push_subscription,
       });
       showToast.success(t("save_success_toast"), { icon: <Check size={18} /> });
@@ -94,6 +114,29 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  // MEH-1191: save the just-collected phone (reusing PATCH /users/me from
+  // MEH-1190), flip the toggle ON, and persist the opt-in — one interaction.
+  const savePhoneAndEnable = async () => {
+    if (!phoneValid) return;
+    setPhoneSaving(true);
+    try {
+      await updateProfile({ phone: phoneInput.trim() });
+      setPrefs((p) => ({ ...p, whatsapp_opt_in: true }));
+      setShowPhoneField(false);
+      setPhoneInput("");
+      await save({ whatsapp_opt_in: true });
+    } catch {
+      showToast.error(t("save_error_toast"));
+    } finally {
+      setPhoneSaving(false);
+    }
+  };
+
+  const cancelPhone = () => {
+    setShowPhoneField(false);
+    setPhoneInput("");
   };
 
   if (loading) {
@@ -151,6 +194,37 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         {toggleRow("whatsapp_opt_in", t("row_whatsapp_opt_in"), ChatCircle)}
       </div>
 
+      {showPhoneField && (
+        <div className="rounded-[8px] bg-primary/5 border border-primary/20 p-3 space-y-2">
+          <p className="text-xs text-text">{t("phone_required_prompt")}</p>
+          <input
+            type="tel"
+            value={phoneInput}
+            onChange={(e) => setPhoneInput(e.target.value)}
+            placeholder="050-1234567"
+            dir="ltr"
+            aria-label={t("phone_required_prompt")}
+            className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={savePhoneAndEnable}
+              disabled={!phoneValid || phoneSaving}
+              className="flex-1 bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
+            >
+              {phoneSaving ? t("saving") : t("phone_save_cta")}
+            </button>
+            <button
+              onClick={cancelPhone}
+              className="text-fg-muted hover:text-text text-lg leading-none px-2 py-2"
+              aria-label={t("close_aria")}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {pushStatus !== "unsupported" && pushStatus !== "granted" && (
         <button
           onClick={enablePush}
@@ -179,7 +253,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       )}
 
       <button
-        onClick={save}
+        onClick={() => save()}
         disabled={saving}
         className="w-full bg-primary text-white text-sm py-2 rounded-[8px] hover:bg-primary-dark transition disabled:opacity-50"
       >

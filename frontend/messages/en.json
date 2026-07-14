@@ -2371,16 +2371,16 @@
   "modals": {
     "location": {
       "title": "Where are you?",
-      "subtitle": "We'll find businesses near you",
+      "subtitle": "Pick a city or share your location — we'll show local businesses near you",
       "search_label": "Search city",
       "search_placeholder": "Type a city name...",
       "aria_label": "Choose a city",
       "close_aria": "Close",
       "geo_button": "Near me",
       "geo_loading": "Finding...",
-      "geo_failure": "We couldn't get your location",
-      "current_location_fallback": "Current location",
-      "skip": "Skip for now",
+      "geo_denied": "We don't have location access — pick a city instead",
+      "geo_failure": "We couldn't detect your location — pick a city instead",
+      "skip": "Not now",
       "popular_cities": {
         "tel_aviv": "Tel Aviv",
         "jerusalem": "Jerusalem",
@@ -3928,6 +3928,8 @@
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
       "row_whatsapp_opt_in": "Send via WhatsApp",
+      "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
+      "phone_save_cta": "Save and enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Enable push notifications (PWA)",
@@ -4016,7 +4018,8 @@
       "email_oauth_provider_fallback": "external",
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
-      "field_phone_hint": "Notifications coming soon"
+      "field_phone_hint": "For WhatsApp updates from businesses you follow",
+      "field_phone_error": "Invalid phone number"
     },
     "business": {
       "tabpanel_aria": "My business",
