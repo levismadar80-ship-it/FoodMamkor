@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Leaf } from "@phosphor-icons/react";
@@ -35,7 +36,10 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  *   categoryCards: card[] joined with API category IDs (card.key/name/categoryId).
  *
  * History: PREMIUM_DESIGN (photo cards); MEH-643 (Assembly-v2 flat redesign);
- * MEH-1080 (buttons → links, 1:1 card↔category split).
+ * MEH-1080 (buttons → links, 1:1 card↔category split); MEH-1183 (bridge
+ * photos fill the card frame with a glyph/Leaf fallback — flat, NO scrim;
+ * the PREMIUM_DESIGN 65% green overlay that leaked an Act+Acre logo is
+ * deliberately NOT reintroduced).
  */
 export function HomeCategoryGrid({ categoryCards }) {
   const t = useTranslations();
@@ -58,19 +62,60 @@ export function HomeCategoryGrid({ categoryCards }) {
           const isHero = idx < 2;
           const numeral = String(idx + 1).padStart(2, "0");
           const cardClassName = [
-            "group flex flex-col h-full bg-surface-card border border-border hover:border-primary transition-colors duration-base ease-quart focus-ring",
+            // MEH-1183: relative + overflow-hidden so a fill photo is clipped
+            // to the sharp card frame and the border/focus ring render over it.
+            "group relative flex flex-col h-full overflow-hidden bg-surface-card border border-border hover:border-primary transition-colors duration-base ease-quart focus-ring",
           ].join(" ");
-          const cardBody = (
+          // MEH-991 (HOME-18): v8 aspect matrix — small 1:1 desktop+mobile / 4:3 tablet; hero mobile 16:7.
+          const aspectClassName = isHero
+            ? "aspect-[16/7] md:aspect-[4/3] lg:aspect-[16/9]"
+            : "aspect-square md:aspect-[4/3] lg:aspect-square";
+          // Gold Cormorant numeral (LTR-isolated) + display-font name. Shared by
+          // the photo and glyph paths so the tokens/position stay identical.
+          const caption = (
+            <>
+              <span dir="ltr" className="font-english italic text-accent leading-none text-[22px] lg:text-[28px]">
+                {numeral}
+              </span>
+              <h3 className={[
+                // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline; glyph never scales.
+                "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
+                isHero ? "text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
+              ].join(" ")}>
+                {card.name}
+              </h3>
+            </>
+          );
+          const cardBody = card.image ? (
+            <>
+              {/* MEH-1183: bridge photo fills the whole card frame — flat, NO
+                  overlay/scrim/gradient/tint (the deleted PREMIUM_DESIGN version
+                  put a 65% green scrim here; forbidden now — legibility comes from
+                  the photo, never a tint). alt = Hebrew category name. */}
+              <Image
+                src={card.image}
+                alt={card.name}
+                fill
+                sizes={isHero
+                  ? "(min-width: 1024px) 50vw, (min-width: 768px) 33vw, 100vw"
+                  : "(min-width: 1024px) 25vw, 50vw"}
+                className="object-cover"
+                priority={isHero}
+              />
+              {/* Aspect spacer — locks the frame proportion so the fill image
+                  causes zero CLS. Photo shows through (transparent). */}
+              <div className={["relative", aspectClassName].join(" ")} aria-hidden="true" />
+              {/* Numeral + name — unchanged position (bottom strip) + tokens,
+                  lifted above the photo in stacking order. */}
+              <div className="relative z-10 flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6">
+                {caption}
+              </div>
+            </>
+          ) : (
             <>
               {/* Glyph panel — cream background, hand-drawn line glyph in brand
                   green; Phosphor Leaf stand-in until MEH-683 draws the missing 4. */}
-              <div
-                className={[
-                  "grid place-items-center bg-background text-primary",
-                  // MEH-991 (HOME-18): v8 aspect matrix — small 1:1 desktop+mobile / 4:3 tablet; hero mobile 16:7.
-                  isHero ? "aspect-[16/7] md:aspect-[4/3] lg:aspect-[16/9]" : "aspect-square md:aspect-[4/3] lg:aspect-square",
-                ].join(" ")}
-              >
+              <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")}>
                 {LineArt ? (
                   <LineArt
                     className={
@@ -86,16 +131,7 @@ export function HomeCategoryGrid({ categoryCards }) {
 
               {/* Body — gold Cormorant numeral (LTR-isolated) + display-font name. */}
               <div className="flex items-baseline gap-3 px-4 pb-4 pt-5 md:px-6 md:pt-6">
-                <span dir="ltr" className="font-english italic text-accent leading-none text-[22px] lg:text-[28px]">
-                  {numeral}
-                </span>
-                <h3 className={[
-                  // MEH-991 (HOME-15): v8 hover lock — border→green + 1px gold underline; glyph never scales.
-                  "font-headline-md font-bold text-text leading-tight group-hover:underline decoration-accent decoration-1 underline-offset-4",
-                  isHero ? "text-[20px] lg:text-[22px]" : "text-[15px] md:text-[18px]",
-                ].join(" ")}>
-                  {card.name}
-                </h3>
+                {caption}
               </div>
             </>
           );
