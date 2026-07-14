@@ -451,6 +451,14 @@ python scripts/check_api_contract.py --probe "$BACKEND"
   - [ ] Chat widget bottom-left answers a test question
   - [ ] No console errors in DevTools
 - [ ] No new entries in Sentry's "issues" tab from the staging deploy
+- [ ] **Prod is clean of demo/test data** — run the read-only scan against
+  production and confirm it exits 0:
+  ```
+  railway run python backend/scripts/check_no_demo_data.py
+  ```
+  Exit 1 means a demo/test entity leaked to prod — review each flagged row
+  (the script never deletes) and clean it before promoting. Policy + the
+  `תסס`-fermentation false-positive caveat: [ADR-029](./decisions/ADR-029-demo-data-staging-only.md).
 - [ ] PR description lists every behavior change so the next reviewer knows
   what they're approving for production
 
