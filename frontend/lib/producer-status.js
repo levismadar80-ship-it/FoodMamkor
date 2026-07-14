@@ -23,11 +23,6 @@ export const PRODUCER_STATUS_COLORS = {
   inactive: "bg-gray-200 text-gray-700",
 };
 
-// SEPARATOR CONTRACT: dashboard JSX splits on " — " (em-dash with spaces).
-// If you change the separator here, update producer/dashboard/page.js too.
-export const PENDING_WHATSAPP_COMPANION_COPY =
-  "לא קיבלת הודעה? השלימי את הפרופיל כאן — עריכת פרופיל";
-
 export function getProducerStatusLabel(status) {
   return PRODUCER_STATUS_LABELS[status] ?? status;
 }
