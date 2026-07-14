@@ -59,7 +59,7 @@ const BASELINE = new Set([
   "group_buys.dashboard.form.deadline_helper",
   "map.near_me_pill.aria",
   "map.near_me_pill.empty",
-  "map.near_me_pill.label",
+  // MEH-1194: the near-me label key was deleted (pill → icon-only button).
   "nav.trust_strip",
 ]);
 

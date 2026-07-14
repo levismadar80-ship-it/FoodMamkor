@@ -26,13 +26,13 @@ import { Crosshair } from "@phosphor-icons/react";
  * the collapsed sheet. The prior fixed `bottom-[16vh]` cleared PEEK=14vh but the
  * sheet's HALF=45vh snap rose well past it, floating this pill OVER the cards'
  * WhatsApp button + "פרופיל מלא" (Sapir 12/07 QA, IMG_9351).
- * MEH-1135 corner ownership: this pill sits on the START corner (`start-4`) —
- * the bottom-END corner belongs to the chat FAB (now logical `insetInlineEnd`;
- * convention in .claude/rules/rtl.md). With both elements logical they occupy
- * OPPOSITE corners in every locale (/he: FAB left, near-me right; /en:
- * mirrored), so there is no shared-corner collision. This supersedes the
- * MEH-1133 move to the FAB's corner, which was only needed while the FAB was
- * physical-right. RTL: start-4 / ps / pe logical props only.
+ * MEH-1194: circular icon button (Crosshair, 44×44) in the bottom-END corner
+ * (`end-4`), matching the desktop GPS circle's token set (MapPane.jsx) and the
+ * Google/Apple Maps "my location" convention — no wide text pill floating
+ * mid-canvas. The bottom-END corner is free on /map because MEH-1180 pathname-
+ * gated the chat FAB off this route, so the prior MEH-1135 START-corner
+ * placement (chosen only to avoid the FAB) is no longer needed. RTL: `end-4`
+ * logical prop only — mirrors correctly in /en.
  */
 export default function NearMePill({ onClick }) {
   const t = useTranslations();
@@ -53,10 +53,15 @@ export default function NearMePill({ onClick }) {
         transitionDuration: "var(--map-sheet-anim, 0ms), 150ms",
         transitionTimingFunction: "cubic-bezier(0.32,0.72,0,1), ease",
       }}
-      className="lg:hidden absolute start-4 z-[1000] flex items-center gap-1.5 rounded-full bg-background border border-border shadow-md ps-3 pe-3.5 py-2 text-sm font-medium text-text hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
+      // MEH-1194: circular icon button in the map's bottom-END corner — same
+      // token set as the desktop GPS circle (MapPane.jsx: w-11 h-11 rounded-full
+      // bg-background border, hover, focus ring), Crosshair glyph, no text label.
+      // transition-colors is intentionally omitted: the inline style block above
+      // already animates background-color (alongside `bottom`), so the Tailwind
+      // utility would be overridden anyway.
+      className="lg:hidden absolute end-4 z-[1000] w-11 h-11 rounded-full bg-background border border-border flex items-center justify-center text-primary hover:bg-green-50 focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      <Crosshair size={16} weight="bold" className="text-primary" aria-hidden="true" />
-      {t("map.near_me_pill.label")}
+      <Crosshair size={20} weight="bold" aria-hidden="true" />
     </button>
   );
 }
