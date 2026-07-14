@@ -3950,6 +3950,8 @@
       "row_new_product": "מוצרים חדשים",
       "row_delivery_area": "אזורי משלוח חדשים",
       "row_whatsapp_opt_in": "שלחו ב-WhatsApp",
+      "phone_required_prompt": "כדי לקבל עדכונים בוואטסאפ נצטרך את מספר הטלפון שלכם",
+      "phone_save_cta": "שמירה והפעלה",
       "push_denied_toast": "הרשאת התראות נדחתה",
       "push_blocked": "התראות דחיפה חסומות בדפדפן",
       "push_enable": "הפעילו התראות דחיפה (PWA)",

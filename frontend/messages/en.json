@@ -3928,6 +3928,8 @@
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
       "row_whatsapp_opt_in": "Send via WhatsApp",
+      "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
+      "phone_save_cta": "Save and enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Enable push notifications (PWA)",
