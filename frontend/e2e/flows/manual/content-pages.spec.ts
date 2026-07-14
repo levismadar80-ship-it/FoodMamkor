@@ -61,6 +61,47 @@ test.describe("/join — MEH-995 (MEH-1171 § content pages)", () => {
     await expect(cta).toHaveCount(1);
     await expect(cta).toHaveAttribute("href", /\/register\/producer$/);
   });
+
+  // item 2 — the 4 "how it works" steps + the link to the full process
+  test("shows the 4 how-it-works steps and links to the acceptance process", async ({ page }) => {
+    await initConsent(page);
+    await page.goto("/join");
+    for (const title of ["נרשמים", "שיחה אישית", "העמוד עולה", "לקוחות פונים ישירות"]) {
+      await expect(page.getByText(title, { exact: false }).first()).toBeVisible({ timeout: 15_000 });
+    }
+    await expect(page.getByRole("link", { name: "לתהליך הקבלה המלא" })).toHaveAttribute(
+      "href",
+      /\/about\/process$/,
+    );
+  });
+
+  // item 3 — the FAQ teaser ("כמה זה עולה?" + the free/no-fees answer) links to
+  // the businesses FAQ; the no-fees line is a BRAND lock
+  test("FAQ teaser shows the cost question + free answer and links to the businesses FAQ", async ({ page }) => {
+    await initConsent(page);
+    await page.goto("/join");
+    // the page renders responsive twins of each section — scope to the visible one
+    const faq = page.getByTestId("join-faq").locator("visible=true").first();
+    await expect(faq.getByText("כמה זה עולה?")).toBeVisible();
+    await expect(faq.getByText("חינם להצטרף ולהופיע. אין עמלות על עסקאות — לעולם.")).toBeVisible();
+    await expect(faq.getByRole("link", { name: "לכל השאלות" })).toHaveAttribute(
+      "href",
+      /\/about\/for-businesses$/,
+    );
+  });
+
+  // item 8 — the testimonial slot is a SELF-EXPLAINING placeholder ("בקרוב —
+  // עדות ראשונה" + a "here a real testimonial will appear" line), never a fake
+  // testimonial presented as genuine
+  test("the testimonial slot is a labeled placeholder, not a fake testimonial", async ({ page }) => {
+    await initConsent(page);
+    await page.goto("/join");
+    const slot = page.getByTestId("join-testimonial").locator("visible=true").first();
+    await expect(slot.getByText("בקרוב — עדות ראשונה")).toBeVisible();
+    await expect(
+      slot.getByText("כאן תופיע עדות אמיתית של בעלת עסק — מילה במילה, באישורה."),
+    ).toBeVisible();
+  });
 });
 
 test.describe("/share — MEH-1160 (MEH-1171 § content pages)", () => {
