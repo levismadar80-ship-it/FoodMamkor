@@ -20,12 +20,18 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
   const t = useTranslations("modals.location");
   const [searchValue, setSearchValue] = useState("");
   const [geoLoading, setGeoLoading] = useState(false);
+  // MEH-1192: inline (non-native) geolocation failure message. Replaces the
+  // old native alert() so a failed/denied locate keeps the user IN the modal
+  // with a path forward (pick a city) instead of a browser dead-end dialog.
+  const [geoError, setGeoError] = useState("");
   const overlayRef = useRef(null);
 
   useFocusReturn(open);
 
   useEffect(() => {
-    if (!open) return;
+    // Modal stays mounted (renders null) when closed, so state survives a
+    // close/reopen — clear any stale inline geo error on close (MEH-1192).
+    if (!open) { setGeoError(""); return; }
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -38,12 +44,28 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
     onClose();
   };
 
-  const handleSearchSubmit = () => {
-    if (searchValue.trim()) handleCityPick(searchValue.trim());
+  // MEH-1192: commit ONLY on submit. CitySearch's onChange fires per keystroke
+  // (correct — it drives the dropdown); onSubmit fires on Enter / dropdown pick
+  // and carries the chosen value as its argument. Same contract MapClient uses
+  // (MapClient.jsx:545). Read the argument, not searchValue — when a suggestion
+  // is picked CitySearch calls onChange(city) then onSubmit(city) in the same
+  // tick, so the searchValue state is not yet updated.
+  const handleSearchSubmit = (submitted) => {
+    const city = (typeof submitted === "string" ? submitted : searchValue).trim();
+    if (city) handleCityPick(city);
+  };
+
+  // MEH-1192: inline failure instead of a native alert / silent "מיקום נוכחי"
+  // filter. Keep the modal open, surface the message, and focus the city field.
+  const showGeoError = (message) => {
+    setGeoLoading(false);
+    setGeoError(message);
+    document.getElementById("location-modal-city")?.focus();
   };
 
   const handleGeo = () => {
     if (!navigator.geolocation) return;
+    setGeoError("");
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -58,17 +80,23 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
             data.address?.village ||
             data.address?.hamlet ||
             "";
-          if (city) handleCityPick(city);
-          else handleCityPick(t("current_location_fallback"));
+          // No city resolved → never commit the literal fallback string (it
+          // matches zero businesses). Ask the user to pick a city manually.
+          if (city) {
+            setGeoLoading(false);
+            handleCityPick(city);
+          } else {
+            showGeoError(t("geo_failure"));
+          }
         } catch {
-          handleCityPick(t("current_location_fallback"));
-        } finally {
-          setGeoLoading(false);
+          showGeoError(t("geo_failure"));
         }
       },
-      () => {
-        setGeoLoading(false);
-        alert(t("geo_failure"));
+      (err) => {
+        // PERMISSION_DENIED (code 1) → stay in the modal, distinct message,
+        // focus the city search. Mirrors MapClient.jsx:296. Technical failures
+        // (position unavailable / timeout, codes 2/3) → generic detect message.
+        showGeoError(err?.code === 1 ? t("geo_denied") : t("geo_failure"));
       },
     );
   };
@@ -107,12 +135,18 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
           value={searchValue}
           onChange={(v) => {
             setSearchValue(v);
-            if (v.trim()) handleCityPick(v.trim());
+            if (geoError) setGeoError("");
           }}
           onSubmit={handleSearchSubmit}
           placeholder={t("search_placeholder")}
           className="mb-4"
         />
+
+        {geoError && (
+          <p role="alert" className="text-sm text-red-600 -mt-2 mb-4">
+            {geoError}
+          </p>
+        )}
 
         {/* MEH-910: 2×2 grid on mobile balances the 4 city chips (was
             flex-wrap → 3 + 1 orphan at 390px); sm:flex restores the
