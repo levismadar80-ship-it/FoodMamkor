@@ -42,6 +42,7 @@ from app.schemas.schemas import (
 )
 from app.services.analytics import server_health
 from app.services.vacation_state import read_vacation_state
+from app.utils.sql import LIKE_ESCAPE, escape_like
 
 router = APIRouter(prefix="/admin", tags=["admin-extra"])
 
@@ -62,8 +63,13 @@ def list_users(
 ):
     q = db.query(User)
     if search:
-        like = f"%{search}%"
-        q = q.filter((User.email.ilike(like)) | (User.name.ilike(like)))
+        # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
+        # matches literally instead of acting as a wildcard (same class as F1).
+        like = f"%{escape_like(search)}%"
+        q = q.filter(
+            User.email.ilike(like, escape=LIKE_ESCAPE)
+            | User.name.ilike(like, escape=LIKE_ESCAPE)
+        )
     if role and role != "all":
         q = q.filter(User.role == role)
     users = q.order_by(User.created_at.desc()).limit(500).all()

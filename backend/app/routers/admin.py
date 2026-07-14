@@ -39,6 +39,7 @@ from app.services.license_validation import (
     ensure_license_for_categories,
 )
 from app.slug_utils import RESERVED_SLUGS
+from app.utils.sql import LIKE_ESCAPE, escape_like
 
 logger = logging.getLogger(__name__)
 
@@ -124,8 +125,13 @@ def list_producers(
         else:
             q = q.filter(Producer.status == status)
     if search:
-        like = f"%{search}%"
-        q = q.filter((Producer.name.ilike(like)) | (Producer.city.ilike(like)))
+        # F13 (MEH-1188): escape LIKE metacharacters so a user-supplied % / _
+        # matches literally instead of acting as a wildcard (same class as F1).
+        like = f"%{escape_like(search)}%"
+        q = q.filter(
+            Producer.name.ilike(like, escape=LIKE_ESCAPE)
+            | Producer.city.ilike(like, escape=LIKE_ESCAPE)
+        )
     return q.order_by(Producer.created_at.desc()).all()
 
 
