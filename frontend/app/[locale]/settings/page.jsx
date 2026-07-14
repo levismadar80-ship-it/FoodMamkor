@@ -25,6 +25,7 @@ import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
 import PasswordInput from "@/components/PasswordInput";
 import { firstFailureMessage } from "@/lib/passwordMessages";
+import { validateIsraeliPhone } from "@/lib/validators";
 import { env } from "@/lib/env";
 
 function SettingsLoadingFallback() {
@@ -175,15 +176,24 @@ function ProfileTab() {
   const [name, setName] = useState(user.name || "");
   const [city, setCity] = useState(user.city || "");
   const [phone, setPhone] = useState(user.phone || "");
+  // MEH-1190: track blur so the invalid-phone message shows only after the
+  // user leaves the field (mirrors the /register onBlur pattern), not on
+  // every keystroke — but canSave is gated on validity regardless of touch.
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
   const trimmedName = name.trim();
+  // MEH-1190: empty phone is allowed (optional field); a non-empty value must
+  // pass validateIsraeliPhone (reused from lib/validators — no new regex).
+  const phoneValid = !phone.trim() || validateIsraeliPhone(phone);
   const dirty =
-    trimmedName !== (user.name || "") || city.trim() !== (user.city || "");
-  const canSave = dirty && !!trimmedName;
+    trimmedName !== (user.name || "") ||
+    city.trim() !== (user.city || "") ||
+    phone.trim() !== (user.phone || "");
+  const canSave = dirty && !!trimmedName && phoneValid;
 
   const isOAuth = !!user.is_oauth;
   const oAuthProvider = user.google_id ? "Google" : user.apple_id ? "Apple" : null;
@@ -198,6 +208,7 @@ function ProfileTab() {
       const patch = {};
       if (trimmedName !== user.name) patch.name = trimmedName;
       if (city.trim() !== (user.city || "")) patch.city = city.trim();
+      if (phone.trim() !== (user.phone || "")) patch.phone = phone.trim();
       await updateProfile(patch);
       setMessage(t("saved_msg"));
       setTimeout(() => setMessage(null), 3000);
@@ -339,8 +350,10 @@ function ProfileTab() {
             </>
           }
           helperText={t("field_phone_hint")}
+          error={phoneTouched && !phoneValid ? t("field_phone_error") : undefined}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          onBlur={() => setPhoneTouched(true)}
           placeholder="050-1234567"
           dir="ltr"
         />

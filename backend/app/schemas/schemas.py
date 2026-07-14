@@ -1943,6 +1943,10 @@ class ProfileUpdate(BaseModel):
     email: EmailStr | None = None
     avatar_url: str | None = None
     city: str | None = Field(None, max_length=100)
+    # MEH-1190: phone is the only UI path for OAuth users (who never pass
+    # through UserRegister) to add a WhatsApp-alert number. Column already
+    # exists (models.py:55, String(20)); no migration.
+    phone: str | None = Field(None, max_length=20)
 
 
 class PasswordChange(BaseModel):
