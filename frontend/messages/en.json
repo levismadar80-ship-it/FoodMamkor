@@ -1043,7 +1043,6 @@
       }
     },
     "pane": {
-      "hint": "Tap a business marker to see details · scroll the list at right for all businesses",
       "search_this_area": "Search this area",
       "empty": {
         "heading": "No businesses in this area yet",
@@ -1093,8 +1092,7 @@
       "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
-      "show_map": "Show map"
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
     },
     "chip_scroll": {
       "category_aria": "Filter by category",

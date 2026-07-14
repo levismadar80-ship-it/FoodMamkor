@@ -63,7 +63,6 @@ export function useMapSync({
   categories,
   setAllProducers,
   // from useFirstVisitHints
-  setShowMapHint,
   setSheetSnap,
 }) {
   const t = useTranslations();
@@ -159,18 +158,13 @@ export function useMapSync({
   }, [setHoveredProducerId]);
 
   // docs/archive/MAP_IMPROVEMENTS.md #1 — map moved → show "search this area" button.
-  // Also dismisses the onboarding hint immediately: panning means the user
-  // has already engaged with the map so the hint is no longer useful, and
-  // rtl-ok: comment references the existing horizontal-center idiom in MapClient.jsx,
-  // does not introduce any className — the substring below is documentation-only.
-  // both elements share top-4 with the centered class — letting them stack is confusing.
+  // MEH-1193: the first-visit onboarding hint (and its dismiss-on-pan +
+  // session flag) was removed — the map is self-evident (clickable markers +
+  // visible list + drag handle), so handleMapMove now only flips the "search
+  // this area" affordance.
   const handleMapMove = useCallback(() => {
     setMapMoved(true);
-    if (typeof window !== "undefined" && !sessionStorage.getItem("map_tour_shown")) {
-      setShowMapHint(false);
-      sessionStorage.setItem("map_tour_shown", "1");
-    }
-  }, [setMapMoved, setShowMapHint]);
+  }, [setMapMoved]);
 
   const handleMapCanvasClick = useCallback(() => {
     setSelectedProducer(null);

@@ -11,8 +11,6 @@ import { PEEK } from "@/components/MapBottomSheet";
  * useProducersFeed / useMapFilters / useMapSync.
  *
  * Owns:
- *   - showMapHint (with onboarding hint timer + click-once dismiss)
- *     ← MapClient.jsx:97 + :135-154
  *   - legendOpen + legendRef (with click-outside dismiss)
  *     ← MapClient.jsx:79-80 + :82-89
  *   - visitedIds (seeded once on mount from getRecentlyViewedIds)
@@ -44,7 +42,6 @@ import { PEEK } from "@/components/MapBottomSheet";
  * cycle-inducing surfaces breaks both.
  */
 export function useFirstVisitHints() {
-  const [showMapHint, setShowMapHint] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
   // MEH-1010: legendRef is a callback ref collecting BOTH legend wrapper
   // nodes — MapPane mounts twice (desktop shell + mobile shell,
@@ -90,30 +87,7 @@ export function useFirstVisitHints() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [legendOpen]);
 
-  // MEH-58 Phase 1: onboarding hint — first visit only (sessionStorage).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem("map_tour_shown")) return;
-    const show = setTimeout(() => setShowMapHint(true), 3000);
-    const dismiss = setTimeout(() => {
-      setShowMapHint(false);
-      sessionStorage.setItem("map_tour_shown", "1");
-    }, 6000);
-    const onClick = () => {
-      setShowMapHint(false);
-      sessionStorage.setItem("map_tour_shown", "1");
-    };
-    window.addEventListener("click", onClick, { once: true });
-    return () => {
-      clearTimeout(show);
-      clearTimeout(dismiss);
-      window.removeEventListener("click", onClick);
-    };
-  }, []);
-
   return {
-    showMapHint,
-    setShowMapHint,
     legendOpen,
     setLegendOpen,
     legendRef,

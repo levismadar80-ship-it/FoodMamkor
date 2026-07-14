@@ -249,7 +249,6 @@ export default function MapPage() {
     setCommittedBounds: filters.setCommittedBounds,
     categories: feed.categories,
     setAllProducers: feed.setAllProducers,
-    setShowMapHint: hints.setShowMapHint,
     setSheetSnap: hints.setSheetSnap,
   });
 
@@ -389,7 +388,6 @@ export default function MapPage() {
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
       visitedIds={hints.visitedIds}
-      showMapHint={hints.showMapHint}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}

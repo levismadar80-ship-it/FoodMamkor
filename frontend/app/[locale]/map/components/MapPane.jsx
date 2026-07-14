@@ -40,9 +40,8 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
  * Map pane shared by desktop split-pane and mobile bottom-sheet
  * shells. Verbatim move of the `mapPane` JSX const from
  * MapClient.jsx:577-664 — the dynamic <MapComponent/>, the
- * showMapHint overlay, the "search this area" button, the
- * empty-state card, the desktop-only GPS center button, and the
- * collapsible category legend.
+ * "search this area" button, the empty-state card, the desktop-only
+ * GPS center button, and the collapsible category legend.
  *
  * RTL exception zone: this component carries 4 of MapClient's 6
  * `// rtl-ok` annotations. Physical left/right CSS is preserved
@@ -51,8 +50,8 @@ const MapComponent = dynamic(() => import("@/components/MapComponent"), {
  * "Intentional physical-property exceptions" list.
  *
  * Z-index tokens preserved verbatim:
- *   z-[800] legend ・ z-[900] showMapHint ・ z-[1000] (×3) for
- *   "search this area", empty-state card, and desktop GPS button.
+ *   z-[800] legend ・ z-[1000] (×3) for "search this area",
+ *   empty-state card, and desktop GPS button.
  *   See .claude/rules/rtl.md → "Map z-index tokens".
  */
 export default function MapPane({
@@ -67,7 +66,6 @@ export default function MapPane({
   mapRef,
   visitedIds,
   // overlay state + handlers
-  showMapHint,
   mapMoved,
   onSearchThisArea,
   visibleProducers,
@@ -99,15 +97,6 @@ export default function MapPane({
         mapRef={mapRef}
         visitedIds={visitedIds}
       />
-      {showMapHint && (
-        <div
-          // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-[900] px-5 py-2.5 rounded-md bg-primary-dark text-white text-sm font-medium shadow-lg animate-[slide-up_0.25s_ease-out] pointer-events-none"
-          role="status"
-        >
-          {t("map.pane.hint")}
-        </div>
-      )}
       {mapMoved && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
