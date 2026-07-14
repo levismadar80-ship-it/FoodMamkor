@@ -166,14 +166,18 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
           {/* Language — not a button (embeds the LanguageToggle control 1:1).
               MEH-908: dropped the redundant leading Globe + "שפה" label; the
               LanguageToggle already renders its own Globe (single control),
-              and "עב / EN" reads as the language affordance on its own. */}
+              and "עב / EN" reads as the language affordance on its own.
+              MEH-1196: dropped the leftover `ms-auto` wrapper span that pushed
+              this row to the OPPOSITE (END) edge from its siblings — a stale
+              relic of the pre-MEH-908 layout where the "שפה" label sat at the
+              start. The Globe (LanguageToggle) now leads at the START edge and
+              the "עב / EN" text follows, reusing staticRowCls's flex + gap-3 so
+              it aligns with the Heart / Gear / SignOut rows by construction. */}
           <li className={liCls}>
             <div className={staticRowCls + " text-background/65 text-[13.5px]"}>
-              <span className="ms-auto inline-flex items-center gap-1.5">
-                <span className="font-english text-[13px] text-background/70" dir="ltr" aria-hidden="true">
-                  עב / EN
-                </span>
-                <LanguageToggle className="text-background hover:bg-white/10" />
+              <LanguageToggle className="text-background hover:bg-white/10" />
+              <span className="font-english text-[13px] text-background/70" dir="ltr" aria-hidden="true">
+                עב / EN
               </span>
             </div>
           </li>
