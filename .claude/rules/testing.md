@@ -81,10 +81,38 @@ are needed — an earlier version of this note claimed MEH-736 added them to sat
 ruleset only ever gated on the 2 aggregators). Full mechanism:
 [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md) → "Required checks".
 
-**`Playwright E2E (Vercel preview)` is NOT a required check.** It lives in
-`e2e.yml`, triggered by `deployment_status` (after the Vercel preview deploys),
-and job-skips on docs diffs (`e2e.yml:54-60`). **Docs-only PRs: don't poll E2E.**
-Merge when the **2 required aggregator gates** are green.
+**`Playwright E2E (Vercel preview)` (mobile Pixel 5 + VRT parity) runs on every
+PR to staging.** It lives in `e2e.yml`, triggered by `pull_request` + `push` on
+`staging` (`e2e.yml:33-37` — the old `deployment_status` trigger was dropped when
+MEH-1044 moved E2E to a local `next start` target). The E2E job is **not yet**
+wired into the required-check set — the sanctioned way to make it block merge is
+the `E2E gate (required)` aggregator (job id `e2e-gate`, `always()` +
+`needs: [filter, e2e]`) whose YAML is staged in
+[docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md) for Sapir to apply
+(`.github/workflows/**` is CC-deny, MEH-671). Adding the E2E job *directly* to the
+ruleset was tried on 2026-07-13 and reverted the same day because it re-introduced
+MEH-892 (a skipped-but-directly-required job reads as `Expected` → blocks
+docs-only).
+
+> **⚠️ `e2e.yml`'s paths-filter does NOT currently skip docs-only** — proven by
+> MEH-1201's own CI (PR #1741, a docs-only diff, run `29283974004`): the `filter`
+> job emitted `frontend = true` for 5 `.md` files and the full suite ran (and was
+> red). Root cause: `e2e.yml`'s filter uses `predicate-quantifier: some` with
+> negation patterns (`!**/*.md`, `!docs/**`, …), under which each negation is an
+> additive OR that matches nearly everything — so the MEH-499 "docs-skip" never
+> worked. (`pr-checks.yml`'s `changes` job has **no** negations and correctly
+> skips docs — which is why the 2 required aggregators stayed green.) **Therefore
+> the E2E gate must NOT be added to the ruleset until (A) the `e2e.yml` filter is
+> fixed to actually skip docs-only, and (B) the suite is green.** Both fixes +
+> evidence are in [docs/ci/e2e-gate.patch.md](../../docs/ci/e2e-gate.patch.md)
+> ("תנאי מוקדם A/B").
+
+Governance + gate matrix:
+[ADR-028](../../docs/decisions/ADR-028-qa-gates-per-tier.md) (see Appendix A
+amendment). **Docs-only PRs: don't poll E2E** — merge when the **2 required
+aggregator gates** are green (a third, `E2E gate (required)`, joins them once
+Sapir fixes the filter, greens the suite, applies the patch, and adds the context
+to ruleset 15240090).
 
 **Transient "waiting for status / expected" right after push** = the required gates
 are still registering (workflow startup), **not** a failure. Let them settle, then
