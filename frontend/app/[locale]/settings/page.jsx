@@ -796,7 +796,12 @@ function BusinessTab() {
           always-visible pointer to the real dashboard (un-gated from
           status === "approved" — owners need it while pending too). */}
       <div className="text-center">
-        <Link href="/producer/dashboard" className="text-sm text-primary hover:underline">
+        {/* MEH-1209: the copy is "ערכו פרופיל עסק" — it must land on the edit
+            surface, not the dashboard overview. Repointed to /edit so every
+            entry into editing (owner bar, completeness card, this link) is
+            consistent (the MEH-963 pointer intent is preserved — /edit is
+            reachable from the dashboard, and the copy now matches the target). */}
+        <Link href="/producer/dashboard/edit" className="text-sm text-primary hover:underline">
           {t("edit_profile_link")}
         </Link>
       </div>
