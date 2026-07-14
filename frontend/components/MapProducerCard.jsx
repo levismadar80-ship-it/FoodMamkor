@@ -30,22 +30,11 @@ export default function MapProducerCard({ producer, active, onClick }) {
   const [thumbIsWide, setThumbIsWide] = useState(false);
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
-  const priceLabel = p.starting_price_label || p.price_range;
-  // MEH-934: split the price so only the numeric run renders Cormorant italic,
-  // bidi-isolated — fixes "מ-35₪" reversing in RTL. The ₪ is excluded from the
-  // prefix class so a shekel-first label ("₪35") keeps the currency with the
-  // number in Cormorant rather than splitting it off.
-  // 3-part split (prefix)(digitRun)(suffix): the old 2-part regex sent
-  // everything after the first digit — including Hebrew unit words ("/בקבוק")
-  // — into the Cormorant <bdi>; Cormorant has no Hebrew glyphs → fallback
-  // garble. Brand LOCK: Cormorant = Latin/numerals ONLY. The digit run keeps
-  // . , ₪ and - (ranges like "35-50") with the numerals; prefix + suffix stay
-  // in the Hebrew body font. A label with no digits at all renders whole in
-  // the body font (priceMatch null → prefix fallback).
-  const priceMatch = priceLabel ? priceLabel.match(/^([^\d₪]*)([\d.,₪-]+)(.*)$/) : null;
-  const pricePrefix = priceMatch ? priceMatch[1] : priceLabel || "";
-  const priceNumber = priceMatch?.[2] ?? "";
-  const priceSuffix = priceMatch?.[3] ?? "";
+  // MEH-1210: price removed from the map card — Mehamakor is an editorial
+  // directory, not a marketplace (DNA-LOCK); starting_price_label was a
+  // misleading cheapest-product anchor. Exact prices stay at PRODUCT level
+  // inside /producer. The MEH-934 Cormorant-split regex was only needed to
+  // render this price and is deleted with it.
   const isVerified = p.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
   const rating = Number(p.avg_rating || 0);
   const reviewsCount = p.reviews_count || 0;
@@ -162,23 +151,16 @@ export default function MapProducerCard({ producer, active, onClick }) {
               )}
             </div>
           )}
-          {/* Uniform-template slot 4 — ONE meta line: {city} · {distance} · {price}.
-              Replaces the old standalone distance <p> and the separate price line. */}
-          {(p.city || distanceLabel || priceLabel) && (
+          {/* Uniform-template slot 4 — ONE meta line: {city} · {distance}.
+              MEH-1210: the price segment was removed (editorial directory, not a
+              marketplace — DNA-LOCK). */}
+          {(p.city || distanceLabel) && (
             <p className="text-[13px] leading-5 text-fg-muted line-clamp-1 mt-0.5" data-testid="map-meta-line">
               {p.city}
               {distanceLabel && (
                 <>
                   {p.city ? " · " : ""}
                   <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
-                </>
-              )}
-              {priceLabel && (
-                <>
-                  {p.city || distanceLabel ? " · " : ""}
-                  {pricePrefix && <span className="font-body-md">{pricePrefix}</span>}
-                  {priceNumber && <bdi className="font-english italic numeric">{priceNumber}</bdi>}
-                  {priceSuffix && <span className="font-body-md">{priceSuffix}</span>}
                 </>
               )}
             </p>

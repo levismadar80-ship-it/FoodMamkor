@@ -207,7 +207,8 @@ describe("ProducerCard — Phase B anatomy", () => {
 
   // MEH-1142: the decorative primary-contact-method hint was removed from the
   // card footer (it read as a broken button; live contact CTAs live on
-  // /producer). The footer now renders price only.
+  // /producer). MEH-1210 later removed the price too, so the footer is gone
+  // entirely — the hint must still never appear.
   it("never renders the decorative primary-method hint", () => {
     render(<ProducerCard producer={fullProducer} />);
     expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
@@ -220,22 +221,23 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("truncates the price label (narrow max-width)", () => {
+  // MEH-1210: the price footer was removed — Mehamakor is an editorial
+  // directory, not a marketplace (DNA-LOCK), and starting_price_label (the
+  // cheapest product) was a misleading anchor. The card must render NO price
+  // even when price_range / starting_price_label are populated.
+  it("never renders a price, even when price_range is populated", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price.className).toMatch(/max-w-/);
+    expect(screen.queryByText("₪40-80")).not.toBeInTheDocument();
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
-  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
-  it("bidi-isolates the price label with dir=ltr", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price).toHaveAttribute("dir", "ltr");
-  });
-
-  it("hides price when both price_range and starting_price_label are null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
+  it("renders no price when the producer has starting_price_label only", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, price_range: null, starting_price_label: "מ-35₪" }}
+      />,
+    );
+    expect(screen.queryByText(/35/)).not.toBeInTheDocument();
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 

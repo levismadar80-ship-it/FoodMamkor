@@ -166,7 +166,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const priceLabel = producer.price_range || producer.starting_price_label;
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
@@ -358,23 +357,12 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {/* MEH-1142: footer is price-only — the decorative primary-contact-method
-            hint was removed (it read as a broken button; live contact CTAs are on
-            /producer). mt-auto keeps the footer pinned to the card bottom; the
-            row always renders so layout stays stable when priceLabel is absent. */}
-        <div className="mt-auto pt-3">
-          {priceLabel && (
-            // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
-            // so it can't flip inside RTL — mirrors the ProducerCard.jsx
-            // distance-pill and rating idiom (the only prior unwrapped numeric span).
-            <span
-              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px] inline-block"
-              dir="ltr"
-            >
-              {priceLabel}
-            </span>
-          )}
-        </div>
+        {/* MEH-1210: the price footer was removed — Mehamakor is an editorial
+            directory, not a marketplace (DNA-LOCK), and the rendered
+            starting_price_label (cheapest product) was a misleading anchor.
+            Exact prices stay at PRODUCT level inside /producer. Card heights
+            stay equal via grid `align-items:stretch` + `h-full` on the
+            <article> above (MEH-1142), which never depended on this footer. */}
       </div>
     </article>
   );

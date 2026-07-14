@@ -143,7 +143,7 @@ describe("MapProducerCard — uniform card template", () => {
     expect(container.querySelectorAll("[data-testid='map-meta-line']").length).toBeLessThanOrEqual(1);
   });
 
-  it("renders ONE meta line: city · distance · price", () => {
+  it("renders ONE meta line: city · distance (no price — MEH-1210)", () => {
     window.sessionStorage.setItem(
       "user_location",
       JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
@@ -156,66 +156,40 @@ describe("MapProducerCard — uniform card template", () => {
     const meta = screen.getByTestId("map-meta-line");
     expect(meta.textContent).toMatch(/^ירושלים · /);
     expect(meta).toContainElement(screen.getByTestId("map-distance-pill"));
-    expect(meta.textContent).toContain("מ-");
-    expect(meta.textContent).toContain("/בקבוק");
+    // price segment removed — none of the price string may appear
+    expect(meta.textContent).not.toContain("מ-");
+    expect(meta.textContent).not.toContain("25");
+    expect(meta.textContent).not.toContain("בקבוק");
   });
 });
 
-describe("MapProducerCard — price RTL split (MEH-934)", () => {
-  it("splits a Hebrew-prefixed price: prefix in body font, number in Cormorant <bdi>", () => {
-    render(<MapProducerCard producer={{ ...producer, price_range: "מ-35₪" }} />);
-    const prefix = screen.getByText("מ-");
-    expect(prefix.tagName).toBe("SPAN");
-    expect(prefix).toHaveClass("font-body-md");
-    const number = screen.getByText("35₪");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
+// MEH-1210: the map card no longer renders a price at all — Mehamakor is an
+// editorial directory, not a marketplace (DNA-LOCK). The MEH-934 Cormorant
+// price-split regex was deleted with the price. These tests pin its absence.
+describe("MapProducerCard — no price (MEH-1210)", () => {
+  it("renders no price even when price_range is populated", () => {
+    render(<MapProducerCard producer={{ ...producer, city: "ירושלים", price_range: "מ-35₪" }} />);
+    const meta = screen.getByTestId("map-meta-line");
+    expect(meta.textContent).not.toContain("35");
+    expect(meta.textContent).not.toContain("₪");
   });
 
-  it("keeps a shekel-first label (₪35) whole in the <bdi> with no prefix span", () => {
-    const { container } = render(<MapProducerCard producer={{ ...producer, price_range: "₪35" }} />);
-    expect(screen.queryByText("מ-")).not.toBeInTheDocument();
-    expect(container.querySelector("span.font-body-md")).toBeNull();
-    const number = screen.getByText("₪35");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
-  });
-
-  it("renders a pure-numeric range (35-50) entirely in the <bdi>", () => {
-    render(<MapProducerCard producer={{ ...producer, price_range: "35-50" }} />);
-    const number = screen.getByText("35-50");
-    expect(number.tagName).toBe("BDI");
-  });
-
-  it("keeps a Hebrew unit suffix (מ-25/בקבוק) OUT of the Cormorant <bdi>", () => {
-    const { container } = render(
-      <MapProducerCard producer={{ ...producer, price_range: "מ-25/בקבוק" }} />,
+  it("renders no price even when starting_price_label is populated", () => {
+    render(
+      <MapProducerCard
+        producer={{ ...producer, city: "ירושלים", starting_price_label: "מ-25/בקבוק" }}
+      />,
     );
-    const number = screen.getByText("25");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
-    const suffix = screen.getByText("/בקבוק");
-    expect(suffix.tagName).toBe("SPAN");
-    expect(suffix).toHaveClass("font-body-md");
-    expect(suffix).not.toHaveClass("font-english");
-    // Brand LOCK: Cormorant (.font-english) = Latin/numerals ONLY — no Hebrew
-    // may ever land inside it (it has no Hebrew glyphs → fallback garble).
-    for (const el of container.querySelectorAll(".font-english")) {
-      expect(el.textContent).not.toMatch(/[֐-׿]/);
-    }
+    const meta = screen.getByTestId("map-meta-line");
+    expect(meta.textContent).not.toContain("25");
+    expect(meta.textContent).not.toContain("בקבוק");
   });
 
-  it("renders a digitless label (חינם) whole in the body font with no <bdi>", () => {
+  it("renders no <bdi> price node when the producer has no rating (bdi was price-only)", () => {
     const { container } = render(
-      <MapProducerCard producer={{ ...producer, price_range: "חינם" }} />,
+      <MapProducerCard producer={{ ...producer, price_range: "₪35" }} />,
     );
-    const label = screen.getByText("חינם");
-    expect(label).toHaveClass("font-body-md");
-    expect(container.querySelector("bdi")).toBeNull();
-  });
-
-  it("renders no price element when the producer has no price", () => {
-    const { container } = render(<MapProducerCard producer={producer} />);
+    // with no avg_rating the rating <bdi> is absent, so any <bdi> would be a price leak
     expect(container.querySelector("bdi")).toBeNull();
   });
 });
