@@ -95,3 +95,60 @@
 - לעדכן template 06 (שורת ה-DoD "נבדק בנייד") — templates 00-08 חיים מחוץ ל-repo, זו הערת PR ולא עריכת קובץ.
 - אם required checks השתנו (Appendix A הופעל) — לעדכן branch-protection בהתאם.
 - אינדקס ה-ADR ב-`docs/decisions/README.md` מפגר: חסרים ADR-027 ו-ADR-028. להוסיף שתי שורות index (מחוץ ל-scope של MEH-1185 — verification נעל 4 קבצים).
+
+## Amendment (2026-07-13) — Appendix A option 1 הוחל ובוטל; המסלול המאושר = E2E gate aggregator (MEH-1201)
+
+**מתקן:** Phase 0b/0e (למעלה) + Appendix A option 1.
+
+**מה קרה (13/07, ערב):** ספיר הוסיפה את ה-context הישיר `Playwright E2E (Vercel
+preview)` ל-required checks של ה-`protect-staging` ruleset (ID 15240090), לפי
+Appendix A option 1. **ההנחה שם — ש-job שמדולג ב-paths-filter מדווח `success` ולכן
+docs-only ימשיך להתמזג — שגויה בריפו הזה.** MEH-892 (Done, 29/06) כבר הוכיח ב-merge
+אמיתי (`405: 6 of 6 required status checks have not succeeded: 5 expected`) ש-job
+שדולג ורשום **ישירות** כ-required נספר כ-`Expected` וחוסם תחת ה-ruleset. הוספת
+ה-job הישיר החזירה בדיוק את הבאג הזה. **ספיר הסירה את ה-context מה-ruleset באותו
+ערב** — המצב הנוכחי: E2E רץ, מפרסם `Playwright QA — PASS/FAIL` על ה-PR
+(`e2e.yml:176-214`), לא חוסם.
+
+**המסקנה:** Appendix A **option 1 נדחית** (היא שוברת docs-only). המסלול המאושר הוא
+**E2E gate aggregator** — job `e2e-gate` בשם `E2E gate (required)`, `if: always()`
++ `needs: [filter, e2e]`, בתבנית `ci-gate`/`deploy-gate` הקיימת. ה-aggregator תמיד
+רץ ומדווח `success` גם כש-`e2e` דולג (docs-only), כך שה-context הנרשם ל-ruleset
+לעולם אינו `Expected`. זה בדיוק מה ש-MEH-892 העביר את הריפו אליו; ה-option הישיר
+עקף את הארכיטקטורה הזו.
+
+**מה בוצע ב-MEH-1201:**
+- ה-YAML של ה-aggregator מוכן ב-`docs/ci/e2e-gate.patch.md` (ספיר מדביקה ל-`e2e.yml`
+  — `.github/workflows/**` הוא CC-deny, MEH-671).
+- אחרי ההדבקה: ספיר מוסיפה את ה-context **`E2E gate (required)`** (ולא את
+  `Playwright E2E (Vercel preview)`) ל-required checks של ruleset 15240090.
+- זה משלים את הפיכת ה-mobile+VRT לחוסם התלויה ב-MEH-991 Chunk 3 (Phase 0e / residual
+  risk #5) — בלי לשבור docs-only.
+
+**עדכון לטבלת ה-tier (YELLOW, שורה 41):** VRT parity "רץ-ירוק-אך-לא-חוסם" הופך
+ל-active gate כשספיר מחילה את ה-E2E gate aggregator (לא בהוספת ה-job הישיר ל-ruleset).
+Appendix A option 2 (העברת job VRT-scoped ל-`pr-checks.yml` תחת `ci-gate`) נשארת
+חלופה שנדחתה — עלות הרצת Playwright כפולה; ה-aggregator ב-`e2e.yml` עדיף.
+
+### תיקון הנחת Phase-0: ה-paths-filter של `e2e.yml` אינו מדלג docs-only (MEH-1201, נמצא ב-CI)
+
+Phase-0 של ה-ADR הזה (Gate inventory שורה 23, ו-"נקודת המפתח" Phase 0b/0e) הניח
+ש-`e2e.yml` מדלג docs-only דרך paths-filter (`e2e.yml:71-74`). **ההנחה שגויה —
+הופרכה ב-CI של PR #1741 (MEH-1201, docs-only).** ה-run `29283974004`, job `Paths
+filter`: `predicate-quantifier: some` + 5 קבצי `.md` → `frontend = true`, וה-E2E
+רץ (ונכשל: `4 failed · 1 flaky · 100 passed`, הכשלים ב-`/producer/[id]` a11y + VRT
+parity — MEH-991 Chunk 3). שורש הבעיה: תחת `some`, דפוסי-השלילה (`!**/*.md`,
+`!docs/**`, `!.changeset/**`, `!CHANGELOG.md`) נבדקים כ-OR נפרד וכל אחד מהם מותאם
+לכמעט כל קובץ → ה-"docs-skip" של MEH-499 מעולם לא עבד.
+
+**מסקנה לשער:** ה-aggregator לבדו אינו מספיק. שני תנאים מוקדמים חובה **לפני** הוספת
+`E2E gate (required)` ל-ruleset (אחרת כל PR של docs-only ייחסם — בדיוק כשל MEH-892
+משורש אחר):
+
+- **A — לתקן את ה-paths-filter** ב-`e2e.yml:62-74`: להסיר את דפוסי-השלילה ולמרר את
+  ה-job `changes` ב-`pr-checks.yml:117-121` (ללא שלילות — פולט נכון `frontend=false`
+  על docs). YAML מוכן ב-`docs/ci/e2e-gate.patch.md` ("תנאי מוקדם A".
+- **B — לייצב את הסוויטה**: 4 הכשלים ב-`/producer/[id]` (MEH-991 Chunk 3 parity +
+  a11y) חייבים להיסגר; אחרת השער אדום גם על non-docs.
+
+Residual-risk #5 למעלה ("VRT אינו חוסם merge כרגע") נשאר בתוקף עד שכל אלה נסגרים.
