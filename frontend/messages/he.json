@@ -2395,16 +2395,16 @@
   "modals": {
     "location": {
       "title": "מאיפה נתחיל?",
-      "subtitle": "נמצא עסקים קרובים",
+      "subtitle": "בחרו עיר או שתפו מיקום — ונציג בתי עסק מקומיים באזור שלכם",
       "search_label": "חיפוש עיר",
       "search_placeholder": "הקלידו שם עיר...",
       "aria_label": "בחירת עיר",
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
       "geo_loading": "בחיפוש...",
-      "geo_failure": "לא הצלחנו לקבל את המיקום",
-      "current_location_fallback": "מיקום נוכחי",
-      "skip": "דלגו לעכשיו",
+      "geo_denied": "אין לנו גישה למיקום — אפשר לבחור עיר ידנית",
+      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית",
+      "skip": "לא עכשיו",
       "popular_cities": {
         "tel_aviv": "תל אביב",
         "jerusalem": "ירושלים",

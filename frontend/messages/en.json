@@ -2373,16 +2373,16 @@
   "modals": {
     "location": {
       "title": "Where are you?",
-      "subtitle": "We'll find businesses near you",
+      "subtitle": "Pick a city or share your location — we'll show local businesses near you",
       "search_label": "Search city",
       "search_placeholder": "Type a city name...",
       "aria_label": "Choose a city",
       "close_aria": "Close",
       "geo_button": "Near me",
       "geo_loading": "Finding...",
-      "geo_failure": "We couldn't get your location",
-      "current_location_fallback": "Current location",
-      "skip": "Skip for now",
+      "geo_denied": "We don't have location access — pick a city instead",
+      "geo_failure": "We couldn't detect your location — pick a city instead",
+      "skip": "Not now",
       "popular_cities": {
         "tel_aviv": "Tel Aviv",
         "jerusalem": "Jerusalem",
