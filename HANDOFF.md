@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-14 — MEH-1203: /favorites grid parity + FAB gate (F2 held as STOP) — draft PR
+
+- **Branch:** `feature/meh-1203-favorites-grid-parity` off `origin/staging` (SHA `e57f9a73`, divergence 0 at cut). YELLOW tier. `Closes MEH-1203`. Harness-designated `claude/*` batch branch rejected by the MEH-1141 gate → used the issue `feature/*` name.
+- **Shipped (F1 + F3, 3 files + test):** F1 grid `FavoritesClient.jsx:130` → `grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4` (parity with `ProducersClient.jsx:489`). F3 `ChatWidgetLazy.jsx` `if (pathname === "/favorites") return null;` + docstring + new vitest case. Bell tap-target bumped to CardHeart's density variant.
+- **F2 held (STOP condition a+b):** favorites uses the shared central `ProducerCard`; its Leaf+`BRAND_NAME` placeholder (`ProducerCard.jsx:234-245`, MEH-643 canon) is the SAME one `/producers` + homepage render. The spec's "leaf-only" canon is the **product-card** placeholder (MEH-1138/MEH-1168 P1) — a different component. Removing the wordmark = central-component edit affecting 3 surfaces + would break the F1 parity goal. Surfaced to Sapir; not touched.
+- **Verify:** build exit 0 · vitest 7/7 (ChatWidgetLazy) · route-mocked Playwright 375 (2 cols) + 1440 (4 cols), FAB absent (`qa-artifacts/MEH-1203/`, WebP 76 KB). **Not auto-merged** — F2 decision + merge is Sapir's.
+- **Next (Sapir):** decide F2 (non-bug vs separate central-design ticket) → un-draft + merge if F1+F3 accepted.
+
 ## 2026-07-13 — MEH-1183: category-card bridge photos + glyph fallback — MERGED (Sapir "MERGE" 14/07)
 
 - **Branch:** `feature/meh-1183-category-image-fallback` off `origin/staging` (divergence 0 at cut; harness-designated `claude/*` name rejected by the MEH-1141 branch-name gate → used the issue `feature/*` name). **YELLOW + visual.** `Refs MEH-1175` (parent) BEFORE `Closes MEH-1183` (child).
