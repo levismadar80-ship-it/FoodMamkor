@@ -4016,7 +4016,8 @@
       "email_oauth_provider_fallback": "external",
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
-      "field_phone_hint": "Notifications coming soon"
+      "field_phone_hint": "For WhatsApp updates from businesses you follow",
+      "field_phone_error": "Invalid phone number"
     },
     "business": {
       "tabpanel_aria": "My business",

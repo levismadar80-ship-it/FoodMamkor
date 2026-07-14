@@ -4038,7 +4038,8 @@
       "email_oauth_provider_fallback": "חיצוני",
       "email_change_hint": "לשינוי אימייל, פנו לתמיכה",
       "field_phone_label": "טלפון",
-      "field_phone_hint": "נוסיף בקרוב notifications"
+      "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
+      "field_phone_error": "מספר טלפון לא תקין"
     },
     "business": {
       "tabpanel_aria": "העסק שלי",
