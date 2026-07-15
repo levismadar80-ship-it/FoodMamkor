@@ -239,8 +239,6 @@ export function HomeCTA() {
   return (
     <section className="bg-background text-text py-20">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        {/* Gold eyebrow rule — 64px. mx-auto = sanctioned horizontal-center idiom (text-center section), not a physical RTL prop. */}
-        <span className="block w-16 h-px bg-accent mx-auto mb-6" aria-hidden="true" />
         <h2 className="font-headline-display text-headline-display mb-4">
           {t("home.cta.heading")}
         </h2>
