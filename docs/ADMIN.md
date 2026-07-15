@@ -123,6 +123,33 @@ npx playwright test             # E2E
 **Source of truth ב-DB:** ראה `docs/DATA.md` סקציית "Analytics" —
 `producer_page_views`, `producer_whatsapp_clicks`, `users.last_active_at`.
 
+## §10 "הכירו בית עסק" — תלות דאטה + הדלקה (MEH-1214)
+
+בלוק §10 בדף הבית (`HomeFeaturedProducer`) — הפעימה הויזואלית היחידה בין
+רשת בתי העסק ל-CTA התחתון (תמונה 4:5 + ציטוט + סיפור + CTAs) — **מרנדר
+`null` בשקט** כשאין לו קלט מתאים. זה **לא באג** — self-hide מתוכנן, בלי
+placeholder בדוי (LOCK: "מגזין, לא marketplace"; אין סטוק בבאנד העריכתי).
+
+**תנאי הרינדור (שני השדות ביחד):** §10 נדלק רק כשקיים בית עסק עם
+`is_recommended = true` **וגם** `short_description` לא-ריק. אם אין כזה →
+`null` → הבלוק נעלם והדף מציג שלושה בלוקים טקסטואליים ברצף (visual pacing gap).
+
+שרשרת הקוד (אומת ב-file:line):
+- `frontend/lib/featured-producer.js:12-15` — `selectFeaturedProducer` בוחר את
+  בית העסק הראשון עם `is_recommended` **וגם** `short_description` (אחרי `trim`).
+- `frontend/lib/use-home-page.js:365` — `featuredProducer = selectFeaturedProducer(producers)`.
+- `frontend/app/[locale]/home/HomeStaticBlocks.jsx:199` — `if (!featured) return null`.
+
+**איך מדליקים (פעולת אדמין, אין קוד):** `/admin/producers` → בחרי בית עסק →
+סמני **מומלץ** (`is_recommended`) + ודאי ש-`short_description` מלא ועורכי
+(הציטוט של §10 מגיע ממנו). §10 נדלק מיד ברענון, בלי deploy.
+
+- **staging:** בית עסק דמו זמין — `/ruach-hasadeh` (MEH-1198). סמני אותו מומלץ
+  כדי להדליק את §10 ל-design QA / VRT (הבלוק מעולם לא נראה מרונדר עם דאטה אמיתית).
+- **production:** רק בית עסק **אמיתי** עם סיפור. חסום עד MEH-409 (10 בתי העסק
+  הראשונים). ⚠️ **בית העסק הדמו `/ruach-hasadeh` לא מסומן מומלץ ב-prod** — ראה
+  MEH-1189 (audit ישויות בדיקה לפני launch).
+
 ## Handover checklist (MEH-21)
 
 אם את ממלאת תפקיד admin במהמקור — הרשימה הזאת היא ה-minimum viable
