@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-15 — MEH-450: two UI fixes (recently-viewed strip + CTA gold rule) — PR 1 (GREEN, UI-only)
+
+- **Branch:** `feature/meh-450-remove-recently-viewed-list` off `origin/staging` (divergence 0 at cut). GREEN tier, UI-only deletion. `Closes MEH-450`. **Branch note:** harness-designated `claude/meh-450-ui-fixes-wl6tyy` rejected by the MEH-1141 branch-name gate (no `claude/*`); used the issue `feature/*` name per task constraints. Two atomic PRs (this = PR 1).
+- **PR 1 — /producers: remove `RecentlyViewedStrip`.** It sat between filter chips and the results counter/grid; on a 0-result filter it read as false results (Baymard/NN-g). **Phase 0 (file:line):** render at `ProducersClient.jsx:401`, local def at `:538`; grep confirmed `Image`/`getRecentlyViewedIds`/`optimizeCloudinary`/`BRAND_NAME` used ONLY inside the strip (orphaned on removal), while `Leaf`(:662)+`Link`(:628+) stay. Removed render + def + 4 orphaned imports — pure deletion (−76 LOC). Layout now: filter chips → counter/active-filters row → grid; zero-result empty state directly under counter (above the fold on mobile). Homepage recently-viewed (`HomeStaticBlocks.jsx` `HomeRecentlyViewed`) untouched.
+- **Verify:** `npm run build` exit 0 (compiled 17.7s); `grep -rn RecentlyViewedStrip frontend/` → only a stale comment in `__tests__/PaginationCounter.test.jsx:9` (out of scope, left); full vitest 1061 pass / 14 skip (incl. the ProducersClient-rendering PaginationCounter test).
+- **PR 2 (next):** remove decorative gold eyebrow rule above the HomeCTA heading in `HomeStaticBlocks.jsx`.
+
 ## 2026-07-13 — MEH-1183: category-card bridge photos + glyph fallback — MERGED (Sapir "MERGE" 14/07)
 
 - **Branch:** `feature/meh-1183-category-image-fallback` off `origin/staging` (divergence 0 at cut; harness-designated `claude/*` name rejected by the MEH-1141 branch-name gate → used the issue `feature/*` name). **YELLOW + visual.** `Refs MEH-1175` (parent) BEFORE `Closes MEH-1183` (child).
