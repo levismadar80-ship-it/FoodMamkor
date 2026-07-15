@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { MagnifyingGlass, MapPin, Plant, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import Breadcrumb from "@/components/Breadcrumb";
@@ -13,11 +12,8 @@ import LocationModal from "@/components/LocationModal";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
 import { useUserCity } from "@/lib/use-user-city";
-import { getRecentlyViewedIds } from "@/lib/recently-viewed";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
-import { optimizeCloudinary } from "@/lib/cloudinary";
-import { BRAND_NAME } from "@/lib/constants";
 import api from "@/lib/api";
 import { CategoriesResponseSchema } from "@/lib/api-schemas";
 
@@ -395,11 +391,6 @@ export default function ProducersClient({
         />
       </div>
 
-      {/* Recently viewed strip — MEH-922: moved below the search box + filter
-          chips (was above them, between the H1 and the search) so the browse
-          tools lead the page; self-hides when there's no view history. */}
-      <RecentlyViewedStrip />
-
       {/* Results counter + active filters — MEH-1186: one control line.
           The removable chips (category ×, toggle ×, city ×, search ×) and
           "נקו הכל" sit beside the counter, replacing the full-bleed green
@@ -532,73 +523,6 @@ export default function ProducersClient({
         onSelectCity={handleCitySelected}
       />
     </>
-  );
-}
-
-function RecentlyViewedStrip() {
-  const t = useTranslations("producers.recently_viewed");
-  const [producers, setProducers] = useState([]);
-
-  useEffect(() => {
-    const ids = getRecentlyViewedIds();
-    if (!ids.length) return;
-    Promise.all(
-      ids.map((id) =>
-        api
-          .get(`/producers/${id}`)
-          .then((r) => r.data)
-          .catch(() => null),
-      ),
-    ).then((results) => setProducers(results.filter(Boolean)));
-  }, []);
-
-  if (!producers.length) return null;
-
-  // MEH-1186: mini-cards (thumb + name + city) matching the homepage
-  // recently-viewed pattern (HomeStaticBlocks.jsx HomeRecentlyViewed,
-  // MEH-912/913) — replaces the old text-pill list. Imageless producers
-  // get the ProducerCard.jsx Leaf + BRAND_NAME placeholder. Same data
-  // source (getRecentlyViewedIds → /producers/:id), links, and self-hide.
-  return (
-    <section aria-label={t("aria")} className="mb-5">
-      <p className="text-xs font-semibold text-fg-muted mb-2 px-0.5">{t("label")}</p>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1">
-        {producers.map((p) => {
-          const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = optimizeCloudinary(p.images?.[0]);
-          return (
-            <Link
-              key={p.id}
-              href={href}
-              className="shrink-0 w-[160px] bg-white border border-border rounded-[12px] overflow-hidden transition group hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
-            >
-              <div className="relative w-full h-[100px] bg-background overflow-hidden">
-                {imgSrc ? (
-                  <Image
-                    src={imgSrc}
-                    alt={p.name}
-                    fill
-                    sizes="160px"
-                    className="object-cover group-hover:scale-105 transition duration-300"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-1" aria-hidden="true">
-                    <Leaf size={28} weight="light" className="text-primary/[0.32]" />
-                    <span className="font-headline-md text-xs font-bold text-primary/50">
-                      {BRAND_NAME}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="p-2.5">
-                <p className="font-headline-md font-bold text-sm text-text truncate">{p.name}</p>
-                {p.city && <p className="text-xs text-fg-muted truncate">{p.city}</p>}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
