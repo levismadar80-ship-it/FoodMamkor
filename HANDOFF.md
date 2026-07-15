@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-15 — MEH-450: two UI fixes — PR 2 (GREEN, UI-only)
+
+- **Branch:** `feature/meh-450-remove-cta-gold-rule` off `origin/staging` (divergence 0 at cut). GREEN tier, UI-only deletion. `Closes MEH-450`. Second of the two atomic MEH-450 PRs (PR 1 = remove /producers recently-viewed strip).
+- **PR 2 — HomeCTA: remove decorative gold eyebrow rule.** `HomeStaticBlocks.jsx:242-243` — removed the comment + `<span className="block w-16 h-px bg-accent mx-auto mb-6" aria-hidden="true" />` above the heading. Section `py-20` (80px top padding) keeps the heading uncramped → no margin adjustment needed. Verified isolation: the two remaining `w-8` gold rules (`HomeStaticBlocks.jsx:126`, `HomeCategoryGrid.jsx:52`) are untouched.
+- **Verify:** `npm run build` exit 0 (compiled 20.3s); no test imports `HomeStaticBlocks`/`HomeCTA` and none assert on the gold rule; pure −2 LOC deletion.
+
 ## 2026-07-13 — MEH-1183: category-card bridge photos + glyph fallback — MERGED (Sapir "MERGE" 14/07)
 
 - **Branch:** `feature/meh-1183-category-image-fallback` off `origin/staging` (divergence 0 at cut; harness-designated `claude/*` name rejected by the MEH-1141 branch-name gate → used the issue `feature/*` name). **YELLOW + visual.** `Refs MEH-1175` (parent) BEFORE `Closes MEH-1183` (child).
