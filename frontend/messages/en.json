@@ -2806,13 +2806,14 @@
   },
   "share_page": {
     "h1": "Spread the word",
-    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — and another business owner find their home.",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — real food, close to home.",
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
     "copy_toast": "Link copied",
     "native": "More ways to share",
     "email": "Share by email",
     "email_subject": "Have you heard of Mehamakor?",
+    "email_fallback_toast": "We couldn't open your email app — the message was copied, paste it into your email.",
     "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
