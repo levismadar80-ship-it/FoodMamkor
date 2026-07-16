@@ -11,6 +11,7 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useTranslations } from "next-intl";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
+import { setUserLocation } from "@/lib/user-location";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/map-categories";
 import { categoryGlyphSvg } from "@/lib/marker-glyph";
@@ -252,6 +253,10 @@ export default function MapComponent({
               showToast.error(t("geo_invalid"));
               return;
             }
+            // MEH-1230: persist the fix so the /map "מרחק" sort unlocks and card
+            // distance labels render live (useUserLocation subscribers re-render on
+            // the dispatched event). No prior code path ever wrote user_location.
+            setUserLocation(latitude, longitude);
             const latlng = [latitude, longitude];
             programmaticMoveRef.current = true;
             mapInstanceRef.current.flyTo(latlng, 13, { duration: 1.2 });
