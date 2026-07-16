@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1251 admin clicks (2 chunks: AdminRowMenu portal + Header pointer-events)
+
+- **Chunk A (LOW, merge-on-green authority) — `feature/meh-1251-adminrowmenu-portal`:** AdminRowMenu (⋮) now portals its open panel to `document.body` + `position: fixed` measured from the trigger rect (REUSE of FilterSheet portal precedent) → escapes the admin tables' `overflow-hidden`/`overflow-x-auto` clipping on lower rows. RTL end-edge pin via logical `insetInlineEnd`. Full a11y/dismissal contract preserved (outside-click now also exempts the portaled `menuRef`); closes on scroll/resize. `AdminRowMenu.jsx` + `AdminRowMenu.test.jsx` only — consumers untouched. build + vitest (9 passed) + lint(0 err) + RTL hook all green.
+- **Chunk B (HIGH — Header.jsx central component, NO MERGE WITHOUT SAPIR) — `feature/meh-1251-header-pointer-events`:** PENDING (next). Header nav-shell full-width wrapper → `pointer-events-none`, `<nav>` pill → `pointer-events-auto`, so clicks in the transparent band pass through to the admin toolbar ("פרטים חסרים"). pointer-events ONLY.
+- **⚠️ Live collision for Chunk B:** open PR #1743 (`feature/meh-1195-header-shell-opaque`, DO-NOT-MERGE) also edits `Header.jsx` — surface to Sapir before merging Chunk B; the two touch different concerns (surface opacity vs pointer-events) but overlap the same file.
+- **Phase 0 sweep (report-only):** BottomNav.jsx:218 full-width `fixed` wrapper missing `pointer-events-none` (same shield class as the Header — not fixed here); producers InfoTooltip low clip-risk; reviews/outreach tables hold no clipped popover.
+
 ## 2026-07-16 — MEH-1248: template 06 → v2.1 (3 anti-pattern deltas migrated) — unblocks MEH-1246 ranks 1+2
 
 - **Branch:** `feature/meh-1248-template-06-v21-delta` off `origin/staging` (divergence 0 at cut; harness `claude/*` name avoided per MEH-1141). LOW-RISK/docs-only, end-to-end to merge.
