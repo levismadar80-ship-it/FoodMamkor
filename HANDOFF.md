@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1229: producer-photo delivery consistency — MERGED (PR #1777, squash 95882f1) + docs backfill
+
+- **Merged:** `feature/meh-1229-producer-photo-consistency` → staging (PR #1777, both required gates green). Every producer/product/event image now routes through one helper with a single source-of-truth ratio map (`IMAGE_RATIOS` in `frontend/lib/cloudinary.js`).
+- **Ratio map:** `{card 4:3, featured 4:5, strip 16:10, square 1:1, banner 16:9}` with documented opt-outs (`ImageGallery`/`Lightbox` art-directed; `MapProducerCard` MEH-1133 intrinsic-aspect logo letterbox). `ImageWithFallback` gained optional `aspectRatio`/`optimizeWidth` (backward-compatible).
+- **Fixes:** `FridayDeliveryStrip` ignored-string-arg bug (crop never shipped); two raw `next/image` bypasses (`ProducerSections` event thumb + `RecipeDetail` related-product thumb) → `ImageWithFallback` (graceful fallback, no `_next/image` 404). Centralized all hardcoded ratio literals; added ratios to no-ratio tile/banner surfaces.
+- **Churn note (MEH-1112):** staging churned ~every 6-7 min during the merge window; the branch's CHANGELOG/HANDOFF/MANUAL_TESTING entries were dropped to make it conflict-immune, code merged clean, and the docs are restored in this backfill branch (`feature/meh-1229-docs-backfill`).
+- **Open (DoD):** mobile QA on staging (iOS Safari + Chrome) — `/`, `/producers`, `/producer/[id]` products+events, `/map` popup+sheet, `/events/[id]`, `/experiences`; confirm no broken images in console + framing OK on the newly-cropped strips/banners (geometric CSS crop → Cloudinary `g_auto` smart-crop). MEH-1222 (broken-URL data cleanup) parallel; fallback protects regardless.
+
 ## 2026-07-16 — MEH-1226 + MEH-1228: account-menu dashboard entry (desktop + mobile) — MERGED (PRs #1772, #1775)
 
 - **Both MERGED to staging, both Linear → Done.** LOW-RISK/GREEN, pre-approved merge (Sapir). Two sibling PRs from the MEH-1089 dashboard UX pass.
