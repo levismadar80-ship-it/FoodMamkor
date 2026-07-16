@@ -2,6 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  // MEH-1241: provision authenticated storageState for the seeded staging QA
+  // accounts (demo-owner / demo-consumer). No-ops on a local baseURL; specs
+  // opt in via test.use({ storageState: "e2e/.auth/<role>.json" }). The admin
+  // fixture (SMOKE_ADMIN_* in flows/19,20) is separate and untouched.
+  globalSetup: "./e2e/global-setup.ts",
   // MEH-991 Chunk 3: e2e/visual holds the VRT parity specs; baselines are
   // runner-generated via .github/workflows/vrt-update.yml (workflow_dispatch).
   testMatch: ["e2e/flows/**/*.spec.ts", "e2e/visual/**/*.spec.ts"],
