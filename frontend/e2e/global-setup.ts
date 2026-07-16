@@ -67,8 +67,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
           `local env), or run only unauthenticated specs.`,
       );
     }
-    const api = await request.newContext({ baseURL, ignoreHTTPSErrors: true });
-    const res = await api.post("/api/auth/login", { data: { email: role.email, password } });
+    // Named `ctx` (not `api`) so the API-contract audit — which greps for
+    // `api.<method>(` call sites — doesn't misread this raw, /api-prefixed
+    // Playwright request as an app api-client call (MEH-1241).
+    const ctx = await request.newContext({ baseURL, ignoreHTTPSErrors: true });
+    const res = await ctx.post("/api/auth/login", { data: { email: role.email, password } });
     if (!res.ok()) {
       throw new Error(
         `[global-setup] login failed for ${role.name} (${role.email}) at ${baseURL}: ` +
@@ -81,8 +84,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     }
     // Capture refresh cookie(s) from the login response, then inject the JWT into
     // localStorage where the SPA reads it (lib/auth-context.js).
-    const state = await api.storageState();
-    await api.dispose();
+    const state = await ctx.storageState();
+    await ctx.dispose();
     state.origins = [{ origin, localStorage: [{ name: "token", value: accessToken }] }];
     fs.writeFileSync(path.join(AUTH_DIR, `${role.name}.json`), JSON.stringify(state, null, 2));
     console.log(`[global-setup] wrote ${role.name} storageState (${role.email}).`);
