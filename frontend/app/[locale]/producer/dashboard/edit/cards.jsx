@@ -28,6 +28,7 @@ import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import EditAccordionCard from "@/components/EditAccordionCard";
 import AddressSearch from "@/components/AddressSearch";
+import Input from "@/components/ui/Input";
 
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
@@ -779,6 +780,97 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR3: producer-facing price-range + top-product editor.
+// Frontend-only gap: the owner whitelist (_PRODUCER_WRITABLE_FIELDS,
+// producer_me.py) already accepts `price_range` + `top_product_name` — there
+// was just no UI in the edit tab. Mirrors LocationCard's card/save/dirty/
+// inline-error contract; persists via PUT /producers/me.
+// REUSES: edit/cards.jsx LocationCard (save/dirty/reportDirty contract).
+// ============================================================
+
+// Exported for isolation tests (EditTabPricingCard.test.jsx).
+export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.pricing");
+  const seedTop = profile?.top_product_name ?? "";
+  const seedPrice = profile?.price_range ?? "";
+  const [topProduct, setTopProduct] = useState(seedTop);
+  const [priceRange, setPriceRange] = useState(seedPrice);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty = topProduct !== seedTop || priceRange !== seedPrice;
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("pricing", dirty);
+    return () => reportDirty("pricing", false);
+  }, [dirty, reportDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      const payload = {
+        top_product_name: topProduct.trim() || null,
+        price_range: priceRange.trim() || null,
+      };
+      await api.put("/producers/me", payload);
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="space-y-3">
+        <Input
+          type="text"
+          label={t("field_top_product")}
+          value={topProduct}
+          maxLength={80}
+          onChange={(e) => setTopProduct(e.target.value)}
+          placeholder={t("top_product_placeholder")}
+        />
+        <Input
+          type="text"
+          label={t("field_price_range")}
+          value={priceRange}
+          maxLength={60}
+          onChange={(e) => setPriceRange(e.target.value)}
+          placeholder={t("price_range_placeholder")}
+        />
+      </div>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
     </div>
   );
 }

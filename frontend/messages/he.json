@@ -3817,6 +3817,7 @@
         "categories_summary": "{count, plural, =0 {עוד לא נבחרו קטגוריות} one {קטגוריה אחת} two {שתי קטגוריות} other {# קטגוריות}}",
         "images_summary": "{count, plural, =0 {עוד אין תמונות} one {תמונה אחת} two {שתי תמונות} other {# תמונות}}",
         "location_missing": "עוד לא הוגדר מיקום",
+        "pricing_summary_empty": "עוד לא הוגדרו מחיר ומוצר מוביל",
         "products_summary": "{count, plural, =0 {עוד אין מוצרים} one {מוצר אחד} two {שני מוצרים} other {# מוצרים}}",
         "more_group": "עוד אפשרויות",
         "next_step_aria": "השלב הבא להשלמה"
@@ -3828,6 +3829,7 @@
         "phone_field_helper": "המספר הזה משמש גם לוואטסאפ וגם לשיחות",
         "field_instagram": "אינסטגרם (שם משתמש או קישור)",
         "field_website": "אתר (קישור)",
+        "field_whatsapp_group": "קישור לקבוצת וואטסאפ",
         "field_email": "אימייל",
         "field_facebook": "פייסבוק (קישור)",
         "field_external_order": "טופס הזמנות (קישור)",
@@ -3878,6 +3880,18 @@
         "subtitle": "הקלידו את הכתובת ובחרו מהרשימה — כך העסק יופיע במקום הנכון במפה.",
         "current_prefix": "מיקום נוכחי:",
         "save_cta": "שמירת מיקום",
+        "saving": "בשמירה…",
+        "saved": "נשמר",
+        "save_error": "השמירה נכשלה. נסו שוב."
+      },
+      "pricing": {
+        "heading": "מחיר ומוצר מוביל",
+        "subtitle": "המחיר ההתחלתי והמוצר המוביל של העסק — מופיעים בכרטיס העסק שלכם.",
+        "field_top_product": "מוצר עיקרי",
+        "top_product_placeholder": "בשר בקר grass-fed",
+        "field_price_range": "מחיר התחלתי",
+        "price_range_placeholder": "מ-₪65/ק״ג",
+        "save_cta": "שמירה",
         "saving": "בשמירה…",
         "saved": "נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."

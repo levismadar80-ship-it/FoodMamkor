@@ -3796,6 +3796,7 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
+        "pricing_summary_empty": "No price or top product set yet",
         "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
         "more_group": "More options",
         "next_step_aria": "Next step to complete"
@@ -3807,6 +3808,7 @@
         "phone_field_helper": "This number is used for both WhatsApp and calls",
         "field_instagram": "Instagram (username)",
         "field_website": "Website (link)",
+        "field_whatsapp_group": "WhatsApp group link",
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
@@ -3857,6 +3859,18 @@
         "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
         "current_prefix": "Current location:",
         "save_cta": "Save location",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "pricing": {
+        "heading": "Price & top product",
+        "subtitle": "Your starting price and top product — shown on your business card.",
+        "field_top_product": "Top product",
+        "top_product_placeholder": "Grass-fed beef",
+        "field_price_range": "Starting price",
+        "price_range_placeholder": "from ₪65/kg",
+        "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
