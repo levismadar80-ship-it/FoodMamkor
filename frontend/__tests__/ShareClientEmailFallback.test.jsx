@@ -28,6 +28,8 @@ vi.mock("next-intl", () => ({
       email: "email",
       email_subject: "subject",
       email_fallback_toast: FALLBACK_TOAST,
+      copy_failed_toast: "copy failed — select and copy manually",
+      email_copy_failed_toast: "mail + copy failed — try again",
       message: SHARE_MESSAGE,
     };
     return (key, vars) => {
@@ -49,10 +51,13 @@ vi.mock("@phosphor-icons/react", () => {
   };
 });
 
-const { errorToast } = vi.hoisted(() => ({ errorToast: vi.fn() }));
+const { errorToast, successToast } = vi.hoisted(() => ({
+  errorToast: vi.fn(),
+  successToast: vi.fn(),
+}));
 vi.mock("@/lib/toast", () => ({
   showToast: {
-    success: vi.fn(),
+    success: (...a) => successToast(...a),
     error: (...a) => errorToast(...a),
     info: vi.fn(),
   },
@@ -65,7 +70,9 @@ const writeText = vi.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
   errorToast.mockClear();
+  successToast.mockClear();
   writeText.mockClear();
+  writeText.mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", {
     value: { writeText },
     configurable: true,
@@ -75,6 +82,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  delete document.execCommand;
 });
 
 describe("ShareClient — silent-mailto fallback (MEH-1220)", () => {
@@ -112,5 +120,41 @@ describe("ShareClient — silent-mailto fallback (MEH-1220)", () => {
     // One toast per fallback firing — not 1 + N leaked listeners.
     expect(errorToast).toHaveBeenCalledTimes(2);
     expect(writeText).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("ShareClient — copy double-failure (MEH-1223)", () => {
+  it("copy link: clipboard rejects AND execCommand fails → failure toast, not הועתק", async () => {
+    // Both paths fail: navigator.clipboard.writeText rejects, execCommand
+    // returns false. The old code showed the success toast unconditionally.
+    // jsdom has no document.execCommand — assign a mock directly.
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    const execCommand = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommand;
+
+    render(<ShareClient />);
+    fireEvent.click(screen.getByTestId("share-copy"));
+
+    // Let the async copyLink chain settle.
+    await vi.runAllTimersAsync();
+
+    expect(execCommand).toHaveBeenCalledWith("copy");
+    expect(successToast).not.toHaveBeenCalled();
+    expect(errorToast).toHaveBeenCalledWith("copy failed — select and copy manually");
+  });
+
+  it("email fallback: clipboard rejects AND execCommand fails → mail+copy failure toast", async () => {
+    writeText.mockRejectedValueOnce(new Error("denied"));
+    const execCommand = vi.fn().mockReturnValue(false);
+    document.execCommand = execCommand;
+
+    render(<ShareClient />);
+    fireEvent.click(screen.getByTestId("share-email"));
+
+    await vi.runAllTimersAsync();
+
+    expect(execCommand).toHaveBeenCalledWith("copy");
+    expect(errorToast).toHaveBeenCalledWith("mail + copy failed — try again");
+    expect(errorToast).not.toHaveBeenCalledWith(FALLBACK_TOAST);
   });
 });
