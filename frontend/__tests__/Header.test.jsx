@@ -217,14 +217,21 @@ describe("Header", () => {
   });
 
   describe("avatar dropdown — role-specific items (MEH-39)", () => {
-    it("producer sees לוח הבקרה שלי and profile leads to the dashboard", () => {
+    // MEH-1226: dashboard leads the producer menu (above profile/settings);
+    // the profile row now targets /settings?tab=profile (no longer a duplicate
+    // of the /producer/dashboard target).
+    it("producer sees לוח הבקרה שלי first, dashboard link separate from profile", () => {
       userRef.current = { id: "u1", name: "מיה", role: "producer" };
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — מיה"));
-      expect(screen.getByText("לוח הבקרה שלי")).toBeInTheDocument();
       expect(screen.queryByText("ממשק אדמין")).toBeNull();
+      const dashboardLink = screen.getByText("לוח הבקרה שלי").closest("a");
+      expect(dashboardLink.getAttribute("href")).toBe("/producer/dashboard");
       const profileLink = screen.getByText("הפרופיל שלי").closest("a");
-      expect(profileLink.getAttribute("href")).toBe("/producer/dashboard");
+      expect(profileLink.getAttribute("href")).toBe("/settings?tab=profile");
+      // dashboard sits above the profile row in the menu
+      const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
+      expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("הפרופיל שלי"));
     });
 
     it("admin sees ממשק אדמין in the dropdown", () => {
