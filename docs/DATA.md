@@ -407,6 +407,7 @@ PUT    /producers/me                              producer — MEH-999: license 
 POST   /producers/me/verify-phone                producer  — send WhatsApp OTP (3/10min)
 POST   /producers/me/verify-phone/confirm        producer  — confirm code, sets phone_verified (5/min)
 POST   /producers/me/kashrut-request             producer  — request a kashrut badge (10/hr)
+POST   /producers/me/request-review              producer  — MEH-1236 resubmit-for-review ping: pending/pending_whatsapp only (else 409), 3/hr; notification-only (admin WhatsApp+email via notify_admin_producer_resubmit, fail-open) — NO DB write, requested_changes stays admin-owned
 POST   /producers/me/availability                 producer  — toggle is_available_today (legacy; mirrors to availability_state during MEH-291 7-day overlap)
 POST   /producers/me/availability-status           producer  — set durable status (legacy; mirrors to availability_state during MEH-291 overlap)
 POST   /producers/me/availability-state            producer  — MEH-291 unified 4-value enum
