@@ -2572,10 +2572,6 @@
       "all_shown": "{count, plural, one {Showed the only business} other {Showed all {count} businesses}}",
       "loading_more_aria": "Loading more businesses"
     },
-    "recently_viewed": {
-      "aria": "Recently viewed",
-      "label": "Recently viewed"
-    },
     "filters": {
       "city_chip": "In my city",
       "category_all": "All categories",

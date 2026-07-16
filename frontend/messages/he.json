@@ -2593,10 +2593,6 @@
       "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד} two {הצגנו את כל שני בתי העסק} other {הצגנו את כל {count} בתי העסק}}",
       "loading_more_aria": "טעינת בתי עסק נוספים"
     },
-    "recently_viewed": {
-      "aria": "ביקרת לאחרונה",
-      "label": "ביקרת לאחרונה"
-    },
     "filters": {
       "city_chip": "בעיר שלי",
       "category_all": "כל הקטגוריות",
