@@ -47,6 +47,16 @@
 **Family 6 — dead fields (MEH-1190 family):**
 - `frontend/app/[locale]/producer/dashboard/edit/cards.jsx` (DescriptionCard assist) — the Instagram input is seeded from `profile.instagram` and editable, but `save()` sends only `{description, short_description}`; an edited Instagram value feeds AI generation only and is silently dropped on save. (May be intended — it lives inside the assist form — but it's the one rendered field whose edit does not persist.)
 
+## 2026-07-16 — MEH-1246: project-instructions density audit — `docs/PROJECT_INSTRUCTIONS_AUDIT.md` (discovery-first, docs-only)
+
+- **Branch:** `feature/meh-1246-project-instructions-audit` off `origin/staging` (divergence 0 at cut). Harness-designated `claude/project-instructions-audit-fwrjqi` would hit the MEH-1141 branch-name gate → used the Linear `<constraints>` `feature/*` name (same class as MEH-1183/1201/1220/1232/1233). LOW-RISK/docs-only.
+- **Input:** the current claude.ai Project instructions, pasted by Sapir into the session (snapshot **2026-07-16**) — they live in claude.ai only, not the repo. Phase 0 was read-only and ended at a WAIT gate; Sapir locked with 3 adjustments before Phase 1.
+- **Deliverable:** `docs/PROJECT_INSTRUCTIONS_AUDIT.md` — counting rule + per-section breakdown (~117 directives / 20 sections, inside the 100–120 estimate), position map (DoD stranded in the middle third; the 31-directive Linear block in the final third), full overlap matrix with file:line per row, ranked trim list, do-not-trim list, and the **full trimmed draft** as a fenced block (Hebrew preserved) for copy-paste into claude.ai.
+- **Locked adjustments applied:** (1) §19 + §7 removed from the trim list and kept full — new **dual-audience** classification rule (the orchestrator does not auto-load `.claude/rules/*` / `CONTEXT.md`, so a pointer = a deleted rule for that reader); documented in the audit. (2) §18 + §11 (the two biggest cuts) marked **"apply after MEH-1248"** (template-06 → v2.1 migration of the `<forbidden>`/persona/pre-fill deltas), not performed here. (3) Reordering in scope — top block rebuilt: identity/stack → §4 state-load → promoted "check Linear before new issue" → §5 brand LOCK → §9 DoD; promoted rules keep exact wording, position only.
+- **Count:** trimmed draft now ≈ **113** (−4: §17 + §13 deleted, §14 Alembic dup folded); projected after MEH-1248 ≈ **74** (−43). The near-term win is **positional, not numeric** — the two rules whose dilution caused MEH-1230/1192 now sit in the primacy slot.
+- **Scope honored:** zero edits to `CLAUDE.md`, `.claude/rules/*`, `.claude/hooks/*`, workflows, or templates 00-08. One new docs file only.
+- **Next:** push + PR; merge on the 2 required gates (CI gate + Deploy gate) — docs-only skips the named jobs (MEH-716); then MEH-1246 → Done. Follow-on: MEH-1248 unlocks trim ranks 1+2.
+
 ## 2026-07-16 — MEH-1192 (R1): LocationModal geolocate persists GPS fix — MERGED (PR #1776, squash 97a29736) + docs backfill
 
 - **Merged to staging** (squash `97a29736`, PR #1776). `Refs MEH-1192` (R1 code only). Residual of MEH-1230.
