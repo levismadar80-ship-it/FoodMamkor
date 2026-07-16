@@ -152,6 +152,18 @@ export default function ProducerDashboardEditPage() {
   }, []);
   const anyDirty = Object.values(dirtyMap).some(Boolean);
 
+  // MEH-1237: jump from an unsaved-banner card name to its accordion — reuses
+  // the exact open+scroll path the URL-hash deep link uses below (setOpenKey +
+  // KEY_TO_ANCHOR scrollIntoView), so there is one navigation mechanism.
+  const jumpToCard = useCallback((key) => {
+    setOpenKey(key);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(KEY_TO_ANCHOR[key])
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== "producer") {
@@ -350,18 +362,55 @@ export default function ProducerDashboardEditPage() {
       (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
   };
 
+  // MEH-1237: display name per dirty-card key — REUSES the exact heading
+  // strings the accordion headers already render (no duplicated Hebrew). Keys
+  // match the reportDirty keys the cards lift up.
+  const DIRTY_CARD_NAMES = {
+    images: t("images.heading"),
+    categories: t("categories.heading"),
+    location: t("location.heading"),
+    bio: t("description_card.heading"),
+    products: tProducts("section_heading"),
+    contact: t("contact_channels.heading"),
+    questions: t("custom_questions.heading"),
+  };
+  // Stable order (matches the accordion render order below), filtered to dirty.
+  const DIRTY_ORDER = [
+    "images", "categories", "location", "bio", "products", "contact", "questions",
+  ];
+  const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
-      {/* MEH-1100: sticky unsaved-changes banner — sits just under the
-          layout's sticky tab nav (top-0 z-10, ~46px tall). */}
+      {/* MEH-1100 + MEH-1237: sticky unsaved-changes banner — sits just under
+          the layout's sticky tab nav (top-0 z-10, ~46px tall). Names the dirty
+          cards with jump links (Shopify Polaris contextual save bar) instead of
+          a generic message, so the owner knows exactly what's unsaved + where. */}
       {anyDirty && (
         <div
-          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex items-center gap-2 shadow-sm"
+          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
           role="status"
           data-testid="unsaved-banner"
         >
           <Warning size={16} className="text-primary shrink-0" aria-hidden="true" />
-          {t("unsaved_guard.banner")}
+          <span>{t("unsaved_guard.banner_prefix")}</span>
+          <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+            {dirtyKeys.map((key, i) => (
+              <span key={key} className="inline-flex items-center gap-1">
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-fg-muted">·</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => jumpToCard(key)}
+                  data-testid={`unsaved-jump-${key}`}
+                  className="underline underline-offset-2 font-medium hover:text-primary transition-colors"
+                >
+                  {DIRTY_CARD_NAMES[key]}
+                </button>
+              </span>
+            ))}
+          </span>
         </div>
       )}
 

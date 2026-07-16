@@ -3568,6 +3568,7 @@
       "loading_analytics": "טעינת סטטיסטיקות...",
       "unsaved_guard": {
         "banner": "יש שינויים שלא נשמרו",
+        "banner_prefix": "שינויים שלא נשמרו ב:",
         "confirm": "יש שינויים שלא נשמרו. לעזוב את העמוד בלי לשמור?"
       },
       "insights_zero_state": {

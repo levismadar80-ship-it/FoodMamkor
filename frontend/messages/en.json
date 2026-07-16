@@ -3547,6 +3547,7 @@
       "loading_analytics": "Loading analytics…",
       "unsaved_guard": {
         "banner": "You have unsaved changes",
+        "banner_prefix": "Unsaved changes in:",
         "confirm": "You have unsaved changes. Leave without saving?"
       },
       "insights_zero_state": {
