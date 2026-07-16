@@ -6,7 +6,7 @@ import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import { render, act, screen } from "@testing-library/react";
 
 // MEH-475 PR-C4a chunk 4a: mock next-intl. ProducersClient + sub-components
-// (RecentlyViewedStrip / FilterEmptyState / CatalogEmptyState / PageOverflowState
+// (FilterEmptyState / CatalogEmptyState / PageOverflowState
 // / ServerPageLinks) all call useTranslations(). Map keys this test asserts on;
 // ICU plural strings resolve via simple substitution so {count} interpolations
 // render naturally.
@@ -24,8 +24,6 @@ vi.mock("next-intl", () => ({
       "filters.city_chip": "בעיר שלי",
       "filters.filter_by": "מסנן לפי:",
       "filters.clear_all": "נקי הכל",
-      "recently_viewed.aria": "ביקרת לאחרונה",
-      "recently_viewed.label": "ביקרת לאחרונה",
     };
     return flat[key] ?? key;
   },

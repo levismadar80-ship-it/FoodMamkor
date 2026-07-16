@@ -1152,6 +1152,30 @@ class TestMeh56BioGenerator:
         )
         assert resp.status_code == 422
 
+    def test_bio_generate_happy_path_returns_bio(self, client, db, monkeypatch):
+        # MEH-1235: lock the success contract at the route level — when the AI
+        # IS available the endpoint returns the generated text (the frontend
+        # then fills the textarea). Pairs with the fail-open empty case above so
+        # the "textarea fills OR visible Hebrew error, never silent" invariant
+        # is covered on both branches. generate_bio is imported inside the
+        # handler, so patch it at its source module.
+        import app.services.bio_generator as bg
+        monkeypatch.setattr(bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל")
+
+        from conftest import make_user
+        p = make_producer(db, name="ביו3")
+        user = make_user(db, email="biouser3@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"sells": "ריבות ביתיות"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["bio"] == "ריבות בעבודת יד מהגליל"
+
 
 # ---------- Contact ----------
 
@@ -1564,6 +1588,46 @@ class TestAvatarUpload:
             files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
         )
         assert resp.status_code == 401
+
+
+# ---------- MEH-1190: Profile phone field ----------
+
+class TestProfilePhone:
+    """PATCH /users/me phone — editable, optional, length-bounded (MEH-1190).
+
+    The users.phone column already existed and is read by the WhatsApp alert
+    fan-out (alerts.py); this covers the newly-wired ProfileUpdate.phone.
+    """
+
+    def test_patch_sets_phone(self, client, db):
+        user = make_user(db, email="phone-set@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0501234567"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["phone"] == "0501234567"
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone == "0501234567"
+
+    def test_patch_empty_phone_clears_to_none(self, client, db):
+        user = make_user(db, email="phone-clear@example.com")
+        client.patch("/users/me", json={"phone": "0501234567"}, headers=auth_header(user))
+        resp = client.patch("/users/me", json={"phone": ""}, headers=auth_header(user))
+        assert resp.status_code == 200
+        assert resp.json()["phone"] is None
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone is None
+
+    def test_patch_phone_too_long_returns_422(self, client, db):
+        user = make_user(db, email="phone-long@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0" * 21},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
 
 
 # ---------- MEH-148: Reserved slug protection ----------

@@ -154,15 +154,6 @@ export default function MapBottomSheet({ snap, onSnapChange, children, count, lo
             {t("count", { count })}
           </p>
         )}
-        {snap === HALF && (
-          <button
-            type="button"
-            onClick={() => onSnapChange(PEEK)}
-            className="text-sm text-primary font-medium hover:underline"
-          >
-            {t("show_map")}
-          </button>
-        )}
       </div>
 
       {/* Scrollable content — MEH-1133: `pt-1` gives the first card a little

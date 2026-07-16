@@ -967,6 +967,7 @@
       "nationwide": "משלוחים לכל הארץ",
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
+      "delivery_day_label": "משלוח ביום {day}",
       "pickup": "איסוף עצמי"
     },
     "follow": {
@@ -1013,7 +1014,7 @@
         "label": "מיון:",
         "nearest": "מרחק",
         "top_rated": "הכי מדורגות",
-        "newest": "חדש בשוק"
+        "newest": "הצטרפו לאחרונה"
       }
     },
     "errors": {
@@ -1046,7 +1047,6 @@
       }
     },
     "pane": {
-      "hint": "לחצו על סמן עסק כדי לראות פרטים · גלגלו ברשימה מימין לכל העסקים",
       "search_this_area": "חפשו באזור זה",
       "empty": {
         "heading": "אין עסקים באזור זה עדיין",
@@ -1096,15 +1096,13 @@
       "open_in_google": "פתיחה במפות Google"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}",
-      "show_map": "הצג מפה"
+      "count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}"
     },
     "chip_scroll": {
       "category_aria": "סינון לפי קטגוריה",
       "attribute_aria": "סינון לפי תכונה"
     },
     "near_me_pill": {
-      "label": "קרוב אליי",
       "aria": "הצגת בתי עסק קרובים למיקום שלי",
       "empty": "אין עדיין עסקים באזורך — הנה הקרובים"
     }
@@ -1318,6 +1316,12 @@
         "all_complete": "כל בתי העסק שלמים",
         "empty": "אין בתי עסק להצגה",
         "awaiting_completion": "ממתין להשלמה",
+        "photo_preview": {
+          "label": "תמונות",
+          "thumb_alt": "תמונה {index} של {name}",
+          "broken": "תמונה שבורה — לא נטענה",
+          "more_alt": "עוד {count} תמונות"
+        },
         "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה.",
         "delete_error": "מחיקת בית העסק נכשלה. נסו שוב.",
         "deleting": "מוחקים…"
@@ -2400,16 +2404,16 @@
   "modals": {
     "location": {
       "title": "מאיפה נתחיל?",
-      "subtitle": "נמצא עסקים קרובים",
+      "subtitle": "בחרו עיר או שתפו מיקום — ונציג בתי עסק מקומיים באזור שלכם",
       "search_label": "חיפוש עיר",
       "search_placeholder": "הקלידו שם עיר...",
       "aria_label": "בחירת עיר",
       "close_aria": "סגור",
       "geo_button": "קרוב אליי",
       "geo_loading": "בחיפוש...",
-      "geo_failure": "לא הצלחנו לקבל את המיקום",
-      "current_location_fallback": "מיקום נוכחי",
-      "skip": "דלגו לעכשיו",
+      "geo_denied": "אין לנו גישה למיקום — אפשר לבחור עיר ידנית",
+      "geo_failure": "לא הצלחנו לזהות את המיקום — אפשר לבחור עיר ידנית",
+      "skip": "לא עכשיו",
       "popular_cities": {
         "tel_aviv": "תל אביב",
         "jerusalem": "ירושלים",
@@ -2600,10 +2604,6 @@
       "showing_count": "מציגות {loaded} מתוך {total} בתי עסק",
       "all_shown": "{count, plural, one {הצגנו את בית העסק היחיד} two {הצגנו את כל שני בתי העסק} other {הצגנו את כל {count} בתי העסק}}",
       "loading_more_aria": "טעינת בתי עסק נוספים"
-    },
-    "recently_viewed": {
-      "aria": "ביקרת לאחרונה",
-      "label": "ביקרת לאחרונה"
     },
     "filters": {
       "city_chip": "בעיר שלי",
@@ -2835,13 +2835,16 @@
   },
   "share_page": {
     "h1": "ספרו עלינו",
-    "intro": "מהמקור גדל מפה לאוזן. כל שיתוף עוזר לעוד קוראת לגלות בתי עסק שנבדקו אישית — ולעוד בעלת עסק למצוא את הבית שלה.",
+    "intro": "מהמקור גדל מפה לאוזן. כל שיתוף עוזר לעוד קוראת לגלות בתי עסק שנבדקו אישית — אוכל אמיתי, קרוב לבית.",
     "whatsapp": "שתפו בוואטסאפ",
     "copy": "העתיקו קישור",
     "copy_toast": "הקישור הועתק",
+    "copy_failed_toast": "לא הצלחנו להעתיק — סמנו את הטקסט והעתיקו ידנית",
     "native": "עוד דרכים לשתף",
     "email": "שתפו במייל",
     "email_subject": "מכירים את מהמקור?",
+    "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — ההודעה הועתקה, הדביקו אותה במייל",
+    "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
     "message": "הכירו את מהמקור — בתי עסק מקומיים לאוכל, כולם עברו היכרות אישית. שווה הצצה: {url}",
     "footer_link": "ספרו עלינו"
   },
@@ -2868,7 +2871,7 @@
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
       "greeting_template": "שלום {name}, {q}",
-      "delivery_to_city": "אפשר משלוח ל-{city}?"
+      "delivery_to_city": "אפשר משלוח ל{city}?"
     }
   },
   "directory": {
@@ -3957,6 +3960,8 @@
       "row_new_product": "מוצרים חדשים",
       "row_delivery_area": "אזורי משלוח חדשים",
       "row_whatsapp_opt_in": "שלחו ב-WhatsApp",
+      "phone_required_prompt": "כדי לקבל עדכונים בוואטסאפ נצטרך את מספר הטלפון שלכם",
+      "phone_save_cta": "שמירה והפעלה",
       "push_denied_toast": "הרשאת התראות נדחתה",
       "push_blocked": "התראות דחיפה חסומות בדפדפן",
       "push_enable": "הפעילו התראות דחיפה (PWA)",
@@ -4045,7 +4050,8 @@
       "email_oauth_provider_fallback": "חיצוני",
       "email_change_hint": "לשינוי אימייל, פנו לתמיכה",
       "field_phone_label": "טלפון",
-      "field_phone_hint": "נוסיף בקרוב notifications"
+      "field_phone_hint": "לעדכונים בוואטסאפ מבתי עסק שאתם עוקבים אחריהם",
+      "field_phone_error": "מספר טלפון לא תקין"
     },
     "business": {
       "tabpanel_aria": "העסק שלי",
