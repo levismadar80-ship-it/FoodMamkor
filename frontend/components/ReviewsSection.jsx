@@ -23,18 +23,37 @@ function formatName(fullName, fallback) {
   return `${parts[0]} ${parts[parts.length - 1][0]}.`;
 }
 
+// MEH-1233 B1: fractional fill — an average of 4.7 renders four full stars and
+// one 70%-filled star instead of Math.round-ing to five full (which reads as a
+// faked 5.0). Each position paints an empty base star with a filled star clipped
+// to `fill*100%` on top; the row is dir="ltr" so the clip grows from the star's
+// left edge (logical start inside the LTR container). Integer values (a single
+// review's `stars`) still render as solid full stars — same visual as before.
 function StarRow({ value, size = 16, ariaLabel }) {
+  const numeric = Number(value) || 0;
   return (
     <div className="flex gap-0.5" dir="ltr" aria-label={ariaLabel}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          size={size}
-          weight={n <= value ? "fill" : "regular"}
-          color={n <= value ? "#896714" : "#e5dfd3"}
-          aria-hidden="true"
-        />
-      ))}
+      {[1, 2, 3, 4, 5].map((n) => {
+        const fill = Math.max(0, Math.min(1, numeric - (n - 1)));
+        return (
+          <span
+            key={n}
+            className="relative inline-block"
+            style={{ width: size, height: size }}
+            aria-hidden="true"
+          >
+            <Star size={size} weight="regular" color="#e5dfd3" />
+            {fill > 0 && (
+              <span
+                className="absolute inset-y-0 start-0 overflow-hidden"
+                style={{ width: `${Math.round(fill * 100)}%` }}
+              >
+                <Star size={size} weight="fill" color="#896714" />
+              </span>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -320,9 +339,9 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
             {Number(avgRating).toFixed(1)}
           </p>
           <StarRow
-            value={Math.round(Number(avgRating))}
+            value={Number(avgRating)}
             size={20}
-            ariaLabel={t("star_aria", { value: Math.round(Number(avgRating)) })}
+            ariaLabel={t("star_aria", { value: Number(avgRating).toFixed(1) })}
           />
           <p className="text-fg-muted text-sm mt-2">{t("summary_based_on", { total })}</p>
         </div>

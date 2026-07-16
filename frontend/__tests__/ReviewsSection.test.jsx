@@ -187,3 +187,23 @@ describe("ReviewsSection — single empty-state box with merged gate hint (MEH-1
     expect(screen.queryByText(/empty_gate_hint/)).not.toBeInTheDocument();
   });
 });
+
+// MEH-1233 B1: the rating summary must render a fractional 5th star for a 4.7
+// average — the pre-fix Math.round painted five FULL stars, reading as a faked
+// 5.0. Each star position clips a filled star to `fill*100%`; here we assert the
+// 5th wrapper is 70% wide and exactly four are 100%.
+describe("ReviewsSection — B1 fractional star fill (MEH-1233)", () => {
+  it("avg 4.7 → four full stars + one 70%-filled star (never five full)", async () => {
+    apiMock.get.mockResolvedValue({ data: { reviews: [], total: 3, page: 1, pages: 1 } });
+    const { container } = render(
+      <ReviewsSection producerId="p-1" avgRating={4.7} reviewCount={3} isOwner={false} />,
+    );
+    // Summary appears once the fetch resolves (total>=3 && avg>0).
+    await screen.findByText("4.7");
+    const fills = [...container.querySelectorAll("span[style]")]
+      .map((el) => el.style.width)
+      .filter((w) => w.endsWith("%"));
+    expect(fills.filter((w) => w === "100%")).toHaveLength(4);
+    expect(fills).toContain("70%");
+  });
+});
