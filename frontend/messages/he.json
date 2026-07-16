@@ -2865,7 +2865,7 @@
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
       "greeting_template": "שלום {name}, {q}",
-      "delivery_to_city": "אפשר משלוח ל-{city}?"
+      "delivery_to_city": "אפשר משלוח ל{city}?"
     }
   },
   "directory": {
