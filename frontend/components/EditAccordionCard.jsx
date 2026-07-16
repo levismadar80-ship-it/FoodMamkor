@@ -22,7 +22,7 @@
  */
 
 import { CaretDown } from "@phosphor-icons/react";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 
 // ============================================================
 // MEH-1158: header content-preview primitives. Presentational only — the
@@ -60,7 +60,7 @@ export function PreviewThumbs({ urls = [], max = 3 }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={`${url}-${i}`}
-          src={optimizeCloudinary(url, { aspectRatio: "1:1", width: 80 })}
+          src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.square, width: 80 })}
           alt=""
           aria-hidden="true"
           className="w-10 h-10 object-cover rounded-[8px] border border-border shrink-0"
