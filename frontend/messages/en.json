@@ -1094,7 +1094,7 @@
     },
     "mini": {
       "default_label": "Location",
-      "open_in_waze": "Open in",
+      "open_in_waze": "Open in Waze",
       "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {
