@@ -444,13 +444,25 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
+  // MEH-1226: align with the "profile = public page, settings = config"
+  // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
+  // then the profile row points at the PUBLIC business page (/producer/[id],
+  // from user.producer_id — set together with role==="producer" at
+  // auth.py:522-523); guarded so a producer without a linked id never
+  // renders /producer/undefined. Non-producers have no public page, so the
+  // profile row is dropped entirely — their menu is settings → logout.
+  // Settings drops the ?tab param to land on the same /settings as the
+  // mobile AccountSheet.
   const items = [
-    // MEH-1226: producer dashboard sits FIRST (above profile/settings); the
-    // profile row now always targets /settings?tab=profile (previously it
-    // duplicated the /producer/dashboard target for producers).
-    ...(isProducer ? [{ href: "/producer/dashboard", label: t("account.menu.dashboard") }] : []),
-    { href: "/settings?tab=profile", label: t("account.menu.profile") },
-    { href: "/settings?tab=security", label: t("account.menu.settings") },
+    ...(isProducer
+      ? [
+          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
+          ...(user.producer_id
+            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
+            : []),
+        ]
+      : []),
+    { href: "/settings", label: t("account.menu.settings") },
     ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
 
