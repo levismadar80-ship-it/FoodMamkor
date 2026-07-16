@@ -21,7 +21,7 @@ vi.mock("next-intl", () => ({
       checklist_todo: "עדיין חסר",
       "steps.image": "תמונה ראשית",
       "steps.location": "קטגוריות ומיקום",
-      "steps.products": "3 מוצרים בקטלוג",
+      "steps.products": "מוצר ראשון בקטלוג",
       "steps.contact": "פרטי קשר",
     };
     const raw = flat[key] ?? key;
@@ -107,9 +107,18 @@ describe("ProfileCompletenessCard (MEH-1106 4-step checklist)", () => {
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
   });
 
-  it("products step is card-only: fewer than 3 products → step todo, CTA → #profile-products", () => {
-    const { container } = render(
+  // MEH-1238: one product now completes the checklist step (badge still needs 3).
+  it("one product → products step done → 100% complete", () => {
+    render(
       <ProfileCompletenessCard producer={{ ...base, products: [{ id: "p1" }] }} />,
+    );
+    expect(screen.getByText("הפרופיל מלא")).toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  });
+
+  it("products step is card-only: zero products → step todo, CTA → #profile-products", () => {
+    const { container } = render(
+      <ProfileCompletenessCard producer={{ ...base, products: [] }} />,
     );
     // image/location/contact done, products todo → 75%.
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "75");
