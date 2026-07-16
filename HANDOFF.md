@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1230: /map GPS-fix persistence + sort-ring clip — feature/meh-1230-fix-map-gps-persistence (LOW/UI)
+
+- **Branch:** `feature/meh-1230-fix-map-gps-persistence` off `origin/staging` (divergence 0). LOW-RISK per MEH-450. `Closes MEH-1230`. (Harness-designated `claude/map-sort-gps-focus-fix-loxs6w` → re-cut to the `feature/*` name per the MEH-1141 branch-name gate + task spec — same class as MEH-1223/1224.)
+- **Phase 0 (file:line):** `grep setUserLocation frontend/` → defined only at `lib/user-location.js:54`, **zero production callers** (only `__tests__/userLocation.test.js`) → STOP-condition (a) not triggered. Sort control = `MapClient.jsx:485-503` (`-my-2.5` wrapper + `min-h-[44px]` select w/ `focus-visible:ring-2 ring-offset-1`) inside the `overflow-y-auto` scroll container at `:467`.
+- **Root cause:** no path ever wrote `user_location` → `useUserLocation()` always null → "מרחק" option permanently `disabled` + `MapProducerCard`/`ProducerCard` distance labels never rendered. The MEH-12 homepage write was dropped in the MEH-970-era /map rework without migrating it.
+- **Fix:** `setUserLocation(lat,lng)` added to both GPS success paths after coord validation — `MapComponent.jsx goToMyLocation` (shared NearMePill + crosshair path) + `MapClient.jsx handleGpsClick`. Ring clip: added `pt-3.5` to the scroll container `:467` (kept `-my-2.5` so the count row stays compact — chose padding-top over removing `-my-2.5`, which would grow the row to 44px and violate "count row stays compact").
+- **Test:** new `__tests__/MapGeolocationPersist.test.jsx` — leaflet-stubbed (repo never mounts real Leaflet under jsdom), mocks `navigator.geolocation` success, asserts `user_location` written + event dispatched + an invalid-fix negative case.
+- **Scope:** `LocationModal.jsx` untouched (MEH-1192-owned, In Progress) — its geolocate path should also call `setUserLocation` (flag for MEH-1192). Did NOT change `disabled={!userLoc}` or restructure the native select.
+- **Verify:** `npm run build` exit 0 · full vitest 1068 pass / 14 skip (2 new) · 0 physical-RTL props added (MapClient is path-exempt anyway) · pytest N/A (frontend-only, 0 backend files). **Live check (GPS unlock → "מרחק" + distance labels + ring not clipped) deferred to Sapir on Vercel/mobile** — the CC sandbox can't geolocate and Railway/tile egress is blocked.
+- **Next:** open PR, merge on green CI (LOW-RISK per MEH-450).
+
 ## 2026-07-16 — MEH-1217: /map desktop GPS-button contrast + legend anchor — feature/meh-1217-map-controls-visibility (LOW/UI, HELD for Sapir preview)
 
 - **Branch:** `feature/meh-1217-map-controls-visibility` off `origin/staging` (divergence 0). LOW-RISK UI (lg-only). Single file `MapPane.jsx`. `Closes MEH-1217`.

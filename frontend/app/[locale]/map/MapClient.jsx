@@ -10,7 +10,7 @@ import MapBottomSheet from "@/components/MapBottomSheet";
 import { haversineKm } from "@/lib/distance";
 import { showToast } from "@/lib/toast";
 import { useUserCity } from "@/lib/use-user-city";
-import { useUserLocation } from "@/lib/user-location";
+import { useUserLocation, setUserLocation } from "@/lib/user-location";
 
 import CityPickerModal from "./components/CityPickerModal";
 import FilterChipsBar from "./components/FilterChipsBar";
@@ -285,6 +285,9 @@ export default function MapPage() {
         setGpsLoading(false);
         const { latitude: lat, longitude: lng } = pos.coords;
         if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
+        // MEH-1230: persist the fix so "מרחק" sort unlocks + card distance labels
+        // render live (useUserLocation subscribers re-render on the event).
+        setUserLocation(lat, lng);
         sync.mapApiRef.current?.getMap()?.flyTo([lat, lng], 13, { duration: 1.2 });
       },
       (err) => {
@@ -464,7 +467,11 @@ export default function MapPage() {
             </div>
             {filterChipsBar}
           </div>
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {/* MEH-1230: pt-3.5 gives the sort <select>'s focus ring clearance at the
+              scroll container's top edge. The control keeps -my-2.5 (compact count
+              row); without top padding overflow-y-auto clipped the ring (the row is
+              this container's top-flush child). */}
+          <div className="flex-1 overflow-y-auto px-4 pt-3.5 pb-4">
             <div className="flex items-start justify-between mb-3">
               {/* MEH-826: locked count copy + "near you · {region}" subhead under it */}
               <div>
