@@ -1675,7 +1675,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
       },
-      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. Closing: \"Have a great day.\""
+      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.co.il.\"\n7. Closing: \"Have a great day.\""
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
