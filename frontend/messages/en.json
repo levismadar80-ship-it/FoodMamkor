@@ -669,6 +669,11 @@
         "tab_nav": "Quick profile navigation"
       },
       "back_label": "← Back",
+      "owner_bar": {
+        "label": "This is your business page",
+        "cta": "Edit business",
+        "aria": "Edit your business"
+      },
       "tabs": {
         "about": "About",
         "products": "Products",
@@ -1089,7 +1094,7 @@
     },
     "mini": {
       "default_label": "Location",
-      "open_in_waze": "Open in",
+      "open_in_waze": "Open in Waze",
       "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {

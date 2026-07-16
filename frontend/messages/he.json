@@ -664,6 +664,11 @@
         "tab_nav": "ניווט מהיר בפרופיל"
       },
       "back_label": "← חזרה",
+      "owner_bar": {
+        "label": "זהו עמוד העסק שלכם",
+        "cta": "ערכו את העסק",
+        "aria": "עריכת העסק שלכם"
+      },
       "tabs": {
         "about": "אודות",
         "products": "מוצרים",
@@ -1087,7 +1092,7 @@
     },
     "mini": {
       "default_label": "מיקום",
-      "open_in_waze": "פתיחה ב",
+      "open_in_waze": "פתיחה ב-Waze",
       "open_in_google": "פתיחה במפות Google"
     },
     "bottom_sheet": {
