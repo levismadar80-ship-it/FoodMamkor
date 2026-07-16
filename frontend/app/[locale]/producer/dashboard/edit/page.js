@@ -60,7 +60,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -74,6 +74,7 @@ const ANCHOR_TO_KEY = {
   images: "images",
   location: "location",
   products: "products",
+  pricing: "pricing",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
   // under the accordion they resolve to the same cards, auto-expanded.
@@ -119,6 +120,7 @@ const KEY_TO_ANCHOR = {
   images: "images",
   location: "location",
   products: "products",
+  pricing: "pricing",
 };
 
 export default function ProducerDashboardEditPage() {
@@ -358,6 +360,14 @@ export default function ProducerDashboardEditPage() {
     ) : (
       <PreviewEmpty />
     ),
+    pricing:
+      profile.top_product_name || profile.price_range ? (
+        <PreviewChips
+          items={[profile.top_product_name, profile.price_range].filter(Boolean)}
+        />
+      ) : (
+        <PreviewEmpty />
+      ),
     questions:
       (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
   };
@@ -372,11 +382,12 @@ export default function ProducerDashboardEditPage() {
     bio: t("description_card.heading"),
     products: tProducts("section_heading"),
     contact: t("contact_channels.heading"),
+    pricing: t("pricing.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "location", "bio", "products", "contact", "questions",
+    "images", "categories", "location", "bio", "products", "contact", "pricing", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -561,6 +572,27 @@ export default function ProducerDashboardEditPage() {
         <span className="flex-1 h-px bg-border" aria-hidden="true" />
       </div>
 
+      {/* MEH-1242 PR3 — price range + top product editor (optional marketing
+          info; lives under "more options", not in the completeness funnel). */}
+      <EditAccordionCard
+        anchorId="pricing"
+        title={t("pricing.heading")}
+        summary={
+          [profile.top_product_name, profile.price_range]
+            .filter(Boolean)
+            .join(" · ") || tAcc("pricing_summary_empty")
+        }
+        preview={previews.pricing}
+        open={openKey === "pricing"}
+        onToggle={() => toggleKey("pricing")}
+      >
+        <PricingCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
       {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
       <EditAccordionCard
         anchorId="questions"
@@ -693,6 +725,9 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
     phone: profile?.phone || "",
     instagram: profile?.instagram || "",
     website: profile?.website || "",
+    // MEH-1242 PR3: whatsapp_group — backend whitelist already accepts it and
+    // the public ContactCard already renders it; this is the missing editor.
+    whatsapp_group: profile?.whatsapp_group || "",
     contact_email: profile?.contact_email || "",
     facebook: profile?.facebook || "",
     external_order_form: profile?.external_order_form || "",
@@ -741,6 +776,7 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
         phone: form.phone.trim() || null,
         instagram: form.instagram.trim() || null,
         website: form.website.trim() || null,
+        whatsapp_group: form.whatsapp_group.trim() || null,
         contact_email: form.contact_email.trim() || null,
         facebook: form.facebook.trim() || null,
         external_order_form: form.external_order_form.trim() || null,
@@ -773,6 +809,10 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
         <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
+        {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
+            empty-primary guard applies (fieldError never targets it). */}
+        <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          onChange={(e) => upd("whatsapp_group", e.target.value)} />
         <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
