@@ -1177,6 +1177,73 @@ class TestMeh56BioGenerator:
         assert resp.json()["bio"] == "ריבות בעבודת יד מהגליל"
 
 
+class TestMeh1236RequestReview:
+    """POST /producers/me/request-review — resubmit-for-review ping.
+
+    Notification-only (no schema change): pending producer → 200 + admin ping
+    fired; already-decided producer → 409; non-producer → 403; unauth → 401;
+    over the 3/hour limit → 429.
+    """
+
+    def _producer_owner(self, db, status, email):
+        from conftest import make_user
+        p = make_producer(db, name="עסק בהמתנה", status=status)
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = p.id
+        db.commit()
+        return p, user
+
+    def test_pending_producer_fires_admin_ping(self, client, db, monkeypatch):
+        called = {}
+        import app.services.auth_notifications as an
+
+        def _fake(name, city):
+            called["args"] = (name, city)
+
+        monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
+        p, user = self._producer_owner(db, "pending", "resub1@example.com")
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+        # BackgroundTask runs within the TestClient call → the admin ping fired
+        # with the producer's own name + city, fail-open at the service layer.
+        assert called["args"] == (p.name, p.city)
+
+    def test_pending_whatsapp_producer_allowed(self, client, db):
+        _, user = self._producer_owner(db, "pending_whatsapp", "resub2@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_approved_producer_conflict(self, client, db):
+        # Re-review only makes sense in the pending queue (mirrors
+        # admin.request_producer_changes' 409 guard).
+        _, user = self._producer_owner(db, "approved", "resub3@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 409
+
+    def test_non_producer_forbidden(self, client, db):
+        from conftest import make_user
+        consumer = make_user(db, email="resubcons@example.com", role="consumer")
+        resp = client.post(
+            "/producers/me/request-review", headers=auth_header(consumer)
+        )
+        assert resp.status_code == 403
+
+    def test_requires_auth(self, client):
+        resp = client.post("/producers/me/request-review")
+        assert resp.status_code == 401
+
+    def test_rate_limited_after_three_per_hour(self, client, db):
+        _, user = self._producer_owner(db, "pending", "resub4@example.com")
+        headers = auth_header(user)
+        statuses = [
+            client.post("/producers/me/request-review", headers=headers).status_code
+            for _ in range(4)
+        ]
+        assert statuses[:3] == [200, 200, 200]
+        assert statuses[3] == 429
+
+
 # ---------- Contact ----------
 
 class TestContact:
