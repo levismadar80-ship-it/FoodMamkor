@@ -10,6 +10,7 @@ import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import AddressSearch from "@/components/AddressSearch";
 import InfoTooltip from "@/components/InfoTooltip";
 import Input from "@/components/ui/Input";
 import {
@@ -166,11 +167,16 @@ function Field({ label, children, full = false }) {
 
 export default function ProducerForm({ initial = null, producerId = null }) {
   const t = useTranslations("admin");
+  // MEH-1242 PR2: reuse the owner LocationCard's Hebrew copy for the admin
+  // address search — no new i18n keys (see dashboard.producer.location).
+  const tLoc = useTranslations("dashboard.producer.location");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
   const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
+  // MEH-1242 PR2: free-text address backing the AddressSearch combobox.
+  const [addressText, setAddressText] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -226,6 +232,17 @@ export default function ProducerForm({ initial = null, producerId = null }) {
   }, [initial]);
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // MEH-1242 PR2: Nominatim address pick → fill lat/lng/city. Never clobber an
+  // existing city when the result lacks one. REUSES edit/cards.jsx LocationCard.
+  const handleAddressSelect = (picked) => {
+    setForm((f) => ({
+      ...f,
+      lat: picked.lat ?? f.lat,
+      lng: picked.lng ?? f.lng,
+      city: picked.city || f.city,
+    }));
+  };
 
   const toggleCategory = (id) => {
     setForm((f) => {
@@ -437,20 +454,53 @@ export default function ProducerForm({ initial = null, producerId = null }) {
             onChange={(e) => update("slug", e.target.value)}
             placeholder={t("producers.form.fields.slug_placeholder")}
           />
-          <Input
-            type="number"
-            step="any"
-            label={t("producers.form.fields.lat")}
-            value={form.lat}
-            onChange={(e) => update("lat", e.target.value)}
-          />
-          <Input
-            type="number"
-            step="any"
-            label={t("producers.form.fields.lng")}
-            value={form.lng}
-            onChange={(e) => update("lng", e.target.value)}
-          />
+          {/* MEH-1242 PR2: raw lat/lng inputs replaced by AddressSearch
+              (Nominatim geocode) — onSelect fills lat/lng/city. Raw coords
+              stay editable behind the collapsed manual-edit disclosure below
+              (admin escape hatch). REUSES: components/AddressSearch.jsx +
+              edit/cards.jsx LocationCard. */}
+          <div className="md:col-span-2">
+            <label htmlFor="admin-producer-address" className="block text-sm text-muted mb-1">
+              {tLoc("heading")}
+            </label>
+            <AddressSearch
+              id="admin-producer-address"
+              value={addressText}
+              onChange={setAddressText}
+              onSelect={handleAddressSelect}
+            />
+            <p className="text-xs text-muted mt-1">{tLoc("subtitle")}</p>
+            {form.lat !== "" && form.lng !== "" && (
+              <p className="text-xs text-muted mt-2">
+                {tLoc("current_prefix")}{" "}
+                <span className="text-text">
+                  {form.city ? `${form.city} · ` : ""}
+                  <span dir="ltr">{form.lat}, {form.lng}</span>
+                </span>
+              </p>
+            )}
+            <details className="mt-3">
+              <summary className="text-xs text-primary underline cursor-pointer w-fit">
+                {t("common.edit")}
+              </summary>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lat")}
+                  value={form.lat}
+                  onChange={(e) => update("lat", e.target.value)}
+                />
+                <Input
+                  type="number"
+                  step="any"
+                  label={t("producers.form.fields.lng")}
+                  value={form.lng}
+                  onChange={(e) => update("lng", e.target.value)}
+                />
+              </div>
+            </details>
+          </div>
         </div>
       </Section>
 
