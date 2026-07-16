@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { useAdminAction } from "@/lib/use-admin-action";
+import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
@@ -141,15 +143,34 @@ const EMPTY = {
   vacation_until: "",
 };
 
+// Focus-retention fix: Section + Field live at MODULE scope. Defining them
+// inside ProducerForm recreated their component identity on every render, so
+// React remounted the whole subtree and dropped input focus mid-typing.
+function Section({ title, children }) {
+  return (
+    <div className="bg-white rounded-[12px] border border-border p-6">
+      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children, full = false }) {
+  return (
+    <label className={`block ${full ? "md:col-span-2" : ""}`}>
+      <span className="block text-sm text-muted mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export default function ProducerForm({ initial = null, producerId = null }) {
   const t = useTranslations("admin");
   const kosherLabel = (value) => t(KOSHER_LABEL_KEYS[value] ?? "producers.form.fields.kosher_none");
   const router = useRouter();
+  const { run, isBusy } = useAdminAction();
   const [form, setForm] = useState(EMPTY);
   const [categories, setCategories] = useState([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     api.get("/categories").then((r) => setCategories(r.data));
@@ -218,79 +239,106 @@ export default function ProducerForm({ initial = null, producerId = null }) {
     });
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    setUploading(true);
-    try {
-      const uploaded = [];
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const r = await api.post("/upload/image", fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        uploaded.push(r.data.url);
-      }
-      setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.image_upload"));
-    } finally {
-      setUploading(false);
-    }
+    // MEH-228 pattern: image upload routes through useAdminAction — per-key
+    // in-flight lock + central error toast (no more swallowed failures).
+    run(
+      "producer-images",
+      async () => {
+        const uploaded = [];
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append("file", file);
+          const r = await api.post("/upload/image", fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          uploaded.push(r.data.url);
+        }
+        setForm((f) => ({ ...f, images: [...(f.images || []), ...uploaded] }));
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.image_upload"),
+        ),
+    );
   };
 
   const removeImage = (url) => {
     setForm((f) => ({ ...f, images: f.images.filter((u) => u !== url) }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setError("");
-    setSaving(true);
-
+    // Explicit field list (no {...form} spread): the legacy delivery_cities
+    // column is never sent — delivery_area_cities is the sole cities channel
+    // (MEH-903). Save routes through useAdminAction (MEH-228): per-key
+    // in-flight lock + central error toast (no swallowed failures).
     const payload = {
-      ...form,
-      lat: form.lat === "" ? null : parseFloat(form.lat),
-      lng: form.lng === "" ? null : parseFloat(form.lng),
+      name: form.name,
+      contact_name: form.contact_name,
+      opening_hours: form.opening_hours,
+      phone: form.phone,
+      instagram: form.instagram,
+      website: form.website,
+      whatsapp_group: form.whatsapp_group,
+      primary_contact_method: form.primary_contact_method,
       // MEH-17 — Pydantic's EmailStr rejects empty strings; null is fine.
       contact_email: form.contact_email?.trim() || null,
-      // MEH-903 A: the single CitiesAutocomplete (form.delivery_cities) is the
-      // source for delivery_area_cities → delivery_areas table. The legacy
-      // delivery_cities column is spread via ...form but is inert on the backend
-      // (admin no longer writes it — Chunk A).
+      facebook: form.facebook,
+      external_order_form: form.external_order_form,
+      city: form.city,
+      lat: form.lat === "" ? null : parseFloat(form.lat),
+      lng: form.lng === "" ? null : parseFloat(form.lng),
+      slug: form.slug,
+      description: form.description,
+      short_description: form.short_description,
+      top_product_name: form.top_product_name,
+      price_range: form.price_range,
+      category_ids: form.category_ids,
+      has_delivery: form.has_delivery,
+      pickup_points: form.pickup_points,
+      kosher: form.kosher,
+      grass_fed: form.grass_fed,
+      organic_certified: form.organic_certified,
+      is_recommended: form.is_recommended,
+      producer_license_number: form.producer_license_number,
+      admin_notes: form.admin_notes,
+      images: form.images,
+      // MEH-213 — location mode
+      has_physical_location: form.has_physical_location,
+      offers_delivery: form.offers_delivery,
+      delivery_nationwide: form.delivery_nationwide,
+      // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
+      // the legacy delivery_cities column is intentionally omitted.
       delivery_area_cities: form.delivery_cities,
-      // MEH-291 — clear vacation_until when not on vacation
-      vacation_until: form.availability_state === "on_vacation" && form.vacation_until ? form.vacation_until : null,
+      // MEH-291 — unified availability; clear vacation_until when not on vacation.
+      availability_state: form.availability_state,
+      vacation_until:
+        form.availability_state === "on_vacation" && form.vacation_until
+          ? form.vacation_until
+          : null,
     };
 
-    try {
-      if (producerId) {
-        await api.put(`/admin/producers/${producerId}`, payload);
-      } else {
-        await api.post("/admin/producers", payload);
-      }
-      router.push("/admin?tab=producers");
-    } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("producers.form.errors.save"));
-    } finally {
-      setSaving(false);
-    }
+    run(
+      "producer-save",
+      async () => {
+        if (producerId) {
+          await api.put(`/admin/producers/${producerId}`, payload);
+        } else {
+          await api.post("/admin/producers", payload);
+        }
+        router.push("/admin?tab=producers");
+      },
+      (err) =>
+        showToast.error(
+          detailToMessage(err.response?.data?.detail) ||
+            t("producers.form.errors.save"),
+        ),
+    );
   };
-
-  const Section = ({ title, children }) => (
-    <div className="bg-white rounded-[12px] border border-border p-6">
-      <h2 className="font-semibold text-lg mb-4 text-primary">{title}</h2>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, children, full = false }) => (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="block text-sm text-muted mb-1">{label}</span>
-      {children}
-    </label>
-  );
 
   // MEH-1128 Wave C: single-line inputs migrated to ui/Input — this recipe
   // now feeds ONLY the selects + textareas (no primitive for them until the
@@ -300,12 +348,6 @@ export default function ProducerForm({ initial = null, producerId = null }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">
-          {error}
-        </div>
-      )}
-
       <Section title={t("producers.form.sections.basic")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* MEH-1128 Wave C: single-line fields via ui/Input (labels move to
@@ -605,10 +647,10 @@ export default function ProducerForm({ initial = null, producerId = null }) {
           accept="image/*"
           multiple
           onChange={handleImageUpload}
-          disabled={uploading}
+          disabled={isBusy("producer-images")}
           className="text-sm"
         />
-        {uploading && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
+        {isBusy("producer-images") && <p className="text-sm text-muted mt-2">{t("producers.form.uploading")}</p>}
         {form.images?.length > 0 && (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
             {form.images.map((url) => (
@@ -689,13 +731,13 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         <button
           type="submit"
           disabled={
-            saving ||
+            isBusy("producer-save") ||
             (!form.has_physical_location && !form.offers_delivery) ||
             (form.offers_delivery && !form.delivery_nationwide && form.delivery_cities.length === 0)
           }
           className="bg-primary text-white px-8 py-3 rounded-[12px] hover:bg-primary-dark transition font-medium disabled:opacity-50"
         >
-          {saving ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
+          {isBusy("producer-save") ? t("common.saving") : producerId ? t("producers.form.submit_update") : t("producers.form.submit_create")}
         </button>
         <button
           type="button"
