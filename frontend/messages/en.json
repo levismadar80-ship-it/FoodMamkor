@@ -1308,6 +1308,12 @@
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
         "awaiting_completion": "Awaiting completion",
+        "photo_preview": {
+          "label": "Photos",
+          "thumb_alt": "Photo {index} of {name}",
+          "broken": "Broken image — failed to load",
+          "more_alt": "{count} more photos"
+        },
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again.",
         "deleting": "Deleting…"
