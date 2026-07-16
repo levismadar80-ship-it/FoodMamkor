@@ -5,6 +5,58 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH sweep 1235/1236/1237/1238/1239/1234: 6 PRs, ALL MERGED (ADR-016 v2 autonomous batch)
+
+- **Batch outcome (one PR per issue, merged on green required gates; E2E = known non-required red):**
+
+| MEH | PR | squash | root cause / what shipped | tests added |
+|---|---|---|---|---|
+| 1235 | #1786 | `7266c537` | OPERATIONAL, not code — never-silent UI already shipped+tested; root cause = `ANTHROPIC_API_KEY` unset on Railway staging (log: `[BIO] Anthropic client unavailable`) or 5/hr 429 | +1 route happy-path |
+| 1236 | #1787 | `8c17a3b4` | ImagesCard upload≠save trap → auto-persist after upload; new `POST /producers/me/request-review` (pending-only 409, 3/hr, notification-only, NO schema) + banner resubmit button | 6 pytest + 3 vitest |
+| 1237 | #1788 | `3e64eed4` | generic unsaved banner → names dirty cards + jump links (reuses headings + KEY_TO_ANCHOR) | +1 vitest |
+| 1238 | #1789 | `24f9e3a1` | 1-product business stuck at 75% → `CHECKLIST_PRODUCTS_MIN=1` decoupled from badges.js (=3, untouched) | +2 vitest |
+| 1239 | #1791 | `1238a897` | empty product form → example placeholders + price-pair hint, copy-only | +1 vitest |
+| 1234 | #1793 | `53d1d3b3` | Nominatim weak IL coverage + "שרה"×4 dupes → `lib/places.js` Google Places (New, REST, session tokens) + Nominatim fallback + dedupe; AddressSearch API unchanged | 6+3 vitest |
+
+- **STOP conditions hit:** MEH-1235 STOP-e — **Sapir: verify `ANTHROPIC_API_KEY` on the Railway staging service** (never set from a session). MEH-1234 — **new env var `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** documented in `frontend/.env.example` + PR #1793 body; Sapir adds in Vercel (Production+Preview); fallback keeps the app fully functional without it.
+- **No schema changes** anywhere in the batch (1236's endpoint is notification-only; `requested_changes` columns untouched).
+- **Deferred to Sapir (no feature-branch Vercel previews since MEH-1044):** mobile QA per UI change — upload→checklist tick (1236), banner jump links (1237), 100% with 1 product (1238), form placeholders at 375px (1239), "דרך שרה" suggestions once the Maps key lands (1234).
+- **Parallel-session note (rule 1):** during the batch, staging also advanced with the MEH-1242 admin ProducerForm series (#1790/#1794) + #1792 from another session. No file collision materialized — #1794 consumes AddressSearch whose public API #1793 deliberately preserved. Flagged here per the single-session audit rule; no duplicate PRs were opened.
+- **Env note (pytest):** CC sandbox had no backend venv/postgres — backend tests were verified by CI's `Backend tests` leg on each PR (all green); vitest + `npm run build` ran locally per PR.
+
+### ממצאי sweep 16/07 (report-only — ספיר מסננת; לא תוקן כלום)
+
+**Family 1 — silent fail-open:**
+- `frontend/components/ProductsSection.jsx:54` — products fetch `.catch(() => setProducts([]))` renders the same "no products" EmptyState on error; load failure indistinguishable from an empty catalog.
+- `frontend/app/[locale]/producer/dashboard/page.js:124` — analytics `.catch(() => setAnalytics(null))` leaves the `loading_analytics` text up forever on fetch failure (render branch :525-526).
+- `frontend/app/[locale]/producer/dashboard/page.js:125` — profile `.catch(() => setProfile(null))` silently unmounts the completeness card + locks the vanity-share link with no error state.
+- `frontend/components/AddressSearch.jsx` (post-1234 `selectResult` catch) — a geocode-resolve failure swallows silently; onSelect never fires so LocationCard Save stays disabled with no message.
+- `frontend/app/[locale]/producer/dashboard/page.js:172` — empty `.catch(() => {})` on the availability refetch (low severity; primary failure already toasts at :167).
+
+**Family 2 — upload≠save traps (ImagesCard excluded — fixed in MEH-1236):**
+- `frontend/components/ProductsSection.jsx:82-83` (add) + `:164-165` (edit) — product image uploads to Cloudinary immediately but `image_url` persists only on the explicit Add/Save submit; closing the form via X orphans the upload and the change looks lost. (Settings avatar auto-saves — not a trap.)
+
+**Family 3 — stale state after mutation:** none found.
+
+**Family 4 — disabled buttons without visible reason:**
+- `frontend/app/[locale]/settings/page.jsx:371` — profile Save `disabled={!canSave || saving}` gates on `phoneValid` (:196) but the invalid-phone error renders only when `phoneTouched` (:353) — a pasted invalid phone disables Save with no visible reason.
+- `frontend/components/ProductsSection.jsx:578` — add-submit disabled during image upload with no hint on the button itself (low severity).
+
+**Family 5 — physical CSS in RTL:** none (settings/page.jsx instances are path-exempt + rtl-ok).
+
+**Family 6 — dead fields (MEH-1190 family):**
+- `frontend/app/[locale]/producer/dashboard/edit/cards.jsx` (DescriptionCard assist) — the Instagram input is seeded from `profile.instagram` and editable, but `save()` sends only `{description, short_description}`; an edited Instagram value feeds AI generation only and is silently dropped on save. (May be intended — it lives inside the assist form — but it's the one rendered field whose edit does not persist.)
+
+## 2026-07-16 — MEH-1246: project-instructions density audit — `docs/PROJECT_INSTRUCTIONS_AUDIT.md` (discovery-first, docs-only)
+
+- **Branch:** `feature/meh-1246-project-instructions-audit` off `origin/staging` (divergence 0 at cut). Harness-designated `claude/project-instructions-audit-fwrjqi` would hit the MEH-1141 branch-name gate → used the Linear `<constraints>` `feature/*` name (same class as MEH-1183/1201/1220/1232/1233). LOW-RISK/docs-only.
+- **Input:** the current claude.ai Project instructions, pasted by Sapir into the session (snapshot **2026-07-16**) — they live in claude.ai only, not the repo. Phase 0 was read-only and ended at a WAIT gate; Sapir locked with 3 adjustments before Phase 1.
+- **Deliverable:** `docs/PROJECT_INSTRUCTIONS_AUDIT.md` — counting rule + per-section breakdown (~117 directives / 20 sections, inside the 100–120 estimate), position map (DoD stranded in the middle third; the 31-directive Linear block in the final third), full overlap matrix with file:line per row, ranked trim list, do-not-trim list, and the **full trimmed draft** as a fenced block (Hebrew preserved) for copy-paste into claude.ai.
+- **Locked adjustments applied:** (1) §19 + §7 removed from the trim list and kept full — new **dual-audience** classification rule (the orchestrator does not auto-load `.claude/rules/*` / `CONTEXT.md`, so a pointer = a deleted rule for that reader); documented in the audit. (2) §18 + §11 (the two biggest cuts) marked **"apply after MEH-1248"** (template-06 → v2.1 migration of the `<forbidden>`/persona/pre-fill deltas), not performed here. (3) Reordering in scope — top block rebuilt: identity/stack → §4 state-load → promoted "check Linear before new issue" → §5 brand LOCK → §9 DoD; promoted rules keep exact wording, position only.
+- **Count:** trimmed draft now ≈ **113** (−4: §17 + §13 deleted, §14 Alembic dup folded); projected after MEH-1248 ≈ **74** (−43). The near-term win is **positional, not numeric** — the two rules whose dilution caused MEH-1230/1192 now sit in the primacy slot.
+- **Scope honored:** zero edits to `CLAUDE.md`, `.claude/rules/*`, `.claude/hooks/*`, workflows, or templates 00-08. One new docs file only.
+- **Next:** push + PR; merge on the 2 required gates (CI gate + Deploy gate) — docs-only skips the named jobs (MEH-716); then MEH-1246 → Done. Follow-on: MEH-1248 unlocks trim ranks 1+2.
+
 ## 2026-07-16 — MEH-1192 (R1): LocationModal geolocate persists GPS fix — MERGED (PR #1776, squash 97a29736) + docs backfill
 
 - **Merged to staging** (squash `97a29736`, PR #1776). `Refs MEH-1192` (R1 code only). Residual of MEH-1230.
