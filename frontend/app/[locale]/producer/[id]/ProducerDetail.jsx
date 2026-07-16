@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
 import ContactSidebar from "./components/ContactSidebar";
+import OwnerEditBar from "./components/OwnerEditBar";
 import ProducerHeader from "./components/ProducerHeader";
 import ProducerSections from "./components/ProducerSections";
 import StickyContactBar from "./components/StickyContactBar";
@@ -82,6 +83,11 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* MEH-1209: owner-only edit entry — renders above the h1 (which lives in
+          the Tinted Masthead for imageless profiles and in ProducerHeader
+          otherwise), in-flow, above the fold. Self-gates on ownership; a
+          non-owner viewer gets 0 DOM, so there is no reserved space / CLS. */}
+      <OwnerEditBar producer={producer} />
       {/* MEH-1146 chunk B: breadcrumb only — the redundant "→ חזרה" button was
           removed (the breadcrumb already provides the home/category path). */}
       <div className="mb-4">

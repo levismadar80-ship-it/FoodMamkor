@@ -669,6 +669,11 @@
         "tab_nav": "Quick profile navigation"
       },
       "back_label": "← Back",
+      "owner_bar": {
+        "label": "This is your business page",
+        "cta": "Edit business",
+        "aria": "Edit your business"
+      },
       "tabs": {
         "about": "About",
         "products": "Products",
