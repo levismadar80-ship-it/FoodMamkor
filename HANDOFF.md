@@ -5,6 +5,11 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1219: WhatsApp click source-attribution audit — feature/meh-1219-whatsapp-click-audit (docs-only)
+
+- **Verdict: MISSING.** WhatsApp click logging records **no source/surface** — a tap from the map list card, the profile sidebar, the sticky bar, and the delivery block are all indistinguishable rows. Confirmed (not "not found"): the endpoint `POST /api/producers/{id}/whatsapp-click` (`producers.py:252-277`) takes only the producer id + optional JWT; the `producer_whatsapp_clicks` model (`models.py:934-947`) = `{id, producer_id, user_id, clicked_at}`, matched by the baseline migration (`…baseline.py:444-455`); all 5 active CTAs `sendBeacon` with no body/query (`contact-tracking.js:50`, `MapProducerCard.jsx:206`, `WhatsAppButton.jsx:57`, `ContactCard.jsx:106`, `StickyContactBar.jsx:84`, `MobileSheetSelectedCard.jsx:92`). `ProducerCard` (the /producers list card) has **no** WhatsApp CTA at all.
+- **Report:** NEW `docs/reports/whatsapp-click-attribution-2026-07.md` (4 sections + file:line for every claim + minimal-change proposal). Adding `source` needs a nullable column + Alembic migration → **HIGH-RISK follow-up**, not GREEN. The keep/remove-the-card product decision should follow instrumentation + a data window. Docs-only diff. `Closes MEH-1219`.
+
 ## 2026-07-16 — MEH-1223: /share copy toast tells the truth on double failure — feature/meh-1223-copy-toast-truth (GREEN, awaiting CI)
 
 - **Branch:** `feature/meh-1223-copy-toast-truth` off `origin/staging` (divergence 0 at cut). LOW-RISK/GREEN per MEH-450. `Closes MEH-1223`; unblocks MEH-1221. **Branch note (same class as MEH-1220/1183/1201):** harness-designated `claude/meh-1223-copy-toast-truth-ax0ndm` would hit the MEH-1141 branch-name gate (no `claude/*`) → used the issue `feature/*` name (task + Linear both specify it).
