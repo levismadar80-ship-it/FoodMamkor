@@ -905,6 +905,7 @@
       "cancelling": "Cancelling...",
       "cancel_cta": "Cancel my commitment",
       "cancel_confirm": "Cancel your commitment?",
+      "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
@@ -1675,7 +1676,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
       },
-      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. Closing: \"Have a great day.\""
+      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.co.il.\"\n7. Closing: \"Have a great day.\""
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
@@ -3796,6 +3797,7 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
+        "pricing_summary_empty": "No price or top product set yet",
         "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
         "more_group": "More options",
         "next_step_aria": "Next step to complete"
@@ -3807,6 +3809,7 @@
         "phone_field_helper": "This number is used for both WhatsApp and calls",
         "field_instagram": "Instagram (username)",
         "field_website": "Website (link)",
+        "field_whatsapp_group": "WhatsApp group link",
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
@@ -3857,6 +3860,18 @@
         "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
         "current_prefix": "Current location:",
         "save_cta": "Save location",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "pricing": {
+        "heading": "Price & top product",
+        "subtitle": "Your starting price and top product — shown on your business card.",
+        "field_top_product": "Top product",
+        "top_product_placeholder": "Grass-fed beef",
+        "field_price_range": "Starting price",
+        "price_range_placeholder": "from ₪65/kg",
+        "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
