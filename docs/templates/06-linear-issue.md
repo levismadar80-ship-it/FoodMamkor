@@ -1,6 +1,6 @@
-# 📋 Template 06 — Linear Issue (v2.0)
+# 📋 Template 06 — Linear Issue (v2.1)
 
-למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.0 — אפריל 2026.
+למשימה מלאה ב-Linear (1-10 שעות). גרסה 2.1 — יולי 2026 (מיגרציית 3 anti-pattern deltas מה-project instructions, MEH-1248; בסיס גרסה 2.0 — אפריל 2026).
 
 ---
 
@@ -293,6 +293,12 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 ❌ **Comments במקום description edits** — נשבר ה-source-of-truth principle.
 
 ❌ **Hebrew copy ב-comments** — שמרי ב-description הראשי.
+
+❌ **`<forbidden>` block** — הוחלף ב-V2 ב-positive framing דרך `<scope>` + `<constraints>`.
+
+❌ **Heavy persona embellishment ב-`<role>`** — Wharton 2025: לא משפר accuracy.
+
+❌ **Pre-fill** — Opus 4.6+ הסיר תמיכה.
 
 ---
 
