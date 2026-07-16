@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { NavigationArrow } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -32,10 +32,6 @@ function DisableInteraction() {
 
 export default function MiniMap({ lat, lng, name }) {
   const t = useTranslations("map.mini");
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    setIsMobile(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
-  }, []);
 
   const hasCoords = lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng));
   const wazeUrl = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
@@ -67,17 +63,20 @@ export default function MiniMap({ lat, lng, name }) {
       {/* Navigation buttons — only when coordinates are valid */}
       {hasCoords && (
         <div className="flex gap-3 mt-3">
-          {isMobile && (
-            <a
-              href={wazeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 border border-text text-text px-4 py-2 min-h-[44px] rounded-sm text-sm hover:bg-green-50 transition"
-            >
-              <NavigationArrow size={16} weight="regular" aria-hidden="true" />
-              {t("open_in_waze")}-Waze
-            </a>
-          )}
+          {/* MEH-1233 B5: Waze sits next to Google on ALL viewports (was
+              mobile-only, so the desktop audit saw only Google). The Israeli
+              audience defaults to Waze for navigation. Same visual style as the
+              Google button; full label lives in the i18n value ("פתיחה ב-Waze")
+              — no hardcoded "-Waze" suffix in JSX. */}
+          <a
+            href={wazeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 border border-text text-text px-4 py-2 min-h-[44px] rounded-sm text-sm hover:bg-green-50 transition"
+          >
+            <NavigationArrow size={16} weight="regular" aria-hidden="true" />
+            {t("open_in_waze")}
+          </a>
           <a
             href={gmapsUrl}
             target="_blank"
@@ -86,7 +85,8 @@ export default function MiniMap({ lat, lng, name }) {
           >
             <NavigationArrow size={16} weight="regular" aria-hidden="true" />
             {/* MEH-1139: full label lives in the i18n value ("פתיחה במפות Google") —
-                no hardcoded "-Google Maps" suffix. Waze keeps the prefix pattern. */}
+                no hardcoded "-Google Maps" suffix. MEH-1233 B5 aligned Waze to
+                the same rule (full label in i18n, no "-Waze" suffix). */}
             {t("open_in_google")}
           </a>
         </div>

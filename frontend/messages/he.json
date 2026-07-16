@@ -664,6 +664,11 @@
         "tab_nav": "ניווט מהיר בפרופיל"
       },
       "back_label": "← חזרה",
+      "owner_bar": {
+        "label": "זהו עמוד העסק שלכם",
+        "cta": "ערכו את העסק",
+        "aria": "עריכת העסק שלכם"
+      },
       "tabs": {
         "about": "אודות",
         "products": "מוצרים",
@@ -962,6 +967,7 @@
       "nationwide": "משלוחים לכל הארץ",
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
+      "delivery_day_label": "משלוח ביום {day}",
       "pickup": "איסוף עצמי"
     },
     "follow": {
@@ -1086,7 +1092,7 @@
     },
     "mini": {
       "default_label": "מיקום",
-      "open_in_waze": "פתיחה ב",
+      "open_in_waze": "פתיחה ב-Waze",
       "open_in_google": "פתיחה במפות Google"
     },
     "bottom_sheet": {
@@ -1310,6 +1316,12 @@
         "all_complete": "כל בתי העסק שלמים",
         "empty": "אין בתי עסק להצגה",
         "awaiting_completion": "ממתין להשלמה",
+        "photo_preview": {
+          "label": "תמונות",
+          "thumb_alt": "תמונה {index} של {name}",
+          "broken": "תמונה שבורה — לא נטענה",
+          "more_alt": "עוד {count} תמונות"
+        },
         "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה.",
         "delete_error": "מחיקת בית העסק נכשלה. נסו שוב.",
         "deleting": "מוחקים…"
@@ -2859,7 +2871,7 @@
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
       "greeting_template": "שלום {name}, {q}",
-      "delivery_to_city": "אפשר משלוח ל-{city}?"
+      "delivery_to_city": "אפשר משלוח ל{city}?"
     }
   },
   "directory": {

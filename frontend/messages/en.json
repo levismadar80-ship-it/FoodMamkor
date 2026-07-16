@@ -669,6 +669,11 @@
         "tab_nav": "Quick profile navigation"
       },
       "back_label": "← Back",
+      "owner_bar": {
+        "label": "This is your business page",
+        "cta": "Edit business",
+        "aria": "Edit your business"
+      },
       "tabs": {
         "about": "About",
         "products": "Products",
@@ -964,6 +969,7 @@
       "nationwide": "Nationwide delivery",
       "arranged": "Delivery by arrangement — contact for details",
       "min_order": "Minimum",
+      "delivery_day_label": "Delivery on {day}",
       "pickup": "Self pickup"
     },
     "follow": {
@@ -1088,7 +1094,7 @@
     },
     "mini": {
       "default_label": "Location",
-      "open_in_waze": "Open in",
+      "open_in_waze": "Open in Waze",
       "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {
@@ -1308,6 +1314,12 @@
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
         "awaiting_completion": "Awaiting completion",
+        "photo_preview": {
+          "label": "Photos",
+          "thumb_alt": "Photo {index} of {name}",
+          "broken": "Broken image — failed to load",
+          "more_alt": "{count} more photos"
+        },
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again.",
         "deleting": "Deleting…"

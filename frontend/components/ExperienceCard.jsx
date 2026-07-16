@@ -6,7 +6,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -59,7 +59,7 @@ export default function ExperienceCard({ experience: ex }) {
               CSS-background image is announced to assistive tech. */}
           <div
             className="h-44 bg-cover bg-center"
-            style={{ backgroundImage: `url(${optimizeCloudinary(ex.image_url, { width: 800 })})` }}
+            style={{ backgroundImage: `url(${optimizeCloudinary(ex.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 800 })})` }}
             role="img"
             aria-label={ex.title}
           />
