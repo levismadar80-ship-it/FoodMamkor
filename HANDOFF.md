@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1192 (R1): LocationModal geolocate persists GPS fix — MERGED (PR #1776, squash 97a29736) + docs backfill
+
+- **Merged to staging** (squash `97a29736`, PR #1776). `Refs MEH-1192` (R1 code only). Residual of MEH-1230.
+- **What:** `LocationModal.jsx handleGeo` success now calls `setUserLocation(pos.coords.latitude, pos.coords.longitude)` as its first statement, before the Nominatim reverse-geocode — so the /map "מרחק" sort + card distance labels unlock via the city-search fallback modal too (the 3rd and last geolocate flow after MEH-1230's two /map handlers). Persists on every branch (city / no-city / Nominatim error). Extended `LocationModal.test.jsx` (geo success + rejecting fetch → `user_location` written + event). No `handleGeo` refactor; MEH-1735 contract/copy/3-call-sites untouched.
+- **Merge friction (MEH-1112 treadmill):** the PR hit **4** consecutive staging-churn conflicts on the append-only CHANGELOG/HANDOFF; broke it by **dropping those two files** (conflict-immune, code+test only, +38) and merging on the green required gates (CI gate + Deploy gate; Playwright E2E non-required, known-red on `/producer/[id]`). This entry is the backfill.
+- **Linear:** MEH-1192 was already `Done` (moved 18:15:55, ~90 min before this merge, by a prior authority-upgrade closer session whose SYNC note replaced the manual R2 with the scripted `LocationModal.test.jsx` QA). The `Refs`-only PR did **not** change its status; left Done (not reopened) — surfaced to Sapir for the call.
+- **Verify:** `npm run build` exit 0 · LocationModal vitest 4/4 · `grep -c "setUserLocation(" LocationModal.jsx` = 1 · 0 physical-RTL props. Live real-device GPS check (R2) is Sapir's option if wanted.
+
 ## 2026-07-16 — MEH-1229: producer-photo delivery consistency — MERGED (PR #1777, squash 95882f1) + docs backfill
 
 - **Merged:** `feature/meh-1229-producer-photo-consistency` → staging (PR #1777, both required gates green). Every producer/product/event image now routes through one helper with a single source-of-truth ratio map (`IMAGE_RATIOS` in `frontend/lib/cloudinary.js`).
