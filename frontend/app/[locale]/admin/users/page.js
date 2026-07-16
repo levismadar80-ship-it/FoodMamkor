@@ -22,7 +22,6 @@ export default function AdminUsersPage() {
   const [expanded, setExpanded] = useState(null);
   const [favorites, setFavorites] = useState({});
   const [confirm, setConfirm] = useState(null); // { userId, userName, action: "promote"|"demote" }
-  const [busy, setBusy] = useState(false);
   // MEH-1046: client-side pagination — slice the already-fetched array. The
   // search/role filters are SERVER-side (load() query params), so `users` is
   // already the filtered result set. Page resets on filter change only, not
@@ -43,16 +42,16 @@ export default function AdminUsersPage() {
     api.get("/admin/users", { params }).then((r) => setUsers(r.data)).catch(() => setUsers([]));
   };
 
-  const applyRole = async (id, newRole) => {
-    setBusy(true);
-    try {
+  // MEH-228: role change routes through useAdminAction — per-key in-flight
+  // lock (no double-promote) + central error toast (previously the failure was
+  // swallowed by the finally). Modal closes on success; on error it stays open
+  // for retry while the toast surfaces the reason.
+  const applyRole = (id, newRole) =>
+    run(`role:${id}`, async () => {
       await api.put(`/admin/users/${id}/role`, { role: newRole });
       load();
-    } finally {
-      setBusy(false);
       setConfirm(null);
-    }
-  };
+    });
 
   const toggleBlock = (id) =>
     run(`block:${id}`, async () => {
@@ -306,7 +305,7 @@ export default function AdminUsersPage() {
             </p>
             <div className="flex gap-3 justify-start">
               <button
-                disabled={busy}
+                disabled={isBusy(`role:${confirm.userId}`)}
                 onClick={() =>
                   applyRole(confirm.userId, confirm.action === "promote" ? "admin" : "consumer")
                 }
@@ -316,7 +315,7 @@ export default function AdminUsersPage() {
                     : "bg-red-600 hover:bg-red-700"
                 } disabled:opacity-50`}
               >
-                {busy ? t("users.confirm.submitting") : t("users.confirm.confirm")}
+                {isBusy(`role:${confirm.userId}`) ? t("users.confirm.submitting") : t("users.confirm.confirm")}
               </button>
               <button
                 onClick={() => setConfirm(null)}
