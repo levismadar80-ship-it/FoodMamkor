@@ -3742,7 +3742,7 @@
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
-          "products": "3 products in your catalog",
+          "products": "First product in your catalog",
           "contact": "Contact details"
         },
         "fields": {
