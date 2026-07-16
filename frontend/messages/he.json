@@ -962,6 +962,7 @@
       "nationwide": "משלוחים לכל הארץ",
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
+      "delivery_day_label": "משלוח ביום {day}",
       "pickup": "איסוף עצמי"
     },
     "follow": {
@@ -2865,7 +2866,7 @@
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
       "greeting_template": "שלום {name}, {q}",
-      "delivery_to_city": "אפשר משלוח ל-{city}?"
+      "delivery_to_city": "אפשר משלוח ל{city}?"
     }
   },
   "directory": {

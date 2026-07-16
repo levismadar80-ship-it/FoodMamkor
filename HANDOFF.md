@@ -5,6 +5,22 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1229: producer-photo delivery consistency — MERGED (PR #1777, squash 95882f1) + docs backfill
+
+- **Merged:** `feature/meh-1229-producer-photo-consistency` → staging (PR #1777, both required gates green). Every producer/product/event image now routes through one helper with a single source-of-truth ratio map (`IMAGE_RATIOS` in `frontend/lib/cloudinary.js`).
+- **Ratio map:** `{card 4:3, featured 4:5, strip 16:10, square 1:1, banner 16:9}` with documented opt-outs (`ImageGallery`/`Lightbox` art-directed; `MapProducerCard` MEH-1133 intrinsic-aspect logo letterbox). `ImageWithFallback` gained optional `aspectRatio`/`optimizeWidth` (backward-compatible).
+- **Fixes:** `FridayDeliveryStrip` ignored-string-arg bug (crop never shipped); two raw `next/image` bypasses (`ProducerSections` event thumb + `RecipeDetail` related-product thumb) → `ImageWithFallback` (graceful fallback, no `_next/image` 404). Centralized all hardcoded ratio literals; added ratios to no-ratio tile/banner surfaces.
+- **Churn note (MEH-1112):** staging churned ~every 6-7 min during the merge window; the branch's CHANGELOG/HANDOFF/MANUAL_TESTING entries were dropped to make it conflict-immune, code merged clean, and the docs are restored in this backfill branch (`feature/meh-1229-docs-backfill`).
+- **Open (DoD):** mobile QA on staging (iOS Safari + Chrome) — `/`, `/producers`, `/producer/[id]` products+events, `/map` popup+sheet, `/events/[id]`, `/experiences`; confirm no broken images in console + framing OK on the newly-cropped strips/banners (geometric CSS crop → Cloudinary `g_auto` smart-crop). MEH-1222 (broken-URL data cleanup) parallel; fallback protects regardless.
+
+## 2026-07-16 — MEH-1226 + MEH-1228: account-menu dashboard entry (desktop + mobile) — MERGED (PRs #1772, #1775)
+
+- **Both MERGED to staging, both Linear → Done.** LOW-RISK/GREEN, pre-approved merge (Sapir). Two sibling PRs from the MEH-1089 dashboard UX pass.
+- **MEH-1226 (PR #1772, `Closes MEH-1226`) — desktop `UserMenu` (`Header.jsx`, `hidden md:block`).** Implemented the **updated** spec (supersedes the merged PR #1769's older profile→settings version): producer menu = `לוח הבקרה שלי` → `הפרופיל שלי` (→ **public** `/producer/${user.producer_id}`) → `הגדרות` (`/settings`) → admin → logout; non-producer profile row **removed** (menu = settings → logout); settings href dropped `?tab=` → plain `/settings` (mobile parity). **Phase 0 (STOP-a cleared):** `user.producer_id` is on `/auth/me` `UserOut` (`schemas.py:1071`), set with `role="producer"` (`auth.py:522-523`); profile row guarded on it so `/producer/undefined` never renders. Single component file + Header vitest role cases + `qa-artifacts/MEH-1226/` (Playwright live-app QA, producer+consumer). **#1769 was already merged → could not be reused; opened #1772 as a fresh PR** (restarted the branch off staging, per the merged-PR git rule).
+- **MEH-1228 (PR #1775, `Closes MEH-1228`) — mobile `AccountSheet.jsx`.** Added a producer-gated (`user?.role === "producer"`) `לוח הבקרה שלי` row → `/producer/dashboard` as the **first** sheet row (above favorites), mirroring the desktop order. Reuses `liCls`/`rowCls`/`iconCls` 1:1 + Phosphor `Gauge` (size 19); i18n reuses `account.menu.dashboard`; guest/consumer sheets unchanged. Single component + 2 vitest cases.
+- **Verify:** `npm run build` green on both; Header 24/24 + AccountSheet 8/8 vitest; both required gates (`CI gate` + `Deploy gate`) green on each merged head (`cf010a57` / `752f9330`); `Playwright E2E` = known non-required red on `/producer/[id]` (MEH-991 drift, unrelated). **Mobile visual QA (375px) + desktop menu = Sapir on the Vercel preview / staging** (no dev-server QA this session — two container crashes during Task-2 QA forced a git+build-only finish).
+- **Churn note (MEH-1112):** staging advanced 3× under #1772 during the merge window (append-only-log conflicts); re-synced each time — none were code conflicts. STOP conditions (a) id-present, (b) no MEH-1209 overlap (that branch = ProducerDetail/OwnerEditBar only), (c)/(d) not hit.
+
 ## 2026-07-16 — MEH-1232: admin pending-queue photo thumbnails before approval — feature/meh-1232-admin-pending-photo-preview (LOW/GREEN, frontend-only)
 
 - **Branch:** `feature/meh-1232-admin-pending-photo-preview` off `origin/staging` (recut clean, divergence 0 at push). LOW-RISK/GREEN (admin-only, display-only, single component + 2 message files). `Closes MEH-1232`. **Branch note (same class as MEH-1183/1201/1220/1223/1224):** harness-designated `claude/meh-1232-phases-0-1-2-a9zck1` would hit the MEH-1141 branch-name gate (no `claude/*`) → used the Linear `<constraints>` `feature/*` name.
@@ -106,6 +122,14 @@
 - **Doc-sync (Rule 11):** `docs/MANUAL_TESTING.md:22` — the "/producers ביקרת לאחרונה = מיני-כרטיסים" case is now false (strip deleted); replaced it with a regression check that the strip is GONE from /producers (homepage recently-viewed cases at :1801-1816 untouched).
 - **Verify:** `npm run build` exit 0 (compiled 17.7s); `grep -rn RecentlyViewedStrip frontend/` → only a stale comment in `__tests__/PaginationCounter.test.jsx:9` (out of task scope, left); full vitest 1061 pass / 14 skip (incl. the ProducersClient-rendering PaginationCounter test).
 - **PR 2 (next):** remove decorative gold eyebrow rule above the HomeCTA heading in `HomeStaticBlocks.jsx` (shipped — see PR 2 section above).
+
+## 2026-07-14 — MEH-1203: /favorites grid parity + FAB gate (F2 held as STOP) — draft PR
+
+- **Branch:** `feature/meh-1203-favorites-grid-parity` off `origin/staging` (SHA `e57f9a73`, divergence 0 at cut). YELLOW tier. `Closes MEH-1203`. Harness-designated `claude/*` batch branch rejected by the MEH-1141 gate → used the issue `feature/*` name.
+- **Shipped (F1 + F3, 3 files + test):** F1 grid `FavoritesClient.jsx:130` → `grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4` (parity with `ProducersClient.jsx:489`). F3 `ChatWidgetLazy.jsx` `if (pathname === "/favorites") return null;` + docstring + new vitest case. Bell tap-target bumped to CardHeart's density variant.
+- **F2 held (STOP condition a+b):** favorites uses the shared central `ProducerCard`; its Leaf+`BRAND_NAME` placeholder (`ProducerCard.jsx:234-245`, MEH-643 canon) is the SAME one `/producers` + homepage render. The spec's "leaf-only" canon is the **product-card** placeholder (MEH-1138/MEH-1168 P1) — a different component. Removing the wordmark = central-component edit affecting 3 surfaces + would break the F1 parity goal. Surfaced to Sapir; not touched.
+- **Verify:** build exit 0 · vitest 7/7 (ChatWidgetLazy) · route-mocked Playwright 375 (2 cols) + 1440 (4 cols), FAB absent (`qa-artifacts/MEH-1203/`, WebP 76 KB). **Not auto-merged** — F2 decision + merge is Sapir's.
+- **Next (Sapir):** decide F2 (non-bug vs separate central-design ticket) → un-draft + merge if F1+F3 accepted.
 
 ## 2026-07-13 — MEH-1183: category-card bridge photos + glyph fallback — MERGED (Sapir "MERGE" 14/07)
 
