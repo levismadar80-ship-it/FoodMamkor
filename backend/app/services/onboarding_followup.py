@@ -34,6 +34,14 @@ from app.services.email import send_email
 logger = logging.getLogger(__name__)
 
 
+# MEH-1242: single canonical site-domain constant. The public web domain is
+# mehamakor.co.il (matches the frontend SITE_URL default,
+# frontend/lib/env.client.js). The email signatures below resolve their domain
+# from here via {site_domain} instead of hardcoding the literal 5×.
+# (mehamakor.online is the staging alias — never the public-facing address.)
+SITE_DOMAIN = "mehamakor.co.il"
+
+
 # MEH-539: step → (days_old threshold, Producer column attribute name).
 # Column is by step number (the 2nd / 3rd / 4th / 5th email of the sequence),
 # the days-old number is the wait window. See migration b504e4be4225.
@@ -83,7 +91,7 @@ _EMAIL_2_BODY = """\
 
 ספיר שנפ
 מייסדת | מהמקור
-mehamakor.co.il
+{site_domain}
 """
 
 _EMAIL_3_SUBJECT = "צילום מוצר — בלי מצלמה, בלי סטודיו"
@@ -119,7 +127,7 @@ _EMAIL_3_BODY = """\
 
 ספיר שנפ
 מייסדת | מהמקור
-mehamakor.co.il
+{site_domain}
 """
 
 _EMAIL_4_SUBJECT = "ההודעה הראשונה — איך לא לפספס אותה"
@@ -159,7 +167,7 @@ _EMAIL_4_BODY = """\
 
 ספיר שנפ
 מייסדת | מהמקור
-mehamakor.co.il
+{site_domain}
 """
 
 _EMAIL_5A_SUBJECT = "חודש איתנו — סיכום קצר + מה הלאה"
@@ -195,7 +203,7 @@ _EMAIL_5A_BODY = """\
 
 ספיר שנפ
 מייסדת | מהמקור
-mehamakor.co.il
+{site_domain}
 """
 
 _EMAIL_5B_SUBJECT = "הפרופיל ממתין — חסר רק דבר אחד"
@@ -222,7 +230,7 @@ _EMAIL_5B_BODY = """\
 
 ספיר שנפ
 מייסדת | מהמקור
-mehamakor.co.il
+{site_domain}
 """
 
 
@@ -252,6 +260,7 @@ def _build_email(step: int, producer: Producer, first_name: str) -> Tuple[str, s
     fmt = {
         "greeting": _greeting(first_name),
         "frontend_url": settings.frontend_url,
+        "site_domain": SITE_DOMAIN,
     }
     if step == 2:
         return _EMAIL_2_SUBJECT, _EMAIL_2_BODY.format(**fmt)
