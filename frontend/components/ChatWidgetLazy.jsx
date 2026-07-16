@@ -20,6 +20,8 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 // a conditional render by route, NOT a global removal). usePathname comes from
 // @/i18n/navigation, so it is locale-stripped ("/producer/123", not "/he/...").
 // The dashboard subtree (/producer/dashboard/...) keeps the FAB.
+// MEH-1203: /favorites joins /map + /producer/[id] in the gate — the FAB
+// overlapped the first card of the canonical 2-col favorites grid.
 function isProducerDetail(pathname) {
   // `$` anchor: match the /producer/[id] leaf exactly (no public sub-routes),
   // so a hypothetical future nested route wouldn't accidentally lose the FAB.
@@ -42,5 +44,10 @@ export default function ChatWidgetLazy() {
   // are untouched.
   if (pathname === "/map" || pathname.startsWith("/map/")) return null;
   if (isProducerDetail(pathname)) return null;
+  // MEH-1203: /favorites is the third page where the FAB does damage — at the
+  // canonical 2-col grid the launcher's bottom-END corner (insetInlineEnd,
+  // z-9999) sits over the first card. Same pathname-gate pattern as /map and
+  // /producer/[id] above; the widget stays mounted everywhere else.
+  if (pathname === "/favorites") return null;
   return <ChatWidget />;
 }

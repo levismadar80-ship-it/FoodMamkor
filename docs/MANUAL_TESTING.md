@@ -129,6 +129,8 @@
 
 - [ ] **גבהים אחידים בבית** — `/`, סקציית "בתי עסק מומלצים", דסקטופ (4 טורים) ונייד (2 טורים) — **תוצאה מצופה:** כל הכרטיסים באותה שורה בגובה זהה (בלי "מדרגות"), גם כשלכרטיס אין מחיר/דירוג/תיאור. שורת המחיר צמודה לתחתית הכרטיס.
 - [ ] **גבהים אחידים במשטחים נוספים** — `/producers`, `/search`, ורצועת "עסקים חדשים" בבית — **תוצאה מצופה:** אותה אחידות גבהים.
+- [ ] **מועדפים — רשת 2/3/4 (MEH-1203)** — `/favorites` (מחוברת) — **תוצאה מצופה:** 2 עמודות בנייד (375px), 3 ב-lg, 4 ב-xl — זהה ל-/producers; לא כרטיס אחד רחב לשורה.
+- [ ] **מועדפים — אין FAB צ'אט (MEH-1203)** — `/favorites` בנייד — **תוצאה מצופה:** כפתור הצ'אט הצף אינו מרונדר (כמו ב-/map ו-/producer); לא מכסה את הכרטיס הראשון.
 - [ ] **מועדפים — פאנל התראות פתוח** — `/favorites` (מחוברת), לחיצה על פעמון בכרטיס אחד לפתיחת AlertPrefsPanel — **תוצאה מצופה:** הפאנל נפתח מתחת לכרטיס במלואו, בלי גלישה/חיתוך; שאר הכרטיסים בשורה נשארים בגובה זהה.
 - [ ] **אין אייקון method-hint** — כל כרטיס עסק (בית/מועדפים/חיפוש) — **תוצאה מצופה:** אין אייקון וואטסאפ/טלפון/אתר דקורטיבי בתחתית הכרטיס; הפוטר מציג מחיר בלבד (או ריק). יצירת קשר עדיין קיימת בעמוד העסק.
 
@@ -1643,7 +1645,7 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] Long top product name truncates with `…`
 
 ### Regression checks
-- [ ] `/favorites` grid is **unchanged** — still 1-col on mobile, 2-col at md, 3-col at lg
+- [ ] `/favorites` grid = **parity with /producers** (MEH-1203) — 2-col on mobile, 3-col at lg, 4-col at xl (was 1/md:2/lg:3)
 - [ ] Card hover shadow + lift effect still works on desktop
 - [ ] "מאומת" / "פרמיום" / "זמין היום" badges still visible on the image
 - [ ] WhatsApp / phone / Instagram icon row in footer still clickable
