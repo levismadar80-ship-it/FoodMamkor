@@ -50,21 +50,31 @@ export default function ShareClient() {
 
   // REUSES: frontend/components/ShareButton.jsx:34-49 — clipboard + toast
   // with execCommand last-resort fallback.
+  // MEH-1223: track real success — execCommand can return false OR throw, so a
+  // double failure (clipboard AND execCommand both fail) must show the failure
+  // toast, not "הועתק".
   const copyLink = async () => {
+    let copied = false;
     try {
       await navigator.clipboard.writeText(SITE_URL);
-      showToast.success(t("copy_toast"), { icon: <Check size={18} /> });
+      copied = true;
     } catch {
       const ta = document.createElement("textarea");
       ta.value = SITE_URL;
       document.body.appendChild(ta);
       ta.select();
       try {
-        document.execCommand("copy");
-        showToast.success(t("copy_toast"), { icon: <Check size={18} /> });
+        copied = document.execCommand("copy");
+      } catch {
+        copied = false;
       } finally {
         document.body.removeChild(ta);
       }
+    }
+    if (copied) {
+      showToast.success(t("copy_toast"), { icon: <Check size={18} /> });
+    } else {
+      showToast.error(t("copy_failed_toast"));
     }
   };
 
@@ -108,20 +118,27 @@ export default function ShareClient() {
     document.addEventListener("visibilitychange", onVisibility);
     timer = setTimeout(async () => {
       removeListeners();
+      // MEH-1223: track real copy success — on a double failure (mail app never
+      // opened AND clipboard+execCommand both failed) show the failure toast,
+      // not the "message copied, paste it" fallback toast.
+      let copied = false;
       try {
         await navigator.clipboard.writeText(message);
+        copied = true;
       } catch {
         const ta = document.createElement("textarea");
         ta.value = message;
         document.body.appendChild(ta);
         ta.select();
         try {
-          document.execCommand("copy");
+          copied = document.execCommand("copy");
+        } catch {
+          copied = false;
         } finally {
           document.body.removeChild(ta);
         }
       }
-      showToast.error(t("email_fallback_toast"));
+      showToast.error(copied ? t("email_fallback_toast") : t("email_copy_failed_toast"));
     }, MAIL_FALLBACK_MS);
   };
 

@@ -2572,10 +2572,6 @@
       "all_shown": "{count, plural, one {Showed the only business} other {Showed all {count} businesses}}",
       "loading_more_aria": "Loading more businesses"
     },
-    "recently_viewed": {
-      "aria": "Recently viewed",
-      "label": "Recently viewed"
-    },
     "filters": {
       "city_chip": "In my city",
       "category_all": "All categories",
@@ -2810,10 +2806,12 @@
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
     "copy_toast": "Link copied",
+    "copy_failed_toast": "We couldn't copy — select the text and copy it manually",
     "native": "More ways to share",
     "email": "Share by email",
     "email_subject": "Have you heard of Mehamakor?",
     "email_fallback_toast": "We couldn't open your email app — the message was copied, paste it into your email.",
+    "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
     "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
