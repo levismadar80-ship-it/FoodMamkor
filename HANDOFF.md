@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1251 Chunk B: Header click-shield → pointer-events (HIGH — awaiting Sapir merge)
+
+- **Branch:** `feature/meh-1251-header-pointer-events` off `origin/staging`. Central component (`Header.jsx`) → **push + preview + STOP, no merge without Sapir** (per MEH-1251 authority).
+- **What:** `pointer-events-none` on the `<header>` + inner nav-shell wrapper, `pointer-events-auto` on the `<nav>` pill. The transparent band beside the pill was swallowing clicks on page content under it (admin "פרטים חסרים"). pointer-events ONLY — no visual/layout/z change. `<header>` (not only shell) needs it because a pointer-events-none child still lets its `auto` parent capture.
+- **Verify:** build green · vitest — new `HeaderPointerEvents.test.jsx` (4) + existing Header suite (24) all pass · 0 lint errors · RTL hook clean.
+- **⚠️ Live collision:** open PR #1743 (`feature/meh-1195-header-shell-opaque`, DO-NOT-MERGE) also edits `Header.jsx` (surface opacity — different concern). Surface to Sapir before merging; resolve conflict at merge.
+- **Preview:** ⚠️ Vercel deployment **rate-limited** ("retry in 24 hours") at push time — preview URL may be delayed. Chunk A (PR #1804, merged-on-green authority) is the sibling PR.
+
 ## 2026-07-16 — MEH-1248: template 06 → v2.1 (3 anti-pattern deltas migrated) — unblocks MEH-1246 ranks 1+2
 
 - **Branch:** `feature/meh-1248-template-06-v21-delta` off `origin/staging` (divergence 0 at cut; harness `claude/*` name avoided per MEH-1141). LOW-RISK/docs-only, end-to-end to merge.

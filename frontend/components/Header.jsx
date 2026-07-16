@@ -217,14 +217,26 @@ export default function Header() {
         // covered the open dropdown (truncating "לוח הבקרה שלי"). 1050 sits
         // above map controls:1000 and below cookie:1100 — see the /map z-token
         // ledger in .claude/rules/rtl.md.
-        className="sticky top-0 z-[1050]"
+        // MEH-1251: pointer-events-none — the full-width sticky band was a
+        // click-SHIELD over the transparent area beside the pill, swallowing
+        // clicks on page content under it at the top of the viewport (reported:
+        // the admin toolbar "פרטים חסרים" button was dead). It's set on the
+        // <header> (not only the inner shell) because a pointer-events-none
+        // child still lets its `auto` parent hit-test the click — so the shell
+        // alone wouldn't pass clicks THROUGH to the page. The <nav> pill below
+        // re-enables events (pointer-events-auto). pointer-events ONLY — no
+        // visual/layout/z-index change (MEH-732/MEH-1072/MEH-1109 untouched).
+        className="sticky top-0 z-[1050] pointer-events-none"
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
             avoid doubling (mobile + non-strip pages keep pt-4). */}
+        {/* MEH-1251: pointer-events-none — this full-width wrapper is the click
+            shield (inherits from the <header> too); the <nav> pill re-enables
+            events. pointer-events only, no visual/layout change. */}
         <div
           className={[
-            "relative flex flex-col items-center px-5 sm:px-6 pb-2",
+            "relative flex flex-col items-center px-5 sm:px-6 pb-2 pointer-events-none",
             showStrip ? "pt-4 md:pt-0" : "pt-4",
           ].join(" ")}
         >
@@ -249,7 +261,12 @@ export default function Header() {
             // spread. This intentionally REVERSES MEH-890's mobile content-hug
             // for mobile ONLY. Desktop keeps `md:w-auto md:justify-normal` →
             // the MEH-890/MEH-1072 content-hug geometry is untouched at md+.
-            "w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
+            // MEH-1251: pointer-events-auto re-enables events on the pill (and
+            // all its descendants — logo, nav links, search, UserMenu + its
+            // dropdown, which render inside this <nav> subtree) after the
+            // <header>/shell shield set pointer-events-none. Everything
+            // interactive in the header lives inside this <nav>.
+            "pointer-events-auto w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
