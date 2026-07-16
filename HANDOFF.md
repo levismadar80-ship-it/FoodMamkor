@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1248: template 06 → v2.1 (3 anti-pattern deltas migrated) — unblocks MEH-1246 ranks 1+2
+
+- **Branch:** `feature/meh-1248-template-06-v21-delta` off `origin/staging` (divergence 0 at cut; harness `claude/*` name avoided per MEH-1141). LOW-RISK/docs-only, end-to-end to merge.
+- **What:** `docs/templates/06-linear-issue.md` v2.0 → v2.1. Version label bumped (base date preserved) + three anti-patterns appended to the Anti-patterns section, `❌ **…**` house style, Hebrew verbatim from project-instructions §18: `<forbidden>` block (positive-framing replacement), heavy persona embellishment in `<role>` (Wharton 2025), pre-fill (Opus 4.6+ removed). No restructure, no rewording of existing content.
+- **Verify:** `git diff --stat` = template (8+/2−) + the two append-only logs; `grep -c "forbidden\|Wharton\|Pre-fill"` = 3; version line reads v2.1. STOP condition (change outside template 06) not hit.
+- **Unblocks:** MEH-1246 ranks 1+2 — template 06 is now the single owner of the three deltas, so the project-instructions §18 can collapse to a pointer and §11's `<forbidden>` item can be deleted with no information loss. That trim is a **separate follow-up on the claude.ai side** (Sapir pastes the collapsed draft; the repo audit already documents the target state in `docs/PROJECT_INSTRUCTIONS_AUDIT.md`).
+- **Next:** push + PR; merge on the 2 required gates (CI gate + Deploy gate); MEH-1248 → Done.
+
 ## 2026-07-16 — MEH sweep 1235/1236/1237/1238/1239/1234: 6 PRs, ALL MERGED (ADR-016 v2 autonomous batch)
 
 - **Batch outcome (one PR per issue, merged on green required gates; E2E = known non-required red):**
