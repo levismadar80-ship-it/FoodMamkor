@@ -1310,6 +1310,12 @@
         "all_complete": "כל בתי העסק שלמים",
         "empty": "אין בתי עסק להצגה",
         "awaiting_completion": "ממתין להשלמה",
+        "photo_preview": {
+          "label": "תמונות",
+          "thumb_alt": "תמונה {index} של {name}",
+          "broken": "תמונה שבורה — לא נטענה",
+          "more_alt": "עוד {count} תמונות"
+        },
         "confirm_delete": "למחוק את \"{name}\"? פעולה זו אינה הפיכה.",
         "delete_error": "מחיקת בית העסק נכשלה. נסו שוב.",
         "deleting": "מוחקים…"

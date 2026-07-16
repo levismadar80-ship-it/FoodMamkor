@@ -23,6 +23,7 @@
 - [ ] **MEH-1193 ניקוי /map** — פתחי `/map` @375px — **תוצאה מצופה:** אין כפתור "הצג מפה" ב-header של ה-bottom-sheet; אין hint ראשוני; פיל "חפשו באזור זה" נראה במלואו. גרירת ה-sheet PEEK⇄HALF עובדת.
 - [ ] **MEH-1194 כפתור קרוב-אליי** — `/map` @360/375/390 — **תוצאה מצופה:** "קרוב אליי" הוא כפתור-אייקון עגול (44×44, Crosshair, בלי טקסט) בפינה התחתונה־END, זהה ויזואלית לכפתור ה-GPS בדסקטופ; לא חופף לכרטיס הראשון או לפקדי הזום בשני ה-snaps.
 - [ ] **MEH-1196 שורת שפה ב-AccountSheet** — פתחי את תפריט החשבון (טאב חשבון ב-BottomNav) @375px ב-/he וב-/en — **תוצאה מצופה:** שורת "עב / EN" מיושרת עם מועדפים/הגדרות/התנתקות (אייקון Globe בהתחלה, טקסט אחריו); הטוגל מחליף שפה ושומר pathname + query.
+- [ ] **MEH-1228 שורת לוח הבקרה ב-AccountSheet** — פתחי את תפריט החשבון (טאב חשבון ב-BottomNav) @375px כבעלת עסק (role=producer) — **תוצאה מצופה:** שורה ראשונה בגיליון = "לוח הבקרה שלי" (אייקון Gauge) → `/producer/dashboard`, מעל מועדפים. כלקוחה רגילה/אורחת — אין שורת לוח בקרה, הגיליון ללא שינוי.
 
 ---
 
@@ -573,6 +574,18 @@ What the automation asserts (and what to check manually if it's down):
 - [ ] Railway log shows `[RISK] scored producer=` (not `… ANTHROPIC_API_KEY not set` / `… unparseable` / `… crashed`)
 - [ ] Admin badge for the row shows a numeric `risk_score` 0–100 (not `אין מידע`)
 - [ ] **Cleanup**: after the run, `SELECT count(*) FROM users WHERE email LIKE 'smoke+%@mehamakor.online'` → **0** (the Action's always() step does this via a users-first CTE)
+
+---
+
+## MEH-1232 — Admin pending queue: photo thumbnails before approval
+
+ב-`/admin/producers` (desktop; סריקה מהירה בנייד מספיקה — admin surface).
+
+- [ ] **תמונות מרונדרות בשורה ממתינה** — פתחי את תור האישורים עם בית עסק בסטטוס `pending` / `pending_whatsapp` שיש לו תמונות — **תוצאה מצופה:** מתחת לשורה מופיעה רצועת thumbnails (עד 4 + "+N" אם יש יותר) לפני לחיצת "אשרי".
+- [ ] **URL שבור מסומן ⚠** — בית עסק ממתין עם תמונה שבורה (למשל `https://bread.jpg`) — **תוצאה מצופה:** ה-thumbnail מוחלף בסמן ⚠ אדום (לא תמונה ריקה), כך שאפשר לראות במבט אחד שהתמונה שבורה.
+- [ ] **קליק פותח את התמונה המלאה** — לחצי על thumbnail תקין — **תוצאה מצופה:** התמונה המקורית (לא החתוכה) נפתחת בטאב חדש.
+- [ ] **רק לממתינים** — בית עסק `approved` — **תוצאה מצופה:** אין רצועת thumbnails (הרצועה מיועדת לתור האישורים בלבד; כרטיס הסטורי של המאושרים ללא שינוי).
+- [ ] **בלי תמונות = בלי רצועה** — בית עסק ממתין ללא תמונות — **תוצאה מצופה:** אין רצועה ריקה (שער התמונה של MEH-799 חוסם אישור בלי תמונה בנפרד).
 
 ---
 
