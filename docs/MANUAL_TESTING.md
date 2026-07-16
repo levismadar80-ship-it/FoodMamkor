@@ -545,7 +545,9 @@ the toast (right side in he/RTL), inheriting the white text color.
 - [ ] עמוד פנימי (`/about`, `/map`) — cream pill כברירת מחדל (לא שקוף) — תוצאה: pill כהה-דיו על cream
 - [ ] קישור פעיל = קו תחתון זהב (`גלי` ב-`/`, `מפה` ב-`/map`) — תוצאה: underline זהב בלבד
 - [ ] אורח: ghost `כניסה לחשבון` + green `הוסיפו עסק ↗` — תוצאה: שניהם מופיעים
-- [ ] מחובר (consumer): avatar dropdown + green CTA נשאר — תוצאה: dropdown profile/settings/logout
+- [ ] מחובר (consumer): avatar dropdown = **הגדרות → התנתקות בלבד** (MEH-1226 — אין `הפרופיל שלי` ללקוחה) — איך לבדוק: קליק על ה-avatar — תוצאה: 2 שורות, `הגדרות` נוחת ב-`/settings`
+- [ ] מחובר (producer): avatar dropdown = `לוח הבקרה שלי` → `הפרופיל שלי` → `הגדרות` → התנתקות (MEH-1226) — איך לבדוק: קליק על ה-avatar כבעלת עסק — תוצאה: `לוח הבקרה שלי`→`/producer/dashboard`, `הפרופיל שלי`→עמוד ציבורי `/producer/[id]`, `הגדרות`→`/settings`
+- [ ] מחובר (admin): avatar dropdown = `הגדרות` → `ממשק אדמין` → התנתקות (MEH-1226 — ללא dashboard/profile) — תוצאה: `ממשק אדמין` אחרון לפני התנתקות
 - [ ] מחובר (producer/admin): **אין** `הוסיפו עסק` (MEH-669) — תוצאה: CTA מוסתר
 - [ ] search icon + `/` shortcut + LanguageToggle עובדים — תוצאה: search נפתח, שפה מתחלפת
 
