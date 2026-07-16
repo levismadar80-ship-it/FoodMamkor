@@ -598,6 +598,10 @@ class ProducerUpdate(BaseModel):
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
+    # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
+    # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
+    # same schema) silently dropped it. Present on ProducerOwnerOut already.
+    opening_hours: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
     # MEH-293/MEH-479: dietary flags moved to products.is_X.

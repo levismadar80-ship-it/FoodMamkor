@@ -29,6 +29,7 @@ import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import EditAccordionCard from "@/components/EditAccordionCard";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
@@ -865,6 +866,242 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
       <button
         onClick={handleSave}
         disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR5: producer-facing opening-hours editor. opening_hours was
+// admin-only; PR5 adds it to _PRODUCER_WRITABLE_FIELDS + ProducerUpdate.
+// Free-text (LTR), persists via PUT /producers/me. Mirrors LocationCard.
+// ============================================================
+
+// Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
+export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.hours");
+  const seed = profile?.opening_hours ?? "";
+  const [hours, setHours] = useState(seed);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty = hours !== seed;
+  useEffect(() => {
+    reportDirty("hours", dirty);
+    return () => reportDirty("hours", false);
+  }, [dirty, reportDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      const payload = { opening_hours: hours.trim() || null };
+      await api.put("/producers/me", payload);
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <Input
+        type="text"
+        dir="ltr"
+        label={t("field_label")}
+        value={hours}
+        onChange={(e) => setHours(e.target.value)}
+        placeholder={t("placeholder")}
+      />
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR5: producer-facing location-mode + delivery editor. Mirrors the
+// admin ProducerForm "business_type" section (physical-store toggle, delivery
+// toggle, nationwide-or-cities via CitiesAutocomplete). The owner now writes
+// has_physical_location / offers_delivery / delivery_nationwide (previously
+// admin-only) plus delivery_area_cities. Client blocks the invalid states the
+// backend ProducerUpdate._validate_location_mode also 422s (neither type;
+// nationwide + cities). REUSES: components/admin/ProducerForm.jsx:491-543.
+// ============================================================
+
+// Exported for isolation tests (EditTabDeliveryCard.test.jsx).
+export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.delivery");
+  const initial = {
+    hasPhysical: profile?.has_physical_location ?? true,
+    offersDelivery: profile?.offers_delivery ?? false,
+    nationwide: profile?.delivery_nationwide ?? false,
+    cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+  };
+  const [baseline, setBaseline] = useState(initial);
+  const [form, setForm] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const set = (patch) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setSaved(false);
+  };
+
+  const dirty =
+    form.hasPhysical !== baseline.hasPhysical ||
+    form.offersDelivery !== baseline.offersDelivery ||
+    form.nationwide !== baseline.nationwide ||
+    form.cities.length !== baseline.cities.length ||
+    form.cities.some((c, i) => c !== baseline.cities[i]);
+  useEffect(() => {
+    reportDirty("delivery", dirty);
+    return () => reportDirty("delivery", false);
+  }, [dirty, reportDirty]);
+
+  const neitherType = !form.hasPhysical && !form.offersDelivery;
+  const citiesMissing =
+    form.offersDelivery && !form.nationwide && form.cities.length === 0;
+  const blocked = neitherType || citiesMissing;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    // Normalise: nationwide/cities only meaningful when delivering; cities
+    // cleared when nationwide (matches admin form + the backend XOR guard).
+    const cities = form.offersDelivery && !form.nationwide ? form.cities : [];
+    const normalized = {
+      hasPhysical: form.hasPhysical,
+      offersDelivery: form.offersDelivery,
+      nationwide: form.offersDelivery ? form.nationwide : false,
+      cities,
+    };
+    try {
+      await api.put("/producers/me", {
+        has_physical_location: normalized.hasPhysical,
+        offers_delivery: normalized.offersDelivery,
+        delivery_nationwide: normalized.nationwide,
+        delivery_area_cities: normalized.cities,
+      });
+      // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
+      onSave({
+        has_physical_location: normalized.hasPhysical,
+        offers_delivery: normalized.offersDelivery,
+        delivery_nationwide: normalized.nationwide,
+        delivery_areas: normalized.cities.map((c) => ({ city: c })),
+      });
+      setBaseline(normalized);
+      setForm(normalized);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.hasPhysical}
+            onChange={(e) => set({ hasPhysical: e.target.checked })}
+            className="w-4 h-4 accent-primary"
+          />
+          {t("has_physical_location")}
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.offersDelivery}
+            onChange={(e) => set({ offersDelivery: e.target.checked })}
+            className="w-4 h-4 accent-primary"
+          />
+          {t("offers_delivery")}
+        </label>
+        {neitherType && (
+          <p className="text-xs text-red-600">{t("type_validation")}</p>
+        )}
+        {form.offersDelivery && (
+          <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.nationwide}
+                onChange={(e) =>
+                  set({
+                    nationwide: e.target.checked,
+                    ...(e.target.checked ? { cities: [] } : {}),
+                  })
+                }
+                className="w-4 h-4 accent-primary"
+              />
+              {t("delivery_nationwide")}
+            </label>
+            {!form.nationwide && (
+              <div>
+                <span className="block text-sm text-muted mb-1">
+                  {t("delivery_cities_label")}
+                </span>
+                <CitiesAutocomplete
+                  value={form.cities}
+                  onChange={(cities) => set({ cities })}
+                />
+                {form.cities.length === 0 && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {t("delivery_cities_required")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty || blocked}
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
         <span aria-live="polite" aria-atomic="true">
