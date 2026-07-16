@@ -5,6 +5,21 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1229: producer-photo delivery consistency (optimizeCloudinary sweep + per-surface ratio map) — feature/meh-1229-producer-photo-consistency (LOW/GREEN, PR opened)
+
+- **Branch:** `feature/meh-1229-producer-photo-consistency` off `origin/staging` (divergence 0). LOW-RISK/GREEN sweep. `Closes MEH-1229`. NOTE: harness cut the session on a `claude/*` branch (blocked by `check-branch-name.sh` + Branch-name gate CI); rebased the work onto the ticket-specified `feature/` branch, which conforms to the locked pattern.
+- **Phase 0 (file:line, every producer/product/event image surface):**
+  - Reference (unchanged): `HomeStaticBlocks.jsx:88` HomeFeaturedProducer 4:5.
+  - Already through helper w/ ratio → centralized to `IMAGE_RATIOS`: `ProducerCard.jsx:164` (4:3), `MapComponent.jsx:88` popup (1:1), `ProducerSections.jsx:131` products (1:1), `EditAccordionCard.jsx:63` (1:1), `cards.jsx:63`* preview-thumbs (1:1), `RecipeCard.jsx:35` (4:3).
+  - Through helper but NO ratio → added one: `HomeStaticBlocks.jsx:26` recently-viewed (→strip), `MobileSheetSelectedCard.jsx:43` (→banner), `cards.jsx:316` edit grid (→card), `UpcomingEventsPreview.jsx:57` + `EventDetailClient.jsx:81` + `ExperienceCard.jsx:62` event/experience banners (→banner).
+  - BUG: `FridayDeliveryStrip.jsx:17` passed a transform **string** as opts → crop silently dropped; fixed to `{aspectRatio: strip, width:320}`.
+  - RAW bypass (no helper, no fallback) → `ImageWithFallback`: `ProducerSections.jsx:218` event thumb (1:1), `RecipeDetail.jsx:167` related-product thumb (1:1).
+  - Intentional opt-out (helper for f_auto,q_auto, NO crop — documented in map): `ImageGallery`/`Lightbox` (art-directed showcase), `MapProducerCard.jsx:26` (MEH-1133 intrinsic-aspect logo letterbox).
+  - Out of scope: `upload.py`, admin `ProducerForm.jsx:618` (upload preview), hardcoded brand heroes (`HomeHero`, events/experiences/group-buys `HERO_*`), auth backgrounds (`Login/RegisterClient`), `RecipeDetail.jsx:76` recipe hero (recipe content, not producer/product/event).
+- **Core:** `IMAGE_RATIOS = {card 4:3, featured 4:5, strip 16:10, square 1:1, banner 16:9}` in `lib/cloudinary.js` (single SoT, documented opt-outs). `ImageWithFallback` gained optional `aspectRatio`/`optimizeWidth` (backward-compatible; gallery URLs identical).
+- **Verify:** `npm run build` exit 0 · vitest **1066 passed | 14 skipped** (4 cloudinary test mocks → partial-mock so `IMAGE_RATIOS` resolves) · 0 physical RTL props in diff. **Mobile preview (iOS Safari + Chrome) deferred to Sapir** — DoD item.
+- **Next:** Sapir mobile QA on preview (`/` recently-viewed + featured, `/producers`, `/producer/[id]` products+events, `/map` popup+sheet, `/events/[id]`, `/experiences`) → confirm no broken images in console → merge. MEH-1222 (broken-URL data cleanup) is parallel; this fallback protects regardless.
+
 ## 2026-07-16 — MEH-1217: /map desktop GPS-button contrast + legend anchor — feature/meh-1217-map-controls-visibility (LOW/UI, HELD for Sapir preview)
 
 - **Branch:** `feature/meh-1217-map-controls-visibility` off `origin/staging` (divergence 0). LOW-RISK UI (lg-only). Single file `MapPane.jsx`. `Closes MEH-1217`.

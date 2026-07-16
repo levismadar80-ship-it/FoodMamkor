@@ -13,7 +13,10 @@ vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }
 // next/dynamic → the MiniMap marker.
 vi.mock("next/dynamic", () => ({ default: () => () => <div data-testid="minimap" /> }));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn(() => new Promise(() => {})) } }));
-vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
+  optimizeCloudinary: (u) => u,
+}));
 vi.mock("@phosphor-icons/react", () => ({ Leaf: () => <span /> }));
 
 vi.mock("@/components/DeliveryBlock", () => ({ default: () => <div data-testid="delivery" /> }));

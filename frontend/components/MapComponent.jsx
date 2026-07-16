@@ -9,7 +9,7 @@ import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useTranslations } from "next-intl";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { showToast } from "@/lib/toast";
 import { CoordSchema } from "@/lib/schemas";
 import { styleForProducer } from "@/lib/map-categories";
@@ -85,7 +85,7 @@ function createCategoryMarker(
   // single source of truth); empty/null category degrades to DEFAULT (Leaf on
   // primary). Glyph SVG is memoized in lib/marker-glyph (keyed by component ref).
   const imgUrl = producer.images?.[0]
-    ? optimizeCloudinary(producer.images[0], { aspectRatio: "1:1" })
+    ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.square })
     : null;
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const inner = imgUrl

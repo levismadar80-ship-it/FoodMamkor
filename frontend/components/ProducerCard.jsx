@@ -8,7 +8,7 @@ import Image from "next/image";
 import { HeartStraight, Leaf, Star } from "@phosphor-icons/react";
 import BadgeRow from "./BadgeRow";
 import TrustBadge from "./TrustBadge";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { highlightMatch } from "@/lib/highlightMatch";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
@@ -161,7 +161,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   useEffect(() => {
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
-  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: "4:3" });
+  const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: IMAGE_RATIOS.card });
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;

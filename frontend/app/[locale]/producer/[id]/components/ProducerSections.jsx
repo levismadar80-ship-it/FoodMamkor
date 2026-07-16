@@ -4,7 +4,8 @@ import { Leaf } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -128,7 +129,7 @@ export default function ProducerSections({
                 // Cloudinary 1:1 square when a photo exists; otherwise the
                 // canonical no-photo state (MEH-1138) — never a package icon.
                 const img = product.image_url
-                  ? optimizeCloudinary(product.image_url, { aspectRatio: "1:1", width: 160 })
+                  ? optimizeCloudinary(product.image_url, { aspectRatio: IMAGE_RATIOS.square, width: 160 })
                   : null;
                 const price =
                   product.price_min != null
@@ -213,10 +214,16 @@ export default function ProducerSections({
                   key={ev.id}
                   className="bg-white rounded-md border border-border p-4 flex gap-4"
                 >
+                  {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
+                      the helper. Now routed through it (square crop + f_auto,q_auto)
+                      with graceful fallback so a broken URL degrades to the
+                      placeholder instead of a _next/image 404. */}
                   {ev.image_url && (
-                    <Image
+                    <ImageWithFallback
                       src={ev.image_url}
                       alt={ev.title}
+                      aspectRatio={IMAGE_RATIOS.square}
+                      optimizeWidth={128}
                       width={64}
                       height={64}
                       className="w-16 h-16 rounded-sm object-cover flex-shrink-0"

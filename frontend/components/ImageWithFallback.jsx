@@ -22,9 +22,11 @@ export default function ImageWithFallback({
   className = "",
   style,
   priority,
+  aspectRatio, // MEH-1229: optional per-surface crop ratio (from IMAGE_RATIOS)
+  optimizeWidth, // MEH-1229: optional Cloudinary width cap (distinct from layout `width`)
   ...rest
 }) {
-  const optimized = optimizeCloudinary(src);
+  const optimized = optimizeCloudinary(src, { aspectRatio, width: optimizeWidth });
   const [error, setError] = useState(!optimized);
 
   // Reset error state when src prop changes (gallery navigation etc.)
