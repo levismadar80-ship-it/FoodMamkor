@@ -445,9 +445,12 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const isAdmin = user.role === "admin";
 
   const items = [
-    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: t("account.menu.profile") },
-    { href: "/settings?tab=security", label: t("account.menu.settings") },
+    // MEH-1226: producer dashboard sits FIRST (above profile/settings); the
+    // profile row now always targets /settings?tab=profile (previously it
+    // duplicated the /producer/dashboard target for producers).
     ...(isProducer ? [{ href: "/producer/dashboard", label: t("account.menu.dashboard") }] : []),
+    { href: "/settings?tab=profile", label: t("account.menu.profile") },
+    { href: "/settings?tab=security", label: t("account.menu.settings") },
     ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
 
