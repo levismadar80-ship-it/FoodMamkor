@@ -24,7 +24,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Clock, Users, Leaf } from "@phosphor-icons/react";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
 
 export default function RecipeCard({ slug, recipe }) {
@@ -32,7 +32,7 @@ export default function RecipeCard({ slug, recipe }) {
   const totalMin =
     (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
   // MEH-911: smart-crop through the central helper (mirrors ProducerCard:183).
-  const imgSrc = optimizeCloudinary(recipe.image_url, { aspectRatio: "4:3" });
+  const imgSrc = optimizeCloudinary(recipe.image_url, { aspectRatio: IMAGE_RATIOS.card });
 
   return (
     <Link

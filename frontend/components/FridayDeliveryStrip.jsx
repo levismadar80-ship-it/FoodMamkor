@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import api from "@/lib/api";
 
 function ProducerMiniCard({ producer }) {
@@ -13,8 +13,10 @@ function ProducerMiniCard({ producer }) {
   // the prior producer.friday_delivery namespace never existed in the JSONs,
   // so the strip rendered raw key-path fallbacks (bug found in PR #1061).
   const t = useTranslations("group_buys.friday_delivery");
+  // MEH-1229: the 2nd arg is an options object, not a transform string — the
+  // old string arg was silently ignored (only f_auto,q_auto shipped, no crop).
   const img = producer.images?.[0]
-    ? optimizeCloudinary(producer.images[0], "w_160,h_160,c_fill,f_auto,q_auto")
+    ? optimizeCloudinary(producer.images[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 })
     : null;
 
   return (

@@ -10,7 +10,7 @@ import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { BRAND_NAME } from "@/lib/constants";
 
 /**
@@ -54,7 +54,7 @@ export function UpcomingEventsPreview() {
             {ev.image_url ? (
               <div
                 className="h-40 bg-cover bg-center"
-                style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url)})` }}
+                style={{ backgroundImage: `url(${optimizeCloudinary(ev.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 800 })})` }}
               />
             ) : (
               // MEH-1143: canonical no-photo state — fixed h-40 area always renders;

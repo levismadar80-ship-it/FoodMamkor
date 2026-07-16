@@ -46,7 +46,8 @@ vi.mock("next/image", () => ({
   default: ({ src, alt }) => <img src={src} alt={alt} />,
 }));
 
-vi.mock("@/lib/cloudinary", () => ({
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (url) => url || null,
 }));
 

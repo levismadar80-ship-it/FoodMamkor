@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
 
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
 import {
   getPrimaryContactHref,
@@ -40,7 +40,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   const t = useTranslations();
   if (!selectedProducer) return null;
   const sp = selectedProducer;
-  const spImg = optimizeCloudinary(sp.images?.[0]);
+  const spImg = optimizeCloudinary(sp.images?.[0], { aspectRatio: IMAGE_RATIOS.banner, width: 800 });
   // MEH-826: full-profile fallback href (now used when no primary CTA href).
   const spHref = sp.slug ? `/${sp.slug}` : `/producer/${sp.id}`;
   // MEH-826: dynamic primary CTA — mirrors MapProducerCard.jsx contact-method wiring.

@@ -31,7 +31,10 @@ vi.mock("next/link", () => ({
 vi.mock("next/image", () => ({
   default: ({ src, alt }) => <img src={src} alt={alt} />,
 }));
-vi.mock("@/lib/cloudinary", () => ({ optimizeCloudinary: (u) => u }));
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
+  optimizeCloudinary: (u) => u,
+}));
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 vi.mock("@/lib/holidays", () => ({ getActiveHoliday: vi.fn() }));
 

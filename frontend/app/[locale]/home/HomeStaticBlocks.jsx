@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
@@ -23,7 +23,7 @@ export function HomeRecentlyViewed({ items }) {
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
         {items.map((p) => {
           const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
-          const imgSrc = optimizeCloudinary(p.images?.[0]);
+          const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
           return (
             <Link
               key={p.id}
@@ -85,7 +85,7 @@ export function HomeFeaturedProducer({ featured }) {
   const t = useTranslations("home.featured");
   if (!featured) return null;
   const photo = featured.photo
-    ? optimizeCloudinary(featured.photo, { aspectRatio: "4:5", width: 900 })
+    ? optimizeCloudinary(featured.photo, { aspectRatio: IMAGE_RATIOS.featured, width: 900 })
     : null;
   const meta = [featured.name, [featured.category, featured.city].filter(Boolean).join(", ")]
     .filter(Boolean)

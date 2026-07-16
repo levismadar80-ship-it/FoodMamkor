@@ -25,7 +25,7 @@ import { Warning, X, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import EditAccordionCard from "@/components/EditAccordionCard";
 import AddressSearch from "@/components/AddressSearch";
 
@@ -313,7 +313,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
             <div key={`${url}-${i}`} className="relative group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={optimizeCloudinary(url)}
+                src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
                 alt=""
                 className="w-full h-24 object-cover rounded-[8px] border border-border"
               />

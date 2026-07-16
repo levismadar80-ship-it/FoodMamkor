@@ -26,7 +26,8 @@ vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(() => new Promise(() => {})) },
 }));
 
-vi.mock("@/lib/cloudinary", () => ({
+vi.mock("@/lib/cloudinary", async (importOriginal) => ({
+  ...(await importOriginal()), // keep real IMAGE_RATIOS
   optimizeCloudinary: (url) => `optimized:${url}`,
 }));
 

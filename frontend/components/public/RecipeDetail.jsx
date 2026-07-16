@@ -26,7 +26,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
 
 function splitLines(text) {
@@ -163,9 +164,15 @@ export default function RecipeDetail({ recipe, producer, relatedProducts }) {
                 className="bg-white rounded-[12px] border border-border p-3 flex items-center gap-3"
               >
                 {p.image_url ? (
-                  <Image
+                  // MEH-1229: was a raw <Image src={p.image_url}> that bypassed the
+                  // helper. Now helper-routed (square crop + f_auto,q_auto) with a
+                  // graceful fallback so a broken related-product URL degrades to
+                  // the placeholder instead of a _next/image 404.
+                  <ImageWithFallback
                     src={p.image_url}
                     alt=""
+                    aspectRatio={IMAGE_RATIOS.square}
+                    optimizeWidth={112}
                     width={56}
                     height={56}
                     className="w-14 h-14 object-cover rounded-[8px]"
