@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1192 (R1): LocationModal geolocate persists GPS fix — feature/meh-1192-locmodal-persist-gps (LOW/UI)
+
+- **Branch:** `feature/meh-1192-locmodal-persist-gps` off `origin/staging` (divergence 0). LOW-RISK per MEH-450. Residual of MEH-1230.
+- **Phase 0 (file:line):** `grep setUserLocation frontend/` (non-test) → exactly the two MEH-1230 sites (`MapComponent.jsx:259`, `MapClient.jsx:290`); `LocationModal.jsx` did **not** call it → STOP-condition (a) not triggered. `handleGeo` success callback = `LocationModal.jsx:71-94`; note it has **no** coord-validation block (unlike the two MEH-1230 handlers).
+- **Fix:** one import + `setUserLocation(pos.coords.latitude, pos.coords.longitude)` as the **first** statement in the success callback — before the Nominatim reverse-geocode — so persistence + the `mehamakor:user-location` event fire on every branch (city resolved / no-city / Nominatim reject), independent of reverse-geocode. No `handleGeo` refactor, no coord-validation added (guard: one import + one call; NaN round-trips to null via setUserLocation's JSON write). MEH-1735 commit contract / inline-error flow / copy / 3 call-sites untouched.
+- **Test:** extended `LocationModal.test.jsx` — mocks a geolocation success + a **rejecting** `fetch` → asserts `user_location` written + event dispatched (proves persistence survives Nominatim failure). 4/4 pass.
+- **Verify:** `npm run build` exit 0 · LocationModal vitest 4/4 · `grep -c "setUserLocation(" LocationModal.jsx` = 1 · 0 physical-RTL props · no new he/en keys.
+- **Status:** merge R1 on green CI (required gates only; E2E known-red on `/producer/[id]` is non-required). **Do NOT move MEH-1192 to Done** — R2 (Sapir manual QA, `needs-sapir`) still open → leave In Progress.
+
 ## 2026-07-13 — MEH-1148 audit batch: 3 bug-fix PRs MERGED (MEH-1152/1151/1153) + MEH-991 VRT note
 
 - **All three from the MEH-1148 defensive-grep audit, merged to staging (Sapir authorized "merge as they are"):**
