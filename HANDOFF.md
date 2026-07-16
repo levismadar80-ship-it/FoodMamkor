@@ -14,6 +14,13 @@
 - **Verify:** `npm run build` exit 0 · eslint MapPane **0 errors** (7 pre-existing warnings). **HELD — not merging:** UI change, rule 9 default (couldn't reach Sapir on batch merge-authority, transport). Real visual confirmation of both fixes = Sapir on preview.
 - **Update (takeover, same day):** Smadar approved "take over the 2 open PRs" in the follow-up batch session — hold released, branch synced with staging (Accept-Both on this file), merged on green CI. Visual confirm of both fixes on staging desktop /map remains open for Sapir.
 
+## 2026-07-16 — MEH-1218 + MEH-1217: batch takeover — PRs #1765 + #1767 (adopted from stalled parallel session)
+
+- **Context:** session `01J4EdtyuHZHTMjA3JeViHfd` implemented both tickets and opened PRs #1765 (MEH-1218, sort label) + #1767 (MEH-1217, map controls) but HELD merges — it couldn't reach Smadar (transport errors) and defaulted to rule 9. A follow-up batch session arrived with placeholder ticket IDs; per rule 1/28 it STOPPED, surfaced the collision, and Smadar chose **"take over the 2 open PRs"** — no duplicate PRs were opened (the MEH-1215/1216 lesson held).
+- **MEH-1218 (PR #1765):** branch synced with `origin/staging` (clean merge); this CHANGELOG/HANDOFF entry pair added (the prior session held them back, staged only in its sandbox). Diff unchanged otherwise: `he.json`/`en.json` label-only ("הצטרפו לאחרונה" / "Recently joined") + `docs/BRAND.md` §7 anti-pattern row. REPORT-ONLY "שוק" table lives in the PR body — Sapir decides on the rest (worker "שוק שישי" untouched, named feature).
+- **MEH-1217 (PR #1767):** branch was `dirty` vs staging (CHANGELOG/HANDOFF churn) — synced with Accept-Both. Diff unchanged: `MapPane.jsx` desktop GPS button `bg-surface-floating` + `shadow-md`, legend `origin-bottom-left`.
+- **Merge authority:** batch dispatch granted ADR-016 GREEN/YELLOW auto-merge; Smadar's takeover approval supersedes the prior session's hold. Merged on green CI. Visual confirm of both fixes on staging (desktop /map) remains open for Sapir — flagged in both PR bodies.
+
 ## 2026-07-16 — MEH-1224: category caption strip + hover zoom — MERGED 081b0f0e (PR #1762)
 
 - **Merged to staging** (squash `081b0f0e`, PR #1762). `Closes MEH-1224` · `Refs MEH-1183`. GREEN / styling tier.
