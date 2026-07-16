@@ -13,7 +13,7 @@
  *     edit + delete controls (CRUD affordances present)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import api from "@/lib/api";
@@ -73,5 +73,21 @@ describe("Edit-tab ProductsSection (MEH-999 mount)", () => {
     ).toBeInTheDocument();
     // Empty-state copy must NOT show when a product exists.
     expect(screen.queryByText(P.empty.title)).not.toBeInTheDocument();
+  });
+
+  // MEH-1239: the new-product form guides the owner with example placeholders +
+  // a price-pair hint (Wolt/Shopify pattern) — copy only, no behavior change.
+  it("new-product form shows example placeholders + the price hint", async () => {
+    api.get.mockResolvedValue({ data: [] });
+    renderSection();
+    await screen.findByText(P.section_heading);
+
+    // Open the add form via the empty-state CTA.
+    fireEvent.click(screen.getByText(P.empty.cta));
+
+    const F = P.form;
+    expect(screen.getByPlaceholderText(F.name_placeholder)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(F.description_placeholder)).toBeInTheDocument();
+    expect(screen.getByText(F.price_hint)).toBeInTheDocument();
   });
 });

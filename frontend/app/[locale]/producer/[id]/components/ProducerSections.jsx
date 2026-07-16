@@ -192,6 +192,7 @@ export default function ProducerSections({
                         <div
                           className="w-full h-full bg-background flex items-center justify-center"
                           aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                          role="img"
                         >
                           <Leaf size={32} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
                         </div>
