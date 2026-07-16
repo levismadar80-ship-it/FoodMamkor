@@ -57,7 +57,7 @@ export default function AdminExperiencesPage() {
       showToast.success(t("experiences.approve_toast"), { icon: <Leaf size={18} /> });
       load();
     } catch (e) {
-      alert(detailToMessage(e.response?.data?.detail) || t("experiences.approve_error"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("experiences.approve_error"));
     } finally {
       setBusy(false);
     }
@@ -78,7 +78,7 @@ export default function AdminExperiencesPage() {
   const submitModal = async () => {
     if (!modalEx || !modalAction) return;
     if (!feedback.trim()) {
-      alert(t("experiences.validate_feedback"));
+      showToast.error(t("experiences.validate_feedback"));
       return;
     }
     setBusy(true);
@@ -94,7 +94,7 @@ export default function AdminExperiencesPage() {
       closeModal();
       load();
     } catch (e) {
-      alert(detailToMessage(e.response?.data?.detail) || t("experiences.submit_error"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("experiences.submit_error"));
     } finally {
       setBusy(false);
     }

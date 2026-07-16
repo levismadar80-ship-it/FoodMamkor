@@ -18,6 +18,8 @@ import { Camera, DownloadSimple } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
+// MEH-1250: retire native alert() on the async upload-error path (toast idiom).
+import { showToast } from "@/lib/toast";
 import { BRAND_NAME } from "@/lib/constants";
 
 const W = 1080;
@@ -207,7 +209,7 @@ export default function StoryCardCanvas({ producer, onUploaded }) {
       setUploadedUrl(r.data.url);
       onUploaded?.(r.data.url);
     } catch (err) {
-      alert(detailToMessage(err.response?.data?.detail) || t("upload_error"));
+      showToast.error(detailToMessage(err.response?.data?.detail) || t("upload_error"));
     } finally {
       setUploading(false);
     }
