@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1217: /map desktop GPS-button contrast + legend anchor — feature/meh-1217-map-controls-visibility (LOW/UI, HELD for Sapir preview)
+
+- **Branch:** `feature/meh-1217-map-controls-visibility` off `origin/staging` (divergence 0). LOW-RISK UI (lg-only). Single file `MapPane.jsx`. `Closes MEH-1217`.
+- **Phase 0 (file:line):** desktop GPS button = `MapPane.jsx:127-139` (`hidden lg:flex … bg-background border`, no shadow) — last touched by **MEH-1187**, **not** MEH-1194 (which only moved the mobile `NearMePill`), so **no scope collision** (spec's rebase warning cleared). Legend = `:146-196` (panel `min-w-[180px]` above the `w-8 h-8` toggle, both block children of the `bottom-4 left-4` container → near/left edge already shared).
+- **Fix 1 (GPS contrast):** `bg-background` (cream #F5F0E8) → `bg-surface-floating` (#FFFEFB) + `shadow-md`. Reproduced the bug locally (before-shot: cream button invisible on the light map). Matches the search-this-area pill + legend that already use `bg-surface-floating`. Kept position/size/z-[1000]/aria/disabled + the `eslint-disable-next-line no-restricted-syntax` rtl-ok directive (had to keep it directly adjacent to the className — a verbose comment inserted between them broke the directive adjacency + tripped the lint hook; fixed by dropping the comment).
+- **Fix 2 (legend anchor):** added `origin-bottom-left` to the panel so it reads as growing out of the toggle (near edge already flush per spec). Subtle/transform-origin only — **could not visually verify in-sandbox** (map tiles egress-blocked + a rebuild/next-start CSS-serving quirk rendered the page unstyled). **Flagged for Sapir's eyeball on the Vercel preview.**
+- **Verify:** `npm run build` exit 0 · eslint MapPane **0 errors** (7 pre-existing warnings). **HELD — not merging:** UI change, rule 9 default (couldn't reach Sapir on batch merge-authority, transport). Real visual confirmation of both fixes = Sapir on preview.
+- **Update (takeover, same day):** Smadar approved "take over the 2 open PRs" in the follow-up batch session — hold released, branch synced with staging (Accept-Both on this file), merged on green CI. Visual confirm of both fixes on staging desktop /map remains open for Sapir.
+
 ## 2026-07-16 — MEH-1218 + MEH-1217: batch takeover — PRs #1765 + #1767 (adopted from stalled parallel session)
 
 - **Context:** session `01J4EdtyuHZHTMjA3JeViHfd` implemented both tickets and opened PRs #1765 (MEH-1218, sort label) + #1767 (MEH-1217, map controls) but HELD merges — it couldn't reach Smadar (transport errors) and defaulted to rule 9. A follow-up batch session arrived with placeholder ticket IDs; per rule 1/28 it STOPPED, surfaced the collision, and Smadar chose **"take over the 2 open PRs"** — no duplicate PRs were opened (the MEH-1215/1216 lesson held).
