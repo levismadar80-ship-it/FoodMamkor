@@ -121,6 +121,16 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    // MEH-1176 F7: /neighbor was hidden pre-launch (MEH-598, PR #684) with the
+    // INTENT of a quiet redirect home — but no rule was ever added, so stale
+    // links 404'd. `:path*` matches zero+ segments (covers bare + deep links).
+    // permanent: false — the surface may revive (MEH-543).
+    return [
+      { source: "/:locale(he|en)/neighbor/:path*", destination: "/:locale", permanent: false },
+      { source: "/neighbor/:path*", destination: "/", permanent: false },
+    ];
+  },
   async rewrites() {
     // Server-side proxy target. Read at server boot from process.env.
     //
