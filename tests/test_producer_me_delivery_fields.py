@@ -10,6 +10,9 @@ invariants still fire there:
 
 delivery_area_cities was already owner-processed (popped + _apply_delivery_cities);
 included here to confirm the combined payload round-trips.
+
+REUSES: tests/test_availability_validation.py:122 (_producer_user owner-wiring
+pattern — make_producer + make_user(role="producer") + user.producer_id link).
 """
 from tests.conftest import auth_header, make_producer, make_user
 
