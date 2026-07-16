@@ -5,6 +5,16 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-13 — MEH-1148 audit batch: 3 bug-fix PRs MERGED (MEH-1152/1151/1153) + MEH-991 VRT note
+
+- **All three from the MEH-1148 defensive-grep audit, merged to staging (Sapir authorized "merge as they are"):**
+  - **MEH-1152 (#1669, `6de2b79`)** — HEIC/HEIF accepted in the upload magic-byte gate (`upload.py` `_sniff_image_type` + `_HEIF_BRANDS`; Cloudinary transcodes; no new dep). Rule-5a CVE check done (bounded 12-byte sniff, no in-process HEIF decode → no libheif CVE class applies).
+  - **MEH-1151 (#1672, `ca3ecd2`)** — `key={params.slug}` on `<ProducerDetail>` remounts on slug→slug nav (stale-state fix, audit D7).
+  - **MEH-1153 (#1705, `d0c43b1`)** — server-side `category_ids ≥1` on `ProducerRegister`+`ProducerCreate` (audit E10); conftest self-seed absorbed the fixture ripple, zero new factories, 1360 backend passed.
+- **MEH-991 producer-detail VRT baseline:** the `vrt-update` bot auto-appends a producer-detail (and occasionally home) regen whenever a synced branch's push touches `frontend/e2e/visual/**`. Per Sapir (Option 3) the producer-detail regen rode along via **#1669** and landed correct on staging. Remaining VRT surfaces stay red per the deferred "one consolidated regen when the UI queue is empty" plan; MEH-1197 is separately refreshing producer-detail after the /producers visual-language change.
+- **Conflict-immunity + docs-follow-up (this PR, #1733, `feature/meh-991-vrt-followup`):** the bug-fix branches were made conflict-immune by reverting their CHANGELOG/HANDOFF + redundant VRT PNGs to staging; the dropped MEH-1151 + MEH-1153 entries are backfilled here. This branch is kept as a **single docs-only commit rebuilt off staging** (never a merge — a merge pulls staging's `parity.spec.ts` and re-triggers the vrt-update bot, polluting the docs PR with stray baseline PNGs).
+- **Open follow-up nits (non-blocking, optional):** #1669 — `msf1` is a HEIF *sequence* brand (could 500 at Cloudinary vs clean 400) + add a `/upload/image` HEIC test; #1705 — document the `ProducerAdminCreate` category exemption inline. None are Must-Fix.
+
 ## 2026-07-16 — MEH-1230: /map GPS-fix persistence + sort-ring clip — feature/meh-1230-fix-map-gps-persistence (LOW/UI)
 
 - **Branch:** `feature/meh-1230-fix-map-gps-persistence` off `origin/staging` (divergence 0). LOW-RISK per MEH-450. `Closes MEH-1230`. (Harness-designated `claude/map-sort-gps-focus-fix-loxs6w` → re-cut to the `feature/*` name per the MEH-1141 branch-name gate + task spec — same class as MEH-1223/1224.)
