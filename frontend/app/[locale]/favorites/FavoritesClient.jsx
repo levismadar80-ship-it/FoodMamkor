@@ -29,9 +29,13 @@ function FavoriteCardWrapper({ fav }) {
         onClick={() => setOpen((v) => !v)}
         title={t("alerts_aria")}
         aria-label={t("alerts_aria")}
-        className="absolute top-2 end-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-primary transition z-10"
+        aria-pressed={open}
+        // MEH-1203: mirror CardHeart's density variant (ProducerCard.jsx:144)
+        // so the bell keeps a comfortable tap target inside the smaller 2-col
+        // card — 34px on mobile, 44px sm: up, top-end corner opposite the heart.
+        className="absolute top-2 end-2 sm:top-3 sm:end-3 w-[34px] h-[34px] sm:w-11 sm:h-11 flex items-center justify-center rounded-full bg-background/90 hover:bg-background text-primary transition z-10"
       >
-        <Bell size={16} weight={open ? "fill" : "regular"} aria-hidden="true" />
+        <Bell size={18} weight={open ? "fill" : "regular"} aria-hidden="true" />
       </button>
       {open && (
         <div className="mt-2">
@@ -127,7 +131,10 @@ export default function FavoritesClient() {
             <Bell size={13} aria-hidden="true" />
             {t("list_alerts_hint")}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* MEH-1203: grid parity with /producers (ProducersClient.jsx:489) —
+              2 cols mobile · 3 at lg · 4 at xl, same gap-3/md:gap-6. The old
+              1/md:2/lg:3 grid rendered one near-full-width card per row. */}
+          <div className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
             {favorites.map((fav) => (
               <FavoriteCardWrapper key={fav.producer_id} fav={fav} />
             ))}
