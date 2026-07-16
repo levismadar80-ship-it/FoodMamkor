@@ -50,6 +50,10 @@ import {
   ClipboardText,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+// MEH-1245: retire the last native alert() straggler on the producer edit tab
+// (CustomQuestionsCard save-error) — toast idiom matches dashboard/page.js:167
+// (MEH-1092) + recipes/page.js (MEH-959/1192 conversions).
+import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
@@ -621,7 +625,7 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      alert(tRoot("error_questions_save"));
+      showToast.error(tRoot("error_questions_save"));
     } finally {
       setSaving(false);
     }
