@@ -5,6 +5,7 @@ import { Crosshair, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import CitySearch from "@/components/CitySearch";
 import { useFocusReturn } from "@/lib/use-focus-return";
+import { setUserLocation } from "@/lib/user-location";
 
 // City keys → HE values are the API/canonical names (Hebrew). Display labels
 // resolve via t(`modals.location.popular_cities.${key}`) so /en/ shows the
@@ -69,6 +70,11 @@ export default function LocationModal({ open, onClose, onSelectCity }) {
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        // MEH-1192 (R1): persist the GPS fix so /map "מרחק" sort + card distance
+        // labels unlock — BEFORE the Nominatim reverse-geocode below (which only
+        // resolves a city name for the filter), so persistence never depends on
+        // Nominatim succeeding. Third and last geolocate flow after MEH-1230.
+        setUserLocation(pos.coords.latitude, pos.coords.longitude);
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&accept-language=he`,
