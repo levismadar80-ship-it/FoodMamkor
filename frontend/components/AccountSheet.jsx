@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft } from "@phosphor-icons/react";
+import { Heart, Gear, Storefront, SignIn, SignOut, User, ArrowUpLeft, Gauge } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import LanguageToggle from "@/components/LanguageToggle";
 
@@ -32,6 +32,9 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
   const t = useTranslations();
   const panelRef = useRef(null);
   const isIn = !!user;
+  // MEH-1228: producers get a dashboard entry from the sheet (mobile parity
+  // with the desktop UserMenu, where "לוח הבקרה שלי" leads — MEH-1226).
+  const isProducer = user?.role === "producer";
   const hasAvatar = !!user?.avatar_url;
   const initial = user ? (user.name || "?").trim().charAt(0).toUpperCase() : null;
 
@@ -132,6 +135,17 @@ export default function AccountSheet({ open, onClose, user, logout, showBiz }) {
               <Link href="/login" onClick={onClose} className={rowCls}>
                 <SignIn size={19} weight="regular" className={iconCls} aria-hidden="true" />
                 {t("nav.login")}
+              </Link>
+            </li>
+          )}
+          {/* MEH-1228: producer dashboard entry — first row (above favorites),
+              mirroring the desktop UserMenu order. Guest/consumer sheets are
+              unchanged (isProducer is false). */}
+          {isProducer && (
+            <li className={liCls}>
+              <Link href="/producer/dashboard" onClick={onClose} className={rowCls}>
+                <Gauge size={19} weight="regular" className={iconCls} aria-hidden="true" />
+                {t("account.menu.dashboard")}
               </Link>
             </li>
           )}
