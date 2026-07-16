@@ -108,6 +108,56 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("דבש פרחי בר")).toBeInTheDocument();
   });
 
+  // MEH-1233 B4: the signature product renders as a highlight CARD (photo when
+  // a matching grid product has one, else the leaf placeholder) and the matching
+  // grid entry is deduped so it never appears twice.
+  it("signature with a matching grid product: featured with its photo, deduped from the grid", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "לחם מחמצת כפרי",
+          starting_price_label: "החל מ-25₪",
+          products: [
+            { id: 21, name: "לחם מחמצת כפרי", image_url: "https://res.cloudinary.com/x/bread.jpg" },
+            { id: 22, name: "חלה", image_url: null },
+          ],
+        }}
+      />,
+    );
+    // name appears once (highlight only — NOT also a grid card)
+    expect(screen.getAllByText("לחם מחמצת כפרי")).toHaveLength(1);
+    expect(screen.getByText("החל מ-25₪")).toBeInTheDocument();
+    // highlight photo = the matching product's optimized image
+    const imgs = screen.getAllByTestId("product-image");
+    expect(imgs.some((i) => (i.getAttribute("src") || "").includes("bread.jpg"))).toBe(true);
+    // the other product still shows in the grid
+    expect(screen.getByText("חלה")).toBeInTheDocument();
+  });
+
+  it("free-text signature with no matching product: name + leaf placeholder, grid intact", () => {
+    render(
+      <ProducerSections
+        {...baseProps}
+        producer={{
+          id: 1,
+          name: "רוח השדה",
+          top_product_name: "מארז טעימות",
+          products: [
+            { id: 31, name: "לחם מחמצת כפרי", image_url: "https://res.cloudinary.com/x/b.jpg" },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText("מארז טעימות")).toBeInTheDocument();
+    // no match → leaf placeholder in the highlight
+    expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
+    // the grid product remains
+    expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
+  });
+
   it("no stray indicator/dot renders on an imageless card", () => {
     const { container } = render(
       <ProducerSections
