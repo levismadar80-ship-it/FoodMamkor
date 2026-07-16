@@ -3589,7 +3589,11 @@
       "changes_requested": {
         "title": "One detail left to complete",
         "cta": "Complete the details",
-        "aria": "Completion request from the team"
+        "aria": "Completion request from the team",
+        "resubmit_cta": "I'm done — send for review",
+        "resubmit_sending": "Sending…",
+        "resubmit_sent": "Sent for review — we'll update you soon",
+        "resubmit_error": "Couldn't send. Please try again."
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",

@@ -3610,7 +3610,11 @@
       "changes_requested": {
         "title": "נשאר להשלים",
         "cta": "להשלמת הפרטים",
-        "aria": "בקשת השלמה מהצוות"
+        "aria": "בקשת השלמה מהצוות",
+        "resubmit_cta": "סיימתי להשלים — שלחו לבדיקה",
+        "resubmit_sending": "שולחים…",
+        "resubmit_sent": "נשלח לבדיקה — נעדכן אתכם בקרוב",
+        "resubmit_error": "השליחה לא הצליחה. נסו שוב."
       },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",

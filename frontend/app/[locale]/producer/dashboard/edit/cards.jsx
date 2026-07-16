@@ -209,7 +209,25 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         const r = await api.post("/upload/image", fd);
         uploaded.push(r.data.url);
       }
-      setImages((prev) => [...prev, ...uploaded]);
+      const next = [...images, ...uploaded];
+      setImages(next);
+      // MEH-1236: kill the upload≠save trap. Uploading a photo used to feel like
+      // saving, but images[] only persisted on an explicit Save click — so the
+      // overview checklist ("חסרה תמונה") never updated and the photo looked
+      // lost. Auto-persist the new list right after a successful upload (single
+      // PUT) so the checklist reflects it with no manual save. Removals keep the
+      // explicit Save intent below (a mis-click shouldn't wipe a photo silently).
+      try {
+        await api.put("/producers/me", { images: next });
+        onSave({ images: next });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } catch (err) {
+        // Uploaded to Cloudinary but the profile save failed — the photos stay
+        // in the local list (now dirty), so the explicit Save button lets her
+        // retry. Never silent: surface the save error.
+        setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      }
     } catch (err) {
       setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
     } finally {
