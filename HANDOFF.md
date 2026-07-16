@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1223: /share copy toast tells the truth on double failure — feature/meh-1223-copy-toast-truth (GREEN, awaiting CI)
+
+- **Branch:** `feature/meh-1223-copy-toast-truth` off `origin/staging` (divergence 0 at cut). LOW-RISK/GREEN per MEH-450. `Closes MEH-1223`; unblocks MEH-1221. **Branch note (same class as MEH-1220/1183/1201):** harness-designated `claude/meh-1223-copy-toast-truth-ax0ndm` would hit the MEH-1141 branch-name gate (no `claude/*`) → used the issue `feature/*` name (task + Linear both specify it).
+- **Root cause (file:line):** `ShareClient.jsx` `copyLink()` (`:53-69` pre-fix) put `showToast.success(copy_toast)` *inside* the execCommand `try` and had no failure branch; the MEH-1220 `handleEmailClick` fallback (`:109-125` pre-fix) called `showToast.error(email_fallback_toast)` unconditionally after the try/catch. `document.execCommand("copy")` returns `false` on failure (and can throw) — neither was checked, so a double failure still toasted success/"copied".
+- **Shipped (4 files):** `ShareClient.jsx` — both paths track a `copied` boolean (`copied = document.execCommand("copy")` + inner `catch { copied = false }`); `copyLink` → `success(copy_toast)` iff copied else `error(copy_failed_toast)`; email fallback → `error(copied ? email_fallback_toast : email_copy_failed_toast)`. `he.json`+`en.json` — new `share_page.copy_failed_toast` + `share_page.email_copy_failed_toast` (neutral-plural, no emoji). `__tests__/ShareClientEmailFallback.test.jsx` — toast mock now exposes hoisted `successToast`; +2 tests (copy button + email fallback, both clipboard methods fail → failure toast, `success` not called / `FALLBACK_TOAST` not shown). jsdom has no `document.execCommand` → assigned a `vi.fn()` directly + `delete` in `afterEach`.
+- **Constraints honored:** single code file + 2 json; ContactCard/ContactClient untouched (MEH-1221 clones this); 1200ms timer + mailto href unchanged; RTL start-/end- only (no positional classes added).
+- **Verify:** `npm run build` exit 0 · full vitest **1066 passed | 14 skipped** (incl. en-parity guard + the 2 new tests) · 0 physical-RTL / 0 lucide-react import / 0 new "יצרן" UI string in the diff · both message JSONs parse. **DoD exception:** no new UI — "נבדק בנייד" N/A. Preview URL = Sapir post-merge if Vercel builds it.
+- **Next:** merge on green CI (LOW-RISK autonomous authority), then Linear MEH-1223 → Done. MEH-1221 unblocked.
+
 ## 2026-07-16 — ⚠️ Double-dispatch incident (MEH-450 vs MEH-1215/1216) + i18n housekeeping
 
 - **⚠️ DOUBLE-DISPATCH (rule 1 parallel-session).** Two CC sessions worked the **same two changes** concurrently on 2026-07-15:
@@ -12,6 +21,7 @@
   - Remove HomeCTA gold eyebrow rule: my MEH-450 session shipped **PR #1757** (`4040712b`); the parallel session opened **PR #1760** as MEH-1216 *after* #1757 already merged → empty diff → **closed unmerged**. MEH-1216 sat "In Progress" until I marked it **Done** (2026-07-16) crediting #1757 in its description.
   - **Lesson / next session:** MEH-450, MEH-1215, MEH-1216 are the SAME work — do not re-open. If orchestration dispatches a ticket, grep staging + check Linear attachments/PRs FIRST (rule 1 + rule 27). Root cause: same fix filed both under an umbrella (MEH-450) and as split tickets (1215/1216) and both were dispatched.
 - **Housekeeping PR (this session):** removed the orphaned `producers.recently_viewed` i18n keys (he+en) + stale `RecentlyViewedStrip` refs in `PaginationCounter.test.jsx` (comment :9 + dead mock keys :27-28) left behind by the strip deletion. Branch `feature/meh-1215-cleanup-recently-viewed-i18n`. Homepage recently-viewed (`home.recent` + `lib/recently-viewed.js`) untouched. build green; 19/19 affected tests; `grep RecentlyViewedStrip frontend/` → 0. `Refs MEH-1215`.
+
 ## 2026-07-15 — MEH-1220: /share silent-mailto fallback + reader-focused intro copy — PR #1759 (GREEN, awaiting CI)
 
 - **Branch:** `feature/meh-1220-share-email-fallback` off `origin/staging` (divergence 0 at cut). LOW-RISK/GREEN per MEH-450. `Closes MEH-1220`. **Branch note (same class as MEH-1183/1201):** harness-designated `claude/share-email-fallback-copy-oj4xu2` was rejected by the MEH-1141 branch-name gate (`check-branch-name.sh`, no `claude/*`); confirmed target with Sapir → used the issue `feature/*` name.
