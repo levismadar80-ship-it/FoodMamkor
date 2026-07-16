@@ -53,7 +53,9 @@ export default function DeliveryBlock({ nationwide, areas = [], pickup = false, 
                 {da.delivery_day && (
                   <>
                     {da.min_order ? <span aria-hidden="true">·</span> : null}
-                    <span>{da.delivery_day}</span>
+                    {/* MEH-1233 B3: label the bare day so "· חמישי" reads as the
+                        delivery day, not an order deadline ("· משלוח ביום חמישי"). */}
+                    <span>{t("delivery_day_label", { day: da.delivery_day })}</span>
                   </>
                 )}
               </span>

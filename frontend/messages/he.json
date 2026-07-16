@@ -962,6 +962,7 @@
       "nationwide": "משלוחים לכל הארץ",
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
+      "delivery_day_label": "משלוח ביום {day}",
       "pickup": "איסוף עצמי"
     },
     "follow": {

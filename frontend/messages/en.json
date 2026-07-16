@@ -964,6 +964,7 @@
       "nationwide": "Nationwide delivery",
       "arranged": "Delivery by arrangement — contact for details",
       "min_order": "Minimum",
+      "delivery_day_label": "Delivery on {day}",
       "pickup": "Self pickup"
     },
     "follow": {
