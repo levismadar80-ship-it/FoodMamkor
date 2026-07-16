@@ -1152,6 +1152,30 @@ class TestMeh56BioGenerator:
         )
         assert resp.status_code == 422
 
+    def test_bio_generate_happy_path_returns_bio(self, client, db, monkeypatch):
+        # MEH-1235: lock the success contract at the route level — when the AI
+        # IS available the endpoint returns the generated text (the frontend
+        # then fills the textarea). Pairs with the fail-open empty case above so
+        # the "textarea fills OR visible Hebrew error, never silent" invariant
+        # is covered on both branches. generate_bio is imported inside the
+        # handler, so patch it at its source module.
+        import app.services.bio_generator as bg
+        monkeypatch.setattr(bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל")
+
+        from conftest import make_user
+        p = make_producer(db, name="ביו3")
+        user = make_user(db, email="biouser3@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"sells": "ריבות ביתיות"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["bio"] == "ריבות בעבודת יד מהגליל"
+
 
 class TestMeh1236RequestReview:
     """POST /producers/me/request-review — resubmit-for-review ping.

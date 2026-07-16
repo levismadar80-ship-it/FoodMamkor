@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-16 — MEH-1192 (R1): LocationModal geolocate persists GPS fix — MERGED (PR #1776, squash 97a29736) + docs backfill
+
+- **Merged to staging** (squash `97a29736`, PR #1776). `Refs MEH-1192` (R1 code only). Residual of MEH-1230.
+- **What:** `LocationModal.jsx handleGeo` success now calls `setUserLocation(pos.coords.latitude, pos.coords.longitude)` as its first statement, before the Nominatim reverse-geocode — so the /map "מרחק" sort + card distance labels unlock via the city-search fallback modal too (the 3rd and last geolocate flow after MEH-1230's two /map handlers). Persists on every branch (city / no-city / Nominatim error). Extended `LocationModal.test.jsx` (geo success + rejecting fetch → `user_location` written + event). No `handleGeo` refactor; MEH-1735 contract/copy/3-call-sites untouched.
+- **Merge friction (MEH-1112 treadmill):** the PR hit **4** consecutive staging-churn conflicts on the append-only CHANGELOG/HANDOFF; broke it by **dropping those two files** (conflict-immune, code+test only, +38) and merging on the green required gates (CI gate + Deploy gate; Playwright E2E non-required, known-red on `/producer/[id]`). This entry is the backfill.
+- **Linear:** MEH-1192 was already `Done` (moved 18:15:55, ~90 min before this merge, by a prior authority-upgrade closer session whose SYNC note replaced the manual R2 with the scripted `LocationModal.test.jsx` QA). The `Refs`-only PR did **not** change its status; left Done (not reopened) — surfaced to Sapir for the call.
+- **Verify:** `npm run build` exit 0 · LocationModal vitest 4/4 · `grep -c "setUserLocation(" LocationModal.jsx` = 1 · 0 physical-RTL props. Live real-device GPS check (R2) is Sapir's option if wanted.
+
 ## 2026-07-16 — MEH-1229: producer-photo delivery consistency — MERGED (PR #1777, squash 95882f1) + docs backfill
 
 - **Merged:** `feature/meh-1229-producer-photo-consistency` → staging (PR #1777, both required gates green). Every producer/product/event image now routes through one helper with a single source-of-truth ratio map (`IMAGE_RATIOS` in `frontend/lib/cloudinary.js`).
@@ -20,6 +28,17 @@
 - **MEH-1228 (PR #1775, `Closes MEH-1228`) — mobile `AccountSheet.jsx`.** Added a producer-gated (`user?.role === "producer"`) `לוח הבקרה שלי` row → `/producer/dashboard` as the **first** sheet row (above favorites), mirroring the desktop order. Reuses `liCls`/`rowCls`/`iconCls` 1:1 + Phosphor `Gauge` (size 19); i18n reuses `account.menu.dashboard`; guest/consumer sheets unchanged. Single component + 2 vitest cases.
 - **Verify:** `npm run build` green on both; Header 24/24 + AccountSheet 8/8 vitest; both required gates (`CI gate` + `Deploy gate`) green on each merged head (`cf010a57` / `752f9330`); `Playwright E2E` = known non-required red on `/producer/[id]` (MEH-991 drift, unrelated). **Mobile visual QA (375px) + desktop menu = Sapir on the Vercel preview / staging** (no dev-server QA this session — two container crashes during Task-2 QA forced a git+build-only finish).
 - **Churn note (MEH-1112):** staging advanced 3× under #1772 during the merge window (append-only-log conflicts); re-synced each time — none were code conflicts. STOP conditions (a) id-present, (b) no MEH-1209 overlap (that branch = ProducerDetail/OwnerEditBar only), (c)/(d) not hit.
+
+## 2026-07-16 — MEH-1233: producer-page audit batch (B1–B5) — 5 PRs MERGED to staging
+
+- **All 5 merged** under the 16/07 GREEN/LOW-RISK auto-merge grant (MEH-450 + ADR-016): B1 #1779, B2 #1780, B3 #1781, B4 #1782, B5 (feature/meh-1233-b5-waze, last PR carries docs + QA). Branches `feature/meh-1233-b{1..5}-*` off `origin/staging` (per Linear `<constraints>` `feature/*` names — the harness-designated `claude/*` branch would hit the MEH-1141 gate). `Closes MEH-1233` on the B5 PR; the other four `Refs MEH-1233`.
+- **B1 (stars):** `ReviewsSection.jsx` `StarRow` — `Math.round(avgRating)` → per-position fractional fill (filled star clipped to `Math.round(fill*100)%`). 4.7 = four full + one 70% star. Read-only call sites only; `StarPicker` untouched.
+- **B2 (copy):** `messages/he.json` `whatsapp.question_chips.delivery_to_city` "ל-{city}" → "ל{city}" (maqaf removed; ל attaches to the Hebrew word). i18n-only; `ContactCard.test` mock+assertion updated.
+- **B3 (delivery day):** new `group_buys.delivery.delivery_day_label` ("משלוח ביום {day}" / "Delivery on {day}"); `DeliveryBlock.jsx` wraps the bare `da.delivery_day` → "· משלוח ביום חמישי". No hardcoded Hebrew in JSX.
+- **B4 (signature row) — Phase 0 root cause `ProducerSections.jsx:104-116`:** the signature product sat in a `bg-background` (page-cream) box → read as an empty wide strip when only `top_product_name` existed, and duplicated a grid card (C4). Root cause in-file → STOP (a) not triggered. **Choice: styled highlight + dedup** — a `surface-card` card with a 64px thumbnail (matching product's photo when present, else MEH-1138 leaf) + name + `starting_price_label`; the matching product is filtered out of the grid (`gridProducts`, exact name match). No new i18n/schema/deps.
+- **B5 (Waze):** `MiniMap.jsx` — removed the `isMobile` gate so the Waze link renders next to Google on all viewports (desktop audit had seen only Google); removed the unused `isMobile` state and the hardcoded "-Waze" JSX suffix (full label in i18n: "פתיחה ב-Waze" / "Open in Waze"). URL `https://waze.com/ul?ll={lat},{lng}&navigate=yes`, new tab.
+- **Verify:** `npm run build` green per branch; full vitest **1070 passed | 14 skipped**; he/en parity green; 0 physical-RTL props. **QA:** `qa-artifacts/MEH-1233/ruach-hasadeh-fixes-{375,1440}.webp` are component-fidelity reproductions (real design tokens) — the live `/ruach-hasadeh` page is server-fetched against Railway (`page.js` `serverFetch`), egress-blocked from the CC sandbox, so **final on-page confirmation on staging is Sapir's** (same class as MEH-1183/1230/1217).
+- **Manual cleanup pending (CC can't delete remote refs — git proxy 403):** delete merged remote branches `feature/meh-1233-b{1..5}-*` via the GitHub UI.
 
 ## 2026-07-16 — MEH-1232: admin pending-queue photo thumbnails before approval — feature/meh-1232-admin-pending-photo-preview (LOW/GREEN, frontend-only)
 
