@@ -47,8 +47,9 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
   it("toggling a diet chip writes its param to the URL", () => {
     const { result } = renderHook(() => useHomePage());
     act(() => result.current.toggleChip("gluten_free"));
-    const lastUrl = router.replace.mock.calls.at(-1)[0];
-    expect(lastUrl).toContain("gluten_free=1");
+    // MEH-1293: updateURL now mirrors via window.history.replaceState (shallow)
+    // instead of router.replace — assert on the real URL, transport-agnostic.
+    expect(window.location.search).toContain("gluten_free=1");
   });
 
   it("serializes all 6 chip keys when all are active", () => {
@@ -63,7 +64,8 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     ]) {
       act(() => result.current.toggleChip(key));
     }
-    const lastUrl = router.replace.mock.calls.at(-1)[0];
+    // MEH-1293: assert on the real URL (history.replaceState), not router.replace.
+    const lastUrl = window.location.search;
     for (const param of [
       "kosher=1",
       "gluten_free=1",
