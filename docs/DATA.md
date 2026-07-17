@@ -367,6 +367,17 @@ All endpoints served from `backend/app/main.py`. Auth via JWT in the
 via `slowapi` — see `backend/app/rate_limit.py` and
 [SECURITY.md](./SECURITY.md) §2.
 
+> **MEH-1164 F5 (Chunk 2A) — verified-email gate on content creates.** The
+> producer create endpoints `POST /events`, `POST /producers/me/recipes`, and
+> `POST /group-buys` depend on `require_verified_producer` (`app/auth.py`) =
+> `require_producer` (role first → "Producer access required") **then** the
+> email-verified check (unverified → 403 `יש לאמת את כתובת האימייל תחילה`),
+> matching the verification banner's promise. `POST /experiences` already used
+> `require_verified_email` and is unchanged. Non-create producer routes
+> (PUT/update, list/delete) stay on `require_producer`. No schema change — uses
+> the existing `users.email_verified`. (`POST /group-buys` has no dedicated
+> block below; noted here.)
+
 ### Auth (`app/routers/auth.py`)
 
 ```
@@ -478,7 +489,7 @@ POST   /home-products/rate/{token}        public — submit rating
 GET    /events                    public — filter: city, category, from_date, to_date; approved producers only (MEH-1161; owner sees own via ?producer_id=, admin sees all)
 GET    /events/upcoming            public — limit=N next events; approved producers only (MEH-1161)
 GET    /events/{event_id}          public — pending producer's event → 404 for strangers (MEH-1161; owner/admin bypass)
-POST   /events                     producer — any producer role (a pending producer's event stays hidden until the business is approved — MEH-1161)
+POST   /events                     producer — require_verified_producer (MEH-1164 F5): producer role + verified email — unverified → 403 "יש לאמת את כתובת האימייל תחילה"; non-producer → "Producer access required" (role checked first). A pending producer's event stays hidden until the business is approved — MEH-1161
 PUT    /events/{event_id}          producer — owner only (cross-owner → 404)
 DELETE /events/{event_id}          auth    — owner or admin (stranger → 404)
 ```
@@ -501,7 +512,7 @@ POST   /experiences/validate           public  — 30/hour, real-time Claude Hai
 GET    /experiences                    public  — filter: category, city. Only approved+upcoming.
 GET    /experiences/mine               auth    — owner's submissions, any status
 GET    /experiences/{id}               mixed   — approved=public; non-approved=owner+admin
-POST   /experiences                    auth    — 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
+POST   /experiences                    auth    — require_verified_email (already gated pre-MEH-1164 — left unchanged by Chunk 2A). 10/hour. REJECTED → 400. APPROVED/FLAGGED → pending.
 PUT    /experiences/{id}               auth    — owner only (cross-owner → 404). Any edit resets to status=pending + re-runs Claude.
 DELETE /experiences/{id}               auth    — owner or admin (stranger → 404)
 ```
@@ -621,8 +632,8 @@ POST /admin/experiences/{id}/reject                    admin — feedback option
 ### Producer recipes (`app/routers/producer_recipes.py`, `admin_recipes.py` — MEH-589)
 
 ```
-# Producer self (require_producer)
-POST   /producers/me/recipes                producer  — 10/hr — Claude pre-check, REJECTED→400
+# Producer self (require_producer; create = require_verified_producer)
+POST   /producers/me/recipes                producer  — require_verified_producer (MEH-1164 F5: verified email; unverified → 403) — 10/hr — Claude pre-check, REJECTED→400
 GET    /producers/me/recipes                producer  — list all statuses
 GET    /producers/me/recipes/{id}           producer  — 404 if not own
 PATCH  /producers/me/recipes/{id}           producer  — 10/hr — content change re-moderates
