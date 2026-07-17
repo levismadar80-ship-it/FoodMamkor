@@ -12,6 +12,14 @@
 - **Tier:** YELLOW — self-QA done, auto-merge on CI green.
 - **Docs:** `docs/DATA.md` (/producers param) + `.ai/diagrams/api-routes.md` updated.
 
+## 2026-07-17 — MEH-1280 — PWA install icons → new mark-only pomegranate — `feature/meh-1280-pwa-icons-mark-only`
+
+- **What:** the PWA install dialog still showed the old "MEHA MEKOR" wordmark — `frontend/public/icon-192.png` + `icon-512.png` were never regenerated for the 5-seed pomegranate rebrand (apple-touch-icon + favicons already updated). Asset-only: both re-rendered from `logo.svg` onto a cream `#F5F0E8` canvas, mark centered at 0.88 (192) / 0.80 (512 — manifest `purpose:maskable`, keeps the mark in the safe-zone), flattened to RGB.
+- **How:** cairosvg/pillow blocked (no network for pip), so rendered via the pre-installed headless Chromium (SVG inlined at the target px on a cream page, `--force-device-scale-factor=1 --window-size=NxN`, RGB screenshot). Deterministic same output. Corner pixel verified `#F5F0E8`; `file` → exact `192x192` / `512x512`.
+- **Phase-0:** confirmed both current icons were the OLD wordmark before overwrite (premise valid). Scope: exactly 2 modified files, no manifest/layout/favicon/apple-touch-icon/code change.
+- **QA:** `npm run build` green. `git status` = 2 modified PNGs only.
+- **Next:** Sapir on-device check — trigger the PWA install prompt on mobile after merge, confirm the pomegranate mark shows.
+
 ## 2026-07-17 — MEH-1279 — AccountSheet language-row alignment (`LanguageToggle variant="bare"`, follow-up MEH-1196) — `feature/meh-1279-language-row-align`
 
 - **What:** MEH-1196 (PR #1744) fixed the language row's SIDE (`ms-auto` removed) but not its GEOMETRY — the embedded `LanguageToggle` was a standalone 36px circle chip (`w-9 h-9` + `Globe 20`), so the glyph sat ~8px inside the sibling icon line, the chip inflated row height, and the label was 13px vs neighbours' 13.5px. Added `variant="bare"` to `LanguageToggle.jsx` (bare `Globe 19`, no circle, caller owns layout via `className`, optional `children` after the Globe; default chip byte-identical). `AccountSheet.jsx` now renders the row AS the toggle (`variant="bare"` + shared `rowCls`) → geometrically identical to the SignOut row (`min-h-[48px]`, `gap-3`, START line, `/65` tier), single ≥44px tap target; `עב / EN` moves inside (`text-[13.5px]`, `dir="ltr"`, `aria-hidden`). Removed now-unused `staticRowCls`.
