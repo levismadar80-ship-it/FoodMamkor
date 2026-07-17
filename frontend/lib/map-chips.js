@@ -38,13 +38,18 @@ export const CATEGORY_CHIPS = [
 // MEH-657: map filter chips are text-only (Emoji LOCK v2 / a11y) — no glyph prefix.
 // MEH-1075: `group` drives the FilterSheet sections (diet | quality | service).
 // Within-group render order = array order (diet order per spec: טבעוני ·
-// ללא גלוטן · ללא לקטוז). Do NOT add a kosher chip — kosher is verified-only
-// per MEH-986.
+// ללא גלוטן · ללא לקטוז).
+// MEH-1087: a VERIFIED-ONLY kosher chip ("כשרות מאומתת") IS now allowed — it
+// filters ?kosher=true, which the backend maps to kashrut_verified_at ONLY
+// (producer_listing.py:153 _kosher_condition, MEH-986 ch3b + MEH-1260 expiry),
+// never the free-text Producer.kosher. A FREE-TEXT kosher chip stays forbidden
+// (חוק איסור הונאה בכשרות, MEH-986). Copy is Sapir-LOCKED — do not paraphrase.
 export const TOGGLE_CHIPS = [
   { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
   { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
   // MEH-1259: organic chip removed — self-declared organic is no longer a
   // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
+  { key: "kosher",        label: "כשרות מאומתת",                 group: "quality" },
   { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
@@ -94,6 +99,9 @@ export function chipStateToParams(state, dbCategories) {
   // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;
   if (state.verified) params.verified = true;
+  // MEH-1087: verified-only kosher — backend maps ?kosher=true to
+  // kashrut_verified_at only (producer_listing.py:153).
+  if (state.kosher) params.kosher = true;
   if (state.grass_fed) params.grass_fed = true;
   if (state.gluten_free) params.gluten_free = true;
   if (state.vegan) params.vegan = true;
