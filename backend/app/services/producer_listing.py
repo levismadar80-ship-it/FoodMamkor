@@ -146,6 +146,33 @@ def _build_base_queries(
     return q, count_q
 
 
+def _kosher_condition(kosher: bool):
+    """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
+    verified-only — it matches admin-verified kashrut (kashrut_verified_at,
+    stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
+
+    MEH-1260: expiry enforcement — an expired certificate no longer passes
+    ?kosher=true (and lands in ?kosher=false, the exact complement). Legacy
+    pre-expiry-era rows (NULL expires_at, non-null verified_at) stay valid.
+    Naive utcnow matches how admin_kashrut.py:73 writes the timestamps.
+    """
+    if kosher:
+        return and_(
+            Producer.kashrut_verified_at.isnot(None),
+            or_(
+                Producer.kashrut_expires_at.is_(None),
+                Producer.kashrut_expires_at > datetime.utcnow(),
+            ),
+        )
+    return or_(
+        Producer.kashrut_verified_at.is_(None),
+        and_(
+            Producer.kashrut_expires_at.isnot(None),
+            Producer.kashrut_expires_at <= datetime.utcnow(),
+        ),
+    )
+
+
 def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
@@ -182,35 +209,13 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
         q = q.filter(Producer.availability_state != "on_vacation")
         count_q = count_q.filter(Producer.availability_state != "on_vacation")
 
-    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
-    # verified-only — it matches admin-verified kashrut (kashrut_verified_at,
-    # stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
-    # MEH-1260: expiry enforcement — an expired certificate no longer passes
-    # ?kosher=true (and lands in ?kosher=false, the exact complement). Legacy
-    # pre-expiry-era rows (NULL expires_at, non-null verified_at) stay valid.
-    # Naive utcnow matches how admin_kashrut.py:73 writes the timestamps.
+    # MEH-986 ch3b + MEH-1260: verified-only kosher filter with expiry
+    # enforcement — extracted to _kosher_condition (PLR0915 headroom).
     kosher = filters.get("kosher")
     if kosher is not None:
-        if kosher:
-            kosher_valid = and_(
-                Producer.kashrut_verified_at.isnot(None),
-                or_(
-                    Producer.kashrut_expires_at.is_(None),
-                    Producer.kashrut_expires_at > datetime.utcnow(),
-                ),
-            )
-            q = q.filter(kosher_valid)
-            count_q = count_q.filter(kosher_valid)
-        else:
-            kosher_invalid = or_(
-                Producer.kashrut_verified_at.is_(None),
-                and_(
-                    Producer.kashrut_expires_at.isnot(None),
-                    Producer.kashrut_expires_at <= datetime.utcnow(),
-                ),
-            )
-            q = q.filter(kosher_invalid)
-            count_q = count_q.filter(kosher_invalid)
+        kosher_cond = _kosher_condition(kosher)
+        q = q.filter(kosher_cond)
+        count_q = count_q.filter(kosher_cond)
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —
