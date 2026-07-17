@@ -52,7 +52,8 @@ import { categoryGlyphSvg } from "@/lib/marker-glyph";
  *   - Border: 2px primary; selected (active) → 3px primary-dark.
  *   - Verified badge: FROZEN (MEH-762 handoff) — white-on-green ✓, bottom-end.
  *   - Rings: hover → subtle primary; active → primary glow; premium → gold.
- *   - Visited: opacity 0.4 (dimmed).
+ *   - Visited: grayscale + opacity 0.7 (dimmed but still legible — MEH-1277;
+ *     0.4 on a 36px circle read as disabled/broken rather than "visited").
  *
  * MEH-936 intentionally OVERRIDES the MEH-763 F2 lock ("category colour/icon
  * only in legend + card dots; markers carry no category colour, so the
@@ -90,7 +91,11 @@ function createCategoryMarker(
   // rings, not size (drops the old 28/32/36 size jump).
   const size = 36;
   const dimmed = visited && !active && !hovered;
-  const opacity = dimmed ? 0.4 : 1;
+  // MEH-1277: visited = grayscale + 0.7 (was 0.4). Strong transparency on a
+  // small 36px circle read as disabled/broken; desaturation + softer opacity
+  // stays distinct from a fresh pin yet legible (Airbnb "viewed" pattern).
+  const opacity = dimmed ? 0.7 : 1;
+  const grayscale = dimmed ? "filter:grayscale(1);" : "";
   const isPremium = producer.plan === "premium";
   const isVerified = producer.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
 
@@ -143,6 +148,7 @@ function createCategoryMarker(
         border:${borderWidth}px solid ${borderColor};
         box-shadow:${boxShadow};
         opacity:${opacity};
+        ${grayscale}
         transition:all 0.18s ease-out;
       ">
         ${inner}
