@@ -812,15 +812,29 @@ instead of manually. Three moving parts:
    env vars **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** (set on the
    Railway staging backend + GitHub Actions secrets, same values). To (re)apply
    them **non-destructively** — no producer/review/product rows touched, unlike
-   `--refresh`:
+   `--refresh` — run by Sapir against staging only. **Two routes, pick one:**
+
+   **A. Railway Console (in-container, `cwd=/app`)** — the Docker build context
+   is `backend/`, so its contents copy straight to `/app`; there is **no**
+   `/app/backend/`, and the `railway` CLI does not exist inside the container:
+
+   ```bash
+   # Railway → service → Console (already at /app)
+   python scripts/seed_demo_business.py --sync-users
+   ```
+
+   **B. Local machine with the Railway CLI, from the repo root:**
 
    ```bash
    railway run python backend/scripts/seed_demo_business.py --sync-users
    ```
 
-   Run by Sapir against staging only (the script's `_assert_not_production()`
-   refuses any non-staging host). Idempotent; aborts loudly if either password
-   env var is unset.
+   Both hit the staging DB (route B via the CLI's env injection; route A is
+   already inside the staging service). The script's `_assert_not_production()`
+   refuses any non-staging host. Idempotent; aborts loudly if either
+   `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset. Expected output:
+   `Synced QA users: demo-owner@example.com (password reset),
+   demo-consumer@example.com (created). …`
 
 2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
    each role in via `POST /api/auth/login` and writes
