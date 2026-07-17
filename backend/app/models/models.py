@@ -17,6 +17,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -175,6 +176,14 @@ class Producer(Base):
     reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    # MEH-1291: "עודכן לאחרונה" freshness signal. Nullable, NO default, NO
+    # server_default, NO backfill — an honest signal: the column stays NULL
+    # until a real UPDATE fires `onupdate=func.now()`, so untouched producers
+    # render nothing on the public page. tz-aware (MEH-762 verified_at
+    # precedent, NOT naive utcnow). Expand-only (ADR-007). Paired migration:
+    # a3f1c9d2e4b7. Exposed public read-only via ProducerDetailOut (MEH-1291
+    # Chunk B).
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
     # MEH-51: trust ladder + kashrut badges
     phone_verified = Column(Boolean, default=False)
     ambassador = Column(Boolean, default=False)
