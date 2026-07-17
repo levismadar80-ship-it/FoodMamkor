@@ -47,15 +47,18 @@ describe("ChangesRequestedBanner — resubmit (MEH-1236)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("click → POST /producers/me/request-review → sent confirmation", async () => {
+  it("click → POST /producers/me/request-review → sent confirmation replaces the nag", async () => {
     api.post.mockResolvedValueOnce({});
     renderBanner();
     fireEvent.click(screen.getByTestId("resubmit-button"));
     await screen.findByTestId("resubmit-sent");
     expect(api.post).toHaveBeenCalledWith("/producers/me/request-review");
-    // Button replaced by the confirmation line for the session.
+    // MEH-1270: the whole nag is replaced by the positive confirmation panel
+    // for the session — button gone, nag title gone, sent title + body shown.
     expect(screen.queryByTestId("resubmit-button")).not.toBeInTheDocument();
-    expect(screen.getByTestId("resubmit-sent")).toHaveTextContent(C.resubmit_sent);
+    expect(screen.queryByText(C.title)).not.toBeInTheDocument();
+    expect(screen.getByTestId("resubmit-sent")).toHaveTextContent(C.sent_title);
+    expect(screen.getByText(C.sent_body)).toBeInTheDocument();
   });
 
   it("error → visible alert, button stays for retry", async () => {
