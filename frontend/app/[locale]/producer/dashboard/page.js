@@ -18,10 +18,13 @@ import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 import ChangesRequestedBanner from "./ChangesRequestedBanner";
 import { producerCompleteness } from "@/lib/producer-completeness";
 import { clampPercent } from "@/lib/percent";
+// MEH-1267: canonical public domain (MEH-1242 PR4) — mehamakor.online is the
+// staging alias, never public-facing. SITE_URL is the mehamakor.co.il origin.
+import { SITE_URL } from "@/lib/env";
 
 function VanityLinkCard({ slug }) {
   const t = useTranslations("dashboard.producer.vanity_link");
-  const url = `https://mehamakor.online/p/${slug}`;
+  const url = `${SITE_URL}/p/${slug}`;
   const [copied, setCopied] = useState(false);
 
   const copy = () => {

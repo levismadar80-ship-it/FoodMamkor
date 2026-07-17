@@ -7,12 +7,29 @@
 
 ## 2026-07-17 — MEH-1255 delivery-exclusion mode "לכל הארץ חוץ מ:" — feature/meh-1255-delivery-exclusion (HIGH-RISK, chunk-by-chunk)
 
-- **Status:** all 3 chunks done + committed locally on `feature/meh-1255-delivery-exclusion`. Chunk A + B were Sapir-approved at their WAIT gates; Chunk C (frontend) done under the same session. **NOT pushed yet** — pending Sapir's final go on Chunk C before PR + push.
+- **Status:** all 3 chunks Sapir-approved at their WAIT gates; PR opened + merging on the 2 required gates.
 - **Chunk A (schema, Alembic-only):** migration `e7c4b1f95a2d` — `producers.delivery_excluded_cities TEXT[] NOT NULL DEFAULT '{}'` + CHECK `delivery_excluded_requires_nationwide`. Applied + verified locally (`upgrade head` from base, `alembic check` clean). No new table.
 - **Chunk B (backend):** schemas (Admin create / Update / public ListOut) + validators + shared effective-state guard `app/services/delivery_validation.py` (partial-update 422 not 500) + owner/admin write paths + consumer `delivery_city` filter rewritten (inner JOIN → EXISTS + nationwide-minus-excluded branch — nationwide producers now match the city filter). pytest: `tests/test_delivery_exclusion.py` 8, `test_api.py` 216, adjacent 17 — all green.
 - **Chunk C (frontend):** `DeliveryCard` (`edit/cards.jsx`) + admin `ProducerForm` reveal an optional "חוץ מ:" CitiesAutocomplete (region chips) when nationwide is on; `DeliveryBlock` "משלוחים לכל הארץ (למעט …)"; `ProducerSections` passes `delivery_excluded_cities`. i18n he+en (`nationwide_except`, `delivery_excluded_label/hint`). vitest: DeliveryBlock +3, EditTabDeliveryCard +1 (existing PUT assertion updated for the new field); affected suites 26/26; build green.
 - **Docs:** DATA.md (producers DDL + MEH-1255 note), `.ai/diagrams/db-schema.md` (3rd CHECK note), MANUAL_TESTING § MEH-1255, CHANGELOG, this entry.
-- **Next:** on Sapir "go merge" → push branch, open PR, merge on the 2 required gates. Then MEH-1255 → Done.
+- **Next:** merge on the 2 required gates. Then MEH-1255 → Done.
+
+## 2026-07-17 — staging QA (MEH-1210/1211) + MEH-1268 CATEGORY_STYLES
+
+**T1 — MEH-1268 (Closes, PR #1839, squash `93ecdfa8`):** `frontend/lib/map-categories.js` — renamed the stale post-MEH-927 combined key `"בשר, עוף ודגים"` → `"בשר"` (identical `#c04040` + `Cow`) and added `"דגים"` (`Fish` glyph, **same** meat colour — MEH-936 redundant shape encoding, no new palette colour, MEH-763 F2-safe). Fixes meat/fish businesses falling through `styleForProducer` → DEFAULT Leaf/green on all 4 map surfaces. `map-chips.js` untouched (filter grouping resolves against DB names). vitest 42 + build green.
+
+**T0 — post-merge QA for MEH-1210 + MEH-1211 — ⚠️ BLOCKED by deploy-lag, re-run needed.** Ran Playwright (sandbox Chromium + TLS-1.2 + `x-vercel-protection-bypass`) against `staging.mehamakor.online` /he routes @375+1440.
+- **🔑 HEADLINE: live staging is serving a build that PREDATES both #1826 (MEH-1211) and #1830 (MEH-1210).** Evidence: (a) discovery cards **still render ₪** ("מ-₪70/ק״ג" on 6/7 cards, /home + /producers) — MEH-1210 deletes those spans; (b) the ruach-hasadeh card renders a **broken `<img>`** (`naturalWidth 0`, dead `cloudinary.com/demo` URL) with **no** leaf/wordmark placeholder — MEH-1211's `onError` fallback is absent. Fresh SSR (`x-vercel-cache: MISS`, `no-store`, `age 0`) ⇒ it's the deployed **build** that's stale, not CDN cache. Root cause = today's Vercel deploy rate-limit (`api-deployments-free-per-day`); the staging redeploy for the merged commits never shipped.
+- **Consequence:** checks #1/#2 (card-height equality after MEH-1210 removed the `mt-auto` footer) measured **spread 0px** every row — but on the **OLD** card, so they do **not** validate the post-1210 layout. #4 (₪ absence) + #5 (placeholder) read as FAIL **only because the build is stale**, not a code regression (source re-verified: no price span, `onError` present, vitest green).
+- **Verified regardless of deploy:** #6 galil-farm /he/map card chip **text = "בשר"** ✓ (MEH-1263 data re-map IS live) — the glyph is still DEFAULT Leaf (pre-MEH-1268; fixed by #1839, awaiting deploy). #7 ruach `/producer` product prices present in ₪ (`24₪–28₪`, `120₪`, `מינימום 60₪`) ✓.
+- **Blocked, not run:** #3 /he/favorites (needs consumer session — `DEMO_CONSUMER_PASSWORD` not in the CC sandbox).
+- **ACTION FOR SAPIR:** once the Vercel deploy quota resets, trigger a **staging redeploy** (redeploy latest `staging`), then re-run T0 (#1,#2,#4,#5) + MEH-1268 self-QA (galil map glyph = meat, legend/markers/mini-map consistency). The MEH-1210 height-equality risk is **still unverified anywhere reachable** (live=stale, local `next start` has no sandbox-reachable API, jsdom has no layout) — the redeploy re-run is the only path.
+
+## 2026-07-17 — MEH-1267 admin polish (LOW) — feature/meh-1267-admin-polish
+
+- **What:** 4 admin fixes. (1) `total_group_buys` (`count(GroupBuy.id)`) in `admin_extra.get_dashboard`; `admin/page.js` binds it, drops the `"›"` placeholder. (2) `StoryCardCanvas` gained `onClose` → X button (logical-start) + Esc; `AdminProducersTable` wires it to `onToggleStoryCard`. (3) Canonical domain (MEH-1242 PR4): `mehamakor.online` (staging alias) → `SITE_URL` (`lib/env`, `mehamakor.co.il`) in StoryCardCanvas + VanityLinkCard + `story.canvas.footer_url` copy. (4) Ambassador kebab item `title` tooltip (i18n). Copy pass he-only: `footer_url` גלו→גלי, `save_cloudinary` שמרו→שמרי, `actions.delete` מחקו→מחקי.
+- **QA:** build green; vitest `AdminDashboardStats` + `StoryCardPanel` (4) + backend dashboard test green.
+- **Overlap w/ MEH-1266:** shares `admin_extra.get_dashboard` (`total_group_buys` vs `open_reports` filter — different lines) + `he/en.json` (distinct keys). Merge order: 1267 first; 1266 syncs staging post-Sapir-go (Accept-Both on logs).
 
 ## 2026-07-17 — MEH-1258 / 1260 / 1259 batch (license card + kashrut expiry + organic hide) — full authority
 
