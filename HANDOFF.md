@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
+
+- **Branch `feature/meh-1252-demo-image-ids` (off staging).** The exact swap the earlier 17/07 sweep session **skipped and deferred to this ticket**. MEH-1198 SYNC (16/07) supplied the 5 `mehamakor/demo/ruach-hasadeh-*` public_ids on the `dfzpscjks` cloud; Sapir chose the **Full per-product (5/5)** scope when asked (vs pure 6-site swap).
+- **`backend/scripts/seed_demo_business.py` only** — replaced all 6 `res.cloudinary.com/demo/` URLs; added `image_url` to products חלה/כוסמין/עוגיות (had none); recipe→sourdough, event→hero. No schema change, no env vars, no non-image seed fields touched. `py_compile` OK; 0 demo-cloud refs remain; all 5 public_ids referenced.
+- **pytest deferred to CI's Backend-tests leg** (pytest/app deps not installed in sandbox, `pip` blocked — same precedent as the MEH-1259/1260 batch above). No test references the seed script.
+- **⚠️ Deploy note for Sapir:** this merge triggers a staging build that will pick up `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (added to Vercel today, after the last build) — AddressSearch flips from the Nominatim fallback to Google Places. **Re-test address search after this deploys.** Flagged in the PR body.
+- **Next (Sapir):** run `--refresh` via Railway Web Console, then visual crop check (esp. `ruach-hasadeh-cookies` portrait→4:3) per MEH-1198.
+
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
 ## 2026-07-17 — staging QA (MEH-1210/1211) + MEH-1268 CATEGORY_STYLES
