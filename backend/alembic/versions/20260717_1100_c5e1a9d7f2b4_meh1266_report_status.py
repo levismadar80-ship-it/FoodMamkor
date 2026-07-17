@@ -1,7 +1,7 @@
 """meh1266_report_status
 
 Revision ID: c5e1a9d7f2b4
-Revises: d4e7a92c81b5
+Revises: e7c4b1f95a2d
 Create Date: 2026-07-17 11:00:00.000000+00:00
 
 MEH-1266 (report lifecycle): adds a resolve/dismiss lifecycle to `reports`
@@ -34,7 +34,12 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "c5e1a9d7f2b4"
-down_revision: Union[str, None] = "d4e7a92c81b5"
+# MEH-1266: originally chained off d4e7a92c81b5; re-parented onto e7c4b1f95a2d
+# (MEH-1255, delivery_excluded_cities) after that migration merged to staging
+# off the same parent — linearizes the two heads. No change to this revision's
+# own DDL (Sapir-approved); order vs the unrelated delivery-cities migration is
+# irrelevant.
+down_revision: Union[str, None] = "e7c4b1f95a2d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
