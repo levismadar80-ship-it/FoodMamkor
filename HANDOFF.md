@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1276 — structured Hebrew opening-hours editor — `feature/meh-1276-hours-editor`
+
+- **What:** replaced the free-text `HoursCard` (MEH-1242 PR5, expected `Sun-Thu 09:00-18:00` and silently `null`'d on any deviation) with a structured Hebrew editor — 7 day rows (א׳–ש׳, RTL) + open/closed checkbox + two `type="time"` inputs (`dir="ltr"`) per open day + one-click preset. Serialises to the **same canonical string** → zero DB/API/`parseHours` change.
+- **Files:** NEW `lib/hours-serialize.js` (serializer w/ range compression + prefill + validation), NEW `HoursEditor.jsx` (cards.jsx >1200 lines → `HoursCard` is now a thin wrapper), NEW `__tests__/hours-serialize.test.js` (14), UPDATE `cards.jsx` + `__tests__/EditTabDeliveryCard.test.jsx` (HoursCard isolation tests reworked) + `messages/he.json`/`en.json` (7 new keys, parity kept).
+- **Load/save:** existing string prefills; unparseable → amber notice + empty editor, original kept until explicit save; per-day close>open validation; persistent ✓ (MEH-1270 pattern). Round-trip serialize→parseHours→serialize is stable (test-locked).
+- **QA:** vitest **1195 pass** + `npm run build` green + DoD gate (lucide/יצרן/en-parity pass; the 2 DoD fails — backend pytest venv + `MapPane.jsx` RTL — are pre-existing & outside the diff). Local-stack visual QA with the **real** component (temp route + Playwright, 3 states × 375+1440) → `qa-artifacts/MEH-1276/*.webp` (compressed, 88 KB). **Auth-gated live producer-login QA on seeded staging deferred to Sapir** (sandbox can't reach backend).
+- **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day) — no preview URL until it resets; not a required gate.
+- **Batch:** ticket 2 of the MEH-1277→MEH-1276 batch.
+
 ## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
 
 - **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
