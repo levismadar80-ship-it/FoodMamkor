@@ -19,10 +19,11 @@ the badge / favorites attachment all preserved.
 # previously covered this complexity in producers.py cannot be migrated here
 # because pyproject.toml is protected by MEH-442 protect-lint-config hook.
 
+from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -184,14 +185,32 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
     # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
     # verified-only — it matches admin-verified kashrut (kashrut_verified_at,
     # stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
+    # MEH-1260: expiry enforcement — an expired certificate no longer passes
+    # ?kosher=true (and lands in ?kosher=false, the exact complement). Legacy
+    # pre-expiry-era rows (NULL expires_at, non-null verified_at) stay valid.
+    # Naive utcnow matches how admin_kashrut.py:73 writes the timestamps.
     kosher = filters.get("kosher")
     if kosher is not None:
         if kosher:
-            q = q.filter(Producer.kashrut_verified_at.isnot(None))
-            count_q = count_q.filter(Producer.kashrut_verified_at.isnot(None))
+            kosher_valid = and_(
+                Producer.kashrut_verified_at.isnot(None),
+                or_(
+                    Producer.kashrut_expires_at.is_(None),
+                    Producer.kashrut_expires_at > datetime.utcnow(),
+                ),
+            )
+            q = q.filter(kosher_valid)
+            count_q = count_q.filter(kosher_valid)
         else:
-            q = q.filter(Producer.kashrut_verified_at.is_(None))
-            count_q = count_q.filter(Producer.kashrut_verified_at.is_(None))
+            kosher_invalid = or_(
+                Producer.kashrut_verified_at.is_(None),
+                and_(
+                    Producer.kashrut_expires_at.isnot(None),
+                    Producer.kashrut_expires_at <= datetime.utcnow(),
+                ),
+            )
+            q = q.filter(kosher_invalid)
+            count_q = count_q.filter(kosher_invalid)
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —

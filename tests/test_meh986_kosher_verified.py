@@ -7,7 +7,7 @@ free-text `kosher` field no longer serializes on the public
 `ProducerOwnerOut` (admin-internal + owner's own view). The column is unchanged.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.schemas.schemas import (
     ProducerAdminOut,
@@ -50,3 +50,41 @@ def test_kosher_filter_excludes_free_text_only_producer(client, db):
     assert "חוות כשר טקסט" not in names_true  # free-text is NOT "verified"
     names_false = {p["name"] for p in client.get("/producers?kosher=false").json()}
     assert "חוות כשר טקסט" in names_false
+
+
+def test_kosher_filter_excludes_expired_cert(client, db):
+    # MEH-1260: expired certificate → out of ?kosher=true, into ?kosher=false.
+    # Naive utcnow mirrors how admin_kashrut.py:73 writes the timestamps.
+    expired = make_producer(db, name="חוות תעודה פגה")
+    expired.kashrut_verified_at = datetime.utcnow() - timedelta(days=730)
+    expired.kashrut_expires_at = datetime.utcnow() - timedelta(days=365)
+    db.commit()
+    names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}
+    assert "חוות תעודה פגה" not in names_true
+    names_false = {p["name"] for p in client.get("/producers?kosher=false").json()}
+    assert "חוות תעודה פגה" in names_false
+
+
+def test_kosher_filter_keeps_valid_cert(client, db):
+    # MEH-1260: an in-date certificate is unchanged by the expiry predicate.
+    valid = make_producer(db, name="חוות תעודה בתוקף")
+    valid.kashrut_verified_at = datetime.utcnow()
+    valid.kashrut_expires_at = datetime.utcnow() + timedelta(days=180)
+    db.commit()
+    names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}
+    assert "חוות תעודה בתוקף" in names_true
+    names_false = {p["name"] for p in client.get("/producers?kosher=false").json()}
+    assert "חוות תעודה בתוקף" not in names_false
+
+
+def test_kosher_filter_keeps_legacy_null_expires(client, db):
+    # MEH-1260 legacy safety: rows verified before the expiry era carry NULL
+    # kashrut_expires_at and must stay valid — do not break them.
+    legacy = make_producer(db, name="חוות ותיקה ללא תפוגה")
+    legacy.kashrut_verified_at = datetime.utcnow() - timedelta(days=900)
+    legacy.kashrut_expires_at = None
+    db.commit()
+    names_true = {p["name"] for p in client.get("/producers?kosher=true").json()}
+    assert "חוות ותיקה ללא תפוגה" in names_true
+    names_false = {p["name"] for p in client.get("/producers?kosher=false").json()}
+    assert "חוות ותיקה ללא תפוגה" not in names_false
