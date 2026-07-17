@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
@@ -20,6 +21,7 @@ import {
   StatsSchema,
   ProducerSchema,
   ProducersResponseSchema,
+  RandomProducerSchema,
 } from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
@@ -55,6 +57,9 @@ const GEO_RADIUS_KM_RETRY = 30;
  */
 export function useHomePage() {
   const { user } = useAuth();
+  // MEH-1288: real navigation to a random producer page (a page change, unlike
+  // the MEH-1293 same-URL History-API mirroring below — push is correct here).
+  const router = useRouter();
   // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
   // old flat keys ("hero_title"). Wave 2 migrates those call sites and
   // this wrap is removed.
@@ -478,6 +483,23 @@ export function useHomePage() {
 
   const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
 
+  // MEH-1288: "הפתיעו אותי" — fetch one random approved producer from the
+  // backend (ORDER BY random(), full catalog — not just the loaded page) and
+  // navigate to its page. Best-effort: a network error or malformed payload is
+  // a silent no-op (the button stays, the user can tap again). Mirrors
+  // ProducerCard's href rule (slug preferred, id fallback).
+  const handleSurprise = useCallback(async () => {
+    try {
+      const r = await api.get("/producers/random");
+      const parsed = RandomProducerSchema.safeParse(r.data);
+      if (!parsed.success) return;
+      const { slug, id } = parsed.data;
+      router.push(slug ? `/${slug}` : `/producer/${id}`);
+    } catch {
+      // no-op — best-effort surprise
+    }
+  }, [router]);
+
   // Advance from Step 0 onboarding tip. Resets the local 2s-delay gate
   // so a future return to step 0 re-arms the delay (matches the original
   // inline `() => { setStep0Visible(false); onboardAdvance(); }`).
@@ -552,6 +574,7 @@ export function useHomePage() {
     geoEmptyNotice,
     // handlers
     handleNearMe,
+    handleSurprise,
     handleCitySelected,
     handleClearLocation,
     handleWhatsAppClick,
