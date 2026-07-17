@@ -35,8 +35,10 @@ describe("ProductsSection empty state (MEH-1172)", () => {
     api.get.mockResolvedValue({ data: [] });
     renderSection();
 
-    expect(await screen.findByText(P.empty.title)).toBeInTheDocument();
-    expect(screen.getByText(P.empty.title)).toHaveTextContent("הוסיפו את המוצר הראשון שלכם");
+    const title = await screen.findByText(P.empty.title);
+    expect(title).toBeInTheDocument();
+    // the empty-state title is a real heading (EmptyState renders it as <h3>)
+    expect(title.tagName).toBe("H3");
     expect(screen.getByText(P.empty.description)).toBeInTheDocument();
   });
 
