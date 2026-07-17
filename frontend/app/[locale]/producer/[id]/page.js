@@ -1,5 +1,5 @@
 import ProducerDetail from "./ProducerDetail";
-import { buildProducerMetadata, buildJsonLd, serializeJsonLd } from "@/lib/seo";
+import { buildProducerMetadata, buildJsonLd, serializeJsonLd, buildPageUrl, SITE_URL } from "@/lib/seo";
 import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
@@ -15,13 +15,18 @@ async function getProducer(id) {
 }
 
 // MEH-476 PR 3b2: per-page hreflang for producer-by-id route. D1 title
-// format ({name} | brand) applied per-locale. Canonical points to /producer/{id}
-// (this route's path); slug-based /{slug} has its own canonical.
+// format ({name} | brand) applied per-locale.
+// MEH-1060 (SEO-01): when the producer has a slug, canonical + hreflang must
+// point to the slug URL — matching the JSON-LD @id/url (buildPageUrl) and the
+// sitemap entry, so the three SEO signals agree instead of self-canonicaling
+// to /producer/{id}. buildPageUrl is the single owner of the slug-vs-id
+// preference; strip SITE_URL to get the relative path buildAlternates expects.
+// 404 (no producer) keeps the /producer/{id} path.
 export async function generateMetadata(props) {
   const params = await props.params;
   const { id, locale } = params;
   const producer = await getProducer(id);
-  const path = `/producer/${id}`;
+  const path = producer ? buildPageUrl(producer).replace(SITE_URL, "") : `/producer/${id}`;
   const alternates = buildAlternates(path, locale);
 
   if (!producer) {
