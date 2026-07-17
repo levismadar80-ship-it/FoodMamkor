@@ -1,0 +1,65 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+
+// MEH-1177 (ADR-024): the footer nav split into two audience groups —
+// "גלו" (readers) and "לבתי עסק" (producers) — each with a real <h3> heading.
+// Return each translation key verbatim so we can assert on the group-heading
+// keys and locate links by href.
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key) => key,
+}));
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }) => (
+    <a href={href} {...rest}>{children}</a>
+  ),
+}));
+
+vi.mock("next/image", () => ({
+  default: (props) => <img alt={props.alt ?? ""} {...props} />,
+}));
+
+vi.mock("@phosphor-icons/react", () => ({
+  InstagramLogo: () => <span data-testid="ig" />,
+  ArrowRight: () => <span data-testid="arrow" />,
+}));
+
+vi.mock("@/components/ButtonSpinner", () => ({ default: () => <span /> }));
+vi.mock("@/lib/api", () => ({ default: { post: vi.fn() } }));
+vi.mock("@/lib/errors", () => ({ detailToMessage: (e) => String(e) }));
+vi.mock("@/lib/constants", () => ({ BRAND_NAME: "מהמקור" }));
+
+import Footer from "@/components/Footer";
+
+const hrefsUnder = (heading) => {
+  // the group's link list is the <ul> that follows its <h3> within the same group <div>
+  const group = heading.closest("div");
+  return Array.from(group.querySelectorAll("a[href]")).map((a) => a.getAttribute("href"));
+};
+
+describe("Footer nav split into two audience groups (MEH-1177)", () => {
+  it("renders both group headings", () => {
+    render(<Footer />);
+    expect(screen.getByText("nav.footer.group_discover_heading")).toBeInTheDocument();
+    expect(screen.getByText("nav.footer.group_business_heading")).toBeInTheDocument();
+  });
+
+  it("groups the reader links under 'גלו' and the producer links under 'לבתי עסק'", () => {
+    render(<Footer />);
+    const discover = hrefsUnder(screen.getByText("nav.footer.group_discover_heading"));
+    const business = hrefsUnder(screen.getByText("nav.footer.group_business_heading"));
+
+    expect(discover).toEqual(["/", "/map", "/events", "/about", "/share"]);
+    expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
+  });
+
+  it("keeps all 8 nav links exactly once (no link dropped in the split)", () => {
+    render(<Footer />);
+    const navLinks = Array.from(
+      screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
+    ).map((a) => a.getAttribute("href"));
+    expect(navLinks.sort()).toEqual(
+      ["/", "/about", "/about/for-businesses", "/about/process", "/events", "/join", "/map", "/share"].sort(),
+    );
+  });
+});
