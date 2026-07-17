@@ -29,6 +29,14 @@ export const StatsSchema = z.object({
   categories_count: z.number(),
 });
 
+// GET /producers/random → ProducerRandomOut = { id:UUID, slug:str|null } —
+// MEH-1288 homepage "הפתיעו אותי" button. A malformed payload routes to the
+// caller's no-op (no navigation) instead of pushing a broken href.
+export const RandomProducerSchema = z.object({
+  id: z.union([z.string(), z.number()]),
+  slug: z.string().nullable().optional(),
+});
+
 // GET /users/me/favorites → list[FavoriteOut].
 // Backend FavoriteOut.producer_id is a required, non-nullable UUID, so it
 // must be present for the parse to succeed — otherwise a payload of empty

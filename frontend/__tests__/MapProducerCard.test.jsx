@@ -46,7 +46,8 @@ vi.mock("@/lib/map-categories", () => ({
 }));
 vi.mock("@phosphor-icons/react", () => ({
   Star: (p) => <span data-testid="star-icon" {...p} />,
-  ArrowRight: (p) => <span data-testid="arrow-icon" {...p} />,
+  // MEH-1296: chevron glyph ArrowRight → CaretRight.
+  CaretRight: (p) => <span data-testid="caret-icon" {...p} />,
 }));
 
 const producer = {
@@ -72,14 +73,16 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 
-  it("renders LTR-isolated distance when user + producer coords exist", () => {
+  it("renders distance as a <bdi> (auto-dir, digits-first) when coords exist", () => {
     window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
     expect(pill.tagName).toBe("BDI");
     expect(pill.textContent).toBe('53.9 ק"מ'); // 🔒 §3 Hebrew unit, no "ממך"
     expect(pill.textContent).not.toContain("km");
-    expect(pill).toHaveAttribute("dir", "ltr");
+    // MEH-1296: no dir override — <bdi> auto-resolves to RTL so the token reads
+    // digits-first in the RTL meta line.
+    expect(pill).not.toHaveAttribute("dir");
   });
 
   it("does NOT render distance when producer lat/lng are missing", () => {
