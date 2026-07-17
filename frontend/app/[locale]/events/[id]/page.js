@@ -4,6 +4,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, buildEntityTitle, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildEventJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: Event + Breadcrumb JSON-LD
+import { BRAND_NAME } from "@/lib/constants";
 
 // MEH-476 PR 3b2: server wrapper for the originally-client /events/[id] page.
 // Client Components cannot export generateMetadata; the actual UI lives in
@@ -57,6 +58,10 @@ export async function generateMetadata(props) {
     description: event?.description || t("description_fallback"),
     openGraph: {
       type: "article",
+      // MEH-1060 (SEO-15): add og:url (self canonical) + siteName, mirroring the
+      // producer-page precedent (lib/seo.js buildProducerMetadata).
+      url: alternates.canonical,
+      siteName: BRAND_NAME,
       locale: OG_LOCALE[locale],
       images: event?.image_url ? [event.image_url] : ["/og-image.png"],
     },

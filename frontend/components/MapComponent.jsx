@@ -69,6 +69,20 @@ import { categoryGlyphSvg } from "@/lib/marker-glyph";
 // Inline hex in the divIcon HTML below is required — Leaflet renders a raw HTML
 // string, so Tailwind tokens can't apply. Values map to design tokens:
 // #2e6853 = primary, #2E4A2E = primary-dark, #fff = surface, #896714 = accent.
+
+// MEH-1060 (SEO-14): the marker photo is a meaningful image (the producer),
+// not decorative — it needs an alt for image indexing + a11y (matches the
+// ProducerCard `alt={producer.name}` pattern). Because the marker HTML is a
+// raw string injected via Leaflet's divIcon, producer.name must be
+// HTML-attribute-escaped so it can't break out of the alt="..." quotes.
+function escapeHtmlAttr(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function createCategoryMarker(
   producer,
   { active = false, hovered = false, visited = false } = {},
@@ -95,7 +109,7 @@ function createCategoryMarker(
     : null;
   const { color: categoryColor, icon: GlyphIcon } = styleForProducer(producer);
   const inner = imgUrl
-    ? `<img src="${imgUrl}" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+    ? `<img src="${imgUrl}" loading="lazy" alt="${escapeHtmlAttr(producer.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
     : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${categoryColor};">${categoryGlyphSvg(GlyphIcon)}</div>`;
 
   // Verified badge — tiny white-on-green checkmark, bottom-right.

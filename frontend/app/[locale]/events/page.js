@@ -27,6 +27,14 @@ export async function generateMetadata({ params }) {
       // Next.js replaces openGraph object on override — re-declare image.
       images: ["/og-image.png"],
     },
+    // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
+    // layout's generic site card).
+    twitter: {
+      card: "summary_large_image",
+      title: t("og_title"),
+      description: t("og_description"),
+      images: ["/og-image.png"],
+    },
     alternates: buildAlternates("/events", locale),
   };
 }

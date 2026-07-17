@@ -49,17 +49,18 @@ describe("Footer nav split into two audience groups (MEH-1177)", () => {
     const discover = hrefsUnder(screen.getByText("nav.footer.group_discover_heading"));
     const business = hrefsUnder(screen.getByText("nav.footer.group_business_heading"));
 
-    expect(discover).toEqual(["/", "/map", "/events", "/about", "/share"]);
+    // MEH-1060 (SEO-09): /producers index link added to the discover group.
+    expect(discover).toEqual(["/", "/producers", "/map", "/events", "/about", "/share"]);
     expect(business).toEqual(["/join", "/about/process", "/about/for-businesses"]);
   });
 
-  it("keeps all 8 nav links exactly once (no link dropped in the split)", () => {
+  it("keeps all 9 nav links exactly once (no link dropped in the split)", () => {
     render(<Footer />);
     const navLinks = Array.from(
       screen.getByRole("navigation", { name: "nav.footer.nav_aria" }).querySelectorAll("a[href]"),
     ).map((a) => a.getAttribute("href"));
     expect(navLinks.sort()).toEqual(
-      ["/", "/about", "/about/for-businesses", "/about/process", "/events", "/join", "/map", "/share"].sort(),
+      ["/", "/about", "/about/for-businesses", "/about/process", "/events", "/join", "/map", "/producers", "/share"].sort(),
     );
   });
 });
