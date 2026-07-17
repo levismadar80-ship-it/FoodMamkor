@@ -226,7 +226,15 @@ export default function Header() {
         // alone wouldn't pass clicks THROUGH to the page. The <nav> pill below
         // re-enables events (pointer-events-auto). pointer-events ONLY — no
         // visual/layout/z-index change (MEH-732/MEH-1072/MEH-1109 untouched).
-        className="sticky top-0 z-[1050] pointer-events-none"
+        // MEH-1195: + gated bg-background — MEH-947 made the PILL opaque on
+        // inner pages but the sticky SHELL around it (px-5 gutters + pt-4/pb-2
+        // strips) stayed transparent, so page content scrolling under the header
+        // bled through beside/above the pill (single Hebrew letters reading as a
+        // render glitch). Give the shell the same cream surface on inner pages
+        // (!isHomepage); the homepage keeps its float-over-hero transparency
+        // (MEH-947-approved) — so the token is gated, not unconditional. Surface
+        // only: no geometry / z / blur. Both concerns coexist on this one line.
+        className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
