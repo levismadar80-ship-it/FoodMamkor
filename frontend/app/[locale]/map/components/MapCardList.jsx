@@ -56,9 +56,12 @@ export default function MapCardList({
           }}
           onMouseEnter={() => onCardMouseEnter(p.id)}
           onMouseLeave={onCardMouseLeave}
-          // MEH-1010: active gains a desktop-only ring (marker-click card-sync
-          // highlight per AC); mobile keeps the border-only look unchanged.
-          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-lg" : ""} ${activeProducerId === p.id ? "border-2 border-primary rounded-lg bg-green-50/[6%] lg:ring-2 lg:ring-primary" : ""} transition`}
+          // MEH-1010: marker-hover highlights the card with a ring (two-way sync).
+          // MEH-1243: the SELECTED (active) visual is now the card's own Pin-Echo
+          // (category-color border + 6% tint, rendered inside MapProducerCard) —
+          // the wrapper no longer paints its own active border/tint, which would
+          // double up with the pin-echo. `active` is still passed to the card below.
+          className={`${hoveredProducerId === p.id ? "ring-2 ring-primary rounded-lg" : ""} transition`}
         >
           <MapProducerCard
             producer={p}

@@ -2,20 +2,34 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import MapProducerCard from "@/components/MapProducerCard";
 
-// MEH-826: covers the client-side distance block. useUserLocation + lib/distance
-// are intentionally REAL — the test exercises the actual sessionStorage read +
-// haversine/formatDistance pipeline. Everything else is mocked to isolate it.
+// MEH-1243: MapProducerCard is now a "selection card" — image · name ·
+// rating-if-exists · meta line + ONE end-corner chevron (the only nav
+// affordance). Body tap selects (pin-sync) an unselected card and navigates a
+// selected one (second-tap). No contact CTA / "full profile" link / verified
+// seal / delivery pill (all removed). Rating = ★ X.X (N), reserved-height row.
+//
+// MEH-826: distance block stays REAL (useUserLocation + lib/distance exercise
+// the actual sessionStorage read + haversine/formatDistance pipeline).
 vi.mock("next-intl", () => ({
   useTranslations: () => (k) => k,
 }));
-vi.mock("next/link", () => ({
-  default: ({ children, href }) => <a href={href}>{children}</a>,
+
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
 }));
-// next/image doesn't forward onLoad reliably under jsdom — render a plain <img>
-// that forwards onLoad + className so the MEH-1133 aspect flip is testable
-// (real-browser behavior verified separately in qa-artifacts).
+
+vi.mock("next/link", () => ({
+  default: ({ children, href, ...props }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+// next/image doesn't forward onLoad/onError reliably under jsdom — render a
+// plain <img> forwarding both so the MEH-1133 aspect flip + MEH-1211 fallback
+// stay testable (real-browser behavior verified separately in qa-artifacts).
 vi.mock("next/image", () => ({
-  // MEH-1211: also forward onError so the load-failure fallback is testable.
   default: ({ onLoad, onError, className, alt, src }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} onError={onError} />
@@ -24,32 +38,15 @@ vi.mock("next/image", () => ({
 vi.mock("@/lib/cloudinary", () => ({
   optimizeCloudinary: (u) => u || "",
 }));
-vi.mock("@/lib/use-user-city", () => ({
-  useUserCity: () => ({ city: null }),
-}));
 vi.mock("@/lib/map-categories", () => ({
   styleForProducer: () => ({
     color: "#000000",
-    textColor: "#000000",
     icon: (p) => <span data-testid="cat-icon" {...p} />,
   }),
 }));
-vi.mock("@/lib/contact-method", () => ({
-  getPrimaryContactHref: () => null,
-  getPrimaryMethod: () => "whatsapp",
-  getPrimaryContactLabel: () => "label",
-  isPrimaryExternal: () => false,
-}));
 vi.mock("@phosphor-icons/react", () => ({
-  Star: (p) => <span {...p} />,
-  Truck: (p) => <span {...p} />,
-  Leaf: (p) => <span {...p} />,
-  WhatsappLogo: (p) => <span {...p} />,
-  Phone: (p) => <span {...p} />,
-  Globe: (p) => <span {...p} />,
-  EnvelopeSimple: (p) => <span {...p} />,
-  SealCheck: (p) => <span {...p} />,
-  ArrowRight: (p) => <span {...p} />,
+  Star: (p) => <span data-testid="star-icon" {...p} />,
+  ArrowRight: (p) => <span data-testid="arrow-icon" {...p} />,
 }));
 
 const producer = {
@@ -62,8 +59,11 @@ const producer = {
   lng: 35.2137,
 };
 
+const GEO = { lat: 32.0853, lng: 34.7818 };
+
 beforeEach(() => {
   window.sessionStorage.clear();
+  pushMock.mockClear();
 });
 
 describe("MapProducerCard — distance (MEH-826)", () => {
@@ -73,119 +73,227 @@ describe("MapProducerCard — distance (MEH-826)", () => {
   });
 
   it("renders LTR-isolated distance when user + producer coords exist", () => {
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
+    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
-    expect(pill.textContent).toMatch(/km\u2069 ממך$/);
+    expect(pill.tagName).toBe("BDI");
+    expect(pill.textContent).toBe('53.9 ק"מ'); // 🔒 §3 Hebrew unit, no "ממך"
+    expect(pill.textContent).not.toContain("km");
     expect(pill).toHaveAttribute("dir", "ltr");
   });
 
   it("does NOT render distance when producer lat/lng are missing", () => {
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
+    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
     render(<MapProducerCard producer={{ ...producer, lat: null, lng: null }} />);
     expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 });
 
-describe("MapProducerCard — glyph-LOCK (MEH-938)", () => {
-  it("renders verified seal (icon + aria-label only) with no raw ✓/→ dingbat", () => {
-    // identity t() mock → keys; the SealCheck renders only when
-    // verification_tier === "verified" (MEH-766 ch1 — seal source switched off is_verified).
-    // Uniform template: the t("verified") TEXT is dropped on the map card — the
-    // label survives as the icon's aria-label only.
-    render(<MapProducerCard producer={{ ...producer, verification_tier: "verified" }} />);
-    expect(screen.getByLabelText("verified")).toBeInTheDocument();
-    expect(screen.queryByText("verified")).not.toBeInTheDocument();
-    expect(screen.getByText("full_profile")).toBeInTheDocument();
-    // ✓ and → are now Phosphor icons (mocked <span>), never text dingbats — guards re-introduction
-    expect(document.body.textContent).not.toContain("✓");
-    expect(document.body.textContent).not.toContain("→");
+describe("MapProducerCard — meta line (🔒 §3 category-first, distance-last)", () => {
+  it("renders ONE meta line: category first, distance last", () => {
+    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    render(
+      <MapProducerCard
+        producer={{ ...producer, categories: [{ name: "ירקות, פירות ומשקים" }] }}
+      />,
+    );
+    const meta = screen.getByTestId("map-meta-line");
+    // category text comes before the distance in the DOM order
+    expect(meta.textContent).toMatch(/^ירקות, פירות ומשקים/);
+    expect(meta).toContainElement(screen.getByTestId("map-distance-pill"));
+    expect(meta.textContent).toMatch(/ק"מ$/);
+    expect(meta.textContent).not.toContain("km");
+    expect(meta.textContent).not.toContain("ממך");
+  });
+
+  it("category text truncates; the distance token never shrinks", () => {
+    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    render(
+      <MapProducerCard
+        producer={{ ...producer, categories: [{ name: "ירקות, פירות ומשקים" }] }}
+      />,
+    );
+    const categoryText = screen.getByText("ירקות, פירות ומשקים");
+    expect(categoryText).toHaveClass("truncate");
+    // the distance sits in a shrink-0 / whitespace-nowrap wrapper
+    const distWrap = screen.getByTestId("map-distance-pill").closest("span.shrink-0");
+    expect(distWrap).toBeTruthy();
+    expect(distWrap).toHaveClass("whitespace-nowrap");
+  });
+
+  it("with no geolocation, meta line shows category only (fallback, same row)", () => {
+    render(
+      <MapProducerCard producer={{ ...producer, categories: [{ name: "דבש" }] }} />,
+    );
+    const meta = screen.getByTestId("map-meta-line");
+    expect(meta.textContent).toContain("דבש");
+    expect(screen.queryByTestId("map-distance-pill")).not.toBeInTheDocument();
   });
 });
 
-describe("MapProducerCard — uniform card template", () => {
-  it("no longer renders the category color dot on the thumbnail", () => {
-    const { container } = render(
-      <MapProducerCard
-        producer={{ ...producer, images: ["/photo.jpg"], categories: [{ name: "דבש" }] }}
-      />,
-    );
-    // the dot was the only absolutely-positioned span inside the thumbnail box
-    expect(container.querySelector("span.absolute")).toBeNull();
-  });
-
-  it("no longer renders the hours/open-now block", () => {
+describe("MapProducerCard — rating (🔒 §5/§7 ★ X.X (N), reserved height)", () => {
+  it("renders ★ X.X (N) as an LTR-isolated <bdi> at ≥3 reviews", () => {
     render(
       <MapProducerCard
-        producer={{ ...producer, opening_hours: { sun: [["08:00", "18:00"]] } }}
-      />,
-    );
-    // identity t() mock → the old block surfaced "open_now"/"closed_now" keys
-    expect(screen.queryByText(/open_now|closed_now/)).not.toBeInTheDocument();
-  });
-
-  it("renders rating inside the chip line as an LTR-isolated <bdi>, not a trust strip", () => {
-    const { container } = render(
-      <MapProducerCard
-        producer={{ ...producer, categories: [{ name: "דבש" }], avg_rating: 4.5, reviews_count: 7 }}
+        producer={{ ...producer, avg_rating: 4.5, reviews_count: 7 }}
       />,
     );
     const rating = screen.getByText("4.5 (7)");
     expect(rating.tagName).toBe("BDI");
     expect(rating).toHaveAttribute("dir", "ltr");
-    // chip + rating share one flex line
-    expect(rating.closest("div")).toContainElement(screen.getByText("דבש"));
-    expect(container.querySelectorAll("[data-testid='map-meta-line']").length).toBeLessThanOrEqual(1);
   });
 
-  it("renders ONE meta line: city · distance (no price)", () => {
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
+  it("hides the rating below 3 reviews but KEEPS the row (reserved height)", () => {
     render(
       <MapProducerCard
-        producer={{ ...producer, city: "ירושלים", price_range: "מ-25/בקבוק" }}
+        producer={{ ...producer, avg_rating: 5, reviews_count: 2 }}
       />,
     );
-    const meta = screen.getByTestId("map-meta-line");
-    expect(meta.textContent).toMatch(/^ירושלים · /);
-    expect(meta).toContainElement(screen.getByTestId("map-distance-pill"));
-    // MEH-1210: price no longer appears in the meta line.
-    expect(meta.textContent).not.toContain("מ-");
-    expect(meta.textContent).not.toContain("/בקבוק");
+    // the rating content is gone …
+    expect(screen.queryByTestId("map-rating")).not.toBeInTheDocument();
+    // … but its fixed-height row still exists so all cards stay equal-height.
+    expect(screen.getByTestId("map-rating-row")).toBeInTheDocument();
+  });
+
+  it("hides the rating when avg_rating is null even with many reviews", () => {
+    render(
+      <MapProducerCard
+        producer={{ ...producer, avg_rating: null, reviews_count: 40 }}
+      />,
+    );
+    expect(screen.queryByTestId("map-rating")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-rating-row")).toBeInTheDocument();
   });
 });
 
-// MEH-1210: price removed from discovery cards ("מגזין, לא marketplace").
-// The MEH-934 RTL price-split render is gone — prices live at product level
-// inside /producer, never on the map card.
-describe("MapProducerCard — price removed (MEH-1210)", () => {
-  it("renders no price element (no <bdi>) even when a price is set", () => {
-    const { container } = render(
-      <MapProducerCard producer={{ ...producer, price_range: "מ-35₪" }} />,
-    );
-    expect(container.querySelector("bdi")).toBeNull();
-    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
-    expect(screen.queryByText("מ-")).not.toBeInTheDocument();
-  });
-
-  it("renders no price when the producer has a city + distance + price", () => {
-    window.sessionStorage.setItem(
-      "user_location",
-      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
-    );
+describe("MapProducerCard — reduced to a selection card (MEH-1243 'drop both')", () => {
+  it("has no contact CTA and no 'full profile' text link", () => {
     render(
       <MapProducerCard
-        producer={{ ...producer, city: "חיפה", price_range: "35-50" }}
+        producer={{ ...producer, phone: "0501234567", primary_contact_method: "whatsapp" }}
       />,
     );
+    // no <button> at all, no visible "full_profile" text (it's the chevron's aria-label only)
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText("full_profile")).not.toBeInTheDocument();
+  });
+
+  it("has no verified seal even when verification_tier='verified'", () => {
+    render(
+      <MapProducerCard producer={{ ...producer, verification_tier: "verified" }} />,
+    );
+    expect(screen.queryByLabelText("verified")).not.toBeInTheDocument();
+  });
+
+  it("has no delivery pill even when the producer delivers to the user's city", () => {
+    render(
+      <MapProducerCard
+        producer={{ ...producer, delivery_areas: [{ city: "ירושלים", delivery_day: "ה" }] }}
+      />,
+    );
+    expect(screen.queryByText("distance_prefix")).not.toBeInTheDocument();
+  });
+
+  it("renders no ✓ / → text dingbats (glyph-LOCK MEH-938)", () => {
+    render(
+      <MapProducerCard producer={{ ...producer, verification_tier: "verified" }} />,
+    );
+    expect(document.body.textContent).not.toContain("✓");
+    expect(document.body.textContent).not.toContain("→");
+  });
+});
+
+describe("MapProducerCard — chevron nav + second-tap (Direction B)", () => {
+  it("renders a single end-corner chevron linking to /{slug}", () => {
+    render(<MapProducerCard producer={producer} onClick={vi.fn()} />);
+    const chevron = screen.getByTestId("map-chevron");
+    expect(chevron.tagName).toBe("A");
+    expect(chevron).toHaveAttribute("href", "/havat-hadvash");
+    expect(chevron).toHaveAttribute("aria-label", "full_profile");
+  });
+
+  it("falls back to /producer/:id when there is no slug", () => {
+    render(<MapProducerCard producer={{ ...producer, slug: undefined }} onClick={vi.fn()} />);
+    expect(screen.getByTestId("map-chevron")).toHaveAttribute("href", "/producer/p1");
+  });
+
+  it("body tap on an UNSELECTED card selects (onClick), does not navigate", () => {
+    const onClick = vi.fn();
+    render(<MapProducerCard producer={producer} onClick={onClick} active={false} />);
+    fireEvent.click(screen.getByText("חוות הדבש"));
+    expect(onClick).toHaveBeenCalledWith(producer);
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("body tap on an ALREADY-SELECTED card navigates to /{slug}, does not re-select", () => {
+    const onClick = vi.fn();
+    render(<MapProducerCard producer={producer} onClick={onClick} active={true} />);
+    fireEvent.click(screen.getByText("חוות הדבש"));
+    expect(pushMock).toHaveBeenCalledWith("/havat-hadvash");
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("clicking the chevron does not bubble to the body select handler", () => {
+    const onClick = vi.fn();
+    render(<MapProducerCard producer={producer} onClick={onClick} active={false} />);
+    fireEvent.click(screen.getByTestId("map-chevron"));
+    expect(onClick).not.toHaveBeenCalled();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("MapProducerCard — Pin-Echo selected state (🔒 §1)", () => {
+  it("selected card uses a 2px category-color border + 6% tint + 7px padding", () => {
+    const { container } = render(<MapProducerCard producer={producer} active={true} />);
+    const article = container.querySelector("article");
+    expect(article.style.borderWidth).toBe("2px");
+    expect(article.style.padding).toBe("7px");
+    // categoryTint("#000000", 0.06) → rgba(0, 0, 0, 0.06)
+    expect(article.style.backgroundColor).toMatch(/rgba\(0, ?0, ?0, ?0\.06\)/);
+  });
+
+  it("unselected card carries no inline pin-echo border/padding overrides", () => {
+    const { container } = render(<MapProducerCard producer={producer} active={false} />);
+    const article = container.querySelector("article");
+    expect(article.style.borderWidth).toBe("");
+    expect(article.style.padding).toBe("");
+  });
+});
+
+describe("MapProducerCard — no-photo placeholder (🔒 §6)", () => {
+  it("renders the category-glyph placeholder on the #EAF3DE tile when no image", () => {
+    render(<MapProducerCard producer={{ ...producer, categories: [{ name: "דבש" }] }} />);
+    const thumb = screen.getByTestId("map-thumb");
+    expect(thumb.style.backgroundColor).toMatch(/rgb\(234, ?243, ?222\)|#EAF3DE/i);
+    // the placeholder glyph lives in an aria-hidden box inside the thumb
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeTruthy();
+    expect(thumb.querySelector("img")).toBeNull();
+  });
+
+  it("falls back from a broken image to the placeholder glyph (MEH-1211)", () => {
+    const { container } = render(
+      <MapProducerCard producer={{ ...producer, images: ["/dead.jpg"] }} />,
+    );
+    const thumb = screen.getByTestId("map-thumb");
+    const img = thumb.querySelector("img");
+    expect(img).toBeTruthy();
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeNull();
+    fireEvent.error(img);
+    expect(thumb.querySelector("img")).toBeNull();
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeTruthy();
+  });
+});
+
+describe("MapProducerCard — price stays removed (MEH-1210)", () => {
+  it("renders no price text even when price fields are set", () => {
+    window.sessionStorage.setItem("user_location", JSON.stringify(GEO));
+    render(
+      <MapProducerCard
+        producer={{ ...producer, city: "חיפה", price_range: "מ-35₪", categories: [{ name: "דבש" }] }}
+      />,
+    );
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/מ-35/)).not.toBeInTheDocument();
     expect(screen.queryByText("35-50")).not.toBeInTheDocument();
   });
 });
@@ -193,9 +301,8 @@ describe("MapProducerCard — price removed (MEH-1210)", () => {
 describe("MapProducerCard — thumbnail letterbox (MEH-1133)", () => {
   const withImage = { ...producer, images: ["/logo.png"] };
 
-  // jsdom never loads images (naturalWidth = 0), so stub the intrinsic
-  // dimensions on the rendered <img> and fire its load event to drive the
-  // onLoad aspect check exactly as a real load would.
+  // jsdom never loads images (naturalWidth = 0), so stub intrinsic dimensions on
+  // the rendered <img> and fire its load event to drive the onLoad aspect check.
   function loadImageWith(w, h) {
     const { container } = render(<MapProducerCard producer={withImage} />);
     const img = container.querySelector("img");
@@ -216,25 +323,5 @@ describe("MapProducerCard — thumbnail letterbox (MEH-1133)", () => {
   it("defaults to object-cover before the image loads", () => {
     const { container } = render(<MapProducerCard producer={withImage} />);
     expect(container.querySelector("img")).toHaveClass("object-cover");
-  });
-});
-
-// MEH-1211: a present-but-dead image URL must fall back to the leaf thumb
-// placeholder instead of the browser broken-glyph.
-describe("MapProducerCard — broken-image fallback (MEH-1211)", () => {
-  it("renders the leaf placeholder when the image errors", () => {
-    const { container } = render(
-      <MapProducerCard producer={{ ...producer, images: ["/dead.jpg"] }} />,
-    );
-    // Scope to the thumbnail box — the full_profile arrow also carries aria-hidden.
-    const thumb = container.querySelector(".bg-green-50");
-    const img = thumb.querySelector("img");
-    expect(img).toBeTruthy();
-    // No leaf placeholder while the image is still present.
-    expect(thumb.querySelector('[aria-hidden="true"]')).toBeNull();
-    fireEvent.error(img);
-    // Image is gone, the leaf placeholder box takes its place.
-    expect(thumb.querySelector("img")).toBeNull();
-    expect(thumb.querySelector('[aria-hidden="true"]')).toBeTruthy();
   });
 });
