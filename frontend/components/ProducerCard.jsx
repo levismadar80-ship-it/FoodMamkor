@@ -173,7 +173,6 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
 
-  const priceLabel = producer.price_range || producer.starting_price_label;
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
@@ -367,23 +366,10 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           </p>
         )}
 
-        {/* MEH-1142: footer is price-only — the decorative primary-contact-method
-            hint was removed (it read as a broken button; live contact CTAs are on
-            /producer). mt-auto keeps the footer pinned to the card bottom; the
-            row always renders so layout stays stable when priceLabel is absent. */}
-        <div className="mt-auto pt-3">
-          {priceLabel && (
-            // MEH-1031 (A6): bidi-isolate the price (number+unit+currency)
-            // so it can't flip inside RTL — mirrors the ProducerCard.jsx
-            // distance-pill and rating idiom (the only prior unwrapped numeric span).
-            <span
-              className="font-body-md font-semibold text-accent text-sm truncate max-w-[120px] inline-block"
-              dir="ltr"
-            >
-              {priceLabel}
-            </span>
-          )}
-        </div>
+        {/* MEH-1210: price removed from discovery cards ("מגזין, לא marketplace")
+            — exact prices are a marketplace signal; they stay at product level
+            inside /producer. The prior MEH-1142 price-only footer (mt-auto span)
+            is gone; p-4 supplies the card's bottom padding. */}
       </div>
     </article>
   );
