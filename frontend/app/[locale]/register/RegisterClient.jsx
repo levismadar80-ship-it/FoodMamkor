@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { EnvelopeSimple } from "@phosphor-icons/react";
@@ -338,13 +338,13 @@ function RegisterPageBody() {
             />
             <span className="leading-relaxed">
               {t("auth.register.consumer.terms.intro")}{" "}
-              <a href="/terms" target="_blank" className="text-primary hover:underline">
+              <Link href="/terms" target="_blank" className="text-primary hover:underline">
                 {t("auth.register.consumer.terms.tos_link")}
-              </a>{" "}
+              </Link>{" "}
               {t("auth.register.consumer.terms.and")}
-              <a href="/privacy" target="_blank" className="text-primary hover:underline">
+              <Link href="/privacy" target="_blank" className="text-primary hover:underline">
                 {t("auth.register.consumer.terms.privacy_link")}
-              </a>
+              </Link>
             </span>
           </label>
           {/* MEH-328 Chunk D: "האימייל כבר רשום" inline warning removed.

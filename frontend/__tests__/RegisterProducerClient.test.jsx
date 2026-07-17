@@ -22,6 +22,19 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// MEH-1285: terms/privacy links now use Link from @/i18n/navigation
+// (locale-aware); stub it so next-intl's createNavigation isn't loaded
+// under jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+}));
+
 // Anonymous (non-upgrade) flow by default: user null, auth resolved.
 // MEH-994: authState is a mutable ref so the pre-flight upgrade-variant test
 // can flip `user` without a second mock module (reset in beforeEach).

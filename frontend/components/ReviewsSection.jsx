@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, EyeSlash, Leaf, Star } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth-context";
@@ -424,7 +425,7 @@ export default function ReviewsSection({ producerId, avgRating = 0, reviewCount 
         <div className="bg-green-50/50 rounded-[16px] p-5 border border-border mb-6 text-sm text-fg-muted text-center">
           {t.rich("login_prompt", {
             login: (chunks) => (
-              <a href="/login" className="text-primary hover:underline">{chunks}</a>
+              <Link href="/login" className="text-primary hover:underline">{chunks}</Link>
             ),
           })}
         </div>
