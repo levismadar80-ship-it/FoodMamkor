@@ -81,7 +81,14 @@ function SettingsPageBody() {
     setTab(next);
     const qp = new URLSearchParams(params.toString());
     qp.set("tab", next);
-    router.replace(`/settings?${qp.toString()}`);
+    // MEH-1294: shallow History API, not router.replace — a tab switch should not
+    // trigger an RSC navigation. window.location.pathname keeps the locale prefix
+    // on /en/settings (the old hardcoded "/settings" dropped it). Same-URL guard.
+    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170.
+    const qs = qp.toString();
+    if (typeof window === "undefined") return;
+    if (qs === window.location.search.replace(/^\?/, "")) return;
+    window.history.replaceState(null, "", `${window.location.pathname}?${qs}`);
   };
 
   return (

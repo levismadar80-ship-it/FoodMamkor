@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MagnifyingGlass, MapPin, Plant, Leaf } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
@@ -50,7 +50,6 @@ export default function ProducersClient({
 }) {
   const t = useTranslations("producers");
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // MEH-990: city chip is text-only like the rest of CHIPS_CONFIG (Emoji LOCK,
   // MEH-657) — dropped the 📍 icon string that ChipScrollRow rendered raw.
@@ -123,11 +122,24 @@ export default function ProducersClient({
       if (city) params.set("city", city);
       if (q) params.set("q", q);
       const qs = params.toString();
-      const url = qs ? `/producers?${qs}` : "/producers";
-      if (method === "push") router.push(url, { scroll: false });
-      else router.replace(url, { scroll: false });
+      // MEH-1294: mirror to the URL via the shallow History API, NOT router.push/
+      // replace. A Next navigation here is an RSC round-trip (Phase 0: 2 route
+      // ?_rsc per filter action) that also re-suspends the page.jsx Suspense
+      // boundary (the MEH-1085 DISC-08 state-reset class). Same-URL guard first;
+      // window.location.pathname keeps the locale prefix on /en (the old
+      // hardcoded "/producers" dropped it). MEH-1084 push/replace semantics are
+      // preserved verbatim: pushState for a category selection (Back cancels it),
+      // replaceState for chip/city/search refinement and category clear.
+      // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170.
+      if (typeof window === "undefined") return;
+      const current = window.location.search.replace(/^\?/, "");
+      if (qs === current) return;
+      const path = window.location.pathname;
+      const url = qs ? `${path}?${qs}` : path;
+      if (method === "push") window.history.pushState(null, "", url);
+      else window.history.replaceState(null, "", url);
     },
-    [router],
+    [],
   );
 
   const fetchFiltered = useCallback((chipState, city, q, category) => {

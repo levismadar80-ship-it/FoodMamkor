@@ -51,7 +51,9 @@ vi.mock("@/lib/api", () => ({
 const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
 
 beforeEach(() => {
-  router.replace.mockClear();
+  // MEH-1294: syncUrl now writes via window.history.replaceState — reset the
+  // jsdom URL each test so assertions read a clean starting search string.
+  window.history.replaceState(null, "", "/");
   params = {};
 });
 
@@ -61,9 +63,9 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "גבינה" } });
     fireEvent.submit(box.closest("form"));
-    expect(router.replace).toHaveBeenCalledTimes(1);
-    const url = router.replace.mock.calls[0][0];
-    expect(url).toContain(`q=${encodeURIComponent("גבינה")}`);
+    // MEH-1294: syncUrl mirrors via window.history.replaceState — assert the
+    // resulting URL directly (transport-agnostic).
+    expect(window.location.search).toContain(`q=${encodeURIComponent("גבינה")}`);
   });
 
   it("trims whitespace and an empty term clears q (URL has no q=)", () => {
@@ -71,8 +73,9 @@ describe("ProducersClient free-text search (MEH-830)", () => {
     const box = screen.getByRole("searchbox");
     fireEvent.change(box, { target: { value: "   " } });
     fireEvent.submit(box.closest("form"));
-    expect(router.replace).toHaveBeenCalledTimes(1);
-    expect(router.replace.mock.calls[0][0]).not.toContain("q=");
+    // MEH-1294: an empty term leaves no q= in the URL (the same-URL guard may
+    // skip the write when the URL is already clean — either way, no q=).
+    expect(window.location.search).not.toContain("q=");
   });
 
   it("?focus=1 focuses the search input on mount", () => {
