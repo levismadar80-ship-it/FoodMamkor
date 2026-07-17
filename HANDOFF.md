@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1279 — AccountSheet language-row alignment (`LanguageToggle variant="bare"`, follow-up MEH-1196) — `feature/meh-1279-language-row-align`
+
+- **What:** MEH-1196 (PR #1744) fixed the language row's SIDE (`ms-auto` removed) but not its GEOMETRY — the embedded `LanguageToggle` was a standalone 36px circle chip (`w-9 h-9` + `Globe 20`), so the glyph sat ~8px inside the sibling icon line, the chip inflated row height, and the label was 13px vs neighbours' 13.5px. Added `variant="bare"` to `LanguageToggle.jsx` (bare `Globe 19`, no circle, caller owns layout via `className`, optional `children` after the Globe; default chip byte-identical). `AccountSheet.jsx` now renders the row AS the toggle (`variant="bare"` + shared `rowCls`) → geometrically identical to the SignOut row (`min-h-[48px]`, `gap-3`, START line, `/65` tier), single ≥44px tap target; `עב / EN` moves inside (`text-[13.5px]`, `dir="ltr"`, `aria-hidden`). Removed now-unused `staticRowCls`.
+- **Phase-0 grep (reported in PR):** `LanguageToggle` has ONE live consumer = this row (Header dropped it in MEH-896, comments only). Pattern does NOT recur — `admin/AdminRowMenu.jsx` + Header `UserMenu` dropdown are uniform text-only rows (no embedded differently-sized control). No scope expansion.
+- **QA:** `npm run build` green; vitest AccountSheet+Header 32/32; DoD lint (lucide/physical-RTL/יצרן) clean on both files. Local-stack before/after @375 (MEH-1242 pattern, guest state, cookie dismissed) in `qa-artifacts/MEH-1279/` — Globe now flush on the sibling icon line; locale flip `/`→`/en` verified live. `onToggle` untouched.
+- **Next:** Sapir on-device mobile check of the AccountSheet language row on staging after merge.
+
 ## 2026-07-17 — MEH-1276 — structured Hebrew opening-hours editor — `feature/meh-1276-hours-editor`
 
 - **What:** replaced the free-text `HoursCard` (MEH-1242 PR5, expected `Sun-Thu 09:00-18:00` and silently `null`'d on any deviation) with a structured Hebrew editor — 7 day rows (א׳–ש׳, RTL) + open/closed checkbox + two `type="time"` inputs (`dir="ltr"`) per open day + one-click preset. Serialises to the **same canonical string** → zero DB/API/`parseHours` change.
