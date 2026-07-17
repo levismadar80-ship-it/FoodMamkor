@@ -51,6 +51,7 @@
       "group_business_heading": "For businesses",
       "nav_discover": "Discover businesses",
       "producers": "All businesses",
+      "why_local": "Why local?",
       "newsletter_heading": "Good food is meant to be shared",
       "newsletter_label": "Newsletter email",
       "newsletter_placeholder": "Your email, please",
@@ -2377,7 +2378,8 @@
       "cta": {
         "heading": "Built a business that deserves a home? We'd love to meet you.",
         "register": "Add your business",
-        "explore": "Discover businesses near you"
+        "explore": "Discover businesses near you",
+        "why_local_link": "Why local?"
       },
       "contact": {
         "heading": "Talk to us",
@@ -4377,5 +4379,29 @@
     "primary_channel": "The primary channel is the big button on your business page — most customer inquiries arrive there. You can change it anytime.",
     "order_form": "A link to an external form (e.g. Google Forms) where customers leave a structured order instead of a free-text message.",
     "group_buy": "A pooled order: several customers order together until a preset deadline, and everything is delivered at once — fewer trips, more certainty."
+  },
+  "about_why_local": {
+    "meta_title": "Why local? — Mehamakor",
+    "meta_description": "Five reasons to choose local food — taste, local economy, fairness, transparency, and the environment — and how to find local businesses on Mehamakor.",
+    "og_title": "Why local?",
+    "og_description": "Food grown, baked, or made close to home. Five good reasons to choose local — and how to find it.",
+    "h1": "Why local?",
+    "intro": "\"Local\" is a simple thing: food grown, baked, or made close to home, in season, from people with names and faces. Five good reasons to choose it — and how to find it.",
+    "taste_h": "The taste of now",
+    "taste_body": "A tomato picked this morning at the nearby moshav beats one picked green to survive two weeks in transit — and the variety matters too: chains sell varieties chosen to survive shipping and look good on the shelf, while a local grower picks for flavor.",
+    "money_h": "The money stays close",
+    "money_body": "A shekel spent at a local business keeps circulating in the area, while most of one spent at a big chain leaves. A <nef>UK study by the New Economics Foundation</nef> found vegetable boxes from local businesses returned roughly twice as much to the local economy as chain purchases.",
+    "fairness_h": "Fairness for the people doing the work",
+    "fairness_body": "No middlemen and no commissions — the money reaches whoever grew, baked, cooked, or made it, not whoever stood in between.",
+    "provenance_h": "Knowing where it comes from",
+    "provenance_body": "Local food has an address and a name. You can ask who grew it, how, and when — and get an answer from a person, not a sticker. Over time it becomes a real acquaintance, and that knowledge is its own kind of calm.",
+    "env_h": "Good for the environment, good for all of us",
+    "env_body": "Fewer road miles, less packaging, less time in cold storage. And something easy to forget: a region that can feed itself is a stronger region — whatever happens.",
+    "start_h": "Where to start",
+    "start_body": "That's why Mehamakor exists: one place gathering local businesses — each hand-picked and approved, each with a page telling its story and a direct line to reach it. No commissions, no middlemen.",
+    "cta": "Discover businesses in your area",
+    "sources_prefix": "Sources:",
+    "source_sustain": "Sustain UK — What is local food and why does it matter?",
+    "source_collectivecrop": "CollectiveCrop — Fresh-Picked vs Supermarket Produce"
   }
 }
