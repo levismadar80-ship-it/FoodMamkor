@@ -69,9 +69,11 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // read from sessionStorage (useUserLocation); shows only for GPS users (null
   // otherwise). Mirrors ProducerCard.jsx.
   const userLoc = useUserLocation();
+  // MEH-1243 (🔒 §3): Hebrew unit, digits-first, no "ממך" suffix — rendered
+  // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ".
   const distanceLabel =
     userLoc && p.lat != null && p.lng != null
-      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng))
+      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng), { unit: "he", suffix: false })
       : null;
 
   // MEH-1243 (Direction B): body tap SELECTS an unselected card (pin-sync,

@@ -77,7 +77,8 @@ describe("MapProducerCard — distance (MEH-826)", () => {
     render(<MapProducerCard producer={producer} />);
     const pill = screen.getByTestId("map-distance-pill");
     expect(pill.tagName).toBe("BDI");
-    expect(pill.textContent).toMatch(/km⁩ ממך$/);
+    expect(pill.textContent).toBe('53.9 ק"מ'); // 🔒 §3 Hebrew unit, no "ממך"
+    expect(pill.textContent).not.toContain("km");
     expect(pill).toHaveAttribute("dir", "ltr");
   });
 
@@ -100,7 +101,9 @@ describe("MapProducerCard — meta line (🔒 §3 category-first, distance-last)
     // category text comes before the distance in the DOM order
     expect(meta.textContent).toMatch(/^ירקות, פירות ומשקים/);
     expect(meta).toContainElement(screen.getByTestId("map-distance-pill"));
-    expect(meta.textContent).toMatch(/km⁩ ממך$/);
+    expect(meta.textContent).toMatch(/ק"מ$/);
+    expect(meta.textContent).not.toContain("km");
+    expect(meta.textContent).not.toContain("ממך");
   });
 
   it("category text truncates; the distance token never shrinks", () => {
