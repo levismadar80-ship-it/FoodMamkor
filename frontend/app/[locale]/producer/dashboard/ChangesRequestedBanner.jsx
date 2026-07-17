@@ -52,6 +52,29 @@ export default function ChangesRequestedBanner({ profile }) {
     ? new Date(profile.changes_requested_at).toLocaleDateString("he-IL")
     : null;
 
+  // MEH-1270: once resubmitted, the "נשאר להשלים" nag would contradict the
+  // action she just took — replace the whole banner with a positive
+  // confirmation for the rest of the session (session-local by design:
+  // request-review is notification-only, no DB flag — producer_me.py:897).
+  if (status === "sent") {
+    return (
+      <div
+        className="bg-primary/10 border border-primary/30 rounded-[16px] p-4 mb-6"
+        role="status"
+        data-testid="changes-requested-banner"
+        aria-label={t("aria")}
+      >
+        <div className="flex items-start gap-3">
+          <CheckCircle size={20} weight="fill" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="font-semibold text-text mb-1" data-testid="resubmit-sent">{t("sent_title")}</p>
+            <p className="text-text text-sm">{t("sent_body")}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       // accent (gold) tint — an ACTION to take, not a failure (contrast the
@@ -83,28 +106,17 @@ export default function ChangesRequestedBanner({ profile }) {
 
             {/* MEH-1236: resubmit affordance — once she's completed the details
                 she tells the admin to re-check, closing the loop. Notification
-                only; on success the button becomes a confirmation line for the
-                rest of the session. */}
-            {status === "sent" ? (
-              <p
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary"
-                data-testid="resubmit-sent"
-                role="status"
-              >
-                <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-                {t("resubmit_sent")}
-              </p>
-            ) : (
-              <button
-                type="button"
-                onClick={resubmit}
-                disabled={status === "sending"}
-                data-testid="resubmit-button"
-                className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
-              >
-                {status === "sending" ? t("resubmit_sending") : t("resubmit_cta")}
-              </button>
-            )}
+                only; on success (status "sent") the whole banner is replaced by
+                the confirmation panel above (MEH-1270), for the session. */}
+            <button
+              type="button"
+              onClick={resubmit}
+              disabled={status === "sending"}
+              data-testid="resubmit-button"
+              className="inline-block border border-accent/40 text-accent px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-accent/10 transition disabled:opacity-60"
+            >
+              {status === "sending" ? t("resubmit_sending") : t("resubmit_cta")}
+            </button>
           </div>
 
           {status === "error" && errorMsg && (

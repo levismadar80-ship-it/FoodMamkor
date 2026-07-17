@@ -21,7 +21,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Warning, X, Sparkle } from "@phosphor-icons/react";
+import { Warning, X, Sparkle, CheckCircle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -1018,8 +1018,10 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
       const payload = { producer_license_number: value.trim() || null };
       await api.put("/producers/me", payload);
       onSave(payload);
+      // MEH-1270: persist the success signal until the next edit (onChange
+      // resets it) — the prior 3s auto-hide made a real save read as a failed
+      // one. The masked header chip updates via onSave→profile immediately.
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
     } catch (err) {
       // Surfaces the MEH-999 2c clear-while-required Hebrew 422 inline.
       setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
@@ -1067,10 +1069,24 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
         disabled={saving || !dirty}
         className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
       >
-        <span aria-live="polite" aria-atomic="true">
-          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-        </span>
+        {saving ? t("saving") : t("save_cta")}
       </button>
+
+      {/* MEH-1270: explicit, persistent success confirmation — the single
+          live region for the card (the button no longer swaps its label, so
+          a real save can't read as a failed one). Cleared on the next edit;
+          the masked header chip updates via onSave→profile immediately. */}
+      {saved && !errorMsg && (
+        <p
+          className="mt-3 flex items-center gap-1.5 text-xs text-primary"
+          role="status"
+          aria-live="polite"
+          data-testid="license-save-success"
+        >
+          <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {t("save_success")}
+        </p>
+      )}
     </div>
   );
 }

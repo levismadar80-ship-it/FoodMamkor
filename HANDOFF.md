@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
+
+- **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
+- **Phase 0 verdict — did Sapir's save persist?** Can't prove the live round-trip from the CC sandbox (Railway egress blocked). But the code path is sound (`producer_license_number ∈ _PRODUCER_WRITABLE_FIELDS`, producer_me.py:205; returned on `ProducerOwnerOut`), and the symptom is fully explained by the weak/transient feedback + the documented 17/07 stale-bundle deploy-lag. Most likely her save **did** persist (or she hit a stale bundle); either way the AC fix is the right remedy.
+- **STOP(e):** `request-review` is notification-only (no DB flag) → session-level "sent" state (Option A, ships now); true persistence = new column + Alembic (Option B, RED, out of scope). AC scoped it to "for the session" → no STOP needed.
+- **QA:** vitest 1164✅ + build✅ + DoD gate (lucide/יצרן/en-parity all pass; the 2 DoD fails are pre-existing & outside the diff — backend pytest venv + `MapPane.jsx` RTL, untouched). New i18n he+en: `license.save_success`, `changes_requested.sent_title`/`sent_body`. Visual reference `qa-artifacts/MEH-1270/` (375+1440). **Live mobile QA on the MEH-1241 seeded producer deferred to Sapir** (auth-gated + no sandbox backend).
+- **Next:** Task 2 MEH-1271 (admin registry verification links) after this merges.
+
 ## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
 
 - **Branch `feature/meh-1252-demo-image-ids` (off staging).** The exact swap the earlier 17/07 sweep session **skipped and deferred to this ticket**. MEH-1198 SYNC (16/07) supplied the 5 `mehamakor/demo/ruach-hasadeh-*` public_ids on the `dfzpscjks` cloud; Sapir chose the **Full per-product (5/5)** scope when asked (vs pure 6-site swap).

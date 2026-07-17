@@ -3627,7 +3627,9 @@
         "resubmit_cta": "סיימתי להשלים — שלחו לבדיקה",
         "resubmit_sending": "שולחים…",
         "resubmit_sent": "נשלח לבדיקה — נעדכן אתכם בקרוב",
-        "resubmit_error": "השליחה לא הצליחה. נסו שוב."
+        "resubmit_error": "השליחה לא הצליחה. נסו שוב.",
+        "sent_title": "נשלח לבדיקה",
+        "sent_body": "הפרטים נשלחו — נעדכן אחרי בדיקת הצוות."
       },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
@@ -3908,6 +3910,7 @@
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "saved": "נשמר ✓",
+        "save_success": "מספר הרישיון נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
       "pricing": {
