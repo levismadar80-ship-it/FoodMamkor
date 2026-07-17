@@ -87,6 +87,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       const fd = new FormData();
       fd.append("file", file);
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      // MEH-1261 F3: no auto-persist here (unlike the edit form) — the product
+      // doesn't exist yet, so there is nothing to PUT until the Add submit
+      // creates it. Closing the form discards the whole draft, image included.
       setForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
       setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
@@ -170,6 +173,22 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       fd.append("file", file);
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setEditForm((f) => ({ ...f, image_url: r.data.url }));
+      // MEH-1261 F3: kill the upload≠save trap on the edit form — the image
+      // used to persist only on the explicit Save, so closing via X orphaned
+      // the upload and the change looked lost. Auto-persist the image alone
+      // (partial PUT — name/price edits stay behind the explicit Save, and
+      // removal keeps the explicit-Save intent too).
+      // REUSES: edit/cards.jsx ImagesCard uploadFiles (MEH-1236, PR #1787).
+      try {
+        const saved = await api.put(`/producers/me/products/${editingId}`, {
+          image_url: r.data.url,
+        });
+        setProducts((p) => p.map((x) => (x.id === editingId ? saved.data : x)));
+      } catch {
+        // Uploaded to Cloudinary but the product save failed — the form still
+        // holds the image (dirty), so the explicit Save can retry. Never silent.
+        setError(tErr("image_autosave_failed"));
+      }
     } catch (err) {
       setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
