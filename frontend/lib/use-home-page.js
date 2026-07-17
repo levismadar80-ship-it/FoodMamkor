@@ -269,7 +269,7 @@ export function useHomePage() {
     // A router.replace — even to the SAME URL (geo lat/lng are intentionally NOT
     // persisted, so a geo apply produces an identical qs) — issues an RSC
     // round-trip that invalidates the router cache and lands mid-scroll, killing
-    // the "קרוב אליי" smooth scroll (Phase 0: 1 ?_rsc per click; ×5 mash → scroll
+    // the near-me smooth scroll (Phase 0: 1 ?_rsc per click; ×5 mash → scroll
     // interrupted, grid left the viewport). Same-URL guard + window.location
     // (locale-safe on /en, fixes the old hardcoded "/" locale drop).
     // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170 (MEH-1085 DISC-08).
@@ -399,7 +399,7 @@ export function useHomePage() {
   // city modal; technical failures (codes 2/3) toast and stay put.
   const handleNearMe = () => {
     // MEH-1293: idempotence guard — if a geo filter is already active, another
-    // "קרוב אליי" click must NOT re-fetch or re-write history (that was the
+    // near-me click must NOT re-fetch or re-write history (that was the
     // multi-click storm). Just re-scroll to the already-filtered grid. The
     // chip ✕ (handleClearLocation) stays the only reset path.
     if (geoFilter) {
