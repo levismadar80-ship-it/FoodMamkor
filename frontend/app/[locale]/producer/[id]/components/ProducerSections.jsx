@@ -337,7 +337,10 @@ export default function ProducerSections({
         // MEH-1168 P2: on mobile the anchor must clear BOTH the sticky header
         // and the now-visible section tab bar (which sticks below it); desktop
         // has no tab bar so it keeps the header-only offset.
-        className="scroll-mt-[150px] md:scroll-mt-24"
+        // MEH-1202: mobile offset = live header height (`--chrome-top`) + the
+        // tab-bar band (~68px), replacing the hardcoded 150px. Desktop keeps
+        // the header-only scroll-mt-24 (no tab bar there).
+        className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
         ref={(el) => {
           sectionRefs.current.reviews = el;
           reviewsContainerRef.current = el;

@@ -110,14 +110,16 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         verified={producer.verification_tier === "verified"}
       />
 
-      {/* Mobile tab bar — MEH-1168 P2: sticks at top-[82px], BELOW the global
-          sticky header (82px tall, z-[1050]). At the previous top-0 the bar
-          stuck at the same offset as the header and, being z-30, was fully
-          occluded behind it once scrolled into a deep section (it "vanished").
-          Clearing the header keeps it visible page-long. */}
+      {/* Mobile tab bar — MEH-1168 P2: sticks BELOW the global sticky header so
+          it stays visible page-long (at top-0 it hid behind the z-[1050]
+          header once scrolled into a deep section). MEH-1202: the offset is now
+          the LIVE-measured header height via the `--chrome-top` CSS var
+          (Header.jsx publishes it), not the old hardcoded `top-[82px]` — the
+          82px stays only as an SSR/first-paint fallback. */}
       <nav
         ref={tabBarRef}
-        className="md:hidden sticky top-[82px] z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
+        style={{ top: "var(--chrome-top, 82px)" }}
+        className="md:hidden sticky z-30 bg-white border-b border-border -mx-4 px-4 mt-6"
         aria-label={t("producer.detail.aria.tab_nav")}
       >
         <div className="flex">

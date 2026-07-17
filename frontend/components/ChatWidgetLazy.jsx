@@ -4,6 +4,9 @@ import dynamic from "next/dynamic";
 // Locale-stripping usePathname — returns "/map" for /he/map AND /en/map
 // (same import BottomNav.jsx:7 uses for its route-awareness).
 import { usePathname } from "@/i18n/navigation";
+// MEH-1202: isProducerDetail moved to a shared helper so BottomNav's new gate
+// and this FAB gate share one owner (no keep-in-sync drift).
+import { isProducerDetail } from "@/lib/producer-route";
 
 // Client boundary so `ssr: false` is valid: the root layout is a Server
 // Component (it exports generateMetadata), where next/dynamic ssr:false is
@@ -22,12 +25,6 @@ const ChatWidget = dynamic(() => import("@/components/ChatWidget"), {
 // The dashboard subtree (/producer/dashboard/...) keeps the FAB.
 // MEH-1203: /favorites joins /map + /producer/[id] in the gate — the FAB
 // overlapped the first card of the canonical 2-col favorites grid.
-function isProducerDetail(pathname) {
-  // `$` anchor: match the /producer/[id] leaf exactly (no public sub-routes),
-  // so a hypothetical future nested route wouldn't accidentally lose the FAB.
-  return /^\/producer\/(?!dashboard(\/|$))[^/]+$/.test(pathname || "");
-}
-
 export default function ChatWidgetLazy() {
   const pathname = usePathname();
   // /map is the second page where the FAB does damage instead of good: the

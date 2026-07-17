@@ -5,6 +5,8 @@ import Link from "next/link";
 // home-tab match fires on the localized homepage. next/navigation's is
 // locale-prefixed (/he) and left the home tab permanently unhighlighted.
 import { usePathname } from "@/i18n/navigation";
+// MEH-1202: gate BottomNav OFF the producer detail page (shared route helper).
+import { isProducerDetail } from "@/lib/producer-route";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Compass, MapTrifold, Flower, User } from "@phosphor-icons/react";
@@ -209,6 +211,13 @@ export default function BottomNav() {
   // Static tint capsule for the account tab (not on the route track — the route
   // tabs share the single MEH-852 liquid-stretch indicator instead).
   const capsuleCls = "absolute inset-0 rounded-full bg-primary/10 z-0 pointer-events-none";
+
+  // MEH-1202: on /producer/[id] the StickyContactBar ("שליחת הודעה", z-[598],
+  // bottom-16) is the single bottom chrome layer — BottomNav stacked a SECOND
+  // fixed bottom bar under it. Gate BottomNav OFF this route so mobile shows one
+  // bottom layer, not two. Scoped to the public producer leaf only (dashboard
+  // subtree keeps the nav). Placed after every hook so rules-of-hooks holds.
+  if (isProducerDetail(pathname)) return null;
 
   return (
     <>

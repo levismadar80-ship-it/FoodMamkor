@@ -85,6 +85,21 @@ describe("BottomNav", () => {
     expect(hrefs).not.toContain("/favorites");
   });
 
+  // MEH-1202: on the public producer detail page the StickyContactBar is the
+  // single bottom chrome layer — BottomNav gates itself off so mobile shows one
+  // bottom bar, not two.
+  it("renders null on /producer/[id] (StickyContactBar is the sole bottom bar)", () => {
+    pathnameRef.current = "/producer/123";
+    const { container } = render(<BottomNav />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("still renders on the /producer/dashboard owner subtree", () => {
+    pathnameRef.current = "/producer/dashboard";
+    render(<BottomNav />);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
+  });
+
   it("account tab is a dialog-toggle button, not a route", () => {
     render(<BottomNav />);
     const account = screen.getByRole("button");
