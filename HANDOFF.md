@@ -3,6 +3,20 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1164 sub-chunk B — surface verified-email 403 with inline resend CTA (4 forms) — `feature/meh-1164-verified-email-cta`
+
+- **Sapir GO with both open questions = YES:** (1) backend 403 detail → structured `{code, message}`; (2) include the experiences form (4 forms total, not 3).
+- **3 commits, one PR:** (a) `backend/app/auth.py` — `_EMAIL_UNVERIFIED_DETAIL` is now a dict `{"code":"email_unverified","message":<Hebrew>}` feeding both verified-email deps; `tests/test_verified_email_enforcement.py` asserts `{code,message}` on all 4 creates; role-precedence 403 stays a plain string. (b) `lib/use-resend-verification.js` (extracted from `VerifyBanner.jsx:57-72`; banner consumes it, `layout.js` untouched) + `components/UnverifiedEmailNotice.jsx` + `lib/errors.js:isUnverifiedEmailError` (code-first, legacy-string fallback) + `auth.verify.publish_gate` he/en twins + unit tests. (c) wired the 4 forms' catch blocks (`events/new/page.js`, `group-buys/page.js`, `RecipeForm.jsx`, `experiences/new/NewExperienceClient.jsx`).
+- **Grep-proof:** the 4 `api.post` create sites are the only frontend consumers of the verified-email-gated endpoints; all 4 guarded.
+- **QA:** `npm run build` green · vitest **1221 pass** (15 new/affected) · ESLint 0 errors (warnings pre-existing) · touched files RTL-clean (the 2 DoD fails — backend pytest venv + `MapPane.jsx` RTL — are pre-existing & outside the diff). Playwright proof @390px RTL (idle + "✓ נשלח!" states) in `qa-artifacts/MEH-1164/*.webp`.
+- **`/adversarial-review` (auth.py touched again) pending before the review handoff.** Cadence: draft PR + preview → **WAIT for Sapir's review**, NO auto-merge (auth-touching, human merge-gate).
+- **Next:** open the draft PR, run `/adversarial-review`, post preview + proof, wait.
+
+## 2026-07-17 — MEH-1295 — VRT baselines re-capture (/about /login /register) — `feature/meh-1295-vrt-baselines-1278`
+
+- **Verified footer-only (step-1 STOP gate passed):** same-env A/B render of `25b990e8` (baseline-era) vs staging HEAD localizes every structural diff to the footer region (first diff row 62–92% down each page); no layout shift, no ink change above it. Stale baselines predate the whole footer cluster (MEH-1177 audience split + MEH-1278 2-col grid + MEH-1281 heading bump), not just MEH-1278 → desktop +82px / mobile −61px. Diff evidence in `qa-artifacts/MEH-1295/` (webp).
+- Pushed the trigger commit (deletes the 6 stale trio baselines) → `vrt-update.yml` bot regenerates them on-runner. Tests-only → merge on green CI per ticket (no mobile QA). **In progress:** awaiting bot commit, then re-trigger + PR.
+
 ## 2026-07-17 — MEH-1164 Chunk 2A + docs — enforce verified email on producer creates — `feature/meh-1164-enforce-verified-email` (#1870, `9d1002b`) + `feature/meh-1164-docs`
 
 - **Chunk 2A (MERGED, #1870 squash `9d1002b`):** audit F5. NEW `require_verified_producer` (`auth.py`) = `require_producer` (role first → "Producer access required") + email-verified check (→ Hebrew 403 via shared `_EMAIL_UNVERIFIED_DETAIL`). Swapped **create** endpoints only: `events.py:create_event`, `producer_recipes.py:create_my_recipe`, `group_buys.py:create_group_buy`. `experiences.py` already enforced → unchanged; PUT/update + other producer routes stay on `require_producer`. `tests/test_verified_email_enforcement.py` (unverified→403 · verified→201 · role precedence · experiences regression). No schema change. Merged on verified-green CI (real pytest ran), direct merge (no auto-merge — #1868 standing rule).
