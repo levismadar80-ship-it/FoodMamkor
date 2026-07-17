@@ -32,6 +32,18 @@ const { apiMock, authState } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", () => ({ default: apiMock }));
+// MEH-1285: the login prompt now uses Link from @/i18n/navigation
+// (locale-aware); stub it so next-intl's createNavigation isn't loaded
+// under jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={typeof href === "string" ? href : "#"} {...props}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => "/",
+}));
 vi.mock("@/lib/auth-context", () => ({ useAuth: () => authState }));
 vi.mock("@/lib/toast", () => ({ showToast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/errors", () => ({ detailToMessage: (d) => (typeof d === "string" ? d : null) }));

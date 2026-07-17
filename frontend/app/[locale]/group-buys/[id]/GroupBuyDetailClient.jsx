@@ -358,7 +358,7 @@ export default function GroupBuyDetailClient({ id }) {
           {/* Already committed */}
           {gb.user_committed && (
             <div className="space-y-3">
-              <div className="rounded-[12px] bg-[#EAF3DE] border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
+              <div className="rounded-[12px] bg-green-50 border border-primary/20 px-4 py-3 text-primary text-sm font-medium text-center">
                 {t("committed_confirm")}
                 {gb.user_commit?.quantity > 1 && t("committed_units", { count: gb.user_commit.quantity })}
               </div>

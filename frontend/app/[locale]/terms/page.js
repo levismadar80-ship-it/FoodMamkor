@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Envelope } from "@phosphor-icons/react/ssr";
+import { Link } from "@/i18n/navigation";
 import { buildAlternates, urlForLocalePath, OG_LOCALE } from "@/lib/i18n-seo";
 import { BRAND_NAME } from "@/lib/constants";
 import { CONTACT_EMAIL } from "@/lib/env.client";
@@ -149,9 +150,9 @@ function renderBody(id, t) {
             <li>
               {t.rich("sections.report.item_form", {
                 contactlink: (chunks) => (
-                  <a href="/contact" className="text-primary hover:underline">
+                  <Link href="/contact" className="text-primary hover:underline">
                     {chunks}
-                  </a>
+                  </Link>
                 ),
               })}
             </li>
@@ -174,9 +175,9 @@ function renderBody(id, t) {
     case "privacy":
       return t.rich("sections.privacy.body", {
         privacylink: (chunks) => (
-          <a href="/privacy" className="text-primary underline">
+          <Link href="/privacy" className="text-primary underline">
             {chunks}
-          </a>
+          </Link>
         ),
       });
     case "contact":

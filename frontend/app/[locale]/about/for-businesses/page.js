@@ -3,7 +3,6 @@ import {
   Camera,
   BookOpen,
   CaretDown,
-  SealCheck,
   Basket,
   Truck,
   ChatCircleText,
@@ -217,7 +216,8 @@ export default async function FaqForBusinessesPage({ params }) {
               {[
                 ["photos", Camera],
                 ["story", BookOpen],
-                ["verified", SealCheck],
+                // MEH-1285 legal-gated: restore after lawyer decision on
+                // two-tier model (brief Q2.2). he/en keys kept intact.
                 ["products", Basket],
                 ["delivery", Truck],
                 ["reviews", ChatCircleText],

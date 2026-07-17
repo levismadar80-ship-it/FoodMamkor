@@ -2879,7 +2879,7 @@
   "directory": {
     "disclaimer": {
       "brand_is_prefix": "presents",
-      "directory_only": "business information only. The business bears full responsibility for products and licensing.",
+      "directory_only": "business information only. The business bears full responsibility for items and licensing.",
       "prices_set_by_businesses": "Prices are set by the businesses themselves."
     }
   },
@@ -3042,7 +3042,7 @@
     "showcase": {
       "label": "Example",
       "heading": "What a complete profile looks like",
-      "intro": "A complete profile is the difference between a business card and an open shop. These are the six elements customers actually read:",
+      "intro": "A complete profile is the difference between a business card and an open shop. These are the elements customers actually read:",
       "example_name": "Ruach HaSadeh Bakery",
       "example_tagline": "Slow-fermented sourdough, stone-milled flour, baked daily in a stone oven.",
       "items": {
@@ -3268,9 +3268,9 @@
   },
   "guides": {
     "index": {
-      "meta_title": "Guides for business owners | Mehamakor",
-      "meta_description": "Three short guides for business owners on Mehamakor: how to write your story, how to photograph your products, and how to reply to customer messages.",
-      "og_description": "Three short guides for business owners on Mehamakor — story, photography, messages.",
+      "meta_title": "Guides for businesses | Mehamakor",
+      "meta_description": "Three short guides for businesses on Mehamakor: how to write your story, how to photograph your products, and how to reply to customer messages.",
+      "og_description": "Three short guides for businesses on Mehamakor — story, photography, messages.",
       "eyebrow": "Guides for business owners",
       "heading": "Three guides for your first month",
       "intro": "Joined recently? These are the three guides I send to every new business owner on Mehamakor. Short, direct, no big promises — just what works.",
