@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1278 — mobile footer 2-col nav grid (follow-up MEH-1177) — `feature/meh-1278-footer-mobile-2col`
+
+- **What:** styling-only follow-up to the MEH-1177 footer audience split. On mobile the two nav groups ("גלו" / "לבתי עסק") stacked vertically (~340px wasted height, poor scan). Single-file change in `frontend/components/Footer.jsx`: nav `<nav>` className `flex flex-col gap-6` → `grid grid-cols-2 gap-6 md:flex md:flex-col` — 2-col start-aligned grid on mobile, original flex-col stack at `md:` (desktop unchanged). RTL grid auto-places "גלו" at the start side. No `text-center` present. Newsletter/brand/copyright columns + MEH-867 AA color tokens untouched.
+- **QA:** `npm run build` green (local) + CI (CI gate + Deploy gate both green). Styling-only → no Playwright per Rule 5; RTL uses grid/flex only (no physical directional classes). E2E VRT parity specs (login/register/about/producer-detail) diff at the bottom because the mobile footer is now ~96px shorter — **that IS the intended change**; MEH-991 baselines are now stale and need the standard vrt-update regen. **Live mobile QA on staging deferred to Sapir.**
+- **Next:** await Sapir's mobile confirm on staging; VRT-baseline regen for the shorter footer.
+
 ## 2026-07-17 — Autonomous launch sweep session (MEH-1074) — `feature/meh-1074-sweep-handoff`
 
 CC ran the ADR-016 v2 autonomous sweep over the live Linear queue. Five issues advanced to Done, two held for human input, plus a false-reopen corrected. Every merge passed both required gates (CI gate + Deploy gate); Vercel's own deployment status was rate-limited all session (retry-in-24h) but it is **not** a required check, so it did not block.
