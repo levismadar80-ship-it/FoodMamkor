@@ -1091,6 +1091,12 @@ RESEND_API_KEY=<from resend.com — account with mehamakor.online verified>
 # Override only to send from a different address on the same verified domain.
 EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.online>
 
+# LEGACY / removable — SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD are
+# DEAD: no code reads them since the smtplib→Resend migration (MEH-150 / PR #335,
+# ADR-002) deleted the SMTP_* fields from config.py. Verified 2026-07-17 (MEH-1164
+# docs step): zero consumers under backend/. If they still exist in Railway they
+# can be removed (do this yourself in the Railway UI — CC never touches Railway).
+
 FRONTEND_URL=https://mehamakor.online
 ```
 
