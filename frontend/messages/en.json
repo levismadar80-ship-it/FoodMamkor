@@ -3610,8 +3610,9 @@
         "aria": "Completion request from the team",
         "resubmit_cta": "I'm done — send for review",
         "resubmit_sending": "Sending…",
-        "resubmit_sent": "Sent for review — we'll update you soon",
-        "resubmit_error": "Couldn't send. Please try again."
+        "resubmit_error": "Couldn't send. Please try again.",
+        "sent_title": "Sent for review",
+        "sent_body": "Your details were sent — we'll update you after the team reviews them."
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
@@ -3892,6 +3893,7 @@
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved ✓",
+        "save_success": "License number saved",
         "save_error": "Save failed. Please try again."
       },
       "pricing": {
