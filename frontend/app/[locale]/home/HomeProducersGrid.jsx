@@ -8,6 +8,7 @@ import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import OnboardingTip from "@/components/OnboardingTip";
 import ChipScrollRow from "@/components/ChipScrollRow";
+import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
 
 /**
@@ -38,7 +39,10 @@ export function HomeProducersGrid({
   onAdvanceFromStep0,
   onToggleChip,
   onClearCategory,
+  onClearLocation,
   onLoadMore,
+  geoActive,
+  cityActive,
 }) {
   const t = useTranslations();
   // MEH-1174: derive the active category once — drives both the dynamic
@@ -115,6 +119,14 @@ export function HomeProducersGrid({
           )}
         </div>
       )}
+
+      {/* MEH-1269: dismissible location-filter chip (geo "קרוב אליי" or an
+          explicit city choice). Self-hides when no location filter is active. */}
+      <ActiveFilterChip
+        geoActive={geoActive}
+        cityActive={cityActive}
+        onClear={onClearLocation}
+      />
 
       {producersLoading ? (
         <SkeletonProducerGrid count={8} />
