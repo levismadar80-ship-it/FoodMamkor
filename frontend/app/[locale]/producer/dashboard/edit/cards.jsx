@@ -1190,6 +1190,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 <CitiesAutocomplete
                   value={form.cities}
                   onChange={(cities) => set({ cities })}
+                  showRegionChips
                 />
                 {form.cities.length === 0 && (
                   <p className="text-xs text-red-600 mt-1">

@@ -5,7 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
-## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit
+## 2026-07-17 — MEH-1256 region quick-add chips — feature/meh-1256-region-quick-add
+
+- **What:** NEW `frontend/data/regions.js` (7 colloquial regions → exact `ISRAEL_CITIES` members, vitest-guarded) + `showRegionChips` prop on `CitiesAutocomplete` (default false; click = deduped union into value; fully-selected region → disabled "· נוסף"). Wired only in dashboard `DeliveryCard` + admin `ProducerForm` delivery blocks. PR #1811 review follow-ups folded in (hint test via he.json key; hint hidden while arrow-highlighted).
+- **Queue context:** ticket 3 of 3 ran ahead of MEH-1255 chunks B/C (1255 Chunk A schema WAITs on Sapir; 1256 only needed the 1254 merge). Region names are data, not i18n copy (like cities.js); new i18n key `search.cities_autocomplete.region_added` he+en.
+- **QA:** vitest 13/13 + consumer suites (EditTabDeliveryCard, AdminProducerForm×2) + build green. Mobile QA deferred to Sapir per MANUAL_TESTING § MEH-1256.
+
+## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit (MERGED — PR #1811, squash b7558cf7)
 
 - **What:** typed-but-not-selected city in the delivery-cities field silently vanished on Save → false "יש לבחור לפחות עיר אחת". `CitiesAutocomplete.jsx`: Enter commits an exact suggestion match (even `activeIdx === -1`, multiple suggestions); blur auto-commits exact match synchronously / clears non-match; `autoComplete="off"`; muted `commit_hint` helper (he+en `search.cities_autocomplete.commit_hint`). Adversarial-review REFEREE fix: debounce timer canceled on commit/blur (ghost-dropdown reopen).
 - **Files:** `frontend/components/CitiesAutocomplete.jsx`, `frontend/messages/{he,en}.json` (+1 key each), NEW `frontend/__tests__/CitiesAutocomplete.test.jsx` (7 passed; placed in `frontend/__tests__/` per repo convention — ticket's `components/__tests__/` path doesn't exist).
