@@ -2752,7 +2752,8 @@
     },
     "cities_autocomplete": {
       "remove_aria": "Remove {city}",
-      "placeholder": "Type a city name..."
+      "placeholder": "Type a city name...",
+      "commit_hint": "Pick a city from the list to add it"
     },
     "city_search": {
       "placeholder": "Search city...",

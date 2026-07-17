@@ -2773,7 +2773,8 @@
     },
     "cities_autocomplete": {
       "remove_aria": "הסר {city}",
-      "placeholder": "הקלידו שם עיר..."
+      "placeholder": "הקלידו שם עיר...",
+      "commit_hint": "בחרי עיר מהרשימה כדי להוסיף"
     },
     "city_search": {
       "placeholder": "חפשו עיר...",
