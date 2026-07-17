@@ -190,6 +190,16 @@ def update_my_producer(
         "organic_certified",
         "has_delivery",
         "pickup_points",
+        # MEH-1242 PR5: owner permission-surface extension — location mode +
+        # opening hours (previously admin-only). delivery_area_cities is still
+        # popped + processed separately below. The (has_physical_location OR
+        # offers_delivery) and nationwide-XOR-cities invariants are enforced by
+        # ProducerUpdate._validate_location_mode (schemas.py) + the DB CHECK
+        # constraints (models.py) — this only opens the write path.
+        "has_physical_location",
+        "offers_delivery",
+        "delivery_nationwide",
+        "opening_hours",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",

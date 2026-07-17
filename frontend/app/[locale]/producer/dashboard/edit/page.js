@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -79,6 +79,8 @@ const ANCHOR_TO_KEY = {
   location: "location",
   products: "products",
   pricing: "pricing",
+  delivery: "delivery",
+  hours: "hours",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
   // under the accordion they resolve to the same cards, auto-expanded.
@@ -125,6 +127,8 @@ const KEY_TO_ANCHOR = {
   location: "location",
   products: "products",
   pricing: "pricing",
+  delivery: "delivery",
+  hours: "hours",
 };
 
 export default function ProducerDashboardEditPage() {
@@ -387,11 +391,13 @@ export default function ProducerDashboardEditPage() {
     products: tProducts("section_heading"),
     contact: t("contact_channels.heading"),
     pricing: t("pricing.heading"),
+    delivery: t("delivery.heading"),
+    hours: t("hours.heading"),
     questions: t("custom_questions.heading"),
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "location", "bio", "products", "contact", "pricing", "questions",
+    "images", "categories", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -591,6 +597,44 @@ export default function ProducerDashboardEditPage() {
         onToggle={() => toggleKey("pricing")}
       >
         <PricingCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
+          has_physical_location / offers_delivery / delivery_nationwide + cities). */}
+      <EditAccordionCard
+        anchorId="delivery"
+        title={t("delivery.heading")}
+        summary={
+          [
+            profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+            profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || tAcc("delivery_none")
+        }
+        open={openKey === "delivery"}
+        onToggle={() => toggleKey("delivery")}
+      >
+        <DeliveryCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
+      <EditAccordionCard
+        anchorId="hours"
+        title={t("hours.heading")}
+        summary={profile.opening_hours || tAcc("hours_empty")}
+        open={openKey === "hours"}
+        onToggle={() => toggleKey("hours")}
+      >
+        <HoursCard
           profile={profile}
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}
