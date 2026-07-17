@@ -43,7 +43,8 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt }) => <img src={src} alt={alt} />,
+  // MEH-1211: forward onError so the load-failure fallback can be exercised.
+  default: ({ src, alt, onError }) => <img src={src} alt={alt} onError={onError} />,
 }));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
@@ -182,6 +183,19 @@ describe("ProducerCard — Phase B anatomy", () => {
   it("renders fallback placeholder when images array is empty", () => {
     render(<ProducerCard producer={minimalProducer} />);
     expect(screen.getByText("מהמקור")).toBeInTheDocument();
+  });
+
+  // MEH-1211: a present-but-dead image URL must fall back to the canonical
+  // no-photo placeholder instead of the browser broken-glyph + alt overflow.
+  it("renders fallback when the image errors (present-but-dead URL)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    // Image is present at first paint — no placeholder wordmark yet.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+    const img = screen.getByAltText("חוות השקמה");
+    fireEvent.error(img);
+    // After the load failure the canonical placeholder (leaf + wordmark) shows.
+    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    expect(screen.queryByAltText("חוות השקמה")).not.toBeInTheDocument();
   });
 
   it("never renders the premium image overlay", () => {
