@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Star, ArrowRight } from "@phosphor-icons/react";
+import { Star, CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
 import { styleForProducer } from "@/lib/map-categories";
 import { useUserLocation } from "@/lib/user-location";
@@ -136,7 +136,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
         ) : (
           // MEH-1243 (🔒 placeholder): category glyph at 70% of the pin color.
           <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
-            <CategoryIcon size={28} weight="fill" style={{ color: categoryColor, opacity: 0.7 }} />
+            <CategoryIcon size={32} weight="light" style={{ color: categoryColor, opacity: 0.7 }} />
           </div>
         )}
       </div>
@@ -147,8 +147,27 @@ export default function MapProducerCard({ producer, active, onClick }) {
           {p.name}
         </h3>
 
+        {/* Meta line — category FIRST (muted glyph + truncating text), distance
+            LAST (flex-shrink-0, never truncates). MEH-1296: sits directly under
+            the name, above the rating row. The distance <bdi> has no dir override
+            so it auto-resolves to RTL and reads digits-first ("1.2 ק"מ"). 🔒 §3. */}
+        <p className="text-[13px] leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
+          {category?.name && (
+            <span className="inline-flex items-center gap-1 min-w-0">
+              <CategoryIcon size={14} weight="regular" aria-hidden="true" className="shrink-0 text-fg-muted" />
+              <span className="truncate">{category.name}</span>
+            </span>
+          )}
+          {distanceLabel && (
+            <span className="shrink-0 whitespace-nowrap">
+              {category?.name && <span className="mx-1" aria-hidden="true">·</span>}
+              <bdi data-testid="map-distance-pill">{distanceLabel}</bdi>
+            </span>
+          )}
+        </p>
+
         {/* Rating row — reserves its height ALWAYS; renders content only at ≥3
-            reviews (uniform-height guarantee, 🔒 §5). */}
+            reviews (uniform-height guarantee, 🔒 §5). MEH-1296: below the meta line. */}
         <div className="h-[18px] flex items-center" data-testid="map-rating-row">
           {showRating && (
             <span className="inline-flex items-center gap-0.5 text-[12px] text-fg-muted" data-testid="map-rating">
@@ -158,37 +177,21 @@ export default function MapProducerCard({ producer, active, onClick }) {
             </span>
           )}
         </div>
-
-        {/* Meta line — category FIRST (glyph + truncating text), distance LAST
-            (flex-shrink-0, never truncates, <bdi> reads digits-first). 🔒 §3. */}
-        <p className="text-[13px] leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
-          {category?.name && (
-            <span className="inline-flex items-center gap-1 min-w-0">
-              <CategoryIcon size={14} weight="fill" aria-hidden="true" className="shrink-0" style={{ color: categoryColor }} />
-              <span className="truncate">{category.name}</span>
-            </span>
-          )}
-          {distanceLabel && (
-            <span className="shrink-0 whitespace-nowrap">
-              {category?.name && <span className="mx-1" aria-hidden="true">·</span>}
-              <bdi dir="ltr" data-testid="map-distance-pill">{distanceLabel}</bdi>
-            </span>
-          )}
-        </p>
       </div>
 
       {/* End-corner chevron — the ONLY nav affordance. Full-height 44px column →
-          ≥44×44 hit area (§V). MEH-938: ArrowRight + rtl:rotate-180 = forward in he.
-          Recolors to the pin color when selected (🔒 §1). */}
+          ≥44×44 hit area (§V). MEH-938: CaretRight + rtl:rotate-180 = forward in he.
+          MEH-1296: border-s hairline divider separates it from the text; softer
+          CaretRight glyph. Recolors to the pin color when selected (🔒 §1). */}
       <Link
         href={baseHref}
         onClick={(e) => e.stopPropagation()}
         aria-label={t("full_profile")}
         data-testid="map-chevron"
-        className="shrink-0 self-stretch w-11 flex items-center justify-center rounded text-fg-muted hover:text-primary focus-visible:text-primary transition-colors focus-ring"
+        className="shrink-0 self-stretch w-11 flex items-center justify-center rounded border-s border-border text-fg-muted hover:text-primary focus-visible:text-primary transition-colors focus-ring"
         style={active ? { color: categoryColor } : undefined}
       >
-        <ArrowRight size={16} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
+        <CaretRight size={18} weight="regular" aria-hidden="true" className="rtl:rotate-180" />
       </Link>
     </article>
   );
