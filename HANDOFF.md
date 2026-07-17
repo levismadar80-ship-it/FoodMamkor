@@ -3,6 +3,18 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1074 autonomous sweep (session 3): 1 merged · 2 PRs open · 3 close-outs · 1 Phase-0
+
+Ran alongside a live parallel sweep session (it held MEH-1268/927/1267 + merged the 1252/1255/1259/1260/1266/1267 queue). Took only disjoint, unclaimed tickets; collision-checked each via `get_issue` + `git ls-remote` before touching.
+
+- **Merged to staging — PR #1843 (MEH-1222):** image-URL write-boundary validation (see CHANGELOG). Backend-only, code-only; the data-side null-out of existing bad rows is Sapir's (no DML in a Claude session).
+- **PR #1848 (MEH-1221) — merging on green:** ContactCard email-icon silent-`mailto` fallback (clones the merged ShareClient MEH-1220/1223 pattern; copy-address + toast on no-handler, MEH-1223 real-success flag). vitest 11 + build green. LOW-RISK, auto-merge on green.
+- **PR #1847 (MEH-1087) — ⚠️ DO-NOT-MERGE, held for Sapir:** verified-only kosher chip ("כשרות מאומתת") in the /map FilterSheet. Legal gate verified (`?kosher` → `kashrut_verified_at` only, `producer_listing.py:153`); reverses the old "no kosher chip" sentinel (which guarded a *free-text* chip). Held because it touches `MapClient.jsx` (central) + legal-adjacent copy. vitest 28 + build green.
+- **Close-outs (verified merged/complete → re-Done + commented):** MEH-1233 (B1–B5 all merged #1779–1785), MEH-1229 (#1777+#1783), MEH-1210 (#1830 — cards verified price-free on staging; closed superseded PR #1752). All three were rule-29 auto-reopens, not real reopens.
+- **MEH-1202 (Urgent, HIGH-RISK, Sapir-gated) — Phase 0 + numbered plan posted to Linear, no edits.** Producer mobile chrome stack: mapped the 4 sticky layers + the transparent-band bleed with file:line; plan = live-measured `--chrome-top` CSS var (kills the hardcoded `top-[82px]`/`|| 82`/`scroll-mt-[150px]`), opaque header shell, and a `usePathname` gate to drop BottomNav on `/producer` (reuse ChatWidgetLazy's `isProducerDetail`). Awaits Sapir's "go".
+- **Not taken (documented):** MEH-1227 (a11y aria sweep) — Low priority + its DoD needs an **axe run against a seeded backend**, which the CC sandbox can't do (needs MEH-1198 demo on staging or a CI axe run); deferred, not skipped-blind. MEH-1252 — already merged by the parallel session. MEH-1249 (adopt PR #1729), MEH-1060 (SEO), MEH-1241/800/514 — not reached this run.
+- **Env note:** backend pytest/pydantic + ruff resolved locally via `uv run` (`uv.lock` pins ruff 0.15.12); `pip` is blocked in the sandbox. Draft PRs skip build/pytest/vitest (`pr-checks.yml` `&& draft == false`) — mark ready to run the real gates before merging.
+
 ## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
 
 - **Branch `feature/meh-1252-demo-image-ids` (off staging).** The exact swap the earlier 17/07 sweep session **skipped and deferred to this ticket**. MEH-1198 SYNC (16/07) supplied the 5 `mehamakor/demo/ruach-hasadeh-*` public_ids on the `dfzpscjks` cloud; Sapir chose the **Full per-product (5/5)** scope when asked (vs pure 6-site swap).
