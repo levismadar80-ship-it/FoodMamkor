@@ -251,8 +251,13 @@ def update_my_producer(
         db.query(ProducerCategory).filter(
             ProducerCategory.producer_id == producer.id
         ).delete()
-        for cid in category_ids:
-            db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+        # MEH-1297: payload order = stored order (position 0 = primary).
+        for pos, cid in enumerate(category_ids):
+            db.add(
+                ProducerCategory(
+                    producer_id=producer.id, category_id=cid, position=pos
+                )
+            )
 
     db.commit()
     db.refresh(producer)

@@ -93,8 +93,11 @@ def _apply_categories(db: Session, producer: Producer, category_ids: list[int]):
     db.query(ProducerCategory).filter(
         ProducerCategory.producer_id == producer.id
     ).delete()
-    for cid in category_ids:
-        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+    # MEH-1297: payload order = stored order (position 0 = primary).
+    for pos, cid in enumerate(category_ids):
+        db.add(
+            ProducerCategory(producer_id=producer.id, category_id=cid, position=pos)
+        )
 
 
 def _apply_delivery_cities(db: Session, producer: Producer, cities: list[str]):
