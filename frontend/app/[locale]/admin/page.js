@@ -42,7 +42,7 @@ export default function AdminDashboard() {
     { key: "total_producers",   label: t("dashboard.stats.total_producers"),   value: s.total_producers,     Icon: Storefront, href: "/admin/producers" },
     { key: "pending_approval",  label: t("dashboard.stats.pending_approval"),  value: s.pending_producers,   Icon: HourglassSimple, href: "/admin/producers?status=pending", warn: s.pending_producers > 0 },
     { key: "registered_users",  label: t("dashboard.stats.registered_users"),  value: s.total_users,         Icon: Users, href: "/admin/users" },
-    { key: "group_buys",        label: t("dashboard.stats.group_buys"),        value: "›",                   Icon: Package, href: "/admin/group-buys" },
+    { key: "group_buys",        label: t("dashboard.stats.group_buys"),        value: s.total_group_buys,    Icon: Package, href: "/admin/group-buys" },
   ];
 
   // Simple inline SVG line chart for monthly producers

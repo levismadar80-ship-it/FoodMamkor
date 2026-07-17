@@ -1293,6 +1293,7 @@
           "set_ambassador_title": "Set as ambassador",
           "ambassador_active": "⭐ Ambassador",
           "ambassador_inactive": "☆ Ambassador",
+          "ambassador_tooltip": "Manual flag for a leading business — promotes to Trust Tier 5 with a public badge",
           "story_card_title": "Create Instagram card",
           "story_card": "📸 Story",
           "delete": "Delete",
@@ -2874,11 +2875,12 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "Discover more businesses at mehamakor.online",
+      "footer_url": "Discover more businesses at mehamakor.co.il",
       "upload_error": "Cloudinary upload error",
       "default_country": "Israel",
       "caption_prefix": "🌿 A new business on Mehamakor!",
       "title": "Instagram card ready",
+      "close": "Close story panel",
       "generating": "Generating",
       "download": "Download",
       "uploading": "Uploading...",

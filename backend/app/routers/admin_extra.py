@@ -29,7 +29,7 @@ from app.models import (
     StaticPage,
     User,
 )
-from app.models.models import KashrutBadgeRequest, ProducerRecipe
+from app.models.models import GroupBuy, KashrutBadgeRequest, ProducerRecipe
 from app.schemas.schemas import (
     CategoryIn,
     CategoryOut,
@@ -610,6 +610,9 @@ def get_dashboard(
         .scalar()
         or 0,
         "open_reports": int(open_reports),
+        # MEH-1267: real group-buys count replaces the hardcoded "›" placeholder
+        # on the admin dashboard card.
+        "total_group_buys": db.query(func.count(GroupBuy.id)).scalar() or 0,
         "total_events": db.query(func.count(Event.id)).scalar() or 0,
         "total_experiences": db.query(func.count(Experience.id)).scalar() or 0,
         "flagged_home_products": int(flagged_home_products),
