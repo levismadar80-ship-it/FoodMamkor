@@ -138,6 +138,8 @@ const EMPTY = {
   offers_delivery: false,
   delivery_nationwide: false,
   delivery_cities: [],
+  // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
+  delivery_excluded_cities: [],
   // MEH-291 — unified 4-state availability. Backend dual-writes to legacy
   // availability_status during the 7-day overlap; Phase 4 drops the legacy.
   availability_state: "accepting_orders",
@@ -216,6 +218,8 @@ export default function ProducerForm({ initial = null, producerId = null }) {
         // MEH-903 A: the single cities input is populated from the delivery_areas
         // relation (the store), not the legacy delivery_cities column.
         delivery_cities: initial.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+        // MEH-1255: nationwide exclusion list.
+        delivery_excluded_cities: initial.delivery_excluded_cities ?? [],
         // MEH-291 — unified 4-state availability (with legacy fallback during overlap).
         availability_state:
           initial.availability_state ??
@@ -331,6 +335,11 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       // MEH-903 A: delivery_area_cities → delivery_areas table (single SoT);
       // the legacy delivery_cities column is intentionally omitted.
       delivery_area_cities: form.delivery_cities,
+      // MEH-1255: exclusion list only meaningful in nationwide mode; the
+      // toggle already clears it otherwise, and the backend guard enforces it.
+      delivery_excluded_cities: form.delivery_nationwide
+        ? form.delivery_excluded_cities
+        : [],
       // MEH-291 — unified availability; clear vacation_until when not on vacation.
       availability_state: form.availability_state,
       vacation_until:
@@ -611,7 +620,9 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   checked={form.delivery_nationwide}
                   onChange={(e) => {
                     update("delivery_nationwide", e.target.checked);
+                    // Clear cities entering nationwide; clear exclusions leaving it.
                     if (e.target.checked) update("delivery_cities", []);
+                    else update("delivery_excluded_cities", []);
                   }}
                   className="w-4 h-4 accent-primary"
                 />
@@ -628,6 +639,18 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   {form.delivery_cities.length === 0 && (
                     <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
                   )}
+                </div>
+              )}
+              {/* MEH-1255: nationwide exclusion list — "לכל הארץ חוץ מ:" */}
+              {form.delivery_nationwide && (
+                <div>
+                  <span className="block text-sm text-muted mb-1">{t("producers.form.fields.delivery_excluded_label")}</span>
+                  <p className="text-xs text-fg-muted mb-1">{t("producers.form.fields.delivery_excluded_hint")}</p>
+                  <CitiesAutocomplete
+                    value={form.delivery_excluded_cities}
+                    onChange={(cities) => update("delivery_excluded_cities", cities)}
+                    showRegionChips
+                  />
                 </div>
               )}
             </div>

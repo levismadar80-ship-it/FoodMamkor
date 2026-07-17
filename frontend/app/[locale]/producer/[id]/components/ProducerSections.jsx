@@ -318,6 +318,7 @@ export default function ProducerSections({
         <div ref={(el) => { sectionRefs.current.delivery = el; }}>
           <DeliveryBlock
             nationwide={producer.delivery_nationwide}
+            excluded={producer.delivery_excluded_cities || []}
             areas={producer.delivery_areas || []}
             pickup={!!producer.pickup_points}
             producer={producer}

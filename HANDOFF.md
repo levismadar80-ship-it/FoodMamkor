@@ -5,6 +5,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1255 delivery-exclusion mode "לכל הארץ חוץ מ:" — feature/meh-1255-delivery-exclusion (HIGH-RISK, chunk-by-chunk)
+
+- **Status:** all 3 chunks done + committed locally on `feature/meh-1255-delivery-exclusion`. Chunk A + B were Sapir-approved at their WAIT gates; Chunk C (frontend) done under the same session. **NOT pushed yet** — pending Sapir's final go on Chunk C before PR + push.
+- **Chunk A (schema, Alembic-only):** migration `e7c4b1f95a2d` — `producers.delivery_excluded_cities TEXT[] NOT NULL DEFAULT '{}'` + CHECK `delivery_excluded_requires_nationwide`. Applied + verified locally (`upgrade head` from base, `alembic check` clean). No new table.
+- **Chunk B (backend):** schemas (Admin create / Update / public ListOut) + validators + shared effective-state guard `app/services/delivery_validation.py` (partial-update 422 not 500) + owner/admin write paths + consumer `delivery_city` filter rewritten (inner JOIN → EXISTS + nationwide-minus-excluded branch — nationwide producers now match the city filter). pytest: `tests/test_delivery_exclusion.py` 8, `test_api.py` 216, adjacent 17 — all green.
+- **Chunk C (frontend):** `DeliveryCard` (`edit/cards.jsx`) + admin `ProducerForm` reveal an optional "חוץ מ:" CitiesAutocomplete (region chips) when nationwide is on; `DeliveryBlock` "משלוחים לכל הארץ (למעט …)"; `ProducerSections` passes `delivery_excluded_cities`. i18n he+en (`nationwide_except`, `delivery_excluded_label/hint`). vitest: DeliveryBlock +3, EditTabDeliveryCard +1 (existing PUT assertion updated for the new field); affected suites 26/26; build green.
+- **Docs:** DATA.md (producers DDL + MEH-1255 note), `.ai/diagrams/db-schema.md` (3rd CHECK note), MANUAL_TESTING § MEH-1255, CHANGELOG, this entry.
+- **Next:** on Sapir "go merge" → push branch, open PR, merge on the 2 required gates. Then MEH-1255 → Done.
+
 ## 2026-07-17 — MEH-1258 / 1260 / 1259 batch (license card + kashrut expiry + organic hide) — full authority
 
 - **MEH-1258 — MERGED (PR #1814, squash `57c82c22`):** new `LicenseCard` on `/producer/dashboard/edit` (anchor `#license`, after Categories). Mirrors the admin license field (numeric/ltr/maxLength-20 + amber format warning reused from `admin.producers.form.fields.license_format_warning`); license-required hint via `requiresProducerLicense`; save `PUT /producers/me`; MEH-999 2c clear-guard stays server-side (Hebrew 422 inline); masked `•••`+last-4 header chip. NEW `EditTabLicenseCard.test.jsx` (6). 375px self-QA `qa-artifacts/MEH-1258/`. **Sapir: mobile QA** — https://staging.mehamakor.online/he/producer/dashboard/edit#license
