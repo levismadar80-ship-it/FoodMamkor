@@ -19,12 +19,18 @@ export function useUserCity() {
   useEffect(() => {
     setCityState(read());
     const onChanged = () => setCityState(read());
-    window.addEventListener(EVENT_NAME, onChanged);
-    window.addEventListener("storage", (e) => {
+    // MEH-1269: the "storage" listener was previously an anonymous inline
+    // handler, so cleanup below could not remove it — a listener leak on every
+    // unmount/remount of any useUserCity consumer. Named handler + matching
+    // removeEventListener closes the leak.
+    const onStorage = (e) => {
       if (e.key === STORAGE_KEY) onChanged();
-    });
+    };
+    window.addEventListener(EVENT_NAME, onChanged);
+    window.addEventListener("storage", onStorage);
     return () => {
       window.removeEventListener(EVENT_NAME, onChanged);
+      window.removeEventListener("storage", onStorage);
     };
   }, []);
 

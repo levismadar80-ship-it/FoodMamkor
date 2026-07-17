@@ -9,6 +9,13 @@ export const ProducerSchema = z.object({
   name: z.string(),
   lat: z.number().finite().nullable().optional(),
   lng: z.number().finite().nullable().optional(),
+  // MEH-1269: server-computed great-circle distance (km) attached in geo
+  // mode only (ProducerListOut.distance_km, backend producer_listing.py:353,
+  // ORDER BY distance ASC). Declared so z.object stops stripping it; null in
+  // non-geo listings. Cards still derive the on-screen label client-side from
+  // the sessionStorage GPS fix (ProducerCard.jsx:179) — this preserves the
+  // server value for any future distance-aware consumer.
+  distance_km: z.number().nullable().optional(),
   phone: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   // MEH-766 ch5: is_verified dropped from the backend contract (ADR-022) —
