@@ -17,6 +17,7 @@
 
 import {
   Cow,
+  Fish,
   Plant,
   Cheese,
   Bread,
@@ -27,7 +28,15 @@ import {
 } from "@phosphor-icons/react";
 
 export const CATEGORY_STYLES = {
-  "בשר, עוף ודגים":      { color: "#c04040", icon: Cow,         iconName: "Cow" },
+  // MEH-1268 (post-MEH-927 taxonomy): the combined "בשר, עוף ודגים" row was
+  // split in the DB into standalone "בשר" + "דגים". Renamed the stale combined
+  // key to "בשר" (identical meat style — #c04040 + Cow) so meat businesses stop
+  // falling through to DEFAULT (Leaf/green) on all 4 map surfaces, and added
+  // "דגים" reusing the SAME meat colour with a distinct Fish glyph — redundant
+  // shape encoding (MEH-936) keeps the two apart without adding a palette colour
+  // (stays within the MEH-763 F2 ≤-colours / deuteranopia-safe constraint).
+  "בשר":                 { color: "#c04040", icon: Cow,         iconName: "Cow" },
+  "דגים":                { color: "#c04040", icon: Fish,        iconName: "Fish" },
   "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
   "חלב וגבינות":         { color: "#4a90d9", textColor: "#3b72ad", icon: Cheese,      iconName: "Cheese" },
   "לחמים ואפייה":        { color: "#896714", icon: Bread,       iconName: "Bread" }, // MEH-1065: accent token (retired stale gold)
