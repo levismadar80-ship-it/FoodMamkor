@@ -5,6 +5,14 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1241 Chunk 5: Vercel protection-bypass for staging auth runs — feature/meh-1241-qa-vercel-bypass (PR #1812, NOT merged)
+
+- **🔑 DURABLE LESSON — `staging.mehamakor.online` sits behind Vercel Deployment Protection (`vercel_auth_enabled`).** **ANY automated request to staging** — Playwright E2E, `curl`, monitoring, smoke checks — **must send the header `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET`**, or it 302-redirects to `vercel.com/sso-api` and **never reaches the backend**. Verified live 17/07: **no header → 302** (→ `vercel.com/sso-api`); **with header → HTTP 200 + `refresh_token` + `X-Railway-Edge`** (real backend hit). For Playwright the header is needed on **BOTH** surfaces — the API `request` context **and** the browser context (`page.goto`) — else login succeeds but navigation still hits the SSO wall. Get the secret from **Vercel → Settings → Deployment Protection → Protection Bypass for Automation** (system env `VERCEL_AUTOMATION_BYPASS_SECRET`); **rotating it needs a redeploy**. Never log/commit the value.
+- **Shipped (branch `feature/meh-1241-qa-vercel-bypass`, PR #1812 — Sapir merges, binding):** `frontend/e2e/global-setup.ts` (send header on login request; throw on remote+unset), `frontend/playwright.config.ts` (browser-context header reads the canonical `VERCEL_AUTOMATION_BYPASS_SECRET` too), `docs/DEPLOYMENT.md` (documents the secret), CHANGELOG + this entry.
+- **Verified:** spec compiles + skips cleanly on localhost (6 skipped, exit 0); default CI E2E (MEH-1044) unaffected; diff carries no secret value (env reads only).
+- **Still pending (Sapir):** the live spec run — the sandbox has the bypass secret but not `DEMO_OWNER_PASSWORD`/`DEMO_CONSUMER_PASSWORD`. Command in the PR #1812 body (adds `VERCEL_AUTOMATION_BYPASS_SECRET=…` to the earlier TEST_URL invocation). A failing case = a real MEH-1226/1228 bug (report, don't fix).
+- **Branch-name note:** ticket said `feature/qa-vercel-bypass`; the MEH-1141 gate requires `meh-NNN` → used `feature/meh-1241-qa-vercel-bypass` (MEH-1241 In Progress, no Done-reopen).
+
 ## 2026-07-17 — MEH-1256 region quick-add chips — feature/meh-1256-region-quick-add
 
 - **What:** NEW `frontend/data/regions.js` (7 colloquial regions → exact `ISRAEL_CITIES` members, vitest-guarded) + `showRegionChips` prop on `CitiesAutocomplete` (default false; click = deduped union into value; fully-selected region → disabled "· נוסף"). Wired only in dashboard `DeliveryCard` + admin `ProducerForm` delivery blocks. PR #1811 review follow-ups folded in (hint test via he.json key; hint hidden while arrow-highlighted).

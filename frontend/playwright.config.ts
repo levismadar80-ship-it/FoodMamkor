@@ -55,17 +55,20 @@ export default defineConfig({
     video: "retain-on-failure",
     // MEH-264 — Vercel Deployment Protection returns 403 "host_not_allowed"
     // on every preview URL until requests present this bypass header.
-    // Secret lives in GitHub Actions → Secrets as
-    // VERCEL_AUTOMATION_BYPASS_SECRET and is exported to the job env as
-    // VERCEL_BYPASS_SECRET. When unset (local runs), we send an empty
-    // string which Vercel ignores for non-protected environments.
+    // MEH-1241 — canonical env name is VERCEL_AUTOMATION_BYPASS_SECRET (the
+    // Vercel system env / GitHub secret name); the legacy job-export alias
+    // VERCEL_BYPASS_SECRET is kept only as a fallback. Same precedence as
+    // global-setup.ts so both surfaces read the same value. When unset (local
+    // runs), we send an empty string which Vercel ignores for non-protected
+    // environments.
     //
     // MEH-306 sub-B — `x-vercel-skip-toolbar=1` removes the
     // <vercel-live-feedback> widget from preview pages so its overlay
     // doesn't intercept pointer events during tests (per
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
     extraHTTPHeaders: {
-      "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET || "",
+      "x-vercel-protection-bypass":
+        process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "",
       "x-vercel-skip-toolbar": "1",
     },
   },

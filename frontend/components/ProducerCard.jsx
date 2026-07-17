@@ -242,6 +242,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.
               <div
                 className="absolute inset-0 flex flex-col items-center justify-center bg-background gap-2"
+                role="img"
                 aria-label={t("producer.card.aria.image_missing", { name: producer.name })}
               >
                 <Leaf size={60} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
