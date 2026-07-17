@@ -152,8 +152,11 @@ export default function Footer() {
             ].map((group) => (
               <div key={group.heading}>
                 {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
-                    uppercase, and letter-spacing harms RTL legibility. */}
-                <h3 className="mb-3 text-green-100" style={{ fontSize: "11px" }}>
+                    uppercase, and letter-spacing harms RTL legibility.
+                    MEH-1281: 11px → 13px (text-[13px] utility, matching the
+                    MEH-1103 nav-link treatment — no inline font sizing) +
+                    font-semibold so the group heading outweighs its links. */}
+                <h3 className="mb-3 text-[13px] font-semibold text-green-100">
                   {group.heading}
                 </h3>
                 <ul className="flex flex-col gap-2">
