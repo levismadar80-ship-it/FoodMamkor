@@ -12,6 +12,11 @@
 - **QA:** vitest 7/7 + build green (outputs in PR). Live mobile check (type "זכרון יעקב" + Enter → chip; type + tap שמירה → chip kept) deferred to Sapir — no feature-branch Vercel previews since MEH-1044.
 - **Queue context:** ticket 1 of 3 (MEH-1254 → MEH-1255 exclusion mode HIGH-RISK → MEH-1256 region quick-add, same file, waits for this merge).
 
+## 2026-07-17 — MEH-1195 header shell opaque — rebased onto staging + MERGED (PR #1743)
+
+- **MEH-1195 (Med · RED · central Header):** the held `feature/meh-1195-header-shell-opaque` PR #1743 (opened 2026-07-13 with a DO-NOT-MERGE Sapir gate) was brought current and merged under the 17/07 full-end-to-end grant. Since staging's `Header.jsx` had gained the MEH-1251 Chunk B click-shield (`pointer-events-none`) after #1743 was cut, the `<header>` className conflicted. Resolved keeping **BOTH** concerns on one line: `` className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`} `` — the MEH-1251 shield AND the MEH-1195 gated `bg-background`. **Method note:** the env denies `git rebase`/`git reset --hard` (history-rewrite gated), so staging was brought in via `git merge origin/staging` instead — identical final tree, and the PR squash-merge collapses it to one commit on staging regardless. DO-NOT-MERGE markers stripped from the PR title + body; draft flipped to ready. build green · Header vitest green · both required gates green. `Closes MEH-1195`.
+>>>>>>> origin/staging
+
 ## 2026-07-17 — MEH-1253 BottomNav pointer-events shield
 
 - **What:** applied the MEH-1251 Chunk B shield pattern to `BottomNav.jsx`. The full-width `fixed` wrapper (`:217`) had default `pointer-events`, so its transparent band (side gutters + safe-area/16px paddingBottom below the pill) swallowed taps/scroll on content underneath. Added `pointer-events-none` on the wrapper (`:228`) + `pointer-events-auto` on the `<nav>` pill (`:249`). One wrapper only (no intermediate shell like Header) → one none + one auto. `onFocusCapture` unaffected (pointer-events-none ≠ focus block). Zero visual/layout/z change.
