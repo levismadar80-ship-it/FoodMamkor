@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { REGIONS } from "@/data/regions";
 
 /**
  * MEH-213: Multi-select city autocomplete backed by GET /cities?q=.
@@ -28,8 +29,18 @@ import api from "@/lib/api";
  * clears on blur so it's obvious it was NOT saved. autoComplete="off" keeps
  * browser autofill from bypassing the suggestion flow, and a muted helper
  * line shows while typed text is still uncommitted.
+ *
+ * MEH-1256 — optional region quick-add chips (showRegionChips, default
+ * false; delivery contexts only — dashboard DeliveryCard + admin
+ * ProducerForm). Clicking a region unions its data/regions.js city list
+ * into value (dedupe); a fully-selected region renders disabled ("נוסף").
+ * UI sugar only — no region entity is persisted.
  */
-export default function CitiesAutocomplete({ value = [], onChange }) {
+export default function CitiesAutocomplete({
+  value = [],
+  onChange,
+  showRegionChips = false,
+}) {
   const t = useTranslations("search.cities_autocomplete");
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -82,6 +93,18 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
 
   const removeCity = (city) => {
     onChange(value.filter((c) => c !== city));
+  };
+
+  // MEH-1256: region quick-add — union (dedupe) of value + the region's
+  // cities. A region whose cities are all selected renders disabled.
+  const regionDone = (region) => region.cities.every((c) => value.includes(c));
+
+  const addRegion = (region) => {
+    const merged = [...value];
+    for (const c of region.cities) {
+      if (!merged.includes(c)) merged.push(c);
+    }
+    if (merged.length !== value.length) onChange(merged);
   };
 
   // MEH-1254: a fully typed city counts as a selection when it exactly
@@ -145,6 +168,30 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
 
   return (
     <div className="relative">
+      {/* MEH-1256: region quick-add chips (delivery contexts only) */}
+      {showRegionChips && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {REGIONS.map((region) => {
+            const done = regionDone(region);
+            return (
+              <button
+                key={region.key}
+                type="button"
+                disabled={done}
+                onClick={() => addRegion(region)}
+                className={`rounded-full border border-border text-[12px] px-2.5 py-0.5 transition ${
+                  done
+                    ? "bg-green-50 text-fg-muted cursor-default"
+                    : "bg-white text-text hover:bg-background"
+                }`}
+              >
+                {done ? `${region.name} · ${t("region_added")}` : region.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Selected chips + input */}
       <div
         className="min-h-[42px] flex flex-wrap gap-1.5 items-center border border-border rounded-md px-3 py-2 bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30 cursor-text"
@@ -186,8 +233,10 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
         />
       </div>
 
-      {/* MEH-1254: typed-but-uncommitted hint — muted, not an error */}
-      {query.trim() !== "" && (
+      {/* MEH-1254: typed-but-uncommitted hint — muted, not an error.
+          Hidden while a suggestion is arrow-highlighted (the user is already
+          "picking from the list" — PR #1811 review). */}
+      {query.trim() !== "" && activeIdx < 0 && (
         <p className="mt-1 text-xs text-fg-muted">{t("commit_hint")}</p>
       )}
 

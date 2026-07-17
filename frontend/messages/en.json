@@ -2753,7 +2753,8 @@
     "cities_autocomplete": {
       "remove_aria": "Remove {city}",
       "placeholder": "Type a city name...",
-      "commit_hint": "Pick a city from the list to add it"
+      "commit_hint": "Pick a city from the list to add it",
+      "region_added": "Added"
     },
     "city_search": {
       "placeholder": "Search city...",

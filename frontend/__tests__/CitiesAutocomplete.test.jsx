@@ -15,18 +15,21 @@ import { NextIntlClientProvider } from "next-intl";
 import he from "../messages/he.json";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import api from "@/lib/api";
+import { REGIONS } from "@/data/regions";
+import { ISRAEL_CITIES } from "@/data/cities";
 
 vi.mock("@/lib/api", () => ({ default: { get: vi.fn() } }));
 
 const CITIES = ["זכרון יעקב", "זכרון משה"];
 
-function Harness({ onChange, initial = [] }) {
+function Harness({ onChange, initial = [], showRegionChips = false }) {
   const [v, setV] = useState(initial);
   return (
     <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
       <CitiesAutocomplete
         value={v}
         onChange={(next) => { setV(next); onChange(next); }}
+        showRegionChips={showRegionChips}
       />
     </NextIntlClientProvider>
   );
@@ -124,6 +127,68 @@ describe("CitiesAutocomplete (MEH-1254)", () => {
     render(<Harness onChange={vi.fn()} />);
     await typeAndWaitForSuggestions("זכרון");
 
-    expect(screen.getByText("בחרי עיר מהרשימה כדי להוסיף")).toBeInTheDocument();
+    expect(
+      screen.getByText(he.search.cities_autocomplete.commit_hint),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the commit hint while a suggestion is arrow-highlighted (PR #1811 review)", async () => {
+    render(<Harness onChange={vi.fn()} />);
+    const input = await typeAndWaitForSuggestions("זכרון");
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+
+    expect(
+      screen.queryByText(he.search.cities_autocomplete.commit_hint),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("CitiesAutocomplete region quick-add (MEH-1256)", () => {
+  const SHARON = REGIONS.find((r) => r.key === "sharon");
+
+  it("data guard: every region city is an exact member of ISRAEL_CITIES", () => {
+    for (const region of REGIONS) {
+      const strays = region.cities.filter((c) => !ISRAEL_CITIES.includes(c));
+      expect(strays, `${region.name}: ${strays.join(", ")}`).toEqual([]);
+    }
+  });
+
+  it("does not render region chips by default", () => {
+    render(<Harness onChange={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: SHARON.name })).not.toBeInTheDocument();
+  });
+
+  it("clicking a region chip adds all of its cities", () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} showRegionChips />);
+
+    fireEvent.click(screen.getByRole("button", { name: SHARON.name }));
+
+    expect(onChange).toHaveBeenCalledWith(SHARON.cities);
+  });
+
+  it("dedupes: already-selected cities are not added twice", () => {
+    const onChange = vi.fn();
+    const preselected = [SHARON.cities[0], SHARON.cities[1]];
+    render(<Harness onChange={onChange} showRegionChips initial={preselected} />);
+
+    fireEvent.click(screen.getByRole("button", { name: SHARON.name }));
+
+    const result = onChange.mock.calls[0][0];
+    expect(result).toEqual([...preselected, ...SHARON.cities.slice(2)]);
+    expect(new Set(result).size).toBe(result.length);
+  });
+
+  it("a fully selected region renders disabled in the added state", () => {
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} showRegionChips initial={[...SHARON.cities]} />);
+
+    const addedLabel = `${SHARON.name} · ${he.search.cities_autocomplete.region_added}`;
+    const chip = screen.getByRole("button", { name: addedLabel });
+    expect(chip).toBeDisabled();
+
+    fireEvent.click(chip);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

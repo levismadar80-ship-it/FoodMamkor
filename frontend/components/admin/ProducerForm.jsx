@@ -623,6 +623,7 @@ export default function ProducerForm({ initial = null, producerId = null }) {
                   <CitiesAutocomplete
                     value={form.delivery_cities}
                     onChange={(cities) => update("delivery_cities", cities)}
+                    showRegionChips
                   />
                   {form.delivery_cities.length === 0 && (
                     <p className="text-xs text-red-600 mt-1">{t("producers.form.fields.delivery_cities_required")}</p>
