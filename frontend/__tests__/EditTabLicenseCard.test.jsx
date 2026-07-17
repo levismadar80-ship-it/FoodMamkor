@@ -53,6 +53,24 @@ describe("Edit-tab LicenseCard (isolation)", () => {
     expect(onSave).toHaveBeenCalledWith({ producer_license_number: "1234567" });
   });
 
+  it("shows a persistent inline success confirmation after a successful save (MEH-1270)", async () => {
+    const { onSave } = renderCard();
+    fireEvent.change(screen.getByLabelText(L.field_label), {
+      target: { value: "1234567" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: L.save_cta }));
+    const ok = await screen.findByTestId("license-save-success");
+    expect(ok).toHaveTextContent(L.save_success);
+    expect(onSave).toHaveBeenCalledWith({ producer_license_number: "1234567" });
+    // No error shown alongside the success.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // Editing again clears the confirmation (dirty state resumes).
+    fireEvent.change(screen.getByLabelText(L.field_label), {
+      target: { value: "12345678" },
+    });
+    expect(screen.queryByTestId("license-save-success")).not.toBeInTheDocument();
+  });
+
   it("clearing sends null and surfaces the backend Hebrew 422 detail inline", async () => {
     // The MEH-999 2c guard (clear while a license-required category is held)
     // lives server-side — the card must only surface its Hebrew detail.
