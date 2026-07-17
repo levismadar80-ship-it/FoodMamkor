@@ -66,7 +66,7 @@ export default function CookieBanner() {
     <div
       ref={bannerRef}
       className="cookie-banner fixed bottom-[calc(env(safe-area-inset-bottom)+80px)] md:bottom-0 inset-x-0 z-[1100] bg-primary-dark text-green-50 shadow-[0_-2px_12px_rgba(0,0,0,0.15)]"
-      role="dialog"
+      role="region"
       aria-label={t("aria_label")}
     >
       <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col items-stretch gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
