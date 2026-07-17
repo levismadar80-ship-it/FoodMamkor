@@ -3,6 +3,12 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1278 — mobile footer 2-col nav grid (follow-up MEH-1177) — `feature/meh-1278-footer-mobile-2col`
+
+- **What:** styling-only follow-up to the MEH-1177 footer audience split. On mobile the two nav groups ("גלו" / "לבתי עסק") stacked vertically (~340px wasted height, poor scan). Single-file change in `frontend/components/Footer.jsx`: nav `<nav>` className `flex flex-col gap-6` → `grid grid-cols-2 gap-6 md:flex md:flex-col` — 2-col start-aligned grid on mobile, original flex-col stack at `md:` (desktop unchanged). RTL grid auto-places "גלו" at the start side. No `text-center` present. Newsletter/brand/copyright columns + MEH-867 AA color tokens untouched.
+- **QA:** `npm run build` green (local). Styling-only → no Playwright per Rule 5; RTL uses grid/flex only (no physical directional classes). **Live mobile QA on staging deferred to Sapir** (per the batch task — merge on green, then Sapir mobile-checks staging).
+- **Next:** await Sapir's mobile confirm on staging.
+
 ## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
 
 - **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
