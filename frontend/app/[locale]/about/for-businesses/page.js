@@ -246,18 +246,30 @@ export default async function FaqForBusinessesPage({ params }) {
           </figure>
         </section>
 
+        {/* MEH-1284: surface the /about/for-businesses/guides index (MEH-539,
+            3 guides) — previously reachable only from onboarding emails. */}
+        <p className="mt-10 sm:mt-12 text-[15px]">
+          <Link
+            href="/about/for-businesses/guides"
+            className="inline-flex items-center gap-1 underline text-primary focus-ring rounded-sm"
+          >
+            {t("guides_link")}
+            <span aria-hidden="true">←</span>
+          </Link>
+        </p>
+
         <footer className="mt-14 sm:mt-16 border-t border-border pt-8">
           {/* MEH-1113: Instagram-DM routing replaced with the form + visible email
               (every inbound path → ContactMessage + notification). Neutral-plural
               voice per ADR-024. Site-wide footer Instagram link is untouched. */}
           <p className="text-base mb-4 text-text/90">
             {t("footer_questions_prefix")}{" "}
-            <a
+            <Link
               href="/about?topic=business#contact"
               className="underline text-primary"
             >
               {t("footer_form_link")}
-            </a>{" "}
+            </Link>{" "}
             {t("footer_or_email")}{" "}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
