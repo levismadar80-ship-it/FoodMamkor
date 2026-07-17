@@ -75,14 +75,25 @@ _DIETARY_FILTERS: list[tuple[str, str]] = [
 
 
 def _build_base_queries(
-    db: Session, *, geo: tuple[float, float, float] | None, sort: str | None
+    db: Session,
+    *,
+    geo: tuple[float, float, float] | None,
+    sort: str | None,
+    require_physical: bool = False,
 ):
     """Initial q + count_q.
 
     `geo=(lat, lng, radius_km)` activates the geo search path (Haversine
-    distance, MEH-213 physical-location filter, ORDER BY distance ASC);
-    `geo=None` is the standard listing path (sort by created_at DESC or
-    rating per the `sort` arg).
+    distance, ORDER BY distance ASC); `geo=None` is the standard listing
+    path (sort by created_at DESC or rating per the `sort` arg).
+
+    `require_physical` (geo mode only): when True, keep MEH-213's
+    `has_physical_location IS TRUE` filter — the /map pin semantics, where a
+    delivery-only producer has no address to pin. When False (the default,
+    MEH-1282), geo mode returns ALL approved producers with non-null coords
+    in range, INCLUDING delivery-only ones — the "קרוב אליי" home flow wants
+    every nearby business, not just map-pinnable ones. The flag has no effect
+    in non-geo mode (the standard listing never filtered on physical location).
 
     Build two parallel queries:
       q       — full SELECT (Producer + eager-loaded relationships, plus
@@ -94,7 +105,9 @@ def _build_base_queries(
     dragged joinedload + order_by artifacts into the count SQL and made
     Postgres reject the query with a 500 on every geo search. Keep the
     two queries separate and apply each filter/join to BOTH so the total
-    count stays consistent with the page slice.
+    count stays consistent with the page slice. The `require_physical`
+    filter below is applied to BOTH for exactly this reason — a page query
+    that filters where the count doesn't (or vice-versa) reopens that 500.
     """
     if geo is not None:
         lat, lng, radius_km = geo
@@ -108,23 +121,29 @@ def _build_base_queries(
                 selectinload(Producer.delivery_areas),
             )
             .filter(Producer.status == "approved")
-            # MEH-213: map pins only for producers with a physical location.
-            # Delivery-only producers have no address to pin on the map.
-            .filter(Producer.has_physical_location.is_(True))
-            # Haversine is undefined for NULL coords — exclude them before
-            # applying the distance filter.
-            .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
-            .filter(distance_expr <= radius_km)
-            .order_by(distance_expr.asc())
         )
         count_q = (
             db.query(func.count(Producer.id.distinct()))
             .select_from(Producer)
             .filter(Producer.status == "approved")
-            .filter(Producer.has_physical_location.is_(True))
-            .filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
-            .filter(haversine_km(lat, lng) <= radius_km)
         )
+        if require_physical:
+            # MEH-213 map-pin semantics: only producers with a physical
+            # location. MEH-1282 makes this opt-in (default OFF) so the home
+            # "קרוב אליי" flow can surface delivery-only producers too. Apply
+            # to BOTH q and count_q — see the 500-bug warning above.
+            q = q.filter(Producer.has_physical_location.is_(True))
+            count_q = count_q.filter(Producer.has_physical_location.is_(True))
+        # Haversine is undefined for NULL coords — exclude them before
+        # applying the distance filter.
+        q = (
+            q.filter(Producer.lat.isnot(None), Producer.lng.isnot(None))
+            .filter(distance_expr <= radius_km)
+            .order_by(distance_expr.asc())
+        )
+        count_q = count_q.filter(
+            Producer.lat.isnot(None), Producer.lng.isnot(None)
+        ).filter(haversine_km(lat, lng) <= radius_km)
         return q, count_q
 
     order = (
@@ -379,15 +398,18 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     Returns (results, total_count). Caller is responsible for setting
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
-    Expected keys in **filters: lat, lng, radius_km, category,
-    delivery_city, has_delivery, verified, kosher, city,
+    Expected keys in **filters: lat, lng, radius_km, require_physical,
+    category, delivery_city, has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
     (MEH-1259: `organic` removed — the public ?organic filter is gone.)
+    (MEH-1282: `require_physical` — geo-only opt-in for the has_physical_location
+    filter; default False so delivery-only producers appear in geo results.)
     """
     lat = filters.get("lat")
     lng = filters.get("lng")
     radius_km = filters.get("radius_km")
+    require_physical = filters.get("require_physical", False)
     sort = filters.get("sort")
     search_q = filters.get("search_q")
     limit = filters.get("limit", 100)
@@ -401,7 +423,9 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     )
     geo_search = geo is not None
 
-    q, count_q = _build_base_queries(db, geo=geo, sort=sort)
+    q, count_q = _build_base_queries(
+        db, geo=geo, sort=sort, require_physical=require_physical
+    )
     q, count_q = _apply_scalar_filters(q, count_q, **filters)
     q, count_q = _apply_search_filter(db, q, count_q, search_q, geo_search=geo_search)
 

@@ -224,7 +224,12 @@ export function useMapSync({
       showToast.info(msg);
       return;
     }
-    const params = { ...chipParams, ...geoValidation.data };
+    // MEH-1282: /map is a MAP — pins need a physical location. The geo
+    // /producers default flipped to include delivery-only producers (for the
+    // home "קרוב אליי" flow), so the map's "חפשי באזור זה" fetch must opt back
+    // into MEH-213's has_physical_location filter, or delivery-only businesses
+    // with stored coords would appear as pins (reopening MEH-213).
+    const params = { ...chipParams, ...geoValidation.data, require_physical: true };
     if (process.env.NODE_ENV !== "production") {
       console.log("[חפשי באזור זה] GET /producers", params);
     }

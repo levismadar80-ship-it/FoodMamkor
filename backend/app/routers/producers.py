@@ -53,6 +53,11 @@ def list_producers(
     lat: float | None = None,
     lng: float | None = None,
     radius_km: float | None = None,
+    # MEH-1282: geo-only opt-in for MEH-213's has_physical_location filter.
+    # Default False → geo results include delivery-only producers (the home
+    # "קרוב אליי" flow). Set true for map-pin semantics (physical location only).
+    # No effect outside geo mode.
+    require_physical: bool = False,
     category: int | None = None,
     delivery_city: str | None = None,
     has_delivery: bool | None = None,
@@ -95,6 +100,7 @@ def list_producers(
         lat=lat,
         lng=lng,
         radius_km=radius_km,
+        require_physical=require_physical,
         category=category,
         delivery_city=delivery_city,
         has_delivery=has_delivery,
