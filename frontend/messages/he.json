@@ -4198,8 +4198,8 @@
         "name_placeholder": "לדוגמה: לחם מחמצת כוסמין",
         "description_label": "תיאור קצר",
         "description_placeholder": "לדוגמה: כיכר 750 גרם, נאפה בטאבון",
-        "price_min_label": "מחיר מ- (₪)",
-        "price_max_label": "מחיר עד- (₪)",
+        "price_min_label": "מחיר מ-",
+        "price_max_label": "מחיר עד",
         "price_max_optional_suffix": "אופציונלי",
         "price_hint": "מחיר אחיד? מלאו רק \"מ-\". טווח מחירים? מלאו גם \"עד\" (אופציונלי).",
         "diet_heading": "סימוני תזונה (אופציונלי)",
@@ -4210,6 +4210,7 @@
         "image_alt": "תמונה",
         "image_remove": "הסר",
         "image_upload_cta": "העלו תמונה",
+        "image_replace": "החליפו תמונה",
         "image_uploading": "בהעלאה..."
       },
       "save_edit_cta": "שמרו שינויים",

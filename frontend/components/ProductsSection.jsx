@@ -317,7 +317,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
             <form
               key={product.id}
               onSubmit={(e) => handleEdit(product.id, e)}
-              className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50"
+              className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-text">{t("edit_heading")}</p>
@@ -330,116 +330,69 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
                   {t("edit_legacy_price_note", { range: product.price_range })}
                 </p>
               )}
-              <div>
-                <label htmlFor={`edit-product-${product.id}-name`} className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-                <input
-                  id={`edit-product-${product.id}-name`}
-                  required
-                  value={editForm.name || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label htmlFor={`edit-product-${product.id}-description`} className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-                <input
-                  id={`edit-product-${product.id}-description`}
-                  value={editForm.description || ""}
-                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
+              {/* MEH-1273 group (a) — details: name + description (tight spacing within, wider between groups). */}
+              <div className="space-y-3">
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-price-min`} className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
+                  <label htmlFor={`edit-product-${product.id}-name`} className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
                   <input
-                    id={`edit-product-${product.id}-price-min`}
+                    id={`edit-product-${product.id}-name`}
                     required
-                    type="number"
-                    min={1}
-                    max={10000}
-                    step={0.5}
-                    value={editForm.price_min || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
+                    value={editForm.name || ""}
+                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
                     className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label htmlFor={`edit-product-${product.id}-price-max`} className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
+                  <label htmlFor={`edit-product-${product.id}-description`} className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
                   <input
-                    id={`edit-product-${product.id}-price-max`}
-                    type="number"
-                    min={1}
-                    max={10000}
-                    step={0.5}
-                    value={editForm.price_max || ""}
-                    onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
+                    id={`edit-product-${product.id}-description`}
+                    value={editForm.description || ""}
+                    onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
                     className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
-              <div>
-                <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_gluten_free}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_gluten_free")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_vegan}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_vegan: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_vegan")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!editForm.is_lactose_free}
-                      onChange={(e) => setEditForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
-                      className="w-4 h-4 accent-primary"
-                    />
-                    <span>{tForm("diet_lactose_free")}</span>
-                  </label>
-                </div>
+
+              {/* MEH-1273 group (b) — price: ₪ inside the input (logical start-3); labels drop "(₪)". */}
+              <div className="grid grid-cols-2 gap-2">
+                <PriceField
+                  id={`edit-product-${product.id}-price-min`}
+                  label={tForm("price_min_label")}
+                  required
+                  value={editForm.price_min || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price_min: e.target.value }))}
+                />
+                <PriceField
+                  id={`edit-product-${product.id}-price-max`}
+                  label={tForm("price_max_label")}
+                  optionalSuffix={tForm("price_max_optional_suffix")}
+                  value={editForm.price_max || ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, price_max: e.target.value }))}
+                />
               </div>
-              <div>
-                {/* MEH-1096: group heading — file input below is labelled by its
-                    own wrapping <label>, so this stays a <span>. */}
-                <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
-                {editForm.image_url ? (
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                      <Image src={editForm.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditForm((f) => ({ ...f, image_url: "" }))}
-                      className="text-xs text-red-500 hover:underline"
-                    >
-                      {tForm("image_remove")}
-                    </button>
+
+              {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}
+              <div className="space-y-3">
+                <div>
+                  <p id={`edit-diet-heading-${product.id}`} className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
+                  <div role="group" aria-labelledby={`edit-diet-heading-${product.id}`} className="flex flex-wrap gap-2">
+                    <DietChip label={tForm("diet_gluten_free")} pressed={!!editForm.is_gluten_free} onToggle={() => setEditForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                    <DietChip label={tForm("diet_vegan")} pressed={!!editForm.is_vegan} onToggle={() => setEditForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                    <DietChip label={tForm("diet_lactose_free")} pressed={!!editForm.is_lactose_free} onToggle={() => setEditForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
                   </div>
-                ) : (
-                  <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
-                    <Package size={14} aria-hidden="true" />
-                    {editUploading ? tForm("image_uploading") : tForm("image_upload_cta")}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleEditImageUpload}
-                      disabled={editUploading}
-                    />
-                  </label>
-                )}
+                </div>
+                <div>
+                  {/* MEH-1096: group heading — file input below is labelled by its
+                      own wrapping <label>, so this stays a <span>. */}
+                  <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
+                  <UploadZone
+                    imageUrl={editForm.image_url}
+                    uploading={editUploading}
+                    onUpload={handleEditImageUpload}
+                    onRemove={() => setEditForm((f) => ({ ...f, image_url: "" }))}
+                    tForm={tForm}
+                  />
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -500,127 +453,82 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-3 bg-green-50">
+        <form onSubmit={handleAdd} className="border border-border rounded-[10px] p-4 space-y-5 bg-green-50">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-text">{t("add_heading")}</p>
             <button type="button" onClick={() => { setAdding(false); setError(""); }} aria-label={t("cancel_aria")}>
               <X size={16} className="text-fg-muted" aria-hidden="true" />
             </button>
           </div>
-          <div>
-            <label htmlFor="new-product-name" className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
-            <input
-              id="new-product-name"
-              required
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder={tForm("name_placeholder")}
-              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div>
-            <label htmlFor="new-product-description" className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
-            <input
-              id="new-product-description"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder={tForm("description_placeholder")}
-              className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
+          {/* MEH-1273 group (a) — details: name + description. */}
+          <div className="space-y-3">
             <div>
-              <label htmlFor="new-product-price-min" className="text-xs text-fg-muted mb-1 block">{tForm("price_min_label")}</label>
+              <label htmlFor="new-product-name" className="text-xs text-fg-muted mb-1 block">{tForm("name_label")}</label>
               <input
-                id="new-product-price-min"
+                id="new-product-name"
                 required
-                type="number"
-                min={1}
-                max={10000}
-                step={0.5}
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder={tForm("name_placeholder")}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <label htmlFor="new-product-description" className="text-xs text-fg-muted mb-1 block">{tForm("description_label")}</label>
+              <input
+                id="new-product-description"
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder={tForm("description_placeholder")}
+                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+
+          {/* MEH-1273 group (b) — price: ₪ inside the input (logical start-3); labels drop "(₪)". */}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <PriceField
+                id="new-product-price-min"
+                label={tForm("price_min_label")}
+                required
                 value={form.price_min}
                 onChange={(e) => setForm((f) => ({ ...f, price_min: e.target.value }))}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
               />
-            </div>
-            <div>
-              <label htmlFor="new-product-price-max" className="text-xs text-fg-muted mb-1 block">{tForm("price_max_label")} <span className="text-fg-muted">{tForm("price_max_optional_suffix")}</span></label>
-              <input
+              <PriceField
                 id="new-product-price-max"
-                type="number"
-                min={1}
-                max={10000}
-                step={0.5}
+                label={tForm("price_max_label")}
+                optionalSuffix={tForm("price_max_optional_suffix")}
                 value={form.price_max}
                 onChange={(e) => setForm((f) => ({ ...f, price_max: e.target.value }))}
-                className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
               />
             </div>
+            {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
+            <p className="text-xs text-fg-muted">{tForm("price_hint")}</p>
           </div>
-          {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
-          <p className="text-xs text-fg-muted -mt-1">{tForm("price_hint")}</p>
-          <div>
-            <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_gluten_free}
-                  onChange={(e) => setForm((f) => ({ ...f, is_gluten_free: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_gluten_free")}</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_vegan}
-                  onChange={(e) => setForm((f) => ({ ...f, is_vegan: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_vegan")}</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_lactose_free}
-                  onChange={(e) => setForm((f) => ({ ...f, is_lactose_free: e.target.checked }))}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span>{tForm("diet_lactose_free")}</span>
-              </label>
-            </div>
-          </div>
-          <div>
-            {/* MEH-1096: group heading — file input below is labelled by its
-                own wrapping <label>, so this stays a <span>. */}
-            <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
-            {form.image_url ? (
-              <div className="flex items-center gap-2">
-                <div className="relative w-12 h-12 rounded-[6px] overflow-hidden shrink-0">
-                  <Image src={form.image_url} alt={tForm("image_alt")} fill className="object-cover" sizes="48px" />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
-                  className="text-xs text-red-500 hover:underline"
-                >
-                  {tForm("image_remove")}
-                </button>
+
+          {/* MEH-1273 group (c) — diet flags (toggle chips) + image. */}
+          <div className="space-y-3">
+            <div>
+              <p id="add-diet-heading" className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
+              <div role="group" aria-labelledby="add-diet-heading" className="flex flex-wrap gap-2">
+                <DietChip label={tForm("diet_gluten_free")} pressed={form.is_gluten_free} onToggle={() => setForm((f) => ({ ...f, is_gluten_free: !f.is_gluten_free }))} />
+                <DietChip label={tForm("diet_vegan")} pressed={form.is_vegan} onToggle={() => setForm((f) => ({ ...f, is_vegan: !f.is_vegan }))} />
+                <DietChip label={tForm("diet_lactose_free")} pressed={form.is_lactose_free} onToggle={() => setForm((f) => ({ ...f, is_lactose_free: !f.is_lactose_free }))} />
               </div>
-            ) : (
-              <label className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-primary border border-primary/30 rounded-[8px] px-3 py-1.5 hover:bg-primary/5 transition">
-                <Package size={14} aria-hidden="true" />
-                {uploading ? tForm("image_uploading") : tForm("image_upload_cta")}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                />
-              </label>
-            )}
+            </div>
+            <div>
+              {/* MEH-1096: group heading — file input below is labelled by its
+                  own wrapping <label>, so this stays a <span>. */}
+              <span className="text-xs text-fg-muted mb-1 block">{tForm("image_label")}</span>
+              <UploadZone
+                imageUrl={form.image_url}
+                uploading={uploading}
+                onUpload={handleImageUpload}
+                onRemove={() => setForm((f) => ({ ...f, image_url: "" }))}
+                tForm={tForm}
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -634,5 +542,106 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
         </form>
       )}
     </div>
+  );
+}
+
+// MEH-1273: presentational helpers — local to ProductsSection (inline
+// duplication, not a shared component). Save/upload logic stays in the parent;
+// these own layout only.
+
+// Price field with the ₪ adornment rendered INSIDE the input.
+// REUSES: app/[locale]/producer/dashboard/group-buys/page.js:126-137 (Input
+// startAdornment="₪") + components/ui/Input.jsx:105-110 (absolute start-3 span).
+// Logical props only (start-3 / ps-8) — RTL-safe.
+function PriceField({ id, label, optionalSuffix, value, onChange, required = false }) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs text-fg-muted mb-1 block">
+        {label}
+        {optionalSuffix ? <span className="text-fg-muted"> {optionalSuffix}</span> : null}
+      </label>
+      <div className="relative">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-sm text-fg-muted"
+        >
+          ₪
+        </span>
+        <input
+          id={id}
+          required={required}
+          type="number"
+          min={1}
+          max={10000}
+          step={0.5}
+          value={value}
+          onChange={onChange}
+          className="w-full border border-border rounded-[8px] ps-8 pe-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Diet flag as a toggleable chip (≥44px tap target, aria-pressed, focus ring).
+// REUSES: components/CategorySelector.jsx:163-200 selected idiom
+// (border-primary bg-green-50 vs border-border hover:border-primary) — ADR-019
+// states via the primary/cream family, no new state token.
+function DietChip({ label, pressed, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={pressed}
+      className={[
+        "min-h-[44px] rounded-[10px] border px-4 py-2 text-sm text-start transition focus-ring",
+        pressed
+          ? "border-primary bg-green-50 text-text"
+          : "border-border bg-white text-text hover:border-primary",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
+}
+
+// Click-to-upload zone with thumbnail preview + replace/remove affordance.
+// REUSES: app/[locale]/producer/dashboard/events/new/page.js:251-288 (dashed
+// click-to-upload label + thumbnail/remove). Upload handler stays in the parent.
+function UploadZone({ imageUrl, uploading, onUpload, onRemove, tForm }) {
+  if (imageUrl) {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="relative w-16 h-16 rounded-[8px] overflow-hidden shrink-0 border border-border">
+          <Image src={imageUrl} alt={tForm("image_alt")} fill className="object-cover" sizes="64px" />
+        </div>
+        <label className="cursor-pointer text-sm text-primary hover:underline">
+          {uploading ? tForm("image_uploading") : tForm("image_replace")}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onUpload}
+            disabled={uploading}
+          />
+        </label>
+        <button type="button" onClick={onRemove} className="text-sm text-red-500 hover:underline">
+          {tForm("image_remove")}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <label className="flex flex-col items-center justify-center gap-1 text-center text-sm text-fg-muted border border-dashed border-border rounded-[8px] px-4 py-6 cursor-pointer hover:bg-green-50 transition">
+      <Package size={20} className="text-fg-muted" aria-hidden="true" />
+      <span>{uploading ? tForm("image_uploading") : tForm("image_upload_cta")}</span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onUpload}
+        disabled={uploading}
+      />
+    </label>
   );
 }
