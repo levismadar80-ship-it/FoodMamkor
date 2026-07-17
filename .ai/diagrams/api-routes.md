@@ -9,6 +9,7 @@
 >   - 🌐 = public (no token)
 >   - 🔑 = any authenticated user (`get_current_user`)
 >   - 👤 = producer role (`require_producer`)
+>   - ✅👤 = verified producer (`require_verified_producer` — producer role + verified email; unverified → 403 `יש לאמת את כתובת האימייל תחילה`, MEH-1164 F5). Applies to the **create** endpoints `POST /events`, `POST /producers/me/recipes`, `POST /group-buys`.
 >   - 🛡️ = admin role (`require_admin`)
 
 ## 1. Registered routers at a glance
@@ -98,7 +99,7 @@ graph TD
     NeighborList --> HPClick[POST /home-products/{id}/whatsapp-click<br/>🔑 schedules Twilio follow-up]
     NeighborList --> HPRate[POST /home-products/rate/{token}<br/>🌐 token-based single-use]
 
-    Events[/events + /experiences] --> EventCreate[POST /events<br/>👤 any producer role — MEH-1161:<br/>pending producer's events stay hidden]
+    Events[/events + /experiences] --> EventCreate[POST /events<br/>✅👤 verified producer — MEH-1164 F5;<br/>MEH-1161: pending producer's events stay hidden]
     Events --> EventReads[GET /events + /upcoming + /id<br/>🌐 approved producers only — MEH-1161:<br/>pending filtered from lists, detail 404,<br/>owner/admin bypass]
     Events --> ExpCreate[POST /experiences<br/>🔑 Claude Haiku pre-check +<br/>admin approval queue]
 ```
