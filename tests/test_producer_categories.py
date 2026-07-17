@@ -19,7 +19,7 @@ Surfaces exercised:
 
 from __future__ import annotations
 
-from app.models.models import Producer, ProducerCategory
+from app.models.models import Category, Producer, ProducerCategory
 from tests.conftest import auth_header, make_category, make_producer, make_user
 
 
@@ -149,8 +149,9 @@ class TestCategoryDeleteGuard:
         assert resp.status_code == 409, resp.text
         assert "לא ניתן למחוק" in resp.text
         assert "1" in resp.text  # the linked-producer count
-        # The category must still exist.
-        assert client.get("/categories").status_code in (200, 404)
+        # The guard must NOT have deleted the row — verify it still exists.
+        db.expire_all()
+        assert db.query(Category).filter(Category.id == cat.id).first() is not None
 
     def test_delete_unlinked_category_200(self, client, db):
         """A category with no producers deletes cleanly."""
