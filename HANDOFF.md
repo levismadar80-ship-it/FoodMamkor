@@ -3,14 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-17 — MEH-1164 Chunk 1 — email-delivery diagnosis + fail-loud RESEND guard — `feature/meh-1164-email-docs-guard` (PR #1868, DRAFT — NOT merged)
+## 2026-07-17 — MEH-1164 Chunk 1 — email-delivery diagnosis + fail-loud RESEND guard — `feature/meh-1164-email-docs-guard` (PR #1868 — MERGED to staging)
 
 - **Root cause (F6):** verification email never arrived on staging within 20+ min because `RESEND_API_KEY` was never set on Railway staging. `send_verify_email` (`backend/app/services/auth_emails.py:79-83`) logged an ERROR and returned without sending; `POST /auth/register` still returned a "check your email" ack. Doubly-silent: fail-open in `email.py:54-55` + discarded background-task return at `auth.py:323`. `docs/DEPLOYMENT.md` never listed the var, so the provisioning gap had no signal. Full file:line diagnosis in the MEH-1164 Linear SYNC block.
 - **Fix (3 files, no schema/API change):** NEW `_check_email_delivery_config` in `startup.py`, raised in `lifespan` when `ENV in (staging, production)` and `RESEND_API_KEY` unset (fail-loud; mirrors `JWT_SECRET_KEY` fail-fast + `FRONTEND_URL` drift guard; dev/test keep the no-op). `docs/DEPLOYMENT.md` gains `RESEND_API_KEY` + `EMAIL_FROM_ADDRESS` rows (staging table + production block). `tests/test_startup_guard.py` gains the guard truth-table tests.
-- **QA:** `py_compile` + standalone truth-table replication (pip blocked in sandbox → pytest + build run in CI). Only backend/docs/tests touched — no frontend, no UI.
-- **CI note:** first `pr-checks` run went red on the `DO-NOT-MERGE marker gate` — the PR body's "do not merge" wording tripped the ADR-016/MEH-1155 marker (accidental, descriptive prose, not an intentional lock). Reworded the body (no trigger token) + pushed an empty commit to re-fire `synchronize`; gate expected green. Vercel preview is `Ignored` (no frontend) and hit the free-tier daily deploy limit — neither is a required gate.
-- **Merge gate (unchanged):** PR stays **DRAFT**. Sapir sets `RESEND_API_KEY` on Railway staging, runs a real registration end-to-end (email received → verify link works), and sends "delivery verified — land #1868" → only then flip ready + squash-merge (guard would block boot otherwise). After merge: MEH-1164 state stays **In Progress** (Chunk 2 pending).
-- **Chunk 2 — `require_verified_email` enforcement — NOT authorized.** Gated on the delivery confirmation above; Sapir sends the spec afterwards. Hard order: delivery fixed before enforcement.
+- **QA:** `py_compile` + standalone truth-table replication (pip blocked in sandbox → pytest + build run in CI, both green on the ready run). Only backend/docs/tests touched — no frontend, no UI.
+- **CI note:** first `pr-checks` run went red on the `DO-NOT-MERGE marker gate` — the PR body's "do not merge" wording tripped the ADR-016/MEH-1155 marker (accidental, descriptive prose, not an intentional lock). Reworded the body (no trigger token) + empty commit re-fired the run; gate went green. Vercel `Ignored`/rate-limit status is not a required gate.
+- **Merge:** Sapir confirmed `RESEND_API_KEY` set on Railway staging + delivery verified end-to-end → PR flipped ready, real backend pytest ran green, squash-merged. MEH-1164 stays **In Progress** (Chunk 2 pending).
+- **Chunk 2 — `require_verified_email` enforcement — plan-first, awaiting go.** `require_verified_email` on the events / experiences / recipes / group-buys create endpoints; pytest per endpoint (unverified→403 Hebrew detail, verified→pass); frontend 403 surfaced with the existing "שלחו שוב" CTA; he+en twins. Numbered plan posted for Sapir; no code until go.
+
+## 2026-07-17 — MEH-1280 — PWA install icons → new mark-only pomegranate — `feature/meh-1280-pwa-icons-mark-only`
+
+- **What:** the PWA install dialog still showed the old "MEHA MEKOR" wordmark — `frontend/public/icon-192.png` + `icon-512.png` were never regenerated for the 5-seed pomegranate rebrand (apple-touch-icon + favicons already updated). Asset-only: both re-rendered from `logo.svg` onto a cream `#F5F0E8` canvas, mark centered at 0.88 (192) / 0.80 (512 — manifest `purpose:maskable`, keeps the mark in the safe-zone), flattened to RGB.
+- **How:** cairosvg/pillow blocked (no network for pip), so rendered via the pre-installed headless Chromium (SVG inlined at the target px on a cream page, `--force-device-scale-factor=1 --window-size=NxN`, RGB screenshot). Deterministic same output. Corner pixel verified `#F5F0E8`; `file` → exact `192x192` / `512x512`.
+- **Phase-0:** confirmed both current icons were the OLD wordmark before overwrite (premise valid). Scope: exactly 2 modified files, no manifest/layout/favicon/apple-touch-icon/code change.
+- **QA:** `npm run build` green. `git status` = 2 modified PNGs only.
+- **Next:** Sapir on-device check — trigger the PWA install prompt on mobile after merge, confirm the pomegranate mark shows.
 
 ## 2026-07-17 — MEH-1279 — AccountSheet language-row alignment (`LanguageToggle variant="bare"`, follow-up MEH-1196) — `feature/meh-1279-language-row-align`
 
