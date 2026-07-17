@@ -11,6 +11,7 @@ Related:  app/routers/producer_me.py (owner PUT), app/routers/admin.py
           delivery_excluded_requires_nationwide).
 History:  MEH-1255 (creation).
 """
+
 from fastapi import HTTPException
 
 from app.models.models import Producer

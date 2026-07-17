@@ -152,3 +152,43 @@ def test_admin_put_persists_exclusions(client, db):
 
     db.refresh(producer)
     assert producer.delivery_excluded_cities == ["אילת"]
+
+
+def _admin_create_payload(**overrides):
+    payload = {
+        "name": "עסק ארצי חדש",
+        "description": "תיאור לעסק החדש",
+        "city": "תל אביב",
+        "category_ids": [],
+        "has_physical_location": False,
+        "offers_delivery": True,
+        "delivery_nationwide": True,
+        "delivery_area_cities": [],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_admin_create_persists_exclusions(client, db):
+    admin = make_user(db, role="admin")
+    resp = client.post(
+        "/admin/producers",
+        json=_admin_create_payload(delivery_excluded_cities=["אילת"]),
+        headers=auth_header(admin),
+    )
+    assert resp.status_code in (200, 201), resp.text
+    assert resp.json()["delivery_excluded_cities"] == ["אילת"]
+
+
+def test_admin_create_excluded_without_nationwide_is_422(client, db):
+    admin = make_user(db, role="admin")
+    resp = client.post(
+        "/admin/producers",
+        json=_admin_create_payload(
+            has_physical_location=True,
+            delivery_nationwide=False,
+            delivery_excluded_cities=["אילת"],
+        ),
+        headers=auth_header(admin),
+    )
+    assert resp.status_code == 422, resp.text
