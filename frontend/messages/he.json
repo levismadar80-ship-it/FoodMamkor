@@ -741,7 +741,9 @@
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
           "whatsapp_group": "קבוצת וואטסאפ"
-        }
+        },
+        "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
+        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב"
       },
       "sticky_bar": {
         "vacation_msg": "שלחו הודעה"
@@ -973,6 +975,7 @@
     "delivery": {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
+      "nationwide_except": "משלוחים לכל הארץ (למעט {cities})",
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
       "delivery_day_label": "משלוח ביום {day}",
@@ -1429,6 +1432,8 @@
           "type_validation": "חייב לסמן לפחות אחד מהשניים",
           "delivery_nationwide": "משלוחים לכל הארץ",
           "delivery_cities_label": "ערים שמשלוחים אליהן",
+          "delivery_excluded_label": "חוץ מ:",
+          "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
           "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
           "has_delivery": "🚚 יש משלוחים",
           "pickup_points": "📦 נקודות איסוף ברחבי הארץ",
@@ -1740,12 +1745,15 @@
         "flagged": "מוצרים ביתיים בבדיקה",
         "hidden": "מוסתרים אוטומטית"
       },
-      "section_3plus": "בתי עסק עם 3+ דיווחים",
+      "section_open": "בתי עסק עם דיווחים פתוחים",
+      "auto_flag_badge": "3+ דיווחים",
       "no_reports": "אין דיווחים פתוחים",
       "report_count": "{count} דיווחים",
       "actions": {
         "suspend": "⏸️ השהה עסק",
-        "ignore": "התעלם"
+        "ignore": "התעלם",
+        "dismiss_confirm": "להתעלם מכל הדיווחים על {name}?",
+        "dismissing": "מתעלמת…"
       },
       "remove_reason_prompt": "סיבת ההסרה (תישלח למוכר)",
       "flagged": {
@@ -1754,7 +1762,8 @@
         "empty": "אין מוצרים בבדיקה כרגע",
         "default_reason": "סומן לבדיקה",
         "approve": "אשרי",
-        "remove": "❌ הסירי"
+        "remove": "❌ הסירי",
+        "removing": "מסירה…"
       },
       "hidden": {
         "heading": "מוצרים ביתיים מוסתרים אוטומטית",
@@ -3631,8 +3640,9 @@
         "aria": "בקשת השלמה מהצוות",
         "resubmit_cta": "סיימתי להשלים — שלחו לבדיקה",
         "resubmit_sending": "שולחים…",
-        "resubmit_sent": "נשלח לבדיקה — נעדכן אתכם בקרוב",
-        "resubmit_error": "השליחה לא הצליחה. נסו שוב."
+        "resubmit_error": "השליחה לא הצליחה. נסו שוב.",
+        "sent_title": "נשלח לבדיקה",
+        "sent_body": "הפרטים נשלחו — נעדכן אחרי בדיקת הצוות."
       },
       "greeting": "שלום {name}",
       "welcome_subtitle": "ברוכים הבאים לניהול העסק של {business}",
@@ -3913,6 +3923,7 @@
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "saved": "נשמר ✓",
+        "save_success": "מספר הרישיון נשמר",
         "save_error": "השמירה נכשלה. נסו שוב."
       },
       "pricing": {
@@ -3935,6 +3946,8 @@
         "type_validation": "חייב לסמן לפחות אחד מהשניים",
         "delivery_nationwide": "משלוחים לכל הארץ",
         "delivery_cities_label": "ערים שמשלוחים אליהן",
+        "delivery_excluded_label": "חוץ מ:",
+        "delivery_excluded_hint": "אופציונלי — ערים שלא משלחים אליהן",
         "delivery_cities_required": "יש לבחור לפחות עיר אחת או לסמן משלוחים לכל הארץ",
         "save_cta": "שמירה",
         "saving": "בשמירה…",

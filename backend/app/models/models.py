@@ -160,6 +160,16 @@ class Producer(Base):
     # Delivery scope — mutually exclusive: nationwide flag XOR city list.
     delivery_nationwide = Column(Boolean, nullable=False, default=False)
     delivery_cities = Column(ARRAY(Text), nullable=False, default=[])
+    # MEH-1255: nationwide exclusion list — "משלוחים לכל הארץ חוץ מ:".
+    # Only meaningful when delivery_nationwide=true; CHECK constraint
+    # delivery_excluded_requires_nationwide keeps it empty otherwise
+    # (ShipperHQ include/exclude zone model).
+    delivery_excluded_cities = Column(
+        ARRAY(Text),
+        nullable=False,
+        default=[],
+        server_default=text("'{}'::text[]"),
+    )
     # Aggregates (denormalized for fast list queries) — maintained in review router
     avg_rating = Column(Float, default=0)
     reviews_count = Column(Integer, default=0)
@@ -261,6 +271,13 @@ class Producer(Base):
         CheckConstraint(
             "NOT (delivery_nationwide AND array_length(delivery_cities, 1) > 0)",
             name="delivery_nationwide_xor_cities",
+        ),
+        # MEH-1255: an exclusion list without nationwide mode is contradictory.
+        # Column is NOT NULL so the equality form is NULL-free (no
+        # array_length three-valued-logic edge). Added in e7c4b1f95a2d.
+        CheckConstraint(
+            "delivery_nationwide OR delivery_excluded_cities = '{}'::text[]",
+            name="delivery_excluded_requires_nationwide",
         ),
     )
 
@@ -648,8 +665,25 @@ class Report(Base):
     )
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # MEH-1266: report lifecycle. status ∈ {open, resolved, dismissed};
+    # dashboard counters + /admin/reports filter on status == "open".
+    status = Column(
+        String,
+        nullable=False,
+        default="open",
+        server_default=text("'open'"),
+    )
+    resolved_at = Column(DateTime, nullable=True)
+    # SET NULL (not CASCADE): closing an account must not delete the report
+    # history — only drop the resolver attribution.
+    resolved_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
-    reporter = relationship("User")
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    resolver = relationship("User", foreign_keys=[resolved_by])
     producer = relationship("Producer", back_populates="reports")
 
 

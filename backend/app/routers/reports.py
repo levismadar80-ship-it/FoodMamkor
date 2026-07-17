@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -12,6 +13,12 @@ from app.rate_limit import limiter
 from app.schemas.schemas import ReportCreate
 
 router = APIRouter(tags=["reports"])
+
+# MEH-1266: reports that admins still need to act on. Closed reports
+# (resolved|dismissed) drop out of /admin/reports and every dashboard counter.
+OPEN_STATUS = "open"
+# >=3 open reports auto-flags a producer for the red "3+" treatment.
+AUTO_FLAG_THRESHOLD = 3
 
 
 @router.post("/producers/{producer_id}/report", status_code=201)
@@ -56,13 +63,17 @@ def report_producer(
         db.rollback()
         raise HTTPException(status_code=409, detail="כבר דיווחת על בית עסק זה")
 
-    # Check if 3+ reports — auto-flag
+    # Check if 3+ OPEN reports — auto-flag (MEH-1266: closed reports no
+    # longer inflate the flag).
     count = (
         db.query(func.count(Report.id))
-        .filter(Report.producer_id == producer_id)
+        .filter(
+            Report.producer_id == producer_id,
+            Report.status == OPEN_STATUS,
+        )
         .scalar()
     )
-    flagged = count >= 3
+    flagged = count >= AUTO_FLAG_THRESHOLD
 
     return {"detail": "Report submitted", "flagged_for_review": flagged}
 
@@ -72,14 +83,19 @@ def get_flagged_producers(
     user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Get producers with 3+ reports."""
+    """MEH-1266: every producer with >=1 OPEN report (not only 3+).
+
+    Each group carries `report_count` (open only) and `auto_flagged`
+    (>=3 open reports). Closed reports (resolved|dismissed) are excluded.
+    """
     results = (
         db.query(
             Report.producer_id,
             func.count(Report.id).label("report_count"),
         )
+        .filter(Report.status == OPEN_STATUS)
         .group_by(Report.producer_id)
-        .having(func.count(Report.id) >= 3)
+        .having(func.count(Report.id) >= 1)
         .all()
     )
     flagged = []
@@ -87,7 +103,10 @@ def get_flagged_producers(
         producer = db.query(Producer).filter(Producer.id == producer_id).first()
         reports = (
             db.query(Report)
-            .filter(Report.producer_id == producer_id)
+            .filter(
+                Report.producer_id == producer_id,
+                Report.status == OPEN_STATUS,
+            )
             .order_by(Report.created_at.desc())
             .all()
         )
@@ -96,6 +115,7 @@ def get_flagged_producers(
                 "producer_id": str(producer_id),
                 "producer_name": producer.name if producer else None,
                 "report_count": report_count,
+                "auto_flagged": report_count >= AUTO_FLAG_THRESHOLD,
                 "reports": [
                     {
                         "id": str(r.id),
@@ -107,3 +127,38 @@ def get_flagged_producers(
             }
         )
     return flagged
+
+
+def _close_report(report_id: UUID, new_status: str, admin: User, db: Session) -> dict:
+    """Shared resolve/dismiss transition. 404 if missing, 409 if already
+    closed (idempotency guard against a double-close race)."""
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="דיווח לא נמצא")
+    if report.status != OPEN_STATUS:
+        raise HTTPException(status_code=409, detail="הדיווח כבר טופל")
+    report.status = new_status
+    report.resolved_at = datetime.utcnow()
+    report.resolved_by = admin.id
+    db.commit()
+    return {"detail": "Report closed", "status": new_status}
+
+
+@router.post("/admin/reports/{report_id}/resolve")
+def resolve_report(
+    report_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Mark a report resolved (action taken)."""
+    return _close_report(report_id, "resolved", user, db)
+
+
+@router.post("/admin/reports/{report_id}/dismiss")
+def dismiss_report(
+    report_id: UUID,
+    user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Dismiss a report (no action needed / false alarm)."""
+    return _close_report(report_id, "dismissed", user, db)

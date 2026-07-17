@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
+
+- **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
+- **Phase 0 verdict — did Sapir's save persist?** Can't prove the live round-trip from the CC sandbox (Railway egress blocked). But the code path is sound (`producer_license_number ∈ _PRODUCER_WRITABLE_FIELDS`, producer_me.py:205; returned on `ProducerOwnerOut`), and the symptom is fully explained by the weak/transient feedback + the documented 17/07 stale-bundle deploy-lag. Most likely her save **did** persist (or she hit a stale bundle); either way the AC fix is the right remedy.
+- **STOP(e):** `request-review` is notification-only (no DB flag) → session-level "sent" state (Option A, ships now); true persistence = new column + Alembic (Option B, RED, out of scope). AC scoped it to "for the session" → no STOP needed.
+- **QA:** vitest 1164✅ + build✅ + DoD gate (lucide/יצרן/en-parity all pass; the 2 DoD fails are pre-existing & outside the diff — backend pytest venv + `MapPane.jsx` RTL, untouched). New i18n he+en: `license.save_success`, `changes_requested.sent_title`/`sent_body`. Visual reference `qa-artifacts/MEH-1270/` (375+1440). **Live mobile QA on the MEH-1241 seeded producer deferred to Sapir** (auth-gated + no sandbox backend).
+- **Next:** Task 2 MEH-1271 (admin registry verification links) after this merges.
+
+## 2026-07-17 — MEH-1074 autonomous sweep (session 3): 1 merged · 2 PRs open · 3 close-outs · 1 Phase-0
+
+Ran alongside a live parallel sweep session (it held MEH-1268/927/1267 + merged the 1252/1255/1259/1260/1266/1267 queue). Took only disjoint, unclaimed tickets; collision-checked each via `get_issue` + `git ls-remote` before touching.
+
+- **Merged to staging — PR #1843 (MEH-1222):** image-URL write-boundary validation (see CHANGELOG). Backend-only, code-only; the data-side null-out of existing bad rows is Sapir's (no DML in a Claude session).
+- **PR #1848 (MEH-1221) — merging on green:** ContactCard email-icon silent-`mailto` fallback (clones the merged ShareClient MEH-1220/1223 pattern; copy-address + toast on no-handler, MEH-1223 real-success flag). vitest 11 + build green. LOW-RISK, auto-merge on green.
+- **PR #1847 (MEH-1087) — ⚠️ DO-NOT-MERGE, held for Sapir:** verified-only kosher chip ("כשרות מאומתת") in the /map FilterSheet. Legal gate verified (`?kosher` → `kashrut_verified_at` only, `producer_listing.py:153`); reverses the old "no kosher chip" sentinel (which guarded a *free-text* chip). Held because it touches `MapClient.jsx` (central) + legal-adjacent copy. vitest 28 + build green.
+- **Close-outs (verified merged/complete → re-Done + commented):** MEH-1233 (B1–B5 all merged #1779–1785), MEH-1229 (#1777+#1783), MEH-1210 (#1830 — cards verified price-free on staging; closed superseded PR #1752). All three were rule-29 auto-reopens, not real reopens.
+- **MEH-1202 (Urgent, HIGH-RISK, Sapir-gated) — Phase 0 + numbered plan posted to Linear, no edits.** Producer mobile chrome stack: mapped the 4 sticky layers + the transparent-band bleed with file:line; plan = live-measured `--chrome-top` CSS var (kills the hardcoded `top-[82px]`/`|| 82`/`scroll-mt-[150px]`), opaque header shell, and a `usePathname` gate to drop BottomNav on `/producer` (reuse ChatWidgetLazy's `isProducerDetail`). Awaits Sapir's "go".
+- **Not taken (documented):** MEH-1227 (a11y aria sweep) — Low priority + its DoD needs an **axe run against a seeded backend**, which the CC sandbox can't do (needs MEH-1198 demo on staging or a CI axe run); deferred, not skipped-blind. MEH-1252 — already merged by the parallel session. MEH-1249 (adopt PR #1729), MEH-1060 (SEO), MEH-1241/800/514 — not reached this run.
+- **Env note:** backend pytest/pydantic + ruff resolved locally via `uv run` (`uv.lock` pins ruff 0.15.12); `pip` is blocked in the sandbox. Draft PRs skip build/pytest/vitest (`pr-checks.yml` `&& draft == false`) — mark ready to run the real gates before merging.
+>>>>>>> origin/staging
+
 ## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
 
 - **Branch `feature/meh-1252-demo-image-ids` (off staging).** The exact swap the earlier 17/07 sweep session **skipped and deferred to this ticket**. MEH-1198 SYNC (16/07) supplied the 5 `mehamakor/demo/ruach-hasadeh-*` public_ids on the `dfzpscjks` cloud; Sapir chose the **Full per-product (5/5)** scope when asked (vs pure 6-site swap).
@@ -12,6 +33,22 @@
 - **Next (Sapir):** run `--refresh` via Railway Web Console, then visual crop check (esp. `ruach-hasadeh-cookies` portrait→4:3) per MEH-1198.
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
+
+## 2026-07-17 — MEH-1266 reports lifecycle (HIGH, schema) — feature/meh-1266-report-lifecycle
+
+- **What:** full resolve/dismiss lifecycle for producer reports. NEW Alembic `c5e1a9d7f2b4` (head; re-parented off `e7c4b1f95a2d`/MEH-1255 to linearize a two-head collision when both landed off `d4e7a92c81b5`): `reports.status` (VARCHAR NOT NULL `'open'`, backfilled) + `resolved_at` + `resolved_by` (FK users ON DELETE SET NULL). NEW `POST /admin/reports/{id}/resolve|dismiss` (409 double-close). `GET /admin/reports` drops the ≥3 gate → every producer with ≥1 open report + `auto_flagged`. Dashboard `open_reports` + sidebar badge count open only. Reports page: batch-dismiss endpoint (survives refresh), neutral border for 1–2, red for 3+, `window.prompt`→dialog.
+- **Checkpoint (MEH-267):** Alembic revision posted in-thread; awaited Sapir "go" before apply/merge. Columns present in pytest via `create_all` (suite green without applying the migration).
+- **QA:** pytest `test_report_lifecycle.py` 9/9 + `test_api.py` 216/216; vitest `AdminReportsPage.test.jsx`. Build + local full-stack QA per QA sweep. Files: models.py, reports.py, admin_extra.py, reports/page.js, he/en.json, DATA.md, db-schema.md, api-routes.md.
+- **File-location deviation:** tests live at repo-root `tests/` (not `backend/tests/` as the ticket wrote) — matches the real suite location.
+- **Merged post-checkpoint:** Sapir approved the Alembic revision; pushed → PR → merged on green CI (staging re-synced, Accept-Both on logs; `admin_extra.get_dashboard` auto-merged `open_reports` filter alongside 1267's `total_group_buys`).
+## 2026-07-17 — MEH-1255 delivery-exclusion mode "לכל הארץ חוץ מ:" — feature/meh-1255-delivery-exclusion (HIGH-RISK, chunk-by-chunk)
+
+- **Status:** all 3 chunks Sapir-approved at their WAIT gates; PR opened + merging on the 2 required gates.
+- **Chunk A (schema, Alembic-only):** migration `e7c4b1f95a2d` — `producers.delivery_excluded_cities TEXT[] NOT NULL DEFAULT '{}'` + CHECK `delivery_excluded_requires_nationwide`. Applied + verified locally (`upgrade head` from base, `alembic check` clean). No new table.
+- **Chunk B (backend):** schemas (Admin create / Update / public ListOut) + validators + shared effective-state guard `app/services/delivery_validation.py` (partial-update 422 not 500) + owner/admin write paths + consumer `delivery_city` filter rewritten (inner JOIN → EXISTS + nationwide-minus-excluded branch — nationwide producers now match the city filter). pytest: `tests/test_delivery_exclusion.py` 8, `test_api.py` 216, adjacent 17 — all green.
+- **Chunk C (frontend):** `DeliveryCard` (`edit/cards.jsx`) + admin `ProducerForm` reveal an optional "חוץ מ:" CitiesAutocomplete (region chips) when nationwide is on; `DeliveryBlock` "משלוחים לכל הארץ (למעט …)"; `ProducerSections` passes `delivery_excluded_cities`. i18n he+en (`nationwide_except`, `delivery_excluded_label/hint`). vitest: DeliveryBlock +3, EditTabDeliveryCard +1 (existing PUT assertion updated for the new field); affected suites 26/26; build green.
+- **Docs:** DATA.md (producers DDL + MEH-1255 note), `.ai/diagrams/db-schema.md` (3rd CHECK note), MANUAL_TESTING § MEH-1255, CHANGELOG, this entry.
+- **Next:** merge on the 2 required gates. Then MEH-1255 → Done.
 
 ## 2026-07-17 — staging QA (MEH-1210/1211) + MEH-1268 CATEGORY_STYLES
 

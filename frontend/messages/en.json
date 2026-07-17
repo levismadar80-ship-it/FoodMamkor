@@ -746,7 +746,9 @@
           "facebook": "Facebook",
           "external_order": "Order form",
           "whatsapp_group": "WhatsApp group"
-        }
+        },
+        "email_fallback_toast": "We couldn't open your email app — the address was copied",
+        "email_copy_failed_toast": "We couldn't open your email app or copy — please try again"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -975,6 +977,7 @@
     "delivery": {
       "heading": "Delivery",
       "nationwide": "Nationwide delivery",
+      "nationwide_except": "Nationwide delivery (except {cities})",
       "arranged": "Delivery by arrangement — contact for details",
       "min_order": "Minimum",
       "delivery_day_label": "Delivery on {day}",
@@ -1427,6 +1430,8 @@
           "type_validation": "Must select at least one of the two",
           "delivery_nationwide": "Delivery nationwide",
           "delivery_cities_label": "Cities delivered to",
+          "delivery_excluded_label": "Except:",
+          "delivery_excluded_hint": "Optional — cities you don't deliver to",
           "delivery_cities_required": "Select at least one city or mark nationwide delivery",
           "has_delivery": "🚚 Offers delivery",
           "pickup_points": "📦 Pickup points across the country",
@@ -1738,12 +1743,15 @@
         "flagged": "Home products under review",
         "hidden": "Auto-hidden"
       },
-      "section_3plus": "Businesses with 3+ reports",
+      "section_open": "Businesses with open reports",
+      "auto_flag_badge": "3+ reports",
       "no_reports": "No open reports",
       "report_count": "{count} reports",
       "actions": {
         "suspend": "⏸️ Suspend business",
-        "ignore": "Ignore"
+        "ignore": "Ignore",
+        "dismiss_confirm": "Dismiss all reports for {name}?",
+        "dismissing": "Dismissing…"
       },
       "remove_reason_prompt": "Removal reason (will be sent to the seller)",
       "flagged": {
@@ -1752,7 +1760,8 @@
         "empty": "No products under review right now",
         "default_reason": "Flagged for review",
         "approve": "Approve",
-        "remove": "❌ Remove"
+        "remove": "❌ Remove",
+        "removing": "Removing…"
       },
       "hidden": {
         "heading": "Auto-hidden home products",
@@ -3610,8 +3619,9 @@
         "aria": "Completion request from the team",
         "resubmit_cta": "I'm done — send for review",
         "resubmit_sending": "Sending…",
-        "resubmit_sent": "Sent for review — we'll update you soon",
-        "resubmit_error": "Couldn't send. Please try again."
+        "resubmit_error": "Couldn't send. Please try again.",
+        "sent_title": "Sent for review",
+        "sent_body": "Your details were sent — we'll update you after the team reviews them."
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
@@ -3892,6 +3902,7 @@
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved ✓",
+        "save_success": "License number saved",
         "save_error": "Save failed. Please try again."
       },
       "pricing": {
@@ -3914,6 +3925,8 @@
         "type_validation": "Must select at least one of the two",
         "delivery_nationwide": "Delivery nationwide",
         "delivery_cities_label": "Cities delivered to",
+        "delivery_excluded_label": "Except:",
+        "delivery_excluded_hint": "Optional — cities you don't deliver to",
         "delivery_cities_required": "Select at least one city or mark nationwide delivery",
         "save_cta": "Save",
         "saving": "Saving…",

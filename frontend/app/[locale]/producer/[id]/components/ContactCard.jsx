@@ -15,6 +15,61 @@ import ShareButton from "@/components/ShareButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
+import { showToast } from "@/lib/toast";
+
+// MEH-1221: silent-mailto fallback window. mailto: fails silently on desktops
+// with no mail handler (no error, no navigation). The email icon is a bare
+// mailto and the address is not shown anywhere on the card, so a customer on
+// such a desktop has NO email path at all. We race this timer against window
+// "blur" / visibilitychange (either fires when a handler grabs focus); timer
+// wins → no handler → copy the address + toast so she can paste it.
+// REUSES: frontend/app/[locale]/share/ShareClient.jsx:104-143 (MEH-1220/1223)
+// — same detection mechanics + MEH-1223 real-success flag (a double failure
+// shows the failure toast, never a false "copied").
+const MAIL_FALLBACK_MS = 1200;
+
+function armMailtoFallback(email, t) {
+  if (!email) return;
+  let timer;
+  const removeListeners = () => {
+    window.removeEventListener("blur", onHandlerOpened);
+    document.removeEventListener("visibilitychange", onVisibility);
+  };
+  const onHandlerOpened = () => {
+    clearTimeout(timer);
+    removeListeners();
+  };
+  const onVisibility = () => {
+    if (document.hidden) onHandlerOpened();
+  };
+  window.addEventListener("blur", onHandlerOpened);
+  document.addEventListener("visibilitychange", onVisibility);
+  timer = setTimeout(async () => {
+    removeListeners();
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(email);
+      copied = true;
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = email;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        copied = document.execCommand("copy");
+      } catch {
+        copied = false;
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
+    showToast.error(
+      copied
+        ? t("producer.detail.contact_card.email_fallback_toast")
+        : t("producer.detail.contact_card.email_copy_failed_toast"),
+    );
+  }, MAIL_FALLBACK_MS);
+}
 
 /**
  * Module:   ContactCard
@@ -126,7 +181,18 @@ export default function ContactCard({ producer, isVacation, primaryCategory, sha
                 role="listitem"
                 aria-label={t(`producer.detail.contact_card.aria.${key}`)}
                 title={t(`producer.detail.contact_card.aria.${key}`)}
-                onClick={track === false ? undefined : () => trackContactClick(producer.id, key)}
+                onClick={
+                  track === false
+                    ? undefined
+                    : () => {
+                        // Fires exactly once per click (fallback must not double-track).
+                        trackContactClick(producer.id, key);
+                        // MEH-1221: email-only silent-mailto fallback.
+                        if (key === "email") {
+                          armMailtoFallback(producer.contact_email?.trim(), t);
+                        }
+                      }
+                }
                 className="inline-flex items-center justify-center w-11 h-11 rounded-md text-fg-muted hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <Icon size={20} aria-hidden="true" />
