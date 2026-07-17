@@ -21,6 +21,7 @@ import { API_URL } from "@/lib/env";
 import { serverFetch } from "@/lib/server-fetch"; // MEH-977: timeout + transient-retry
 import { buildAlternates, OG_LOCALE } from "@/lib/i18n-seo";
 import { buildRecipeBreadcrumbJsonLd, serializeJsonLd } from "@/lib/seo"; // MEH-1062: recipe BreadcrumbList
+import { BRAND_NAME } from "@/lib/constants";
 
 async function getJson(path) {
   try {
@@ -81,6 +82,10 @@ export async function generateMetadata(props) {
     openGraph: {
       title: `${recipe.title} | ${producer.name}`,
       description: truncate(recipe.description, 160),
+      // MEH-1060 (SEO-15): add og:url (self canonical) + siteName, mirroring the
+      // producer-page precedent (lib/seo.js buildProducerMetadata).
+      url: alternates.canonical,
+      siteName: BRAND_NAME,
       images: recipe.image_url ? [recipe.image_url] : undefined,
       type: "article",
       locale: OG_LOCALE[locale],
