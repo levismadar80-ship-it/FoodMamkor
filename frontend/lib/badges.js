@@ -175,7 +175,14 @@ function earnsBadge(producer, key) {
       // approve flow (admin_kashrut.py:75, alongside kashrut_badges) — the same
       // "verified signal" shape the verified badge uses at :136. Free-text
       // producer.kosher now drives NO public badge.
-      return !!producer.kashrut_verified_at;
+      // MEH-1260: expiry enforcement — an expired certificate earns no badge.
+      // Legacy rows verified before the expiry era carry NULL expires_at and
+      // stay valid (do NOT break them). Mirrors producer_listing.py ?kosher.
+      return (
+        !!producer.kashrut_verified_at &&
+        (!producer.kashrut_expires_at ||
+          new Date(producer.kashrut_expires_at) > new Date())
+      );
     case "delivery":
       return (
         !!producer.has_delivery ||

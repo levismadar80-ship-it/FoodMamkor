@@ -175,6 +175,32 @@ describe("allBadges", () => {
     expect(allBadges({ kosher: "" }).map((b) => b.key)).toEqual([]);
   });
 
+  // MEH-1260: expiry enforcement — an expired certificate earns no badge;
+  // legacy pre-expiry-era rows (NULL expires_at) stay valid.
+  it("kosher — expiry enforced: valid / expired / legacy-null (MEH-1260)", () => {
+    // valid: expires in the future → badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: "2099-01-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+    // expired: verified but past expires_at → NO badge.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2024-01-01T00:00:00Z",
+        kashrut_expires_at: "2024-06-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual([]);
+    // legacy: verified with NULL expires_at → unchanged, badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: null,
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+  });
+
   it("delivery — via delivery_count > 0", () => {
     expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
   });
