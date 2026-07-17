@@ -1093,6 +1093,8 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     offersDelivery: profile?.offers_delivery ?? false,
     nationwide: profile?.delivery_nationwide ?? false,
     cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+    // MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:").
+    excluded: profile?.delivery_excluded_cities ?? [],
   };
   const [baseline, setBaseline] = useState(initial);
   const [form, setForm] = useState(initial);
@@ -1110,7 +1112,9 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     form.offersDelivery !== baseline.offersDelivery ||
     form.nationwide !== baseline.nationwide ||
     form.cities.length !== baseline.cities.length ||
-    form.cities.some((c, i) => c !== baseline.cities[i]);
+    form.cities.some((c, i) => c !== baseline.cities[i]) ||
+    form.excluded.length !== baseline.excluded.length ||
+    form.excluded.some((c, i) => c !== baseline.excluded[i]);
   useEffect(() => {
     reportDirty("delivery", dirty);
     return () => reportDirty("delivery", false);
@@ -1127,12 +1131,16 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
     setErrorMsg(null);
     // Normalise: nationwide/cities only meaningful when delivering; cities
     // cleared when nationwide (matches admin form + the backend XOR guard).
+    // MEH-1255: excluded list only meaningful in nationwide-delivery mode.
     const cities = form.offersDelivery && !form.nationwide ? form.cities : [];
+    const excluded =
+      form.offersDelivery && form.nationwide ? form.excluded : [];
     const normalized = {
       hasPhysical: form.hasPhysical,
       offersDelivery: form.offersDelivery,
       nationwide: form.offersDelivery ? form.nationwide : false,
       cities,
+      excluded,
     };
     try {
       await api.put("/producers/me", {
@@ -1140,6 +1148,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_area_cities: normalized.cities,
+        delivery_excluded_cities: normalized.excluded,
       });
       // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
       onSave({
@@ -1147,6 +1156,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
         offers_delivery: normalized.offersDelivery,
         delivery_nationwide: normalized.nationwide,
         delivery_areas: normalized.cities.map((c) => ({ city: c })),
+        delivery_excluded_cities: normalized.excluded,
       });
       setBaseline(normalized);
       setForm(normalized);
@@ -1216,6 +1226,22 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                     {t("delivery_cities_required")}
                   </p>
                 )}
+              </div>
+            )}
+            {/* MEH-1255: nationwide exclusion list — "לכל הארץ חוץ מ:" */}
+            {form.nationwide && (
+              <div>
+                <span className="block text-sm text-muted mb-1">
+                  {t("delivery_excluded_label")}
+                </span>
+                <p className="text-xs text-fg-muted mb-1">
+                  {t("delivery_excluded_hint")}
+                </p>
+                <CitiesAutocomplete
+                  value={form.excluded}
+                  onChange={(excluded) => set({ excluded })}
+                  showRegionChips
+                />
               </div>
             )}
           </div>

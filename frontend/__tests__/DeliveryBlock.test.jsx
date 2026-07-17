@@ -8,6 +8,8 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     // MEH-1233 B3: the delivery day is now labeled ("משלוח ביום {day}").
     if (key === "delivery_day_label") return `משלוח ביום ${vars?.day ?? ""}`;
+    // MEH-1255: nationwide-with-exclusions display.
+    if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -60,6 +62,43 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
       <DeliveryBlock nationwide={false} areas={[]} pickup={true} producer={producer} />,
     );
     expect(screen.getByText("איסוף עצמי")).toBeInTheDocument();
+  });
+
+  it("shows the plain nationwide badge when there are no exclusions", () => {
+    render(
+      <DeliveryBlock nationwide={true} excluded={[]} areas={[]} pickup={false} producer={producer} />,
+    );
+    expect(screen.getByText("משלוחים לכל הארץ")).toBeInTheDocument();
+    expect(screen.queryByText(/למעט/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'משלוחים לכל הארץ (למעט …)' when nationwide has an exclusion list (MEH-1255)", () => {
+    render(
+      <DeliveryBlock
+        nationwide={true}
+        excluded={["זכרון יעקב", "עתלית"]}
+        areas={[]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    expect(
+      screen.getByText("משלוחים לכל הארץ (למעט זכרון יעקב, עתלית)"),
+    ).toBeInTheDocument();
+  });
+
+  it("ignores an exclusion list when not nationwide (guarded upstream)", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        excluded={["זכרון יעקב"]}
+        areas={[{ id: 1, city: "חיפה", min_order: 0, delivery_day: "" }]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    expect(screen.queryByText(/למעט/)).not.toBeInTheDocument();
+    expect(screen.getByText("חיפה")).toBeInTheDocument();
   });
 
   it("renders the WhatsApp CTA demoted to tertiary (not the green primary)", () => {

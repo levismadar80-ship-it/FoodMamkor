@@ -49,6 +49,7 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
 )
+from app.services.delivery_validation import ensure_exclusion_requires_nationwide
 from app.services.license_validation import ensure_license_for_categories
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
@@ -199,6 +200,9 @@ def update_my_producer(
         "has_physical_location",
         "offers_delivery",
         "delivery_nationwide",
+        # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — guarded by
+        # _ensure_exclusion_requires_nationwide + the DB CHECK.
+        "delivery_excluded_cities",
         "opening_hours",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
@@ -212,6 +216,8 @@ def update_my_producer(
     delivery_cities = payload.pop("delivery_area_cities", None)
 
     _enforce_owner_license_gate(db, producer, payload, category_ids)
+    # MEH-1255: effective-state guard — excluded cities require nationwide.
+    ensure_exclusion_requires_nationwide(producer, payload)
 
     # Validate and deduplicate slug if explicitly provided.
     if "slug" in payload and payload["slug"]:

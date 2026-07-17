@@ -10,7 +10,8 @@ import { formatPrice } from "@/lib/utils";
  * ProducerDetail when offers_delivery=true.
  *
  * States:
- *   nationwide=true         → "משלוחים לכל הארץ" badge
+ *   nationwide=true         → "משלוחים לכל הארץ" badge; with an exclusion
+ *                             list (MEH-1255) → "משלוחים לכל הארץ (למעט …)"
  *   areas.length > 0        → one editorial row per area (city · min order ·
  *                             day, invention-fix 4) from delivery_areas
  *   nationwide=false, none  → "משלוחים בתיאום מראש"
@@ -20,9 +21,11 @@ import { formatPrice } from "@/lib/utils";
  * section no longer competes with the contact card's single primary CTA.
  * min_order is rendered via formatPrice (MEH-1140 canonical shekel format).
  */
-export default function DeliveryBlock({ nationwide, areas = [], pickup = false, producer }) {
+export default function DeliveryBlock({ nationwide, excluded = [], areas = [], pickup = false, producer }) {
   const t = useTranslations("group_buys.delivery");
   const hasAreas = areas.length > 0;
+  // MEH-1255: nationwide delivery with an exclusion list.
+  const hasExclusions = nationwide && excluded.length > 0;
   return (
     <section className="mt-8 border-t border-border pt-6">
       <h2 className="font-headline-md text-2xl font-bold text-text mb-4 flex items-center gap-2">
@@ -32,7 +35,10 @@ export default function DeliveryBlock({ nationwide, areas = [], pickup = false, 
 
       {nationwide ? (
         <span className="inline-flex items-center gap-1.5 bg-green-50 text-text border border-border rounded-[20px] text-[13px] px-3 py-1.5 font-medium mb-4">
-          <Truck size={14} className="text-current ms-1" aria-hidden="true" />{t("nationwide")}
+          <Truck size={14} className="text-current ms-1" aria-hidden="true" />
+          {hasExclusions
+            ? t("nationwide_except", { cities: excluded.join(", ") })
+            : t("nationwide")}
         </span>
       ) : hasAreas ? (
         <ul className="mb-4 divide-y divide-border border-y border-border">

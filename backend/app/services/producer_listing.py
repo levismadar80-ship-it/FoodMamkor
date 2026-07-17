@@ -243,12 +243,22 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
     delivery_city = filters.get("delivery_city")
     has_delivery = filters.get("has_delivery")
     if delivery_city:
-        q = q.join(DeliveryArea).filter(
+        # MEH-1255: nationwide producers now match any delivery_city EXCEPT
+        # their exclusion list ("לכל הארץ חוץ מ:"). Before this they were
+        # never returned here at all — the XOR keeps their delivery_areas
+        # empty, so the old inner JOIN dropped them. EXISTS (.any()) replaces
+        # the JOIN so the OR branch isn't swallowed by join semantics; for
+        # area-based producers the result set is identical.
+        area_match = Producer.delivery_areas.any(
             func.lower(DeliveryArea.city) == delivery_city.lower()
         )
-        count_q = count_q.join(DeliveryArea).filter(
-            func.lower(DeliveryArea.city) == delivery_city.lower()
+        nationwide_match = and_(
+            Producer.delivery_nationwide.is_(True),
+            ~Producer.delivery_excluded_cities.any(delivery_city),
         )
+        city_cond = or_(area_match, nationwide_match)
+        q = q.filter(city_cond)
+        count_q = count_q.filter(city_cond)
     elif has_delivery:
         q = q.filter(Producer.delivery_areas.any())
         count_q = count_q.filter(Producer.delivery_areas.any())
