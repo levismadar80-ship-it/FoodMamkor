@@ -3944,7 +3944,15 @@
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
-        "save_error": "Save failed. Please try again."
+        "save_success": "Hours saved",
+        "save_error": "Save failed. Please try again.",
+        "toggle_open": "Open",
+        "toggle_closed": "Closed",
+        "from_label": "opening time",
+        "to_label": "closing time",
+        "preset": "Sun–Thu 9:00–18:00, Fri until 14:00",
+        "unparseable": "The existing format wasn't recognised — please re-enter the hours",
+        "invalid_range": "Closing time must be after opening time"
       },
       "custom_questions": {
         "heading": "Questions that appear on your page",

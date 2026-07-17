@@ -88,6 +88,29 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(null);
   const userMenuRef = useRef(null);
+  const headerRef = useRef(null);
+
+  // MEH-1202: publish the sticky header's LIVE-measured height as the
+  // `--chrome-top` CSS var on :root, so downstream sticky chrome (the
+  // /producer section tab bar) offsets off the real header height instead of a
+  // hardcoded `top-[82px]`. Write-only — reads the header's own box and sets a
+  // custom property; it changes NOTHING about the header's own rendering
+  // (no state, no class, no layout). ResizeObserver covers the trust-strip
+  // toggle, responsive pill height, and font-driven reflow. The header lives in
+  // the root layout (never unmounts during SPA nav); disconnect on teardown.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--chrome-top",
+        `${Math.round(el.getBoundingClientRect().height)}px`,
+      );
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // MEH-39: close the avatar dropdown when the user clicks outside it.
   useEffect(() => {
@@ -206,6 +229,7 @@ export default function Header() {
         </div>
       )}
       <header
+        ref={headerRef}
         // MEH-896: sticky lives on the pill <header> only. The trust strip
         // above is a normal-flow sibling so it scrolls away with the page.
         // MEH-890 chunk 2: the black hero scrim was REMOVED. The pill carries
