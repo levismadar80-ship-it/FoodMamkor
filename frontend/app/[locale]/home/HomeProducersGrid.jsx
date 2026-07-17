@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Leaf, MapPin, X } from "@phosphor-icons/react";
+import { Info, Leaf, MapPin, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import ProducerCard from "@/components/ProducerCard";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
@@ -43,6 +43,7 @@ export function HomeProducersGrid({
   onLoadMore,
   geoActive,
   cityActive,
+  geoEmptyNotice,
 }) {
   const t = useTranslations();
   // MEH-1174: derive the active category once — drives both the dynamic
@@ -132,6 +133,22 @@ export function HomeProducersGrid({
         <SkeletonProducerGrid count={8} />
       ) : (
         <>
+          {/* MEH-1282 (GAP A): persistent inline notice when "קרוב אליי" found
+              nothing nearby and fell back to the full list. The MEH-1269 toast
+              was too transient — its final state read as "nothing happened".
+              Muted, tokens-only, sits above the counter. Cleared by any filter
+              action (chip / city / category / location) in useHomePage. */}
+          {geoEmptyNotice && (
+            <p
+              className="flex items-center gap-1.5 text-sm text-fg-muted mb-3"
+              data-testid="geo-empty-notice"
+              role="status"
+              aria-live="polite"
+            >
+              <Info size={16} className="text-current shrink-0" aria-hidden="true" />
+              {t("home.producers.geo_empty")}
+            </p>
+          )}
           {/* MEH-23 — "מציגים X מתוך Y" counter above the grid. */}
           {producers.length > 0 && (
             <p
