@@ -248,6 +248,17 @@ erDiagram
 > re-adds them idempotently (`IF NOT EXISTS`). Pydantic `model_validator`
 > guards the API layer; these protect direct-SQL paths (seeds, imports, psql).
 
+> **MEH-1255 delivery-exclusion (migration `e7c4b1f95a2d` + ORM
+> `__table_args__`):** `producers.delivery_excluded_cities` (`TEXT[] NOT NULL
+> DEFAULT '{}'`) lists the cities a nationwide producer does NOT deliver to.
+> Third CHECK on `producers` — `delivery_excluded_requires_nationwide`
+> (`delivery_nationwide OR delivery_excluded_cities = '{}'::text[]`) — keeps it
+> empty unless nationwide (sibling of `delivery_nationwide_xor_cities`; the
+> NOT-NULL column lets it use the NULL-free equality form). New column, no new
+> table (`EXPECTED_TABLES` unchanged). Public on `ProducerListOut`; the
+> `?delivery_city=` consumer filter now returns nationwide producers minus
+> their exclusions.
+
 ## 4. Analytics + marketing
 
 ```mermaid
