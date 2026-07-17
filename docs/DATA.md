@@ -386,9 +386,13 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 ### Producers (`app/routers/producers.py`, `producer_me.py`)
 
 ```
-GET    /producers                                 public — filters: lat+lng+radius_km, category, delivery_city, has_delivery,
-                                               verified, kosher, city (producer city), is_available_today, grass_fed
+GET    /producers                                 public — filters: lat+lng+radius_km, require_physical, category, delivery_city,
+                                               has_delivery, verified, kosher, city (producer city), is_available_today, grass_fed
                                                sort: newest (default) | rating
+                                               MEH-1282: ?require_physical (geo-only, default false). Geo results include
+                                               delivery-only producers (has_physical_location=false) by default so the home
+                                               "קרוב אליי" flow surfaces every nearby business; require_physical=true keeps
+                                               MEH-213's has_physical_location filter (map-pin semantics). No effect outside geo mode.
                                                MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): ?kosher is VERIFIED-ONLY.
                                                kosher=true → kashrut_verified_at IS NOT NULL (admin-stamped, admin_kashrut.py:75);
                                                kosher=false → kashrut_verified_at IS NULL. NEVER keys off the free-text

@@ -54,7 +54,7 @@ export default function HomePage() {
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
-    featuredProducer, geoActive, cityActive,
+    featuredProducer, geoActive, cityActive, geoEmptyNotice,
     handleNearMe, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
@@ -192,6 +192,7 @@ export default function HomePage() {
         onLoadMore={handleLoadMore}
         geoActive={geoActive}
         cityActive={cityActive}
+        geoEmptyNotice={geoEmptyNotice}
       />
 
       {/* =========================

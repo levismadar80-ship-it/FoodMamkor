@@ -89,6 +89,13 @@ export function useHomePage() {
   // null. Drives the dismissible ActiveFilterChip above the grid. Mutually
   // exclusive with filters.delivery_city (the explicit city-choice mode).
   const [geoFilter, setGeoFilter] = useState(null);
+  // MEH-1282 (GAP A): persistent flag set when a "קרוב אליי" search finds nothing
+  // at either radius and falls back to the full list. The MEH-1269 toast alone
+  // was too transient — its final state (chip cleared, full list shown) read as
+  // "nothing happened". This drives a persistent inline notice in the grid.
+  // Cleared on the next successful geo search, city choice, or any chip/category
+  // /location filter action.
+  const [geoEmptyNotice, setGeoEmptyNotice] = useState(false);
   // MEH-1259: organic chip removed from the home filter row (self-declared
   // organic is no longer a public filter — חוק תוצרת אורגנית 2005).
   const [chips, setChips] = useState({ kosher: false, has_delivery: false, verified: false });
@@ -304,6 +311,8 @@ export function useHomePage() {
   };
 
   const toggleChip = (key) => {
+    // MEH-1282: any chip toggle is a fresh filter action — clear the geo-empty notice.
+    setGeoEmptyNotice(false);
     const next = { ...chips, [key]: !chips[key] };
     setChips(next);
     const params = buildChipParams(next);
@@ -341,6 +350,8 @@ export function useHomePage() {
       .then((rows) => (rows.length > 0 ? rows : fetchAtRadius(GEO_RADIUS_KM_RETRY)))
       .then((rows) => {
         if (rows.length > 0) {
+          // MEH-1282: a successful geo search clears any prior empty notice.
+          setGeoEmptyNotice(false);
           setProducers(rows);
           setVisibleCount(PAGE_SIZE);
           return;
@@ -349,6 +360,9 @@ export function useHomePage() {
         setGeoFilter(null);
         loadProducers({ ...catParam, ...chipParams });
         showToast.info(t("home.producers.geo_empty"));
+        // MEH-1282 (GAP A): persist the outcome inline — the toast alone left
+        // the final state indistinguishable from "nothing happened".
+        setGeoEmptyNotice(true);
       })
       .catch(() => {})
       .finally(() => {
@@ -410,6 +424,8 @@ export function useHomePage() {
     setUserCity(city);
     // MEH-1269: an explicit city choice exits geo mode (chip swaps geo → city).
     setGeoFilter(null);
+    // MEH-1282: a city choice supersedes the empty-near-me notice.
+    setGeoEmptyNotice(false);
     const newFilters = { ...filters, delivery_city: city };
     setFilters(newFilters);
     updateURL(newFilters);
@@ -422,6 +438,8 @@ export function useHomePage() {
   // reloads keeping any category + chip filters intact.
   const handleClearLocation = () => {
     setGeoFilter(null);
+    // MEH-1282: clearing the location filter also clears the empty-near-me notice.
+    setGeoEmptyNotice(false);
     const newFilters = { ...filters, delivery_city: "" };
     setFilters(newFilters);
     updateURL(newFilters);
@@ -433,6 +451,8 @@ export function useHomePage() {
   // Adapters for the producers-grid component (avoids passing the full
   // setFilters/updateURL/loadProducers/buildChipParams quartet).
   const handleClearCategory = () => {
+    // MEH-1282: clearing the category is a filter action — clear the geo-empty notice.
+    setGeoEmptyNotice(false);
     const newFilters = { ...filters, category: "" };
     setFilters(newFilters);
     updateURL(newFilters);
@@ -512,6 +532,7 @@ export function useHomePage() {
     featuredProducer,
     geoActive,
     cityActive,
+    geoEmptyNotice,
     // handlers
     handleNearMe,
     handleCitySelected,
