@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -75,6 +75,8 @@ const ANCHOR_TO_KEY = {
   questions: "questions",
   "contact-channels": "contact",
   categories: "categories",
+  // MEH-1258: license editor card (deep-linked from the "נשאר להשלים" banner).
+  license: "license",
   images: "images",
   location: "location",
   products: "products",
@@ -123,6 +125,7 @@ const KEY_TO_ANCHOR = {
   questions: "questions",
   contact: "contact-channels",
   categories: "categories",
+  license: "license",
   images: "images",
   location: "location",
   products: "products",
@@ -305,6 +308,11 @@ export default function ProducerDashboardEditPage() {
   // no copy. Products' first name comes from the initial payload join — the
   // live in-card CRUD only feeds the count (payload-only constraint).
   const categoryNames = (profile.categories || []).map((c) => c.name);
+  // MEH-1258: masked license value for the header preview/summary — bullets +
+  // last 4 digits (7-10-digit Ministry-of-Health numbers stay identifiable
+  // without exposing the whole value in the always-visible header).
+  const licenseRaw = (profile.producer_license_number || "").trim();
+  const licenseMasked = licenseRaw ? `•••${licenseRaw.slice(-4)}` : "";
   // MEH-1173: the MEH-532 seed description is not a real description — show the
   // empty-preview placeholder for it, matching the summary + next-step marker.
   const realDescription =
@@ -376,6 +384,18 @@ export default function ProducerDashboardEditPage() {
       ) : (
         <PreviewEmpty />
       ),
+    // MEH-1258: masked license chip — never the full number in the collapsed
+    // header (it scrolls past shoulders/screenshots); the open card shows it.
+    license: licenseMasked ? (
+      <span
+        dir="ltr"
+        className="inline-block px-2 py-0.5 rounded-full border border-border text-xs font-normal text-fg-muted"
+      >
+        {licenseMasked}
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
     questions:
       (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
   };
@@ -386,6 +406,7 @@ export default function ProducerDashboardEditPage() {
   const DIRTY_CARD_NAMES = {
     images: t("images.heading"),
     categories: t("categories.heading"),
+    license: t("license.heading"),
     location: t("location.heading"),
     bio: t("description_card.heading"),
     products: tProducts("section_heading"),
@@ -397,7 +418,7 @@ export default function ProducerDashboardEditPage() {
   };
   // Stable order (matches the accordion render order below), filtered to dirty.
   const DIRTY_ORDER = [
-    "images", "categories", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
+    "images", "categories", "license", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
   ];
   const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
 
@@ -477,6 +498,26 @@ export default function ProducerDashboardEditPage() {
         onToggle={() => toggleKey("categories")}
       >
         <CategoriesCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* ②b MEH-1258 — producer license editor. Sits right after Categories
+          (the requirement derives from the categories just picked; the spec's
+          "between Categories and Images" reads in ANCHOR_TO_KEY order — the
+          MEH-1132 funnel renders Images first, so "after Categories" is the
+          faithful placement). Closes the "נשאר להשלים: חסר מספר רישיון" loop. */}
+      <EditAccordionCard
+        anchorId="license"
+        title={t("license.heading")}
+        summary={licenseMasked || t("license.summary_empty")}
+        preview={previews.license}
+        open={openKey === "license"}
+        onToggle={() => toggleKey("license")}
+      >
+        <LicenseCard
           profile={profile}
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}
