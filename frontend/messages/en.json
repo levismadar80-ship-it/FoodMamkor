@@ -3868,6 +3868,16 @@
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
       },
+      "license": {
+        "heading": "Producer license",
+        "field_label": "Producer license number (Ministry of Health)",
+        "required_hint": "One of your selected categories requires a producer license. Filling in the number is required for approval.",
+        "summary_empty": "Not set",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "saved": "Saved ✓",
+        "save_error": "Save failed. Please try again."
+      },
       "pricing": {
         "heading": "Price & top product",
         "subtitle": "Your starting price and top product — shown on your business card.",
