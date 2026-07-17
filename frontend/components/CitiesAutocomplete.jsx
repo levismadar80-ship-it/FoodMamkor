@@ -21,6 +21,13 @@ import api from "@/lib/api";
  * D2 converges only the field radius to the canon (`rounded-[12px]`→
  * `rounded-md`); the composed structure + debounce/fetch/keyboard nav are
  * untouched (over-engineering guard: no autocomplete refactor).
+ *
+ * MEH-1254 — commit-on-type fix (Fluent/Clarity combobox pattern): a fully
+ * typed city that exactly matches a suggestion commits on Enter (even with
+ * activeIdx === -1 and multiple suggestions) and on blur; non-matching text
+ * clears on blur so it's obvious it was NOT saved. autoComplete="off" keeps
+ * browser autofill from bypassing the suggestion flow, and a muted helper
+ * line shows while typed text is still uncommitted.
  */
 export default function CitiesAutocomplete({ value = [], onChange }) {
   const t = useTranslations("search.cities_autocomplete");
@@ -61,18 +68,26 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
     fetchSuggestions(q);
   };
 
-  const addCity = (city) => {
+  const addCity = (city, { refocus = true } = {}) => {
+    // MEH-1254: cancel any in-flight debounce — a late fetch would reopen
+    // the dropdown after the field was already committed/cleared.
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!value.includes(city)) onChange([...value, city]);
     setQuery("");
     setSuggestions([]);
     setOpen(false);
     setActiveIdx(-1);
-    inputRef.current?.focus();
+    if (refocus) inputRef.current?.focus();
   };
 
   const removeCity = (city) => {
     onChange(value.filter((c) => c !== city));
   };
+
+  // MEH-1254: a fully typed city counts as a selection when it exactly
+  // matches one of the current suggestions (compare after trim).
+  const exactMatch = (q) =>
+    q ? suggestions.find((c) => c.trim() === q) || null : null;
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
@@ -83,8 +98,11 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
       setActiveIdx((i) => Math.max(i - 1, -1));
     } else if (e.key === "Enter") {
       e.preventDefault();
+      const exact = exactMatch(query.trim());
       if (activeIdx >= 0 && suggestions[activeIdx]) {
         addCity(suggestions[activeIdx]);
+      } else if (exact) {
+        addCity(exact);
       } else if (query.trim() && suggestions.length === 1) {
         addCity(suggestions[0]);
       }
@@ -94,6 +112,24 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
       setOpen(false);
       setActiveIdx(-1);
     }
+  };
+
+  // MEH-1254: commit an exact match on blur (click on "שמירה" must not lose
+  // the typed city); clear non-matching text so it's obvious it wasn't saved.
+  // Commit/clear runs synchronously — the parent reads state right after blur
+  // on a save click. Dropdown options preventDefault on mousedown, so picking
+  // one never triggers this path.
+  const handleBlur = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+    const exact = exactMatch(q);
+    if (exact) {
+      addCity(exact, { refocus: false });
+    } else if (q) {
+      setQuery("");
+      setSuggestions([]);
+    }
+    setTimeout(() => setOpen(false), 150);
   };
 
   // Scroll active item into view
@@ -134,9 +170,10 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           onChange={handleInput}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (suggestions.length > 0) setOpen(true); else fetchSuggestions(query); }}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onBlur={handleBlur}
           placeholder={value.length === 0 ? t("placeholder") : ""}
           className="flex-1 min-w-[120px] outline-none text-sm bg-transparent"
+          autoComplete="off"
           dir="rtl"
           role="combobox"
           aria-expanded={open}
@@ -145,6 +182,11 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
           aria-activedescendant={activeIdx >= 0 ? `city-opt-${activeIdx}` : undefined}
         />
       </div>
+
+      {/* MEH-1254: typed-but-uncommitted hint — muted, not an error */}
+      {query.trim() !== "" && (
+        <p className="mt-1 text-xs text-fg-muted">{t("commit_hint")}</p>
+      )}
 
       {/* Dropdown */}
       {open && (

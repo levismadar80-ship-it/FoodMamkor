@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit
+
+- **What:** typed-but-not-selected city in the delivery-cities field silently vanished on Save → false "יש לבחור לפחות עיר אחת". `CitiesAutocomplete.jsx`: Enter commits an exact suggestion match (even `activeIdx === -1`, multiple suggestions); blur auto-commits exact match synchronously / clears non-match; `autoComplete="off"`; muted `commit_hint` helper (he+en `search.cities_autocomplete.commit_hint`). Adversarial-review REFEREE fix: debounce timer canceled on commit/blur (ghost-dropdown reopen).
+- **Files:** `frontend/components/CitiesAutocomplete.jsx`, `frontend/messages/{he,en}.json` (+1 key each), NEW `frontend/__tests__/CitiesAutocomplete.test.jsx` (7 passed; placed in `frontend/__tests__/` per repo convention — ticket's `components/__tests__/` path doesn't exist).
+- **QA:** vitest 7/7 + build green (outputs in PR). Live mobile check (type "זכרון יעקב" + Enter → chip; type + tap שמירה → chip kept) deferred to Sapir — no feature-branch Vercel previews since MEH-1044.
+- **Queue context:** ticket 1 of 3 (MEH-1254 → MEH-1255 exclusion mode HIGH-RISK → MEH-1256 region quick-add, same file, waits for this merge).
+
 ## 2026-07-17 — MEH-1253 BottomNav pointer-events shield
 
 - **What:** applied the MEH-1251 Chunk B shield pattern to `BottomNav.jsx`. The full-width `fixed` wrapper (`:217`) had default `pointer-events`, so its transparent band (side gutters + safe-area/16px paddingBottom below the pill) swallowed taps/scroll on content underneath. Added `pointer-events-none` on the wrapper (`:228`) + `pointer-events-auto` on the `<nav>` pill (`:249`). One wrapper only (no intermediate shell like Header) → one none + one auto. `onFocusCapture` unaffected (pointer-events-none ≠ focus block). Zero visual/layout/z change.
