@@ -2,7 +2,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
@@ -62,7 +61,6 @@ export function useHomePage() {
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
-  const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
@@ -268,7 +266,18 @@ export function useHomePage() {
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
     const qs = p.toString();
-    router.replace(qs ? `?${qs}` : "/", { scroll: false });
+    // MEH-1293: mirror to the URL via the shallow History API, NOT router.replace.
+    // A router.replace — even to the SAME URL (geo lat/lng are intentionally NOT
+    // persisted, so a geo apply produces an identical qs) — issues an RSC
+    // round-trip that invalidates the router cache and lands mid-scroll, killing
+    // the near-me smooth scroll (Phase 0: 1 ?_rsc per click; ×5 mash → scroll
+    // interrupted, grid left the viewport). Same-URL guard + window.location
+    // (locale-safe on /en, fixes the old hardcoded "/" locale drop).
+    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170 (MEH-1085 DISC-08).
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   };
 
   const loadProducers = (params = {}) => {
@@ -390,6 +399,14 @@ export function useHomePage() {
   // browser directly. PERMISSION_DENIED (code 1) falls back to the existing
   // city modal; technical failures (codes 2/3) toast and stay put.
   const handleNearMe = () => {
+    // MEH-1293: idempotence guard — if a geo filter is already active, another
+    // near-me click must NOT re-fetch or re-write history (that was the
+    // multi-click storm). Just re-scroll to the already-filtered grid. The
+    // chip ✕ (handleClearLocation) stays the only reset path.
+    if (geoFilter) {
+      scrollToProducers();
+      return;
+    }
     const cached = getUserLocation();
     if (cached) {
       applyGeoFilter(cached);
