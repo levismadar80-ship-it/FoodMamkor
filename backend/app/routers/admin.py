@@ -14,6 +14,7 @@ from app.services.auth_notifications import (
     notify_producer_approved,
     notify_producer_changes_requested,
 )
+from app.services.delivery_validation import ensure_exclusion_requires_nationwide
 from app.services.email import send_email
 from app.services.whatsapp import send_text
 from app.database import get_db
@@ -192,6 +193,9 @@ def admin_create_producer(
         has_physical_location=data.has_physical_location,
         offers_delivery=data.offers_delivery,
         delivery_nationwide=data.delivery_nationwide,
+        # MEH-1255: nationwide exclusion list — schema validator already
+        # rejected excluded-without-nationwide on create.
+        delivery_excluded_cities=data.delivery_excluded_cities,
         # MEH-903 A: the legacy delivery_cities column is no longer written —
         # delivery_areas (via _apply_delivery_cities below) is the single store.
         # Column stays declared (drop = Chunk C); new rows keep the [] default.
@@ -226,6 +230,8 @@ def admin_update_producer(
     # is the single store now. Pop it out of the payload so the bulk setattr loop
     # below can't resurrect the write. Column stays declared (drop = Chunk C).
     payload.pop("delivery_cities", None)
+    # MEH-1255: effective-state guard — excluded cities require nationwide.
+    ensure_exclusion_requires_nationwide(producer, payload)
 
     # MEH-530: PATCH semantics — guard against the EFFECTIVE state after
     # the update. If category_ids is being changed → use the new list,
