@@ -15,7 +15,9 @@
 export const ATTRIBUTE_LABELS = {
   verified:      "מאומתים",
   has_delivery:  "משלוח",
-  organic:       "אורגני",
+  // MEH-1259: `organic` label removed — the public organic chip/badge/filter is
+  // gone (self-declared organic, חוק תוצרת אורגנית 2005). Removed from the SoT so
+  // it can't be re-surfaced accidentally before an admin-verified flow exists.
   vegan:         "טבעוני",
   gluten_free:   "ללא גלוטן",
   lactose_free:  "ללא לקטוז",

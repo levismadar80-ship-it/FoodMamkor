@@ -3,12 +3,14 @@ import { renderHook, act } from "@testing-library/react";
 import { useHomePage } from "@/lib/use-home-page";
 import api from "@/lib/api";
 
-// MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders all 7 CHIPS_CONFIG
-// chips and buildChipParams sends all 7 to the API, but updateURL serialized
+// MEH-1083 (MEH-1077 DISC-02): the homepage chip row renders the CHIPS_CONFIG
+// chips and buildChipParams sends them to the API, but updateURL serialized
 // only kosher/organic/delivery/verified and mount-init read the same 4 — so
 // gluten_free/vegan/lactose_free filtered results without ever reaching the
 // URL, and a shared/refreshed URL silently dropped them. These tests pin the
-// 7-key round-trip: toggle → URL param, and deep-link → hydrated chip state.
+// round-trip: toggle → URL param, and deep-link → hydrated chip state.
+// MEH-1259: the "organic" chip was removed (self-declared → not a public
+// filter); the set is now 6 keys.
 
 const router = { replace: vi.fn(), push: vi.fn() };
 
@@ -49,11 +51,10 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     expect(lastUrl).toContain("gluten_free=1");
   });
 
-  it("serializes all 7 chip keys when all are active", () => {
+  it("serializes all 6 chip keys when all are active", () => {
     const { result } = renderHook(() => useHomePage());
     for (const key of [
       "kosher",
-      "organic",
       "gluten_free",
       "vegan",
       "lactose_free",
@@ -65,7 +66,6 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     const lastUrl = router.replace.mock.calls.at(-1)[0];
     for (const param of [
       "kosher=1",
-      "organic=1",
       "gluten_free=1",
       "vegan=1",
       "lactose_free=1",
@@ -74,6 +74,8 @@ describe("homepage diet chips → URL (MEH-1083)", () => {
     ]) {
       expect(lastUrl).toContain(param);
     }
+    // MEH-1259: organic is no longer serialized.
+    expect(lastUrl).not.toContain("organic=1");
   });
 
   it("deep-link ?vegan=1 hydrates the chip and the initial fetch", () => {

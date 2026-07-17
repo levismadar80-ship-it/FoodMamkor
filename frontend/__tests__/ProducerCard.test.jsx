@@ -384,14 +384,15 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
-  it("promotes organic/grass_fed/kosher into the unified pill row", () => {
+  it("promotes grass_fed into the unified pill row; organic never shows (MEH-1259)", () => {
     render(
       <ProducerCard
         producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
       />,
     );
-    expect(screen.getByRole("button", { name: /אורגני/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /גראס פד/ })).toBeInTheDocument();
+    // MEH-1259: organic_certified is set but the public organic badge is gone.
+    expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
   it("uses slug for href when available", () => {
@@ -523,11 +524,13 @@ describe("ProducerCard — heart (Phase C)", () => {
 // MEH-991 (CARD-09): v4 LOCK — a third+ badge collapses to a "+N" overflow chip.
 describe("ProducerCard — badge overflow chip (MEH-991)", () => {
   it("renders +N when the producer earns more than 2 badges", () => {
+    // MEH-1259: organic no longer earns a badge — swapped for kosher
+    // (kashrut_verified_at) so the fixture still earns 4 badges → "+2".
     render(
       <ProducerCard
         producer={{
           ...minimalProducer,
-          organic_certified: true,
+          kashrut_verified_at: "2026-01-01T00:00:00Z",
           grass_fed: true,
           has_gluten_free_products: true,
           has_delivery: true,

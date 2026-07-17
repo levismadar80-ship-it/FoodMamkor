@@ -18,7 +18,7 @@ vi.mock("next-intl", () => ({
 
 const ALL_OFF = {
   categoryKey: "all",
-  organic: false,
+  // MEH-1259: organic removed from the /map FilterSheet toggle set.
   has_delivery: false,
   verified: false,
   grass_fed: false,
@@ -47,7 +47,8 @@ describe("FilterSheet (MEH-1075)", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders title, the 3 group headers, and all 7 toggle chips when open", () => {
+  it("renders title, the 3 group headers, and all 6 toggle chips when open", () => {
+    // MEH-1259: "אורגני" toggle removed — 6 chips now.
     renderSheet();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("filters.sheet.title")).toBeInTheDocument();
@@ -58,13 +59,13 @@ describe("FilterSheet (MEH-1075)", () => {
       "טבעוני",
       "ללא גלוטן",
       "ללא לקטוז",
-      "אורגני",
       "גראס פד",
       "משלוח",
       "מאומתים",
     ]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole("button", { name: "אורגני" })).not.toBeInTheDocument();
   });
 
   it("toggling a chip calls onToggleChip with the chip key; aria-pressed mirrors chipState", () => {
@@ -73,7 +74,8 @@ describe("FilterSheet (MEH-1075)", () => {
     });
     const veganChip = screen.getByRole("button", { name: "טבעוני" });
     expect(veganChip).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "אורגני" })).toHaveAttribute(
+    // MEH-1259: was the organic chip (removed) — grass_fed is the other quality toggle.
+    expect(screen.getByRole("button", { name: "גראס פד" })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -91,11 +93,13 @@ describe("FilterSheet (MEH-1075)", () => {
         has_delivery: true,
       }),
     ).toBe(0);
+    // MEH-1259: was vegan + organic — grass_fed replaces organic as the 2nd
+    // sheet-only quality active (verified is a quick chip, never counted).
     expect(
       countActiveSheetOnlyFilters({
         ...ALL_OFF,
         vegan: true,
-        organic: true,
+        grass_fed: true,
         verified: true,
       }),
     ).toBe(2);

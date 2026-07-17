@@ -17,7 +17,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { Carrot, Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
+import { Package, Pencil, Plus, Trash, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
@@ -288,13 +288,14 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
 
       {products?.length === 0 && !adding && (
         <EmptyState
-          icon={Carrot}
           title={t("empty.title")}
           description={t("empty.description")}
           ctaLabel={t("empty.cta")}
           ctaOnClick={() => { setAdding(true); setError(""); }}
           example={
-            <div className="w-full max-w-xs text-start opacity-70">
+            // MEH-1172: no floating decorative icon — the example card IS the
+            // visual (Carbon empty-state pattern). Full opacity, slightly wider.
+            <div className="w-full max-w-sm text-start">
               <p className="text-[11px] text-fg-muted mb-1">{t("empty.sample_label")}</p>
               <div className="border border-border rounded-[12px] p-3 bg-surface-card flex items-center gap-3">
                 <div className="w-14 h-14 rounded-[8px] bg-green-50 flex items-center justify-center shrink-0">
