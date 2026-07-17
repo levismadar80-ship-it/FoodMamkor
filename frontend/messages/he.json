@@ -1293,9 +1293,10 @@
           "set_ambassador_title": "הגדר כשגרירה",
           "ambassador_active": "⭐ שגרירה",
           "ambassador_inactive": "☆ שגריר",
+          "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "📸 סטורי",
-          "delete": "מחקו",
+          "delete": "מחקי",
           "menu_aria": "פעולות נוספות"
         },
         "columns": {
@@ -2893,15 +2894,16 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "גלו עוד בתי עסק ב mehamakor.online",
+      "footer_url": "גלי עוד בתי עסק ב mehamakor.co.il",
       "upload_error": "שגיאה בהעלאה לקלאודינרי",
       "default_country": "ישראל",
       "caption_prefix": "🌿 עסק חדש במהמקור!",
       "title": "כרטיס אינסטגרם מוכן",
+      "close": "סגירת פאנל הסטורי",
       "generating": "מייצר",
       "download": "הורד",
       "uploading": "בהעלאה...",
-      "save_cloudinary": "שמרו ל-Cloudinary",
+      "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
       "copied": "✅ הועתק!"
     }

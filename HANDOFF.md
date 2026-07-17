@@ -5,6 +5,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1267 admin polish (LOW) — feature/meh-1267-admin-polish
+
+- **What:** 4 admin fixes. (1) `total_group_buys` (`count(GroupBuy.id)`) in `admin_extra.get_dashboard`; `admin/page.js` binds it, drops the `"›"` placeholder. (2) `StoryCardCanvas` gained `onClose` → X button (logical-start) + Esc; `AdminProducersTable` wires it to `onToggleStoryCard`. (3) Canonical domain (MEH-1242 PR4): `mehamakor.online` (staging alias) → `SITE_URL` (`lib/env`, `mehamakor.co.il`) in StoryCardCanvas + VanityLinkCard + `story.canvas.footer_url` copy. (4) Ambassador kebab item `title` tooltip (i18n). Copy pass he-only: `footer_url` גלו→גלי, `save_cloudinary` שמרו→שמרי, `actions.delete` מחקו→מחקי.
+- **QA:** build green; vitest `AdminDashboardStats` + `StoryCardPanel` (4) + backend dashboard test green.
+- **Overlap w/ MEH-1266:** shares `admin_extra.get_dashboard` (`total_group_buys` vs `open_reports` filter — different lines) + `he/en.json` (distinct keys). Merge order: 1267 first; 1266 syncs staging post-Sapir-go (Accept-Both on logs).
+
 ## 2026-07-17 — MEH-1241 Chunk 5: Vercel protection-bypass for staging auth runs — feature/meh-1241-qa-vercel-bypass (PR #1812, NOT merged)
 
 - **🔑 DURABLE LESSON — `staging.mehamakor.online` sits behind Vercel Deployment Protection (`vercel_auth_enabled`).** **ANY automated request to staging** — Playwright E2E, `curl`, monitoring, smoke checks — **must send the header `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET`**, or it 302-redirects to `vercel.com/sso-api` and **never reaches the backend**. Verified live 17/07: **no header → 302** (→ `vercel.com/sso-api`); **with header → HTTP 200 + `refresh_token` + `X-Railway-Edge`** (real backend hit). For Playwright the header is needed on **BOTH** surfaces — the API `request` context **and** the browser context (`page.goto`) — else login succeeds but navigation still hits the SSO wall. Get the secret from **Vercel → Settings → Deployment Protection → Protection Bypass for Automation** (system env `VERCEL_AUTOMATION_BYPASS_SECRET`); **rotating it needs a redeploy**. Never log/commit the value.
