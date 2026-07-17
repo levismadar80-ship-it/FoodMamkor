@@ -85,9 +85,12 @@ export default function CitiesAutocomplete({ value = [], onChange }) {
   };
 
   // MEH-1254: a fully typed city counts as a selection when it exactly
-  // matches one of the current suggestions (compare after trim).
+  // matches one of the current suggestions (compare after trim; NFC
+  // normalize so IME/autofill decomposed forms still match).
   const exactMatch = (q) =>
-    q ? suggestions.find((c) => c.trim() === q) || null : null;
+    q
+      ? suggestions.find((c) => c.trim().normalize() === q.normalize()) || null
+      : null;
 
   const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
