@@ -736,3 +736,31 @@ Tasks auto-expire after 7 days.
     condition + Rule 1 (single-session) תפסו את זה בדיעבד — ה-guard האחרון עבד,
     אבל הוא לא אמור להידרש. Extends Rule 1 (session-start parallel-session audit)
     ו-Rule 27 (search Linear before opening an issue) לצד ה-dispatch._
+
+29. **Linear auto-reopen guard — no bare `MEH-XXXX` in docs/HANDOFF PRs that
+    only MENTION already-Done issues.** In a `docs/`-only or `HANDOFF.md` PR
+    whose diff merely *references* issues that are already `Done`, do NOT put
+    the bare Linear identifier (`MEH-1234`) in the **branch name**, **PR
+    title**, or **PR body**. Write `PR #1772` or a prose description instead.
+
+    - **Why:** the Linear↔GitHub integration (the Linear workspace app — **not**
+      a repo Action; `.github/` has no Linear reference) auto-links on identifier
+      match and fires "linked PR opened → In Progress", flipping the mentioned
+      closed issues back to In Progress. A merge whose body has no closing
+      keyword (`Closes`/`Fixes`) does **not** restore them to Done — so they
+      stay reopened and need manual re-closing.
+    - **Evidence (16/07):** PR #1778 (docs/HANDOFF) carried `Refs` + two closed
+      identifiers in its body → Linear linked both; they flipped Done→In Progress
+      ~3s after the PR opened (19:31:55Z) and the non-`Closes` merge left them
+      reopened.
+    - **Scope of the ban:** only the identifier of an **already-Done** issue that
+      the PR merely mentions. The identifier of the issue the PR actually
+      *closes* still belongs in the body as `Closes MEH-XXXX` (that link is
+      correct — the issue is genuinely active and should return to Done on
+      merge). Branch-name gate (MEH-1141) requires `meh-[0-9]+` for code PRs, so
+      this ban applies to the *mentioned-and-Done* identifiers, not to a code
+      PR's own active-ticket branch slug.
+
+    _Source: MEH-1240 (2026-07-16) — UserMenu/AccountSheet batch PRs
+    #1772/#1775/#1778 repeatedly reopened closed tickets via the auto-link
+    automation._
