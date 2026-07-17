@@ -3,99 +3,120 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Star, Truck, Leaf, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
+import { Star, CaretRight } from "@phosphor-icons/react";
 import { optimizeCloudinary } from "@/lib/cloudinary";
-import { useUserCity } from "@/lib/use-user-city";
 import { styleForProducer } from "@/lib/map-categories";
-import { getPrimaryContactHref, getPrimaryMethod, getPrimaryContactLabel, isPrimaryExternal } from "@/lib/contact-method";
 import { useUserLocation } from "@/lib/user-location";
 import { haversineKm, formatDistance } from "@/lib/distance";
 
 // MEH-1133: aspect at/above which a thumbnail source is treated as "logo-like"
 // (wide banner/logo) and letterboxed (object-contain) instead of cropped
-// (object-cover). 2.0 (≥2:1) catches wide logos like the MEHA MEKOR wordmark
-// (~3:1, which object-cover cropped to "NEHA MEK") while leaving normal
-// landscape food photos (≤16:9 ≈ 1.78) filling the box as before.
+// (object-cover). 2.0 (≥2:1) catches wide logos while leaving normal landscape
+// food photos (≤16:9 ≈ 1.78) filling the box as before.
 const LOGO_ASPECT_MIN = 2;
 
+// MEH-1243 (🔒 Pin-Echo): the selected card washes its background with 6% of the
+// category color. Hex → rgba so any 6-digit CATEGORY_STYLES color works; falls
+// back to brand green for a malformed value.
+function categoryTint(hex, alpha) {
+  const h = String(hex || "").replace("#", "");
+  if (h.length !== 6) return `rgba(46, 104, 83, ${alpha})`;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Module:   MapProducerCard
+ * Purpose:  /map list "selection card" — image · name · rating-if-exists · meta
+ *           line, plus ONE end-corner chevron as the only navigation affordance.
+ *           Card = select (pin-sync), page = act.
+ * Does NOT: hold a contact CTA / "full profile" link / verified seal / delivery
+ *           pill — those live in MobileSheetSelectedCard + /producer (MEH-1243).
+ * Related:  frontend/app/[locale]/map/components/MapCardList.jsx (useMapSync,
+ *           active/hover wiring); frontend/lib/map-categories.js (CATEGORY_STYLES).
+ * History:  MEH-826 (client distance); MEH-1133 (logo letterbox); MEH-1178
+ *           (uniform template); MEH-1210 (price removed); MEH-1211 (broken-img
+ *           fallback); MEH-1243 (Direction B + 🔒 Pin-Echo redesign).
+ */
 export default function MapProducerCard({ producer, active, onClick }) {
   const t = useTranslations("map.producer_card");
-  const { city: userCity } = useUserCity();
+  const router = useRouter();
   const p = producer;
   const imgSrc = optimizeCloudinary(p.images?.[0]);
   // MEH-1133: default to cover (SSR/first paint) and flip to contain only once
-  // the loaded image proves logo-like — so wide logos letterbox on the green-50
-  // box instead of cropping, while photos keep the full-bleed cover look.
+  // the loaded image proves logo-like.
   const [thumbIsWide, setThumbIsWide] = useState(false);
-  // MEH-1211: fall back to the leaf thumb placeholder when a present-but-dead
+  // MEH-1211: fall back to the category-glyph placeholder when a present-but-dead
   // image URL fails to load (avoids the browser broken-glyph + alt overflow).
   const [imgError, setImgError] = useState(false);
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
-  // MEH-1210: price removed from discovery cards ("מגזין, לא marketplace") —
-  // exact prices are a marketplace signal; they stay at product level inside
-  // /producer. The prior MEH-934 price-split render (pricePrefix/priceNumber/
-  // priceSuffix <bdi>) is gone from the meta line below.
-  const isVerified = p.verification_tier === "verified"; // MEH-766 ch1: doc-verification tier
-  const rating = Number(p.avg_rating || 0);
-  const reviewsCount = p.reviews_count || 0;
-  // MEH-798: also pull the Phosphor `icon` for the category chip below.
-  const { color: categoryColor, textColor: categoryTextColor, icon: CategoryIcon } = styleForProducer(p);
+  // MEH-798/MEH-1243: category color + Phosphor glyph drive the meta line + the
+  // pin-echo selected state + the no-photo placeholder.
+  const { color: categoryColor, icon: CategoryIcon } = styleForProducer(p);
 
-  // MEH-826: client-side distance — haversine(user GPS, producer lat/lng).
-  // GPS is read from sessionStorage (useUserLocation); no fetch, no radius
-  // param, no backend. Shows only for GPS users (null otherwise). Mirrors
-  // ProducerCard.jsx:191-197.
+  // MEH-1243 (🔒 rating): Google format ★ X.X (N), shown only at ≥3 reviews. Below
+  // the threshold the row still reserves its height so every card is equal-height.
+  const reviewsCount = p.reviews_count || 0;
+  const rating = Number(p.avg_rating || 0);
+  const showRating = reviewsCount >= 3 && Number.isFinite(rating) && rating > 0;
+
+  // MEH-826: client-side distance — haversine(user GPS, producer lat/lng). GPS is
+  // read from sessionStorage (useUserLocation); shows only for GPS users (null
+  // otherwise). Mirrors ProducerCard.jsx.
   const userLoc = useUserLocation();
+  // MEH-1243 (🔒 §3): Hebrew unit, digits-first, no "ממך" suffix — rendered
+  // inside the <bdi dir="ltr"> below. e.g. "1.2 ק"מ".
   const distanceLabel =
     userLoc && p.lat != null && p.lng != null
-      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng))
+      ? formatDistance(haversineKm(userLoc.lat, userLoc.lng, p.lat, p.lng), { unit: "he", suffix: false })
       : null;
 
-  const deliveryMatch = userCity && Array.isArray(p.delivery_areas)
-    ? p.delivery_areas.find((d) => d.city === userCity)
-    : null;
-
-  // MEH-296/MEH-17: dynamic CTA — href + icon follow the producer's chosen
-  // primary_contact_method (whatsapp/phone/website/email). Null href → hide
-  // the button (the "full profile" link below still reaches the producer).
-  const primaryHref = getPrimaryContactHref(p);
-  const primaryMethod = getPrimaryMethod(p);
-  const ctaExternal = primaryMethod === "whatsapp" || isPrimaryExternal(p);
-  const CtaIcon =
-    { whatsapp: WhatsappLogo, phone: Phone, website: Globe, email: EnvelopeSimple }[primaryMethod] ||
-    WhatsappLogo;
-
+  // MEH-1243 (Direction B): body tap SELECTS an unselected card (pin-sync,
+  // MEH-1010 — two-way, via onClick) and NAVIGATES a card that is already
+  // selected (second-tap, no dblclick handler). The end-corner chevron <Link>
+  // is the always-visible, screen-reader nav path; the `a, button` guard lets it
+  // (and any inner link) own its own click.
   const handleRootClick = (e) => {
-    if (onClick) {
-      if (e.target.closest("a, button")) return;
+    if (e.target.closest("a, button")) return;
+    if (active) {
+      router.push(baseHref);
+    } else if (onClick) {
       onClick(p);
     }
   };
 
-  const waPhone = p.phone?.replace(/\D/g, "");
-
   return (
     <article
       onClick={handleRootClick}
-      // MEH-763: card-click is a mouse-only select-on-map affordance (handleCardClick →
-      // highlight + flyTo, NOT navigation). The <article> is deliberately non-focusable
-      // (no role/tabIndex/key handler) so it doesn't wrap its inner profile Link + CTA in a
-      // nested-interactive button — those two links are the keyboard targets. The keyboard
-      // path to select-on-map from the list is tracked in MEH-765.
+      data-testid="map-card"
       className={[
-        // min-h keeps sparse cards (no chip / no meta) the same height as fully
-        // populated ones — the uniform template's equal-height guarantee.
-        "flex gap-3 bg-white border rounded-md overflow-hidden transition min-h-[128px]",
-        active ? "border-primary border-2" : "border-border",
-        onClick ? "cursor-pointer" : "",
+        // min-h + fixed rows = the uniform-template equal-height guarantee.
+        "flex gap-3 bg-white border border-border rounded-md overflow-hidden transition-colors min-h-[112px] p-2",
+        onClick || active ? "cursor-pointer" : "",
       ].join(" ")}
-      style={{ direction: "rtl" }}
+      // MEH-1243 (🔒 Pin-Echo): selected = 2px category-color border + 6% tint +
+      // padding 8→7px, so the 1px→2px border swap keeps border+padding = 9px on
+      // every side (border-box) → identical content box, zero layout jump.
+      style={{
+        direction: "rtl",
+        ...(active && {
+          borderWidth: "2px",
+          borderColor: categoryColor,
+          backgroundColor: categoryTint(categoryColor, 0.06),
+          padding: "7px",
+        }),
+      }}
     >
-      {/* Thumbnail — RIGHT in RTL (first child) */}
+      {/* Thumbnail — START (right in RTL, first child). #EAF3DE placeholder tile. */}
       <div
-        className="shrink-0 w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative bg-green-50"
+        className="shrink-0 self-stretch w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative rounded overflow-hidden"
+        style={{ backgroundColor: "#EAF3DE" }}
+        data-testid="map-thumb"
       >
         {imgSrc && !imgError ? (
           <Image
@@ -103,9 +124,8 @@ export default function MapProducerCard({ producer, active, onClick }) {
             alt={p.name || ""}
             fill
             sizes="(max-width: 1179px) 72px, 88px"
-            // MEH-1133: measure the loaded source's intrinsic aspect; a logo-like
-            // wide image letterboxes (object-contain) on the green-50 box so the
-            // full wordmark shows, a normal photo keeps object-cover (full bleed).
+            // MEH-1133: a logo-like wide image letterboxes (object-contain) on the
+            // #EAF3DE tile; a normal photo keeps object-cover (full bleed).
             onLoad={(e) => {
               const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
               if (w && h) setThumbIsWide(w / h >= LOGO_ASPECT_MIN);
@@ -114,98 +134,65 @@ export default function MapProducerCard({ producer, active, onClick }) {
             className={thumbIsWide ? "object-contain" : "object-cover"}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" aria-hidden="true"><Leaf size={24} className="text-primary/40" /></div>
-        )}
-      </div>
-
-      {/* Text content — LEFT in RTL */}
-      <div className="flex-1 py-2 pe-3 min-w-0 flex flex-col justify-between">
-        <div>
-          <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "17px" }}>
-            {p.name}
-          </h3>
-          {/* MEH-798 */}
-          {/* REUSES: frontend/app/[locale]/map/components/MapPane.jsx:170-176
-              — 20px wash + 12px icon, F1 flat (no shadow). */}
-          {/* Uniform-template slot 3 — category chip · rating · verified seal on ONE
-              line. The separate trust strip is gone: rating (Star + LTR-isolated
-              number) and the SealCheck (icon-only, aria-label carries t("verified"))
-              moved up here so every card stacks the same slots. */}
-          {(category?.name || rating > 0 || isVerified) && (
-            <div className="mt-0.5 flex h-6 items-center gap-1.5 min-w-0">
-              {category?.name && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs min-w-0"
-                  style={{ backgroundColor: `${categoryColor}1A`, color: categoryTextColor || categoryColor }}
-                >
-                  <CategoryIcon size={12} weight="fill" aria-hidden="true" />
-                  <span className="line-clamp-1">{category.name}</span>
-                </span>
-              )}
-              {rating > 0 && (
-                <span className="inline-flex items-center gap-0.5 text-[12px] text-fg-muted shrink-0">
-                  <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
-                  <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
-                </span>
-              )}
-              {/* MEH-938: ✓ dingbat → Phosphor SealCheck (glyph-LOCK) */}
-              {isVerified && (
-                <SealCheck size={13} className="text-fg-muted shrink-0" role="img" aria-label={t("verified")} />
-              )}
-            </div>
-          )}
-          {/* Uniform-template slot 4 — ONE meta line: {city} · {distance}.
-              MEH-1210: price dropped from the meta line (marketplace signal —
-              prices live at product level inside /producer). */}
-          {(p.city || distanceLabel) && (
-            <p className="text-[13px] leading-5 text-fg-muted line-clamp-1 mt-0.5" data-testid="map-meta-line">
-              {p.city}
-              {distanceLabel && (
-                <>
-                  {p.city ? " · " : ""}
-                  <span dir="ltr" data-testid="map-distance-pill">{distanceLabel}</span>
-                </>
-              )}
-            </p>
-          )}
-        </div>
-
-        {/* Delivery pill — the only conditional slot (user-relevant: renders
-            solely when the producer delivers to the visitor's own city) */}
-        {deliveryMatch && (
-          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-            <span className="text-[11px] bg-green-50 text-primary rounded-full px-2 py-0.5 inline-flex items-center gap-1">
-              <Truck size={12} className="text-current" aria-hidden="true" />{t("distance_prefix")}{deliveryMatch.city} {deliveryMatch.delivery_day || ""}
-            </span>
+          // MEH-1243 (🔒 placeholder): category glyph at 70% of the pin color.
+          <div className="w-full h-full flex items-center justify-center" aria-hidden="true">
+            <CategoryIcon size={32} weight="light" style={{ color: categoryColor, opacity: 0.7 }} />
           </div>
         )}
+      </div>
 
-        {/* Actions — min-h reserves the 28px contact-button slot even when the
-            producer has no primary CTA, so link-only cards stay the same height */}
-        <div className="flex items-center gap-2 mt-1.5 min-h-[28px]">
-          {primaryHref && (
-            <a
-              href={primaryHref}
-              target={ctaExternal ? "_blank" : undefined}
-              rel={ctaExternal ? "noopener noreferrer" : undefined}
-              onClick={(e) => { e.stopPropagation(); if (primaryMethod === "whatsapp" && waPhone) { try { navigator.sendBeacon?.(`/api/producers/${p.id}/whatsapp-click`); } catch {} } }}
-              className={`${primaryMethod === "whatsapp" ? "bg-whatsapp" : "bg-primary"} text-white w-7 h-7 rounded-full flex items-center justify-center shrink-0`}
-              aria-label={getPrimaryContactLabel(p)}
-            >
-              <CtaIcon size={14} weight="fill" aria-hidden="true" />
-            </a>
+      {/* Text content — center column. Three fixed-height rows → uniform cards. */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+        <h3 className="font-headline-md font-bold text-text line-clamp-1" style={{ fontSize: "17px" }}>
+          {p.name}
+        </h3>
+
+        {/* Meta line — category FIRST (muted glyph + truncating text), distance
+            LAST (flex-shrink-0, never truncates). MEH-1296: sits directly under
+            the name, above the rating row. The distance <bdi> has no dir override
+            so it auto-resolves to RTL and reads digits-first ("1.2 ק"מ"). 🔒 §3. */}
+        <p className="text-[13px] leading-5 text-fg-muted flex items-center min-w-0" data-testid="map-meta-line">
+          {category?.name && (
+            <span className="inline-flex items-center gap-1 min-w-0">
+              <CategoryIcon size={14} weight="regular" aria-hidden="true" className="shrink-0 text-fg-muted" />
+              <span className="truncate">{category.name}</span>
+            </span>
           )}
-          <Link
-            href={baseHref}
-            className="inline-flex items-center gap-0.5 text-primary text-[13px] font-medium hover:underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* MEH-938: → dingbat → Phosphor ArrowRight; rtl:rotate-180 = reading-forward in he (MEH-867/877 pattern) */}
-            {t("full_profile")}
-            <ArrowRight size={13} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
-          </Link>
+          {distanceLabel && (
+            <span className="shrink-0 whitespace-nowrap">
+              {category?.name && <span className="mx-1" aria-hidden="true">·</span>}
+              <bdi data-testid="map-distance-pill">{distanceLabel}</bdi>
+            </span>
+          )}
+        </p>
+
+        {/* Rating row — reserves its height ALWAYS; renders content only at ≥3
+            reviews (uniform-height guarantee, 🔒 §5). MEH-1296: below the meta line. */}
+        <div className="h-[18px] flex items-center" data-testid="map-rating-row">
+          {showRating && (
+            <span className="inline-flex items-center gap-0.5 text-[12px] text-fg-muted" data-testid="map-rating">
+              <Star size={12} weight="fill" className="text-accent" aria-hidden="true" />
+              {/* 🔒 §7: ★ X.X (N), whole numeric block dir="ltr". */}
+              <bdi dir="ltr">{rating.toFixed(1)} ({reviewsCount})</bdi>
+            </span>
+          )}
         </div>
       </div>
+
+      {/* End-corner chevron — the ONLY nav affordance. Full-height 44px column →
+          ≥44×44 hit area (§V). MEH-938: CaretRight + rtl:rotate-180 = forward in he.
+          MEH-1296: border-s hairline divider separates it from the text; softer
+          CaretRight glyph. Recolors to the pin color when selected (🔒 §1). */}
+      <Link
+        href={baseHref}
+        onClick={(e) => e.stopPropagation()}
+        aria-label={t("full_profile")}
+        data-testid="map-chevron"
+        className="shrink-0 self-stretch w-11 flex items-center justify-center rounded border-s border-border text-fg-muted hover:text-primary focus-visible:text-primary transition-colors focus-ring"
+        style={active ? { color: categoryColor } : undefined}
+      >
+        <CaretRight size={18} weight="regular" aria-hidden="true" className="rtl:rotate-180" />
+      </Link>
     </article>
   );
 }

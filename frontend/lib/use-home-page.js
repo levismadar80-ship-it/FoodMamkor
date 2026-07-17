@@ -21,6 +21,7 @@ import {
   StatsSchema,
   ProducerSchema,
   ProducersResponseSchema,
+  RandomProducerSchema,
 } from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
@@ -56,12 +57,14 @@ const GEO_RADIUS_KM_RETRY = 30;
  */
 export function useHomePage() {
   const { user } = useAuth();
+  // MEH-1288: real navigation to a random producer page (a page change, unlike
+  // the MEH-1293 same-URL History-API mirroring below — push is correct here).
+  const router = useRouter();
   // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
   // old flat keys ("hero_title"). Wave 2 migrates those call sites and
   // this wrap is removed.
   const intlT = useTranslations();
   const t = useCallback((oldKey) => intlT(mapKey(oldKey)), [intlT]);
-  const router = useRouter();
   const [producers, setProducers] = useState([]);
   const [categories, setCategories] = useState([]);
   // MEH-517: static SSR-safe defaults — browser APIs (window.location.search,
@@ -267,7 +270,18 @@ export function useHomePage() {
     if (c.has_delivery) p.set("delivery", "1");
     if (c.verified) p.set("verified", "1");
     const qs = p.toString();
-    router.replace(qs ? `?${qs}` : "/", { scroll: false });
+    // MEH-1293: mirror to the URL via the shallow History API, NOT router.replace.
+    // A router.replace — even to the SAME URL (geo lat/lng are intentionally NOT
+    // persisted, so a geo apply produces an identical qs) — issues an RSC
+    // round-trip that invalidates the router cache and lands mid-scroll, killing
+    // the near-me smooth scroll (Phase 0: 1 ?_rsc per click; ×5 mash → scroll
+    // interrupted, grid left the viewport). Same-URL guard + window.location
+    // (locale-safe on /en, fixes the old hardcoded "/" locale drop).
+    // REUSES: frontend/app/[locale]/events/EventsClient.jsx:159-170 (MEH-1085 DISC-08).
+    const current = window.location.search.replace(/^\?/, "");
+    if (qs === current) return;
+    const path = window.location.pathname;
+    window.history.replaceState(null, "", qs ? `${path}?${qs}` : path);
   };
 
   const loadProducers = (params = {}) => {
@@ -389,6 +403,14 @@ export function useHomePage() {
   // browser directly. PERMISSION_DENIED (code 1) falls back to the existing
   // city modal; technical failures (codes 2/3) toast and stay put.
   const handleNearMe = () => {
+    // MEH-1293: idempotence guard — if a geo filter is already active, another
+    // near-me click must NOT re-fetch or re-write history (that was the
+    // multi-click storm). Just re-scroll to the already-filtered grid. The
+    // chip ✕ (handleClearLocation) stays the only reset path.
+    if (geoFilter) {
+      scrollToProducers();
+      return;
+    }
     const cached = getUserLocation();
     if (cached) {
       applyGeoFilter(cached);
@@ -460,6 +482,23 @@ export function useHomePage() {
   };
 
   const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
+
+  // MEH-1288: "הפתיעו אותי" — fetch one random approved producer from the
+  // backend (ORDER BY random(), full catalog — not just the loaded page) and
+  // navigate to its page. Best-effort: a network error or malformed payload is
+  // a silent no-op (the button stays, the user can tap again). Mirrors
+  // ProducerCard's href rule (slug preferred, id fallback).
+  const handleSurprise = useCallback(async () => {
+    try {
+      const r = await api.get("/producers/random");
+      const parsed = RandomProducerSchema.safeParse(r.data);
+      if (!parsed.success) return;
+      const { slug, id } = parsed.data;
+      router.push(slug ? `/${slug}` : `/producer/${id}`);
+    } catch {
+      // no-op — best-effort surprise
+    }
+  }, [router]);
 
   // Advance from Step 0 onboarding tip. Resets the local 2s-delay gate
   // so a future return to step 0 re-arms the delay (matches the original
@@ -535,6 +574,7 @@ export function useHomePage() {
     geoEmptyNotice,
     // handlers
     handleNearMe,
+    handleSurprise,
     handleCitySelected,
     handleClearLocation,
     handleWhatsAppClick,

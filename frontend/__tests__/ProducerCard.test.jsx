@@ -258,7 +258,8 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(rating).toHaveAttribute("dir", "ltr");
     // MEH-990: leading ★ glyph is now a Phosphor Star icon (no text node).
     expect(rating.querySelector('[data-testid="icon-star"]')).toBeInTheDocument();
-    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 · 12");
+    // MEH-1243 (🔒 §7): unified Google format ★ X.X (N).
+    expect(rating.textContent.replace(/\s+/g, " ").trim()).toBe("4.5 (12)");
   });
 
   it("hides rating entirely when reviews_count < 3", () => {
