@@ -65,7 +65,13 @@ export default defineConfig({
     // doesn't intercept pointer events during tests (per
     // https://vercel.com/docs/vercel-toolbar/managing-toolbar).
     extraHTTPHeaders: {
-      "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET || "",
+      // MEH-1241: also read the canonical Vercel system env name
+      // (VERCEL_AUTOMATION_BYPASS_SECRET) so a local TEST_URL=staging run — which
+      // exports that name, not VERCEL_BYPASS_SECRET — bypasses protection on page
+      // navigations too (globalSetup handles the login request). Empty on
+      // localhost, which Vercel ignores.
+      "x-vercel-protection-bypass":
+        process.env.VERCEL_BYPASS_SECRET || process.env.VERCEL_AUTOMATION_BYPASS_SECRET || "",
       "x-vercel-skip-toolbar": "1",
     },
   },

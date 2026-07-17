@@ -55,6 +55,22 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     return;
   }
 
+  // MEH-1241: a remote staging/preview target sits behind Vercel Deployment
+  // Protection — the login request needs the automation-bypass header or it
+  // 302s to the Vercel SSO wall (vercel.com/sso-api) and never reaches the
+  // backend. Local runs returned above and need no header; a remote target
+  // with the secret missing is a hard error (fail loud, never silent).
+  const bypassSecret =
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET || process.env.VERCEL_BYPASS_SECRET || "";
+  if (!bypassSecret) {
+    throw new Error(
+      `[global-setup] ${baseURL} is a remote target behind Vercel Deployment ` +
+        `Protection, but VERCEL_AUTOMATION_BYPASS_SECRET is not set — the login ` +
+        `request would 302 to the Vercel SSO wall. Export it (Vercel → Settings ` +
+        `→ Deployment Protection → Protection Bypass for Automation).`,
+    );
+  }
+
   fs.mkdirSync(AUTH_DIR, { recursive: true });
   const origin = new URL(baseURL).origin;
 
@@ -70,7 +86,13 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // Named `ctx` (not `api`) so the API-contract audit — which greps for
     // `api.<method>(` call sites — doesn't misread this raw, /api-prefixed
     // Playwright request as an app api-client call (MEH-1241).
-    const ctx = await request.newContext({ baseURL, ignoreHTTPSErrors: true });
+    const ctx = await request.newContext({
+      baseURL,
+      ignoreHTTPSErrors: true,
+      // Bypass Vercel Deployment Protection on the login POST (value from env
+      // — never logged, never committed).
+      extraHTTPHeaders: { "x-vercel-protection-bypass": bypassSecret },
+    });
     const res = await ctx.post("/api/auth/login", { data: { email: role.email, password } });
     if (!res.ok()) {
       throw new Error(
