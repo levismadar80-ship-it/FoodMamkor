@@ -1732,12 +1732,15 @@
         "flagged": "מוצרים ביתיים בבדיקה",
         "hidden": "מוסתרים אוטומטית"
       },
-      "section_3plus": "בתי עסק עם 3+ דיווחים",
+      "section_open": "בתי עסק עם דיווחים פתוחים",
+      "auto_flag_badge": "3+ דיווחים",
       "no_reports": "אין דיווחים פתוחים",
       "report_count": "{count} דיווחים",
       "actions": {
         "suspend": "⏸️ השהה עסק",
-        "ignore": "התעלם"
+        "ignore": "התעלם",
+        "dismiss_confirm": "להתעלם מכל הדיווחים על {name}?",
+        "dismissing": "מתעלמת…"
       },
       "remove_reason_prompt": "סיבת ההסרה (תישלח למוכר)",
       "flagged": {
@@ -1746,7 +1749,8 @@
         "empty": "אין מוצרים בבדיקה כרגע",
         "default_reason": "סומן לבדיקה",
         "approve": "אשרי",
-        "remove": "❌ הסירי"
+        "remove": "❌ הסירי",
+        "removing": "מסירה…"
       },
       "hidden": {
         "heading": "מוצרים ביתיים מוסתרים אוטומטית",

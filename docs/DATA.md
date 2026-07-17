@@ -195,6 +195,9 @@ home_product_ratings (
 reports (
   id uuid PK, reporter_id FK, producer_id FK,
   reason text, created_at,
+  status varchar NOT NULL default 'open',   -- open|resolved|dismissed (MEH-1266)
+  resolved_at timestamp NULL,               -- (MEH-1266)
+  resolved_by uuid FK users NULL,           -- ON DELETE SET NULL (MEH-1266)
   UNIQUE(reporter_id, producer_id)   -- uq_report_reporter_producer (MEH-773)
 )
 ```
@@ -640,8 +643,10 @@ preserved (admin → 200).
 ### Reports (`app/routers/reports.py`)
 
 ```
-POST /producers/{id}/report      auth  — 3 reports auto-flag for admin; 409 if already reported (MEH-773)
-GET  /admin/reports              admin
+POST /producers/{id}/report                auth  — 3 OPEN reports auto-flag for admin; 409 if already reported (MEH-773)
+GET  /admin/reports                        admin — every producer with >=1 OPEN report; report_count (open) + auto_flagged (>=3). Closed excluded (MEH-1266)
+POST /admin/reports/{report_id}/resolve    admin — status→resolved + resolved_at/by; 409 if already closed (MEH-1266)
+POST /admin/reports/{report_id}/dismiss    admin — status→dismissed + resolved_at/by; 409 if already closed (MEH-1266)
 ```
 
 ### Marketing (`app/routers/marketing.py`)

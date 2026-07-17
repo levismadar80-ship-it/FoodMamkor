@@ -648,8 +648,25 @@ class Report(Base):
     )
     reason = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # MEH-1266: report lifecycle. status ∈ {open, resolved, dismissed};
+    # dashboard counters + /admin/reports filter on status == "open".
+    status = Column(
+        String,
+        nullable=False,
+        default="open",
+        server_default=text("'open'"),
+    )
+    resolved_at = Column(DateTime, nullable=True)
+    # SET NULL (not CASCADE): closing an account must not delete the report
+    # history — only drop the resolver attribution.
+    resolved_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
-    reporter = relationship("User")
+    reporter = relationship("User", foreign_keys=[reporter_id])
+    resolver = relationship("User", foreign_keys=[resolved_by])
     producer = relationship("Producer", back_populates="reports")
 
 

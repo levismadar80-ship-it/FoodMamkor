@@ -1730,12 +1730,15 @@
         "flagged": "Home products under review",
         "hidden": "Auto-hidden"
       },
-      "section_3plus": "Businesses with 3+ reports",
+      "section_open": "Businesses with open reports",
+      "auto_flag_badge": "3+ reports",
       "no_reports": "No open reports",
       "report_count": "{count} reports",
       "actions": {
         "suspend": "⏸️ Suspend business",
-        "ignore": "Ignore"
+        "ignore": "Ignore",
+        "dismiss_confirm": "Dismiss all reports for {name}?",
+        "dismissing": "Dismissing…"
       },
       "remove_reason_prompt": "Removal reason (will be sent to the seller)",
       "flagged": {
@@ -1744,7 +1747,8 @@
         "empty": "No products under review right now",
         "default_reason": "Flagged for review",
         "approve": "Approve",
-        "remove": "❌ Remove"
+        "remove": "❌ Remove",
+        "removing": "Removing…"
       },
       "hidden": {
         "heading": "Auto-hidden home products",

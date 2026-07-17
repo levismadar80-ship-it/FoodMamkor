@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1266 reports lifecycle (HIGH, schema) — feature/meh-1266-report-lifecycle
+
+- **What:** full resolve/dismiss lifecycle for producer reports. NEW Alembic `c5e1a9d7f2b4` (head, off `d4e7a92c81b5`): `reports.status` (VARCHAR NOT NULL `'open'`, backfilled) + `resolved_at` + `resolved_by` (FK users ON DELETE SET NULL). NEW `POST /admin/reports/{id}/resolve|dismiss` (409 double-close). `GET /admin/reports` drops the ≥3 gate → every producer with ≥1 open report + `auto_flagged`. Dashboard `open_reports` + sidebar badge count open only. Reports page: batch-dismiss endpoint (survives refresh), neutral border for 1–2, red for 3+, `window.prompt`→dialog.
+- **Checkpoint (MEH-267):** Alembic revision posted in-thread; awaited Sapir "go" before apply/merge. Columns present in pytest via `create_all` (suite green without applying the migration).
+- **QA:** pytest `test_report_lifecycle.py` 9/9 + `test_api.py` 216/216; vitest `AdminReportsPage.test.jsx`. Build + local full-stack QA per QA sweep. Files: models.py, reports.py, admin_extra.py, reports/page.js, he/en.json, DATA.md, db-schema.md, api-routes.md.
+- **File-location deviation:** tests live at repo-root `tests/` (not `backend/tests/` as the ticket wrote) — matches the real suite location.
+
 ## 2026-07-17 — MEH-1241 Chunk 5: Vercel protection-bypass for staging auth runs — feature/meh-1241-qa-vercel-bypass (PR #1812, NOT merged)
 
 - **🔑 DURABLE LESSON — `staging.mehamakor.online` sits behind Vercel Deployment Protection (`vercel_auth_enabled`).** **ANY automated request to staging** — Playwright E2E, `curl`, monitoring, smoke checks — **must send the header `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET`**, or it 302-redirects to `vercel.com/sso-api` and **never reaches the backend**. Verified live 17/07: **no header → 302** (→ `vercel.com/sso-api`); **with header → HTTP 200 + `refresh_token` + `X-Railway-Edge`** (real backend hit). For Playwright the header is needed on **BOTH** surfaces — the API `request` context **and** the browser context (`page.goto`) — else login succeeds but navigation still hits the SSO wall. Get the secret from **Vercel → Settings → Deployment Protection → Protection Bypass for Automation** (system env `VERCEL_AUTOMATION_BYPASS_SECRET`); **rotating it needs a redeploy**. Never log/commit the value.
