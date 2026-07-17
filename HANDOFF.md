@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1277 — soften visited map pin (grayscale + 0.7) — `feature/meh-1277-visited-pin-soften` (PR #1854)
+
+- **What:** single-file visual fix in `frontend/components/MapComponent.jsx` `createCategoryMarker`. The visited/`dimmed` state was `opacity 0.4`, which on a 36px circle read as disabled/broken (Sapir filed a bug — proof it read as a fault). Now `opacity 0.7` + `filter:grayscale(1)` on the marker circle div — desaturated but legible (Airbnb viewed-state pattern). active/hover/premium rings untouched; docstring updated.
+- **QA:** `npm run build` green. Frontend-only, no schema/API/backend change. `MapComponent.jsx` is not in the central-components list (`MapClient.jsx` is); token-only visual change, no logic.
+- **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day, resets in ~24h) — no preview URL for on-device check until it resets. Not a required CI gate; does not block merge.
+- **Batch:** ticket 1 of the MEH-1277→MEH-1276 batch (LOW-RISK, Sapir-granted end-to-end merge authority).
+
 ## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
 
 - **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
