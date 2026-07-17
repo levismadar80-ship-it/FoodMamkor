@@ -34,6 +34,7 @@ import EditAccordionCard from "@/components/EditAccordionCard";
 import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
+import HoursEditor from "./HoursEditor";
 
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
@@ -900,73 +901,17 @@ export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
-// MEH-1242 PR5: producer-facing opening-hours editor. opening_hours was
-// admin-only; PR5 adds it to _PRODUCER_WRITABLE_FIELDS + ProducerUpdate.
-// Free-text (LTR), persists via PUT /producers/me. Mirrors LocationCard.
+// MEH-1276: producer-facing opening-hours editor. Was a free-text LTR field
+// (MEH-1242 PR5) that expected the machine format "Sun-Thu 09:00-18:00" and
+// silently dropped any deviation. Now a structured Hebrew editor (7 day rows +
+// toggle + time inputs) that serialises to the same canonical string — storage,
+// API, and lib/hours.parseHours are unchanged. Editor lives in HoursEditor.jsx
+// (cards.jsx is already >1200 lines); this stays a thin, test-exported wrapper.
 // ============================================================
 
 // Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
 export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
-  const t = useTranslations("dashboard.producer.hours");
-  const seed = profile?.opening_hours ?? "";
-  const [hours, setHours] = useState(seed);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(null);
-
-  const dirty = hours !== seed;
-  useEffect(() => {
-    reportDirty("hours", dirty);
-    return () => reportDirty("hours", false);
-  }, [dirty, reportDirty]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setSaved(false);
-    setErrorMsg(null);
-    try {
-      const payload = { opening_hours: hours.trim() || null };
-      await api.put("/producers/me", payload);
-      onSave(payload);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
-      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div>
-      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
-      <Input
-        type="text"
-        dir="ltr"
-        label={t("field_label")}
-        value={hours}
-        onChange={(e) => setHours(e.target.value)}
-        placeholder={t("placeholder")}
-      />
-
-      {errorMsg && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
-          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
-          {errorMsg}
-        </p>
-      )}
-
-      <button
-        onClick={handleSave}
-        disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
-      >
-        <span aria-live="polite" aria-atomic="true">
-          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
-        </span>
-      </button>
-    </div>
-  );
+  return <HoursEditor profile={profile} onSave={onSave} reportDirty={reportDirty} />;
 }
 
 // ============================================================

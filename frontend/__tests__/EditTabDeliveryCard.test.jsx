@@ -118,21 +118,51 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
   });
 });
 
-describe("Edit-tab HoursCard (isolation)", () => {
-  it("saves opening_hours via PUT /producers/me", async () => {
+// MEH-1276: HoursCard is now the structured editor (HoursEditor) — the preset
+// fills the 7-day table, save serialises to the same canonical string, an
+// existing string prefills (and round-trips clean → not dirty), and an
+// unparseable value warns without being discarded.
+describe("Edit-tab HoursCard (structured editor, MEH-1276)", () => {
+  it("preset fills the table and saves the canonical string", async () => {
     const { onSave } = renderCard(HoursCard, { profile: { opening_hours: "" } });
-    fireEvent.change(screen.getByLabelText(H.field_label), {
-      target: { value: "Sun-Thu 9-17" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: H.save_cta }));
+    // Empty + not dirty → save disabled.
+    expect(screen.getByRole("button", { name: H.save_cta })).toBeDisabled();
 
+    // One-click preset → dirty → save enabled.
+    fireEvent.click(screen.getByRole("button", { name: H.preset }));
+    const saveBtn = screen.getByRole("button", { name: H.save_cta });
+    expect(saveBtn).not.toBeDisabled();
+
+    fireEvent.click(saveBtn);
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
-        opening_hours: "Sun-Thu 9-17",
+        opening_hours: "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
       }),
     );
     await waitFor(() =>
-      expect(onSave).toHaveBeenCalledWith({ opening_hours: "Sun-Thu 9-17" }),
+      expect(onSave).toHaveBeenCalledWith({
+        opening_hours: "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+      }),
     );
+    // Persistent success confirmation (MEH-1270 pattern).
+    expect(await screen.findByTestId("hours-save-success")).toBeInTheDocument();
+  });
+
+  it("prefills from an existing canonical string and round-trips clean (not dirty)", () => {
+    renderCard(HoursCard, {
+      profile: { opening_hours: "Sun-Thu 09:00-18:00, Fri 09:00-14:00" },
+    });
+    // Re-serialises identically → save stays disabled until a real edit.
+    expect(screen.getByRole("button", { name: H.save_cta })).toBeDisabled();
+    // Seeded times are reflected in the time inputs (Sun-Thu 09:00-18:00).
+    expect(screen.getAllByDisplayValue("18:00").length).toBeGreaterThan(0);
+    expect(screen.getAllByDisplayValue("14:00").length).toBeGreaterThan(0);
+  });
+
+  it("warns on an unparseable string without discarding it", () => {
+    renderCard(HoursCard, {
+      profile: { opening_hours: "whenever we feel like it" },
+    });
+    expect(screen.getByText(H.unparseable)).toBeInTheDocument();
   });
 });
