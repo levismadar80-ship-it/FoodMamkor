@@ -193,6 +193,11 @@ DEMO_REVIEWS = [
 ]
 
 DEMO_OWNER_EMAIL = "demo-owner@example.com"
+# MEH-1241: dedicated QA consumer (code constant, NOT an env var). Distinct
+# from the 3 display-only review consumers (DEMO_REVIEWS), which keep their
+# random unrecorded passwords and are never touched by --sync-users.
+DEMO_CONSUMER_EMAIL = "demo-consumer@example.com"
+DEMO_CONSUMER_NAME = "לקוחת בדיקות (QA)"
 ADMIN_NOTE = (
     "DEMO BUSINESS — MEH-1074 Wave 3 'sample perfect listing'. "
     "STAGING ONLY: never promote/import this row to production "
@@ -357,6 +362,80 @@ def seed_demo_business(db, refresh: bool = False) -> Producer | None:
     return producer
 
 
+def _sync_users(db) -> None:
+    """MEH-1241: non-destructive, users-only sync for staging QA fixtures.
+
+    Repairs exactly the two ``users`` rows Playwright needs a KNOWN password
+    for, WITHOUT touching the producer, its reviews/products/recipes/events, or
+    the 3 display-only demo reviewers. Deliberately does NOT go through
+    ``_delete_existing`` — no cascade, no new producer UUID (see the --refresh
+    path, which is left untouched).
+
+    - ``demo-owner@example.com`` (role=producer, already linked to the demo
+      producer): reset ``password_hash`` from ``DEMO_OWNER_PASSWORD`` + ensure
+      ``email_verified``. UPDATE-only — its ``producer_id`` linkage is created
+      solely by the full seed, so a MISSING owner means the demo business isn't
+      seeded yet → abort rather than create a producer-less "producer".
+    - ``demo-consumer@example.com``: upsert as a verified consumer with a
+      password from ``DEMO_CONSUMER_PASSWORD`` (no producer linkage).
+
+    Both env passwords are mandatory: abort if either is unset — never write a
+    random password again (that random-at-seed gap was the MEH-1241 root cause).
+    Passwords are never printed. Idempotent: re-running yields the same rows.
+    """
+    owner_pw = os.getenv("DEMO_OWNER_PASSWORD")
+    consumer_pw = os.getenv("DEMO_CONSUMER_PASSWORD")
+    missing = [
+        name
+        for name, val in (
+            ("DEMO_OWNER_PASSWORD", owner_pw),
+            ("DEMO_CONSUMER_PASSWORD", consumer_pw),
+        )
+        if not val
+    ]
+    if missing:
+        sys.exit(
+            "REFUSING to sync QA users: missing env var(s) "
+            f"{', '.join(missing)}. Set them (Railway staging backend / local) "
+            "before --sync-users — a random password would be unusable for QA."
+        )
+
+    # Producer owner — UPDATE only (never create here: the producer_id linkage
+    # comes from the full seed, and a producer-less role='producer' would render
+    # a broken /producer/undefined menu row, MEH-1226).
+    owner = db.query(User).filter(User.email == DEMO_OWNER_EMAIL).first()
+    if owner is None:
+        sys.exit(
+            f"REFUSING to sync QA users: {DEMO_OWNER_EMAIL} not found. Run the "
+            "full seed first (python backend/scripts/seed_demo_business.py, "
+            "skip-if-exists) to create the producer + owner, then re-run "
+            "--sync-users."
+        )
+    owner.password_hash = hash_password(owner_pw)
+    owner.email_verified = True
+
+    # Consumer — UPSERT (create if missing; consumers have no producer_id).
+    consumer = db.query(User).filter(User.email == DEMO_CONSUMER_EMAIL).first()
+    created = consumer is None
+    if consumer is None:
+        consumer = User(
+            email=DEMO_CONSUMER_EMAIL,
+            name=DEMO_CONSUMER_NAME,
+            role="consumer",
+            email_verified=True,
+        )
+        db.add(consumer)
+    consumer.password_hash = hash_password(consumer_pw)
+    consumer.email_verified = True
+
+    db.commit()
+    print(
+        f"Synced QA users: {DEMO_OWNER_EMAIL} (password reset), "
+        f"{DEMO_CONSUMER_EMAIL} ({'created' if created else 'password reset'}). "
+        "Producer / reviews / products / display reviewers untouched."
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -364,11 +443,26 @@ def main() -> None:
         action="store_true",
         help="delete the existing demo business (+ seed users) and recreate",
     )
+    parser.add_argument(
+        "--sync-users",
+        action="store_true",
+        help=(
+            "MEH-1241: non-destructive — set demo-owner + demo-consumer "
+            "passwords from DEMO_OWNER_PASSWORD / DEMO_CONSUMER_PASSWORD, "
+            "leaving the producer, reviews, products and the 3 display "
+            "reviewers untouched. Mutually exclusive with --refresh."
+        ),
+    )
     args = parser.parse_args()
+    if args.sync_users and args.refresh:
+        sys.exit("--sync-users and --refresh are mutually exclusive.")
     _assert_not_production()
     db = SessionLocal()
     try:
-        seed_demo_business(db, refresh=args.refresh)
+        if args.sync_users:
+            _sync_users(db)
+        else:
+            seed_demo_business(db, refresh=args.refresh)
     finally:
         db.close()
 

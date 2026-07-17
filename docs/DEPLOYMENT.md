@@ -799,6 +799,60 @@ deploys, which is exactly the opposite of what we want.
 The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
 runs Playwright tests against each PR's Vercel preview URL.
 
+### Staging QA auth fixtures (MEH-1241)
+
+Playwright can drive a logged-in **producer** and **consumer** session against
+staging, so UI behind login (e.g. the account menu) is QA'd automatically
+instead of manually. Three moving parts:
+
+1. **Seed accounts (staging DB).** `backend/scripts/seed_demo_business.py`
+   owns two known-password QA users — `demo-owner@example.com` (role
+   `producer`, linked to the `/ruach-hasadeh` demo) and
+   `demo-consumer@example.com` (role `consumer`). Their passwords come from the
+   env vars **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** (set on the
+   Railway staging backend + GitHub Actions secrets, same values). To (re)apply
+   them **non-destructively** — no producer/review/product rows touched, unlike
+   `--refresh`:
+
+   ```bash
+   railway run python backend/scripts/seed_demo_business.py --sync-users
+   ```
+
+   Run by Sapir against staging only (the script's `_assert_not_production()`
+   refuses any non-staging host). Idempotent; aborts loudly if either password
+   env var is unset.
+
+2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
+   each role in via `POST /api/auth/login` and writes
+   `frontend/e2e/.auth/{producer,consumer}.json` (the JWT lands in
+   `localStorage["token"]`, where the SPA reads it). These files embed a **live
+   JWT** and are **gitignored** (`frontend/.gitignore` → `e2e/.auth/`) — never
+   committed. globalSetup **no-ops on a localhost baseURL** (the accounts exist
+   on staging only) and **throws** on a remote target with a missing password
+   env or a failed login.
+
+3. **A spec opts into a role** — no per-spec login code:
+
+   ```ts
+   import { test } from "@playwright/test";
+   test.use({ storageState: "e2e/.auth/producer.json" }); // or consumer.json
+   ```
+
+**Where these run:** only against a real staging/preview target —
+
+```bash
+cd frontend
+TEST_URL=https://staging.mehamakor.online \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… \
+npx playwright test path/to/auth-spec.ts
+```
+
+They do **not** run in the default CI E2E job, which targets a local
+`next start` (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, MEH-1044) where the
+seeded accounts don't exist — there globalSetup logs a skip and returns. The
+existing admin fixture (`SMOKE_ADMIN_*` → `POST /auth/login` in
+`e2e/flows/19,20`) is separate and unchanged.
+
 ### How it works (current: `deployment_status` trigger)
 
 GitHub Actions fires **only after Vercel signals the preview is ready**
