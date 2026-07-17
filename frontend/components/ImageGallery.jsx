@@ -20,6 +20,13 @@ export default function ImageGallery({ images = [], producerId = null, producerN
   const touchEndX = useRef(null);
   // Keep a ref to the currently displayed image so Lightbox can return focus to it
   const imageButtonRef = useRef(null);
+  // MEH-1247: the specific trigger element that opened the lightbox. The desktop
+  // editorial grid cells (hero / secondary) have no ref of their own, so restoring
+  // focus to `imageButtonRef` (the md:hidden mobile banner) sent focus to a
+  // display:none element on desktop → the WAI-ARIA "return focus to invoker"
+  // contract broke and the E2E focus assertion flaked. Capture the actual invoker
+  // on open and restore focus to it on close (WAI-ARIA dialog pattern).
+  const triggerRef = useRef(null);
 
   const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -49,8 +56,10 @@ export default function ImageGallery({ images = [], producerId = null, producerN
 
   // MEH-1047: open the lightbox at a specific image. The desktop editorial
   // grid cells open at their own index; the mobile carousel opens at `current`.
-  const openLightbox = useCallback((index) => {
+  const openLightbox = useCallback((index, trigger) => {
     setCurrent(index);
+    // MEH-1247: remember the invoker so focus returns to it on close.
+    if (trigger) triggerRef.current = trigger;
     setLightboxOpen(true);
   }, []);
 
@@ -135,7 +144,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         {/* Hero cell — inline-start; spans both rows when a stacked pair exists */}
         <button
           type="button"
-          onClick={() => openLightbox(0)}
+          onClick={(e) => openLightbox(0, e.currentTarget)}
           aria-label={t("open_aria", { current: 1 })}
           className={`relative overflow-hidden bg-gray-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
             images.length >= 3 ? "row-span-2" : ""
@@ -165,7 +174,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             <button
               key={idx}
               type="button"
-              onClick={() => openLightbox(idx)}
+              onClick={(e) => openLightbox(idx, e.currentTarget)}
               aria-label={
                 isPillCell
                   ? t("view_all", { n: images.length })
@@ -204,7 +213,7 @@ export default function ImageGallery({ images = [], producerId = null, producerN
       <button
         ref={imageButtonRef}
         type="button"
-        onClick={() => setLightboxOpen(true)}
+        onClick={(e) => openLightbox(current, e.currentTarget)}
         aria-label={t("open_aria", { current: current + 1 })}
         className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
       >
@@ -259,7 +268,9 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         startIndex={current}
         onClose={() => {
           setLightboxOpen(false);
-          imageButtonRef.current?.focus();
+          // MEH-1247: return focus to the actual invoker (desktop grid cell or
+          // mobile banner), falling back to the mobile banner ref if unknown.
+          (triggerRef.current || imageButtonRef.current)?.focus?.();
         }}
       />
     )}
