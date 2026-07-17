@@ -66,6 +66,43 @@ describe("Edit-tab DeliveryCard (isolation)", () => {
         offers_delivery: true,
         delivery_nationwide: true,
         delivery_area_cities: [],
+        delivery_excluded_cities: [],
+      }),
+    );
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+  });
+
+  it("nationwide reveals the exclusion field and persists delivery_excluded_cities (MEH-1255)", async () => {
+    const { onSave } = renderCard(DeliveryCard, {
+      profile: {
+        has_physical_location: false,
+        offers_delivery: true,
+        delivery_nationwide: true,
+        delivery_areas: [],
+        delivery_excluded_cities: ["אילת"],
+      },
+    });
+    // The exclusion label + hint render in nationwide mode; the delivery-cities
+    // label does not (that field is hidden when nationwide).
+    expect(screen.getByText(D.delivery_excluded_label)).toBeInTheDocument();
+    expect(screen.getByText(D.delivery_excluded_hint)).toBeInTheDocument();
+    expect(screen.queryByText(D.delivery_cities_label)).not.toBeInTheDocument();
+
+    // Seeded + not dirty → save disabled. Make a real change (add a physical
+    // location) so the seeded exclusion list round-trips through the payload.
+    expect(screen.getByRole("button", { name: D.save_cta })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: D.has_physical_location }));
+    const saveBtn = screen.getByRole("button", { name: D.save_cta });
+    expect(saveBtn).not.toBeDisabled();
+
+    fireEvent.click(saveBtn);
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        has_physical_location: true,
+        offers_delivery: true,
+        delivery_nationwide: true,
+        delivery_area_cities: [],
+        delivery_excluded_cities: ["אילת"],
       }),
     );
     await waitFor(() => expect(onSave).toHaveBeenCalled());

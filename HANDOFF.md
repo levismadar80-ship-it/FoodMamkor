@@ -21,6 +21,15 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1255 delivery-exclusion mode "לכל הארץ חוץ מ:" — feature/meh-1255-delivery-exclusion (HIGH-RISK, chunk-by-chunk)
+
+- **Status:** all 3 chunks Sapir-approved at their WAIT gates; PR opened + merging on the 2 required gates.
+- **Chunk A (schema, Alembic-only):** migration `e7c4b1f95a2d` — `producers.delivery_excluded_cities TEXT[] NOT NULL DEFAULT '{}'` + CHECK `delivery_excluded_requires_nationwide`. Applied + verified locally (`upgrade head` from base, `alembic check` clean). No new table.
+- **Chunk B (backend):** schemas (Admin create / Update / public ListOut) + validators + shared effective-state guard `app/services/delivery_validation.py` (partial-update 422 not 500) + owner/admin write paths + consumer `delivery_city` filter rewritten (inner JOIN → EXISTS + nationwide-minus-excluded branch — nationwide producers now match the city filter). pytest: `tests/test_delivery_exclusion.py` 8, `test_api.py` 216, adjacent 17 — all green.
+- **Chunk C (frontend):** `DeliveryCard` (`edit/cards.jsx`) + admin `ProducerForm` reveal an optional "חוץ מ:" CitiesAutocomplete (region chips) when nationwide is on; `DeliveryBlock` "משלוחים לכל הארץ (למעט …)"; `ProducerSections` passes `delivery_excluded_cities`. i18n he+en (`nationwide_except`, `delivery_excluded_label/hint`). vitest: DeliveryBlock +3, EditTabDeliveryCard +1 (existing PUT assertion updated for the new field); affected suites 26/26; build green.
+- **Docs:** DATA.md (producers DDL + MEH-1255 note), `.ai/diagrams/db-schema.md` (3rd CHECK note), MANUAL_TESTING § MEH-1255, CHANGELOG, this entry.
+- **Next:** merge on the 2 required gates. Then MEH-1255 → Done.
+
 ## 2026-07-17 — staging QA (MEH-1210/1211) + MEH-1268 CATEGORY_STYLES
 
 **T1 — MEH-1268 (Closes, PR #1839, squash `93ecdfa8`):** `frontend/lib/map-categories.js` — renamed the stale post-MEH-927 combined key `"בשר, עוף ודגים"` → `"בשר"` (identical `#c04040` + `Cow`) and added `"דגים"` (`Fish` glyph, **same** meat colour — MEH-936 redundant shape encoding, no new palette colour, MEH-763 F2-safe). Fixes meat/fish businesses falling through `styleForProducer` → DEFAULT Leaf/green on all 4 map surfaces. `map-chips.js` untouched (filter grouping resolves against DB names). vitest 42 + build green.

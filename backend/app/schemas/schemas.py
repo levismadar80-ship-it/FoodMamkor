@@ -2,6 +2,7 @@ import re
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
+from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
@@ -80,6 +81,44 @@ def _url_scheme_validator(value: str | None) -> str | None:
     if not stripped.lower().startswith(("http://", "https://")):
         raise ValueError("כתובת אתר חייבת להתחיל ב-http:// או https://")
     return stripped
+
+
+# MEH-1222: image-URL fields silently accepted garbage — "bread.jpg",
+# "http.ad.jpg", "https://bread.jpg" — which then 404-storm through
+# next/image. Stronger than _url_scheme_validator: besides the http(s)
+# scheme it rejects a bare filename pasted as the host (a netloc that ENDS
+# in an image extension), which is exactly the "https://bread.jpg" class
+# the scheme check alone lets through. A real Cloudinary URL carries the
+# ".jpg" in the PATH ("res.cloudinary.com/…/bread.jpg"), not the host, so
+# it passes. Input schemas only — response schemas stay unvalidated so
+# existing bad rows still READ (data cleanup is a separate DML-side pass).
+_IMAGE_HOST_EXT_RE = re.compile(
+    r"\.(jpe?g|png|webp|gif|svg|avif|bmp|tiff?)$", re.IGNORECASE
+)
+
+
+def _image_url_validator(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if stripped == "":
+        return None
+    if not stripped.lower().startswith(("http://", "https://")):
+        raise ValueError("כתובת תמונה חייבת להתחיל ב-http:// או https://")
+    # netloc without credentials/port; a real host never ends in an image ext.
+    host = urlparse(stripped).netloc.split("@")[-1].split(":")[0]
+    if not host or "." not in host or _IMAGE_HOST_EXT_RE.search(host):
+        raise ValueError("כתובת התמונה אינה תקינה")
+    return stripped
+
+
+def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
+    # Drop blank entries, validate each surviving URL. Preserves order.
+    if value is None:
+        return value
+    return [
+        _image_url_validator(v) for v in value if v is not None and str(v).strip() != ""
+    ]
 
 
 def _require_categories_validator(value: list[int] | None) -> list[int]:
@@ -372,6 +411,12 @@ class ProductCreate(BaseModel):
     def empty_str_to_none(cls, v):
         return None if v == "" else v
 
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
     @model_validator(mode="after")
     def check_price_max_gte_min(self):
         if self.price_max is not None and self.price_max < self.price_min:
@@ -396,6 +441,12 @@ class ProductUpdate(BaseModel):
     @classmethod
     def empty_str_to_none(cls, v):
         return None if v == "" else v
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
     @model_validator(mode="after")
     def check_price_max_gte_min(self):
@@ -509,6 +560,10 @@ class ProducerAdminCreate(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — only legal
+    # with delivery_nationwide=true (validator below + DB CHECK
+    # delivery_excluded_requires_nationwide).
+    delivery_excluded_cities: list[str] = []
 
     @field_validator("description")
     @classmethod
@@ -536,6 +591,12 @@ class ProducerAdminCreate(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1222: reject malformed image URLs in the producer photo array.
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
     @model_validator(mode="after")
     def _validate_location_mode(self):
         if not self.has_physical_location and not self.offers_delivery:
@@ -545,6 +606,9 @@ class ProducerAdminCreate(BaseModel):
         # semantic, only the field source changed.
         if self.delivery_nationwide and len(self.delivery_area_cities) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: an exclusion list is only meaningful in nationwide mode.
+        if self.delivery_excluded_cities and not self.delivery_nationwide:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
 
@@ -629,6 +693,11 @@ class ProducerUpdate(BaseModel):
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
     delivery_cities: list[str] | None = None
+    # MEH-1255: nationwide exclusion list. Schema validator catches the
+    # explicit nationwide=false + excluded case; the routers guard the
+    # EFFECTIVE state on partial updates (excluded sent while the stored
+    # delivery_nationwide is false) so the DB CHECK never 500s.
+    delivery_excluded_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
@@ -697,6 +766,12 @@ class ProducerUpdate(BaseModel):
     def _validate_contact_urls(cls, v):
         return _url_scheme_validator(v)
 
+    # MEH-1222: reject malformed image URLs in the producer photo array.
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
     @model_validator(mode="after")
     def _validate_location_mode(self):
         hp = self.has_physical_location
@@ -711,6 +786,11 @@ class ProducerUpdate(BaseModel):
         dc = self.delivery_area_cities
         if dn and dc and len(dc) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: excluded cities sent together with an explicit
+        # nationwide=false is always invalid (partial-update effective-state
+        # check lives in the routers).
+        if self.delivery_excluded_cities and dn is False:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
     @model_validator(mode="after")
@@ -807,6 +887,9 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
+    # "משלוחים לכל הארץ (למעט …)". Empty unless delivery_nationwide.
+    delivery_excluded_cities: list[str] = []
     # MEH-902: serialize the rich delivery relation so MapProducerCard's
     # "delivers to your city" pill can render — it needs per-row `city` +
     # `delivery_day`, which the flat `delivery_cities` above doesn't carry.
@@ -1158,6 +1241,17 @@ class HomeProductCreate(BaseModel):
     def _sanitize_allergens(cls, v):
         return sanitize_text(v, max_length=200)
 
+    # MEH-1222: reject malformed image URLs (public neighbor-product form).
+    @field_validator("photo")
+    @classmethod
+    def _validate_photo(cls, v):
+        return _image_url_validator(v)
+
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
+
 
 class HomeProductUpdate(BaseModel):
     title: str | None = None
@@ -1201,6 +1295,17 @@ class HomeProductUpdate(BaseModel):
     @classmethod
     def _sanitize_allergens(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1222: reject malformed image URLs (public neighbor-product form).
+    @field_validator("photo")
+    @classmethod
+    def _validate_photo(cls, v):
+        return _image_url_validator(v)
+
+    @field_validator("images")
+    @classmethod
+    def _validate_images(cls, v):
+        return _image_url_list_validator(v)
 
 
 class HomeProductRatingOut(BaseModel):
@@ -1332,6 +1437,12 @@ class ExperienceCreate(BaseModel):
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=300)
 
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class ExperienceUpdate(BaseModel):
     title: str | None = Field(None, min_length=4, max_length=300)
@@ -1371,6 +1482,12 @@ class ExperienceUpdate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=300)
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class ExperienceModerationAction(BaseModel):
@@ -1495,6 +1612,13 @@ class ProducerRecipeBase(BaseModel):
     def _sanitize_instructions(cls, v):
         return sanitize_text(v, max_length=10000)
 
+    # MEH-1222: reject malformed image URLs at the write boundary
+    # (inherited by ProducerRecipeCreate).
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class ProducerRecipeCreate(ProducerRecipeBase):
     pass
@@ -1533,6 +1657,12 @@ class ProducerRecipeUpdate(BaseModel):
     @classmethod
     def _sanitize_instructions(cls, v):
         return sanitize_text(v, max_length=10000) if v else v
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class ProducerRecipeOut(BaseModel):
@@ -1742,6 +1872,12 @@ class EventCreate(BaseModel):
     def _sanitize_location(cls, v):
         return sanitize_text(v, max_length=200)
 
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
+
 
 class EventUpdate(BaseModel):
     title: str | None = None
@@ -1768,6 +1904,12 @@ class EventUpdate(BaseModel):
     @classmethod
     def _sanitize_location(cls, v):
         return sanitize_text(v, max_length=200)
+
+    # MEH-1222: reject malformed image URLs at the write boundary.
+    @field_validator("image_url")
+    @classmethod
+    def _validate_image_url(cls, v):
+        return _image_url_validator(v)
 
 
 class EventOut(BaseModel):
