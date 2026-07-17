@@ -5,6 +5,27 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1242 admin-panel fix series: 5 PRs, ALL MERGED
+
+- **Outcome (one PR per logical change, each squash-merged on green required gates):**
+
+| PR | squash | what shipped |
+|---|---|---|
+| 1 #1790 | `fa619554` | ProducerForm `Section`/`Field` → module scope (focus-remount fix); ProducerForm mutations + `users/page.js` `applyRole` → `useAdminAction`; explicit `handleSubmit` payload (legacy `delivery_cities` dropped) |
+| 2 #1794 | `b2071f48` | admin lat/lng → `AddressSearch` geocode + collapsed manual-coords toggle (reuses owner LocationCard + existing i18n) |
+| 3 #1799 | `e1b54426` | edit tab: `whatsapp_group` field + new "מחיר ומוצר מוביל" card (`price_range` + `top_product_name`) |
+| 4 #1803 | `61c5cf74` | canonical `SITE_DOMAIN` (= `mehamakor.co.il`); `onboarding_followup.py` signatures resolve from it; outreach call-script `.online`→`.co.il` |
+| 5 #1806 | `a969890d` | HIGH-RISK, Sapir-approved: owner `PUT /producers/me` gains `opening_hours` + location-mode fields (+ `ProducerUpdate.opening_hours`, also fixed the admin PUT gap); new `HoursCard` + `DeliveryCard`. **No Alembic.** |
+
+- **No schema changes** — every column already existed; no Alembic in the series (PR5 = whitelist + one schema-field-add only).
+- **Deferred to Sapir:** mobile QA on PR2/3/5 (visible UI) — Vercel previews were rate-limited (`api-deployments-free-per-day`, 16/07); verify on `staging.mehamakor.online` or a fresh preview once quota resets.
+- **STOP conditions:** none triggered. PR5's HIGH-RISK STOP was honored — opened for review, merged only after Sapir's explicit "MERGE".
+
+- **Process lesson — "stop for review WITH green CI" pattern (draft-PR trap, learned on PR5):** to hold a HIGH-RISK PR for human review without merging, do **NOT** use a draft PR or a DO-NOT-MERGE marker:
+  - **Draft PRs skip the required build/test jobs** — `pr-checks.yml` gates them on `github.event.pull_request.draft == false` (MEH-926). So a draft never produces the green CI the reviewer needs; its `CI gate` shows green only via the skipped-jobs=success mechanism — a **false green** (workflow rule 21).
+  - **A `DO-NOT-MERGE` / `do-not-merge` marker in the PR title or body FAILS the `do-not-merge-gate`** (`pr-checks.yml:50`, MEH-1155 / ADR-016), and that gate is a `needs:` prerequisite for the test jobs → the whole build/test pipeline is skipped → again no validation.
+  - **Correct pattern:** open the PR **ready-for-review** (CI runs fully + goes green) and simply **do not merge it**. Merges are manual and Sapir-gated by the `protect-staging` ruleset, and no auto-merge is configured — so a ready, un-merged PR is already safe. The reviewer gets a real green CI to review against, and the human still owns the merge.
+
 ## 2026-07-16 — MEH-1251 admin clicks (2 chunks: AdminRowMenu portal + Header pointer-events)
 
 - **Chunk A (LOW, merge-on-green authority) — `feature/meh-1251-adminrowmenu-portal`:** AdminRowMenu (⋮) now portals its open panel to `document.body` + `position: fixed` measured from the trigger rect (REUSE of FilterSheet portal precedent) → escapes the admin tables' `overflow-hidden`/`overflow-x-auto` clipping on lower rows. RTL end-edge pin via logical `insetInlineEnd`. Full a11y/dismissal contract preserved (outside-click now also exempts the portaled `menuRef`); closes on scroll/resize. `AdminRowMenu.jsx` + `AdminRowMenu.test.jsx` only — consumers untouched. build + vitest (9 passed) + lint(0 err) + RTL hook all green.
