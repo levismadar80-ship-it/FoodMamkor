@@ -509,6 +509,10 @@ class ProducerAdminCreate(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list ("לכל הארץ חוץ מ:") — only legal
+    # with delivery_nationwide=true (validator below + DB CHECK
+    # delivery_excluded_requires_nationwide).
+    delivery_excluded_cities: list[str] = []
 
     @field_validator("description")
     @classmethod
@@ -545,6 +549,9 @@ class ProducerAdminCreate(BaseModel):
         # semantic, only the field source changed.
         if self.delivery_nationwide and len(self.delivery_area_cities) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: an exclusion list is only meaningful in nationwide mode.
+        if self.delivery_excluded_cities and not self.delivery_nationwide:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
 
@@ -629,6 +636,11 @@ class ProducerUpdate(BaseModel):
     offers_delivery: bool | None = None
     delivery_nationwide: bool | None = None
     delivery_cities: list[str] | None = None
+    # MEH-1255: nationwide exclusion list. Schema validator catches the
+    # explicit nationwide=false + excluded case; the routers guard the
+    # EFFECTIVE state on partial updates (excluded sent while the stored
+    # delivery_nationwide is false) so the DB CHECK never 500s.
+    delivery_excluded_cities: list[str] | None = None
     # MEH-210 Phase 2 — custom WhatsApp question chips
     custom_questions: list[str] | None = None
     # MEH-89 — admin-settable availability (mirrors producer_me endpoint)
@@ -711,6 +723,11 @@ class ProducerUpdate(BaseModel):
         dc = self.delivery_area_cities
         if dn and dc and len(dc) > 0:
             raise ValueError("לא ניתן לבחור גם משלוחים לכל הארץ וגם ערים ספציפיות")
+        # MEH-1255: excluded cities sent together with an explicit
+        # nationwide=false is always invalid (partial-update effective-state
+        # check lives in the routers).
+        if self.delivery_excluded_cities and dn is False:
+            raise ValueError("ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ")
         return self
 
     @model_validator(mode="after")
@@ -807,6 +824,9 @@ class ProducerListOut(BaseModel):
     offers_delivery: bool = False
     delivery_nationwide: bool = False
     delivery_cities: list[str] = []
+    # MEH-1255: nationwide exclusion list — public so DeliveryBlock can render
+    # "משלוחים לכל הארץ (למעט …)". Empty unless delivery_nationwide.
+    delivery_excluded_cities: list[str] = []
     # MEH-902: serialize the rich delivery relation so MapProducerCard's
     # "delivers to your city" pill can render — it needs per-row `city` +
     # `delivery_day`, which the flat `delivery_cities` above doesn't carry.

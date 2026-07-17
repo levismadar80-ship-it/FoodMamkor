@@ -55,6 +55,8 @@
 >
 > **MEH-971 chunk 3 (2026-06-28):** `ProducerAdminOut` gains a derived **`license_pending: bool`** — **computed** in `_compute_license_pending` (`@model_validator(mode="after")`), never a stored column / no migration. True iff the producer is in ≥1 `LICENSE_REQUIRED_CATEGORIES` category AND `producer_license_number` is empty/NULL; status-independent (an override-approved producer still shows it). Mirrors the MEH-762 `_compute_verification_tier` predicate over the already-loaded `categories` (no DB round-trip). **Admin-only** — on `ProducerAdminOut` only, NOT public `ProducerListOut`/`ProducerDetailOut`. Surfaced as the "רישיון ממתין" badge on the `/admin/producers` queue so an admin verifies the license before approving (pairs with the chunk-4 `allow_without_license` approval guard).
 
+> **MEH-1255 (2026-07-17):** delivery-exclusion mode ("משלוחים לכל הארץ חוץ מ:"). `producers.delivery_excluded_cities` (`TEXT[] NOT NULL DEFAULT '{}'`, migration `e7c4b1f95a2d`) holds the cities a nationwide-delivery producer does NOT ship to (ShipperHQ include/exclude zone model). CHECK `delivery_excluded_requires_nationwide` (`delivery_nationwide OR delivery_excluded_cities = '{}'`) keeps it empty unless nationwide — the sibling of `delivery_nationwide_xor_cities`. Schema (`ProducerUpdate`/`ProducerAdminCreate`) validators reject an exclusion list without nationwide; partial-update effective-state (list sent alone, or nationwide switched off over a stored list) is guarded in the routers (`app/services/delivery_validation.py`) so it 422s (`ערים מוחרגות אפשריות רק עם משלוחים לכל הארץ`) instead of a DB CHECK 500. **Public** — `ProducerListOut`/`ProducerDetailOut` carry `delivery_excluded_cities` so `DeliveryBlock` renders "משלוחים לכל הארץ (למעט …)". **Consumer filter:** `GET /producers?delivery_city=X` (`producer_listing.py`) switched from an inner `JOIN delivery_areas` to `EXISTS (…) OR (delivery_nationwide AND NOT X = ANY(delivery_excluded_cities))` — a nationwide producer now matches any city except its exclusions (previously nationwide producers were never returned by the city filter, their `delivery_areas` being empty by the XOR).
+
 > **MEH-589 (2026-05-15):** `producer_recipes` + `producer_recipe_products`
 > added (chunk 1/4 = MEH-588 schema + chunk 2/4 = MEH-589 endpoints +
 > moderation). Producer-owned recipes go through Claude Haiku pre-check
@@ -89,6 +91,9 @@ producers (
   starting_price_label, price_range,
   grass_fed bool, organic_certified bool, kosher,
   has_delivery bool, pickup_points bool,
+  -- MEH-213 location mode + MEH-1255 nationwide exclusion list
+  has_physical_location bool, offers_delivery bool,
+  delivery_nationwide bool, delivery_excluded_cities text[] NOT NULL default '{}',
   admin_notes, is_available_today bool,
   avg_rating float, reviews_count int,
   created_at, last_active_at,
