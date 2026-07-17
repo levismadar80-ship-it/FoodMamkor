@@ -858,8 +858,27 @@ instead of manually. Three moving parts:
 cd frontend
 TEST_URL=https://staging.mehamakor.online \
 DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… \
-npx playwright test path/to/auth-spec.ts
+VERCEL_AUTOMATION_BYPASS_SECRET=… \
+npx playwright test e2e/flows/21-account-menu-auth.spec.ts
 ```
+
+**`VERCEL_AUTOMATION_BYPASS_SECRET` is required for any `TEST_URL` staging/preview
+run.** `staging.mehamakor.online` sits behind **Vercel Deployment Protection** —
+without this header a request 302-redirects to `vercel.com/sso-api` and never
+reaches the backend (so both the globalSetup login and the spec's page
+navigations would fail). Get it from **Vercel → Settings → Deployment Protection
+→ Protection Bypass for Automation** (it's the `VERCEL_AUTOMATION_BYPASS_SECRET`
+system env var). `globalSetup` sends it on the login request and
+`playwright.config.ts` sends it on browser navigations (`x-vercel-protection-bypass`);
+globalSetup **throws** on a remote target when it's unset. **Rotating** the secret
+(regenerate in that same Vercel setting) requires a **redeploy** before the new
+value takes effect. Never commit or log the value.
+
+> **Env-name (MEH-1241):** `VERCEL_AUTOMATION_BYPASS_SECRET` is the **canonical**
+> name on **both** surfaces (globalSetup + `playwright.config.ts`, same
+> precedence). The legacy job-export alias `VERCEL_BYPASS_SECRET` is still read as
+> a **fallback** in both, so older CI wiring keeps working — but export the
+> canonical name for new setups.
 
 They do **not** run in the default CI E2E job, which targets a local
 `next start` (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, MEH-1044) where the
