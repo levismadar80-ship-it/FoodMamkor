@@ -108,10 +108,58 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Title in Frank Ruhl Libre; meta in DM Sans 13px.
 
 ### MapProducerCard (`frontend/components/MapProducerCard.jsx`)
-- [ ] WhatsApp button green (primary brand), with white icon. Show only if `phone` present.
-- [ ] Share button gray outlined (avoids green conflict with primary WA CTA).
+
+**Card = select, page = act (MEH-1243 — Direction B + 🔒 17/07 DESIGN LOCKED).**
+The map card is a *selection* surface, not an action surface. It holds **at most
+four things**: image/placeholder · name · meta line · rating-if-exists — plus ONE
+always-visible navigation affordance (the end-corner chevron). Everything that
+competes for attention is gone: no in-card contact CTA, no "full profile" text
+link, no verified seal, no "delivers to your city" pill (MEH-1243 "drop both").
+The contact CTA lives ONLY in `MobileSheetSelectedCard` and on `/producer`; the
+verified seal + delivery info stay on those richer surfaces. This retires the
+prior "WhatsApp button green / Share button gray" rule.
+
+**Interaction** (cites current behavior by `file:line`):
+- [ ] **Body tap on an UNSELECTED card → select + pin-sync, never navigate.** The
+  root `<article onClick>` handler (`MapProducerCard.jsx:70-75`, pre-1243) calls
+  the `onClick(producer)` select callback wired through `MapCardList.jsx:63-67`
+  (useMapSync — MEH-1010, two-way). The guard `e.target.closest("a, button")`
+  (`MapProducerCard.jsx:72`) lets inner links own their own clicks.
+- [ ] **Body tap on an ALREADY-SELECTED card → navigate to `/{slug}`.** Sequential
+  taps, NOT a `dblclick`/double-tap gesture (Direction C — a hidden mode — was
+  rejected for a11y/screen readers). The card branches on its own `active` prop
+  (passed at `MapCardList.jsx:65`).
+- [ ] **End-corner chevron = the navigation affordance** — a real `<Link href>` so
+  it is the semantic, screen-reader-visible link and the keyboard target.
+  `ArrowRight` + `rtl:rotate-180` (MEH-938 glyph-LOCK). Owns a full-height end
+  column giving a **≥44×44px** hit area (§V) even though the icon is 13–16px.
+  Hover/focus raises its contrast on desktop; always-visible on touch. No tooltip.
+- [ ] Inner links `stopPropagation` so a chevron/keyboard activation never also
+  fires the root select (former CTA pattern at `MapProducerCard.jsx:191,201`, pre-1243).
+
+**Visual** (🔒 17/07):
+- [ ] **Selected state = Pin-Echo:** 2px border in the **category color**
+  (`CATEGORY_STYLES` / `styleForProducer`, `lib/map-categories.js:30,66`) + a 6%
+  wash of that same color as the card background + the chevron recolored to the
+  pin color. Padding compensates 8→7px vs the 1px unselected border so there is
+  **zero layout jump**. Replaces the old `border-primary border-2`.
+- [ ] **Meta line = category FIRST, distance LAST** (`data-testid="map-meta-line"`):
+  category glyph 14px in the category color hugging the category text; the
+  category text is the flexible part (`truncate`), the distance is `flex-shrink-0`
+  and **never truncates**. Distance wrapped in `<bdi>` so it reads digits-first
+  ("1.2 ק"מ") inside the RTL line.
+- [ ] **Distance is conditional** — shown only with geolocation permission
+  (`useUserLocation`); fallback is category-only on the same row with **zero
+  height change**.
+- [ ] **Rating = `★ X.X (N)`** (Google format, count in parentheses, whole numeric
+  block `dir="ltr"`). Hidden entirely below **3 reviews**, but the row **reserves
+  its height** (`visibility:hidden`) so **every card in the carousel is the same
+  height, always**. Same format on `ProducerCard`.
+- [ ] **No-photo placeholder:** `#EAF3DE` tile + the category glyph at 70% of the
+  pin color. No upload widget, no corner color dots.
 - [ ] Distance shown in km with one decimal — never raw meters.
-- [ ] Compact layout fits inside bottom sheet without scrolling at 375px.
+- [ ] Long category names ellipsize (`truncate`) while the distance anchor stays intact.
+- [ ] Compact layout fits inside the bottom sheet without scrolling at 375px.
 
 ### Header / BottomNav
 - [ ] Persistent across pages except `/map` full-screen.
