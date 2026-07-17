@@ -108,7 +108,22 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // localStorage where the SPA reads it (lib/auth-context.js).
     const state = await ctx.storageState();
     await ctx.dispose();
-    state.origins = [{ origin, localStorage: [{ name: "token", value: accessToken }] }];
+    state.origins = [
+      {
+        origin,
+        localStorage: [
+          { name: "token", value: accessToken },
+          // MEH-1241: seed cookie consent so CookieBanner never renders in
+          // authenticated specs. It reads localStorage["cookieConsent"] ∈
+          // {"all","essential"} (CookieBanner.jsx:26) and shows on any fresh
+          // context otherwise. Its role="dialog" ("הסכמה לעוגיות") otherwise
+          // collides with every other dialog locator (strict-mode violation) —
+          // the systemic root of the MEH-1228 spec failure. Product-side fix
+          // (role="region") is separate: MEH-1262.
+          { name: "cookieConsent", value: "essential" },
+        ],
+      },
+    ];
     fs.writeFileSync(path.join(AUTH_DIR, `${role.name}.json`), JSON.stringify(state, null, 2));
     console.log(`[global-setup] wrote ${role.name} storageState (${role.email}).`);
   }

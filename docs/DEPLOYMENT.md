@@ -874,6 +874,12 @@ globalSetup **throws** on a remote target when it's unset. **Rotating** the secr
 (regenerate in that same Vercel setting) requires a **redeploy** before the new
 value takes effect. Never commit or log the value.
 
+> **Env-name (MEH-1241):** `VERCEL_AUTOMATION_BYPASS_SECRET` is the **canonical**
+> name on **both** surfaces (globalSetup + `playwright.config.ts`, same
+> precedence). The legacy job-export alias `VERCEL_BYPASS_SECRET` is still read as
+> a **fallback** in both, so older CI wiring keeps working — but export the
+> canonical name for new setups.
+
 They do **not** run in the default CI E2E job, which targets a local
 `next start` (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, MEH-1044) where the
 seeded accounts don't exist — there globalSetup logs a skip and returns. The
