@@ -22,7 +22,6 @@ Ran alongside a live parallel sweep session (it held MEH-1268/927/1267 + merged 
 - **MEH-1202 (Urgent, HIGH-RISK, Sapir-gated) — Phase 0 + numbered plan posted to Linear, no edits.** Producer mobile chrome stack: mapped the 4 sticky layers + the transparent-band bleed with file:line; plan = live-measured `--chrome-top` CSS var (kills the hardcoded `top-[82px]`/`|| 82`/`scroll-mt-[150px]`), opaque header shell, and a `usePathname` gate to drop BottomNav on `/producer` (reuse ChatWidgetLazy's `isProducerDetail`). Awaits Sapir's "go".
 - **Not taken (documented):** MEH-1227 (a11y aria sweep) — Low priority + its DoD needs an **axe run against a seeded backend**, which the CC sandbox can't do (needs MEH-1198 demo on staging or a CI axe run); deferred, not skipped-blind. MEH-1252 — already merged by the parallel session. MEH-1249 (adopt PR #1729), MEH-1060 (SEO), MEH-1241/800/514 — not reached this run.
 - **Env note:** backend pytest/pydantic + ruff resolved locally via `uv run` (`uv.lock` pins ruff 0.15.12); `pip` is blocked in the sandbox. Draft PRs skip build/pytest/vitest (`pr-checks.yml` `&& draft == false`) — mark ready to run the real gates before merging.
->>>>>>> origin/staging
 
 ## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
 
