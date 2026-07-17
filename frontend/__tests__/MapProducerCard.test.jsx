@@ -15,9 +15,10 @@ vi.mock("next/link", () => ({
 // that forwards onLoad + className so the MEH-1133 aspect flip is testable
 // (real-browser behavior verified separately in qa-artifacts).
 vi.mock("next/image", () => ({
-  default: ({ onLoad, className, alt, src }) => (
+  // MEH-1211: also forward onError so the load-failure fallback is testable.
+  default: ({ onLoad, onError, className, alt, src }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} />
+    <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} onError={onError} />
   ),
 }));
 vi.mock("@/lib/cloudinary", () => ({
@@ -246,5 +247,25 @@ describe("MapProducerCard — thumbnail letterbox (MEH-1133)", () => {
   it("defaults to object-cover before the image loads", () => {
     const { container } = render(<MapProducerCard producer={withImage} />);
     expect(container.querySelector("img")).toHaveClass("object-cover");
+  });
+});
+
+// MEH-1211: a present-but-dead image URL must fall back to the leaf thumb
+// placeholder instead of the browser broken-glyph.
+describe("MapProducerCard — broken-image fallback (MEH-1211)", () => {
+  it("renders the leaf placeholder when the image errors", () => {
+    const { container } = render(
+      <MapProducerCard producer={{ ...producer, images: ["/dead.jpg"] }} />,
+    );
+    // Scope to the thumbnail box — the full_profile arrow also carries aria-hidden.
+    const thumb = container.querySelector(".bg-green-50");
+    const img = thumb.querySelector("img");
+    expect(img).toBeTruthy();
+    // No leaf placeholder while the image is still present.
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeNull();
+    fireEvent.error(img);
+    // Image is gone, the leaf placeholder box takes its place.
+    expect(thumb.querySelector("img")).toBeNull();
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeTruthy();
   });
 });

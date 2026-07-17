@@ -162,6 +162,13 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
     setLocalFavCount(producer.favorites_count ?? 0);
   }, [producer.favorites_count]);
   const imgSrc = optimizeCloudinary(producer.images?.[0], { aspectRatio: IMAGE_RATIOS.card });
+  // MEH-1211: a present-but-dead image URL renders the browser broken-glyph +
+  // overflowing alt. Track load failure and fall back to the canonical no-photo
+  // placeholder below (the same else-branch used when imgSrc is absent).
+  const [imgError, setImgError] = useState(false);
+  useEffect(() => {
+    setImgError(false);
+  }, [imgSrc]);
 
   const baseHref = producer.slug ? `/${producer.slug}` : `/producer/${producer.id}`;
   const producerHref = referrer ? `${baseHref}?from=${referrer}` : baseHref;
@@ -223,13 +230,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
         >
           <div className="relative w-full aspect-square lg:aspect-[4/3] overflow-hidden bg-background">
-            {imgSrc ? (
+            {imgSrc && !imgError ? (
               <Image
                 src={imgSrc}
                 alt={producer.name}
                 fill
                 className="object-cover object-center transition-transform duration-300 ease-quart group-hover:scale-[1.02]"
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                onError={() => setImgError(true)}
               />
             ) : (
               // MEH-643: canonical no-photo state — cream surface + leaf glyph + brand name.

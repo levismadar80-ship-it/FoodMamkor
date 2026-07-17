@@ -28,6 +28,9 @@ export default function MapProducerCard({ producer, active, onClick }) {
   // the loaded image proves logo-like — so wide logos letterbox on the green-50
   // box instead of cropping, while photos keep the full-bleed cover look.
   const [thumbIsWide, setThumbIsWide] = useState(false);
+  // MEH-1211: fall back to the leaf thumb placeholder when a present-but-dead
+  // image URL fails to load (avoids the browser broken-glyph + alt overflow).
+  const [imgError, setImgError] = useState(false);
   const baseHref = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
   const category = p.categories?.[0];
   const priceLabel = p.starting_price_label || p.price_range;
@@ -106,7 +109,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
       <div
         className="shrink-0 w-[88px] min-[1180px]:w-[88px] max-[1179px]:w-[72px] relative bg-green-50"
       >
-        {imgSrc ? (
+        {imgSrc && !imgError ? (
           <Image
             src={imgSrc}
             alt={p.name || ""}
@@ -119,6 +122,7 @@ export default function MapProducerCard({ producer, active, onClick }) {
               const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
               if (w && h) setThumbIsWide(w / h >= LOGO_ASPECT_MIN);
             }}
+            onError={() => setImgError(true)}
             className={thumbIsWide ? "object-contain" : "object-cover"}
           />
         ) : (
