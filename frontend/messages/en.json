@@ -1424,6 +1424,7 @@
           "license_required_suffix": " (required)",
           "license_required_hint": "Food production in this category requires a producer license from the Ministry of Health",
           "license_format_warning": "Producer license number is 7-10 digits",
+          "license_registry_link": "Check the Ministry of Health registry",
           "license_optional_toggle": "I have a producer license ↓",
           "has_physical_location": "🏪 Physical store (welcomes customers)",
           "offers_delivery": "🚚 Delivery",
@@ -1714,6 +1715,7 @@
         "actions": "Actions"
       },
       "cert_view": "View certificate",
+      "portal_link": "Kashrut business portal (gov.il)",
       "no_cert": "Not uploaded",
       "actions": {
         "approve": "Approve",
