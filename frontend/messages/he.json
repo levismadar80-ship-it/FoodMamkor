@@ -1426,6 +1426,7 @@
           "license_required_suffix": " (חובה)",
           "license_required_hint": "ייצור מזון בקטגוריה זו דורש רישיון יצרן ממשרד הבריאות",
           "license_format_warning": "מספר רישיון יצרן הוא 7-10 ספרות",
+          "license_registry_link": "בדיקה במאגר משרד הבריאות",
           "license_optional_toggle": "יש לי רישיון יצרן ↓",
           "has_physical_location": "🏪 חנות פיזית (קבלת לקוחות)",
           "offers_delivery": "🚚 משלוחים",
@@ -1716,6 +1717,7 @@
         "actions": "פעולות"
       },
       "cert_view": "צפי בתעודה",
+      "portal_link": "פורטל כשרות בתי עסק (gov.il)",
       "no_cert": "לא הועלתה",
       "actions": {
         "approve": "אשרי",
@@ -4196,8 +4198,8 @@
         "name_placeholder": "לדוגמה: לחם מחמצת כוסמין",
         "description_label": "תיאור קצר",
         "description_placeholder": "לדוגמה: כיכר 750 גרם, נאפה בטאבון",
-        "price_min_label": "מחיר מ- (₪)",
-        "price_max_label": "מחיר עד- (₪)",
+        "price_min_label": "מחיר מ-",
+        "price_max_label": "מחיר עד",
         "price_max_optional_suffix": "אופציונלי",
         "price_hint": "מחיר אחיד? מלאו רק \"מ-\". טווח מחירים? מלאו גם \"עד\" (אופציונלי).",
         "diet_heading": "סימוני תזונה (אופציונלי)",
@@ -4208,6 +4210,7 @@
         "image_alt": "תמונה",
         "image_remove": "הסר",
         "image_upload_cta": "העלו תמונה",
+        "image_replace": "החליפו תמונה",
         "image_uploading": "בהעלאה..."
       },
       "save_edit_cta": "שמרו שינויים",
