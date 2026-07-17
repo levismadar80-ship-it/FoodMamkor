@@ -125,10 +125,13 @@ describe("DescriptionCard — single save (MEH-1173 / MEH-1002)", () => {
     expect(api.put).toHaveBeenCalledWith("/producers/me", {
       description: "תיאור מלא של העסק",
       short_description: "ריבות בוטיק מהגליל",
+      // MEH-1261 F5: instagram joined the save payload (untouched here → null).
+      instagram: null,
     });
     expect(onSave).toHaveBeenCalledWith({
       description: "תיאור מלא של העסק",
       short_description: "ריבות בוטיק מהגליל",
+      instagram: null,
     });
     expect(api.post).not.toHaveBeenCalled();
   });
@@ -144,6 +147,8 @@ describe("DescriptionCard — single save (MEH-1173 / MEH-1002)", () => {
     expect(api.put).toHaveBeenCalledWith("/producers/me", {
       description: "רק תיאור, בלי משפט תדמית",
       short_description: null,
+      // MEH-1261 F5: instagram joined the save payload (untouched here → null).
+      instagram: null,
     });
   });
 });
