@@ -418,6 +418,11 @@ GET    /producers/cities                          public — MEH-970: per-city A
                                                GROUP BY city over approved producers; NULL/blank city omitted;
                                                ordered count desc, then city. Counts live from DB (MEH-519 over-claim guard).
                                                response_model=list[ProducerCityOut] → [{ "city": str, "count": int }]
+GET    /producers/random                          public — MEH-1288: one random APPROVED producer for the homepage
+                                               "הפתיעו אותי" button. ORDER BY random() LIMIT 1; 404 when the catalog is
+                                               empty (button is render-gated client-side on statsProducersCount > 0).
+                                               Declared BEFORE /producers/{producer_id} (route-order guard).
+                                               response_model=ProducerRandomOut → { "id": UUID, "slug": str|null }
 POST   /producers                                 auth   — self-register (writes pending)
 GET    /categories                                public
 
