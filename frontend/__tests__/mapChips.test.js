@@ -33,11 +33,12 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     const keys = TOGGLE_CHIPS.map((c) => c.key);
     expect(keys).toContain("has_delivery");
     expect(keys).toContain("verified");
-    expect(keys).toContain("organic");
     expect(keys).toContain("grass_fed");
     expect(keys).toContain("gluten_free");
     expect(keys).toContain("vegan");
     expect(keys).toContain("lactose_free");
+    // MEH-1259: organic toggle removed from the /map FilterSheet.
+    expect(keys).not.toContain("organic");
   });
 });
 
@@ -97,13 +98,23 @@ describe("chipStateToParams", () => {
     ).toEqual({});
   });
 
-  it("composes category + organic + delivery into one param object", () => {
+  it("composes category + grass_fed + delivery into one param object", () => {
+    // MEH-1259: organic removed — grass_fed stands in as the quality toggle.
     expect(
       chipStateToParams(
-        { categoryKey: "produce", organic: true, has_delivery: true },
+        { categoryKey: "produce", grass_fed: true, has_delivery: true },
         dbCategories,
       ),
-    ).toEqual({ category: 2, organic: true, has_delivery: true });
+    ).toEqual({ category: 2, grass_fed: true, has_delivery: true });
+  });
+
+  it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {
+    expect(
+      chipStateToParams(
+        { categoryKey: "all", organic: true, has_delivery: false },
+        dbCategories,
+      ),
+    ).toEqual({});
   });
 });
 

@@ -172,21 +172,19 @@ export default function ProducerHeader({
         </div>
       )}
 
-      {/* Highlights strip — grass_fed / organic / delivery / kosher.
+      {/* Highlights strip — grass_fed / delivery / kosher.
           MEH-1124 (Task C): delivery renders ONCE here (dropped from the pill
-          row via hideKeys), gated on the union `hasDelivery`. */}
-      {(producer.grass_fed || producer.organic_certified || hasDelivery || !!producer.kashrut_verified_at) && (
+          row via hideKeys), gated on the union `hasDelivery`.
+          MEH-1259: organic dropped from the strip — self-declared organic is
+          no longer shown publicly (חוק תוצרת אורגנית 2005). */}
+      {(producer.grass_fed || hasDelivery || !!producer.kashrut_verified_at) && (
         <div className="flex flex-wrap gap-2 mt-3">
           {producer.grass_fed && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               {t("producer.detail.header.attr.grass_fed")}
             </span>
           )}
-          {producer.organic_certified && (
-            <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
-              {t("producer.detail.header.attr.organic")}
-            </span>
-          )}
+          {/* MEH-1259: organic highlight removed (self-declared → not a public claim). */}
           {hasDelivery && (
             <span className="bg-green-50 text-text border border-border rounded-xl text-[11px] px-[10px] py-[4px]">
               <Truck size={14} className="text-current ms-1" aria-hidden="true" /><span className="hidden sm:inline"> {t("producer.detail.header.attr.delivery")}</span>

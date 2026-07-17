@@ -75,7 +75,9 @@ export function useHomePage() {
   const [stats, setStats] = useState(null);
   const [producersLoading, setProducersLoading] = useState(true);
   const [geoLoading] = useState(false);
-  const [chips, setChips] = useState({ kosher: false, organic: false, has_delivery: false, verified: false });
+  // MEH-1259: organic chip removed from the home filter row (self-declared
+  // organic is no longer a public filter — חוק תוצרת אורגנית 2005).
+  const [chips, setChips] = useState({ kosher: false, has_delivery: false, verified: false });
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [showNewUserHint, setShowNewUserHint] = useState(false);
   const { city: userCity, setCity: setUserCity } = useUserCity();
@@ -124,7 +126,7 @@ export function useHomePage() {
     // (MEH-1077 DISC-02).
     const initChips = {
       kosher: p.get("kosher") === "1",
-      organic: p.get("organic") === "1",
+      // MEH-1259: organic no longer hydrated — chip + filter removed.
       gluten_free: p.get("gluten_free") === "1",
       vegan: p.get("vegan") === "1",
       lactose_free: p.get("lactose_free") === "1",
@@ -235,7 +237,7 @@ export function useHomePage() {
     if (f.category) p.set("category", f.category);
     if (f.delivery_city) p.set("city", f.delivery_city);
     if (c.kosher) p.set("kosher", "1");
-    if (c.organic) p.set("organic", "1");
+    // MEH-1259: organic param no longer written — chip + filter removed.
     // MEH-1083: diet keys were missing from the serializer — param names
     // match the chip keys (delivery stays the legacy short name).
     if (c.gluten_free) p.set("gluten_free", "1");

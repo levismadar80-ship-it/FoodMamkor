@@ -5,7 +5,8 @@ import { ATTRIBUTE_LABELS } from "@/lib/attribute-labels";
 
 export const CHIPS_CONFIG = [
   { key: "kosher",        label: "כשר" },
-  { key: "organic",       label: ATTRIBUTE_LABELS.organic },
+  // MEH-1259: organic chip removed — self-declared organic is no longer a
+  // public filter/badge (חוק תוצרת אורגנית 2005). Field + owner toggle kept.
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan },
   { key: "lactose_free",  label: ATTRIBUTE_LABELS.lactose_free },
@@ -15,7 +16,6 @@ export const CHIPS_CONFIG = [
 
 export const CHIPS_DEFAULT = {
   kosher: false,
-  organic: false,
   gluten_free: false,
   vegan: false,
   lactose_free: false,
@@ -27,7 +27,6 @@ export function buildChipParams(chips, overrides = {}) {
   const c = { ...chips, ...overrides };
   const p = {};
   if (c.kosher) p.kosher = true;
-  if (c.organic) p.organic = true;
   if (c.gluten_free) p.gluten_free = true;
   if (c.vegan) p.vegan = true;
   if (c.lactose_free) p.lactose_free = true;

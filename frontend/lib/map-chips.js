@@ -1,11 +1,12 @@
 /**
- * Map filter chips (MEH-14). Seven chips per spec:
- *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · אורגני · משלוח
+ * Map filter chips (MEH-14). Category chips per spec:
+ *   כל · בשר ודגים · ירקות ופירות · חלב וגבינות · לחמים ואפייה · משלוח
+ *   (MEH-1259: the "אורגני" quality toggle was removed — see TOGGLE_CHIPS.)
  *
  * Layout:
  *   - ONE of {כל, בשר, ירקות, חלב, לחם} is active at a time (radio-group
  *     semantics). "כל" is the reset sentinel.
- *   - organic + delivery are independent toggles (on top of the above).
+ *   - delivery is an independent toggle (on top of the above).
  *
  * Category chips map to real DB category IDs at runtime via the
  * Hebrew-name lookup below. If a chip has no matching category in the DB,
@@ -42,7 +43,8 @@ export const CATEGORY_CHIPS = [
 export const TOGGLE_CHIPS = [
   { key: "has_delivery",  label: ATTRIBUTE_LABELS.has_delivery,  group: "service" },
   { key: "verified",      label: ATTRIBUTE_LABELS.verified,      group: "service" },
-  { key: "organic",       label: ATTRIBUTE_LABELS.organic,       group: "quality" },
+  // MEH-1259: organic chip removed — self-declared organic is no longer a
+  // public filter (חוק תוצרת אורגנית 2005). Column + owner toggle kept.
   { key: "grass_fed",     label: "גראס פד",                      group: "quality" },
   { key: "vegan",         label: ATTRIBUTE_LABELS.vegan,         group: "diet" },
   { key: "gluten_free",   label: ATTRIBUTE_LABELS.gluten_free,   group: "diet" },
@@ -89,7 +91,7 @@ export function chipStateToParams(state, dbCategories) {
     const id = resolveCategoryId(chip, dbCategories);
     if (id != null) params.category = id;
   }
-  if (state.organic) params.organic = true;
+  // MEH-1259: organic param no longer built — chip + backend filter removed.
   if (state.has_delivery) params.has_delivery = true;
   if (state.verified) params.verified = true;
   if (state.grass_fed) params.grass_fed = true;
