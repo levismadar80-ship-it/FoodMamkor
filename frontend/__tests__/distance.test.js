@@ -72,3 +72,23 @@ describe("formatDistance", () => {
     expect(formatDistance(20015)).toBe("\u206620015 km\u2069 ממך");
   });
 });
+
+describe("formatDistance — Hebrew unit / no suffix (MEH-1243 §3)", () => {
+  it('renders "{x.x} ק"מ" for 1-99 km, digits-first, no ממך', () => {
+    expect(formatDistance(1.2, { unit: "he", suffix: false })).toBe('1.2 ק"מ');
+    expect(formatDistance(53.9, { unit: "he", suffix: false })).toBe('53.9 ק"מ');
+  });
+
+  it('renders whole ק"מ for >=100 km and מ for <1 km', () => {
+    expect(formatDistance(312.5, { unit: "he", suffix: false })).toBe('313 ק"מ');
+    expect(formatDistance(0.45, { unit: "he", suffix: false })).toBe("450 מ'");
+  });
+
+  it("keeps the ממך suffix when suffix is not disabled", () => {
+    expect(formatDistance(1.2, { unit: "he" })).toBe('1.2 ק"מ ממך');
+  });
+
+  it("default (latin) output is unchanged for existing callers", () => {
+    expect(formatDistance(1.2)).toBe("⁦1.2 km⁩ ממך");
+  });
+});
