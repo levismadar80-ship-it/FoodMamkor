@@ -48,6 +48,8 @@
       "instagram_aria": "עמוד האינסטגרם של מהמקור — נפתח בחלון חדש",
       "nav_aria": "ניווט ראשי בפוטר",
       "nav_heading": "ניווט",
+      "group_discover_heading": "גלו",
+      "group_business_heading": "לבתי עסק",
       "nav_discover": "גלו עסקים",
       "newsletter_heading": "אוכל טוב לא שומרים לעצמנו",
       "newsletter_label": "אימייל לניוזלטר",
@@ -1293,9 +1295,10 @@
           "set_ambassador_title": "הגדר כשגרירה",
           "ambassador_active": "⭐ שגרירה",
           "ambassador_inactive": "☆ שגריר",
+          "ambassador_tooltip": "סימון ידני לבית עסק מוביל — מקפיץ ל-Trust Tier 5 עם badge ציבורי",
           "story_card_title": "צור כרטיס אינסטגרם",
           "story_card": "📸 סטורי",
-          "delete": "מחקו",
+          "delete": "מחקי",
           "menu_aria": "פעולות נוספות"
         },
         "columns": {
@@ -2897,15 +2900,16 @@
   },
   "story": {
     "canvas": {
-      "footer_url": "גלו עוד בתי עסק ב mehamakor.online",
+      "footer_url": "גלי עוד בתי עסק ב mehamakor.co.il",
       "upload_error": "שגיאה בהעלאה לקלאודינרי",
       "default_country": "ישראל",
       "caption_prefix": "🌿 עסק חדש במהמקור!",
       "title": "כרטיס אינסטגרם מוכן",
+      "close": "סגירת פאנל הסטורי",
       "generating": "מייצר",
       "download": "הורד",
       "uploading": "בהעלאה...",
-      "save_cloudinary": "שמרו ל-Cloudinary",
+      "save_cloudinary": "שמרי ל-Cloudinary",
       "copy_caption": "העתקת caption",
       "copied": "✅ הועתק!"
     }
@@ -4162,8 +4166,8 @@
       },
       "load_retry_cta": "נסו שוב",
       "empty": {
-        "title": "מוצר ראשון = בית עסק חי",
-        "description": "בלי מוצרים, הפרופיל שלכם נראה ריק ולקוחות לא יודעות מה יש לכם. הוסיפו 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות.",
+        "title": "הוסיפו את המוצר הראשון שלכם",
+        "description": "הוסיפו 3 מוצרים פופולריים עם תמונה ומחיר — זה לוקח 5 דקות, ולקוחות רואות מיד מה יש לכם.",
         "cta": "+ הוסיפו מוצר ראשון",
         "sample_label": "דוגמה — כך ייראה מוצר שלכם",
         "sample_name": "ריבת תאנים ביתית",

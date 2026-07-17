@@ -19,10 +19,11 @@ the badge / favorites attachment all preserved.
 # previously covered this complexity in producers.py cannot be migrated here
 # because pyproject.toml is protected by MEH-442 protect-lint-config hook.
 
+from datetime import datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import (
@@ -50,7 +51,11 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # MEH-766: `verified` moved to a bespoke verified_at block below (was
     # ("verified", "is_verified")) — the ?verified filter now matches
     # document-verified producers, not the legacy admin-manual boolean.
-    ("organic", "organic_certified"),
+    # MEH-1259 (P0 legal — חוק תוצרת אורגנית 2005): the public ?organic filter
+    # is REMOVED. It matched the self-declared organic_certified boolean, letting
+    # consumers surface unverified "organic" producers — same risk family as the
+    # MEH-986 free-text kosher filter. Re-add only behind an admin-verified flow
+    # (post-launch, Option B). The column stays (owner/admin managed).
     ("is_available_today", "is_available_today"),
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
@@ -145,6 +150,33 @@ def _build_base_queries(
     return q, count_q
 
 
+def _kosher_condition(kosher: bool):
+    """MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
+    verified-only — it matches admin-verified kashrut (kashrut_verified_at,
+    stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
+
+    MEH-1260: expiry enforcement — an expired certificate no longer passes
+    ?kosher=true (and lands in ?kosher=false, the exact complement). Legacy
+    pre-expiry-era rows (NULL expires_at, non-null verified_at) stay valid.
+    Naive utcnow matches how admin_kashrut.py:73 writes the timestamps.
+    """
+    if kosher:
+        return and_(
+            Producer.kashrut_verified_at.isnot(None),
+            or_(
+                Producer.kashrut_expires_at.is_(None),
+                Producer.kashrut_expires_at > datetime.utcnow(),
+            ),
+        )
+    return or_(
+        Producer.kashrut_verified_at.is_(None),
+        and_(
+            Producer.kashrut_expires_at.isnot(None),
+            Producer.kashrut_expires_at <= datetime.utcnow(),
+        ),
+    )
+
+
 def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  # 14 boolean filter pairs by design — _SIMPLE_FILTERS / _DIETARY_FILTERS dispatch tables + structurally distinct query branches (kosher / verified [MEH-766] / category / delivery / city). Refactor would fragment coherent listing logic.
     """Apply the 14 boolean/scalar filter pairs to both queries."""
     # Simple equality filters — driven from _SIMPLE_FILTERS so each new
@@ -181,17 +213,13 @@ def _apply_scalar_filters(q, count_q, **filters: Any):  # noqa: C901, PLR0912  #
         q = q.filter(Producer.availability_state != "on_vacation")
         count_q = count_q.filter(Producer.availability_state != "on_vacation")
 
-    # MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): the ?kosher filter is
-    # verified-only — it matches admin-verified kashrut (kashrut_verified_at,
-    # stamped by admin_kashrut.py:75), NEVER the free-text Producer.kosher.
+    # MEH-986 ch3b + MEH-1260: verified-only kosher filter with expiry
+    # enforcement — extracted to _kosher_condition (PLR0915 headroom).
     kosher = filters.get("kosher")
     if kosher is not None:
-        if kosher:
-            q = q.filter(Producer.kashrut_verified_at.isnot(None))
-            count_q = count_q.filter(Producer.kashrut_verified_at.isnot(None))
-        else:
-            q = q.filter(Producer.kashrut_verified_at.is_(None))
-            count_q = count_q.filter(Producer.kashrut_verified_at.is_(None))
+        kosher_cond = _kosher_condition(kosher)
+        q = q.filter(kosher_cond)
+        count_q = count_q.filter(kosher_cond)
 
     # MEH-766: ?verified filters on verified_at (document-verified, MEH-762),
     # NOT the legacy is_verified boolean. # REUSES: kosher block above —
@@ -342,9 +370,10 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, category,
-    delivery_city, has_delivery, verified, organic, kosher, city,
+    delivery_city, has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
+    (MEH-1259: `organic` removed — the public ?organic filter is gone.)
     """
     lat = filters.get("lat")
     lng = filters.get("lng")

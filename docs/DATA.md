@@ -382,13 +382,16 @@ PATCH  /users/me/password        auth    — MEH-306: full policy + reuse, stamp
 
 ```
 GET    /producers                                 public — filters: lat+lng+radius_km, category, delivery_city, has_delivery,
-                                               verified, organic, kosher, city (producer city), is_available_today, grass_fed
+                                               verified, kosher, city (producer city), is_available_today, grass_fed
                                                sort: newest (default) | rating
                                                MEH-986 ch3b (P0 legal — חוק איסור הונאה בכשרות): ?kosher is VERIFIED-ONLY.
                                                kosher=true → kashrut_verified_at IS NOT NULL (admin-stamped, admin_kashrut.py:75);
                                                kosher=false → kashrut_verified_at IS NULL. NEVER keys off the free-text
                                                Producer.kosher column (which no longer serializes on public ProducerListOut/
                                                DetailOut — kept only on ProducerAdminOut/OwnerOut).
+                                               MEH-1259 (P0 legal — חוק תוצרת אורגנית 2005): ?organic REMOVED — it matched the
+                                               self-declared organic_certified boolean (unverified). Re-add only behind an
+                                               admin-verified flow. Column + owner toggle + admin checkbox kept.
 GET    /producers/{producer_id}                   public
 GET    /producers/by-slug/{slug}                  public
 GET    /producers/cities                          public — MEH-970: per-city APPROVED-producer counts for /map.

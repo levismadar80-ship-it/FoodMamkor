@@ -11,6 +11,46 @@
 - **Checkpoint (MEH-267):** Alembic revision posted in-thread; awaited Sapir "go" before apply/merge. Columns present in pytest via `create_all` (suite green without applying the migration).
 - **QA:** pytest `test_report_lifecycle.py` 9/9 + `test_api.py` 216/216; vitest `AdminReportsPage.test.jsx`. Build + local full-stack QA per QA sweep. Files: models.py, reports.py, admin_extra.py, reports/page.js, he/en.json, DATA.md, db-schema.md, api-routes.md.
 - **File-location deviation:** tests live at repo-root `tests/` (not `backend/tests/` as the ticket wrote) — matches the real suite location.
+- **Merged post-checkpoint:** Sapir approved the Alembic revision; pushed → PR → merged on green CI (staging re-synced, Accept-Both on logs; `admin_extra.get_dashboard` auto-merged `open_reports` filter alongside 1267's `total_group_buys`).
+
+## 2026-07-17 — MEH-1267 admin polish (LOW) — feature/meh-1267-admin-polish
+
+- **What:** 4 admin fixes. (1) `total_group_buys` (`count(GroupBuy.id)`) in `admin_extra.get_dashboard`; `admin/page.js` binds it, drops the `"›"` placeholder. (2) `StoryCardCanvas` gained `onClose` → X button (logical-start) + Esc; `AdminProducersTable` wires it to `onToggleStoryCard`. (3) Canonical domain (MEH-1242 PR4): `mehamakor.online` (staging alias) → `SITE_URL` (`lib/env`, `mehamakor.co.il`) in StoryCardCanvas + VanityLinkCard + `story.canvas.footer_url` copy. (4) Ambassador kebab item `title` tooltip (i18n). Copy pass he-only: `footer_url` גלו→גלי, `save_cloudinary` שמרו→שמרי, `actions.delete` מחקו→מחקי.
+- **QA:** build green; vitest `AdminDashboardStats` + `StoryCardPanel` (4) + backend dashboard test green.
+- **Overlap w/ MEH-1266:** shares `admin_extra.get_dashboard` (`total_group_buys` vs `open_reports` filter — different lines) + `he/en.json` (distinct keys). Merge order: 1267 first; 1266 syncs staging post-Sapir-go (Accept-Both on logs).
+
+## 2026-07-17 — MEH-1258 / 1260 / 1259 batch (license card + kashrut expiry + organic hide) — full authority
+
+- **MEH-1258 — MERGED (PR #1814, squash `57c82c22`):** new `LicenseCard` on `/producer/dashboard/edit` (anchor `#license`, after Categories). Mirrors the admin license field (numeric/ltr/maxLength-20 + amber format warning reused from `admin.producers.form.fields.license_format_warning`); license-required hint via `requiresProducerLicense`; save `PUT /producers/me`; MEH-999 2c clear-guard stays server-side (Hebrew 422 inline); masked `•••`+last-4 header chip. NEW `EditTabLicenseCard.test.jsx` (6). 375px self-QA `qa-artifacts/MEH-1258/`. **Sapir: mobile QA** — https://staging.mehamakor.online/he/producer/dashboard/edit#license
+- **MEH-1260 — MERGED (PR #1817, squash `186166b6`):** kashrut expiry enforcement at the two existing predicates (`badges.js` kosher + `producer_listing.py` `_kosher_condition()`); `KashrutBadgeStrip` hides when expired; legacy NULL `expires_at` valid; naive utcnow matches `admin_kashrut.py:73`. 3 pytest + 1 vitest. NO schema change.
+- **MEH-1259 — this branch `feature/meh-1259-organic-badge-hide`:** hide the self-declared "אורגני" badge/chip/filter from ALL public surfaces (P0 legal, חוק תוצרת אורגנית 2005; Sapir's 17/07 hide-only decision). Neutralized: badge (`badges.js`), /producers chip+param (`producer-filters.js`), home chip+URL (`use-home-page.js`), /map toggle+param (`map-chips.js`), shared label (`attribute-labels.js`), producer-detail highlight (`ProducerHeader.jsx`), backend `?organic` filter (`producer_listing.py`) + query param (`producers.py`). KEPT: column, owner toggle (`producer_me.py`), admin checkbox+table, CSV import. Field left on `ProducerListOut` (inert). NEW `tests/test_meh1259_organic_hidden.py`; 6 vitest suites updated. vitest 1157 + build green.
+- **Process:** MEH-1260's CHANGELOG/HANDOFF entries were dropped from #1817 mid-flight (they conflicted with EVERY parallel-session staging merge — the MEH-1261/1254/1256 queue merged ~10× during the window, each colliding with the append-only logs and forcing a re-sync + fresh 9-min CI cycle). Those entries land HERE with MEH-1259. **Lesson (worth a rule):** when staging is under heavy parallel merge, keep CHANGELOG/HANDOFF OUT of a slow-CI code PR and batch the log entries into a fast-follow docs commit, or the code PR never catches a clean merge window.
+- **Backend env note:** pytest not runnable in sandbox (no postgres/pydantic) — verified by CI's Backend-tests leg per the MEH-1235-1239 precedent.
+
+## 2026-07-17 — MEH-1074 autonomous sweep (this session): 4 merged + 1 held + 1 skipped
+
+- **Merged to staging (code PRs; GREEN/YELLOW auto-merge on green required gates):**
+  - PR #1828 — `role="img"` on ProducerCard missing-image placeholder (axe serious fix). a11y-only.
+  - PR #1827 — Lightbox focus-return to the real invoker (fixes the `06-lightbox.spec.ts:9` flake root cause in ImageGallery). +`ImageGalleryFocusReturn.test.jsx`.
+  - PR #1831 — Footer nav split into "גלו" / "לבתי עסק" audience groups (ADR-024). +`FooterNavGroups.test.jsx`. Voice fix גלה→גלו was already applied.
+  - PR #1829 — workflow rule 29: Linear auto-reopen guard for docs/HANDOFF PRs.
+- **Held for Sapir mobile QA (ready-for-review, NOT merged — visual):** PR #1833 — products empty-state example card becomes the visual + positive title (copy locked). Merge after a 375px glance.
+- **Skipped + commented in Linear:** the demo-image-public_ids swap — the seed file has 6 `res.cloudinary.com/demo/` URLs but the ticket gives 5 public_ids and says "don't change other seed data"; the challah/spelt/cookies IDs have no home without adding `image_url` fields, and recipe/event aren't covered. Needs a 6-site mapping + URL-format confirmation (comment posted).
+- **⚠️ Concurrent sweep session was active on this repo the whole time** (Rule 1 flag). It merged MEH-1261 F1–F5, MEH-1211, MEH-1260, MEH-1210, MEH-1256, 1262, 1264, 1265 + QA sweeps. To avoid the MEH-1215/1216 duplicate-merge class, this session skipped every In-Progress-with-open-PR ticket and took only disjoint unclaimed ones (a11y/focus/footer/rules/empty-state). No file collided.
+- **Method note:** code PRs were kept **CHANGELOG-free** (the same-anchor `## Unreleased` add would go "dirty" on every staging advance from the other session) and all CHANGELOG+HANDOFF entries were batched into this one docs PR. Force-push is env-gated, so two early PRs (#1823/#1825) were re-created code-only under new branch names (#1828/#1827) and the originals closed.
+## 2026-07-17 — map/cards audit batch (MEH-1210/1211/1263/1264/1265) — 4 merged, 1 STOP
+
+End-to-end batch under the 17/07 ADR-016 grant (Sapir-approved). Sequential; each branch cut from fresh `staging` after the previous merge; merged on green **required** gates (`CI gate` + `Deploy gate`). Vercel preview deploys were rate-limited all session (`api-deployments-free-per-day`) — a non-required commit-status, ignored; **live mobile/staging checks deferred to Sapir** (CC-sandbox limitation).
+
+| MEH | PR | squash | outcome |
+|---|---|---|---|
+| 1211 | #1826 | `25b990e8` | broken-image `onError` fallback in ProducerCard + MapProducerCard (raw `<Image>` bypassed `ImageWithFallback`); `imgSrc && !imgError` gate → each card's own canonical placeholder (byte-identical). vitest 62✅ |
+| 1210 | #1830 | `9ecd66ec` | price removed from discovery cards ("מגזין, לא marketplace") — ProducerCard MEH-1142 footer + MapProducerCard MEH-934 price-split gone; product-level `/producer` prices untouched. vitest 57✅ |
+| 1264 | #1832 | `89d70ab0` | docs: BRAND.md §7 license-name exception clause for `"יצרן"` (Option A, lawyer brief §5.3) |
+| 1265 | #1834 | `277f80f7` | docs: fixed stale ProducerCard placeholder line in `design-principles.md` §VI (→ MEH-643 canon) |
+
+- **MEH-1263 — STOP, report-only, ZERO DML (hypothesis 3 = DB data drift).** The reported "דגים chip + fish glyph on חוות הגליל (בשר)" **cannot be produced by the frontend from correctly-assigned data**: seed assigns galil-farm `category_ids:[1]` = "בשר" (`backend/seed_data.py:18,58`); the MEH-927 migration inserts "בשר"/"דגים" as new rows and links **no** producers (`…meh927…py:52-62`, guard requires 0 links); there is **no `Fish` icon anywhere in frontend source**, and `CATEGORY_STYLES` (`frontend/lib/map-categories.js:29-40`) has no "בשר"/"דגים" key → meat resolves to `DEFAULT` (Leaf, green), never a fish glyph. Chip text = `p.categories[0].name` (`MapProducerCard.jsx:35,150`), categories ordered by `Category.id` (`producers.py:338`). So a live "דגים" chip means galil-farm is linked to the "דגים" category **in staging data** — a DB/seed-drift issue, not frontend. Fix belongs to a data re-seed/re-map on staging (Sapir), not this batch.
+  - **Separate real finding (not the reported bug, not fixed here):** `CATEGORY_STYLES` is **stale post-MEH-927** — it still keys `"בשר, עוף ודגים"` and lacks `"בשר"`/`"דגים"` (+ other split/renamed categories), so many businesses fall back to the DEFAULT Leaf glyph/green on all 4 map surfaces (card chip, no-photo marker, legend, mini-map). This is a wrong-**glyph** systemic issue, never a wrong-**text** one → worth its own ticket.
 
 ## 2026-07-17 — MEH-1241 Chunk 5: Vercel protection-bypass for staging auth runs — feature/meh-1241-qa-vercel-bypass (PR #1812, NOT merged)
 
