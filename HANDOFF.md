@@ -10,6 +10,22 @@
 - **QA:** `npm run build` green; vitest AccountSheet+Header 32/32; DoD lint (lucide/physical-RTL/יצרן) clean on both files. Local-stack before/after @375 (MEH-1242 pattern, guest state, cookie dismissed) in `qa-artifacts/MEH-1279/` — Globe now flush on the sibling icon line; locale flip `/`→`/en` verified live. `onToggle` untouched.
 - **Next:** Sapir on-device mobile check of the AccountSheet language row on staging after merge.
 
+## 2026-07-17 — MEH-1276 — structured Hebrew opening-hours editor — `feature/meh-1276-hours-editor`
+
+- **What:** replaced the free-text `HoursCard` (MEH-1242 PR5, expected `Sun-Thu 09:00-18:00` and silently `null`'d on any deviation) with a structured Hebrew editor — 7 day rows (א׳–ש׳, RTL) + open/closed checkbox + two `type="time"` inputs (`dir="ltr"`) per open day + one-click preset. Serialises to the **same canonical string** → zero DB/API/`parseHours` change.
+- **Files:** NEW `lib/hours-serialize.js` (serializer w/ range compression + prefill + validation), NEW `HoursEditor.jsx` (cards.jsx >1200 lines → `HoursCard` is now a thin wrapper), NEW `__tests__/hours-serialize.test.js` (14), UPDATE `cards.jsx` + `__tests__/EditTabDeliveryCard.test.jsx` (HoursCard isolation tests reworked) + `messages/he.json`/`en.json` (7 new keys, parity kept).
+- **Load/save:** existing string prefills; unparseable → amber notice + empty editor, original kept until explicit save; per-day close>open validation; persistent ✓ (MEH-1270 pattern). Round-trip serialize→parseHours→serialize is stable (test-locked).
+- **QA:** vitest **1195 pass** + `npm run build` green + DoD gate (lucide/יצרן/en-parity pass; the 2 DoD fails — backend pytest venv + `MapPane.jsx` RTL — are pre-existing & outside the diff). Local-stack visual QA with the **real** component (temp route + Playwright, 3 states × 375+1440) → `qa-artifacts/MEH-1276/*.webp` (compressed, 88 KB). **Auth-gated live producer-login QA on seeded staging deferred to Sapir** (sandbox can't reach backend).
+- **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day) — no preview URL until it resets; not a required gate.
+- **Batch:** ticket 2 of the MEH-1277→MEH-1276 batch.
+
+## 2026-07-17 — MEH-1277 — soften visited map pin (grayscale + 0.7) — `feature/meh-1277-visited-pin-soften` (PR #1854)
+
+- **What:** single-file visual fix in `frontend/components/MapComponent.jsx` `createCategoryMarker`. The visited/`dimmed` state was `opacity 0.4`, which on a 36px circle read as disabled/broken (Sapir filed a bug — proof it read as a fault). Now `opacity 0.7` + `filter:grayscale(1)` on the marker circle div — desaturated but legible (Airbnb viewed-state pattern). active/hover/premium rings untouched; docstring updated.
+- **QA:** `npm run build` green. Frontend-only, no schema/API/backend change. `MapComponent.jsx` is not in the central-components list (`MapClient.jsx` is); token-only visual change, no logic.
+- **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day, resets in ~24h) — no preview URL for on-device check until it resets. Not a required CI gate; does not block merge.
+- **Batch:** ticket 1 of the MEH-1277→MEH-1276 batch (LOW-RISK, Sapir-granted end-to-end merge authority).
+
 ## 2026-07-17 — MEH-1278 — mobile footer 2-col nav grid (follow-up MEH-1177) — `feature/meh-1278-footer-mobile-2col`
 
 - **What:** styling-only follow-up to the MEH-1177 footer audience split. On mobile the two nav groups ("גלו" / "לבתי עסק") stacked vertically (~340px wasted height, poor scan). Single-file change in `frontend/components/Footer.jsx`: nav `<nav>` className `flex flex-col gap-6` → `grid grid-cols-2 gap-6 md:flex md:flex-col` — 2-col start-aligned grid on mobile, original flex-col stack at `md:` (desktop unchanged). RTL grid auto-places "גלו" at the start side. No `text-center` present. Newsletter/brand/copyright columns + MEH-867 AA color tokens untouched.

@@ -361,6 +361,23 @@ primary is the contact card's CTA; the sticky bar mirrors it (never co-visible);
 the delivery section's WhatsApp order button is tertiary; follow + share are
 tertiary. Verified per-viewport, not just per-section.
 
+### Chrome budget — at most one top + one bottom sticky layer (MEH-1202)
+
+On any mobile viewport, at most **one** sticky top layer and **one** fixed
+bottom layer may be visible at once. Stacked chrome eats the reading area and
+reads as a rendering bug (the ghost-strip class). Rules:
+
+- **Top:** the global `Header` pill is the top layer. A page-level sticky
+  element (e.g. the `/producer` section tab bar) attaches directly *below* it
+  and the two read as one unit — never a second free-floating top bar.
+- **Bottom:** `StickyContactBar` and `BottomNav` must not co-stack. On
+  `/producer/[id]` mobile the contact bar is the sole bottom layer and
+  `BottomNav` is gated off by route (`isProducerDetail`, `lib/producer-route.js`).
+- **Never hardcode a stacked-chrome offset in px/vh.** A sticky layer that sits
+  below another measures the layer above at runtime. `Header` publishes its
+  live height as the `--chrome-top` CSS var (ResizeObserver); downstream sticky
+  chrome offsets off `var(--chrome-top, …)`, never a frozen `top-[82px]`.
+
 ## Do's and Don'ts
 
 - **Do** keep pure white (`surface`) only on top of the cream page — cards,

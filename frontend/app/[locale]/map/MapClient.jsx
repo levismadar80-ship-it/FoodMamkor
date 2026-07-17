@@ -426,10 +426,11 @@ export default function MapPage() {
       onCardMouseLeave={sync.handleCardMouseLeave}
       onCardClick={sync.handleCardClick}
       onResetAll={() => {
-        // MEH-1075: completed to all 7 toggle keys (was missing the diet trio);
+        // MEH-1075: completed to all toggle keys (was missing the diet trio);
         // cancel any pending debounced sheet fetch so it can't clobber this reset.
+        // MEH-1087: + kosher (verified-only kashrut toggle).
         filters.cancelPendingSheetFetch();
-        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
+        filters.setChipState({ categoryKey: "all", organic: false, has_delivery: false, verified: false, kosher: false, grass_fed: false, vegan: false, gluten_free: false, lactose_free: false });
         filters.setActiveCategoryNames(null);
         filters.setCommittedBounds(null);
         filters.setCityFilter("");
