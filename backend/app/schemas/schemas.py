@@ -117,9 +117,7 @@ def _image_url_list_validator(value: list[str] | None) -> list[str] | None:
     if value is None:
         return value
     return [
-        _image_url_validator(v)
-        for v in value
-        if v is not None and str(v).strip() != ""
+        _image_url_validator(v) for v in value if v is not None and str(v).strip() != ""
     ]
 
 
