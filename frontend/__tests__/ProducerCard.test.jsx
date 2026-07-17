@@ -235,22 +235,20 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("truncates the price label (narrow max-width)", () => {
+  // MEH-1210: price removed from discovery cards ("מגזין, לא marketplace").
+  // Prices stay at product level inside /producer — never on the card.
+  it("does NOT render the price label on the card", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price.className).toMatch(/max-w-/);
+    expect(screen.queryByText("₪40-80")).not.toBeInTheDocument();
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
-  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
-  it("bidi-isolates the price label with dir=ltr", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price).toHaveAttribute("dir", "ltr");
-  });
-
-  it("hides price when both price_range and starting_price_label are null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
+  it("renders no price even when both price fields are set", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, price_range: "₪40-80", starting_price_label: "מ-₪25" }}
+      />,
+    );
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
