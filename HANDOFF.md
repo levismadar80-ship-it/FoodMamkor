@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1279 — AccountSheet language-row alignment (`LanguageToggle variant="bare"`, follow-up MEH-1196) — `feature/meh-1279-language-row-align`
+
+- **What:** MEH-1196 (PR #1744) fixed the language row's SIDE (`ms-auto` removed) but not its GEOMETRY — the embedded `LanguageToggle` was a standalone 36px circle chip (`w-9 h-9` + `Globe 20`), so the glyph sat ~8px inside the sibling icon line, the chip inflated row height, and the label was 13px vs neighbours' 13.5px. Added `variant="bare"` to `LanguageToggle.jsx` (bare `Globe 19`, no circle, caller owns layout via `className`, optional `children` after the Globe; default chip byte-identical). `AccountSheet.jsx` now renders the row AS the toggle (`variant="bare"` + shared `rowCls`) → geometrically identical to the SignOut row (`min-h-[48px]`, `gap-3`, START line, `/65` tier), single ≥44px tap target; `עב / EN` moves inside (`text-[13.5px]`, `dir="ltr"`, `aria-hidden`). Removed now-unused `staticRowCls`.
+- **Phase-0 grep (reported in PR):** `LanguageToggle` has ONE live consumer = this row (Header dropped it in MEH-896, comments only). Pattern does NOT recur — `admin/AdminRowMenu.jsx` + Header `UserMenu` dropdown are uniform text-only rows (no embedded differently-sized control). No scope expansion.
+- **QA:** `npm run build` green; vitest AccountSheet+Header 32/32; DoD lint (lucide/physical-RTL/יצרן) clean on both files. Local-stack before/after @375 (MEH-1242 pattern, guest state, cookie dismissed) in `qa-artifacts/MEH-1279/` — Globe now flush on the sibling icon line; locale flip `/`→`/en` verified live. `onToggle` untouched.
+- **Next:** Sapir on-device mobile check of the AccountSheet language row on staging after merge.
+
 ## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
 
 - **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).
