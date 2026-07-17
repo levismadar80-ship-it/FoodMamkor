@@ -41,28 +41,39 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 /**
- * Distance formatter (v4 LOCK CARD-18 — MEH-1035: Latin units + bidi isolate):
- *   < 1 km  → "{N} m ממך"     (rounded to nearest 50 m)
- *   1–99 km → "{x.x} km ממך"  (one decimal)
- *   ≥ 100 km → "{N} km ממך"    (no decimal — false precision)
+ * Distance formatter. Two presentations via the `unit` option:
  *
- * The {number}{unit} run is wrapped in LRI…PDI (\u2066…\u2069) so it renders
- * LTR (Latin numerals + unit) without flipping the trailing Hebrew "ממך",
- * which stays OUTSIDE the isolate and flows RTL. REUSES: BadgeRow.jsx:79.
- * Returns null for non-finite inputs so callers can render conditionally.
+ *   unit:"latin" (DEFAULT — v4 LOCK CARD-18 / MEH-1035, used by ProducerCard +
+ *   BadgeRow): Latin unit inside an LRI…PDI (⁦…⁩) isolate + a trailing
+ *   Hebrew "ממך" (RTL, outside the isolate):
+ *     < 1 km  → "⁦{N} m⁩ ממך"    (nearest 50 m)
+ *     1–99 km → "⁦{x.x} km⁩ ממך" (one decimal)
+ *     ≥ 100 km → "⁦{N} km⁩ ממך"  (no decimal — false precision)
+ *
+ *   unit:"he" (MEH-1243 🔒 §3 — MapProducerCard meta line): Hebrew unit, digits
+ *   first, NO "ממך" suffix (distance is inherently from the user — the word is
+ *   noise on the map card). No isolate chars: the caller wraps the token in
+ *   <bdi dir="ltr">, which supplies the digits-first isolation:
+ *     < 1 km  → "{N} מ'"   ·   1–99 km → "{x.x} ק\"מ"   ·   ≥ 100 km → "{N} ק\"מ"
+ *
+ * `suffix:false` drops the " ממך" tail (independent of `unit`). Returns null for
+ * non-finite/negative inputs so callers can render conditionally.
+ * REUSES: BadgeRow.jsx:79 (latin form).
  */
-export function formatDistance(km) {
+export function formatDistance(km, { unit = "latin", suffix = true } = {}) {
   if (!Number.isFinite(km) || km < 0) return null;
+
+  const he = unit === "he";
+  const sfx = suffix ? " ממך" : "";
 
   if (km < 1) {
     const meters = Math.round((km * 1000) / 50) * 50;
-    if (meters === 0) return "פחות מ-50 \u2066m\u2069 ממך";
-    return `\u2066${meters} m\u2069 ממך`;
+    if (meters === 0) {
+      return he ? `פחות מ-50 מ'${sfx}` : `פחות מ-50 ⁦m⁩${sfx}`;
+    }
+    return he ? `${meters} מ'${sfx}` : `⁦${meters} m⁩${sfx}`;
   }
 
-  if (km < 100) {
-    return `\u2066${km.toFixed(1)} km\u2069 ממך`;
-  }
-
-  return `\u2066${Math.round(km)} km\u2069 ממך`;
+  const val = km < 100 ? km.toFixed(1) : String(Math.round(km));
+  return he ? `${val} ק"מ${sfx}` : `⁦${val} km⁩${sfx}`;
 }
