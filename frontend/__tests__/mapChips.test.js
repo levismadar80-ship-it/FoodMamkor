@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   CATEGORY_CHIPS,
   TOGGLE_CHIPS,
+  QUICK_CHIP_KEYS,
+  countActiveSheetOnlyFilters,
   resolveCategoryId,
   chipStateToParams,
   boundsToCenterRadius,
@@ -37,8 +39,19 @@ describe("CATEGORY_CHIPS + TOGGLE_CHIPS", () => {
     expect(keys).toContain("gluten_free");
     expect(keys).toContain("vegan");
     expect(keys).toContain("lactose_free");
+    // MEH-1087: verified-only kosher toggle restored to /map.
+    expect(keys).toContain("kosher");
     // MEH-1259: organic toggle removed from the /map FilterSheet.
     expect(keys).not.toContain("organic");
+  });
+
+  it("MEH-1087: kosher is a sheet-only quality chip with the locked label", () => {
+    const kosher = TOGGLE_CHIPS.find((c) => c.key === "kosher");
+    expect(kosher).toMatchObject({ label: "כשרות מאומתת", group: "quality" });
+    // Sheet-only: must not sit in the inline quick-chip row.
+    expect(QUICK_CHIP_KEYS).not.toContain("kosher");
+    // Counts toward the "סינון" badge (sheet-only active).
+    expect(countActiveSheetOnlyFilters({ kosher: true })).toBe(1);
   });
 });
 
@@ -106,6 +119,12 @@ describe("chipStateToParams", () => {
         dbCategories,
       ),
     ).toEqual({ category: 2, grass_fed: true, has_delivery: true });
+  });
+
+  it("MEH-1087: kosher state maps to the verified-only ?kosher param", () => {
+    expect(
+      chipStateToParams({ categoryKey: "all", kosher: true }, dbCategories),
+    ).toEqual({ kosher: true });
   });
 
   it("ignores a lingering organic state key (filter removed — MEH-1259)", () => {
