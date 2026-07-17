@@ -39,7 +39,11 @@ test.describe("producer account menu — desktop (MEH-1226)", () => {
   test.skip(isLocal || !fs.existsSync(producerAuth), skipReason);
   test.use({ storageState: producerAuth, viewport: { width: 1280, height: 900 } });
 
-  test("dashboard leads; profile → public /producer/[id]; settings → /settings", async ({ page }) => {
+  test("dashboard leads; profile → public /producer/[id]; settings → /settings", async ({ page }, testInfo) => {
+    // Header UserMenu is the desktop trigger (hidden md:block). Run once, on the
+    // desktop project — the mobile project would force 1280px onto Pixel 5, a
+    // semantically-misplaced duplicate (mirrors specs 19/20).
+    test.skip(testInfo.project.name !== "desktop", "desktop UserMenu — desktop-project-only");
     await page.goto("/");
     await page.locator(accountTrigger).click();
     const menu = page.getByRole("menu");
@@ -70,7 +74,8 @@ test.describe("consumer account menu — desktop (MEH-1226)", () => {
   test.skip(isLocal || !fs.existsSync(consumerAuth), skipReason);
   test.use({ storageState: consumerAuth, viewport: { width: 1280, height: 900 } });
 
-  test("settings → logout only; no profile / dashboard row", async ({ page }) => {
+  test("settings → logout only; no profile / dashboard row", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "desktop UserMenu — desktop-project-only");
     await page.goto("/");
     await page.locator(accountTrigger).click();
     const menu = page.getByRole("menu");
@@ -91,10 +96,17 @@ test.describe("producer AccountSheet — mobile 375px (MEH-1228)", () => {
   test.skip(isLocal || !fs.existsSync(producerAuth), skipReason);
   test.use({ storageState: producerAuth, viewport: { width: 375, height: 812 } });
 
-  test("first sheet row = לוח הבקרה שלי → /producer/dashboard", async ({ page }) => {
+  test("first sheet row = לוח הבקרה שלי → /producer/dashboard", async ({ page }, testInfo) => {
+    // AccountSheet's trigger is the BottomNav account tab (md:hidden). Run once,
+    // on the mobile project (Pixel 5) — the desktop project would force 375px
+    // onto a non-touch Desktop Chrome, a semantically-misplaced duplicate.
+    test.skip(testInfo.project.name !== "mobile", "mobile AccountSheet — mobile-project-only");
     await page.goto("/");
     await page.locator(accountTrigger).click();
-    const sheet = page.getByRole("dialog");
+    // Scope by aria-label: CookieBanner is ALSO role="dialog" (aria-label
+    // "הסכמה לעוגיות", z-[1100]) so a bare getByRole("dialog") is strict-mode
+    // ambiguous. The AccountSheet is aria-label "חשבון" (nav.account).
+    const sheet = page.getByRole("dialog", { name: "חשבון" });
     await expect(sheet).toBeVisible();
 
     await expect(sheet.getByRole("link", { name: "לוח הבקרה שלי" })).toHaveAttribute(
