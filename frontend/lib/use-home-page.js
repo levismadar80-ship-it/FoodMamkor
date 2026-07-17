@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslations } from "next-intl";
@@ -56,6 +57,9 @@ const GEO_RADIUS_KM_RETRY = 30;
  */
 export function useHomePage() {
   const { user } = useAuth();
+  // MEH-1288: real navigation to a random producer page (a page change, unlike
+  // the MEH-1293 same-URL History-API mirroring below — push is correct here).
+  const router = useRouter();
   // MEH-471 strangler-fig: downstream consumers (HomeHero etc) still pass
   // old flat keys ("hero_title"). Wave 2 migrates those call sites and
   // this wrap is removed.
