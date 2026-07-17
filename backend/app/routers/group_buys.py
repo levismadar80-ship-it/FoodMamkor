@@ -11,7 +11,7 @@ from app.auth import (
     get_current_user,
     get_current_user_optional,
     require_admin,
-    require_producer,
+    require_verified_producer,
 )
 from app.database import get_db
 from app.models.models import GroupBuy, GroupBuyCommit, Producer, User
@@ -176,7 +176,7 @@ def cancel_commit(
 @router.post("", status_code=201)
 def create_group_buy(
     data: GroupBuyCreate,
-    current_user: User = Depends(require_producer),
+    current_user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     producer = (

@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import require_producer
+from app.auth import require_producer, require_verified_producer
 from app.database import get_db
 from app.models import Producer, ProducerRecipe, Product, User
 from app.rate_limit import limiter
@@ -108,7 +108,7 @@ def create_my_recipe(
     request: Request,  # required by slowapi
     data: ProducerRecipeCreate,
     background_tasks: BackgroundTasks,
-    user: User = Depends(require_producer),
+    user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     """Submit a new recipe. Mirrors experiences.py:201-272:

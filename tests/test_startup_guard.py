@@ -97,6 +97,9 @@ def test_missing_key_off_delivery_env_is_noop(env):
     assert _check_email_delivery_config(env, "") is None
 
 
-def test_blank_key_treated_as_missing():
-    """An empty-string key (Railway var present but blank) is still fatal."""
-    assert _check_email_delivery_config("staging", "") is not None
+@pytest.mark.parametrize("key", [None, ""])
+def test_blank_or_missing_key_is_fatal(key):
+    """A blank ("" — Railway var present but empty) OR absent (None) key on a
+    delivery env is fatal. `not key` handles both; parametrizing None locks the
+    unset case explicitly (MEH-1164 claude[bot] review)."""
+    assert _check_email_delivery_config("staging", key) is not None
