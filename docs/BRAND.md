@@ -121,7 +121,7 @@ Phrasings that survived to production once and must be caught in review:
 
 - `"home cooks"` (English boilerplate) — caught in `06-press-quotes-bank.md` duplicate, deleted in Phase ζ.
 - `"שכנות מבשלות"` / `"מהמטבח של השכן"` / `"אוכל ביתי"` — illegal-in-Israel framing, brand LOCK violation.
-- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024).
+- `"יצרן/יצרנית"` — use `"בית עסק"` / `"בעלי עסקים"` (ADR-024). **חריג (MEH-1264, Option A):** `"יצרן"` אסור בממשק ובשיווק, למעט כחלק משם רישיון רשמי (`"רישיון יצרן"`, `"מספר רישיון יצרן"`) — דיוק משפטי, lawyer brief §5.3. הצ'יפ הצרכני `"רישיון יצרן"` נשאר AS-IS (שם הרישיון הרשמי של משרד הבריאות).
 - `"marketplace"` / `"פלטפורמת מסחר"` — DNA violation.
 - `"שוק"` as a discovery/sort/nav label (e.g. the old `"חדש בשוק"` sort option) — frames Mehamakor as a trade venue, DNA violation (MEH-1218). The sort label is now `"הצטרפו לאחרונה"`. **Not** forbidden: the named `"שוק שישי"` feature (MEH-50) and the event-type category `"שוק"` (a kind of listed event), which describe a real-world market, not the platform.
 - `"ISSUE 01"` / `"SPRING 2026"` / time-stamped editorial framing — Mehamakor isn't a periodical.
