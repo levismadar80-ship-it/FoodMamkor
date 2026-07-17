@@ -54,8 +54,8 @@ export default function HomePage() {
     onboardStep, onboardAdvance, onboardDismiss,
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
-    featuredProducer,
-    handleNearMe, handleCitySelected,
+    featuredProducer, geoActive, cityActive,
+    handleNearMe, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -188,7 +188,10 @@ export default function HomePage() {
         onAdvanceFromStep0={handleAdvanceFromStep0}
         onToggleChip={toggleChip}
         onClearCategory={handleClearCategory}
+        onClearLocation={handleClearLocation}
         onLoadMore={handleLoadMore}
+        geoActive={geoActive}
+        cityActive={cityActive}
       />
 
       {/* =========================

@@ -381,7 +381,8 @@
       "search_area_label": "Search businesses",
       "near_me": "Near me",
       "searching": "Searching...",
-      "scroll_down_label": "Scroll to business listing"
+      "scroll_down_label": "Scroll to business listing",
+      "geo_failure": "We couldn't detect your location — you can pick a city manually"
     },
     "search": {
       "placeholder": "Search fresh veggies, grass-fed beef...",
@@ -431,7 +432,11 @@
       "explore_map": "Explore on map",
       "load_more": "More businesses",
       "onboarding0": "Discover local businesses — fresh vegetables, cheeses, sourdough and more Tap a card to view details",
-      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above"
+      "onboarding1": "Filter by organic, kosher, delivery and more — tap one of the buttons above",
+      "geo_chip": "Businesses near you",
+      "city_chip": "Businesses in {city}",
+      "clear_location_filter": "Remove location filter",
+      "geo_empty": "No businesses found nearby — showing all businesses"
     },
     "founder_quote": {
       "text": "Real food, from real people, right next door.",
