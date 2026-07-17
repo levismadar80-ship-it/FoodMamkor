@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
 import { detailToMessage } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
+import { KASHRUT_BUSINESS_PORTAL_URL } from "@/lib/official-registries";
 import InfoTooltip from "@/components/InfoTooltip";
 
 // Maps badge_code → admin.kashrut.badges.* key (note hyphen-to-underscore)
@@ -86,6 +88,17 @@ export default function AdminKashrutPage() {
         <p className="text-sm text-fg-muted">
           {t("kashrut.subtitle")}
         </p>
+        {/* MEH-1271: manual cross-check of the kashrut certificate against the
+            official gov.il kashrut business portal (by business name / validity). */}
+        <a
+          href={KASHRUT_BUSINESS_PORTAL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+        >
+          <ArrowSquareOut size={14} weight="bold" aria-hidden="true" />
+          {t("kashrut.portal_link")}
+        </a>
       </div>
       <div className="mb-6">
         <select

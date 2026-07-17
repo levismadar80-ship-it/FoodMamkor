@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Cow, Leaf, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, Cow, Leaf, X } from "@phosphor-icons/react";
 import api from "@/lib/api";
+import { HEALTH_MINISTRY_FOOD_REGISTRY_URL } from "@/lib/official-registries";
 import { useAdminAction } from "@/lib/use-admin-action";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -92,6 +93,17 @@ function ProducerLicenseField({ form, categories, update }) {
           {t("producers.form.fields.license_format_warning")}
         </p>
       )}
+      {/* MEH-1271: manual cross-check against the Ministry of Health food
+          manufacturers registry (by business name / license number). */}
+      <a
+        href={HEALTH_MINISTRY_FOOD_REGISTRY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+      >
+        <ArrowSquareOut size={14} weight="bold" aria-hidden="true" />
+        {t("producers.form.fields.license_registry_link")}
+      </a>
     </div>
   );
 }
