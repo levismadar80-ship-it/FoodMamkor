@@ -1,0 +1,74 @@
+[
+  {
+    "id": "10",
+    "status": "PASS",
+    "detail": "/he/terms @375: header class=\"sticky top-0 z-[1050] pointer-events-none bg-background\" (expect bg-background present)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check10-terms-opaque-375.png"
+    ]
+  },
+  {
+    "id": "10",
+    "status": "PASS",
+    "detail": "/he/terms @1440: header class=\"sticky top-0 z-[1050] pointer-events-none bg-background\" (expect bg-background present)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check10-terms-opaque-1440.png"
+    ]
+  },
+  {
+    "id": "11",
+    "status": "PASS",
+    "detail": "/he @1440: header class=\"sticky top-0 z-[1050] pointer-events-none\" (expect NO bg-background)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check11-home-transparent-1440.png"
+    ]
+  },
+  {
+    "id": "11",
+    "status": "PASS",
+    "detail": "/he @375: header class=\"sticky top-0 z-[1050] pointer-events-none\" (expect NO bg-background)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check11-home-transparent-375.png"
+    ]
+  },
+  {
+    "id": "12",
+    "status": "PASS",
+    "detail": "wrapper pointer-events=none (want none), nav=auto (want auto), gutter elementFromPoint tag=DIV inWrapper=false (want false=passes through)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check12-bottombar-375.png"
+    ]
+  },
+  {
+    "id": "6",
+    "status": "FAIL",
+    "detail": "/he/admin/producers: no aria-haspopup=menu triggers found (rows loaded?)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check6-prod-notrigger.png"
+    ]
+  },
+  {
+    "id": "7",
+    "status": "FAIL",
+    "detail": "/he/admin/users: no aria-haspopup=menu triggers found (rows loaded?)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check7-users-notrigger.png"
+    ]
+  },
+  {
+    "id": "8",
+    "status": "FAIL",
+    "detail": "\"פרטים חסרים\" toggle at scrollY=120: found=0, clicked=false, class changed(active toggled)=null",
+    "shots": [
+      "qa-artifacts/QA-20260717/check8-toolbar-sticky.png"
+    ]
+  },
+  {
+    "id": "9",
+    "status": "PASS",
+    "detail": "nav pointer-events=auto (want auto), links=5, buttons=2, nav-link click worked=true",
+    "shots": [
+      "qa-artifacts/QA-20260717/check9-header-interactive.png"
+    ]
+  }
+]
