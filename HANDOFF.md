@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1252 — demo-image public_ids → dfzpscjks (resolves the prior-session skip)
+
+- **Branch `feature/meh-1252-demo-image-ids` (off staging).** The exact swap the earlier 17/07 sweep session **skipped and deferred to this ticket**. MEH-1198 SYNC (16/07) supplied the 5 `mehamakor/demo/ruach-hasadeh-*` public_ids on the `dfzpscjks` cloud; Sapir chose the **Full per-product (5/5)** scope when asked (vs pure 6-site swap).
+- **`backend/scripts/seed_demo_business.py` only** — replaced all 6 `res.cloudinary.com/demo/` URLs; added `image_url` to products חלה/כוסמין/עוגיות (had none); recipe→sourdough, event→hero. No schema change, no env vars, no non-image seed fields touched. `py_compile` OK; 0 demo-cloud refs remain; all 5 public_ids referenced.
+- **pytest deferred to CI's Backend-tests leg** (pytest/app deps not installed in sandbox, `pip` blocked — same precedent as the MEH-1259/1260 batch above). No test references the seed script.
+- **⚠️ Deploy note for Sapir:** this merge triggers a staging build that will pick up `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (added to Vercel today, after the last build) — AddressSearch flips from the Nominatim fallback to Google Places. **Re-test address search after this deploys.** Flagged in the PR body.
+- **Next (Sapir):** run `--refresh` via Railway Web Console, then visual crop check (esp. `ruach-hasadeh-cookies` portrait→4:3) per MEH-1198.
+
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
 ## 2026-07-17 — MEH-1266 reports lifecycle (HIGH, schema) — feature/meh-1266-report-lifecycle
@@ -12,6 +20,16 @@
 - **QA:** pytest `test_report_lifecycle.py` 9/9 + `test_api.py` 216/216; vitest `AdminReportsPage.test.jsx`. Build + local full-stack QA per QA sweep. Files: models.py, reports.py, admin_extra.py, reports/page.js, he/en.json, DATA.md, db-schema.md, api-routes.md.
 - **File-location deviation:** tests live at repo-root `tests/` (not `backend/tests/` as the ticket wrote) — matches the real suite location.
 - **Merged post-checkpoint:** Sapir approved the Alembic revision; pushed → PR → merged on green CI (staging re-synced, Accept-Both on logs; `admin_extra.get_dashboard` auto-merged `open_reports` filter alongside 1267's `total_group_buys`).
+## 2026-07-17 — staging QA (MEH-1210/1211) + MEH-1268 CATEGORY_STYLES
+
+**T1 — MEH-1268 (Closes, PR #1839, squash `93ecdfa8`):** `frontend/lib/map-categories.js` — renamed the stale post-MEH-927 combined key `"בשר, עוף ודגים"` → `"בשר"` (identical `#c04040` + `Cow`) and added `"דגים"` (`Fish` glyph, **same** meat colour — MEH-936 redundant shape encoding, no new palette colour, MEH-763 F2-safe). Fixes meat/fish businesses falling through `styleForProducer` → DEFAULT Leaf/green on all 4 map surfaces. `map-chips.js` untouched (filter grouping resolves against DB names). vitest 42 + build green.
+
+**T0 — post-merge QA for MEH-1210 + MEH-1211 — ⚠️ BLOCKED by deploy-lag, re-run needed.** Ran Playwright (sandbox Chromium + TLS-1.2 + `x-vercel-protection-bypass`) against `staging.mehamakor.online` /he routes @375+1440.
+- **🔑 HEADLINE: live staging is serving a build that PREDATES both #1826 (MEH-1211) and #1830 (MEH-1210).** Evidence: (a) discovery cards **still render ₪** ("מ-₪70/ק״ג" on 6/7 cards, /home + /producers) — MEH-1210 deletes those spans; (b) the ruach-hasadeh card renders a **broken `<img>`** (`naturalWidth 0`, dead `cloudinary.com/demo` URL) with **no** leaf/wordmark placeholder — MEH-1211's `onError` fallback is absent. Fresh SSR (`x-vercel-cache: MISS`, `no-store`, `age 0`) ⇒ it's the deployed **build** that's stale, not CDN cache. Root cause = today's Vercel deploy rate-limit (`api-deployments-free-per-day`); the staging redeploy for the merged commits never shipped.
+- **Consequence:** checks #1/#2 (card-height equality after MEH-1210 removed the `mt-auto` footer) measured **spread 0px** every row — but on the **OLD** card, so they do **not** validate the post-1210 layout. #4 (₪ absence) + #5 (placeholder) read as FAIL **only because the build is stale**, not a code regression (source re-verified: no price span, `onError` present, vitest green).
+- **Verified regardless of deploy:** #6 galil-farm /he/map card chip **text = "בשר"** ✓ (MEH-1263 data re-map IS live) — the glyph is still DEFAULT Leaf (pre-MEH-1268; fixed by #1839, awaiting deploy). #7 ruach `/producer` product prices present in ₪ (`24₪–28₪`, `120₪`, `מינימום 60₪`) ✓.
+- **Blocked, not run:** #3 /he/favorites (needs consumer session — `DEMO_CONSUMER_PASSWORD` not in the CC sandbox).
+- **ACTION FOR SAPIR:** once the Vercel deploy quota resets, trigger a **staging redeploy** (redeploy latest `staging`), then re-run T0 (#1,#2,#4,#5) + MEH-1268 self-QA (galil map glyph = meat, legend/markers/mini-map consistency). The MEH-1210 height-equality risk is **still unverified anywhere reachable** (live=stale, local `next start` has no sandbox-reachable API, jsdom has no layout) — the redeploy re-run is the only path.
 
 ## 2026-07-17 — MEH-1267 admin polish (LOW) — feature/meh-1267-admin-polish
 
