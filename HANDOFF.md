@@ -5,6 +5,43 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1261 (F1–F5) sweep-fix batch + E2E truth check + mobile QA artifacts
+
+**Task 0 — E2E truth check (report-only): staging E2E is GREEN, the "known /producer/[id] drift" framing was STALE.**
+- Latest `staging` push run (`29567589020`, sha `1a835c3d`, BottomNav MEH-1253): **E2E job = success**, 105 passed / 18 skipped / 1 flaky (`06-lightbox` focus-return, auto-retried green). MEH-1225's PR #1771 `role='img'` placeholder fix is holding — the `/producer/[id]` axe/parity specs pass.
+- The prior red runs were NOT the placeholder: `29566336002` (MEH-1241 seed doc, sha `65313da4`) failed on `11-password-policy` "valid 12-char password completes the flow" (`toBeEnabled` on הצטרפו) and `29538694858` failed on the same spec — both **flaky signup-submit timing**, auto-retried green in later runs. No live `/producer/[id]` regression. So MEH-1201's required-gate flip is **not** currently blocked by a live red — the remaining risk is the known `11-password-policy` flake, not producer drift.
+- Evidence: `e2e.yml` runs against a local `next start` on the runner (not Vercel preview); the E2E job is still **non-required** (not in ruleset 15240090), so it did not gate any MEH-1261 merge.
+
+**Task 1 — MEH-1261 F1–F5: one PR per finding, all 5 CONFIRMED with file:line (none skipped). ADR-016 v2 (merge-on-green).**
+
+| F | PR | what shipped | tests |
+|---|---|---|---|
+| F1 | #1813 (MERGED `ffb9c633`) | `ProductsSection` load failure → distinct `role=alert` card + retry (was `catch→setProducts([])` = looked empty) | `ProductsSectionLoadError.test.jsx` |
+| F2 | #1815 | dashboard analytics/profile fetch → per-section error card + retry, independent failure (was infinite skeleton / silent unmount) | `DashboardSectionFetchErrors.test.jsx` |
+| F3 | #1820 | `ProductsSection` EDIT-form image auto-persists (partial PUT `{image_url}`) — MEH-1236 pattern; ADD form intentionally not (no product yet) | `ProductsSectionImageAutosave.test.jsx` |
+| F4 | #1816 | settings Save no longer dead-without-reason — `phoneTouched` seeds for a saved-invalid phone + `onPaste` (typing UX kept) | `SettingsPhoneDisabledReason.test.jsx` |
+| F5 | #1818 | `DescriptionCard` instagram edit persists (joined dirty + PUT payload; backend whitelist already accepted it) | `EditTabDescriptionCardInstagram.test.jsx` |
+
+- Every PR: `npm run build` + vitest green locally; no backend/schema change (F3's PUT was already `exclude_unset`; F5's field + whitelist pre-existed). No STOP condition hit.
+- Branch slug used `feature/meh-1261-fN-*` (Linear desc said meh-1251 in the slug — a typo; the issue is MEH-1261, confirmed via `get_issue`).
+
+**Task 2 — mobile QA artifacts (report-only, for Sapir): `qa-artifacts/mobile-16-07/` (5 × WebP @375px, 146 KB total).**
+- `meh-1237-unsaved-banner-two-cards` — banner names BOTH dirty cards as jump links ("שינויים שלא נשמרו ב: רישיון יצרן · תיאור העסק"). ✓
+- `meh-1239-product-form-price-hint` — price-pair hint wraps to 2 clean lines at 375px. ✓
+- `meh-1236-images-uploaded-autosaved` + `meh-1236-overview-checklist-after-upload` — upload → "נשמר" auto-save flash → overview checklist "תמונה ראשית ✓" ticked. ✓
+- `meh-1234-addresssearch-suggestions` — dropdown renders 3 "דרך שרה" suggestions at 375px. ✓
+- **⚠️ Rig caveat (Skeptic Mode):** these are a **LOCAL `next start` + stubbed `/api`** rig, NOT live staging — the sandbox has no Vercel-SSO access to `staging.mehamakor.online` and no demo creds. The AddressSearch shot used a **Nominatim-shaped fixture** (Google stub returned `{}`), so it proves the *UI renders suggestions* but **does NOT confirm the Google path fires** — that specific Google-vs-Nominatim question (MEH-1234, key now live in Vercel) is genuinely a **live-staging check for Sapir**. All shots tell her where to look; the real device pass is hers.
+
+## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit
+
+- **What:** typed-but-not-selected city in the delivery-cities field silently vanished on Save → false "יש לבחור לפחות עיר אחת". `CitiesAutocomplete.jsx`: Enter commits an exact suggestion match (even `activeIdx === -1`, multiple suggestions); blur auto-commits exact match synchronously / clears non-match; `autoComplete="off"`; muted `commit_hint` helper (he+en `search.cities_autocomplete.commit_hint`). Adversarial-review REFEREE fix: debounce timer canceled on commit/blur (ghost-dropdown reopen).
+- **Files:** `frontend/components/CitiesAutocomplete.jsx`, `frontend/messages/{he,en}.json` (+1 key each), NEW `frontend/__tests__/CitiesAutocomplete.test.jsx` (7 passed; placed in `frontend/__tests__/` per repo convention — ticket's `components/__tests__/` path doesn't exist).
+- **QA:** vitest 7/7 + build green (outputs in PR). Live mobile check (type "זכרון יעקב" + Enter → chip; type + tap שמירה → chip kept) deferred to Sapir — no feature-branch Vercel previews since MEH-1044.
+- **Queue context:** ticket 1 of 3 (MEH-1254 → MEH-1255 exclusion mode HIGH-RISK → MEH-1256 region quick-add, same file, waits for this merge).
+
+## 2026-07-17 — MEH-1195 header shell opaque — rebased onto staging + MERGED (PR #1743)
+
+- **MEH-1195 (Med · RED · central Header):** the held `feature/meh-1195-header-shell-opaque` PR #1743 (opened 2026-07-13 with a DO-NOT-MERGE Sapir gate) was brought current and merged under the 17/07 full-end-to-end grant. Since staging's `Header.jsx` had gained the MEH-1251 Chunk B click-shield (`pointer-events-none`) after #1743 was cut, the `<header>` className conflicted. Resolved keeping **BOTH** concerns on one line: `` className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`} `` — the MEH-1251 shield AND the MEH-1195 gated `bg-background`. **Method note:** the env denies `git rebase`/`git reset --hard` (history-rewrite gated), so staging was brought in via `git merge origin/staging` instead — identical final tree, and the PR squash-merge collapses it to one commit on staging regardless. DO-NOT-MERGE markers stripped from the PR title + body; draft flipped to ready. build green · Header vitest green · both required gates green. `Closes MEH-1195`.
 ## 2026-07-17 — MEH-1253 BottomNav pointer-events shield
 
 - **What:** applied the MEH-1251 Chunk B shield pattern to `BottomNav.jsx`. The full-width `fixed` wrapper (`:217`) had default `pointer-events`, so its transparent band (side gutters + safe-area/16px paddingBottom below the pill) swallowed taps/scroll on content underneath. Added `pointer-events-none` on the wrapper (`:228`) + `pointer-events-auto` on the `<nav>` pill (`:249`). One wrapper only (no intermediate shell like Header) → one none + one auto. `onFocusCapture` unaffected (pointer-events-none ≠ focus block). Zero visual/layout/z change.

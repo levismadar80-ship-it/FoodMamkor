@@ -47,13 +47,20 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
   const [editUploading, setEditUploading] = useState(false);
+  // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
+  // renders a distinct error card + retry instead of the "no products yet"
+  // EmptyState; `reloadKey` re-fires the mount fetch on retry.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadError(false);
     api.get("/producers/me/products")
       .then((r) => setProducts(r.data))
-      .catch(() => setProducts([]))
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
 
   // MEH-1116: single reporting point — fires on fetch, add, and delete alike.
   useEffect(() => {
@@ -80,6 +87,9 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       const fd = new FormData();
       fd.append("file", file);
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      // MEH-1261 F3: no auto-persist here (unlike the edit form) — the product
+      // doesn't exist yet, so there is nothing to PUT until the Add submit
+      // creates it. Closing the form discards the whole draft, image included.
       setForm((f) => ({ ...f, image_url: r.data.url }));
     } catch (err) {
       setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
@@ -163,6 +173,22 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       fd.append("file", file);
       const r = await api.post("/upload/image", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setEditForm((f) => ({ ...f, image_url: r.data.url }));
+      // MEH-1261 F3: kill the upload≠save trap on the edit form — the image
+      // used to persist only on the explicit Save, so closing via X orphaned
+      // the upload and the change looked lost. Auto-persist the image alone
+      // (partial PUT — name/price edits stay behind the explicit Save, and
+      // removal keeps the explicit-Save intent too).
+      // REUSES: edit/cards.jsx ImagesCard uploadFiles (MEH-1236, PR #1787).
+      try {
+        const saved = await api.put(`/producers/me/products/${editingId}`, {
+          image_url: r.data.url,
+        });
+        setProducts((p) => p.map((x) => (x.id === editingId ? saved.data : x)));
+      } catch {
+        // Uploaded to Cloudinary but the product save failed — the form still
+        // holds the image (dirty), so the explicit Save can retry. Never silent.
+        setError(tErr("image_autosave_failed"));
+      }
     } catch (err) {
       setError(detailToMessage(err?.response?.data?.detail) || tErr("upload_failed_fallback"));
     } finally {
@@ -240,6 +266,25 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       </div>
 
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+      {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
+          (which invites adding a product to a catalog that may already exist). */}
+      {loadError && (
+        <div
+          role="alert"
+          data-testid="products-load-error"
+          className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+        >
+          <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
+          <button
+            type="button"
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="text-sm text-primary font-medium hover:underline"
+          >
+            {t("load_retry_cta")}
+          </button>
+        </div>
+      )}
 
       {products?.length === 0 && !adding && (
         <EmptyState
