@@ -5,10 +5,18 @@ returns issue strings; the lifespan only logs them. WARNING-only by
 design (boot must continue on drift so rollback strategies still work).
 
 Recurrence prevention for MEH-332.
+
+MEH-1164 (F6): also covers _check_email_delivery_config — the fail-loud
+guard for a missing RESEND_API_KEY on staging/production. Unlike the
+FRONTEND_URL guard, a non-None result is fatal (the caller raises), so
+dev/test MUST stay a no-op.
 """
 import pytest
 
-from app.startup import _check_frontend_url_consistency
+from app.startup import (
+    _check_email_delivery_config,
+    _check_frontend_url_consistency,
+)
 
 
 @pytest.mark.parametrize(
@@ -62,3 +70,33 @@ def test_recognized_envs_never_flagged_as_unrecognized():
     ]:
         issues = _check_frontend_url_consistency(env, url)
         assert not any("unrecognized" in i for i in issues)
+
+
+# --- MEH-1164 (F6): RESEND_API_KEY email-delivery fail-loud guard ------------
+
+
+@pytest.mark.parametrize("env", ["staging", "production", "STAGING", "Production"])
+def test_missing_key_on_delivery_env_is_fatal(env):
+    """staging/production with no key → a fatal message (caller raises)."""
+    msg = _check_email_delivery_config(env, "")
+    assert msg is not None
+    assert "RESEND_API_KEY" in msg
+    assert env.lower() in msg
+
+
+@pytest.mark.parametrize("env", ["staging", "production"])
+def test_present_key_on_delivery_env_is_ok(env):
+    """A configured key on a delivery env is fine — no fatal message."""
+    assert _check_email_delivery_config(env, "re_live_xxx") is None
+
+
+@pytest.mark.parametrize("env", ["development", "dev", "", "test", None])
+def test_missing_key_off_delivery_env_is_noop(env):
+    """Dev/test/unknown envs keep the intentional email fail-open no-op — a
+    missing key must NEVER block boot outside staging/production."""
+    assert _check_email_delivery_config(env, "") is None
+
+
+def test_blank_key_treated_as_missing():
+    """An empty-string key (Railway var present but blank) is still fatal."""
+    assert _check_email_delivery_config("staging", "") is not None

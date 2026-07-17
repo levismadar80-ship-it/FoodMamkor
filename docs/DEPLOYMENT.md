@@ -138,6 +138,8 @@ Add a parallel `staging` environment that deploys from the `staging` branch.
    | `ANTHROPIC_API_KEY` | Same key as production (it's the same Anthropic account). |
    | `CORS_ORIGINS` | `https://staging.mehamakor.online,http://localhost:3000` |
    | `FRONTEND_URL` | `https://staging.mehamakor.online` — **override per environment. NEVER copy from production.** Used by backend to build email links (verify-email, reset-password, welcome, producer-dashboard, admin notifications). Misconfiguration sends staging users to production (MEH-332). |
+   | `RESEND_API_KEY` | **Required for any email to send.** Resend HTTP API key from an account where the sending domain (`mehamakor.online`) is verified (SPF+DKIM). **If unset, every verification / reset / welcome email is silently skipped** (fail-open at `backend/app/services/email.py`) — the user still sees a "check your email" ack but nothing sends. Boot fails loud when this is missing on staging/production (MEH-1164 guard in `backend/app/startup.py`), so set it before the next deploy. |
+   | `EMAIL_FROM_ADDRESS` | Optional. Sender header; defaults to `מהמקור <noreply@mehamakor.online>` (`config.py`). Override only if staging should send from a different verified address — the domain must be verified in the same Resend account as `RESEND_API_KEY`. |
    | `ENV` | `staging` |
    | `CLOUDINARY_*` | Same as production for MVP (same media bucket). |
    | `WHATSAPP_PHONE_NUMBER_ID` | Phone Number ID from Meta WhatsApp Manager (see HANDOFF.md → "WhatsApp Cloud API"). Use staging value or leave unset to skip WhatsApp sends on staging. Replaces `TWILIO_WHATSAPP_FROM` (MEH-508). |
@@ -1076,6 +1078,18 @@ ANTHROPIC_MODEL=claude-opus-4-6
 # back to ADMIN_EMAIL when unset. If SMTP is unconfigured, the
 # submission is still persisted to contact_messages (fail-open).
 CONTACT_EMAIL=levismadar80@gmail.com
+
+# Email — Resend HTTP API (Railway blocks SMTP ports 25/465/587, so all mail
+# goes through Resend). REQUIRED for any email to send. The key must belong to
+# a Resend account where the sending domain (mehamakor.online) is verified
+# (SPF+DKIM). If unset, every verification/reset/welcome email is SILENTLY
+# skipped (fail-open in backend/app/services/email.py) — the user still sees a
+# "check your email" ack but nothing sends. Boot fails loud when this is missing
+# on staging/production (MEH-1164 guard in backend/app/startup.py).
+RESEND_API_KEY=<from resend.com — account with mehamakor.online verified>
+# Optional sender header; defaults to "מהמקור <noreply@mehamakor.online>".
+# Override only to send from a different address on the same verified domain.
+EMAIL_FROM_ADDRESS=מהמקור <noreply@mehamakor.online>
 
 FRONTEND_URL=https://mehamakor.online
 ```
