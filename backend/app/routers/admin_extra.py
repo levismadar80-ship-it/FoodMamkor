@@ -548,7 +548,12 @@ def get_dashboard(
         .scalar()
         or 0
     )
-    open_reports = db.query(func.count(Report.id)).scalar() or 0
+    # MEH-1266: count OPEN reports only (status != resolved|dismissed) so the
+    # red dashboard alert + sidebar badge (pending_moderation_count) drop as
+    # admins close reports, instead of the all-time inflation they had before.
+    open_reports = (
+        db.query(func.count(Report.id)).filter(Report.status == "open").scalar() or 0
+    )
     flagged_home_products = (
         db.query(func.count(HomeProduct.id))
         .filter(HomeProduct.moderation_status == "FLAGGED")

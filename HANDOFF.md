@@ -34,6 +34,13 @@ Ran alongside a live parallel sweep session (it held MEH-1268/927/1267 + merged 
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1266 reports lifecycle (HIGH, schema) — feature/meh-1266-report-lifecycle
+
+- **What:** full resolve/dismiss lifecycle for producer reports. NEW Alembic `c5e1a9d7f2b4` (head; re-parented off `e7c4b1f95a2d`/MEH-1255 to linearize a two-head collision when both landed off `d4e7a92c81b5`): `reports.status` (VARCHAR NOT NULL `'open'`, backfilled) + `resolved_at` + `resolved_by` (FK users ON DELETE SET NULL). NEW `POST /admin/reports/{id}/resolve|dismiss` (409 double-close). `GET /admin/reports` drops the ≥3 gate → every producer with ≥1 open report + `auto_flagged`. Dashboard `open_reports` + sidebar badge count open only. Reports page: batch-dismiss endpoint (survives refresh), neutral border for 1–2, red for 3+, `window.prompt`→dialog.
+- **Checkpoint (MEH-267):** Alembic revision posted in-thread; awaited Sapir "go" before apply/merge. Columns present in pytest via `create_all` (suite green without applying the migration).
+- **QA:** pytest `test_report_lifecycle.py` 9/9 + `test_api.py` 216/216; vitest `AdminReportsPage.test.jsx`. Build + local full-stack QA per QA sweep. Files: models.py, reports.py, admin_extra.py, reports/page.js, he/en.json, DATA.md, db-schema.md, api-routes.md.
+- **File-location deviation:** tests live at repo-root `tests/` (not `backend/tests/` as the ticket wrote) — matches the real suite location.
+- **Merged post-checkpoint:** Sapir approved the Alembic revision; pushed → PR → merged on green CI (staging re-synced, Accept-Both on logs; `admin_extra.get_dashboard` auto-merged `open_reports` filter alongside 1267's `total_group_buys`).
 ## 2026-07-17 — MEH-1255 delivery-exclusion mode "לכל הארץ חוץ מ:" — feature/meh-1255-delivery-exclusion (HIGH-RISK, chunk-by-chunk)
 
 - **Status:** all 3 chunks Sapir-approved at their WAIT gates; PR opened + merging on the 2 required gates.

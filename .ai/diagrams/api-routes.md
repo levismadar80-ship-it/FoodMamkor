@@ -126,8 +126,9 @@ graph TD
     Content[/admin/content page] --> AdminCats[GET/POST/PUT/DELETE /admin/categories<br/>🛡️ CRUD]
     Content --> AdminPages[GET/PUT /admin/pages/{slug}<br/>🛡️ about/terms editor]
 
-    Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ sorted by urgency]
-    Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️]
+    Reports[/admin/reports page] --> AdminReports[GET /admin/reports<br/>🛡️ >=1 open report; auto_flagged >=3]
+    Reports --> Resolve[POST /admin/reports/{id}/resolve<br/>🛡️ 409 if closed]
+    Reports --> Dismiss[POST /admin/reports/{id}/dismiss<br/>🛡️ 409 if closed]
 
     Analytics[/admin/analytics page] --> AdminAnalytics[GET /admin/analytics<br/>🛡️ charts + heatmap + top producers]
 
