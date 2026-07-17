@@ -169,7 +169,10 @@ const TabButton = forwardRef(function TabButton(
 // פרופיל
 // ---------------------------------------------------------------------------
 
-function ProfileTab() {
+// Exported for isolation tests (SettingsPhoneDisabledReason.test.jsx) — the
+// full-page mount is skipped in vitest (stale mock drift, see
+// SettingsPage.test.jsx), so the phone-validation UX is asserted directly.
+export function ProfileTab() {
   const { user, updateProfile, refreshUser } = useAuth();
   const tCommon = useTranslations("settings.common");
   const t = useTranslations("settings.profile");
@@ -179,7 +182,13 @@ function ProfileTab() {
   // MEH-1190: track blur so the invalid-phone message shows only after the
   // user leaves the field (mirrors the /register onBlur pattern), not on
   // every keystroke — but canSave is gated on validity regardless of touch.
-  const [phoneTouched, setPhoneTouched] = useState(false);
+  // MEH-1261 F4: seed `touched` when the SAVED phone is already invalid (a
+  // value stored before MEH-1190's validation existed) — otherwise Save is
+  // disabled on mount with no visible reason until the field is blurred.
+  // The paste path is covered by onPaste below for the same reason.
+  const [phoneTouched, setPhoneTouched] = useState(
+    () => !!(user.phone || "").trim() && !validateIsraeliPhone(user.phone),
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -354,6 +363,10 @@ function ProfileTab() {
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           onBlur={() => setPhoneTouched(true)}
+          // MEH-1261 F4: a pasted value is a completed entry, not typing in
+          // progress — surface the invalid-phone reason immediately instead of
+          // leaving the Save button dead with no message until blur.
+          onPaste={() => setPhoneTouched(true)}
           placeholder="050-1234567"
           dir="ltr"
         />
