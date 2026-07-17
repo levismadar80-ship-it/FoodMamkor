@@ -4175,8 +4175,8 @@
         "name_placeholder": "e.g. spelt sourdough loaf",
         "description_label": "Short description",
         "description_placeholder": "e.g. 750g loaf, baked in a taboon",
-        "price_min_label": "Price from (₪)",
-        "price_max_label": "Price to (₪)",
+        "price_min_label": "Price from",
+        "price_max_label": "Price to",
         "price_max_optional_suffix": "optional",
         "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
         "diet_heading": "Dietary tags (optional)",
@@ -4187,6 +4187,7 @@
         "image_alt": "Photo",
         "image_remove": "Remove",
         "image_upload_cta": "Upload photo",
+        "image_replace": "Replace photo",
         "image_uploading": "Uploading…"
       },
       "save_edit_cta": "Save changes",
