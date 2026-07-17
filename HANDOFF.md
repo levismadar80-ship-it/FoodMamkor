@@ -13,6 +13,12 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1267 admin polish (LOW) — feature/meh-1267-admin-polish
+
+- **What:** 4 admin fixes. (1) `total_group_buys` (`count(GroupBuy.id)`) in `admin_extra.get_dashboard`; `admin/page.js` binds it, drops the `"›"` placeholder. (2) `StoryCardCanvas` gained `onClose` → X button (logical-start) + Esc; `AdminProducersTable` wires it to `onToggleStoryCard`. (3) Canonical domain (MEH-1242 PR4): `mehamakor.online` (staging alias) → `SITE_URL` (`lib/env`, `mehamakor.co.il`) in StoryCardCanvas + VanityLinkCard + `story.canvas.footer_url` copy. (4) Ambassador kebab item `title` tooltip (i18n). Copy pass he-only: `footer_url` גלו→גלי, `save_cloudinary` שמרו→שמרי, `actions.delete` מחקו→מחקי.
+- **QA:** build green; vitest `AdminDashboardStats` + `StoryCardPanel` (4) + backend dashboard test green.
+- **Overlap w/ MEH-1266:** shares `admin_extra.get_dashboard` (`total_group_buys` vs `open_reports` filter — different lines) + `he/en.json` (distinct keys). Merge order: 1267 first; 1266 syncs staging post-Sapir-go (Accept-Both on logs).
+
 ## 2026-07-17 — MEH-1258 / 1260 / 1259 batch (license card + kashrut expiry + organic hide) — full authority
 
 - **MEH-1258 — MERGED (PR #1814, squash `57c82c22`):** new `LicenseCard` on `/producer/dashboard/edit` (anchor `#license`, after Categories). Mirrors the admin license field (numeric/ltr/maxLength-20 + amber format warning reused from `admin.producers.form.fields.license_format_warning`); license-required hint via `requiresProducerLicense`; save `PUT /producers/me`; MEH-999 2c clear-guard stays server-side (Hebrew 422 inline); masked `•••`+last-4 header chip. NEW `EditTabLicenseCard.test.jsx` (6). 375px self-QA `qa-artifacts/MEH-1258/`. **Sapir: mobile QA** — https://staging.mehamakor.online/he/producer/dashboard/edit#license
