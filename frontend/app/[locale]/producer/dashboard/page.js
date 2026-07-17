@@ -78,6 +78,29 @@ function VanityLinkCard({ slug }) {
  *           MEH-964 1A (hub split); MEH-964 1B (KPI strip + insights split);
  *           MEH-964 1C (anonymous activity pulse, §5 final spec).
  */
+// MEH-1261 F2: shared inline error card for an Overview section whose fetch
+// failed — visible message + retry, never a frozen loading line or a silently
+// missing card. Kept quiet (bordered card, no red wash) — a section-level
+// hiccup, not a page-level failure.
+function SectionFetchError({ message, retryLabel, onRetry, testid }) {
+  return (
+    <div
+      role="alert"
+      data-testid={testid}
+      className="bg-white border border-border rounded-[16px] p-4 mb-6 flex items-center justify-between gap-3"
+    >
+      <p className="text-sm text-fg-muted">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="text-sm text-primary font-medium hover:underline shrink-0"
+      >
+        {retryLabel}
+      </button>
+    </div>
+  );
+}
+
 export default function ProducerDashboardPage() {
   const t = useTranslations("dashboard.producer");
   const { user, loading: authLoading } = useAuth();
@@ -88,6 +111,14 @@ export default function ProducerDashboardPage() {
   const [loadError, setLoadError] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [profile, setProfile] = useState(null);
+  // MEH-1261 F2: analytics/profile fetch failures used to collapse into their
+  // `null` loading states — analytics froze on "טעינת סטטיסטיקות..." forever
+  // and the completeness card silently unmounted. Each section now tracks its
+  // own error + retry attempt-counter and fails independently of the others.
+  const [analyticsError, setAnalyticsError] = useState(false);
+  const [analyticsAttempt, setAnalyticsAttempt] = useState(0);
+  const [profileError, setProfileError] = useState(false);
+  const [profileAttempt, setProfileAttempt] = useState(0);
   const [vacationUntil, setVacationUntil] = useState("");
   // MEH-999: reveal the return-date field the moment vacation is *selected*
   // (before the POST), breaking the chicken-and-egg where the field only
@@ -121,9 +152,26 @@ export default function ProducerDashboardPage() {
       setData(r.data);
       setVacationUntil(r.data?.producer?.vacation_until || "");
     }).catch(() => setLoadError(true));
-    api.get("/producers/me/analytics").then((r) => setAnalytics(r.data)).catch(() => setAnalytics(null));
-    api.get("/producers/me").then((r) => setProfile(r.data)).catch(() => setProfile(null));
   }, [user, authLoading]);
+
+  // MEH-1261 F2: analytics + profile fetch in their own effects so each can be
+  // retried independently (attempt counter) and a failure in one never hides
+  // the other's data. Same auth guards as the dashboard fetch above.
+  useEffect(() => {
+    if (authLoading || !user || user.role !== "producer") return;
+    setAnalyticsError(false);
+    api.get("/producers/me/analytics")
+      .then((r) => setAnalytics(r.data))
+      .catch(() => { setAnalytics(null); setAnalyticsError(true); });
+  }, [user, authLoading, analyticsAttempt]);
+
+  useEffect(() => {
+    if (authLoading || !user || user.role !== "producer") return;
+    setProfileError(false);
+    api.get("/producers/me")
+      .then((r) => setProfile(r.data))
+      .catch(() => { setProfile(null); setProfileError(true); });
+  }, [user, authLoading, profileAttempt]);
 
   // MEH-291 Phase 3 — unified 4-value availability enum. Replaces the
   // old toggleAvailability + setAvailabilityStatus pair. Backend
@@ -331,6 +379,16 @@ export default function ProducerDashboardPage() {
           mount for that state (the mirror-gated mount below covers the
           approved+complete state, so the card renders exactly once). */}
       {completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
+      {/* MEH-1261 F2: profile fetch failed → say so where the completeness
+          card would render (completenessFirst is true when profile is null). */}
+      {completenessFirst && !profile && profileError && (
+        <SectionFetchError
+          message={t("section_errors.profile")}
+          retryLabel={t("section_errors.retry_cta")}
+          onRetry={() => setProfileAttempt((n) => n + 1)}
+          testid="dashboard-profile-error"
+        />
+      )}
 
       {/* MEH-55: holiday hint — shown 14 days before and during a holiday */}
       {(() => {
@@ -523,7 +581,18 @@ export default function ProducerDashboardPage() {
           sees an invitation, not four zeros. hasActivity per the 1A definition
           (views||whatsapp, rating excluded). */}
       {!analytics ? (
-        <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        analyticsError ? (
+          // MEH-1261 F2: a failed analytics fetch used to leave the loading
+          // line up forever — surface it + retry instead.
+          <SectionFetchError
+            message={t("section_errors.analytics")}
+            retryLabel={t("section_errors.retry_cta")}
+            onRetry={() => setAnalyticsAttempt((n) => n + 1)}
+            testid="dashboard-analytics-error"
+          />
+        ) : (
+          <p className="text-sm text-fg-muted mb-8">{t("loading_analytics")}</p>
+        )
       ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} />
       ) : (
