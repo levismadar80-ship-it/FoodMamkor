@@ -3,6 +3,37 @@
 
 ---
 
+## MEH-1274 — מטריצת רישום (5 פרסונות) — register-phase (17/07)
+
+מטריצת בדיקות רישום בית-עסק לפי 5 פרסונות. **הכיסוי אוטומטי** (pytest +
+Playwright) — הטבלה כאן היא מפת ה-DoD + מדריך לבדיקה ידנית חוזרת מול staging.
+הבדיקות מכסות **רק את שלב הרישום** (השדות שהאשף אוסף); שדות עריכת-בעלים
+(delivery / website / contact-method לאחר אישור) הם **מחוץ לגבולות** (ראו הערה למטה).
+
+| פרסונה | תרחיש register-phase | תוצאה מצופה | אוטומציה |
+|---|---|---|---|
+| **P1** אשף מלא | מילוי 5 מסכי האשף → submit → admin approve → דף ציבורי → login → דשבורד | נוצר `pending_whatsapp`; אחרי אישור: מופיע בדף הציבורי + הדשבורד ב-`data-state-approved="true"` + לינק "צפייה בעמוד" | `frontend/e2e/flows/22-register-personas.spec.ts` (P1, real-backend, TEST_URL=staging) |
+| **P2** OAuth | Google Step-0 → upgrade עם `license_pending` | נוצר יצרן ללא מספר רישיון (NULL) בתור ההמתנה; 409 עם toast אם כבר יש עסק | backend: `tests/test_register_personas.py::TestPersona2OAuthProducer` · UI 409: spec 22 (P2, GSI-stub) |
+| **P3** רב-קטגוריה | בחירת בשר+דגים (name→id) | 2 שורות `producer_categories`; דורש מספר רישיון (שתיהן license-required) אחרת 422 | `tests/test_register_personas.py::TestPersona3MultiCategory` |
+| **P4** אימייל+סיסמה | טלפון ריק + whatsapp; קטגוריות ריקות; אימייל כפול; double-submit; upgrade כפול; שדות עריכת-בעלים בגוף | 422 / 422 / RegisterAck זהה בייט-לבייט ללא token / אין שורה כפולה / 409 / שדות עריכת-בעלים **מתעלמים** (לא 422) | `tests/test_register_personas.py::TestPersona4PasswordEdgeCases` |
+| **P5** בהמתנה | admin request-changes → owner request-review (resubmit) | שני הצדדים 2xx, הסטטוס נשאר pending; request-changes על לא-pending → 409 | backend: `tests/test_register_personas.py::TestPersona5ResubmitLoop` · UI abandon: spec 22 (P5) |
+
+**מחוץ לגבולות (owner-edit surface):** delivery / website / contact-method
+כשדות עריכה לאחר אישור, ו-delivery XOR (משלוח ארצי מול ערים) — מכוסים ב-
+`tests/test_delivery_exclusion.py`, לא כאן. שדות עריכת-בעלים שנשלחים בטעות בגוף
+הרישום (`facebook`, `external_order_form`) **מתעלמים בשקט** (Pydantic
+`extra="ignore"`) — לא נדחים ולא נשמרים; מתועד ב-`test_owner_edit_fields_in_register_body_are_ignored_not_rejected`.
+
+**ניקוי staging (P1):** כל ריצה של spec 22 P1 יוצרת **בית-עסק QA אחד** בשם
+`בדיקת פרסונה E2E-MEH1274-<timestamp>` (וגם אימייל `qa+persona1-<timestamp>@example.com`).
+ה-spec מוחק אותו ב-`finally` בכל תוצאה. אם ריצה נקטעה ונשאר orphan — לזהות
+בתור האדמין לפי הקידומת `E2E-MEH1274-` (חיפוש בשם) ולמחוק דרך
+`DELETE /admin/producers/{id}` או כפתור המחיקה בפאנל. אימיילי הבדיקה ייחודיים
+לכל ריצה (RegisterAck אנטי-אנומרציה שובר reruns עם אותו אימייל), כך שאין
+התנגשות בין ריצות.
+
+---
+
 ## MEH-1269 — "קרוב אליי" בבית = גאו אמיתי + צ'יפ סינון נראה (17/07)
 
 בדקי בנייד (375px) + דסקטופ (1440px), בדף הבית `/`. שכתוב מלא של זרימת
