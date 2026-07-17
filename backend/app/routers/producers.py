@@ -57,7 +57,8 @@ def list_producers(
     delivery_city: str | None = None,
     has_delivery: bool | None = None,
     verified: bool | None = None,
-    organic: bool | None = None,
+    # MEH-1259: the public ?organic query param is removed — self-declared
+    # organic is no longer a filter (חוק תוצרת אורגנית 2005). See producer_listing.py.
     kosher: bool | None = None,
     # Producer city filter (producer's own city, not delivery area).
     city: str | None = None,
@@ -98,7 +99,6 @@ def list_producers(
         delivery_city=delivery_city,
         has_delivery=has_delivery,
         verified=verified,
-        organic=organic,
         kosher=kosher,
         city=city,
         is_available_today=is_available_today,
