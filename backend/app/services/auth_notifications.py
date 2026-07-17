@@ -248,6 +248,64 @@ def notify_admin_new_recipe(producer_name: str, recipe_title: str) -> None:
         )
 
 
+def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None:
+    """Ping admin (WhatsApp + email) that a producer finished completing her
+    details after a request-changes and is ready for a re-review.
+
+    MEH-1236 — the resubmit affordance: after an admin sends a completion
+    request (MEH-1011), the owner had no way to signal she was done, so the
+    admin never knew to look again. This closes that loop with a
+    notification-only ping (NO schema change, no "resubmitted" DB state).
+    REUSES: notify_admin_new_recipe above 1:1 — same free-text send_text to
+    settings.admin_whatsapp_to + email to settings.admin_email, no Meta
+    template needed. Fire-and-forget: runs as a BackgroundTask and
+    swallows-and-logs any failure (MEH-977 — observable, never breaks the
+    200 the producer already got).
+    """
+    # Producer-controlled free text — flatten so a crafted name can't inject
+    # extra lines (e.g. a fake URL line) into the admin message. REUSES the
+    # MEH-1051 sanitizer (one flattener per file, MEH-271).
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    message = (
+        f"העסק {safe_name} השלים את הפרטים — מוכן לבדיקה חוזרת\n"
+        f"עיר: {safe_city}\n"
+        f"לבדיקה: {settings.frontend_url}/admin/producers"
+    )
+    # Per-channel guards (not one shared try) — a WhatsApp raise must not
+    # skip the email, matching notify_admin_new_recipe's independence.
+    try:
+        # WhatsApp via Meta Cloud API (send_text fail-opens on missing config).
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info("[WHATSAPP] Producer-resubmit notification sent to admin")
+            else:
+                # send_text returned False without raising — keep the MEH-977
+                # observability contract: log WITH business context.
+                logger.warning(
+                    "[WHATSAPP] Producer-resubmit notification NOT delivered for "
+                    f"'{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin producer-resubmit WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {safe_name} מוכן לבדיקה חוזרת",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin producer-resubmit email FAILED for '{safe_name}': {e}"
+        )
+
+
 def notify_admin_new_category_request(
     requested_name: str, producer_name: str | None
 ) -> None:

@@ -190,6 +190,16 @@ def update_my_producer(
         "organic_certified",
         "has_delivery",
         "pickup_points",
+        # MEH-1242 PR5: owner permission-surface extension — location mode +
+        # opening hours (previously admin-only). delivery_area_cities is still
+        # popped + processed separately below. The (has_physical_location OR
+        # offers_delivery) and nationwide-XOR-cities invariants are enforced by
+        # ProducerUpdate._validate_location_mode (schemas.py) + the DB CHECK
+        # constraints (models.py) — this only opens the write path.
+        "has_physical_location",
+        "offers_delivery",
+        "delivery_nationwide",
+        "opening_hours",
         "kosher",
         # MEH-530: owner can edit her own license # via /producer/me PUT.
         "producer_license_number",
@@ -876,6 +886,55 @@ def request_kashrut_badge(
     out = KashrutRequestOut.model_validate(req)
     out.producer_name = producer.name
     return out
+
+
+# ---------------------------------------------------------------------------
+# MEH-1236: resubmit-for-review — the owner signals she finished completing
+# the details an admin requested, so the admin knows to look again.
+# ---------------------------------------------------------------------------
+
+
+@router.post("/request-review", status_code=200)
+@limiter.limit("3/hour")
+def request_producer_review(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    user: User = Depends(require_producer),
+    db: Session = Depends(get_db),
+):
+    """Producer-initiated "I'm done — please re-check" ping (MEH-1236).
+
+    Notification-only: NO schema change. The `requested_changes` /
+    `changes_requested_at` columns are deliberately left untouched (they are
+    admin-owned; only approve/reject/request-changes in admin.py write them) —
+    this closes the resubmit loop without inventing a "resubmitted" DB state.
+
+    Pending-only: mirrors admin.request_producer_changes:599 — a re-review
+    request only makes sense while the producer is still in the approval queue,
+    so an already-decided producer (approved/rejected/inactive) → 409.
+
+    The admin notification fires as a BackgroundTask, fail-open (MEH-1051 /
+    MEH-977): a Meta/Resend outage or missing admin config must never affect
+    the 200 the owner sees.
+    """
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+    if producer.status not in ("pending", "pending_whatsapp"):
+        raise HTTPException(
+            status_code=409,
+            detail="ניתן לשלוח לבדיקה חוזרת רק כשבית העסק בהמתנה לאישור",
+        )
+
+    # REUSES: app/services/auth_notifications.py notify_admin_new_recipe pattern
+    # (admin WhatsApp + email, fail-open). Lazy import mirrors the fire_alerts
+    # style already used in this file.
+    from app.services.auth_notifications import notify_admin_producer_resubmit
+
+    background_tasks.add_task(
+        notify_admin_producer_resubmit, producer.name, producer.city
+    )
+    return {"detail": "נשלח לבדיקה חוזרת"}
 
 
 # ---------------------------------------------------------------------------

@@ -5,7 +5,9 @@ import { render, screen } from "@testing-library/react";
 // fix 4), an optional self-pickup line (fix 6), and a DEMOTED tertiary CTA.
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key) => {
+  useTranslations: () => (key, vars) => {
+    // MEH-1233 B3: the delivery day is now labeled ("משלוח ביום {day}").
+    if (key === "delivery_day_label") return `משלוח ביום ${vars?.day ?? ""}`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
@@ -46,7 +48,7 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     expect(screen.getByText("זכרון יעקב")).toBeInTheDocument();
     expect(screen.getByText(/מינימום/)).toBeInTheDocument();
     expect(screen.getByText(/100₪/)).toBeInTheDocument(); // formatPrice canonical
-    expect(screen.getByText("שישי")).toBeInTheDocument();
+    expect(screen.getByText("משלוח ביום שישי")).toBeInTheDocument();
   });
 
   it("shows the self-pickup line only when pickup_points is set", () => {

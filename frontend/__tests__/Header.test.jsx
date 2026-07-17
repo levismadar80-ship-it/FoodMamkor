@@ -182,22 +182,23 @@ describe("Header", () => {
       expect(screen.queryByText("התנתקות")).toBeNull();
     });
 
-    it("opens the dropdown on avatar click with profile / settings / logout items", () => {
+    it("opens the dropdown on avatar click with settings / logout items", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
       expect(screen.getByRole("menu")).toBeInTheDocument();
-      expect(screen.getByText("הפרופיל שלי")).toBeInTheDocument();
       expect(screen.getByText("הגדרות")).toBeInTheDocument();
       expect(screen.getByText("התנתקות")).toBeInTheDocument();
     });
 
-    it("MEH-137: הפרופיל שלי and הגדרות lead to different routes for consumers", () => {
+    // MEH-1226: consumers have no public page, so the profile row is dropped —
+    // the menu is settings → logout, and settings lands on plain /settings
+    // (same target as the mobile AccountSheet).
+    it("consumer menu = settings → logout only, settings → /settings", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
-      const profileLink = screen.getByText("הפרופיל שלי").closest("a");
+      expect(screen.queryByText("הפרופיל שלי")).toBeNull();
       const settingsLink = screen.getByText("הגדרות").closest("a");
-      expect(profileLink.getAttribute("href")).toBe("/settings?tab=profile");
-      expect(settingsLink.getAttribute("href")).toBe("/settings?tab=security");
+      expect(settingsLink.getAttribute("href")).toBe("/settings");
     });
 
     it("hides producer/admin items for plain consumers", () => {
@@ -217,14 +218,23 @@ describe("Header", () => {
   });
 
   describe("avatar dropdown — role-specific items (MEH-39)", () => {
-    it("producer sees לוח הבקרה שלי and profile leads to the dashboard", () => {
-      userRef.current = { id: "u1", name: "מיה", role: "producer" };
+    // MEH-1226: dashboard leads the producer menu; the profile row points at
+    // the PUBLIC business page (/producer/[id], from user.producer_id), not the
+    // dashboard or settings. Order: dashboard → profile → settings.
+    it("producer: dashboard first, profile → public /producer/[id], settings → /settings", () => {
+      userRef.current = { id: "u1", name: "מיה", role: "producer", producer_id: "p-42" };
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — מיה"));
-      expect(screen.getByText("לוח הבקרה שלי")).toBeInTheDocument();
       expect(screen.queryByText("ממשק אדמין")).toBeNull();
+      const dashboardLink = screen.getByText("לוח הבקרה שלי").closest("a");
+      expect(dashboardLink.getAttribute("href")).toBe("/producer/dashboard");
       const profileLink = screen.getByText("הפרופיל שלי").closest("a");
-      expect(profileLink.getAttribute("href")).toBe("/producer/dashboard");
+      expect(profileLink.getAttribute("href")).toBe("/producer/p-42");
+      const settingsLink = screen.getByText("הגדרות").closest("a");
+      expect(settingsLink.getAttribute("href")).toBe("/settings");
+      // dashboard sits above the profile row in the menu
+      const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
+      expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("הפרופיל שלי"));
     });
 
     it("admin sees ממשק אדמין in the dropdown", () => {

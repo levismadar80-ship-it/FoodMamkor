@@ -1152,6 +1152,97 @@ class TestMeh56BioGenerator:
         )
         assert resp.status_code == 422
 
+    def test_bio_generate_happy_path_returns_bio(self, client, db, monkeypatch):
+        # MEH-1235: lock the success contract at the route level — when the AI
+        # IS available the endpoint returns the generated text (the frontend
+        # then fills the textarea). Pairs with the fail-open empty case above so
+        # the "textarea fills OR visible Hebrew error, never silent" invariant
+        # is covered on both branches. generate_bio is imported inside the
+        # handler, so patch it at its source module.
+        import app.services.bio_generator as bg
+        monkeypatch.setattr(bg, "generate_bio", lambda *a, **k: "ריבות בעבודת יד מהגליל")
+
+        from conftest import make_user
+        p = make_producer(db, name="ביו3")
+        user = make_user(db, email="biouser3@test.com", role="producer")
+        user.producer_id = p.id
+        db.commit()
+
+        resp = client.post(
+            "/producers/me/bio/generate",
+            json={"sells": "ריבות ביתיות"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["bio"] == "ריבות בעבודת יד מהגליל"
+
+
+class TestMeh1236RequestReview:
+    """POST /producers/me/request-review — resubmit-for-review ping.
+
+    Notification-only (no schema change): pending producer → 200 + admin ping
+    fired; already-decided producer → 409; non-producer → 403; unauth → 401;
+    over the 3/hour limit → 429.
+    """
+
+    def _producer_owner(self, db, status, email):
+        from conftest import make_user
+        p = make_producer(db, name="עסק בהמתנה", status=status)
+        user = make_user(db, email=email, role="producer")
+        user.producer_id = p.id
+        db.commit()
+        return p, user
+
+    def test_pending_producer_fires_admin_ping(self, client, db, monkeypatch):
+        called = {}
+        import app.services.auth_notifications as an
+
+        def _fake(name, city):
+            called["args"] = (name, city)
+
+        monkeypatch.setattr(an, "notify_admin_producer_resubmit", _fake)
+        p, user = self._producer_owner(db, "pending", "resub1@example.com")
+
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+        # BackgroundTask runs within the TestClient call → the admin ping fired
+        # with the producer's own name + city, fail-open at the service layer.
+        assert called["args"] == (p.name, p.city)
+
+    def test_pending_whatsapp_producer_allowed(self, client, db):
+        _, user = self._producer_owner(db, "pending_whatsapp", "resub2@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 200
+
+    def test_approved_producer_conflict(self, client, db):
+        # Re-review only makes sense in the pending queue (mirrors
+        # admin.request_producer_changes' 409 guard).
+        _, user = self._producer_owner(db, "approved", "resub3@example.com")
+        resp = client.post("/producers/me/request-review", headers=auth_header(user))
+        assert resp.status_code == 409
+
+    def test_non_producer_forbidden(self, client, db):
+        from conftest import make_user
+        consumer = make_user(db, email="resubcons@example.com", role="consumer")
+        resp = client.post(
+            "/producers/me/request-review", headers=auth_header(consumer)
+        )
+        assert resp.status_code == 403
+
+    def test_requires_auth(self, client):
+        resp = client.post("/producers/me/request-review")
+        assert resp.status_code == 401
+
+    def test_rate_limited_after_three_per_hour(self, client, db):
+        _, user = self._producer_owner(db, "pending", "resub4@example.com")
+        headers = auth_header(user)
+        statuses = [
+            client.post("/producers/me/request-review", headers=headers).status_code
+            for _ in range(4)
+        ]
+        assert statuses[:3] == [200, 200, 200]
+        assert statuses[3] == 429
+
 
 # ---------- Contact ----------
 
@@ -1564,6 +1655,46 @@ class TestAvatarUpload:
             files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
         )
         assert resp.status_code == 401
+
+
+# ---------- MEH-1190: Profile phone field ----------
+
+class TestProfilePhone:
+    """PATCH /users/me phone — editable, optional, length-bounded (MEH-1190).
+
+    The users.phone column already existed and is read by the WhatsApp alert
+    fan-out (alerts.py); this covers the newly-wired ProfileUpdate.phone.
+    """
+
+    def test_patch_sets_phone(self, client, db):
+        user = make_user(db, email="phone-set@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0501234567"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["phone"] == "0501234567"
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone == "0501234567"
+
+    def test_patch_empty_phone_clears_to_none(self, client, db):
+        user = make_user(db, email="phone-clear@example.com")
+        client.patch("/users/me", json={"phone": "0501234567"}, headers=auth_header(user))
+        resp = client.patch("/users/me", json={"phone": ""}, headers=auth_header(user))
+        assert resp.status_code == 200
+        assert resp.json()["phone"] is None
+        db.expire_all()
+        assert db.query(User).filter(User.id == user.id).first().phone is None
+
+    def test_patch_phone_too_long_returns_422(self, client, db):
+        user = make_user(db, email="phone-long@example.com")
+        resp = client.patch(
+            "/users/me",
+            json={"phone": "0" * 21},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
 
 
 # ---------- MEH-148: Reserved slug protection ----------

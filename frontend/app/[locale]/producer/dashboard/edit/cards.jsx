@@ -25,9 +25,11 @@ import { Warning, X, Sparkle } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import EditAccordionCard from "@/components/EditAccordionCard";
 import AddressSearch from "@/components/AddressSearch";
+import Input from "@/components/ui/Input";
+import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
@@ -209,7 +211,25 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
         const r = await api.post("/upload/image", fd);
         uploaded.push(r.data.url);
       }
-      setImages((prev) => [...prev, ...uploaded]);
+      const next = [...images, ...uploaded];
+      setImages(next);
+      // MEH-1236: kill the upload≠save trap. Uploading a photo used to feel like
+      // saving, but images[] only persisted on an explicit Save click — so the
+      // overview checklist ("חסרה תמונה") never updated and the photo looked
+      // lost. Auto-persist the new list right after a successful upload (single
+      // PUT) so the checklist reflects it with no manual save. Removals keep the
+      // explicit Save intent below (a mis-click shouldn't wipe a photo silently).
+      try {
+        await api.put("/producers/me", { images: next });
+        onSave({ images: next });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } catch (err) {
+        // Uploaded to Cloudinary but the profile save failed — the photos stay
+        // in the local list (now dirty), so the explicit Save button lets her
+        // retry. Never silent: surface the save error.
+        setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+      }
     } catch (err) {
       setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
     } finally {
@@ -313,7 +333,7 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
             <div key={`${url}-${i}`} className="relative group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={optimizeCloudinary(url)}
+                src={optimizeCloudinary(url, { aspectRatio: IMAGE_RATIOS.card, width: 320 })}
                 alt=""
                 className="w-full h-24 object-cover rounded-[8px] border border-border"
               />
@@ -761,6 +781,333 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR3: producer-facing price-range + top-product editor.
+// Frontend-only gap: the owner whitelist (_PRODUCER_WRITABLE_FIELDS,
+// producer_me.py) already accepts `price_range` + `top_product_name` — there
+// was just no UI in the edit tab. Mirrors LocationCard's card/save/dirty/
+// inline-error contract; persists via PUT /producers/me.
+// REUSES: edit/cards.jsx LocationCard (save/dirty/reportDirty contract).
+// ============================================================
+
+// Exported for isolation tests (EditTabPricingCard.test.jsx).
+export function PricingCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.pricing");
+  const seedTop = profile?.top_product_name ?? "";
+  const seedPrice = profile?.price_range ?? "";
+  const [topProduct, setTopProduct] = useState(seedTop);
+  const [priceRange, setPriceRange] = useState(seedPrice);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty = topProduct !== seedTop || priceRange !== seedPrice;
+  // MEH-1100: lift to the page-level unsaved-changes aggregate.
+  useEffect(() => {
+    reportDirty("pricing", dirty);
+    return () => reportDirty("pricing", false);
+  }, [dirty, reportDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      const payload = {
+        top_product_name: topProduct.trim() || null,
+        price_range: priceRange.trim() || null,
+      };
+      await api.put("/producers/me", payload);
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Chrome + heading live in the EditAccordionCard header (MEH-1116). */}
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="space-y-3">
+        <Input
+          type="text"
+          label={t("field_top_product")}
+          value={topProduct}
+          maxLength={80}
+          onChange={(e) => setTopProduct(e.target.value)}
+          placeholder={t("top_product_placeholder")}
+        />
+        <Input
+          type="text"
+          label={t("field_price_range")}
+          value={priceRange}
+          maxLength={60}
+          onChange={(e) => setPriceRange(e.target.value)}
+          placeholder={t("price_range_placeholder")}
+        />
+      </div>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR5: producer-facing opening-hours editor. opening_hours was
+// admin-only; PR5 adds it to _PRODUCER_WRITABLE_FIELDS + ProducerUpdate.
+// Free-text (LTR), persists via PUT /producers/me. Mirrors LocationCard.
+// ============================================================
+
+// Exported for isolation tests (EditTabDeliveryCard.test.jsx covers the pair).
+export function HoursCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.hours");
+  const seed = profile?.opening_hours ?? "";
+  const [hours, setHours] = useState(seed);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const dirty = hours !== seed;
+  useEffect(() => {
+    reportDirty("hours", dirty);
+    return () => reportDirty("hours", false);
+  }, [dirty, reportDirty]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      const payload = { opening_hours: hours.trim() || null };
+      await api.put("/producers/me", payload);
+      onSave(payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      <Input
+        type="text"
+        dir="ltr"
+        label={t("field_label")}
+        value={hours}
+        onChange={(e) => setHours(e.target.value)}
+        placeholder={t("placeholder")}
+      />
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1242 PR5: producer-facing location-mode + delivery editor. Mirrors the
+// admin ProducerForm "business_type" section (physical-store toggle, delivery
+// toggle, nationwide-or-cities via CitiesAutocomplete). The owner now writes
+// has_physical_location / offers_delivery / delivery_nationwide (previously
+// admin-only) plus delivery_area_cities. Client blocks the invalid states the
+// backend ProducerUpdate._validate_location_mode also 422s (neither type;
+// nationwide + cities). REUSES: components/admin/ProducerForm.jsx:491-543.
+// ============================================================
+
+// Exported for isolation tests (EditTabDeliveryCard.test.jsx).
+export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.delivery");
+  const initial = {
+    hasPhysical: profile?.has_physical_location ?? true,
+    offersDelivery: profile?.offers_delivery ?? false,
+    nationwide: profile?.delivery_nationwide ?? false,
+    cities: profile?.delivery_areas?.map((d) => d.city).filter(Boolean) ?? [],
+  };
+  const [baseline, setBaseline] = useState(initial);
+  const [form, setForm] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  const set = (patch) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setSaved(false);
+  };
+
+  const dirty =
+    form.hasPhysical !== baseline.hasPhysical ||
+    form.offersDelivery !== baseline.offersDelivery ||
+    form.nationwide !== baseline.nationwide ||
+    form.cities.length !== baseline.cities.length ||
+    form.cities.some((c, i) => c !== baseline.cities[i]);
+  useEffect(() => {
+    reportDirty("delivery", dirty);
+    return () => reportDirty("delivery", false);
+  }, [dirty, reportDirty]);
+
+  const neitherType = !form.hasPhysical && !form.offersDelivery;
+  const citiesMissing =
+    form.offersDelivery && !form.nationwide && form.cities.length === 0;
+  const blocked = neitherType || citiesMissing;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setErrorMsg(null);
+    // Normalise: nationwide/cities only meaningful when delivering; cities
+    // cleared when nationwide (matches admin form + the backend XOR guard).
+    const cities = form.offersDelivery && !form.nationwide ? form.cities : [];
+    const normalized = {
+      hasPhysical: form.hasPhysical,
+      offersDelivery: form.offersDelivery,
+      nationwide: form.offersDelivery ? form.nationwide : false,
+      cities,
+    };
+    try {
+      await api.put("/producers/me", {
+        has_physical_location: normalized.hasPhysical,
+        offers_delivery: normalized.offersDelivery,
+        delivery_nationwide: normalized.nationwide,
+        delivery_area_cities: normalized.cities,
+      });
+      // Patch the parent profile so LocationCard gating + re-seeds stay in sync.
+      onSave({
+        has_physical_location: normalized.hasPhysical,
+        offers_delivery: normalized.offersDelivery,
+        delivery_nationwide: normalized.nationwide,
+        delivery_areas: normalized.cities.map((c) => ({ city: c })),
+      });
+      setBaseline(normalized);
+      setForm(normalized);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.hasPhysical}
+            onChange={(e) => set({ hasPhysical: e.target.checked })}
+            className="w-4 h-4 accent-primary"
+          />
+          {t("has_physical_location")}
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.offersDelivery}
+            onChange={(e) => set({ offersDelivery: e.target.checked })}
+            className="w-4 h-4 accent-primary"
+          />
+          {t("offers_delivery")}
+        </label>
+        {neitherType && (
+          <p className="text-xs text-red-600">{t("type_validation")}</p>
+        )}
+        {form.offersDelivery && (
+          <div className="ms-6 space-y-3 border-s-2 border-border ps-4 pt-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.nationwide}
+                onChange={(e) =>
+                  set({
+                    nationwide: e.target.checked,
+                    ...(e.target.checked ? { cities: [] } : {}),
+                  })
+                }
+                className="w-4 h-4 accent-primary"
+              />
+              {t("delivery_nationwide")}
+            </label>
+            {!form.nationwide && (
+              <div>
+                <span className="block text-sm text-muted mb-1">
+                  {t("delivery_cities_label")}
+                </span>
+                <CitiesAutocomplete
+                  value={form.cities}
+                  onChange={(cities) => set({ cities })}
+                />
+                {form.cities.length === 0 && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {t("delivery_cities_required")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {errorMsg && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-red-600" role="alert">
+          <Warning size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={handleSave}
+        disabled={saving || !dirty || blocked}
+        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
     </div>
   );
 }

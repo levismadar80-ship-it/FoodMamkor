@@ -451,6 +451,14 @@ python scripts/check_api_contract.py --probe "$BACKEND"
   - [ ] Chat widget bottom-left answers a test question
   - [ ] No console errors in DevTools
 - [ ] No new entries in Sentry's "issues" tab from the staging deploy
+- [ ] **Prod is clean of demo/test data** — run the read-only scan against
+  production and confirm it exits 0:
+  ```
+  railway run python backend/scripts/check_no_demo_data.py
+  ```
+  Exit 1 means a demo/test entity leaked to prod — review each flagged row
+  (the script never deletes) and clean it before promoting. Policy + the
+  `תסס`-fermentation false-positive caveat: [ADR-029](./decisions/ADR-029-demo-data-staging-only.md).
 - [ ] PR description lists every behavior change so the next reviewer knows
   what they're approving for production
 
@@ -790,6 +798,74 @@ deploys, which is exactly the opposite of what we want.
 
 The workflow at [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
 runs Playwright tests against each PR's Vercel preview URL.
+
+### Staging QA auth fixtures (MEH-1241)
+
+Playwright can drive a logged-in **producer** and **consumer** session against
+staging, so UI behind login (e.g. the account menu) is QA'd automatically
+instead of manually. Three moving parts:
+
+1. **Seed accounts (staging DB).** `backend/scripts/seed_demo_business.py`
+   owns two known-password QA users — `demo-owner@example.com` (role
+   `producer`, linked to the `/ruach-hasadeh` demo) and
+   `demo-consumer@example.com` (role `consumer`). Their passwords come from the
+   env vars **`DEMO_OWNER_PASSWORD`** / **`DEMO_CONSUMER_PASSWORD`** (set on the
+   Railway staging backend + GitHub Actions secrets, same values). To (re)apply
+   them **non-destructively** — no producer/review/product rows touched, unlike
+   `--refresh` — run by Sapir against staging only. **Two routes, pick one:**
+
+   **A. Railway Console (in-container, `cwd=/app`)** — the Docker build context
+   is `backend/`, so its contents copy straight to `/app`; there is **no**
+   `/app/backend/`, and the `railway` CLI does not exist inside the container:
+
+   ```bash
+   # Railway → service → Console (already at /app)
+   python scripts/seed_demo_business.py --sync-users
+   ```
+
+   **B. Local machine with the Railway CLI, from the repo root:**
+
+   ```bash
+   railway run python backend/scripts/seed_demo_business.py --sync-users
+   ```
+
+   Both hit the staging DB (route B via the CLI's env injection; route A is
+   already inside the staging service). The script's `_assert_not_production()`
+   refuses any non-staging host. Idempotent; aborts loudly if either
+   `DEMO_OWNER_PASSWORD` / `DEMO_CONSUMER_PASSWORD` is unset. Expected output:
+   `Synced QA users: demo-owner@example.com (password reset),
+   demo-consumer@example.com (created). …`
+
+2. **globalSetup provisions storageState.** `frontend/e2e/global-setup.ts` logs
+   each role in via `POST /api/auth/login` and writes
+   `frontend/e2e/.auth/{producer,consumer}.json` (the JWT lands in
+   `localStorage["token"]`, where the SPA reads it). These files embed a **live
+   JWT** and are **gitignored** (`frontend/.gitignore` → `e2e/.auth/`) — never
+   committed. globalSetup **no-ops on a localhost baseURL** (the accounts exist
+   on staging only) and **throws** on a remote target with a missing password
+   env or a failed login.
+
+3. **A spec opts into a role** — no per-spec login code:
+
+   ```ts
+   import { test } from "@playwright/test";
+   test.use({ storageState: "e2e/.auth/producer.json" }); // or consumer.json
+   ```
+
+**Where these run:** only against a real staging/preview target —
+
+```bash
+cd frontend
+TEST_URL=https://staging.mehamakor.online \
+DEMO_OWNER_PASSWORD=… DEMO_CONSUMER_PASSWORD=… \
+npx playwright test path/to/auth-spec.ts
+```
+
+They do **not** run in the default CI E2E job, which targets a local
+`next start` (`PLAYWRIGHT_BASE_URL=http://localhost:3000`, MEH-1044) where the
+seeded accounts don't exist — there globalSetup logs a skip and returns. The
+existing admin fixture (`SMOKE_ADMIN_*` → `POST /auth/login` in
+`e2e/flows/19,20`) is separate and unchanged.
 
 ### How it works (current: `deployment_status` trigger)
 

@@ -94,6 +94,38 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     expect(container.querySelectorAll("img")).toHaveLength(1);
   });
 
+  // MEH-1236: uploading a photo auto-persists it (no manual Save click) so the
+  // overview checklist reflects it immediately — kills the upload≠save trap.
+  it("auto-saves the profile right after a successful upload", async () => {
+    const { onSave, container } = renderCard(["https://cdn/a.jpg"]);
+    const input = container.querySelector('input[type="file"]');
+    const file = new File(["x"], "b.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        images: ["https://cdn/a.jpg", "https://cdn/new.jpg"],
+      }),
+    );
+    expect(onSave).toHaveBeenCalledWith({
+      images: ["https://cdn/a.jpg", "https://cdn/new.jpg"],
+    });
+  });
+
+  // A removal must NOT auto-persist — the explicit Save intent guards against a
+  // mis-click silently wiping a photo. api.put fires only on the Save click.
+  it("does not auto-save on remove — only on the explicit Save click", async () => {
+    renderCard(["https://cdn/a.jpg", "https://cdn/b.jpg"]);
+    fireEvent.click(screen.getAllByRole("button", { name: I.remove_aria })[1]);
+    expect(api.put).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: I.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        images: ["https://cdn/a.jpg"],
+      }),
+    );
+  });
+
   it("saves the current image list via PUT /producers/me", async () => {
     const { onSave } = renderCard(["https://cdn/a.jpg", "https://cdn/b.jpg"]);
     // Make the list dirty (remove one) so Save enables.

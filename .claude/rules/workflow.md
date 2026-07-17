@@ -713,3 +713,26 @@ Tasks auto-expire after 7 days.
     landed in the interim, so these slot at 26 + 27 to preserve sequential
     numbering with no gaps and no collision. Rule bodies are verbatim from
     the MEH-405 spec; only the leading numbers changed._
+
+28. **Single-dispatch rule — one prompt per ticket, from the ticket.**
+    Prompt ל-CC יוצא רק מ-ticket קיים. פעם אחת.
+
+    - אין ticket → אין prompt. נותנים תוכנית ממוספרת בלבד (עקרון 5, Manus).
+      Ticket נוצר → ה-prompt יוצא ממנו, ורק ממנו.
+    - ה-prompt חי ב-description. לא מודבק לשיחה לפני שנוצר.
+      Ticket description = the dispatch. אין dispatch שני לאותה עבודה.
+    - שינוי אחרי dispatch → עריכת description + הודעה ל-CC לקרוא מחדש.
+      לעולם לא prompt חדש.
+
+    **Pre-dispatch check (חובה, לפני כל prompt ל-CC):**
+    1. Linear live: קיים ticket לאותה עבודה? (list_issues query על הקבצים/הנושא)
+    2. אותה עבודה כבר דווחה merged בשיחה הזאת או ב-HANDOFF? → STOP, אמת מול staging.
+    3. Umbrella ticket + split tickets על אותם קבצים = double-dispatch.
+       בחרי אחד. השני נסגר כ-duplicate לפני dispatch, לא אחרי.
+
+    _Source: MEH-1215/1216 (2026-07-15) — ה-prompt הודבק לשיחה לפני יצירת
+    ה-tickets, ואז שוב מתוכם. שני CC sessions עבדו אותן שורות: PRs #1755+#1756
+    (שניהם מוזגו — duplicate merge), #1757+#1760 (השני empty, נסגר). CC's STOP
+    condition + Rule 1 (single-session) תפסו את זה בדיעבד — ה-guard האחרון עבד,
+    אבל הוא לא אמור להידרש. Extends Rule 1 (session-start parallel-session audit)
+    ו-Rule 27 (search Linear before opening an issue) לצד ה-dispatch._

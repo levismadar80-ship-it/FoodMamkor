@@ -217,21 +217,34 @@ export default function Header() {
         // covered the open dropdown (truncating "לוח הבקרה שלי"). 1050 sits
         // above map controls:1000 and below cookie:1100 — see the /map z-token
         // ledger in .claude/rules/rtl.md.
-        // MEH-1195: MEH-947 made the PILL opaque on inner pages but the sticky
-        // SHELL around it (px-5 gutters + pt-4/pb-2 strips) stayed transparent,
-        // so page content scrolling under the header bled through beside/above
-        // the pill (single Hebrew letters reading as a render glitch). Give the
-        // shell the same cream surface on inner pages (!isHomepage). Homepage
-        // keeps its float-over-hero transparency (MEH-947-approved) — so the
-        // token is gated, not unconditional. Surface only: no geometry / z / blur.
-        className={`sticky top-0 z-[1050]${isHomepage ? "" : " bg-background"}`}
+        // MEH-1251: pointer-events-none — the full-width sticky band was a
+        // click-SHIELD over the transparent area beside the pill, swallowing
+        // clicks on page content under it at the top of the viewport (reported:
+        // the admin toolbar "פרטים חסרים" button was dead). It's set on the
+        // <header> (not only the inner shell) because a pointer-events-none
+        // child still lets its `auto` parent hit-test the click — so the shell
+        // alone wouldn't pass clicks THROUGH to the page. The <nav> pill below
+        // re-enables events (pointer-events-auto). pointer-events ONLY — no
+        // visual/layout/z-index change (MEH-732/MEH-1072/MEH-1109 untouched).
+        // MEH-1195: + gated bg-background — MEH-947 made the PILL opaque on
+        // inner pages but the sticky SHELL around it (px-5 gutters + pt-4/pb-2
+        // strips) stayed transparent, so page content scrolling under the header
+        // bled through beside/above the pill (single Hebrew letters reading as a
+        // render glitch). Give the shell the same cream surface on inner pages
+        // (!isHomepage); the homepage keeps its float-over-hero transparency
+        // (MEH-947-approved) — so the token is gated, not unconditional. Surface
+        // only: no geometry / z / blur. Both concerns coexist on this one line.
+        className={`sticky top-0 z-[1050] pointer-events-none${isHomepage ? "" : " bg-background"}`}
       >
         {/* Nav-shell — centers the pill. When the strip rendered above already
             provided desktop top-padding, drop the pill's md+ top padding to
             avoid doubling (mobile + non-strip pages keep pt-4). */}
+        {/* MEH-1251: pointer-events-none — this full-width wrapper is the click
+            shield (inherits from the <header> too); the <nav> pill re-enables
+            events. pointer-events only, no visual/layout change. */}
         <div
           className={[
-            "relative flex flex-col items-center px-5 sm:px-6 pb-2",
+            "relative flex flex-col items-center px-5 sm:px-6 pb-2 pointer-events-none",
             showStrip ? "pt-4 md:pt-0" : "pt-4",
           ].join(" ")}
         >
@@ -256,7 +269,12 @@ export default function Header() {
             // spread. This intentionally REVERSES MEH-890's mobile content-hug
             // for mobile ONLY. Desktop keeps `md:w-auto md:justify-normal` →
             // the MEH-890/MEH-1072 content-hug geometry is untouched at md+.
-            "w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
+            // MEH-1251: pointer-events-auto re-enables events on the pill (and
+            // all its descendants — logo, nav links, search, UserMenu + its
+            // dropdown, which render inside this <nav> subtree) after the
+            // <header>/shell shield set pointer-events-none. Everything
+            // interactive in the header lives inside this <nav>.
+            "pointer-events-auto w-full justify-between md:w-auto md:justify-normal max-w-[92vw] flex items-center rounded-full border",
             // MEH-732 guardrail: animate background + shadow (+ the ink/border
             // cross-fade for AA legibility over the hero) — NOT padding (no
             // layout reflow on scroll) and never backdrop-filter.
@@ -451,10 +469,25 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
   const isProducer = user.role === "producer";
   const isAdmin = user.role === "admin";
 
+  // MEH-1226: align with the "profile = public page, settings = config"
+  // pattern (LinkedIn / Airbnb). Producer menu leads with the dashboard,
+  // then the profile row points at the PUBLIC business page (/producer/[id],
+  // from user.producer_id — set together with role==="producer" at
+  // auth.py:522-523); guarded so a producer without a linked id never
+  // renders /producer/undefined. Non-producers have no public page, so the
+  // profile row is dropped entirely — their menu is settings → logout.
+  // Settings drops the ?tab param to land on the same /settings as the
+  // mobile AccountSheet.
   const items = [
-    { href: isProducer ? "/producer/dashboard" : "/settings?tab=profile", label: t("account.menu.profile") },
-    { href: "/settings?tab=security", label: t("account.menu.settings") },
-    ...(isProducer ? [{ href: "/producer/dashboard", label: t("account.menu.dashboard") }] : []),
+    ...(isProducer
+      ? [
+          { href: "/producer/dashboard", label: t("account.menu.dashboard") },
+          ...(user.producer_id
+            ? [{ href: `/producer/${user.producer_id}`, label: t("account.menu.profile") }]
+            : []),
+        ]
+      : []),
+    { href: "/settings", label: t("account.menu.settings") },
     ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
 

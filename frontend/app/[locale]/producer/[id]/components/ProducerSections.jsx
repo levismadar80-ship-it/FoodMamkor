@@ -4,7 +4,8 @@ import { Leaf } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter } from "next-intl";
 import api from "@/lib/api";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
 import DeliveryBlock from "@/components/DeliveryBlock";
@@ -76,6 +77,23 @@ export default function ProducerSections({
   }, [producer?.slug]);
 
   const hasSignature = !!(producer.top_product_name || producer.starting_price_label);
+  // MEH-1233 B4: the signature product (top_product_name) is a free-text DB
+  // label. When it names a product that ALSO has a grid entry, feature that
+  // entry's photo in the highlight and DROP it from the grid below (fixes the
+  // MEH-1146 chunk B duplicate — C4). Exact name match only; a free-text label
+  // with no matching product just renders name + price on the leaf placeholder.
+  const signatureProduct =
+    producer.top_product_name
+      ? (producer.products || []).find(
+          (p) => p.name?.trim() === producer.top_product_name.trim(),
+        )
+      : null;
+  const signatureImg = signatureProduct?.image_url
+    ? optimizeCloudinary(signatureProduct.image_url, { aspectRatio: "1:1", width: 160 })
+    : null;
+  const gridProducts = signatureProduct
+    ? (producer.products || []).filter((p) => p.id !== signatureProduct.id)
+    : producer.products || [];
 
   return (
     <>
@@ -99,19 +117,39 @@ export default function ProducerSections({
           <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
-              starting_price_label is a free-text DB label (NOT routed through
-              formatPrice per MEH-1140 — it is data, not a numeric amount). */}
+              MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
+              starting_price_label) on the lighter surface-card token, not the
+              page-cream `bg-background` box that read as an empty wide row when
+              only the name was present. starting_price_label is a free-text DB
+              label (NOT routed through formatPrice per MEH-1140 — data, not a
+              numeric amount). The photo comes from the matching grid product
+              when one exists (that product is deduped out of the grid below);
+              otherwise the canonical leaf placeholder (MEH-1138). */}
           {hasSignature && (
-            <div className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1 bg-background border border-border rounded-md px-4 py-3">
-              {producer.top_product_name && (
-                <span className="font-medium text-text">{producer.top_product_name}</span>
-              )}
-              {producer.top_product_name && producer.starting_price_label && (
-                <span className="text-fg-muted" aria-hidden="true">·</span>
-              )}
-              {producer.starting_price_label && (
-                <span className="text-accent font-semibold">{producer.starting_price_label}</span>
-              )}
+            <div className="mb-4 flex items-center gap-3 bg-surface-card border border-border rounded-md p-3">
+              <div className="relative w-16 h-16 flex-shrink-0 rounded-md overflow-hidden bg-background">
+                {signatureImg ? (
+                  <Image
+                    src={signatureImg}
+                    alt={producer.top_product_name || ""}
+                    fill
+                    className="object-cover"
+                    sizes="64px"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-background flex items-center justify-center" aria-hidden="true">
+                    <Leaf size={28} weight="light" className="text-primary/[0.32]" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                {producer.top_product_name && (
+                  <p className="font-medium text-text">{producer.top_product_name}</p>
+                )}
+                {producer.starting_price_label && (
+                  <p className="text-accent font-semibold mt-0.5">{producer.starting_price_label}</p>
+                )}
+              </div>
             </div>
           )}
 
@@ -122,13 +160,13 @@ export default function ProducerSections({
               asymmetric card grid). Prices via formatPriceRange (MEH-1140) with
               dir="ltr" bidi isolation (regression baseline:
               qa-artifacts/MEH-1168-p1/price-cell-zoom.webp). */}
-          {producer.products?.length > 0 && (
+          {gridProducts.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-6 border-t border-border">
-              {producer.products.map((product) => {
+              {gridProducts.map((product) => {
                 // Cloudinary 1:1 square when a photo exists; otherwise the
                 // canonical no-photo state (MEH-1138) — never a package icon.
                 const img = product.image_url
-                  ? optimizeCloudinary(product.image_url, { aspectRatio: "1:1", width: 160 })
+                  ? optimizeCloudinary(product.image_url, { aspectRatio: IMAGE_RATIOS.square, width: 160 })
                   : null;
                 const price =
                   product.price_min != null
@@ -154,6 +192,7 @@ export default function ProducerSections({
                         <div
                           className="w-full h-full bg-background flex items-center justify-center"
                           aria-label={t("producer.card.aria.image_missing", { name: product.name })}
+                          role="img"
                         >
                           <Leaf size={32} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
                         </div>
@@ -213,10 +252,16 @@ export default function ProducerSections({
                   key={ev.id}
                   className="bg-white rounded-md border border-border p-4 flex gap-4"
                 >
+                  {/* MEH-1229: was a raw <Image src={ev.image_url}> that bypassed
+                      the helper. Now routed through it (square crop + f_auto,q_auto)
+                      with graceful fallback so a broken URL degrades to the
+                      placeholder instead of a _next/image 404. */}
                   {ev.image_url && (
-                    <Image
+                    <ImageWithFallback
                       src={ev.image_url}
                       alt={ev.title}
+                      aspectRatio={IMAGE_RATIOS.square}
+                      optimizeWidth={128}
                       width={64}
                       height={64}
                       className="w-16 h-16 rounded-sm object-cover flex-shrink-0"

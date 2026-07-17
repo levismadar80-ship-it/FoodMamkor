@@ -66,7 +66,7 @@ export default function AdminRecipesPage() {
       showToast.success(t("recipes.approve_toast"), { icon: <Bread size={18} /> });
       load();
     } catch (e) {
-      alert(detailToMessage(e.response?.data?.detail) || t("recipes.approve_error"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("recipes.approve_error"));
     } finally {
       setBusy(false);
     }
@@ -87,7 +87,7 @@ export default function AdminRecipesPage() {
   const submitModal = async () => {
     if (!modalRecipe || !modalAction) return;
     if (!feedback.trim()) {
-      alert(t("recipes.validate_feedback"));
+      showToast.error(t("recipes.validate_feedback"));
       return;
     }
     setBusy(true);
@@ -103,7 +103,7 @@ export default function AdminRecipesPage() {
       closeModal();
       load();
     } catch (e) {
-      alert(detailToMessage(e.response?.data?.detail) || t("recipes.submit_error"));
+      showToast.error(detailToMessage(e.response?.data?.detail) || t("recipes.submit_error"));
     } finally {
       setBusy(false);
     }

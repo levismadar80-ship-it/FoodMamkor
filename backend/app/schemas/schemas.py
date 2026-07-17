@@ -598,6 +598,10 @@ class ProducerUpdate(BaseModel):
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
+    # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
+    # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
+    # same schema) silently dropped it. Present on ProducerOwnerOut already.
+    opening_hours: str | None = None
     grass_fed: bool | None = None
     organic_certified: bool | None = None
     # MEH-293/MEH-479: dietary flags moved to products.is_X.
@@ -1943,6 +1947,10 @@ class ProfileUpdate(BaseModel):
     email: EmailStr | None = None
     avatar_url: str | None = None
     city: str | None = Field(None, max_length=100)
+    # MEH-1190: phone is the only UI path for OAuth users (who never pass
+    # through UserRegister) to add a WhatsApp-alert number. Column already
+    # exists (models.py:55, String(20)); no migration.
+    phone: str | None = Field(None, max_length=20)
 
 
 class PasswordChange(BaseModel):

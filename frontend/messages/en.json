@@ -669,6 +669,11 @@
         "tab_nav": "Quick profile navigation"
       },
       "back_label": "← Back",
+      "owner_bar": {
+        "label": "This is your business page",
+        "cta": "Edit business",
+        "aria": "Edit your business"
+      },
       "tabs": {
         "about": "About",
         "products": "Products",
@@ -900,6 +905,7 @@
       "cancelling": "Cancelling...",
       "cancel_cta": "Cancel my commitment",
       "cancel_confirm": "Cancel your commitment?",
+      "cancel_dismiss": "No, keep it",
       "deadline_passed": "The deadline has passed — joining is no longer possible",
       "share_wa": "Share with friends",
       "share_text": "Join the group buy — {title} in {city} 🌿\nhttps://mehamakor.co.il/group-buys/{id}",
@@ -964,6 +970,7 @@
       "nationwide": "Nationwide delivery",
       "arranged": "Delivery by arrangement — contact for details",
       "min_order": "Minimum",
+      "delivery_day_label": "Delivery on {day}",
       "pickup": "Self pickup"
     },
     "follow": {
@@ -1010,7 +1017,7 @@
         "label": "Sort:",
         "nearest": "Distance",
         "top_rated": "Top rated",
-        "newest": "Newest"
+        "newest": "Recently joined"
       }
     },
     "errors": {
@@ -1043,7 +1050,6 @@
       }
     },
     "pane": {
-      "hint": "Tap a business marker to see details · scroll the list at right for all businesses",
       "search_this_area": "Search this area",
       "empty": {
         "heading": "No businesses in this area yet",
@@ -1089,12 +1095,11 @@
     },
     "mini": {
       "default_label": "Location",
-      "open_in_waze": "Open in",
+      "open_in_waze": "Open in Waze",
       "open_in_google": "Open in Google Maps"
     },
     "bottom_sheet": {
-      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}",
-      "show_map": "Show map"
+      "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
     },
     "chip_scroll": {
       "category_aria": "Filter by category",
@@ -1310,6 +1315,12 @@
         "all_complete": "All businesses are complete",
         "empty": "No businesses to display",
         "awaiting_completion": "Awaiting completion",
+        "photo_preview": {
+          "label": "Photos",
+          "thumb_alt": "Photo {index} of {name}",
+          "broken": "Broken image — failed to load",
+          "more_alt": "{count} more photos"
+        },
         "confirm_delete": "Delete \"{name}\"? This action cannot be undone.",
         "delete_error": "Deleting the business failed. Please try again.",
         "deleting": "Deleting…"
@@ -1665,7 +1676,7 @@
         "short_title": "Short",
         "short_body": "{name}, adding you to Mehamakor 💚\n{prefillUrl}"
       },
-      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.online.\"\n7. Closing: \"Have a great day.\""
+      "call_script": "1. Warm opening: \"Hi, I'm calling from Mehamakor, is this a good time?\"\n2. Brief explanation: \"An Israeli site connecting local businesses with shoppers seeking quality food.\"\n3. Value proposition: \"Registration is free, your profile will be published, and you receive direct inquiries from customers via WhatsApp.\"\n4. Open question: \"How does that sound?\"\n5. If interested: \"Great! I'm sending you a ready link with all your details — just confirm a password.\"\n6. If declined: \"No problem, thanks for your time. If you change your mind, our address is mehamakor.co.il.\"\n7. Closing: \"Have a great day.\""
     },
     "kashrut": {
       "title": "Kashrut certificate approvals",
@@ -2373,16 +2384,16 @@
   "modals": {
     "location": {
       "title": "Where are you?",
-      "subtitle": "We'll find businesses near you",
+      "subtitle": "Pick a city or share your location — we'll show local businesses near you",
       "search_label": "Search city",
       "search_placeholder": "Type a city name...",
       "aria_label": "Choose a city",
       "close_aria": "Close",
       "geo_button": "Near me",
       "geo_loading": "Finding...",
-      "geo_failure": "We couldn't get your location",
-      "current_location_fallback": "Current location",
-      "skip": "Skip for now",
+      "geo_denied": "We don't have location access — pick a city instead",
+      "geo_failure": "We couldn't detect your location — pick a city instead",
+      "skip": "Not now",
       "popular_cities": {
         "tel_aviv": "Tel Aviv",
         "jerusalem": "Jerusalem",
@@ -2573,10 +2584,6 @@
       "showing_count": "Showing {loaded} of {total} businesses",
       "all_shown": "{count, plural, one {Showed the only business} other {Showed all {count} businesses}}",
       "loading_more_aria": "Loading more businesses"
-    },
-    "recently_viewed": {
-      "aria": "Recently viewed",
-      "label": "Recently viewed"
     },
     "filters": {
       "city_chip": "In my city",
@@ -2808,13 +2815,16 @@
   },
   "share_page": {
     "h1": "Spread the word",
-    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — and another business owner find their home.",
+    "intro": "Mehamakor grows by word of mouth. Every share helps another reader discover personally vetted businesses — real food, close to home.",
     "whatsapp": "Share on WhatsApp",
     "copy": "Copy link",
     "copy_toast": "Link copied",
+    "copy_failed_toast": "We couldn't copy — select the text and copy it manually",
     "native": "More ways to share",
     "email": "Share by email",
     "email_subject": "Have you heard of Mehamakor?",
+    "email_fallback_toast": "We couldn't open your email app — the message was copied, paste it into your email.",
+    "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
     "message": "Discover Mehamakor — local food businesses, each one personally met. Worth a look: {url}",
     "footer_link": "Spread the word"
   },
@@ -3543,6 +3553,7 @@
       "loading_analytics": "Loading analytics…",
       "unsaved_guard": {
         "banner": "You have unsaved changes",
+        "banner_prefix": "Unsaved changes in:",
         "confirm": "You have unsaved changes. Leave without saving?"
       },
       "insights_zero_state": {
@@ -3580,7 +3591,11 @@
       "changes_requested": {
         "title": "One detail left to complete",
         "cta": "Complete the details",
-        "aria": "Completion request from the team"
+        "aria": "Completion request from the team",
+        "resubmit_cta": "I'm done — send for review",
+        "resubmit_sending": "Sending…",
+        "resubmit_sent": "Sent for review — we'll update you soon",
+        "resubmit_error": "Couldn't send. Please try again."
       },
       "greeting": "Hi {name}",
       "welcome_subtitle": "Welcome to managing the business {business}",
@@ -3738,7 +3753,7 @@
         "steps": {
           "image": "Main photo",
           "location": "Categories & location",
-          "products": "3 products in your catalog",
+          "products": "First product in your catalog",
           "contact": "Contact details"
         },
         "fields": {
@@ -3782,6 +3797,11 @@
         "categories_summary": "{count, plural, =0 {No categories selected yet} one {1 category} other {# categories}}",
         "images_summary": "{count, plural, =0 {No photos yet} one {1 photo} other {# photos}}",
         "location_missing": "No location set yet",
+        "pricing_summary_empty": "No price or top product set yet",
+        "delivery_mode_store": "Physical store",
+        "delivery_mode_delivery": "Delivery",
+        "delivery_none": "Not set yet",
+        "hours_empty": "No hours set yet",
         "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
         "more_group": "More options",
         "next_step_aria": "Next step to complete"
@@ -3793,6 +3813,7 @@
         "phone_field_helper": "This number is used for both WhatsApp and calls",
         "field_instagram": "Instagram (username)",
         "field_website": "Website (link)",
+        "field_whatsapp_group": "WhatsApp group link",
         "field_email": "Email",
         "field_facebook": "Facebook (link)",
         "field_external_order": "Order form (link)",
@@ -3843,6 +3864,42 @@
         "subtitle": "Type your address and pick from the list — this places your business at the right spot on the map.",
         "current_prefix": "Current location:",
         "save_cta": "Save location",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "pricing": {
+        "heading": "Price & top product",
+        "subtitle": "Your starting price and top product — shown on your business card.",
+        "field_top_product": "Top product",
+        "top_product_placeholder": "Grass-fed beef",
+        "field_price_range": "Starting price",
+        "price_range_placeholder": "from ₪65/kg",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "delivery": {
+        "heading": "Delivery & pickup",
+        "subtitle": "How customers get your products — physical store, delivery, or both.",
+        "has_physical_location": "🏪 Physical store (welcomes customers)",
+        "offers_delivery": "🚚 Delivery",
+        "type_validation": "Must select at least one of the two",
+        "delivery_nationwide": "Delivery nationwide",
+        "delivery_cities_label": "Cities delivered to",
+        "delivery_cities_required": "Select at least one city or mark nationwide delivery",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed. Please try again."
+      },
+      "hours": {
+        "heading": "Opening hours",
+        "subtitle": "Your opening hours, shown on your business page.",
+        "field_label": "Opening hours",
+        "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+        "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
         "save_error": "Save failed. Please try again."
@@ -3930,6 +3987,8 @@
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
       "row_whatsapp_opt_in": "Send via WhatsApp",
+      "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
+      "phone_save_cta": "Save and enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Enable push notifications (PWA)",
@@ -4018,7 +4077,8 @@
       "email_oauth_provider_fallback": "external",
       "email_change_hint": "To change email, contact support",
       "field_phone_label": "Phone",
-      "field_phone_hint": "Notifications coming soon"
+      "field_phone_hint": "For WhatsApp updates from businesses you follow",
+      "field_phone_error": "Invalid phone number"
     },
     "business": {
       "tabpanel_aria": "My business",
@@ -4070,10 +4130,13 @@
       "cancel_aria": "Cancel",
       "form": {
         "name_label": "Product name *",
+        "name_placeholder": "e.g. spelt sourdough loaf",
         "description_label": "Short description",
+        "description_placeholder": "e.g. 750g loaf, baked in a taboon",
         "price_min_label": "Price from (₪)",
         "price_max_label": "Price to (₪)",
         "price_max_optional_suffix": "optional",
+        "price_hint": "Single price? Fill only \"from\". Price range? Fill \"to\" as well (optional).",
         "diet_heading": "Dietary tags (optional)",
         "diet_gluten_free": "🌾 Gluten-free",
         "diet_vegan": "🥦 Vegan",

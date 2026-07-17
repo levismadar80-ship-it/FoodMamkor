@@ -468,6 +468,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder={tForm("name_placeholder")}
               className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
             />
           </div>
@@ -477,6 +478,7 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               id="new-product-description"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              placeholder={tForm("description_placeholder")}
               className="w-full border border-border rounded-[8px] px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
             />
           </div>
@@ -509,6 +511,8 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
               />
             </div>
           </div>
+          {/* MEH-1239: clarify the price pair — single price vs range (Wolt/Shopify). */}
+          <p className="text-xs text-fg-muted -mt-1">{tForm("price_hint")}</p>
           <div>
             <p className="text-xs text-fg-muted mb-2">{tForm("diet_heading")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

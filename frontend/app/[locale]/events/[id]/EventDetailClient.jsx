@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { formatEventDate } from "@/lib/format-date";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
-import { optimizeCloudinary } from "@/lib/cloudinary";
+import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import Breadcrumb from "@/components/Breadcrumb";
 
 const DETAIL_DATE_OPTIONS = {
@@ -78,7 +78,7 @@ export default function EventDetailClient() {
       {event.image_url && (
         <div
           className="h-[360px] bg-cover bg-center"
-          style={{ backgroundImage: `url(${optimizeCloudinary(event.image_url)})` }}
+          style={{ backgroundImage: `url(${optimizeCloudinary(event.image_url, { aspectRatio: IMAGE_RATIOS.banner, width: 1280 })})` }}
           role="img"
           aria-label={event.title}
         />

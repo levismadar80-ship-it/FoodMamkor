@@ -14,20 +14,35 @@
 // Ordering: glyph-bearing cards lead (first 2 = hero cards); the 4
 // Leaf-fallback cards trail until MEH-683 draws their glyphs.
 // `key` doubles as the CATEGORY_ICONS lookup (meat/veg/dairy/bread/oil/care).
+//
+// MEH-1183: `image` is a TEMPORARY bridge asset — Unsplash free-license
+// stock (MEH-1182 wired the `images.unsplash.com` remotePattern + CSP
+// img-src allowlist in next.config.js). These are placeholders to be
+// replaced by real business photos after MEH-1184; deliberately NOT
+// Cloudinary (bridge assets, not user uploads). A card without an `image`
+// falls back to its hand-drawn glyph / Phosphor Leaf, unchanged.
+// Base params: q=80 (quality) · w=1200 (max render width) · auto=format
+// (WebP/AVIF negotiation) · fit=crop.
+// July 2026 (Sapir picks): drinks / fruit / bread bridge photo IDs
+// swapped for 3 new Unsplash stills. Still TEMPORARY bridge assets —
+// same replace-after-MEH-1184 plan applies (real business photos).
+const unsplash = (id) =>
+  `https://images.unsplash.com/${id}?q=80&w=1200&auto=format&fit=crop`;
+
 export const CATEGORY_CARDS = [
-  { key: "meat",   name: "בשר" },
-  { key: "veg",    name: "ירקות" },
-  { key: "dairy",  name: "חלב וגבינות" },
-  { key: "bread",  name: "לחמים ואפייה" },
-  { key: "oil",    name: "שמנים" },
-  { key: "care",   name: "סבונים טבעיים" },
-  { key: "fish",   name: "דגים" },
-  { key: "fruit",  name: "פירות" },
-  { key: "drinks", name: "יין, בירה ומשקאות" },
+  { key: "meat",   name: "בשר",              image: unsplash("photo-1613454320437-0c228c8b1723") },
+  { key: "veg",    name: "ירקות",            image: unsplash("photo-1575218823251-f9d243b6f720") },
+  { key: "dairy",  name: "חלב וגבינות",      image: unsplash("photo-1667645895855-2d3f7000a7be") },
+  { key: "bread",  name: "לחמים ואפייה",     image: unsplash("photo-1509440159596-0249088772ff") },
+  { key: "oil",    name: "שמנים",            image: unsplash("photo-1474979266404-7eaacbcd87c5") },
+  { key: "care",   name: "סבונים טבעיים",    image: unsplash("photo-1614806687007-2215a9db3b1c") },
+  { key: "fish",   name: "דגים",             image: unsplash("photo-1500732917506-30dc38b6477f") },
+  { key: "fruit",  name: "פירות",            image: unsplash("photo-1610832958506-aa56368176cf") },
+  { key: "drinks", name: "יין, בירה ומשקאות", image: unsplash("photo-1556442281-77c90134c61f") },
   // MEH-1098 (A1): DB category renamed → "קוסמטיקה טבעית". MEH-1104 (contract
   // phase, ADR-007): production rename confirmed, transitional matchAliases
   // removed — the card now resolves on the new DB value only.
-  { key: "cream",  name: "קוסמטיקה טבעית" },
+  { key: "cream",  name: "קוסמטיקה טבעית",   image: unsplash("photo-1612817288484-6f916006741a") },
 ];
 
 // Exact-name resolution — category ids differ per environment

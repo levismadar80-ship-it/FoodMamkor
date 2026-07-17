@@ -50,6 +50,10 @@ import {
   ClipboardText,
 } from "@phosphor-icons/react";
 import api from "@/lib/api";
+// MEH-1245: retire the last native alert() straggler on the producer edit tab
+// (CustomQuestionsCard save-error) — toast idiom matches dashboard/page.js:167
+// (MEH-1092) + recipes/page.js (MEH-959/1192 conversions).
+import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
@@ -60,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -74,6 +78,9 @@ const ANCHOR_TO_KEY = {
   images: "images",
   location: "location",
   products: "products",
+  pricing: "pricing",
+  delivery: "delivery",
+  hours: "hours",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
   // under the accordion they resolve to the same cards, auto-expanded.
@@ -119,6 +126,9 @@ const KEY_TO_ANCHOR = {
   images: "images",
   location: "location",
   products: "products",
+  pricing: "pricing",
+  delivery: "delivery",
+  hours: "hours",
 };
 
 export default function ProducerDashboardEditPage() {
@@ -151,6 +161,18 @@ export default function ProducerDashboardEditPage() {
     );
   }, []);
   const anyDirty = Object.values(dirtyMap).some(Boolean);
+
+  // MEH-1237: jump from an unsaved-banner card name to its accordion — reuses
+  // the exact open+scroll path the URL-hash deep link uses below (setOpenKey +
+  // KEY_TO_ANCHOR scrollIntoView), so there is one navigation mechanism.
+  const jumpToCard = useCallback((key) => {
+    setOpenKey(key);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(KEY_TO_ANCHOR[key])
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -346,22 +368,70 @@ export default function ProducerDashboardEditPage() {
     ) : (
       <PreviewEmpty />
     ),
+    pricing:
+      profile.top_product_name || profile.price_range ? (
+        <PreviewChips
+          items={[profile.top_product_name, profile.price_range].filter(Boolean)}
+        />
+      ) : (
+        <PreviewEmpty />
+      ),
     questions:
       (profile.custom_questions || []).length > 0 ? undefined : <PreviewEmpty />,
   };
 
+  // MEH-1237: display name per dirty-card key — REUSES the exact heading
+  // strings the accordion headers already render (no duplicated Hebrew). Keys
+  // match the reportDirty keys the cards lift up.
+  const DIRTY_CARD_NAMES = {
+    images: t("images.heading"),
+    categories: t("categories.heading"),
+    location: t("location.heading"),
+    bio: t("description_card.heading"),
+    products: tProducts("section_heading"),
+    contact: t("contact_channels.heading"),
+    pricing: t("pricing.heading"),
+    delivery: t("delivery.heading"),
+    hours: t("hours.heading"),
+    questions: t("custom_questions.heading"),
+  };
+  // Stable order (matches the accordion render order below), filtered to dirty.
+  const DIRTY_ORDER = [
+    "images", "categories", "location", "bio", "products", "contact", "pricing", "delivery", "hours", "questions",
+  ];
+  const dirtyKeys = DIRTY_ORDER.filter((k) => dirtyMap[k]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-12 space-y-6">
-      {/* MEH-1100: sticky unsaved-changes banner — sits just under the
-          layout's sticky tab nav (top-0 z-10, ~46px tall). */}
+      {/* MEH-1100 + MEH-1237: sticky unsaved-changes banner — sits just under
+          the layout's sticky tab nav (top-0 z-10, ~46px tall). Names the dirty
+          cards with jump links (Shopify Polaris contextual save bar) instead of
+          a generic message, so the owner knows exactly what's unsaved + where. */}
       {anyDirty && (
         <div
-          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex items-center gap-2 shadow-sm"
+          className="sticky top-12 z-10 bg-white border border-primary rounded-[10px] px-4 py-2 text-sm text-text flex flex-wrap items-center gap-x-2 gap-y-1 shadow-sm"
           role="status"
           data-testid="unsaved-banner"
         >
           <Warning size={16} className="text-primary shrink-0" aria-hidden="true" />
-          {t("unsaved_guard.banner")}
+          <span>{t("unsaved_guard.banner_prefix")}</span>
+          <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+            {dirtyKeys.map((key, i) => (
+              <span key={key} className="inline-flex items-center gap-1">
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-fg-muted">·</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => jumpToCard(key)}
+                  data-testid={`unsaved-jump-${key}`}
+                  className="underline underline-offset-2 font-medium hover:text-primary transition-colors"
+                >
+                  {DIRTY_CARD_NAMES[key]}
+                </button>
+              </span>
+            ))}
+          </span>
         </div>
       )}
 
@@ -512,6 +582,65 @@ export default function ProducerDashboardEditPage() {
         <span className="flex-1 h-px bg-border" aria-hidden="true" />
       </div>
 
+      {/* MEH-1242 PR3 — price range + top product editor (optional marketing
+          info; lives under "more options", not in the completeness funnel). */}
+      <EditAccordionCard
+        anchorId="pricing"
+        title={t("pricing.heading")}
+        summary={
+          [profile.top_product_name, profile.price_range]
+            .filter(Boolean)
+            .join(" · ") || tAcc("pricing_summary_empty")
+        }
+        preview={previews.pricing}
+        open={openKey === "pricing"}
+        onToggle={() => toggleKey("pricing")}
+      >
+        <PricingCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1242 PR5 — location-mode + delivery editor (owner now writes
+          has_physical_location / offers_delivery / delivery_nationwide + cities). */}
+      <EditAccordionCard
+        anchorId="delivery"
+        title={t("delivery.heading")}
+        summary={
+          [
+            profile.has_physical_location !== false ? tAcc("delivery_mode_store") : null,
+            profile.offers_delivery ? tAcc("delivery_mode_delivery") : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || tAcc("delivery_none")
+        }
+        open={openKey === "delivery"}
+        onToggle={() => toggleKey("delivery")}
+      >
+        <DeliveryCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1242 PR5 — opening-hours editor (owner now writes opening_hours). */}
+      <EditAccordionCard
+        anchorId="hours"
+        title={t("hours.heading")}
+        summary={profile.opening_hours || tAcc("hours_empty")}
+        open={openKey === "hours"}
+        onToggle={() => toggleKey("hours")}
+      >
+        <HoursCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
       {/* ⑦ MEH-210 Phase 2 — custom WhatsApp question chips */}
       <EditAccordionCard
         anchorId="questions"
@@ -572,7 +701,7 @@ function CustomQuestionsCard({ profile, onSave, reportDirty = () => {} }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      alert(tRoot("error_questions_save"));
+      showToast.error(tRoot("error_questions_save"));
     } finally {
       setSaving(false);
     }
@@ -644,6 +773,9 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
     phone: profile?.phone || "",
     instagram: profile?.instagram || "",
     website: profile?.website || "",
+    // MEH-1242 PR3: whatsapp_group — backend whitelist already accepts it and
+    // the public ContactCard already renders it; this is the missing editor.
+    whatsapp_group: profile?.whatsapp_group || "",
     contact_email: profile?.contact_email || "",
     facebook: profile?.facebook || "",
     external_order_form: profile?.external_order_form || "",
@@ -692,6 +824,7 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
         phone: form.phone.trim() || null,
         instagram: form.instagram.trim() || null,
         website: form.website.trim() || null,
+        whatsapp_group: form.whatsapp_group.trim() || null,
         contact_email: form.contact_email.trim() || null,
         facebook: form.facebook.trim() || null,
         external_order_form: form.external_order_form.trim() || null,
@@ -724,6 +857,10 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
           onChange={(e) => upd("instagram", e.target.value)} error={fieldError("instagram")} />
         <Input type="url" dir="ltr" label={t("field_website")} value={form.website}
           onChange={(e) => upd("website", e.target.value)} error={fieldError("website")} />
+        {/* MEH-1242 PR3: WhatsApp group link — not a primary method, so no
+            empty-primary guard applies (fieldError never targets it). */}
+        <Input type="url" dir="ltr" label={t("field_whatsapp_group")} value={form.whatsapp_group}
+          onChange={(e) => upd("whatsapp_group", e.target.value)} />
         <Input type="email" dir="ltr" label={t("field_email")} value={form.contact_email}
           onChange={(e) => upd("contact_email", e.target.value)} error={fieldError("contact_email")} />
         <Input type="url" dir="ltr" label={t("field_facebook")} value={form.facebook}
