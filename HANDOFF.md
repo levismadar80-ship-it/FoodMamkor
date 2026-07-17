@@ -5,6 +5,17 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1074 autonomous sweep (this session): 4 merged + 1 held + 1 skipped
+
+- **Merged to staging (code PRs; GREEN/YELLOW auto-merge on green required gates):**
+  - PR #1828 — `role="img"` on ProducerCard missing-image placeholder (axe serious fix). a11y-only.
+  - PR #1827 — Lightbox focus-return to the real invoker (fixes the `06-lightbox.spec.ts:9` flake root cause in ImageGallery). +`ImageGalleryFocusReturn.test.jsx`.
+  - PR #1831 — Footer nav split into "גלו" / "לבתי עסק" audience groups (ADR-024). +`FooterNavGroups.test.jsx`. Voice fix גלה→גלו was already applied.
+  - PR #1829 — workflow rule 29: Linear auto-reopen guard for docs/HANDOFF PRs.
+- **Held for Sapir mobile QA (ready-for-review, NOT merged — visual):** PR #1833 — products empty-state example card becomes the visual + positive title (copy locked). Merge after a 375px glance.
+- **Skipped + commented in Linear:** the demo-image-public_ids swap — the seed file has 6 `res.cloudinary.com/demo/` URLs but the ticket gives 5 public_ids and says "don't change other seed data"; the challah/spelt/cookies IDs have no home without adding `image_url` fields, and recipe/event aren't covered. Needs a 6-site mapping + URL-format confirmation (comment posted).
+- **⚠️ Concurrent sweep session was active on this repo the whole time** (Rule 1 flag). It merged MEH-1261 F1–F5, MEH-1211, MEH-1260, MEH-1210, MEH-1256, 1262, 1264, 1265 + QA sweeps. To avoid the MEH-1215/1216 duplicate-merge class, this session skipped every In-Progress-with-open-PR ticket and took only disjoint unclaimed ones (a11y/focus/footer/rules/empty-state). No file collided.
+- **Method note:** code PRs were kept **CHANGELOG-free** (the same-anchor `## Unreleased` add would go "dirty" on every staging advance from the other session) and all CHANGELOG+HANDOFF entries were batched into this one docs PR. Force-push is env-gated, so two early PRs (#1823/#1825) were re-created code-only under new branch names (#1828/#1827) and the originals closed.
 ## 2026-07-17 — map/cards audit batch (MEH-1210/1211/1263/1264/1265) — 4 merged, 1 STOP
 
 End-to-end batch under the 17/07 ADR-016 grant (Sapir-approved). Sequential; each branch cut from fresh `staging` after the previous merge; merged on green **required** gates (`CI gate` + `Deploy gate`). Vercel preview deploys were rate-limited all session (`api-deployments-free-per-day`) — a non-required commit-status, ignored; **live mobile/staging checks deferred to Sapir** (CC-sandbox limitation).
