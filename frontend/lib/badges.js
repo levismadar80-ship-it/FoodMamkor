@@ -6,8 +6,9 @@
  *   recommended  (manual)  — producer.is_recommended
  *   license      (manual)  — producer.has_producer_license AND verification_tier === "verified" (MEH-531; verified-gate MEH-1162)
  *   new          (auto)    — producer.days_since_created <= 30
- *   organic      (manual)  — producer.organic_certified
  *   grass_fed    (manual)  — producer.grass_fed
+ *   (organic REMOVED — MEH-1259: self-declared organic_certified presented an
+ *    unverified claim as a certificate; hidden until an admin-verified flow.)
  *   gluten_free  (manual)  — has_gluten_free_products  (any product is_gluten_free,  MEH-479)
  *   vegan        (manual)  — has_vegan_products        (any product is_vegan,        MEH-479)
  *   lactose_free (manual)  — has_lactose_free_products (any product is_lactose_free, MEH-479)
@@ -16,7 +17,7 @@
  *   products     (auto)    — producer.products_count >= 3
  *
  * Priority (highest first — drives the card's max-2 truncation):
- *   verified > recommended > license > new > organic > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
+ *   verified > recommended > license > new > grass_fed > gluten_free > vegan > lactose_free > kosher > delivery > products
  *
  * ProducerCard renders the top-priority 2 with `topBadges(producer, 2)`.
  * ProducerDetail renders everything with `allBadges(producer)`.
@@ -58,12 +59,13 @@ export const BADGE_CONFIG = {
     // DESIGN.md § Action hierarchy — a solid-green "חדש" chip competed with it.
     color: "muted",
   },
-  organic: {
-    key: "organic",
-    label: "אורגני",
-    tooltip: "בית העסק מחזיק בתעודת אורגני בתוקף.",
-    color: "muted",
-  },
+  // MEH-1259 (P0 legal — חוק להסדרת תוצרת אורגנית תשס"ה-2005): the public
+  // "אורגני" badge is REMOVED. It lit on the self-declared producer.organic_certified
+  // boolean while the tooltip claimed "תעודת אורגני בתוקף" — presenting an
+  // unverified self-declaration as a certificate (same risk family as MEH-986
+  // kosher). Hidden until an admin-verified flow exists (post-launch, Option B —
+  // KashrutBadgeRequest pattern). The column + owner toggle + admin checkbox are
+  // KEPT (zero data loss); only the public badge/chip/filter surfaces are gone.
   grass_fed: {
     key: "grass_fed",
     label: "גראס פד",
@@ -114,7 +116,7 @@ export const BADGE_PRIORITY = [
   "recommended",
   "license",
   "new",
-  "organic",
+  // MEH-1259: "organic" removed — see BADGE_CONFIG note above.
   "grass_fed",
   "gluten_free",
   "vegan",
@@ -157,8 +159,9 @@ function earnsBadge(producer, key) {
         producer.days_since_created >= 0 &&
         producer.days_since_created <= NEW_DAYS
       );
-    case "organic":
-      return !!producer.organic_certified;
+    // MEH-1259: no "organic" case — the badge is removed from public surfaces
+    // (see BADGE_CONFIG note). producer.organic_certified stays on the payload
+    // (owner/admin managed) but drives NO public badge.
     case "grass_fed":
       return !!producer.grass_fed;
     case "gluten_free":
@@ -175,7 +178,14 @@ function earnsBadge(producer, key) {
       // approve flow (admin_kashrut.py:75, alongside kashrut_badges) — the same
       // "verified signal" shape the verified badge uses at :136. Free-text
       // producer.kosher now drives NO public badge.
-      return !!producer.kashrut_verified_at;
+      // MEH-1260: expiry enforcement — an expired certificate earns no badge.
+      // Legacy rows verified before the expiry era carry NULL expires_at and
+      // stay valid (do NOT break them). Mirrors producer_listing.py ?kosher.
+      return (
+        !!producer.kashrut_verified_at &&
+        (!producer.kashrut_expires_at ||
+          new Date(producer.kashrut_expires_at) > new Date())
+      );
     case "delivery":
       return (
         !!producer.has_delivery ||

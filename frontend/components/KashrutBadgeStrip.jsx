@@ -27,6 +27,10 @@ export default function KashrutBadgeStrip({ badges, verified_at, expires_at }) {
   const t = useTranslations("kashrut");
   const format = useFormatter();
   if (!badges || badges.length === 0) return null;
+  // MEH-1260: expired certificate → hide the whole strip, not just flip the
+  // near-expiry chip (expiry was previously display-only). Legacy NULL
+  // expires_at stays visible — pre-expiry-era rows are still valid.
+  if (expires_at && new Date(expires_at) <= new Date()) return null;
 
   const expiresInDays = daysUntil(expires_at);
   const nearExpiry = expiresInDays !== null && expiresInDays <= 30;

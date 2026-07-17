@@ -103,7 +103,7 @@ generic SaaS checklist shipped with the workflow.
 - [ ] Thumb on the **right side** in RTL (`ps-*` spacing from card edge).
 - [ ] Trust strip: **max 2 items.** If verified → ✓ + rating. If not → rating only. Skip `response_time`.
 - [ ] No 5-icon footer (removed April 2026 per HANDOFF).
-- [ ] Placeholder: category emoji + producer initials, bg `#EAF3DE`, never a stock leaf icon.
+- [ ] Placeholder: cream surface (`bg-background`) + Leaf glyph + brand wordmark — MEH-643 canonical, reaffirmed MEH-1203. Shared across /producers + /favorites.
 - [ ] Heart/favorite button: ≥ 44×44px tap target, positioned top-end corner.
 - [ ] Title in Frank Ruhl Libre; meta in DM Sans 13px.
 

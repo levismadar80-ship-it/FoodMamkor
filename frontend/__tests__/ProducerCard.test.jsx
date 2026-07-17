@@ -43,7 +43,8 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default: ({ src, alt }) => <img src={src} alt={alt} />,
+  // MEH-1211: forward onError so the load-failure fallback can be exercised.
+  default: ({ src, alt, onError }) => <img src={src} alt={alt} onError={onError} />,
 }));
 
 vi.mock("@/lib/cloudinary", async (importOriginal) => ({
@@ -184,6 +185,19 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.getByText("מהמקור")).toBeInTheDocument();
   });
 
+  // MEH-1211: a present-but-dead image URL must fall back to the canonical
+  // no-photo placeholder instead of the browser broken-glyph + alt overflow.
+  it("renders fallback when the image errors (present-but-dead URL)", () => {
+    render(<ProducerCard producer={fullProducer} />);
+    // Image is present at first paint — no placeholder wordmark yet.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
+    const img = screen.getByAltText("חוות השקמה");
+    fireEvent.error(img);
+    // After the load failure the canonical placeholder (leaf + wordmark) shows.
+    expect(screen.getByText("מהמקור")).toBeInTheDocument();
+    expect(screen.queryByAltText("חוות השקמה")).not.toBeInTheDocument();
+  });
+
   it("never renders the premium image overlay", () => {
     render(<ProducerCard producer={fullProducer} />);
     expect(screen.queryByText("פרמיום")).not.toBeInTheDocument();
@@ -221,22 +235,20 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByTestId("primary-method-hint")).not.toBeInTheDocument();
   });
 
-  it("truncates the price label (narrow max-width)", () => {
+  // MEH-1210: price removed from discovery cards ("מגזין, לא marketplace").
+  // Prices stay at product level inside /producer — never on the card.
+  it("does NOT render the price label on the card", () => {
     render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price.className).toMatch(/max-w-/);
+    expect(screen.queryByText("₪40-80")).not.toBeInTheDocument();
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
-  // MEH-1031 (A6): bidi-isolate the price so number+unit+currency can't flip
-  // inside RTL — mirrors the rating/distance-pill dir="ltr" idiom.
-  it("bidi-isolates the price label with dir=ltr", () => {
-    render(<ProducerCard producer={fullProducer} />);
-    const price = screen.getByText("₪40-80");
-    expect(price).toHaveAttribute("dir", "ltr");
-  });
-
-  it("hides price when both price_range and starting_price_label are null", () => {
-    render(<ProducerCard producer={minimalProducer} />);
+  it("renders no price even when both price fields are set", () => {
+    render(
+      <ProducerCard
+        producer={{ ...fullProducer, price_range: "₪40-80", starting_price_label: "מ-₪25" }}
+      />,
+    );
     expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
   });
 
@@ -372,14 +384,15 @@ describe("ProducerCard — Phase B anatomy", () => {
     expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
-  it("promotes organic/grass_fed/kosher into the unified pill row", () => {
+  it("promotes grass_fed into the unified pill row; organic never shows (MEH-1259)", () => {
     render(
       <ProducerCard
         producer={{ ...minimalProducer, organic_certified: true, grass_fed: true }}
       />,
     );
-    expect(screen.getByRole("button", { name: /אורגני/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /גראס פד/ })).toBeInTheDocument();
+    // MEH-1259: organic_certified is set but the public organic badge is gone.
+    expect(screen.queryByRole("button", { name: /אורגני/ })).not.toBeInTheDocument();
   });
 
   it("uses slug for href when available", () => {
@@ -511,11 +524,13 @@ describe("ProducerCard — heart (Phase C)", () => {
 // MEH-991 (CARD-09): v4 LOCK — a third+ badge collapses to a "+N" overflow chip.
 describe("ProducerCard — badge overflow chip (MEH-991)", () => {
   it("renders +N when the producer earns more than 2 badges", () => {
+    // MEH-1259: organic no longer earns a badge — swapped for kosher
+    // (kashrut_verified_at) so the fixture still earns 4 badges → "+2".
     render(
       <ProducerCard
         producer={{
           ...minimalProducer,
-          organic_certified: true,
+          kashrut_verified_at: "2026-01-01T00:00:00Z",
           grass_fed: true,
           has_gluten_free_products: true,
           has_delivery: true,

@@ -8,12 +8,12 @@ import {
 
 describe("BADGE_PRIORITY", () => {
   it("matches the Phase B fold order", () => {
+    // MEH-1259: "organic" removed from the priority list (badge hidden).
     expect(BADGE_PRIORITY).toEqual([
       "verified",
       "recommended",
       "license",
       "new",
-      "organic",
       "grass_fed",
       "gluten_free",
       "vegan",
@@ -113,8 +113,10 @@ describe("allBadges", () => {
     expect(allBadges({ days_since_created: 31 }).map((b) => b.key)).toEqual([]);
   });
 
-  it("organic — when organic_certified is true", () => {
-    expect(allBadges({ organic_certified: true }).map((b) => b.key)).toEqual(["organic"]);
+  // MEH-1259 (P0 legal — חוק תוצרת אורגנית 2005): the self-declared organic
+  // badge is removed from all public surfaces; organic_certified drives NO badge.
+  it("organic — never earns a badge even when organic_certified is true", () => {
+    expect(allBadges({ organic_certified: true }).map((b) => b.key)).toEqual([]);
   });
 
   it("grass_fed — when grass_fed is true", () => {
@@ -175,6 +177,32 @@ describe("allBadges", () => {
     expect(allBadges({ kosher: "" }).map((b) => b.key)).toEqual([]);
   });
 
+  // MEH-1260: expiry enforcement — an expired certificate earns no badge;
+  // legacy pre-expiry-era rows (NULL expires_at) stay valid.
+  it("kosher — expiry enforced: valid / expired / legacy-null (MEH-1260)", () => {
+    // valid: expires in the future → badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: "2099-01-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+    // expired: verified but past expires_at → NO badge.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2024-01-01T00:00:00Z",
+        kashrut_expires_at: "2024-06-01T00:00:00Z",
+      }).map((b) => b.key),
+    ).toEqual([]);
+    // legacy: verified with NULL expires_at → unchanged, badge earned.
+    expect(
+      allBadges({
+        kashrut_verified_at: "2026-01-01T00:00:00Z",
+        kashrut_expires_at: null,
+      }).map((b) => b.key),
+    ).toEqual(["kosher"]);
+  });
+
   it("delivery — via delivery_count > 0", () => {
     expect(allBadges({ delivery_count: 3 }).map((b) => b.key)).toEqual(["delivery"]);
   });
@@ -206,12 +234,12 @@ describe("allBadges", () => {
       is_recommended: true,
       verification_tier: "verified",
     });
+    // MEH-1259: organic_certified is set but earns no badge — absent from order.
     expect(badges.map((b) => b.key)).toEqual([
       "verified",
       "recommended",
       "license",
       "new",
-      "organic",
       "grass_fed",
       "gluten_free",
       "vegan",
@@ -263,14 +291,15 @@ describe("topBadges", () => {
     expect(topBadges(producer, -3)).toEqual([]);
   });
 
-  it("picks organic over delivery when both earned and limit=2 with verified", () => {
-    // verified (priority 0) + organic (priority 3) win over delivery (priority 6)
+  it("picks grass_fed over delivery when both earned and limit=2 with verified", () => {
+    // MEH-1259: was organic (now removed) — grass_fed is the next quality badge.
+    // verified (priority 0) + grass_fed win over delivery (lower priority).
     const p = {
       verification_tier: "verified",
-      organic_certified: true,
+      grass_fed: true,
       has_delivery: true,
     };
-    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "organic"]);
+    expect(topBadges(p, 2).map((b) => b.key)).toEqual(["verified", "grass_fed"]);
   });
 
   // MEH-531: license sits between recommended and new.
@@ -311,14 +340,16 @@ describe("badgeCount", () => {
     ).toBe(5);
   });
 
-  it("counts the new Phase B badges", () => {
+  it("counts the new Phase B badges (organic no longer counts — MEH-1259)", () => {
+    // organic_certified is set but earns no badge post-MEH-1259, so only
+    // grass_fed + kosher count.
     expect(
       badgeCount({
         organic_certified: true,
         grass_fed: true,
         kashrut_verified_at: "2026-01-01T00:00:00Z",
       }),
-    ).toBe(3);
+    ).toBe(2);
   });
 
   it("counts the dietary label badges", () => {

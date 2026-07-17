@@ -47,6 +47,8 @@
       "instagram_aria": "Mehamakor's Instagram page — opens in new tab",
       "nav_aria": "Footer navigation",
       "nav_heading": "Navigation",
+      "group_discover_heading": "Discover",
+      "group_business_heading": "For businesses",
       "nav_discover": "Discover businesses",
       "newsletter_heading": "Good food is meant to be shared",
       "newsletter_label": "Newsletter email",
@@ -2753,7 +2755,8 @@
     "cities_autocomplete": {
       "remove_aria": "Remove {city}",
       "placeholder": "Type a city name...",
-      "commit_hint": "Pick a city from the list to add it"
+      "commit_hint": "Pick a city from the list to add it",
+      "region_added": "Added"
     },
     "city_search": {
       "placeholder": "Search city...",
@@ -4136,8 +4139,8 @@
       },
       "load_retry_cta": "Try again",
       "empty": {
-        "title": "First product = a living business",
-        "description": "Without products, your profile looks empty and customers don't know what you offer. Add 3 popular products with a photo and price — it takes 5 minutes.",
+        "title": "Add your first product",
+        "description": "Add 3 popular products with a photo and price — it takes 5 minutes, and customers instantly see what you offer.",
         "cta": "+ Add first product",
         "sample_label": "Example — how your product will look",
         "sample_name": "Homemade fig jam",

@@ -114,16 +114,17 @@ describe("/producers category axis (MEH-1081)", () => {
   });
 
   it("category composes with a toggle chip — both in URL and fetch params", async () => {
+    // MEH-1259: was the "אורגני" toggle (now removed) — use "ללא גלוטן".
     render(<ProducersClient {...PROPS} />);
     const row = await screen.findByTestId("chip-row-category");
     fireEvent.click(within(row).getByText("דבש"));
-    fireEvent.click(within(screen.getByTestId("chip-row-toggle")).getByText("אורגני"));
+    fireEvent.click(within(screen.getByTestId("chip-row-toggle")).getByText("ללא גלוטן"));
     const url = lastReplaceUrl();
     expect(url).toContain("category=18");
-    expect(url).toContain("organic=1");
+    expect(url).toContain("gluten_free=1");
     await waitFor(() => {
       expect(
-        producersCalls().some((p) => String(p.category) === "18" && p.organic === true),
+        producersCalls().some((p) => String(p.category) === "18" && p.gluten_free === true),
       ).toBe(true);
     });
   });

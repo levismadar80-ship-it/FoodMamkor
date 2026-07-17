@@ -15,9 +15,10 @@ vi.mock("next/link", () => ({
 // that forwards onLoad + className so the MEH-1133 aspect flip is testable
 // (real-browser behavior verified separately in qa-artifacts).
 vi.mock("next/image", () => ({
-  default: ({ onLoad, className, alt, src }) => (
+  // MEH-1211: also forward onError so the load-failure fallback is testable.
+  default: ({ onLoad, onError, className, alt, src }) => (
     // eslint-disable-next-line @next/next/no-img-element
-    <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} />
+    <img alt={alt} src={typeof src === "string" ? src : ""} className={className} onLoad={onLoad} onError={onError} />
   ),
 }));
 vi.mock("@/lib/cloudinary", () => ({
@@ -143,7 +144,7 @@ describe("MapProducerCard — uniform card template", () => {
     expect(container.querySelectorAll("[data-testid='map-meta-line']").length).toBeLessThanOrEqual(1);
   });
 
-  it("renders ONE meta line: city · distance · price", () => {
+  it("renders ONE meta line: city · distance (no price)", () => {
     window.sessionStorage.setItem(
       "user_location",
       JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
@@ -156,67 +157,36 @@ describe("MapProducerCard — uniform card template", () => {
     const meta = screen.getByTestId("map-meta-line");
     expect(meta.textContent).toMatch(/^ירושלים · /);
     expect(meta).toContainElement(screen.getByTestId("map-distance-pill"));
-    expect(meta.textContent).toContain("מ-");
-    expect(meta.textContent).toContain("/בקבוק");
+    // MEH-1210: price no longer appears in the meta line.
+    expect(meta.textContent).not.toContain("מ-");
+    expect(meta.textContent).not.toContain("/בקבוק");
   });
 });
 
-describe("MapProducerCard — price RTL split (MEH-934)", () => {
-  it("splits a Hebrew-prefixed price: prefix in body font, number in Cormorant <bdi>", () => {
-    render(<MapProducerCard producer={{ ...producer, price_range: "מ-35₪" }} />);
-    const prefix = screen.getByText("מ-");
-    expect(prefix.tagName).toBe("SPAN");
-    expect(prefix).toHaveClass("font-body-md");
-    const number = screen.getByText("35₪");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
-  });
-
-  it("keeps a shekel-first label (₪35) whole in the <bdi> with no prefix span", () => {
-    const { container } = render(<MapProducerCard producer={{ ...producer, price_range: "₪35" }} />);
+// MEH-1210: price removed from discovery cards ("מגזין, לא marketplace").
+// The MEH-934 RTL price-split render is gone — prices live at product level
+// inside /producer, never on the map card.
+describe("MapProducerCard — price removed (MEH-1210)", () => {
+  it("renders no price element (no <bdi>) even when a price is set", () => {
+    const { container } = render(
+      <MapProducerCard producer={{ ...producer, price_range: "מ-35₪" }} />,
+    );
+    expect(container.querySelector("bdi")).toBeNull();
+    expect(screen.queryByText(/₪/)).not.toBeInTheDocument();
     expect(screen.queryByText("מ-")).not.toBeInTheDocument();
-    expect(container.querySelector("span.font-body-md")).toBeNull();
-    const number = screen.getByText("₪35");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
   });
 
-  it("renders a pure-numeric range (35-50) entirely in the <bdi>", () => {
-    render(<MapProducerCard producer={{ ...producer, price_range: "35-50" }} />);
-    const number = screen.getByText("35-50");
-    expect(number.tagName).toBe("BDI");
-  });
-
-  it("keeps a Hebrew unit suffix (מ-25/בקבוק) OUT of the Cormorant <bdi>", () => {
-    const { container } = render(
-      <MapProducerCard producer={{ ...producer, price_range: "מ-25/בקבוק" }} />,
+  it("renders no price when the producer has a city + distance + price", () => {
+    window.sessionStorage.setItem(
+      "user_location",
+      JSON.stringify({ lat: 32.0853, lng: 34.7818 }),
     );
-    const number = screen.getByText("25");
-    expect(number.tagName).toBe("BDI");
-    expect(number).toHaveClass("font-english", "italic", "numeric");
-    const suffix = screen.getByText("/בקבוק");
-    expect(suffix.tagName).toBe("SPAN");
-    expect(suffix).toHaveClass("font-body-md");
-    expect(suffix).not.toHaveClass("font-english");
-    // Brand LOCK: Cormorant (.font-english) = Latin/numerals ONLY — no Hebrew
-    // may ever land inside it (it has no Hebrew glyphs → fallback garble).
-    for (const el of container.querySelectorAll(".font-english")) {
-      expect(el.textContent).not.toMatch(/[֐-׿]/);
-    }
-  });
-
-  it("renders a digitless label (חינם) whole in the body font with no <bdi>", () => {
-    const { container } = render(
-      <MapProducerCard producer={{ ...producer, price_range: "חינם" }} />,
+    render(
+      <MapProducerCard
+        producer={{ ...producer, city: "חיפה", price_range: "35-50" }}
+      />,
     );
-    const label = screen.getByText("חינם");
-    expect(label).toHaveClass("font-body-md");
-    expect(container.querySelector("bdi")).toBeNull();
-  });
-
-  it("renders no price element when the producer has no price", () => {
-    const { container } = render(<MapProducerCard producer={producer} />);
-    expect(container.querySelector("bdi")).toBeNull();
+    expect(screen.queryByText("35-50")).not.toBeInTheDocument();
   });
 });
 
@@ -246,5 +216,25 @@ describe("MapProducerCard — thumbnail letterbox (MEH-1133)", () => {
   it("defaults to object-cover before the image loads", () => {
     const { container } = render(<MapProducerCard producer={withImage} />);
     expect(container.querySelector("img")).toHaveClass("object-cover");
+  });
+});
+
+// MEH-1211: a present-but-dead image URL must fall back to the leaf thumb
+// placeholder instead of the browser broken-glyph.
+describe("MapProducerCard — broken-image fallback (MEH-1211)", () => {
+  it("renders the leaf placeholder when the image errors", () => {
+    const { container } = render(
+      <MapProducerCard producer={{ ...producer, images: ["/dead.jpg"] }} />,
+    );
+    // Scope to the thumbnail box — the full_profile arrow also carries aria-hidden.
+    const thumb = container.querySelector(".bg-green-50");
+    const img = thumb.querySelector("img");
+    expect(img).toBeTruthy();
+    // No leaf placeholder while the image is still present.
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeNull();
+    fireEvent.error(img);
+    // Image is gone, the leaf placeholder box takes its place.
+    expect(thumb.querySelector("img")).toBeNull();
+    expect(thumb.querySelector('[aria-hidden="true"]')).toBeTruthy();
   });
 });

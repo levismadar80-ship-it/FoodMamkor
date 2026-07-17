@@ -5,6 +5,53 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1258 / 1260 / 1259 batch (license card + kashrut expiry + organic hide) — full authority
+
+- **MEH-1258 — MERGED (PR #1814, squash `57c82c22`):** new `LicenseCard` on `/producer/dashboard/edit` (anchor `#license`, after Categories). Mirrors the admin license field (numeric/ltr/maxLength-20 + amber format warning reused from `admin.producers.form.fields.license_format_warning`); license-required hint via `requiresProducerLicense`; save `PUT /producers/me`; MEH-999 2c clear-guard stays server-side (Hebrew 422 inline); masked `•••`+last-4 header chip. NEW `EditTabLicenseCard.test.jsx` (6). 375px self-QA `qa-artifacts/MEH-1258/`. **Sapir: mobile QA** — https://staging.mehamakor.online/he/producer/dashboard/edit#license
+- **MEH-1260 — MERGED (PR #1817, squash `186166b6`):** kashrut expiry enforcement at the two existing predicates (`badges.js` kosher + `producer_listing.py` `_kosher_condition()`); `KashrutBadgeStrip` hides when expired; legacy NULL `expires_at` valid; naive utcnow matches `admin_kashrut.py:73`. 3 pytest + 1 vitest. NO schema change.
+- **MEH-1259 — this branch `feature/meh-1259-organic-badge-hide`:** hide the self-declared "אורגני" badge/chip/filter from ALL public surfaces (P0 legal, חוק תוצרת אורגנית 2005; Sapir's 17/07 hide-only decision). Neutralized: badge (`badges.js`), /producers chip+param (`producer-filters.js`), home chip+URL (`use-home-page.js`), /map toggle+param (`map-chips.js`), shared label (`attribute-labels.js`), producer-detail highlight (`ProducerHeader.jsx`), backend `?organic` filter (`producer_listing.py`) + query param (`producers.py`). KEPT: column, owner toggle (`producer_me.py`), admin checkbox+table, CSV import. Field left on `ProducerListOut` (inert). NEW `tests/test_meh1259_organic_hidden.py`; 6 vitest suites updated. vitest 1157 + build green.
+- **Process:** MEH-1260's CHANGELOG/HANDOFF entries were dropped from #1817 mid-flight (they conflicted with EVERY parallel-session staging merge — the MEH-1261/1254/1256 queue merged ~10× during the window, each colliding with the append-only logs and forcing a re-sync + fresh 9-min CI cycle). Those entries land HERE with MEH-1259. **Lesson (worth a rule):** when staging is under heavy parallel merge, keep CHANGELOG/HANDOFF OUT of a slow-CI code PR and batch the log entries into a fast-follow docs commit, or the code PR never catches a clean merge window.
+- **Backend env note:** pytest not runnable in sandbox (no postgres/pydantic) — verified by CI's Backend-tests leg per the MEH-1235-1239 precedent.
+
+## 2026-07-17 — MEH-1074 autonomous sweep (this session): 4 merged + 1 held + 1 skipped
+
+- **Merged to staging (code PRs; GREEN/YELLOW auto-merge on green required gates):**
+  - PR #1828 — `role="img"` on ProducerCard missing-image placeholder (axe serious fix). a11y-only.
+  - PR #1827 — Lightbox focus-return to the real invoker (fixes the `06-lightbox.spec.ts:9` flake root cause in ImageGallery). +`ImageGalleryFocusReturn.test.jsx`.
+  - PR #1831 — Footer nav split into "גלו" / "לבתי עסק" audience groups (ADR-024). +`FooterNavGroups.test.jsx`. Voice fix גלה→גלו was already applied.
+  - PR #1829 — workflow rule 29: Linear auto-reopen guard for docs/HANDOFF PRs.
+- **Held for Sapir mobile QA (ready-for-review, NOT merged — visual):** PR #1833 — products empty-state example card becomes the visual + positive title (copy locked). Merge after a 375px glance.
+- **Skipped + commented in Linear:** the demo-image-public_ids swap — the seed file has 6 `res.cloudinary.com/demo/` URLs but the ticket gives 5 public_ids and says "don't change other seed data"; the challah/spelt/cookies IDs have no home without adding `image_url` fields, and recipe/event aren't covered. Needs a 6-site mapping + URL-format confirmation (comment posted).
+- **⚠️ Concurrent sweep session was active on this repo the whole time** (Rule 1 flag). It merged MEH-1261 F1–F5, MEH-1211, MEH-1260, MEH-1210, MEH-1256, 1262, 1264, 1265 + QA sweeps. To avoid the MEH-1215/1216 duplicate-merge class, this session skipped every In-Progress-with-open-PR ticket and took only disjoint unclaimed ones (a11y/focus/footer/rules/empty-state). No file collided.
+- **Method note:** code PRs were kept **CHANGELOG-free** (the same-anchor `## Unreleased` add would go "dirty" on every staging advance from the other session) and all CHANGELOG+HANDOFF entries were batched into this one docs PR. Force-push is env-gated, so two early PRs (#1823/#1825) were re-created code-only under new branch names (#1828/#1827) and the originals closed.
+## 2026-07-17 — map/cards audit batch (MEH-1210/1211/1263/1264/1265) — 4 merged, 1 STOP
+
+End-to-end batch under the 17/07 ADR-016 grant (Sapir-approved). Sequential; each branch cut from fresh `staging` after the previous merge; merged on green **required** gates (`CI gate` + `Deploy gate`). Vercel preview deploys were rate-limited all session (`api-deployments-free-per-day`) — a non-required commit-status, ignored; **live mobile/staging checks deferred to Sapir** (CC-sandbox limitation).
+
+| MEH | PR | squash | outcome |
+|---|---|---|---|
+| 1211 | #1826 | `25b990e8` | broken-image `onError` fallback in ProducerCard + MapProducerCard (raw `<Image>` bypassed `ImageWithFallback`); `imgSrc && !imgError` gate → each card's own canonical placeholder (byte-identical). vitest 62✅ |
+| 1210 | #1830 | `9ecd66ec` | price removed from discovery cards ("מגזין, לא marketplace") — ProducerCard MEH-1142 footer + MapProducerCard MEH-934 price-split gone; product-level `/producer` prices untouched. vitest 57✅ |
+| 1264 | #1832 | `89d70ab0` | docs: BRAND.md §7 license-name exception clause for `"יצרן"` (Option A, lawyer brief §5.3) |
+| 1265 | #1834 | `277f80f7` | docs: fixed stale ProducerCard placeholder line in `design-principles.md` §VI (→ MEH-643 canon) |
+
+- **MEH-1263 — STOP, report-only, ZERO DML (hypothesis 3 = DB data drift).** The reported "דגים chip + fish glyph on חוות הגליל (בשר)" **cannot be produced by the frontend from correctly-assigned data**: seed assigns galil-farm `category_ids:[1]` = "בשר" (`backend/seed_data.py:18,58`); the MEH-927 migration inserts "בשר"/"דגים" as new rows and links **no** producers (`…meh927…py:52-62`, guard requires 0 links); there is **no `Fish` icon anywhere in frontend source**, and `CATEGORY_STYLES` (`frontend/lib/map-categories.js:29-40`) has no "בשר"/"דגים" key → meat resolves to `DEFAULT` (Leaf, green), never a fish glyph. Chip text = `p.categories[0].name` (`MapProducerCard.jsx:35,150`), categories ordered by `Category.id` (`producers.py:338`). So a live "דגים" chip means galil-farm is linked to the "דגים" category **in staging data** — a DB/seed-drift issue, not frontend. Fix belongs to a data re-seed/re-map on staging (Sapir), not this batch.
+  - **Separate real finding (not the reported bug, not fixed here):** `CATEGORY_STYLES` is **stale post-MEH-927** — it still keys `"בשר, עוף ודגים"` and lacks `"בשר"`/`"דגים"` (+ other split/renamed categories), so many businesses fall back to the DEFAULT Leaf glyph/green on all 4 map surfaces (card chip, no-photo marker, legend, mini-map). This is a wrong-**glyph** systemic issue, never a wrong-**text** one → worth its own ticket.
+
+## 2026-07-17 — MEH-1241 Chunk 5: Vercel protection-bypass for staging auth runs — feature/meh-1241-qa-vercel-bypass (PR #1812, NOT merged)
+
+- **🔑 DURABLE LESSON — `staging.mehamakor.online` sits behind Vercel Deployment Protection (`vercel_auth_enabled`).** **ANY automated request to staging** — Playwright E2E, `curl`, monitoring, smoke checks — **must send the header `x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET`**, or it 302-redirects to `vercel.com/sso-api` and **never reaches the backend**. Verified live 17/07: **no header → 302** (→ `vercel.com/sso-api`); **with header → HTTP 200 + `refresh_token` + `X-Railway-Edge`** (real backend hit). For Playwright the header is needed on **BOTH** surfaces — the API `request` context **and** the browser context (`page.goto`) — else login succeeds but navigation still hits the SSO wall. Get the secret from **Vercel → Settings → Deployment Protection → Protection Bypass for Automation** (system env `VERCEL_AUTOMATION_BYPASS_SECRET`); **rotating it needs a redeploy**. Never log/commit the value.
+- **Shipped (branch `feature/meh-1241-qa-vercel-bypass`, PR #1812 — Sapir merges, binding):** `frontend/e2e/global-setup.ts` (send header on login request; throw on remote+unset), `frontend/playwright.config.ts` (browser-context header reads the canonical `VERCEL_AUTOMATION_BYPASS_SECRET` too), `docs/DEPLOYMENT.md` (documents the secret), CHANGELOG + this entry.
+- **Verified:** spec compiles + skips cleanly on localhost (6 skipped, exit 0); default CI E2E (MEH-1044) unaffected; diff carries no secret value (env reads only).
+- **Still pending (Sapir):** the live spec run — the sandbox has the bypass secret but not `DEMO_OWNER_PASSWORD`/`DEMO_CONSUMER_PASSWORD`. Command in the PR #1812 body (adds `VERCEL_AUTOMATION_BYPASS_SECRET=…` to the earlier TEST_URL invocation). A failing case = a real MEH-1226/1228 bug (report, don't fix).
+- **Branch-name note:** ticket said `feature/qa-vercel-bypass`; the MEH-1141 gate requires `meh-NNN` → used `feature/meh-1241-qa-vercel-bypass` (MEH-1241 In Progress, no Done-reopen).
+
+## 2026-07-17 — MEH-1256 region quick-add chips — feature/meh-1256-region-quick-add
+
+- **What:** NEW `frontend/data/regions.js` (7 colloquial regions → exact `ISRAEL_CITIES` members, vitest-guarded) + `showRegionChips` prop on `CitiesAutocomplete` (default false; click = deduped union into value; fully-selected region → disabled "· נוסף"). Wired only in dashboard `DeliveryCard` + admin `ProducerForm` delivery blocks. PR #1811 review follow-ups folded in (hint test via he.json key; hint hidden while arrow-highlighted).
+- **Queue context:** ticket 3 of 3 ran ahead of MEH-1255 chunks B/C (1255 Chunk A schema WAITs on Sapir; 1256 only needed the 1254 merge). Region names are data, not i18n copy (like cities.js); new i18n key `search.cities_autocomplete.region_added` he+en.
+- **QA:** vitest 13/13 + consumer suites (EditTabDeliveryCard, AdminProducerForm×2) + build green. Mobile QA deferred to Sapir per MANUAL_TESTING § MEH-1256.
+
 ## 2026-07-17 — MEH-1261 (F1–F5) sweep-fix batch + E2E truth check + mobile QA artifacts
 
 **Task 0 — E2E truth check (report-only): staging E2E is GREEN, the "known /producer/[id] drift" framing was STALE.**
@@ -32,7 +79,7 @@
 - `meh-1234-addresssearch-suggestions` — dropdown renders 3 "דרך שרה" suggestions at 375px. ✓
 - **⚠️ Rig caveat (Skeptic Mode):** these are a **LOCAL `next start` + stubbed `/api`** rig, NOT live staging — the sandbox has no Vercel-SSO access to `staging.mehamakor.online` and no demo creds. The AddressSearch shot used a **Nominatim-shaped fixture** (Google stub returned `{}`), so it proves the *UI renders suggestions* but **does NOT confirm the Google path fires** — that specific Google-vs-Nominatim question (MEH-1234, key now live in Vercel) is genuinely a **live-staging check for Sapir**. All shots tell her where to look; the real device pass is hers.
 
-## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit
+## 2026-07-17 — MEH-1254 CitiesAutocomplete commit-on-type fix — feature/meh-1254-cities-autocomplete-commit (MERGED — PR #1811, squash b7558cf7)
 
 - **What:** typed-but-not-selected city in the delivery-cities field silently vanished on Save → false "יש לבחור לפחות עיר אחת". `CitiesAutocomplete.jsx`: Enter commits an exact suggestion match (even `activeIdx === -1`, multiple suggestions); blur auto-commits exact match synchronously / clears non-match; `autoComplete="off"`; muted `commit_hint` helper (he+en `search.cities_autocomplete.commit_hint`). Adversarial-review REFEREE fix: debounce timer canceled on commit/blur (ghost-dropdown reopen).
 - **Files:** `frontend/components/CitiesAutocomplete.jsx`, `frontend/messages/{he,en}.json` (+1 key each), NEW `frontend/__tests__/CitiesAutocomplete.test.jsx` (7 passed; placed in `frontend/__tests__/` per repo convention — ticket's `components/__tests__/` path doesn't exist).
