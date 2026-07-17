@@ -52,17 +52,19 @@ export default function ChangesRequestedBanner({ profile }) {
     ? new Date(profile.changes_requested_at).toLocaleDateString("he-IL")
     : null;
 
-  // MEH-1270: once resubmitted, the "נשאר להשלים" nag would contradict the
+  // MEH-1270: once resubmitted, the still-to-complete nag would contradict the
   // action she just took — replace the whole banner with a positive
   // confirmation for the rest of the session (session-local by design:
   // request-review is notification-only, no DB flag — producer_me.py:897).
+  // aria-label = the success title, not the shared t("aria") completion-request
+  // label (that copy is semantically wrong for the sent state).
   if (status === "sent") {
     return (
       <div
         className="bg-primary/10 border border-primary/30 rounded-[16px] p-4 mb-6"
         role="status"
         data-testid="changes-requested-banner"
-        aria-label={t("aria")}
+        aria-label={t("sent_title")}
       >
         <div className="flex items-start gap-3">
           <CheckCircle size={20} weight="fill" className="text-primary shrink-0 mt-0.5" aria-hidden="true" />

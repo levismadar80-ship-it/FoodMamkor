@@ -1080,7 +1080,6 @@ export function LicenseCard({ profile, onSave, reportDirty = () => {} }) {
         <p
           className="mt-3 flex items-center gap-1.5 text-xs text-primary"
           role="status"
-          aria-live="polite"
           data-testid="license-save-success"
         >
           <CheckCircle size={16} weight="fill" aria-hidden="true" className="shrink-0" />
