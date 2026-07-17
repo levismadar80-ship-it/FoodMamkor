@@ -19,11 +19,19 @@ export function useTabScroll() {
     const el = sectionRefs.current[key];
     if (el) {
       const tabBarHeight = tabBarRef.current?.offsetHeight || 56;
-      // MEH-1168 P2: the tab bar now sticks BELOW the global sticky header, so a
-      // tapped section must land under BOTH. Measure the header (mobile ≈ 82px)
-      // instead of only offsetting by the tab bar, which left headings behind it.
+      // MEH-1168 P2: the tab bar sticks BELOW the global sticky header, so a
+      // tapped section must land under BOTH.
+      // MEH-1202: prefer the header height Header.jsx publishes as the
+      // `--chrome-top` CSS var (single source of truth); fall back to a live
+      // measurement, then 82px — so no page-specific hardcode leads here.
+      const publishedTop = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue("--chrome-top"),
+        10,
+      );
       const headerHeight =
-        document.querySelector("header")?.getBoundingClientRect().height || 82;
+        publishedTop ||
+        document.querySelector("header")?.getBoundingClientRect().height ||
+        82;
       const y =
         el.getBoundingClientRect().top +
         window.scrollY -
