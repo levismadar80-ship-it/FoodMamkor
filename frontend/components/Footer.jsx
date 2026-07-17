@@ -66,19 +66,24 @@ export default function Footer() {
     }
   };
 
-  const navLinks = [
+  // MEH-1177 (ADR-024): the flat 8-link nav mixed two audiences (readers +
+  // producers). NN/g "Footers 101" — group links by secondary audience rather
+  // than dumping them in one column. Two labelled groups: readers ("גלו") +
+  // producers ("לבתי עסק"). Copy locked by Sapir 13/07.
+  const discoverLinks = [
     { href: "/", label: t("nav.footer.nav_discover") },
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
-    { href: "/about/process", label: t("nav.footer.process") },
-    { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
     { href: "/share", label: t("share_page.footer_link") },
-    // MEH-721: quiet replacement for the removed global-footer pitch CTA.
-    // MEH-995: repointed to /join — the canonical recruitment door; the
-    // wizard stays one tap away via /join's single CTA.
+  ];
+  const businessLinks = [
+    // MEH-721/995: the canonical recruitment door; the wizard stays one tap
+    // away via /join's single CTA.
     { href: "/join", label: t("nav.footer.add_business") },
+    { href: "/about/process", label: t("nav.footer.process") },
+    { href: "/about/for-businesses", label: t("nav.footer.faq_businesses") },
   ];
 
   return (
@@ -126,27 +131,37 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* Column 2 — Navigation */}
-          <nav aria-label={t("nav.footer.nav_aria")}>
-            {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
-                uppercase, and letter-spacing harms RTL legibility. */}
-            <h3 className="mb-3 text-green-100" style={{ fontSize: "11px" }}>
-              {t("nav.footer.nav_heading")}
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {navLinks.map((link) => (
-                <li key={link.href + link.label}>
-                  {/* MEH-1103: inline fontSize → utility class (13px unchanged)
-                      — interactive text carries no inline font sizing. */}
-                  <Link
-                    href={link.href}
-                    className="text-[13px] text-green-100 hover:text-white transition"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
+              each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
+              brand → h3 sections). Stacked on mobile; the group headings keep
+              the two audiences legible even when the column is narrow. */}
+          <nav aria-label={t("nav.footer.nav_aria")} className="flex flex-col gap-6">
+            {[
+              { heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
+              { heading: t("nav.footer.group_business_heading"), links: businessLinks },
+            ].map((group) => (
+              <div key={group.heading}>
+                {/* MEH-867: AA-token ink + no uppercase/tracking — Hebrew has no
+                    uppercase, and letter-spacing harms RTL legibility. */}
+                <h3 className="mb-3 text-green-100" style={{ fontSize: "11px" }}>
+                  {group.heading}
+                </h3>
+                <ul className="flex flex-col gap-2">
+                  {group.links.map((link) => (
+                    <li key={link.href + link.label}>
+                      {/* MEH-1103: inline fontSize → utility class (13px unchanged)
+                          — interactive text carries no inline font sizing. */}
+                      <Link
+                        href={link.href}
+                        className="text-[13px] text-green-100 hover:text-white transition"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </nav>
 
           {/* Column 3 — Newsletter */}
