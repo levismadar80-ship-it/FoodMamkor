@@ -203,7 +203,9 @@ erDiagram
         uuid producer_id FK
         uuid user_id FK "reporter"
         string reason
-        string status "open|resolved|dismissed"
+        string status "open|resolved|dismissed (MEH-1266)"
+        timestamp resolved_at "MEH-1266"
+        uuid resolved_by FK "users, ON DELETE SET NULL (MEH-1266)"
         timestamp created_at
     }
 
