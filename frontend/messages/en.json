@@ -2994,15 +2994,15 @@
   },
   "about_business": {
     "meta_title": "FAQ for businesses — Mehamakor",
-    "meta_description": "8 frequently-asked questions from local business owners about Mehamakor: cost, value, time, platform trust, and customer control. Direct, transparent answers.",
+    "meta_description": "Frequently-asked questions from local businesses about Mehamakor: cost, value, time, trust, and customer control. Direct, transparent answers.",
     "og_title": "FAQ for businesses — Mehamakor",
-    "og_description": "8 common questions + direct answers for business owners deciding whether to join.",
-    "eyebrow": "For business owners",
-    "heading": "Frequently-asked questions for business owners",
+    "og_description": "Common questions + direct answers for businesses deciding whether to join.",
+    "eyebrow": "For businesses",
+    "heading": "Frequently-asked questions for businesses",
     "categories": {
       "money_value": "Money and value",
       "time_effort": "Time and effort",
-      "trust": "Platform trust",
+      "trust": "Trust in Mehamakor",
       "control": "Control and stance"
     },
     "faq": {
@@ -3024,7 +3024,7 @@
       },
       "founder": {
         "q": "Who's behind Mehamakor?",
-        "a": "I'm Sapir, 21, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
+        "a": "I'm Sapir, from Zikhron Ya'akov. I built Mehamakor because I was also looking for places to buy real, local food, and it was hard — WhatsApp groups, Instagram searches. I wanted one place. I'm on my own for now, no investors, no big company. You can talk to me on WhatsApp directly and ask anything you want."
       },
       "leads": {
         "q": "The customers who arrive through you — yours or mine?",
@@ -3049,7 +3049,7 @@
         "photos": { "title": "Real photos", "desc": "Three real photos — the product, the place, the hands at work." },
         "story": { "title": "A short story", "desc": "A few personal sentences about your journey. This is what makes customers choose you." },
         "verified": { "title": "Verified badge", "desc": "A checked, valid license — customers see a clear trust mark next to your name." },
-        "products": { "title": "Products with price ranges", "desc": "What to order and for how much — no surprises in chat." },
+        "products": { "title": "Items with price ranges", "desc": "What to order and for how much — no surprises in chat." },
         "delivery": { "title": "Delivery areas", "desc": "Where you deliver, minimum order, and on which day." },
         "reviews": { "title": "Reviews and your reply", "desc": "Real feedback — and a warm reply from you that shows someone is home." }
       },
@@ -3058,6 +3058,7 @@
     "footer_questions_prefix": "Still have questions? Reach us via",
     "footer_form_link": "the contact form",
     "footer_or_email": "or by email",
+    "guides_link": "Want to go deeper? Our guides for business owners",
     "cta": "Add your business"
   },
   "privacy": {
