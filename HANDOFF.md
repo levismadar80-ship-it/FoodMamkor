@@ -5,6 +5,13 @@
 
 > **Note:** This file is rolling 7-day state only. Entries before 2026-05-17 → see git history (`git show <SHA>:HANDOFF.md`). HANDOFF is rolling 7-day per CONTEXT.md §15.
 
+## 2026-07-17 — MEH-1253 BottomNav pointer-events shield
+
+- **What:** applied the MEH-1251 Chunk B shield pattern to `BottomNav.jsx`. The full-width `fixed` wrapper (`:217`) had default `pointer-events`, so its transparent band (side gutters + safe-area/16px paddingBottom below the pill) swallowed taps/scroll on content underneath. Added `pointer-events-none` on the wrapper (`:228`) + `pointer-events-auto` on the `<nav>` pill (`:249`). One wrapper only (no intermediate shell like Header) → one none + one auto. `onFocusCapture` unaffected (pointer-events-none ≠ focus block). Zero visual/layout/z change.
+- **Files:** `frontend/components/BottomNav.jsx` + NEW `frontend/__tests__/BottomNavPointerEvents.test.jsx` (3 passed). Branch `feature/meh-1253-bottomnav-pointer-events`.
+- **Family:** same root-cause as MEH-1202 (/producer mobile "ghost strip") — does NOT replace it.
+- **QA:** structural class contract asserted by vitest; live tap pass-through at 375px is a mobile QA item (stated in the PR body, not claimed as verified).
+
 ## 2026-07-17 — MEH-1241 Chunk 4: account-menu auth spec + seed-path doc fix — feature/meh-1241-qa-auth-spec (PR, NOT merged)
 
 - **Context:** Chunks 1–3 merged (#1800, `c0ac278b`) — `--sync-users` seed mode + globalSetup + pytest. Sapir ran `--sync-users` on staging successfully (`demo-owner` password reset, `demo-consumer` created). Chunk 4 = the proof-of-value auth spec + the seed-path doc fix. **HIGH-RISK, PR only — Sapir merges (binding regardless of CI).**

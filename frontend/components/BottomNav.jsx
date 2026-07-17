@@ -214,8 +214,18 @@ export default function BottomNav() {
     <>
       {/* Floating shell — full-width row with ~14px side gutters (px) + a
           safe-area-inset + 16px bottom gutter; holds the wide pill. */}
+      {/* MEH-1253: this full-width fixed wrapper was a click-SHIELD — the
+          transparent band (side gutters + the safe-area/16px paddingBottom
+          below the pill) swallowed clicks/scroll on page content under it.
+          pointer-events-none here + pointer-events-auto on the <nav> pill lets
+          the band pass events through while the pill stays fully interactive.
+          Same fix as the Header shield (MEH-1251 Chunk B, PR #1805 `8f0d0ffa`).
+          Only ONE wrapper here (no intermediate shell like Header), so one
+          none + one auto suffices. pointer-events only — no visual/layout/z
+          change. onFocusCapture still fires: pointer-events-none does not block
+          focus events (keyboard/programmatic), only pointer hit-testing. */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px]"
+        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] flex justify-center px-[14px] pointer-events-none"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         // MEH-1014: any focus landing inside the pill forces it back to full
         // size (mirror of the MEH-734 focus guard). onFocusCapture catches it
@@ -233,7 +243,10 @@ export default function BottomNav() {
           ref={navRef}
           aria-label={t("nav.mobile_label")}
           className={[
-            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)]",
+            // MEH-1253: pointer-events-auto re-enables events on the pill (and
+            // everything inside it — tabs, account button, onboarding tips)
+            // after the wrapper shield set pointer-events-none above.
+            "relative w-full flex items-stretch justify-between gap-1 rounded-full nav-pill-glass shadow-[0_8px_30px_rgba(46,104,83,0.12)] pointer-events-auto",
             "transition-[height] duration-base ease-quart motion-reduce:transition-none",
             isCompact ? "h-12 p-1" : "h-14 p-1.5",
           ].join(" ")}
