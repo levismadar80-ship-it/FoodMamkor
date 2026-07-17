@@ -29,6 +29,14 @@ export async function generateMetadata({ params }) {
       locale: OG_LOCALE[locale],
       images: ["/og-image.png"],
     },
+    // MEH-1060 (SEO-10): explicit Twitter card mirroring og (was inheriting the
+    // layout's generic site card).
+    twitter: {
+      card: "summary_large_image",
+      title: t("meta_title"),
+      description: t("meta_description"),
+      images: ["/og-image.png"],
+    },
     alternates: buildAlternates("/privacy", locale),
   };
 }
