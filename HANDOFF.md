@@ -12,6 +12,32 @@
 - **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day) — no preview URL until it resets; not a required gate.
 - **Batch:** ticket 2 of the MEH-1277→MEH-1276 batch.
 
+## 2026-07-17 — MEH-1278 — mobile footer 2-col nav grid (follow-up MEH-1177) — `feature/meh-1278-footer-mobile-2col`
+
+- **What:** styling-only follow-up to the MEH-1177 footer audience split. On mobile the two nav groups ("גלו" / "לבתי עסק") stacked vertically (~340px wasted height, poor scan). Single-file change in `frontend/components/Footer.jsx`: nav `<nav>` className `flex flex-col gap-6` → `grid grid-cols-2 gap-6 md:flex md:flex-col` — 2-col start-aligned grid on mobile, original flex-col stack at `md:` (desktop unchanged). RTL grid auto-places "גלו" at the start side. No `text-center` present. Newsletter/brand/copyright columns + MEH-867 AA color tokens untouched.
+- **QA:** `npm run build` green (local) + CI (CI gate + Deploy gate both green). Styling-only → no Playwright per Rule 5; RTL uses grid/flex only (no physical directional classes). E2E VRT parity specs (login/register/about/producer-detail) diff at the bottom because the mobile footer is now ~96px shorter — **that IS the intended change**; MEH-991 baselines are now stale and need the standard vrt-update regen. **Live mobile QA on staging deferred to Sapir.**
+- **Next:** await Sapir's mobile confirm on staging; VRT-baseline regen for the shorter footer.
+
+## 2026-07-17 — Autonomous launch sweep session (MEH-1074) — `feature/meh-1074-sweep-handoff`
+
+CC ran the ADR-016 v2 autonomous sweep over the live Linear queue. Five issues advanced to Done, two held for human input, plus a false-reopen corrected. Every merge passed both required gates (CI gate + Deploy gate); Vercel's own deployment status was rate-limited all session (retry-in-24h) but it is **not** a required check, so it did not block.
+
+**Merged to staging (auto-merge, GREEN/YELLOW):**
+- **MEH-1269** (High/Bug) — homepage "קרוב אליי" → real geolocation (lat/lng/radius 15) + visible dismissible `ActiveFilterChip` + empty-guard + dead-`geoLoading` fix + storage-listener leak fix + `distance_km` schema. PR #1845, squash `4a88a9c9`. Synced a staging MANUAL_TESTING.md append-conflict (Accept-Both) before merge.
+- **MEH-1271** (Med) — admin official-registry verification links (health-ministry food registry + gov.il kashrut portal) as named constants in new `frontend/lib/official-registries.js` + `docs/VERIFICATION.md` §5 procedure. PR #1852, squash `05ddf426`.
+- **MEH-1273** (Med) — ProductsSection add/edit form polish (grouped fields, ₪-in-input, diet chips, click-to-upload zone) — presentational only, handlers byte-identical. PR #1855, squash `c326e324`.
+
+**Held / not merged (documented in each issue's description):**
+- **MEH-1202** (Urgent/Bug, producer mobile chrome-stack) — HIGH-RISK (`Header.jsx` central) → Phase 0 read-only only. Full file:line findings + 8-step numbered plan posted; **awaiting Sapir "go"** before any edit.
+- **MEH-1060** (High, SEO) — Chunk A audit report shipped docs-only (PR #1851). Audit **STOP condition fired**: JSON-LD already exists far beyond FAQPage (7 injection sites via `frontend/lib/seo.js:33`), so chunks B1/B2 as scoped are already shipped. Report proposes a re-scope (canonical unification / SSR discoverability / metadata polish) — **awaiting Sapir review**. Top NEW finding SEO-01 (high): `/producer/[id]` canonical↔JSON-LD URL mismatch (id vs slug).
+
+**Corrected:**
+- **MEH-1268** — its fix (PR #1839) was already merged; the issue had flipped back to In Progress only because a HANDOFF PR mentioned its identifier (rule-29 Linear auto-reopen). Restored to Done.
+
+**Skipped per queue rules:** not-cc / post-launch / data-gated / manual-QA-meta / blocked / release-to-main issues left untouched. The staging→main release (MEH-1105 / PR #1807) was **not** touched — RED, Sapir-only.
+
+**Next:** Sapir to (a) give "go" on MEH-1202, (b) review the MEH-1060 audit + re-scope decision, (c) run mobile QA on the seeded producer (MEH-1241) for MEH-1273's add/edit form and MEH-1269's real-GPS permission flow.
+
 ## 2026-07-17 — MEH-1270 — honest license-save + banner "sent for review" feedback — `feature/meh-1270-license-save-feedback-banner-state`
 
 - **What:** frontend-only fix for the producer-dashboard "נשאר להשלים" loop where a successful save read as a failure (Sapir, 17/07 screenshots). (1) `LicenseCard` (`dashboard/edit/cards.jsx`): replaced the transient 3s button-label success with a **persistent inline ✓** (`CheckCircle` + `license.save_success`, `role="status"`, testid `license-save-success`) cleared on next edit; button reverts to action-only (single live region). Masked header chip already updated immediately via `onSave→profile`. (2) `ChangesRequestedBanner`: on `status === "sent"` the whole nag is **replaced** by a positive confirmation panel (primary tint, `sent_title`/`sent_body`).

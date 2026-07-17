@@ -133,9 +133,16 @@ export default function Footer() {
 
           {/* Column 2 — Navigation. MEH-1177: split into two audience groups,
               each with its own real <h3> heading (MEH-867 hierarchy: sr-only h2
-              brand → h3 sections). Stacked on mobile; the group headings keep
-              the two audiences legible even when the column is narrow. */}
-          <nav aria-label={t("nav.footer.nav_aria")} className="flex flex-col gap-6">
+              brand → h3 sections). MEH-1278: on mobile the two groups sit
+              side-by-side in a 2-col grid (start-aligned, first group "גלו" at
+              the start side) instead of stacking — the stacked layout wasted
+              ~340px of height and read poorly (Baymard: mobile footers rely on
+              scannable start-aligned lists). Desktop (md:) reverts to the
+              original flex-col stack inside the narrow nav column. */}
+          <nav
+            aria-label={t("nav.footer.nav_aria")}
+            className="grid grid-cols-2 gap-6 md:flex md:flex-col"
+          >
             {[
               { heading: t("nav.footer.group_discover_heading"), links: discoverLinks },
               { heading: t("nav.footer.group_business_heading"), links: businessLinks },
