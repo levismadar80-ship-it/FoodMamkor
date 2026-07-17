@@ -75,14 +75,22 @@ import api from "@/lib/api";
 
 const PROPS = { initialItems: [], initialTotal: 0, initialPage: 1, totalPages: 1, perPage: 12 };
 
-const lastReplaceUrl = () => router.replace.mock.calls.at(-1)?.[0] ?? "";
-const lastPushUrl = () => router.push.mock.calls.at(-1)?.[0] ?? "";
+// MEH-1294: syncUrl now mirrors via the shallow History API. Spy on
+// pushState/replaceState — the MEH-1084 verb distinction is preserved
+// (pushState = category selection, replaceState = refinement/clear). The
+// url is the 3rd arg to history.{push,replace}State(state, title, url).
+const pushSpy = vi.spyOn(window.history, "pushState");
+const replaceSpy = vi.spyOn(window.history, "replaceState");
+const lastReplaceUrl = () => replaceSpy.mock.calls.at(-1)?.[2] ?? "";
+const lastPushUrl = () => pushSpy.mock.calls.at(-1)?.[2] ?? "";
 const producersCalls = () =>
   api.get.mock.calls.filter(([path]) => path === "/producers").map(([, opts]) => opts?.params ?? {});
 
 beforeEach(() => {
-  router.replace.mockClear();
-  router.push.mockClear();
+  // reset the jsdom URL so the same-URL guard starts from a clean slate.
+  window.history.replaceState(null, "", "/");
+  pushSpy.mockClear();
+  replaceSpy.mockClear();
   api.get.mockClear();
   params = {};
 });
