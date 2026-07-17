@@ -2752,7 +2752,8 @@
     },
     "cities_autocomplete": {
       "remove_aria": "Remove {city}",
-      "placeholder": "Type a city name..."
+      "placeholder": "Type a city name...",
+      "commit_hint": "Pick a city from the list to add it"
     },
     "city_search": {
       "placeholder": "Search city...",
@@ -4124,8 +4125,10 @@
         "price_too_high": "Price can't exceed 10,000 ₪",
         "price_max_below_min": "Max price must be higher than min price",
         "save_failed": "Save error",
-        "delete_failed": "Delete error"
+        "delete_failed": "Delete error",
+        "load_failed": "We couldn't load your products"
       },
+      "load_retry_cta": "Try again",
       "empty": {
         "title": "First product = a living business",
         "description": "Without products, your profile looks empty and customers don't know what you offer. Add 3 popular products with a photo and price — it takes 5 minutes.",
