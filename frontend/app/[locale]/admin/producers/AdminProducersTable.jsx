@@ -193,7 +193,13 @@ export function ProducerActions({ producer, isStoryOpen, onQuickApprove, onReque
           ...(p.status === "approved"
             ? [{
                 key: "ambassador",
-                label: p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive"),
+                // MEH-1267: title explains the ambassador action (Trust Tier 5)
+                // for admins who don't know what "שגריר" means.
+                label: (
+                  <span title={t("producers.table.actions.ambassador_tooltip")}>
+                    {p.ambassador ? t("producers.table.actions.ambassador_active") : t("producers.table.actions.ambassador_inactive")}
+                  </span>
+                ),
                 disabled: busy(`ambassador:${p.id}`),
                 onSelect: () => onToggleAmbassador(p.id, p.ambassador),
               }]
@@ -340,6 +346,7 @@ function AdminProducersRow({ producer, isStoryOpen, handlers }) {
             <StoryCardCanvas
               producer={p}
               onUploaded={(url) => handlers.onUploadStoryCard(p.id, url)}
+              onClose={() => handlers.onToggleStoryCard(p.id)}
             />
           </td>
         </tr>
