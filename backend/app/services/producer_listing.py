@@ -51,7 +51,11 @@ _SIMPLE_FILTERS: list[tuple[str, str]] = [
     # MEH-766: `verified` moved to a bespoke verified_at block below (was
     # ("verified", "is_verified")) — the ?verified filter now matches
     # document-verified producers, not the legacy admin-manual boolean.
-    ("organic", "organic_certified"),
+    # MEH-1259 (P0 legal — חוק תוצרת אורגנית 2005): the public ?organic filter
+    # is REMOVED. It matched the self-declared organic_certified boolean, letting
+    # consumers surface unverified "organic" producers — same risk family as the
+    # MEH-986 free-text kosher filter. Re-add only behind an admin-verified flow
+    # (post-launch, Option B). The column stays (owner/admin managed).
     ("is_available_today", "is_available_today"),
     # MEH-291 — opt-in 4-value enum filter. Default listing behavior unchanged
     # in Phase 2 (Q4b — default-hide-on_vacation ships in Phase 3 with frontend).
@@ -366,9 +370,10 @@ def build_producers_query(db: Session, **filters: Any) -> tuple[list[Producer], 
     the X-Total-Count response header — the service stays HTTP-agnostic.
 
     Expected keys in **filters: lat, lng, radius_km, category,
-    delivery_city, has_delivery, verified, organic, kosher, city,
+    delivery_city, has_delivery, verified, kosher, city,
     is_available_today, grass_fed, gluten_free, vegan, lactose_free,
     sort, search_q, limit, offset, exclude.
+    (MEH-1259: `organic` removed — the public ?organic filter is gone.)
     """
     lat = filters.get("lat")
     lng = filters.get("lng")
