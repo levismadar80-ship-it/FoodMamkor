@@ -4131,7 +4131,8 @@
         "price_max_below_min": "Max price must be higher than min price",
         "save_failed": "Save error",
         "delete_failed": "Delete error",
-        "load_failed": "We couldn't load your products"
+        "load_failed": "We couldn't load your products",
+        "image_autosave_failed": "The image uploaded but isn't saved yet — click Save to retry"
       },
       "load_retry_cta": "Try again",
       "empty": {
