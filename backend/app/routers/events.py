@@ -17,7 +17,12 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth import get_current_user, get_current_user_optional, require_producer
+from app.auth import (
+    get_current_user,
+    get_current_user_optional,
+    require_producer,
+    require_verified_producer,
+)
 from app.database import get_db
 from app.models import Event, Producer, User
 from app.schemas.schemas import EventCreate, EventFilters, EventOut, EventUpdate
@@ -152,7 +157,7 @@ def get_event(
 def create_event(
     data: EventCreate,
     background_tasks: BackgroundTasks,
-    user: User = Depends(require_producer),
+    user: User = Depends(require_verified_producer),
     db: Session = Depends(get_db),
 ):
     if data.category not in VALID_CATEGORIES:
