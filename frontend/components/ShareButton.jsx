@@ -1,8 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { showToast } from "@/lib/toast";
-import { ShareNetwork, Check } from "@phosphor-icons/react";
+import { ShareNetwork } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 
 export default function ShareButton({ url, title, description, city, category }) {
@@ -20,33 +19,30 @@ export default function ShareButton({ url, title, description, city, category })
     .filter(Boolean)
     .join("\n");
 
+  // MEH-1290: WhatsApp is the product's viral loop, so when the native share
+  // sheet is unavailable (desktop / older browsers) fall back to wa.me with a
+  // concise pre-filled message — business-name line + link — instead of a
+  // silent clipboard copy. navigator.share stays the primary path on mobile.
+  const waText = [t("wa_message_with_meta", { title: resolvedTitle }), `👉 ${url}`]
+    .filter(Boolean)
+    .join("\n");
+  const waHref = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+
   const handleShare = async () => {
     if (!url) return;
-    // Try native share first (mobile) — text only, no file fetching
+    // Native share first (mobile) — its sheet already surfaces WhatsApp among
+    // the OS share targets. Return whether it resolves or is cancelled, so a
+    // cancelled sheet never force-opens WhatsApp.
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: title || BRAND_NAME, text: shareText, url });
-        return;
       } catch {
-        // user cancelled or unsupported — fall through to clipboard
+        // user cancelled or share failed — do not fall through
       }
+      return;
     }
-    try {
-      await navigator.clipboard.writeText(shareText);
-      showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
-    } catch {
-      // last-resort fallback
-      const ta = document.createElement("textarea");
-      ta.value = shareText;
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand("copy");
-        showToast.success(t("copied_toast"), { icon: <Check size={18} /> });
-      } finally {
-        document.body.removeChild(ta);
-      }
-    }
+    // No native share (desktop / older browsers) → wa.me fallback.
+    window.open(waHref, "_blank", "noopener,noreferrer");
   };
 
   return (
