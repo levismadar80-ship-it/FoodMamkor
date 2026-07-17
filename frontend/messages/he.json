@@ -736,7 +736,9 @@
           "facebook": "פייסבוק",
           "external_order": "טופס הזמנות",
           "whatsapp_group": "קבוצת וואטסאפ"
-        }
+        },
+        "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
+        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב"
       },
       "sticky_bar": {
         "vacation_msg": "שלחו הודעה"
