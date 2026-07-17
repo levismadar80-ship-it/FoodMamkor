@@ -1,0 +1,48 @@
+[
+  {
+    "id": "1",
+    "status": "PASS",
+    "detail": "typed 10 chars: focus retained every keystroke=true, final value length=10 (expect 10)",
+    "shots": [
+      "qa-artifacts/QA-20260717/check1-name-typed.png"
+    ]
+  },
+  {
+    "id": "2",
+    "status": "PASS",
+    "detail": "AddressSearch returned 12 suggestion(s) — geocode reachable",
+    "shots": [
+      "qa-artifacts/QA-20260717/check2-address-typed.png"
+    ]
+  },
+  {
+    "id": "6",
+    "status": "PASS",
+    "detail": "/he/admin/producers last-row: parentIsBody=true, items=4 [השהה | ☆ שגריר | 📸 סטורי | מחקו], fullyInViewport=true",
+    "shots": [
+      "qa-artifacts/QA-20260717/check6-menu-open.png"
+    ]
+  },
+  {
+    "id": "7",
+    "status": "PASS",
+    "detail": "/he/admin/users last-row: parentIsBody=true, items=1 [העלי לאדמין], fullyInViewport=true",
+    "shots": [
+      "qa-artifacts/QA-20260717/check7-menu-open.png"
+    ]
+  },
+  {
+    "id": "8",
+    "status": "ERROR",
+    "detail": "locator.getAttribute: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('button:has-text(\"פרטים חסרים\")').first()\u001b[22m\n",
+    "shots": []
+  },
+  {
+    "id": "9b",
+    "status": "PARTIAL",
+    "detail": "UserMenu trigger present=true, dropdown opened with items=false",
+    "shots": [
+      "qa-artifacts/QA-20260717/check9b-usermenu.png"
+    ]
+  }
+]
