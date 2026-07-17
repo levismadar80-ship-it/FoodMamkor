@@ -72,6 +72,9 @@ export default function Footer() {
   // producers ("לבתי עסק"). Copy locked by Sapir 13/07.
   const discoverLinks = [
     { href: "/", label: t("nav.footer.nav_discover") },
+    // MEH-1060 (SEO-09): link to the /producers index — the crawlable catalog
+    // walk was previously reachable only via sitemap/pagination, not the footer.
+    { href: "/producers", label: t("nav.footer.producers") },
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },

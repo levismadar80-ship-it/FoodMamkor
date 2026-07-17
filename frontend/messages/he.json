@@ -51,6 +51,7 @@
       "group_discover_heading": "גלו",
       "group_business_heading": "לבתי עסק",
       "nav_discover": "גלו עסקים",
+      "producers": "כל בתי העסק",
       "newsletter_heading": "אוכל טוב לא שומרים לעצמנו",
       "newsletter_label": "אימייל לניוזלטר",
       "newsletter_placeholder": "האימייל שלך, בבקשה",
@@ -3964,7 +3965,15 @@
         "save_cta": "שמירה",
         "saving": "בשמירה…",
         "saved": "נשמר",
-        "save_error": "השמירה נכשלה. נסו שוב."
+        "save_success": "השעות נשמרו",
+        "save_error": "השמירה נכשלה. נסו שוב.",
+        "toggle_open": "פתוח",
+        "toggle_closed": "סגור",
+        "from_label": "פתיחה",
+        "to_label": "סגירה",
+        "preset": "א׳–ה׳ 9:00–18:00, ו׳ עד 14:00",
+        "unparseable": "הפורמט הקיים לא זוהה — הזינו את השעות מחדש",
+        "invalid_range": "שעת הסגירה חייבת להיות אחרי שעת הפתיחה"
       },
       "custom_questions": {
         "heading": "שאלות שמופיעות בדף שלך",

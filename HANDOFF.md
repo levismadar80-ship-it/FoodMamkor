@@ -3,6 +3,22 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-17 — MEH-1279 — AccountSheet language-row alignment (`LanguageToggle variant="bare"`, follow-up MEH-1196) — `feature/meh-1279-language-row-align`
+
+- **What:** MEH-1196 (PR #1744) fixed the language row's SIDE (`ms-auto` removed) but not its GEOMETRY — the embedded `LanguageToggle` was a standalone 36px circle chip (`w-9 h-9` + `Globe 20`), so the glyph sat ~8px inside the sibling icon line, the chip inflated row height, and the label was 13px vs neighbours' 13.5px. Added `variant="bare"` to `LanguageToggle.jsx` (bare `Globe 19`, no circle, caller owns layout via `className`, optional `children` after the Globe; default chip byte-identical). `AccountSheet.jsx` now renders the row AS the toggle (`variant="bare"` + shared `rowCls`) → geometrically identical to the SignOut row (`min-h-[48px]`, `gap-3`, START line, `/65` tier), single ≥44px tap target; `עב / EN` moves inside (`text-[13.5px]`, `dir="ltr"`, `aria-hidden`). Removed now-unused `staticRowCls`.
+- **Phase-0 grep (reported in PR):** `LanguageToggle` has ONE live consumer = this row (Header dropped it in MEH-896, comments only). Pattern does NOT recur — `admin/AdminRowMenu.jsx` + Header `UserMenu` dropdown are uniform text-only rows (no embedded differently-sized control). No scope expansion.
+- **QA:** `npm run build` green; vitest AccountSheet+Header 32/32; DoD lint (lucide/physical-RTL/יצרן) clean on both files. Local-stack before/after @375 (MEH-1242 pattern, guest state, cookie dismissed) in `qa-artifacts/MEH-1279/` — Globe now flush on the sibling icon line; locale flip `/`→`/en` verified live. `onToggle` untouched.
+- **Next:** Sapir on-device mobile check of the AccountSheet language row on staging after merge.
+
+## 2026-07-17 — MEH-1276 — structured Hebrew opening-hours editor — `feature/meh-1276-hours-editor`
+
+- **What:** replaced the free-text `HoursCard` (MEH-1242 PR5, expected `Sun-Thu 09:00-18:00` and silently `null`'d on any deviation) with a structured Hebrew editor — 7 day rows (א׳–ש׳, RTL) + open/closed checkbox + two `type="time"` inputs (`dir="ltr"`) per open day + one-click preset. Serialises to the **same canonical string** → zero DB/API/`parseHours` change.
+- **Files:** NEW `lib/hours-serialize.js` (serializer w/ range compression + prefill + validation), NEW `HoursEditor.jsx` (cards.jsx >1200 lines → `HoursCard` is now a thin wrapper), NEW `__tests__/hours-serialize.test.js` (14), UPDATE `cards.jsx` + `__tests__/EditTabDeliveryCard.test.jsx` (HoursCard isolation tests reworked) + `messages/he.json`/`en.json` (7 new keys, parity kept).
+- **Load/save:** existing string prefills; unparseable → amber notice + empty editor, original kept until explicit save; per-day close>open validation; persistent ✓ (MEH-1270 pattern). Round-trip serialize→parseHours→serialize is stable (test-locked).
+- **QA:** vitest **1195 pass** + `npm run build` green + DoD gate (lucide/יצרן/en-parity pass; the 2 DoD fails — backend pytest venv + `MapPane.jsx` RTL — are pre-existing & outside the diff). Local-stack visual QA with the **real** component (temp route + Playwright, 3 states × 375+1440) → `qa-artifacts/MEH-1276/*.webp` (compressed, 88 KB). **Auth-gated live producer-login QA on seeded staging deferred to Sapir** (sandbox can't reach backend).
+- **⚠️ Vercel preview blocked:** free-tier daily deploy rate limit (>100/day) — no preview URL until it resets; not a required gate.
+- **Batch:** ticket 2 of the MEH-1277→MEH-1276 batch.
+
 ## 2026-07-17 — MEH-1277 — soften visited map pin (grayscale + 0.7) — `feature/meh-1277-visited-pin-soften` (PR #1854)
 
 - **What:** single-file visual fix in `frontend/components/MapComponent.jsx` `createCategoryMarker`. The visited/`dimmed` state was `opacity 0.4`, which on a 36px circle read as disabled/broken (Sapir filed a bug — proof it read as a fault). Now `opacity 0.7` + `filter:grayscale(1)` on the marker circle div — desaturated but legible (Airbnb viewed-state pattern). active/hover/premium rings untouched; docstring updated.
