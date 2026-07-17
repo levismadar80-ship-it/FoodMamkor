@@ -55,7 +55,7 @@ export default function HomePage() {
     visibleProducers, hasMore, categoryCards,
     statsProducersCount, statsCategoriesCount, statsLoaded, showStatsCounter, newestProducers,
     featuredProducer, geoActive, cityActive, geoEmptyNotice,
-    handleNearMe, handleCitySelected, handleClearLocation,
+    handleNearMe, handleSurprise, handleCitySelected, handleClearLocation,
     handleWhatsAppClick, scrollToProducers, toggleChip,
     handleClearCategory, handleLoadMore, handleAdvanceFromStep0,
   } = useHomePage();
@@ -78,6 +78,8 @@ export default function HomePage() {
         fridayMode={fridayMode}
         geoLoading={geoLoading}
         onNearMe={handleNearMe}
+        onSurprise={handleSurprise}
+        hasProducers={statsProducersCount > 0}
         onScrollDown={scrollToProducers}
       />
 

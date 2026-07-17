@@ -370,6 +370,15 @@ class ProducerCityOut(BaseModel):
     count: int
 
 
+class ProducerRandomOut(BaseModel):
+    """MEH-1288 — GET /producers/random: minimal identity of one random
+    approved producer, just enough for the homepage "הפתיעו אותי" button to
+    navigate (slug preferred, id fallback — mirrors ProducerCard's href)."""
+
+    id: UUID
+    slug: str | None = None
+
+
 # --- Delivery Area ---
 class DeliveryAreaCreate(BaseModel):
     city: str
