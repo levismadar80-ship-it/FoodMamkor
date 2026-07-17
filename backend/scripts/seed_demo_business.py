@@ -49,9 +49,10 @@ from app.models.models import ProducerReview, Event, User  # noqa: E402  # impor
 # ============================================================================
 # DEMO IDENTITY — APPROVED (Sapir, MEH-1074 closeout). The identity values
 # (business name, contact name, category, product set) live in the dict below
-# and in the MEH-1074 Linear description. Photo URLs are Cloudinary public
-# demo-cloud placeholders — swap for real uploads on the mehamakor cloud when
-# available (edit this block + re-run with --refresh).
+# and in the MEH-1074 Linear description. Photo URLs point to free-stock
+# images uploaded to our Cloudinary cloud (dfzpscjks) under mehamakor/demo/,
+# tagged staging-only (MEH-1198 SYNC 16/07 → MEH-1252). One image per slot:
+# hero + one per product (sourdough / challah / spelt / cookies).
 # GUARD — STAGING ONLY: never promote/import this row to production (DNA:
 # licensed-only, trust); MEH-409 swaps it for the best real profile after
 # first-10. The _assert_not_production() gate below enforces staging-only.
@@ -82,10 +83,10 @@ DEMO_PRODUCER = {
     "kosher": "כשר",
     "producer_license_number": "10-000001",  # fictional — admin-only surface
     "images": [
-        # Cloudinary public demo cloud — placeholders, swap for real uploads.
-        "https://res.cloudinary.com/demo/image/upload/bread.jpg",
-        "https://res.cloudinary.com/demo/image/upload/cld-sample-4.jpg",
-        "https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg",
+        # dfzpscjks cloud (MEH-1198 SYNC) — free-stock, tagged staging-only.
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero",
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
+        "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-challah",
     ],
     "top_product_name": "לחם מחמצת כפרי",
     "price_range": "מ-₪24",
@@ -97,19 +98,21 @@ DEMO_PRODUCTS = [
         "description": "כיכר קלאסית 800 גרם — קמח לבן וקמח מלא טחינת אבן, התפחה של 24 שעות.",
         "price_min": 28,
         "price_max": 34,
-        "image_url": "https://res.cloudinary.com/demo/image/upload/bread.jpg",
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
     },
     {
         "name": "חלה קלועה לשבת",
         "description": "חלה רכה ומבריקה על בסיס מחמצת, נאפית בימי חמישי ושישי בלבד.",
         "price_min": 24,
         "price_max": 28,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-challah",
     },
     {
         "name": "לחם כוסמין מלא",
         "description": "כיכר 100% כוסמין מלא, מתאימה גם למי שמעדיפות דגנים עתיקים.",
         "price_min": 30,
         "price_max": 36,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-spelt",
     },
     {
         "name": "עוגיות שקדים ללא גלוטן",
@@ -117,6 +120,7 @@ DEMO_PRODUCTS = [
         "price_min": 25,
         "price_max": 30,
         "is_gluten_free": True,
+        "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-cookies",
     },
 ]
 
@@ -146,7 +150,8 @@ DEMO_RECIPE = {
     "prep_time_min": 10,
     "cook_time_min": 5,
     "servings": 6,
-    "image_url": "https://res.cloudinary.com/demo/image/upload/cld-sample-4.jpg",
+    # Bruschetta made from the כפרי sourdough loaf → reuse its photo.
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-sourdough",
 }
 
 DEMO_EVENT = {
@@ -162,7 +167,8 @@ DEMO_EVENT = {
     "category": "סדנה",
     "price": 120,
     "max_participants": 12,
-    "image_url": "https://res.cloudinary.com/demo/image/upload/cld-sample-2.jpg",
+    # Bread-baking workshop → reuse the hero (basket of assorted breads).
+    "image_url": "https://res.cloudinary.com/dfzpscjks/image/upload/mehamakor/demo/ruach-hasadeh-hero",
 }
 
 # Seed reviewers — @example.com per tests convention; passwords are random
