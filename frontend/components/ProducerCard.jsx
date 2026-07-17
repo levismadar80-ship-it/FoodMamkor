@@ -311,7 +311,8 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
               dir="ltr"
               data-testid="card-rating"
             >
-              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} · {producer.reviews_count}
+              {/* MEH-1243 (🔒 §7): unify to Google format ★ X.X (N) across surfaces. */}
+              <Star size={13} weight="fill" className="text-accent inline align-[-1px]" aria-hidden="true" /> {Number(producer.avg_rating).toFixed(1)} ({producer.reviews_count})
             </span>
           )}
         </div>
