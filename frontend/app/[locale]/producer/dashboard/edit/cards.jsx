@@ -626,14 +626,22 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
   const [area, setArea] = useState("");
   const [special, setSpecial] = useState("");
   const [instagram, setInstagram] = useState(profile.instagram || "");
+  // MEH-1261 F5: the instagram edit used to feed ONLY the AI-generate payload
+  // and was silently dropped on save — the one rendered field whose edit did
+  // not persist. It now joins the card's save contract (the backend owner
+  // whitelist already accepts `instagram` — producer_me.py _PRODUCER_WRITABLE_FIELDS).
+  const [savedInstagram, setSavedInstagram] = useState(profile.instagram || "");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [highlight, setHighlight] = useState(false);
   const [error, setError] = useState("");
 
-  // Dirty covers BOTH saved fields — the single save button owns them together.
-  const dirty = description !== savedDescription || tagline !== savedTagline;
+  // Dirty covers ALL saved fields — the single save button owns them together.
+  const dirty =
+    description !== savedDescription ||
+    tagline !== savedTagline ||
+    instagram !== savedInstagram;
   useEffect(() => {
     reportDirty("bio", dirty);
     return () => reportDirty("bio", false);
@@ -683,11 +691,18 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
     setSaving(true);
     setError("");
     const short_description = tagline.trim() ? tagline : null;
+    // MEH-1261 F5: persist the instagram edit too (trimmed; empty clears).
+    const instagramValue = instagram.trim() || null;
     try {
-      await api.put("/producers/me", { description, short_description });
-      onSave({ description, short_description });
+      await api.put("/producers/me", {
+        description,
+        short_description,
+        instagram: instagramValue,
+      });
+      onSave({ description, short_description, instagram: instagramValue });
       setSavedDescription(description);
       setSavedTagline(tagline);
+      setSavedInstagram(instagram);
       setSaved(true);
     } catch {
       setError(t("error_save"));
@@ -731,7 +746,11 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           t={t}
           assist={{
             sells, setSells, area, setArea, special, setSpecial,
-            instagram, setInstagram, generate, close: () => setAssistOpen(false),
+            // MEH-1261 F5: instagram edits are saved fields now — editing one
+            // drops the "נשמר" label like the description/tagline inputs do.
+            instagram,
+            setInstagram: (v) => { setInstagram(v); setSaved(false); },
+            generate, close: () => setAssistOpen(false),
             loading, error,
           }}
         />
@@ -1190,6 +1209,7 @@ export function DeliveryCard({ profile, onSave, reportDirty = () => {} }) {
                 <CitiesAutocomplete
                   value={form.cities}
                   onChange={(cities) => set({ cities })}
+                  showRegionChips
                 />
                 {form.cities.length === 0 && (
                   <p className="text-xs text-red-600 mt-1">
