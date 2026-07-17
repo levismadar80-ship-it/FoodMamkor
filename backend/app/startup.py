@@ -66,6 +66,40 @@ def _check_frontend_url_consistency(env: str, frontend_url: str) -> list[str]:
     return issues
 
 
+# MEH-1164 (F6): environments that are expected to deliver email. A missing
+# RESEND_API_KEY in one of these silently skips every verification / reset /
+# welcome email — send_verify_email logs an ERROR and returns without sending
+# (app/services/auth_emails.py:79-83), and send_email fail-opens to a debug
+# no-op (app/services/email.py:26-30). That is exactly how F6 went unnoticed on
+# staging for 20+ min: the user still saw a "check your email" ack. Dev/test
+# keep the fail-open no-op (email is optional locally by design).
+_EMAIL_DELIVERY_ENVS = ("staging", "production")
+
+
+def _check_email_delivery_config(env: str, resend_api_key: str) -> str | None:
+    """MEH-1164: fail-loud guard for the email delivery pipe.
+
+    Returns a fatal message when ENV is staging/production but RESEND_API_KEY is
+    unset — else None. The caller RAISES on a non-None result so the deploy
+    fails instead of booting into a state where every email is silently dropped.
+    Mirrors the JWT_SECRET_KEY production fail-fast (config.py:151-158) and the
+    pure-helper structure of _check_frontend_url_consistency above.
+
+    Root cause of F6: RESEND_API_KEY was never set on Railway staging (the
+    docs/DEPLOYMENT.md provisioning table omitted it entirely), so no signal
+    surfaced the gap. This guard converts that silent skip into a boot failure.
+    """
+    e = (env or "").lower()
+    if e in _EMAIL_DELIVERY_ENVS and not resend_api_key:
+        return (
+            f"RESEND_API_KEY is not set but ENV={e} is expected to deliver "
+            "email — every verification / password-reset / welcome email would "
+            "be silently skipped (MEH-1164 F6). Set RESEND_API_KEY in Railway "
+            "before deploying."
+        )
+    return None
+
+
 def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
@@ -173,6 +207,17 @@ async def lifespan(app: FastAPI):
             issue,
             settings.frontend_url,
         )
+
+    # MEH-1164 (F6): fail-loud if the email delivery pipe is unconfigured in an
+    # environment that must send email. Raised AFTER the diagnostics above so
+    # the boot log still shows db_url/PORT/missing-vars/frontend-drift before
+    # the process exits. Dev/test are never affected (email fail-open stays).
+    _email_config_error = _check_email_delivery_config(
+        settings.env, settings.resend_api_key
+    )
+    if _email_config_error:
+        log.error("EMAIL CONFIG FATAL: %s", _email_config_error)
+        raise RuntimeError(_email_config_error)
 
     app.state.db_init_status = "initializing"
     app.state.db_init_task = asyncio.create_task(_init_db_background(app))
