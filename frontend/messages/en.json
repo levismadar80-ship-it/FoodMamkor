@@ -3573,6 +3573,11 @@
         "body": "Your business may not be set up yet, or a temporary error occurred. If the problem persists, we're here to help.",
         "cta": "Contact us"
       },
+      "section_errors": {
+        "analytics": "We couldn't load your stats",
+        "profile": "We couldn't load your business details",
+        "retry_cta": "Try again"
+      },
       "error_availability_update": "We couldn't update your availability — try again in a moment",
       "error_questions_save": "Save error — please try again",
       "vanity_link": {
