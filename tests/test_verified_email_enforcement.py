@@ -88,16 +88,6 @@ def _group_buy_payload(**overrides):
     return payload
 
 
-# The three endpoints now behind require_verified_producer, each with a
-# schema-valid create payload (Regression rule 6 — a 422 would prove
-# nothing about the guard).
-_GATED = [
-    ("POST /events", "/events", _event_payload),
-    ("POST /producers/me/recipes", "/producers/me/recipes", _recipe_payload),
-    ("POST /group-buys", "/group-buys", _group_buy_payload),
-]
-
-
 # ---------- unverified producer -> 403 with the Hebrew detail ----------
 
 

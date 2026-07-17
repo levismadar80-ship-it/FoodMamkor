@@ -273,27 +273,26 @@ def require_producer(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+# Shared so require_verified_email + require_verified_producer can't drift.
+_EMAIL_UNVERIFIED_DETAIL = "יש לאמת את כתובת האימייל תחילה"
+
+
 def require_verified_email(user: User = Depends(get_current_user)) -> User:
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="יש לאמת את כתובת האימייל תחילה",
+            detail=_EMAIL_UNVERIFIED_DETAIL,
         )
     return user
 
 
 def require_verified_producer(user: User = Depends(require_producer)) -> User:
-    # MEH-1164 (Chunk 2 / audit F5): producer-role AND verified email, for the
-    # content-create endpoints (events, recipes, group-buys) that must not
-    # accept submissions from an unverified account — matching the verification
-    # banner's promise. Composes require_producer (role check runs FIRST →
-    # non-producer gets "Producer access required"), then the email-verified
-    # check (→ the same Hebrew 403 as require_verified_email). experiences.py
-    # already uses require_verified_email directly and is intentionally left
-    # unchanged.
+    # MEH-1164 F5: role check first (require_producer → "Producer access
+    # required"), then the email-verified gate. experiences.py already uses
+    # require_verified_email directly and is left unchanged.
     if not user.email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="יש לאמת את כתובת האימייל תחילה",
+            detail=_EMAIL_UNVERIFIED_DETAIL,
         )
     return user
