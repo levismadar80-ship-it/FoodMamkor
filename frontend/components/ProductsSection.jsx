@@ -47,13 +47,20 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
   // double-delete of the same product and disables the row's trash button.
   const [deletingId, setDeletingId] = useState(null);
   const [editUploading, setEditUploading] = useState(false);
+  // MEH-1261 F1: a failed catalog fetch is NOT an empty catalog. `loadError`
+  // renders a distinct error card + retry instead of the "no products yet"
+  // EmptyState; `reloadKey` re-fires the mount fetch on retry.
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setLoadError(false);
     api.get("/producers/me/products")
       .then((r) => setProducts(r.data))
-      .catch(() => setProducts([]))
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadKey]);
 
   // MEH-1116: single reporting point — fires on fetch, add, and delete alike.
   useEffect(() => {
@@ -240,6 +247,25 @@ export default function ProductsSection({ embedded = false, onCountChange } = {}
       </div>
 
       {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+      {/* MEH-1261 F1: load failure gets its own state — never the EmptyState
+          (which invites adding a product to a catalog that may already exist). */}
+      {loadError && (
+        <div
+          role="alert"
+          data-testid="products-load-error"
+          className="border border-border rounded-[10px] p-4 bg-red-50 text-center"
+        >
+          <p className="text-sm text-text mb-2">{tErr("load_failed")}</p>
+          <button
+            type="button"
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="text-sm text-primary font-medium hover:underline"
+          >
+            {t("load_retry_cta")}
+          </button>
+        </div>
+      )}
 
       {products?.length === 0 && !adding && (
         <EmptyState
