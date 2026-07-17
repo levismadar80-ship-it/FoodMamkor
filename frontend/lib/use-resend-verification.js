@@ -48,8 +48,12 @@ export function useResendVerification() {
       } else {
         setResendError(t("error.try_again"));
       }
+    } finally {
+      // finally (not a trailing statement) so a throw inside the catch — e.g.
+      // t() — can never leave the button permanently disabled across the 4
+      // forms that now share this hook. (PR #1884 review nit.)
+      setResendSending(false);
     }
-    setResendSending(false);
   };
 
   return { resendSent, resendSending, resendError, handleResend };
