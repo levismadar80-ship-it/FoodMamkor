@@ -2598,6 +2598,20 @@
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"
       },
+      "rest_descs": {
+        "eggs": "Free-range and pasture eggs",
+        "fruit": "From the orchard, seasonal, fresh",
+        "ferments": "Pickles, kimchi, kombucha",
+        "prepared": "Granola, spreads, ready dishes",
+        "herbs": "Infusions, tinctures, supplements",
+        "cosmetics": "Creams, skincare oils",
+        "candles": "Wax candles, home scents",
+        "drinks": "Boutique winery, beer, cider",
+        "spices": "Spice blends, cooking herbs",
+        "chocolate": "Pralines, handmade sweets",
+        "honey": "Hive honey, pollen, honeycomb",
+        "fish": "Fresh and smoked fish"
+      },
       "section_results": "Results",
       "section_popular": "Popular",
       "counter": "{count}/{max}",
