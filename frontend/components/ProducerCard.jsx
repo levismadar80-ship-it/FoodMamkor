@@ -177,7 +177,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
 
   const userLoc = useUserLocation();
   // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
-  // (digits-first, keeps the default " ממך" tail), English keeps the Latin "km".
+  // (digits-first), English keeps the Latin "km". MEH-1307: no " ממך" tail.
   const locale = useLocale();
   const distanceLabel =
     userLoc && producer.lat != null && producer.lng != null
