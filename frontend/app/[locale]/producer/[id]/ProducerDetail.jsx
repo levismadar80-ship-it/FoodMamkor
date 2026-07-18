@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
 import ImageGallery from "@/components/ImageGallery";
+// MEH-1306: owner-only per-section pencil (self-gating, 0 DOM non-owner).
+import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 import { useAuth } from "@/lib/auth-context";
 
 import ContactCard from "./components/ContactCard";
@@ -49,6 +52,20 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const { activeTab, sectionRefs, tabBarRef, scrollToSection } = useTabScroll();
   const { inlineCTARef, isBarVisible } = useStickyBar({ producerId: producer?.id });
   const { reviewsContainerRef, reviewsVisible } = useLazyReviews({ producerId: producer?.id });
+
+  // MEH-1306: deep-link landing for the edit tab's "view on page" links. The
+  // sections mount only after the client fetch resolves, so the browser's
+  // native hash scroll fires before #section-* exists — re-apply it once the
+  // producer has rendered (mirror of edit/page.js applyHash, load-time only;
+  // later same-page hash clicks scroll natively because the target exists).
+  useEffect(() => {
+    if (!producer) return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash.startsWith("section-")) return;
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [producer]);
 
   if (loading) {
     return (
@@ -102,13 +119,21 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         />
       </div>
 
-      {/* Gallery */}
-      <ImageGallery
-        images={images}
-        producerId={producer.id}
-        producerName={producer.name}
-        verified={producer.verification_tier === "verified"}
-      />
+      {/* Gallery — MEH-1306: wrapped with the stable section id (deep-link
+          target of the edit tab's view-link) + an owner-only pencil row below
+          it (→ #images card). Non-owners get an empty zero-height flex div —
+          no reserved space, no CLS. */}
+      <div id="section-images" className="scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
+        <ImageGallery
+          images={images}
+          producerId={producer.id}
+          producerName={producer.name}
+          verified={producer.verification_tier === "verified"}
+        />
+        <div className="flex justify-end">
+          <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
+        </div>
+      </div>
 
       {/* Mobile tab bar — MEH-1168 P2: sticks BELOW the global sticky header so
           it stays visible page-long (at top-0 it hid behind the z-[1050]
@@ -165,7 +190,15 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
               boundary as the pre-1146 inline CTA. Desktop renders the card
               in the sticky sidebar instead (ContactSidebar, hidden below lg),
               so exactly one primary CTA is visible per viewport. */}
-          <div ref={inlineCTARef} className="lg:hidden mt-4">
+          {/* MEH-1306: section-contact anchors the inline (mobile) card — on
+              desktop this wrapper is display:none, but the contact card is
+              already always visible there in the sticky sidebar. Owner-only
+              pencil row above the card (→ #contact-channels); non-owners get
+              an empty zero-height flex div — no CLS. */}
+          <div ref={inlineCTARef} id="section-contact" className="lg:hidden mt-4 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)]">
+            <div className="flex justify-end">
+              <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
+            </div>
             <ContactCard
               producer={producer}
               isVacation={isVacation}

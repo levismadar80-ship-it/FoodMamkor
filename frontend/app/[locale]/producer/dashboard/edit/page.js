@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard } from "./cards";
+import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -583,6 +583,9 @@ export default function ProducerDashboardEditPage() {
         open={openKey === "products"}
         onToggle={() => toggleKey("products")}
       >
+        {/* MEH-1306: back-link to the public products section — lives in the
+            expanded body (the header is a <button>; no nested interactives). */}
+        <ViewOnPageLink producerId={profile.id} anchor="section-products" />
         <ProductsSection embedded onCountChange={setProductsCount} />
       </EditAccordionCard>
 
@@ -890,6 +893,8 @@ function ContactChannelsCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      {/* MEH-1306: back-link to the public contact-card section. */}
+      <ViewOnPageLink producerId={profile?.id} anchor="section-contact" />
 
       <div className="space-y-3">
         <Input type="tel" dir="ltr" label={t("field_phone")} helperText={t("phone_field_helper")} value={form.phone}

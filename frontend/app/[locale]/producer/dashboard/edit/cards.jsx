@@ -20,8 +20,10 @@
  */
 
 import { useState, useEffect } from "react";
+// MEH-1306: locale-aware link for the "view on page" back-link below.
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Warning, X, Sparkle, CheckCircle } from "@phosphor-icons/react";
+import { Warning, X, Sparkle, CheckCircle, Eye } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -35,6 +37,34 @@ import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import CitiesAutocomplete from "@/components/CitiesAutocomplete";
 import HoursEditor from "./HoursEditor";
+
+// ============================================================
+// MEH-1306: "view on page" back-link — closes the edit↔public loop from the
+// edit side. Rendered inside the EXPANDED card body only (never the accordion
+// header — that's a <button>, a nested interactive element is invalid HTML).
+// Deep-links to the mapped public section id (#section-*, ProducerDetail /
+// ProducerSections). producerId comes from the already-fetched /producers/me
+// payload — no new API calls; self-hides when the id is absent.
+// ============================================================
+
+export function ViewOnPageLink({ producerId, anchor }) {
+  const t = useTranslations("dashboard.producer");
+  if (!producerId) return null;
+  return (
+    <p className="mb-3">
+      <LocaleLink
+        href={`/producer/${producerId}#${anchor}`}
+        data-testid={`view-on-page-${anchor}`}
+        // Calm idiom (ADR-019): muted text link, never a primary CTA;
+        // min-h 44px keeps the tap target (MEH-813).
+        className="inline-flex items-center gap-1.5 min-h-[44px] text-sm text-fg-muted hover:text-accent focus-visible:underline transition-colors"
+      >
+        <Eye size={16} aria-hidden="true" />
+        {t("view_on_page")}
+      </LocaleLink>
+    </p>
+  );
+}
 
 // ============================================================
 // Edit-tab chunk A: producer-facing categories editor.
@@ -289,6 +319,8 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      {/* MEH-1306: back-link to the public gallery section. */}
+      <ViewOnPageLink producerId={profile?.id} anchor="section-images" />
 
       <label
         data-testid="images-dropzone"
@@ -445,6 +477,8 @@ export function LocationCard({ profile, onSave, reportDirty = () => {} }) {
     <div>
       {/* MEH-1116: card chrome + heading moved to the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted mb-4">{t("subtitle")}</p>
+      {/* MEH-1306: back-link to the public map block. */}
+      <ViewOnPageLink producerId={profile?.id} anchor="section-location" />
 
       {hasCoords && (
         <p className="text-xs text-fg-muted mb-3">
@@ -715,6 +749,8 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
     <div className="space-y-4">
       {/* MEH-1116: card chrome + heading live in the EditAccordionCard header. */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
+      {/* MEH-1306: back-link to the public description section. */}
+      <ViewOnPageLink producerId={profile?.id} anchor="section-bio" />
 
       {/* Hero: the description IS the product. Always visible, prefilled. */}
       <div className="space-y-1.5">
