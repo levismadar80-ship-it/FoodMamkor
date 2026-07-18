@@ -321,7 +321,23 @@ erDiagram
         string bot_template_sent "audit-trail: NULL = tried + failed"
         boolean human_replied
     }
+
+    alert_log {
+        uuid id PK
+        uuid user_id FK "CASCADE"
+        uuid producer_id FK "CASCADE"
+        string channel "push|whatsapp (16)"
+        string alert_type "new_event|new_product|delivery_area (32)"
+        timestamp sent_at "indexed (user,producer,channel,sent_at)"
+    }
 ```
+
+> **MEH-1338 — `alert_log` frequency cap:** append-only ledger backing the
+> `fire_alerts` cap (≤1 message per `(user, producer, channel)` per rolling 24h;
+> `alert_type` recorded but not part of the cap key). Composite index
+> `ix_alert_log_cap_lookup(user_id, producer_id, channel, sent_at)` serves the
+> EXISTS check. Adds one table → **`EXPECTED_TABLES` 36 → 37** (`pr-checks.yml`).
+> No retention/purge job yet (rows CASCADE-delete with their user/producer).
 
 ## Locked invariants (do not drift)
 
