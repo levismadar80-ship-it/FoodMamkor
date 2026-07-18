@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1300 + MEH-1301 — demo-seed pack + card copy/distance — two PRs
+
+- **MEH-1301** (frontend copy + Hebrew 'ק"מ' distance) — **MERGED, PR #1889** (squash, auto-merge on the 2 required gates; Sapir pre-approved LOW-RISK). Three `he.json` card keys unified to "בתי עסק" (new-businesses heading, near-me chip, favorites hint → "לחצו על הלב") + en twin; `ProducerCard.jsx` now picks the distance unit by `useLocale()` (he→'ק"מ' keeping " ממך", en→"km") and drops `dir="ltr"` on the distance pill. The `<10km`/`≥10km` precision rule had already shipped via **MEH-1298** (merged into staging mid-session) — resolved the merge by taking MEH-1298's precision and keeping only my ProducerCard-locale delta. `build` + full vitest (1245) green.
+- **MEH-1300** (backend demo-seed script) — branch `feature/meh-1300-demo-seed-pack`, PR pending push. NEW `backend/scripts/seed_demo_producers.py`: `--reset` (name-match delete of 12 test-business patterns + dependents) / `--confirm` (write gate; dry-run otherwise) / idempotent insert of 10 realistic businesses (real geo, magazine-voice `short_description`, ratings spread 12/8/6·3/2·×5-none, 3 kashrut + verified, cosmetics with none, 8 Cloudinary `demo/` heros + 2 leaf-placeholder). `שמן זית`→existing `שמנים` category (no `שמן זית` row; no category change). Script-only: no model/Alembic/API/category change, no new env vars. `_assert_not_production` guard (localhost / `RAILWAY_ENVIRONMENT=staging`).
+- **Verification limits:** MEH-1300 verified via `py_compile` + `ast` data checks (10 slugs, counts, no reset-pattern collision, no `"יצרן"`, valid badge codes) — the CC sandbox has **no local Postgres and pip/egress are blocked**, so the live dry-run + `--reset --confirm` on Railway staging is **Sapir's DoD step**. Then: `/producers` shows 10 businesses (2 with leaf placeholder, description line on desktop), zero `"יצרן"`/`"מטבח הבית"` in the data.
+- **STOP conditions checked:** cosmetics category is a **data row** (`Category` table, `קוסמטיקה טבעית` seeded) — NOT an enum, so no stop. No out-of-scope files needed. No >2-attempt loops.
+
 ## 2026-07-17 — MEH-1289 — new /about/why-local editorial page — `feature/meh-1289-why-local-page`
 
 - **Shipped:** new reader-facing static page `/about/why-local` ("למה מקומי?") making the consumer case for local food. GREEN autonomy end-to-end (Phase 0 → implement → self-QA → PR → merge on the 2 required aggregator gates). Copy **LOCKED by Sapir**, shipped word-for-word.
