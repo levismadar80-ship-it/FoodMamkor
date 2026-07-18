@@ -25,8 +25,13 @@ import { normalizePhone, getWhatsAppHref } from "@/lib/utils";
  * behavior) | "tertiary" (neutral outline). MEH-1146 chunk B demotes the
  * DeliveryBlock CTA to tertiary so the delivery section stops competing with
  * the contact card's single primary CTA (one-primary-per-viewport).
+ *
+ * label: optional per-instance override for the button text. Defaults to the
+ * legacy bare "WhatsApp". MEH-1305 C: the DeliveryBlock instance passes a
+ * Hebrew "שליחת הודעה בוואטסאפ" so the delivery CTA is no longer an untranslated
+ * "WhatsApp" — WITHOUT changing the global default for every other consumer.
  */
-export default function WhatsAppButton({ phone, productTitle, onClick, producerId, tone = "primary" }) {
+export default function WhatsAppButton({ phone, productTitle, onClick, producerId, tone = "primary", label }) {
   const t = useTranslations("whatsapp.button");
   const [pending, setPending] = useState(false);
   const firedRef = useRef(false);
@@ -83,7 +88,7 @@ export default function WhatsAppButton({ phone, productTitle, onClick, producerI
       } ${pending ? "opacity-70 pointer-events-none" : ""}`}
     >
       <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
-      {pending ? t("opening") : "WhatsApp"}
+      {pending ? t("opening") : (label || "WhatsApp")}
     </a>
   );
 }

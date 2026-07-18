@@ -133,11 +133,15 @@ export default function DeliveryBlock({ nationwide, excluded = [], areas = [], p
         </p>
       )}
 
+      {/* MEH-1305 C: Hebrew label for THIS instance only (prop override) — the
+          delivery CTA no longer reads as an untranslated "WhatsApp"; the global
+          WhatsAppButton default is unchanged. */}
       <WhatsAppButton
         phone={producer.phone}
         productTitle={producer.name}
         producerId={producer.id}
         tone="tertiary"
+        label={t("order_cta")}
       />
     </section>
   );
