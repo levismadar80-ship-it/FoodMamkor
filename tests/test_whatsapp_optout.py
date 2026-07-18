@@ -10,6 +10,7 @@ flow: the inbound row is always persisted first (fail-open), the keyword must
 be a full-message match (not a substring), an uncanonicalizable / unknown phone
 is a silent no-op, and an error in the opt-out path never breaks the webhook.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -80,9 +81,12 @@ def captured_send_text(monkeypatch):
 
 
 def _sign(body_bytes: bytes) -> str:
-    return "sha256=" + hmac.new(
-        FAKE_APP_SECRET.encode("utf-8"), body_bytes, hashlib.sha256
-    ).hexdigest()
+    return (
+        "sha256="
+        + hmac.new(
+            FAKE_APP_SECRET.encode("utf-8"), body_bytes, hashlib.sha256
+        ).hexdigest()
+    )
 
 
 def _payload(*, from_phone: str, body: str, message_id: str) -> dict:
@@ -136,7 +140,12 @@ def _alert(db, user, producer, opted_in=True):
 
 def _optin(db, alert_id):
     db.expire_all()
-    return db.query(FavoriteAlert).filter(FavoriteAlert.id == alert_id).first().whatsapp_opt_in
+    return (
+        db.query(FavoriteAlert)
+        .filter(FavoriteAlert.id == alert_id)
+        .first()
+        .whatsapp_opt_in
+    )
 
 
 class TestWhatsAppOptOut:
@@ -156,7 +165,9 @@ class TestWhatsAppOptOut:
         a3 = _alert(db, u2, producer_a)
 
         # Meta delivers the sender as international-without-plus.
-        resp = _post(client, from_phone="972501234567", body="הסר", message_id="wamid.opt1")
+        resp = _post(
+            client, from_phone="972501234567", body="הסר", message_id="wamid.opt1"
+        )
         assert resp.status_code == 200
 
         assert _optin(db, a1.id) is False
@@ -165,9 +176,12 @@ class TestWhatsAppOptOut:
         # Confirmation sent once to the sender.
         assert captured_send_text == [("972501234567", CONFIRMATION)]
         # inbound row persisted even on the opt-out path.
-        assert db.query(InboundMessage).filter(
-            InboundMessage.meta_message_id == "wamid.opt1"
-        ).first() is not None
+        assert (
+            db.query(InboundMessage)
+            .filter(InboundMessage.meta_message_id == "wamid.opt1")
+            .first()
+            is not None
+        )
 
     @pytest.mark.parametrize("kw", ["הסרה", "עצור", "STOP", "  unsubscribe  "])
     def test_keyword_synonyms_and_case_and_trim(
@@ -179,7 +193,9 @@ class TestWhatsAppOptOut:
         db.commit()
         a = _alert(db, user, producer)
 
-        resp = _post(client, from_phone="972509998877", body=kw, message_id=f"wamid.{kw.strip()}")
+        resp = _post(
+            client, from_phone="972509998877", body=kw, message_id=f"wamid.{kw.strip()}"
+        )
         assert resp.status_code == 200
         assert _optin(db, a.id) is False
         assert len(captured_send_text) == 1
@@ -195,27 +211,37 @@ class TestWhatsAppOptOut:
 
         # "הסר" appears as a substring but the message is not a bare keyword.
         resp = _post(
-            client, from_phone="972501112233",
-            body="אל תסיר אותי בבקשה", message_id="wamid.sub1",
+            client,
+            from_phone="972501112233",
+            body="אל תסיר אותי בבקשה",
+            message_id="wamid.sub1",
         )
         assert resp.status_code == 200
         assert _optin(db, a.id) is True  # unchanged
         assert captured_send_text == []
         # inbound still written.
-        assert db.query(InboundMessage).filter(
-            InboundMessage.meta_message_id == "wamid.sub1"
-        ).first() is not None
+        assert (
+            db.query(InboundMessage)
+            .filter(InboundMessage.meta_message_id == "wamid.sub1")
+            .first()
+            is not None
+        )
 
     def test_unknown_phone_is_silent_noop(
         self, client, db, webhook_settings, captured_send_text
     ):
         # No user has this phone.
-        resp = _post(client, from_phone="972500000000", body="הסר", message_id="wamid.unk1")
+        resp = _post(
+            client, from_phone="972500000000", body="הסר", message_id="wamid.unk1"
+        )
         assert resp.status_code == 200
         assert captured_send_text == []
-        assert db.query(InboundMessage).filter(
-            InboundMessage.meta_message_id == "wamid.unk1"
-        ).first() is not None
+        assert (
+            db.query(InboundMessage)
+            .filter(InboundMessage.meta_message_id == "wamid.unk1")
+            .first()
+            is not None
+        )
 
     def test_uncanonicalizable_phone_is_noop(
         self, client, db, webhook_settings, captured_send_text
@@ -242,8 +268,13 @@ class TestWhatsAppOptOut:
 
         monkeypatch.setattr(whatsapp_webhook, "canonical_il_msisdn", boom)
 
-        resp = _post(client, from_phone="972507776655", body="הסר", message_id="wamid.err1")
+        resp = _post(
+            client, from_phone="972507776655", body="הסר", message_id="wamid.err1"
+        )
         assert resp.status_code == 200
-        assert db.query(InboundMessage).filter(
-            InboundMessage.meta_message_id == "wamid.err1"
-        ).first() is not None
+        assert (
+            db.query(InboundMessage)
+            .filter(InboundMessage.meta_message_id == "wamid.err1")
+            .first()
+            is not None
+        )

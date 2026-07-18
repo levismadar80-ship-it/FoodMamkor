@@ -404,7 +404,9 @@ def _maybe_process_optout(db: Session, message: dict) -> None:
         from_phone = message.get("from")
         canonical = canonical_il_msisdn(from_phone)
         if canonical is None:
-            logger.warning("[WEBHOOK] opt-out: sender phone not canonicalizable — no-op")
+            logger.warning(
+                "[WEBHOOK] opt-out: sender phone not canonicalizable — no-op"
+            )
             return
 
         # Python-side canonical match: `User.phone` has no uniform stored
