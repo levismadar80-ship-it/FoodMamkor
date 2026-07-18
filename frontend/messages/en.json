@@ -2739,6 +2739,15 @@
     "notify_cta": "Notify me at launch",
     "notify_submitting": "Sending..."
   },
+  "newsletter_unsubscribe": {
+    "meta_title": "Unsubscribe from the newsletter · Mehamakor",
+    "loading": "Unsubscribing…",
+    "success_title": "You've been unsubscribed 🌿",
+    "success_body": "You won't receive the newsletter anymore. You're always welcome back.",
+    "error_title": "This link isn't valid",
+    "error_body": "The link may have expired or opened only partway. Try again from the email, or get in touch.",
+    "cta_home": "Back to home"
+  },
   "contact": {
     "title": "Talk to us",
     "subtitle": "Questions, ideas, or just hi — we'd love to hear",

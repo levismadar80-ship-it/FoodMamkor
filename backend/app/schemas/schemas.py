@@ -2293,6 +2293,12 @@ class NewsletterIn(BaseModel):
     email: EmailStr
 
 
+# MEH-1330: the unsubscribe link carries a stateless signed token (the
+# subscriber's email in a scoped JWT) — no DB column, no raw email in the URL.
+class NewsletterUnsubscribeIn(BaseModel):
+    token: str = Field(..., min_length=1)
+
+
 # MEH-1113: contact-form topic whitelist → Hebrew label. Single source of
 # truth for both the ContactIn validator (keys = allowed values) and the
 # router's label mapping (marketing.py imports this) — avoids the two-parallel-
