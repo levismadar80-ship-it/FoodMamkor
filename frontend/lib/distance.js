@@ -43,23 +43,21 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
 /**
  * Distance formatter. Two presentations via the `unit` option:
  *
- *   unit:"latin" (v4 LOCK CARD-18 / MEH-1035; English locale + BadgeRow): Latin
- *   unit inside an LRI…PDI (⁦…⁩) isolate + a trailing Hebrew "ממך" (RTL, outside
- *   the isolate):
- *     < 1 km  → "⁦{N} m⁩ ממך"    (nearest 50 m)
- *     1–9 km  → "⁦{x.x} km⁩ ממך" (one decimal)
- *     ≥ 10 km → "⁦{N} km⁩ ממך"   (no decimal — false precision)
+ *   unit:"latin" (DEFAULT — v4 LOCK CARD-18 / MEH-1035, used by ProducerCard +
+ *   BadgeRow): Latin unit inside an LRI…PDI (⁦…⁩) isolate + a trailing
+ *   Hebrew "ממך" (RTL, outside the isolate):
+ *     < 1 km   → "⁦{N} m⁩ ממך"    (nearest 50 m)
+ *     1–9.9 km → "⁦{x.x} km⁩ ממך" (one decimal)
+ *     ≥ 10 km  → "⁦{N} km⁩ ממך"   (no decimal — false precision, MEH-1298)
  *
  *   unit:"he" (MEH-1243 🔒 §3 — MapProducerCard meta line; MEH-1301 — the Hebrew
- *   ProducerCard pill): Hebrew unit 'ק"מ', digits first. With `suffix:false`
- *   (map card) there is NO "ממך" tail; ProducerCard keeps the default " ממך".
- *   No isolate chars — the caller relies on <bdi>/bare-RTL digit isolation:
- *     < 1 km  → "{N} מ'"   ·   1–9 km → "{x.x} ק\"מ"   ·   ≥ 10 km → "{N} ק\"מ"
- *
- * Precision rule (MEH-1301 🔒 18/07 — supersedes the 100 km threshold of
- * MEH-1035 / MEH-1243 §3): < 10 km → one decimal, ≥ 10 km → integer. Applies to
- * both `unit` presentations. Which unit a card renders is chosen by the active
- * locale at the call site (next-intl `useLocale`), not hardcoded here.
+ *   ProducerCard distance pill): Hebrew unit 'ק"מ', digits first. With
+ *   `suffix:false` (map card) there is NO "ממך" tail; ProducerCard keeps the
+ *   default " ממך". No isolate chars — MapProducerCard wraps the token in <bdi>,
+ *   ProducerCard relies on bare-RTL digit isolation (the Latin number self-
+ *   isolates inside the RTL span). Which unit a card renders is chosen by the
+ *   active locale at the call site (next-intl `useLocale`), not hardcoded here:
+ *     < 1 km  → "{N} מ'"   ·   1–9.9 km → "{x.x} ק\"מ"   ·   ≥ 10 km → "{N} ק\"מ"
  *
  * `suffix:false` drops the " ממך" tail (independent of `unit`). Returns null for
  * non-finite/negative inputs so callers can render conditionally.
@@ -79,8 +77,8 @@ export function formatDistance(km, { unit = "latin", suffix = true } = {}) {
     return he ? `${meters} מ'${sfx}` : `⁦${meters} m⁩${sfx}`;
   }
 
-  // MEH-1301: < 10 km keeps one decimal; ≥ 10 km rounds to a whole number
-  // (avoids "38.3 ק"מ" false precision on the card distance pill).
+  // MEH-1298: one decimal only below 10 km ("1.2 ק"מ"); ≥ 10 km rounds to a whole
+  // number ("38 ק"מ") — a tenth of a km is false precision at that range.
   const val = km < 10 ? km.toFixed(1) : String(Math.round(km));
   return he ? `${val} ק"מ${sfx}` : `⁦${val} km⁩${sfx}`;
 }
