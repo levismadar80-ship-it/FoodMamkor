@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1298 — /map tap-target stability (select→navigate) + distance rounding — `feature/meh-1298-map-double-tap-navigate`
+
+- **Bug:** MEH-1243 Direction-B two-tap gesture broke because tap 1 moved the list under the pointer. **Desktop:** removed the legacy `#map-container` `scrollIntoView` from `handleCardClick` (`useMapSync.js:106`) — no-op on today's full-screen `/map`, but the documented mover. **Mobile:** the `MobileSheetSelectedCard` panel mounts above `{cardList}` in the sheet's scroll container → pushed the list down.
+- **Phase-0 (empirical, Playwright) — the key finding:** Chromium's native **scroll anchoring** already holds the list fixed (0px). So the prescribed `scrollTop += panelHeight` comp **double-shifts** (measured −232px). Made it deterministic instead: `[overflow-anchor:none]` on the sheet scroll container (`MapBottomSheet.jsx`) + the `useLayoutEffect` `scrollTop` comp in `MobileSheetSelectedCard.jsx` → **0px on every browser** (no-anchoring baseline +279 → 0; Chromium native 0 preserved; covers iOS Safari where anchoring is weak). **Two files at the sheet layer** — the comp alone regresses Chromium, so the container prop is a required companion; both are in the task's allowed file list. `MapClient.jsx` (central) untouched.
+- **Bonus:** `formatDistance` rounds whole at ≥10 km, one decimal <10 km (was 100 km). Both unit variants.
+- **Tests:** NEW `useMapSync.test.jsx` (handleCardClick selects + no `#map-container` scrollIntoView; coord guard); `distance.test.js` rounding; `MapProducerCard.test.jsx` distance `54 ק"מ`. Two-tap navigate semantics already locked by the MEH-1243 component tests. Full vitest + build green.
+- **QA:** desktop `/map` two-tap → `/producer/[id]` (0px card move, real page, route-mocked). Mobile scroll-comp proven on a route-faithful harness (real `MobileSheetSelectedCard` in an `overflow-anchor:none` container): before (no anchoring) +279px → after 0px. Full `/map` mobile E2E is occlusion-limited in the sandbox (PEEK sheet under cookie banner + BottomNav — known limitation). Screenshots in `qa-artifacts/MEH-1298/`.
+- **Tier:** YELLOW — self-QA done, auto-merge on green required gates. **On-device mobile QA (iOS Safari especially — the anchoring divergence) deferred to Sapir** once Vercel's rate-limit resets.
+
 ## 2026-07-17 — MEH-1243 — /map MapProducerCard selection card (Direction B + 🔒 Pin-Echo) — `feature/meh-1243-map-card-selection`
 
 - **What:** executed the 17/07 DESIGN LOCKED spec. `MapProducerCard` is now a selection card — image · name · rating-if-exists · meta line + ONE end-corner chevron. Removed the contact CTA, "פרופיל מלא" link, verified seal, and delivery pill (**"drop both"** — Sapir answered the seal/pill scope question; both live elsewhere: BadgeRow/`MobileSheetSelectedCard`/`/producer`). `ProducerCard` rating unified `· N` → `(N)`.
