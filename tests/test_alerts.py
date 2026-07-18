@@ -250,6 +250,34 @@ class TestFireAlerts:
         assert tmpl.producer_name == "משק הבקר"
         assert "🐄" not in tmpl.producer_name
 
+    def test_whatsapp_skipped_when_param_sanitizes_empty(self, db, monkeypatch):
+        """An all-emoji producer name collapses to "" after sanitize → the WA
+        template send is skipped (an empty Meta param would 131008), while the
+        push channel still fires."""
+        wa_calls = []
+        push_calls = []
+        monkeypatch.setattr(
+            "app.routers.alerts.send_template", lambda *a, **k: wa_calls.append(1)
+        )
+        monkeypatch.setattr(
+            "app.services.push.send_push_notification",
+            lambda *a, **k: push_calls.append(1),
+        )
+
+        producer = make_producer(db, name="🎉🥕")  # all-emoji → sanitizes to ""
+        user = make_user(db, email="allemoji@example.com")
+        user.phone = "0503334444"
+        db.commit()
+        _make_alert(
+            db, user, producer,
+            notify_new_product=True, whatsapp_opt_in=True, push_subscription=_SUB,
+        )
+
+        fire_alerts(db, producer.id, "new_product", self._content())
+
+        assert wa_calls == []  # WhatsApp send skipped — no doomed empty-param template
+        assert push_calls == [1]  # push channel unaffected
+
     def test_push_sent_when_subscription_set(self, db, monkeypatch):
         """push_subscription set → send_push_notification called with content kwargs."""
         calls = []

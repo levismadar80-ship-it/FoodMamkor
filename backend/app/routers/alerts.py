@@ -247,14 +247,27 @@ def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> 
     # domain lives on the Meta template button, not concatenated here.
     # send_template fail-opens on missing config / HTTP errors; fire_alerts()
     # also wraps this call so a transient failure can't break the loop.
+    #
+    # Both body params run through the sanitizer — a producer name/title with a
+    # newline / tab / 4+ spaces (both are unvalidated free text) would otherwise
+    # trip Meta 131008. Sanitizing can also collapse an all-emoji value to "" —
+    # an empty Meta param is itself a 131008. Skip loudly rather than fire a
+    # doomed template (which would only be generically logged by the transport).
+    name = _sanitize_wa_param(producer_name)
+    update_line = _sanitize_wa_param(content.title)
+    if not name or not update_line:
+        log.warning(
+            "whatsapp alert skipped — empty template param after sanitize "
+            "(producer_name=%r, title=%r)",
+            producer_name,
+            content.title,
+        )
+        return
     send_template(
         to,
         FavoriteAlertHeV1(
-            # Both body params run through the sanitizer — a producer name with a
-            # newline / tab / 4+ spaces (name fields are unvalidated free text)
-            # would otherwise trip Meta 131008 and silently drop the delivery.
-            producer_name=_sanitize_wa_param(producer_name),
-            update_line=_sanitize_wa_param(content.title),
+            producer_name=name,
+            update_line=update_line,
             url_path=content.url,
         ),
     )
