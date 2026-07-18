@@ -12,6 +12,7 @@ vi.mock("next-intl", () => ({
     return key;
   },
   useFormatter: () => ({ dateTime: () => "" }),
+  useLocale: () => "he",
 }));
 
 vi.mock("next/image", () => ({

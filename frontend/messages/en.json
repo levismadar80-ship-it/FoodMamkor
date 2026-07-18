@@ -680,6 +680,7 @@
         "tab_nav": "Quick profile navigation"
       },
       "back_label": "← Back",
+      "last_updated": "Last updated: {date}",
       "owner_bar": {
         "label": "This is your business page",
         "cta": "Edit business",

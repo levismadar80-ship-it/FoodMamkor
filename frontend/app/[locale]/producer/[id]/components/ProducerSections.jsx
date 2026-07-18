@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Leaf } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
-import { useTranslations, useFormatter } from "next-intl";
+import { useTranslations, useFormatter, useLocale } from "next-intl";
 import api from "@/lib/api";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import ImageWithFallback from "@/components/ImageWithFallback";
 // MEH-1140: canonical shekel format — amount then ₪ ("35₪"), one owner in lib/utils.
 import { formatPrice, formatPriceRange } from "@/lib/utils";
+import { formatEventDate } from "@/lib/format-date";
 import DeliveryBlock from "@/components/DeliveryBlock";
 // MEH-788: scroll-reveal on the description + similar sections (not LCP/gallery).
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
@@ -54,6 +55,7 @@ export default function ProducerSections({
 }) {
   const t = useTranslations();
   const format = useFormatter();
+  const locale = useLocale();
   const [showAllEvents, setShowAllEvents] = useState(false);
   // MEH-591: producer recipes (chunk 4/4). Fetched client-side via the
   // public read endpoint added in chunk 2 — backend already filters to
@@ -414,6 +416,22 @@ export default function ProducerSections({
       <div className="mt-6 pt-6 border-t border-border">
         <ReportButton producerId={producer.id} />
       </div>
+
+      {/* MEH-1291: last-updated freshness signal. Renders ONLY when a real
+          edit has stamped producer.updated_at (nullable, no backfill — Chunk A
+          migration a3f1c9d2e4b7), so untouched producers show nothing. Modest
+          month-year granularity via the shared format-date util (he→he-IL,
+          en→en-US). Page-end meta footnote — no section reorder. */}
+      {producer.updated_at && (
+        <p className="mt-4 text-xs text-fg-muted">
+          {t("producer.detail.last_updated", {
+            date: formatEventDate(producer.updated_at, locale, {
+              month: "long",
+              year: "numeric",
+            }),
+          })}
+        </p>
+      )}
     </>
   );
 }
