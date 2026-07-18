@@ -260,6 +260,19 @@ and MEH-374 (62 commits)._
       rather than "fixing" a non-bug. (MEH-1049, 2026-07-09 — PR #1530
       emitted "CI gate failed" from superseded run #2279 while #2280 ran
       green and auto-merged.)
+    - **Draft PRs produce a skip-green signal, not a real pass.** The
+      backend jobs (`Backend tests`, `Backend lint`, build) gate on
+      `github.event.pull_request.draft == false`, so on a *draft* they
+      report `skipped` — and `CI gate`/`Deploy gate` still aggregate to
+      `success` because a skipped leg passes. That green means "nothing
+      ran," not "tests passed." A PR that must merge on CI has to be marked
+      **ready** (`draft: false`) so the real jobs execute; never read a
+      draft's green aggregators as a verified signal. (18/07 — the first
+      MEH-1331 run showed both required gates green while pytest never ran.)
+      Same aggregator mechanic (skipped leg = pass) is documented for
+      docs-only PRs in `.claude/rules/testing.md` → "Required status checks +
+      docs-only merge (MEH-716)" — cross-ref, don't duplicate; if one note
+      changes, update both.
 
 ---
 
@@ -679,6 +692,22 @@ Tasks auto-expire after 7 days.
     `git rebase origin/staging` is acceptable but **merge is the default**
     — preserves the original feature SHAs for adversarial review and the
     merge commit makes the sync point explicit in `git log`. Never force-push.
+
+    **Concurrent-merge storm (staging churns during your CI cycle).** When
+    other PRs land on `staging` across your ~8-min backend-CI run, two
+    failure modes compound. (a) **Stale-ref revert:** a `git merge
+    origin/staging` that reused an earlier `git fetch` can silently
+    reintroduce another PR's *deletions* — `git fetch origin staging`
+    immediately before EVERY merge and confirm the merge shows the expected
+    deletions (18/07 nearly reverted MEH-1317's `analytics.py` removal;
+    caught by adversarial review). (b) **Append-only churn:** your
+    top-of-`## Unreleased` CHANGELOG entry conflicts with every concurrent
+    CHANGELOG insertion → `mergeable_state: dirty` after each CI pass, a
+    loop. Break it by **dropping the CHANGELOG entry from the code PR**
+    (`git checkout origin/staging -- docs/CHANGELOG.md`) so the branch no
+    longer touches CHANGELOG, then re-add it in a later PR. Pair with GitHub
+    **auto-merge** so the PR lands the instant a clean+green window opens.
+    (18/07 — PR #1928 churned ~5 CI cycles before the CHANGELOG-drop cleared it.)
 
     _Source: 2026-05-15 night batch — PR #662 (MEH-222) hit an avoidable
     CHANGELOG/HANDOFF conflict because PR #661 (MEH-464) and PR #660
