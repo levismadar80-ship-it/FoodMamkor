@@ -134,7 +134,8 @@ users (
 )
 
 categories     (id, name unique, emoji)
-producer_categories (producer_id FK, category_id FK, PK(both))
+producer_categories (producer_id FK, category_id FK, PK(both),
+                     position INT NOT NULL default 0)  -- MEH-1297: 0 = primary (first selected); categories ordered by it
 products       (id, producer_id FK, name, description,
                 price_range,                        -- LEGACY free-text; drop tracked in MEH-295 follow-up
                 image_url,
@@ -371,12 +372,21 @@ via `slowapi` — see `backend/app/rate_limit.py` and
 > producer create endpoints `POST /events`, `POST /producers/me/recipes`, and
 > `POST /group-buys` depend on `require_verified_producer` (`app/auth.py`) =
 > `require_producer` (role first → "Producer access required") **then** the
-> email-verified check (unverified → 403 `יש לאמת את כתובת האימייל תחילה`),
-> matching the verification banner's promise. `POST /experiences` already used
-> `require_verified_email` and is unchanged. Non-create producer routes
-> (PUT/update, list/delete) stay on `require_producer`. No schema change — uses
-> the existing `users.email_verified`. (`POST /group-buys` has no dedicated
-> block below; noted here.)
+> email-verified check (unverified → 403), matching the verification banner's
+> promise. `POST /experiences` already used `require_verified_email` and is
+> unchanged. Non-create producer routes (PUT/update, list/delete) stay on
+> `require_producer`. No schema change — uses the existing
+> `users.email_verified`. (`POST /group-buys` has no dedicated block below;
+> noted here.)
+>
+> **MEH-1164 sub-chunk B — structured 403 detail.** The unverified-email 403
+> `detail` is now an **object** `{"code": "email_unverified", "message": "יש
+> לאמת את כתובת האימייל תחילה"}` (all four gated creates — the three above plus
+> `POST /experiences`). `code` is the stable, locale-neutral field the frontend
+> matches on (`lib/errors.js:isUnverifiedEmailError`) to render the inline
+> resend-verification CTA; `message` keeps the original Hebrew constant for
+> transition safety. The role-first 403 (`"Producer access required"`) stays a
+> plain string. Additive — no schema change.
 
 ### Auth (`app/routers/auth.py`)
 

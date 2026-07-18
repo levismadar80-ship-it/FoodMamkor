@@ -7,7 +7,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { formatEventDate } from "@/lib/format-date";
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 // MEH-1140: canonical shekel format ("35₪") — one owner in lib/utils.
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +15,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Input from "@/components/ui/Input";
 import InfoTooltip from "@/components/InfoTooltip";
 import WhatsThis from "@/components/WhatsThis";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 
 const STATUS_CLS = {
   open: "bg-blue-50 text-blue-700 border-blue-200",
@@ -41,6 +42,8 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
+  const [unverified, setUnverified] = useState(false);
 
   const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -55,6 +58,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverified(false);
     setSubmitting(true);
     try {
       await api.post("/group-buys", {
@@ -67,7 +71,11 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       });
       onCreated();
     } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
+      if (isUnverifiedEmailError(err)) {
+        setUnverified(true);
+      } else {
+        setError(detailToMessage(err.response?.data?.detail) || tError("generic"));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -192,6 +200,7 @@ function NewGroupBuyForm({ producerCity, onCreated }) {
       </div>
 
       {/* MEH-1165: role="alert" so the submit error is announced to AT. */}
+      {unverified && <UnverifiedEmailNotice />}
       {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
       <button
         type="submit"
