@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1326 — revive Web Push via static SW + VAPID gating — PR (draft)
+
+- **What:** Web Push dead since MEH-372 (next-pwa removed → no SW registered; VAPID never set) but the panel still showed a "(PWA)" push button. Revived it with a **static** SW that needs no bundler plugin (Turbopack-safe). YELLOW, ADR-016 v2 end-to-end authority.
+- **Shipped:** NEW `frontend/public/sw.js` (push + notificationclick only; no fetch/cache; ported from `worker/index.js` minus the MEH-50 friday setTimeout). `lib/push.js` registers `/sw.js` before `.ready`. `AlertPrefsPanel.jsx` VAPID-gates the button (fetches `/push-vapid-key` on mount → empty ⇒ button absent). Copy: `push_enable` he "קבלו עדכונים גם כשהאתר סגור" + en twin, no "PWA". DELETED `worker/index.js`; un-ignored `public/sw.js` in `frontend/.gitignore`.
+- **⚠️ STOP condition (config.py):** the ticket's comment-only VAPID edit to `backend/app/config.py` is **blocked** — `Edit(backend/app/config.py)` is in `.claude/settings.json permissions.deny` (same tier as `main.py`/Dockerfile/workflows). Not bypassed. **Handed to Sapir as a patch in the PR body** (replace py_vapid HEX snippet → `npx web-push generate-vapid-keys`, note public key must be base64url). It pairs with her existing manual VAPID/Railway smoke DoD step.
+- **Verification:** `npm run build` green, 0 lint errors, i18n parity+namespace guards (8) + `FavoriteButton.test.jsx` (16) green, `grep PWA` he.json alert_prefs = 0. Route-faithful Playwright self-QA (real `next start`, mocked API + `/push-vapid-key`) @375+@1440 both states (button absent w/o key, present w/ key) → `frontend/qa-artifacts/MEH-1326/` (webp, 89 KB).
+- **Out-of-scope stale refs (left, harmless):** `eslint.config.mjs:51` + `knip.json:21` still list the deleted `worker/` dir — globs matching zero files; trivial follow-up, not touched (scope discipline).
+- **Branch:** `feature/meh-1326-static-sw-push` off `origin/staging`. Separate PR from MEH-1327 (zero file overlap, same session).
+- **Next (Sapir):** apply the config.py comment patch; `npx web-push generate-vapid-keys` → VAPID keys in Railway staging → desktop Chrome smoke → production.
+
 ## 2026-07-18 — MEH-1325 — FavoriteButton favorites-cache sync + green ink — MERGED PR #1918
 
 - **Shipped (merged to staging, squash `a084b302`):** aligned the producer-page `FavoriteButton.jsx` with the canonical `CardHeart` (`ProducerCard.jsx`) — one bug ticket, two defects, single file → one PR. Bug fix, YELLOW-ish single-file (not central), ADR-016 v2 end-to-end authority (Sapir 18/07): Phase 0 → implement → self-QA → PR → merge on the 2 required aggregator gates.
