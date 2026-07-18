@@ -87,6 +87,13 @@ async function settle(page: Page): Promise<void> {
 }
 
 test.describe("Visual parity — MEH-991", () => {
+  // MEH-1328 (2026-07-18): the home hero/trust copy changed in MEH-1308 (#1904,
+  // "עסקים" → "בתי עסק" across home.hero.subtitle / cta_primary / home.trust.lead),
+  // red-lining the viewport-only home baseline against the now-stale copy. This
+  // touch re-triggers vrt-update.yml so home-{mobile,desktop}-linux.png are
+  // regenerated on-runner. Delta is confined to the hero region — the home shot
+  // is viewport-only (no fullPage), so the footer/BackToTop/chip changes that
+  // also merged 2026-07-18 sit below the fold and out of frame.
   test("home", async ({ page }) => {
     await preparePage(page);
     await page.goto("/");
