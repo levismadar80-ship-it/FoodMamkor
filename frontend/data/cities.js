@@ -11,16 +11,16 @@
  *   - LocationModal
  *   - /settings (profile city — single field in ProfileTab)
  *
- * Intentionally NOT wired:
- *   - /register/producer step 2 — by design a 3-field minimal form
- *     (producer_name, phone, category_ids); city is filled later from
- *     the dashboard or admin approval, not at signup.
+ * ALSO wired (MEH-1343 header fix — the old "intentionally NOT wired"
+ * note was stale since MEH-853):
+ *   - /register/producer step 2 ("עסק") — CitySearch feeds form.city.
  *
- * The backend also contributes its own cities at runtime via GET /cities
- * (canonical static list ∪ cities table since MEH-1349), which CitySearch
- * merges with this static list and de-duplicates. This file is the "known
- * good" baseline so the autocomplete works even before any data exists in
- * the DB.
+ * CANONICAL SOURCE (MEH-1343 Chunk A): the backend cities TABLE, seeded
+ * with the ~1,270 official data.gov.il localities (one-time per env:
+ * backend/scripts/seed_cities.py or POST /admin/seed-cities). GET /cities
+ * serves table ∪ live business cities; this static list is only the
+ * offline/unseeded baseline that CitySearch merges client-side so the
+ * autocomplete works before the backend responds (or on an unseeded env).
  *
  * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
  * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
