@@ -2811,7 +2811,8 @@
       "remove_aria": "Remove {city}",
       "placeholder": "Type a city name...",
       "commit_hint": "Pick a city from the list to add it",
-      "region_added": "Added"
+      "region_added": "Added",
+      "region_remove_title": "Remove {region} cities"
     },
     "city_search": {
       "placeholder": "Search city...",

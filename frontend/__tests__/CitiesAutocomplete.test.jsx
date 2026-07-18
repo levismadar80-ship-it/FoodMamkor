@@ -180,15 +180,50 @@ describe("CitiesAutocomplete region quick-add (MEH-1256)", () => {
     expect(new Set(result).size).toBe(result.length);
   });
 
-  it("a fully selected region renders disabled in the added state", () => {
+  // MEH-1346: the added-state chip is a toggle, no longer disabled.
+  it("a fully selected region renders enabled with aria-pressed", () => {
     const onChange = vi.fn();
     render(<Harness onChange={onChange} showRegionChips initial={[...SHARON.cities]} />);
 
-    const addedLabel = `${SHARON.name} · ${he.search.cities_autocomplete.region_added}`;
+    const addedLabel = `${SHARON.name} · ✓ ${he.search.cities_autocomplete.region_added}`;
     const chip = screen.getByRole("button", { name: addedLabel });
-    expect(chip).toBeDisabled();
+    expect(chip).not.toBeDisabled();
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+  });
 
-    fireEvent.click(chip);
-    expect(onChange).not.toHaveBeenCalled();
+  it("clicking an added region removes exactly its city list", () => {
+    const onChange = vi.fn();
+    const other = "אילת"; // not in SHARON
+    render(
+      <Harness onChange={onChange} showRegionChips initial={[other, ...SHARON.cities]} />,
+    );
+
+    const addedLabel = `${SHARON.name} · ✓ ${he.search.cities_autocomplete.region_added}`;
+    fireEvent.click(screen.getByRole("button", { name: addedLabel }));
+
+    expect(onChange).toHaveBeenCalledWith([other]);
+  });
+
+  it("removal includes region cities the user had added individually", () => {
+    // Simplest-correct semantics (per ticket): membership in the region's
+    // list is what counts, not how the city got selected.
+    const onChange = vi.fn();
+    render(<Harness onChange={onChange} showRegionChips initial={[...SHARON.cities]} />);
+
+    const addedLabel = `${SHARON.name} · ✓ ${he.search.cities_autocomplete.region_added}`;
+    fireEvent.click(screen.getByRole("button", { name: addedLabel }));
+
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("a partially selected region still adds (not removes)", () => {
+    const onChange = vi.fn();
+    const partial = SHARON.cities.slice(0, 2);
+    render(<Harness onChange={onChange} showRegionChips initial={partial} />);
+
+    fireEvent.click(screen.getByRole("button", { name: SHARON.name }));
+
+    const result = onChange.mock.calls[0][0];
+    expect(result).toEqual([...partial, ...SHARON.cities.slice(2)]);
   });
 });
