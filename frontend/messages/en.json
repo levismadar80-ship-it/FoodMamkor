@@ -332,7 +332,7 @@
           "next_step1": "Personal review",
           "next_step2": "Intro call",
           "next_step3": "Your page goes live",
-          "dashboard_cta": "Go to my dashboard ←",
+          "dashboard_cta": "Go to my dashboard →",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
           "share_cta": "Invite a neighbour",
           "inbox_title": "Check your inbox",
@@ -957,7 +957,7 @@
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
       "deadline_prefix": "Deadline: {date}",
-      "view_public": "View public page ←",
+      "view_public": "View public page →",
       "form": {
         "heading": "New group buy",
         "title_label": "Title",
@@ -1852,7 +1852,7 @@
         "tests": "Connection tests",
         "categories": "Manage categories",
         "categories_hint": "To add, edit, and delete — the content screen.",
-        "categories_link": "Go to content ←"
+        "categories_link": "Go to content →"
       },
       "fields": {
         "admin_email": "Admin email for notifications",
@@ -1951,7 +1951,7 @@
       "empty": "No group buys",
       "until": "until {date}",
       "change_status": "Change status:",
-      "view_page": "View page ←"
+      "view_page": "View page →"
     },
     "analytics": {
       "title": "Analytics",
@@ -2201,7 +2201,7 @@
       "filter_city_placeholder": "Search city...",
       "loading": "Loading experiences...",
       "empty_title": "No experiences match this filter — yet",
-      "empty_cta": "Submit the first experience ←"
+      "empty_cta": "Submit the first experience →"
     },
     "categories": {
       "all": "All",
@@ -2620,8 +2620,8 @@
       "group_food": "Food",
       "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
-      "no_results_cta": "Tell us ←",
-      "show_more": "← More categories ({count})",
+      "no_results_cta": "Tell us →",
+      "show_more": "→ More categories ({count})",
       "show_less": "↑ Fewer categories"
     }
   },
@@ -3710,7 +3710,7 @@
         "rejected": {
           "title": "⚠️ Application not approved",
           "body": "Contact us for more details and a re-review.",
-          "cta": "Contact us ←"
+          "cta": "Contact us →"
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
@@ -3733,7 +3733,7 @@
         "error_generic": "Something went wrong. Please try again.",
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
-      "holiday_catalog_cta": "Update the catalog ←",
+      "holiday_catalog_cta": "Update the catalog →",
       "availability": {
         "tooltip_line_default": "Open to orders = default.",
         "tooltip_line_today": "Available today = fresh inventory now.",
