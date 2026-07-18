@@ -62,7 +62,9 @@ floor card cleanly without it.
 - **3 leaflet map widgets** (`HomepageMiniMap`, `MapComponent`, `MiniMap`) — excluded
   in `gen-barrel.mjs`. They `import "leaflet/dist/leaflet.css"`; bundling them makes
   esbuild emit CSS, which would force the brand-font `@import`s mid-file (invalid).
-  Map widgets aren't DS components. 91 of 94 components sync.
+  Map widgets aren't DS components. **96 of 99 components sync** (2026-07-17: +5 —
+  `AdminRowMenu`, `EditAccordionCard`, `FilterSheet`, `ProductsSection`, `WhatsThis` —
+  added to `cfg.componentSrcMap` as floor cards; bundle up to 96).
 - `CategoryIcons.jsx` (icon map, no single component export) and `Skeleton.jsx`
   (file name ≠ exports — its 3 exports `SkeletonCard/Line/ProducerGrid` ARE synced
   via the `EXTRAS` map in gen-barrel.mjs).
@@ -80,7 +82,14 @@ of `_ds_bundle.css` (valid) and reach designs via `styles.css`'s `@import` closu
 - ~11 `useAuth must be used within AuthProvider` → caught, floor card renders. Expected.
 - Data-shape TypeErrors on app components needing real props (ProducerCard, RecipeCard,
   RecipeDetail, ExperienceCard, etc.) → floor cards. Expected (out of core scope).
-- `admin/ProducerForm` → AxiosError 404 on mount → floor card. Expected.
+- `admin/ProducerForm` → AxiosError 404 on mount → floor card. `[RENDER_ERRORS]` +
+  `bad` — expected/known (data-fetch on mount). Already live in the project.
+- `admin/AdminRowMenu` (new 2026-07-17) → `[RENDER_BLANK]` + `bad`, PNG ~4.5KB. Portal
+  "⋯" row-menu: statically renders only an off-canvas trigger → near-blank floor card.
+  Legitimately non-static (same class as ProducerForm / interaction-only overlays), so
+  it ships as an honest floor card. **Prime candidate for a future authored preview**
+  (compose the open menu inside a `cardMode:single` viewport) if a nicer card is wanted.
+  Both `bad` entries are floor cards → pass the gate by design.
 
 ## Authored-preview learnings (core ~25 set)
 
@@ -124,3 +133,10 @@ SkeletonCard, SkeletonLine, SkeletonProducerGrid.
   acceptable, but if it balloons consider a lighter message subset for previews.
 - next internal context paths (`next/dist/shared/lib/*.shared-runtime`) are version-coupled
   to Next 16 — a Next major bump may move them; update `.ds-provider.jsx`.
+- **Converter-version re-partition (2026-07-17):** the staged `.ds-sync/` scripts were a
+  newer version than the anchor's `scriptsSha` (`6bd093d3…`), so ALL 25 authored previews
+  re-partitioned as `changed` (their `sourceKey` embeds the scripts version) even though
+  no `.tsx` content changed — every cell re-graded `good` from fresh sheets. The freshly
+  uploaded anchor now carries the new `scriptsSha`; a re-sync on the SAME staged scripts
+  won't re-flag them. Expect the same one-time full-authored re-grade whenever the bundled
+  design-sync skill version bumps again — it's cheap (content-identical), not a regression.

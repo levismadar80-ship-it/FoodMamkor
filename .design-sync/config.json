@@ -12,6 +12,11 @@
   },
   "componentSrcMap": {
     "AccountSheet": "components/AccountSheet.jsx",
+    "AdminRowMenu": "components/admin/AdminRowMenu.jsx",
+    "EditAccordionCard": "components/EditAccordionCard.jsx",
+    "FilterSheet": "components/FilterSheet.jsx",
+    "ProductsSection": "components/ProductsSection.jsx",
+    "WhatsThis": "components/WhatsThis.jsx",
     "AddressSearch": "components/AddressSearch.jsx",
     "AlertPrefsPanel": "components/AlertPrefsPanel.jsx",
     "AppleAuthButton": "components/AppleAuthButton.jsx",
