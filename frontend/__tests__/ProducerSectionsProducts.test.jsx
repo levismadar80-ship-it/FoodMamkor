@@ -68,23 +68,23 @@ const producerWith = (products) => ({
 });
 
 describe("ProducerSections products — imageless canonical placeholder (MEH-1138)", () => {
-  it("imageless card renders leaf glyph (light) on the cream token, no wordmark", () => {
+  it("MEH-1305 E: imageless GRID card renders a typographic no-photo cell (initial on tint, no leaf)", () => {
     render(
       <ProducerSections
         {...baseProps}
         producer={producerWith([{ id: 11, name: "גרנולה ביתית", image_url: null }])}
       />,
     );
-    const leaf = screen.getByTestId("leaf-icon");
-    expect(leaf).toBeInTheDocument();
-    expect(leaf.dataset.weight).toBe("light");
-    expect(leaf.className).toMatch(/text-primary\/\[0\.32\]/);
-    // MEH-1168 P1: the brand wordmark is gone from the product placeholder.
-    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
-    // Cream surface token, not a gray/tint box.
-    const placeholder = leaf.closest("div");
-    expect(placeholder.className).toMatch(/bg-background/);
+    // No leaf glyph in the grid anymore — the product initial carries the
+    // no-photo state on a bg-primary/[0.06] tint (MEH-1126 "no icon" intent).
+    expect(screen.queryByTestId("leaf-icon")).not.toBeInTheDocument();
+    const initial = screen.getByText("ג"); // first letter of "גרנולה"
+    expect(initial).toBeInTheDocument();
+    const placeholder = initial.closest("div");
+    expect(placeholder.className).toMatch(/bg-primary\/\[0\.06\]/);
     expect(placeholder.getAttribute("aria-label")).toContain("גרנולה ביתית");
+    // MEH-1168 P1: the brand wordmark stays gone from the product placeholder.
+    expect(screen.queryByText("מהמקור")).not.toBeInTheDocument();
   });
 
   it("imageless card still shows the product name in the card body", () => {
@@ -160,6 +160,26 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getAllByTestId("leaf-icon").length).toBeGreaterThanOrEqual(1);
     // the grid product remains
     expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
+  });
+
+  it("MEH-1305 F: numeric price is bidi-isolated (formatPrice); free-text price_range renders naturally", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 40, name: "דבש", image_url: "https://res.cloudinary.com/x/h.jpg", price_min: 35 },
+          { id: 41, name: "ריבה", image_url: "https://res.cloudinary.com/x/j.jpg", price_range: "מ-30₪ לחבילה" },
+        ])}
+      />,
+    );
+    // numeric → canonical "35₪" wrapped in dir="ltr" (bidi isolation).
+    const ltr = container.querySelector('span[dir="ltr"]');
+    expect(ltr).toHaveTextContent("35₪");
+    // free-text price_range → rendered as-is, NOT force-wrapped in dir="ltr"
+    // (which would corrupt the Hebrew "לחבילה").
+    const freeText = screen.getByText("מ-30₪ לחבילה");
+    expect(freeText).toBeInTheDocument();
+    expect(freeText.closest('span[dir="ltr"]')).toBeNull();
   });
 
   it("no stray indicator/dot renders on an imageless card", () => {

@@ -8,14 +8,20 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key, vars) => {
     // MEH-1233 B3: the delivery day is now labeled ("משלוח ביום {day}").
     if (key === "delivery_day_label") return `משלוח ביום ${vars?.day ?? ""}`;
+    // MEH-1305 A: dispatch-day pivot copy.
+    if (key === "dispatch_days") return `יוצאים בימי ${vars?.day ?? ""}`;
+    if (key === "delivery_day_group") return `ימי ${vars?.day ?? ""}`;
     // MEH-1255: nationwide-with-exclusions display.
     if (key === "nationwide_except") return `משלוחים לכל הארץ (למעט ${vars?.cities ?? ""})`;
     const map = {
       "heading": "משלוחים",
       "nationwide": "משלוחים לכל הארץ",
       "arranged": "בתיאום מראש",
+      "arranged_group": "בתיאום מראש",
       "min_order": "מינימום",
       "pickup": "איסוף עצמי",
+      // MEH-1305 C: Hebrew label passed to the tertiary WhatsAppButton instance.
+      "order_cta": "שליחת הודעה בוואטסאפ",
       "whatsapp.button.default_message": "msg",
       "whatsapp.button.opening": "opening",
     };
@@ -38,19 +44,41 @@ import DeliveryBlock from "@/components/DeliveryBlock";
 const producer = { id: 1, name: "חוות", phone: "0501234567" };
 
 describe("DeliveryBlock (MEH-1146 chunk B)", () => {
-  it("renders a city · min order · day row from delivery_areas", () => {
+  it("MEH-1305 A: one shared day is hoisted to a subline, rows carry city + min only", () => {
     render(
       <DeliveryBlock
         nationwide={false}
-        areas={[{ id: 1, city: "זכרון יעקב", min_order: 100, delivery_day: "שישי" }]}
+        areas={[
+          { id: 1, city: "זכרון יעקב", min_order: 100, delivery_day: "שישי" },
+          { id: 2, city: "עתלית", min_order: 120, delivery_day: "שישי" },
+        ]}
         pickup={false}
         producer={producer}
       />,
     );
+    // Day stated ONCE in the hoisted subline, not repeated per row.
+    expect(screen.getByText("יוצאים בימי שישי")).toBeInTheDocument();
+    expect(screen.queryByText("משלוח ביום שישי")).not.toBeInTheDocument();
     expect(screen.getByText("זכרון יעקב")).toBeInTheDocument();
-    expect(screen.getByText(/מינימום/)).toBeInTheDocument();
     expect(screen.getByText(/100₪/)).toBeInTheDocument(); // formatPrice canonical
-    expect(screen.getByText("משלוח ביום שישי")).toBeInTheDocument();
+  });
+
+  it("MEH-1305 A: 2+ distinct days group under day headers", () => {
+    render(
+      <DeliveryBlock
+        nationwide={false}
+        areas={[
+          { id: 1, city: "חיפה", min_order: 100, delivery_day: "שישי" },
+          { id: 2, city: "עכו", min_order: 80, delivery_day: "שלישי" },
+        ]}
+        pickup={false}
+        producer={producer}
+      />,
+    );
+    expect(screen.getByText("ימי שישי")).toBeInTheDocument();
+    expect(screen.getByText("ימי שלישי")).toBeInTheDocument();
+    expect(screen.getByText("חיפה")).toBeInTheDocument();
+    expect(screen.getByText("עכו")).toBeInTheDocument();
   });
 
   it("shows the self-pickup line only when pickup_points is set", () => {
@@ -108,5 +136,14 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     const cta = screen.getByTestId("whatsapp-cta");
     expect(cta).toHaveAttribute("data-tone", "tertiary");
     expect(cta.className).not.toMatch(/btn-whatsapp/);
+  });
+
+  it("MEH-1305 C: the delivery CTA shows the Hebrew label, not a bare 'WhatsApp'", () => {
+    render(
+      <DeliveryBlock nationwide={true} areas={[]} pickup={false} producer={producer} />,
+    );
+    const cta = screen.getByTestId("whatsapp-cta");
+    expect(cta).toHaveTextContent("שליחת הודעה בוואטסאפ");
+    expect(cta).not.toHaveTextContent("WhatsApp");
   });
 });
