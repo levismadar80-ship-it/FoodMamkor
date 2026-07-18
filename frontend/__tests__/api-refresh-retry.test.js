@@ -77,7 +77,7 @@ describe("MEH-1315 retry-once guard", () => {
   it("401 → refresh-200 → 401 again: exactly ONE refresh call, session expired, rejects", async () => {
     installAdapter({ protectedScript: ["401", "401"] });
 
-    await expect(api.get("/users/me")).rejects.toMatchObject({
+    await expect(api.get("/auth/me")).rejects.toMatchObject({
       response: { status: 401 },
     });
 
@@ -90,7 +90,7 @@ describe("MEH-1315 retry-once guard", () => {
   it("happy path unchanged: 401 → refresh-200 → retry 200 resolves with one refresh", async () => {
     installAdapter({ protectedScript: ["401", "200"] });
 
-    const res = await api.get("/users/me");
+    const res = await api.get("/auth/me");
 
     expect(res.data).toEqual({ ok: true });
     expect(refreshCalls).toHaveLength(1);
@@ -102,7 +102,7 @@ describe("MEH-1315 retry-once guard", () => {
   it("failed refresh unchanged: 401 → refresh-401 expires session without retrying", async () => {
     installAdapter({ refreshResult: "fail", protectedScript: ["401"] });
 
-    await expect(api.get("/users/me")).rejects.toMatchObject({
+    await expect(api.get("/auth/me")).rejects.toMatchObject({
       response: { status: 401 },
     });
 
