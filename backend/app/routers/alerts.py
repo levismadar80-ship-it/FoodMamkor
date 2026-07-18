@@ -14,17 +14,17 @@ Exported helper:
 from __future__ import annotations
 
 import logging
+import re
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
-from app.config import settings
-
 from app.auth import get_current_user
 from app.database import get_db
 from app.models import Favorite, FavoriteAlert, User
-from app.services.whatsapp import send_text
+from app.services.whatsapp import send_template
+from app.services.whatsapp_templates import FavoriteAlertHeV1
 
 # MEH-460 Pkg 4: schemas relocated to app.schemas.schemas per ADR-006 R1.
 # AlertContent is re-exported here so existing
@@ -176,7 +176,10 @@ def fire_alerts(
     try:
         alerts = (
             db.query(FavoriteAlert)
-            .options(joinedload(FavoriteAlert.user))
+            .options(
+                joinedload(FavoriteAlert.user),
+                joinedload(FavoriteAlert.producer),
+            )
             .filter(
                 FavoriteAlert.producer_id == producer_id,
                 getattr(FavoriteAlert, col_name).is_(True),
@@ -203,20 +206,52 @@ def fire_alerts(
 
         if alert.whatsapp_opt_in and alert.user and alert.user.phone:
             try:
-                # MEH-453: use canonical from settings.frontend_url. Bonus —
-                # old prefix lacked https://, so WhatsApp link previews were
-                # flaky; settings.frontend_url is fully-qualified.
+                # MEH-1329: business-initiated favorite alerts must go out as the
+                # approved utility template favorite_alert_he_v1 — a free-form
+                # text message only delivers inside the 24h service window, which
+                # a favoriting customer almost never has open → Meta 131047
+                # window_expired and the alert vanishes silently.
                 _send_whatsapp_alert(
                     alert.user.phone,
-                    f"{content.title}\n{content.body}\n{settings.frontend_url}{content.url}",
+                    alert.producer.name if alert.producer else "",
+                    content,
                 )
             except Exception as exc:
                 log.warning("whatsapp alert failed for user %s: %s", alert.user_id, exc)
 
 
-def _send_whatsapp_alert(to: str, body: str) -> None:
-    # MEH-508: WhatsApp via Meta Cloud API. send_text fail-opens on missing
-    # config / HTTP errors, so the local guard + try/except collapse here.
-    # fire_alerts() above still wraps this in its own try/except so a
-    # transient failure can't break the alert dispatch loop.
-    send_text(to, body)
+# MEH-1329: Meta template parameters reject newline / tab / 4+ consecutive
+# spaces, and a leading emoji weakens the UTILITY-category classification.
+# Strip a leading emoji/symbol run, then collapse every whitespace run to a
+# single space.
+_LEADING_EMOJI = re.compile(
+    "^[\\s‍️"  # whitespace + zero-width-joiner + variation-selector-16
+    "\U0001f300-\U0001faff"
+    "\U00002600-\U000027bf"
+    "\U0001f1e6-\U0001f1ff"
+    "]+"
+)
+
+
+def _sanitize_wa_param(text: str) -> str:
+    """Emoji-strip + single-line a WhatsApp template body parameter."""
+    return re.sub(r"\s+", " ", _LEADING_EMOJI.sub("", text)).strip()
+
+
+def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> None:
+    # MEH-1329: business-initiated, so send the approved utility template
+    # favorite_alert_he_v1 (not a free-form text message). {{1}} = business name,
+    # {{2}} = the sanitized headline; content.body carries a newline and is
+    # NOT sent over WhatsApp (Meta rejects newline params) — the push channel
+    # still gets title+body unchanged. url_path is the leading-"/" path; the
+    # domain lives on the Meta template button, not concatenated here.
+    # send_template fail-opens on missing config / HTTP errors; fire_alerts()
+    # also wraps this call so a transient failure can't break the loop.
+    send_template(
+        to,
+        FavoriteAlertHeV1(
+            producer_name=producer_name,
+            update_line=_sanitize_wa_param(content.title),
+            url_path=content.url,
+        ),
+    )

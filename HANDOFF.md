@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1329 — favorite alerts via approved WhatsApp utility template — PR (draft)
+
+- **What:** `fire_alerts` sent WhatsApp via free-form `send_text` → only delivered inside the 24h window, which favoriting customers never have open → Meta 131047 `window_expired`, silent loss. Switched to the pre-approved `favorite_alert_he_v1` UTILITY template (MEH-754/MEH-509 pattern). GREEN, backend-only, ADR-016 v2.
+- **Shipped:** NEW `FavoriteAlertHeV1` in `whatsapp_templates.py` (`{{1}}` producer_name, `{{2}}` update_line, URL-button `url_path`; `to_components()` override like `OtpCodeV1` — url_path only in the button). `alerts.py`: `joinedload(FavoriteAlert.producer)`, `_send_whatsapp_alert(to, producer_name, content)` → `send_template(...)`; `_sanitize_wa_param()` strips leading emoji + collapses whitespace (Meta param rules); `content.body` not sent over WA (push still gets title+body); removed `send_text`+`settings` imports (grep send_text = 0). `test_alerts.py` updated to template assertions + emoji-strip + to_components payload-shape test.
+- **Verified:** `pytest tests/test_alerts.py` 9 green, ruff clean, full baseline parity (see PR).
+- **Branch:** `feature/meh-1329-favorite-alert-template` off `origin/staging` (after MEH-1327 merged — same test file).
+- **Next (Sapir, after Meta approves template):** staging smoke — WA opt-in with your phone → add a product from a producer account → message arrives, business name in the right slot, "לצפייה באתר" button opens a valid URL.
+
 ## 2026-07-18 — MEH-1327 — pytest coverage for the favorites-alerts chain — PR (draft)
 
 - **What:** added the missing dedicated pytest coverage for `backend/app/routers/alerts.py` (GET/PUT alert prefs + `fire_alerts()` fan-out). GREEN/tests-only (ADR-016 v2 authority).

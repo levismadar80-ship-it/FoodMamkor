@@ -10,8 +10,10 @@ The MEH-1191 422 guard (whatsapp_opt_in=true without a phone) is already covered
 in tests/test_alerts_optin.py and is NOT duplicated here.
 
 Monkeypatch boundaries:
-  - app.routers.alerts.send_text            (module-level import, alerts.py:27)
-  - app.services.push.send_push_notification (call-time import, alerts.py:190)
+  - app.routers.alerts.send_template        (module-level import; MEH-1329 —
+    favorite alerts go out as the approved utility template favorite_alert_he_v1,
+    not free-form send_text)
+  - app.services.push.send_push_notification (call-time import)
 """
 from uuid import uuid4
 
@@ -149,7 +151,7 @@ class TestFireAlerts:
             "app.services.push.send_push_notification",
             lambda sub, **kw: push_calls.append(sub),
         )
-        monkeypatch.setattr("app.routers.alerts.send_text", lambda to, body: True)
+        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
 
         producer = make_producer(db, name="Farm FanOut")
         opted_in = make_user(db, email="in@example.com")
@@ -168,21 +170,27 @@ class TestFireAlerts:
 
         assert push_calls == [{"endpoint": "in"}]
 
-    def test_whatsapp_sent_with_correct_args(self, db, monkeypatch):
-        """whatsapp_opt_in + phone → send_text(to=phone, body=title/body/url)."""
+    def _capture_template(self, monkeypatch):
+        """Monkeypatch send_template to capture (to, template); returns the dict."""
         captured = {}
 
-        def fake_send_text(to, body):
+        def fake_send_template(to, template):
             captured["to"] = to
-            captured["body"] = body
+            captured["template"] = template
             return True
 
-        monkeypatch.setattr("app.routers.alerts.send_text", fake_send_text)
+        monkeypatch.setattr("app.routers.alerts.send_template", fake_send_template)
         monkeypatch.setattr(
             "app.services.push.send_push_notification", lambda *a, **k: None
         )
+        return captured
 
-        producer = make_producer(db, name="Farm WA")
+    def test_whatsapp_sent_as_template_with_correct_params(self, db, monkeypatch):
+        """whatsapp_opt_in + phone → send_template(favorite_alert_he_v1) with the
+        MEH-1329 mapping: {{1}} business name, {{2}} clean headline, url_path."""
+        captured = self._capture_template(monkeypatch)
+
+        producer = make_producer(db, name="משק הבקר של הראל")
         user = make_user(db, email="wa@example.com")
         user.phone = "0501234567"
         db.commit()
@@ -190,13 +198,51 @@ class TestFireAlerts:
             db, user, producer, notify_new_product=True, whatsapp_opt_in=True
         )
 
-        content = AlertContent(title="מוצר חדש", body="עגבניות", url="/p/1")
+        content = AlertContent(title="מוצר חדש: גבינת עיזים", body="טרי מהיום", url="/p/1")
         fire_alerts(db, producer.id, "new_product", content)
 
+        tmpl = captured["template"]
         assert captured["to"] == "0501234567"
-        assert "מוצר חדש" in captured["body"]
-        assert "עגבניות" in captured["body"]
-        assert "/p/1" in captured["body"]
+        assert tmpl.name == "favorite_alert_he_v1"
+        assert tmpl.producer_name == "משק הבקר של הראל"  # {{1}}
+        assert tmpl.update_line == "מוצר חדש: גבינת עיזים"  # {{2}} — the title
+        assert tmpl.url_path == "/p/1"
+        # content.body carries a newline-prone free text — it is NOT in the WA params.
+        assert "טרי מהיום" not in tmpl.update_line
+        # The Meta URL button carries only the "/…" path; the domain is on Meta's side.
+        assert tmpl.url_path.startswith("/")
+
+        # Meta payload structure: body = exactly [producer_name, update_line] in
+        # order; url_path lives ONLY in the url button (NOT a 3rd body param — the
+        # bug the to_components() override guards against).
+        comps = tmpl.to_components()
+        body = next(c for c in comps if c["type"] == "body")
+        button = next(c for c in comps if c["type"] == "button")
+        assert [p["text"] for p in body["parameters"]] == [
+            "משק הבקר של הראל",
+            "מוצר חדש: גבינת עיזים",
+        ]
+        assert button["sub_type"] == "url" and button["index"] == 0
+        assert button["parameters"][0]["text"] == "/p/1"
+
+    def test_whatsapp_update_line_strips_leading_emoji(self, db, monkeypatch):
+        """A leading emoji in the title is stripped from the {{2}} template param
+        (Meta parameter hygiene + UTILITY classification)."""
+        captured = self._capture_template(monkeypatch)
+
+        producer = make_producer(db, name="Farm Emoji")
+        user = make_user(db, email="emoji@example.com")
+        user.phone = "0501112222"
+        db.commit()
+        _make_alert(db, user, producer, notify_new_event=True, whatsapp_opt_in=True)
+
+        content = AlertContent(title="🎉 אירוע חדש: קטיף עצמי", body="ב", url="/e/7")
+        fire_alerts(db, producer.id, "new_event", content)
+
+        tmpl = captured["template"]
+        assert tmpl.update_line == "אירוע חדש: קטיף עצמי"
+        assert "🎉" not in tmpl.update_line
+        assert "\n" not in tmpl.update_line
 
     def test_push_sent_when_subscription_set(self, db, monkeypatch):
         """push_subscription set → send_push_notification called with content kwargs."""
@@ -206,7 +252,7 @@ class TestFireAlerts:
             calls.append({"sub": sub, "title": title, "body": body, "url": url})
 
         monkeypatch.setattr("app.services.push.send_push_notification", fake_push)
-        monkeypatch.setattr("app.routers.alerts.send_text", lambda to, body: True)
+        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
 
         producer = make_producer(db, name="Farm Push")
         user = make_user(db, email="push@example.com")
@@ -232,7 +278,7 @@ class TestFireAlerts:
             raise RuntimeError("boom")
 
         monkeypatch.setattr("app.services.push.send_push_notification", flaky_push)
-        monkeypatch.setattr("app.routers.alerts.send_text", lambda to, body: True)
+        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
 
         producer = make_producer(db, name="Farm Failopen")
         u1 = make_user(db, email="r1@example.com")
@@ -255,7 +301,7 @@ class TestFireAlerts:
             lambda *a, **k: push_calls.append(1),
         )
         monkeypatch.setattr(
-            "app.routers.alerts.send_text", lambda *a, **k: wa_calls.append(1)
+            "app.routers.alerts.send_template", lambda *a, **k: wa_calls.append(1)
         )
 
         producer = make_producer(db, name="Farm Unknown")
