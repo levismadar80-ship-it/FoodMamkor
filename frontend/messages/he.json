@@ -1374,6 +1374,8 @@
         "submit_create": "צור עסק",
         "submit_update": "שמרו שינויים",
         "uploading": "בהעלאה...",
+        "category_cap_hint": "הקטגוריה הראשונה שתבחרי תוצג בכרטיס העסק · עד 3 קטגוריות",
+        "primary_badge": "ראשית",
         "sections": {
           "basic": "פרטי בסיס",
           "categories_tags": "קטגוריות ותגיות",
@@ -2600,6 +2602,9 @@
       },
       "section_results": "תוצאות",
       "section_popular": "פופולריות",
+      "counter": "{count}/{max}",
+      "cap_hint": "הקטגוריה הראשונה שתבחרי תוצג בכרטיס העסק · עד 3 קטגוריות",
+      "primary_badge": "ראשית",
       "group_food": "מזון",
       "group_home": "בית וטיפוח",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",

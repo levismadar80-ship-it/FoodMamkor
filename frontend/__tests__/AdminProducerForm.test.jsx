@@ -67,4 +67,32 @@ describe("Admin ProducerForm (focus retention)", () => {
       await screen.findByText(he.admin.producers.form.sections.basic),
     ).toBeInTheDocument();
   });
+
+  // MEH-1297: category cap-3 + primary badge in the admin form.
+  it("caps categories at 3: a 4th checkbox is disabled once 3 are checked", async () => {
+    api.get.mockResolvedValue({
+      data: [
+        { id: 1, name: "חלב וגבינות" },
+        { id: 2, name: "לחמים ואפייה" },
+        { id: 3, name: "בשר" },
+        { id: 4, name: "שמנים" },
+      ],
+    });
+    renderForm();
+
+    const box = async (name) =>
+      (await screen.findByText(name)).closest("label").querySelector("input");
+
+    fireEvent.click(await box("חלב וגבינות"));
+    fireEvent.click(await box("לחמים ואפייה"));
+    fireEvent.click(await box("בשר"));
+
+    // The 4th (unchecked) category is now disabled; the checked ones are not.
+    expect(await box("שמנים")).toBeDisabled();
+    expect(await box("בשר")).not.toBeDisabled();
+    // First-selected carries the "ראשית" badge.
+    expect(screen.getByTestId("admin-primary-badge")).toHaveTextContent(
+      he.admin.producers.form.primary_badge,
+    );
+  });
 });
