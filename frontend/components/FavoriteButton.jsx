@@ -6,6 +6,12 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
+import {
+  ensureFavoritesLoaded,
+  isFavorited as isFavoritedCache,
+  setFavoritedLocal,
+  subscribeFavorites,
+} from "@/lib/favorites-cache";
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
 
@@ -19,11 +25,18 @@ import AlertPrefsPanel from "./AlertPrefsPanel";
  *   - "gallery" (absolute overlay on ImageGallery) — white circle 44px, HeartStraight icon
  *   - "inline"  (next to <h1> in producer header)  — small heart + "שמור" text
  *
- * Shared behavior: load-once of /users/me/favorites (logged-in only),
- * POST/DELETE toggle (logged-in only), toast, disabled:opacity-60
- * while loading, aria-pressed + aria-label for accessibility.
+ * Shared behavior: reads favorited state from the shared favorites-cache
+ * (hydrated once per session, no per-mount fetch), optimistic POST/DELETE
+ * toggle (logged-in only) that writes setFavoritedLocal so card hearts stay
+ * in sync, toast, disabled:opacity-60 while loading, aria-pressed +
+ * aria-label for accessibility.
  *
  * MEH-54: after favoriting, shows AlertPrefsPanel inline (default + inline variants).
+ * MEH-643/MEH-636: saved ink is primary green, NEVER red (matches CardHeart).
+ * MEH-1325: migrated off the per-mount GET + local state onto favorites-cache
+ * (ensureFavoritesLoaded / subscribeFavorites / setFavoritedLocal) — a save on
+ * /producer now reflects in every subscribed CardHeart in the same session
+ * (and vice-versa), and the saved ink turned green.
  */
 export default function FavoriteButton({ producerId, producerName = "", variant = "default" }) {
   const t = useTranslations("favorites.button");
@@ -37,13 +50,20 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
 
   useEffect(() => {
     if (!user) return;
-    api
-      .get("/users/me/favorites")
-      .then((res) => {
-        const ids = res.data.map((f) => f.producer_id);
-        setFavorited(ids.includes(producerId));
-      })
-      .catch(() => {});
+    // MEH-1325: read from the shared favorites-cache instead of a per-mount
+    // GET /users/me/favorites — mirrors CardHeart (ProducerCard.jsx). The cache
+    // hydrates once; subscribing keeps this button in sync with card hearts.
+    let alive = true;
+    ensureFavoritesLoaded().then(() => {
+      if (alive) setFavorited(isFavoritedCache(producerId));
+    });
+    const unsub = subscribeFavorites(() => {
+      if (alive) setFavorited(isFavoritedCache(producerId));
+    });
+    return () => {
+      alive = false;
+      unsub();
+    };
   }, [user, producerId]);
 
   const toggle = async () => {
@@ -52,16 +72,16 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
       setShowLoginModal(true);
       return;
     }
+    const next = !favorited;
     setLoading(true);
+    // MEH-1325: optimistic — flip local state AND the shared cache before the
+    // network round-trip so subscribed card hearts update immediately; revert
+    // both on failure. Mirrors CardHeart (ProducerCard.jsx).
+    setFavorited(next);
+    setFavoritedLocal(producerId, next);
     try {
-      if (favorited) {
-        await api.delete(`/users/me/favorites/${producerId}`);
-        setFavorited(false);
-        setShowAlertPanel(false);
-        showToast.success(t("removed_toast"));
-      } else {
+      if (next) {
         await api.post(`/users/me/favorites/${producerId}`);
-        setFavorited(true);
         if (variant !== "gallery") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
@@ -74,8 +94,22 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
             icon: <HeartStraight size={18} weight="fill" />,
           });
         }
+      } else {
+        await api.delete(`/users/me/favorites/${producerId}`);
+        setShowAlertPanel(false);
+        showToast.success(t("removed_toast"));
       }
-    } catch {
+    } catch (err) {
+      // MEH-730 idempotent DELETE-404: the favorite was already gone
+      // server-side — keep the heart un-filled (don't revert), matching
+      // CardHeart's handling.
+      if (!next && err?.response?.status === 404) {
+        setShowAlertPanel(false);
+        setLoading(false);
+        return;
+      }
+      setFavorited(!next);
+      setFavoritedLocal(producerId, !next);
       showToast.error(tError("generic"));
     }
     setLoading(false);
@@ -108,7 +142,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         <HeartStraight
           size={22}
           weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-red-500" : "text-text"}
+          className={favorited ? "text-primary" : "text-text"}
           aria-hidden="true"
         />
       </button>
@@ -119,7 +153,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         {...commonProps}
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium min-h-[32px] border transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
           favorited
-            ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
             : "bg-white text-text border-border hover:bg-green-50"
         }`}
       >
@@ -141,7 +175,7 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
         <HeartStraight
           size={24}
           weight={favorited ? "fill" : "regular"}
-          className={favorited ? "text-red-500" : "text-fg-muted"}
+          className={favorited ? "text-primary" : "text-fg-muted"}
           aria-hidden="true"
         />
       </button>
