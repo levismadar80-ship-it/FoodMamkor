@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -22,7 +23,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import Favorite, FavoriteAlert, User
+from app.models import AlertLog, Favorite, FavoriteAlert, User
 from app.services.whatsapp import send_template
 from app.services.whatsapp_templates import FavoriteAlertHeV1
 
@@ -155,6 +156,44 @@ _ALERT_COL = {
     "delivery_area": "notify_delivery_area",
 }
 
+# MEH-1338: frequency cap — at most one message per (user, producer, channel)
+# in a rolling 24h window (a producer adding 5 products in a row sends ONE
+# message per channel, not 5). alert_type is not part of the cap key. Blocked
+# alerts are dropped in v1 — a digest is a follow-up.
+_CAP_WINDOW = timedelta(hours=24)
+_CHANNEL_PUSH = "push"
+_CHANNEL_WHATSAPP = "whatsapp"
+
+
+def _recently_sent(db: Session, user_id: UUID, producer_id: UUID, channel: str) -> bool:
+    """True if `channel` already delivered to (user, producer) within 24h."""
+    cutoff = datetime.utcnow() - _CAP_WINDOW
+    return db.query(
+        db.query(AlertLog)
+        .filter(
+            AlertLog.user_id == user_id,
+            AlertLog.producer_id == producer_id,
+            AlertLog.channel == channel,
+            AlertLog.sent_at >= cutoff,
+        )
+        .exists()
+    ).scalar()
+
+
+def _record_alert_send(
+    db: Session, user_id: UUID, producer_id: UUID, channel: str, alert_type: str
+) -> None:
+    """Append an AlertLog row so the next same-channel event within 24h is capped."""
+    db.add(
+        AlertLog(
+            user_id=user_id,
+            producer_id=producer_id,
+            channel=channel,
+            alert_type=alert_type,
+        )
+    )
+    db.commit()
+
 
 def fire_alerts(
     db: Session, producer_id: UUID, alert_type: str, content: AlertContent
@@ -164,6 +203,9 @@ def fire_alerts(
     Sends:
       - Web Push (if push_subscription set and VAPID configured)
       - WhatsApp (if whatsapp_opt_in and user.phone set)
+
+    MEH-1338: each channel is frequency-capped to at most one message per
+    (user, producer, channel) in a rolling 24h window (AlertLog ledger).
 
     Fail-open: exceptions are logged but never re-raised so the background
     task never crashes the request that triggered it.
@@ -192,8 +234,16 @@ def fire_alerts(
 
     from app.services.push import send_push_notification
 
+    producer_name = alerts[0].producer.name if alerts and alerts[0].producer else ""
+
     for alert in alerts:
-        if alert.push_subscription:
+        # MEH-1338: each channel is capped independently — skip a channel that
+        # already delivered to this (user, producer) within the last 24h. The
+        # AlertLog row is written only after a non-raising send, so a failed
+        # send doesn't suppress the next attempt.
+        if alert.push_subscription and not _recently_sent(
+            db, alert.user_id, producer_id, _CHANNEL_PUSH
+        ):
             try:
                 send_push_notification(
                     alert.push_subscription,
@@ -201,20 +251,27 @@ def fire_alerts(
                     body=content.body,
                     url=content.url,
                 )
+                _record_alert_send(
+                    db, alert.user_id, producer_id, _CHANNEL_PUSH, alert_type
+                )
             except Exception as exc:
                 log.warning("push failed for user %s: %s", alert.user_id, exc)
 
-        if alert.whatsapp_opt_in and alert.user and alert.user.phone:
+        if (
+            alert.whatsapp_opt_in
+            and alert.user
+            and alert.user.phone
+            and not _recently_sent(db, alert.user_id, producer_id, _CHANNEL_WHATSAPP)
+        ):
             try:
                 # MEH-1329: business-initiated favorite alerts must go out as the
                 # approved utility template favorite_alert_he_v1 — a free-form
                 # text message only delivers inside the 24h service window, which
                 # a favoriting customer almost never has open → Meta 131047
                 # window_expired and the alert vanishes silently.
-                _send_whatsapp_alert(
-                    alert.user.phone,
-                    alert.producer.name if alert.producer else "",
-                    content,
+                _send_whatsapp_alert(alert.user.phone, producer_name, content)
+                _record_alert_send(
+                    db, alert.user_id, producer_id, _CHANNEL_WHATSAPP, alert_type
                 )
             except Exception as exc:
                 log.warning("whatsapp alert failed for user %s: %s", alert.user_id, exc)
