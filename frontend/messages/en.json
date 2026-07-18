@@ -4117,6 +4117,7 @@
       "row_whatsapp_opt_in": "Send via WhatsApp",
       "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
       "phone_save_cta": "Save and enable",
+      "phone_helper": "Enter a valid Israeli phone number to enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Get updates even when the site is closed",
