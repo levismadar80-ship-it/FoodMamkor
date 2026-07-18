@@ -47,6 +47,8 @@ export default async function sitemap() {
     { path: "/group-buys", priority: 0.8, changeFrequency: "daily" },
     { path: "/about/process", priority: 0.5, changeFrequency: "monthly" },
     { path: "/about/for-businesses", priority: 0.5, changeFrequency: "monthly" },
+    // MEH-1289: reader-facing "why local" editorial page.
+    { path: "/about/why-local", priority: 0.5, changeFrequency: "monthly" },
     { path: "/register/producer", priority: 0.7, changeFrequency: "monthly" },
     // MEH-803: /register, /login, /contact, /search intentionally NOT listed —
     // each page sets robots:{index:false} (MEH-641 auth chrome / MEH-658 utility

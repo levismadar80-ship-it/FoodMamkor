@@ -370,6 +370,14 @@ export default function AboutPage() {
             >
               {tProcess("crosslink_from_about")}
             </Link>
+            {/* MEH-1289: reader-facing "why local" editorial cross-link. */}
+            <span aria-hidden="true" className="text-border">·</span>
+            <Link
+              href="/about/why-local"
+              className="underline underline-offset-4 hover:text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {t("cta.why_local_link")}
+            </Link>
           </div>
         </div>
       </FadeInSection>

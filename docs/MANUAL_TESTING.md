@@ -3,6 +3,20 @@
 
 ---
 
+## MEH-1289 — דף /about/why-local "למה מקומי?" (17/07)
+
+עמוד עריכתי חדש (magazine prose, ללא bullets). Copy נעול ע"י ספיר — verbatim.
+
+- [ ] **טעינת העמוד** — פתחי `/about/why-local` — **תוצאה מצופה:** H1 "למה מקומי?", פסקת פתיחה, וחמש כותרות H2 (טעם של עכשיו · הכסף נשאר קרוב · הוגנות למי שעושה את העבודה · לדעת מאיפה זה בא · טוב לסביבה, טוב לכולנו) + "איפה מתחילים". טיפוגרפיה: כותרות Frank Ruhl (serif) ירוקות, גוף DM-Sans. RTL תקין, ללא נקודות/emoji.
+- [ ] **קישור פנימי בגוף** — בסקציה "הכסף נשאר קרוב", הביטוי "מחקר בריטי של New Economics Foundation" מקושר (קו-תחתון ירוק) — לחיצה נפתחת בטאב חדש ל-`sustainweb.org/blogs/jul25-what-is-local-food/`.
+- [ ] **CTA** — כפתור "גלו בתי עסק באזור שלכם" בתחתית הפרוזה → `/producers` (עברי) / `/en/producers` (אנגלי).
+- [ ] **שורת מקורות** — בתחתית העמוד, טקסט קטן "מקורות:" + שני קישורים חיים: Sustain UK (→ sustainweb) · CollectiveCrop (→ collectivecrop.com/guides/fresh-picked-vs-supermarket-produce-does-it-matter), שניהם target=_blank.
+- [ ] **גילוי** — הקישור "למה מקומי?" מופיע בקבוצת "גלו" בפוטר וגם כ-cross-link שקט בתחתית `/about`.
+- [ ] **מובייל 375px** — כל התוכן קריא, הכפתור thumb-reachable, אין גלישה אופקית.
+- [ ] **/en** — `/en/about/why-local` מציג את הגרסה האנגלית (סיכום קצר, לא תרגום מלא); אין עברית דולפת.
+
+---
+
 ## MEH-1164 Chunk 2A — אכיפת אימות מייל לפני פרסום תוכן (17/07)
 
 אכיפה שרתית (`require_verified_producer`) על 3 endpoints של יצירת תוכן. **כיסוי אוטומטי:** `tests/test_verified_email_enforcement.py`. בדיקה ידנית מול staging עם בעלת-עסק **לא מאומתת** (email_verified=false):
