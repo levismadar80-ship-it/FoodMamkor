@@ -20,6 +20,8 @@ vi.mock("next-intl", () => ({
       "arranged_group": "בתיאום מראש",
       "min_order": "מינימום",
       "pickup": "איסוף עצמי",
+      // MEH-1305 C: Hebrew label passed to the tertiary WhatsAppButton instance.
+      "order_cta": "שליחת הודעה בוואטסאפ",
       "whatsapp.button.default_message": "msg",
       "whatsapp.button.opening": "opening",
     };
@@ -134,5 +136,14 @@ describe("DeliveryBlock (MEH-1146 chunk B)", () => {
     const cta = screen.getByTestId("whatsapp-cta");
     expect(cta).toHaveAttribute("data-tone", "tertiary");
     expect(cta.className).not.toMatch(/btn-whatsapp/);
+  });
+
+  it("MEH-1305 C: the delivery CTA shows the Hebrew label, not a bare 'WhatsApp'", () => {
+    render(
+      <DeliveryBlock nationwide={true} areas={[]} pickup={false} producer={producer} />,
+    );
+    const cta = screen.getByTestId("whatsapp-cta");
+    expect(cta).toHaveTextContent("שליחת הודעה בוואטסאפ");
+    expect(cta).not.toHaveTextContent("WhatsApp");
   });
 });

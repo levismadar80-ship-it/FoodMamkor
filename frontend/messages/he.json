@@ -987,6 +987,7 @@
       "dispatch_days": "יוצאים בימי {day}",
       "delivery_day_group": "ימי {day}",
       "arranged_group": "בתיאום מראש",
+      "order_cta": "שליחת הודעה בוואטסאפ",
       "pickup": "איסוף עצמי"
     },
     "follow": {
