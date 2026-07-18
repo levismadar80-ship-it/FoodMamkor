@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1325 — FavoriteButton favorites-cache sync + green ink — MERGED PR #1918
+
+- **Shipped (merged to staging, squash `a084b302`):** aligned the producer-page `FavoriteButton.jsx` with the canonical `CardHeart` (`ProducerCard.jsx`) — one bug ticket, two defects, single file → one PR. Bug fix, YELLOW-ish single-file (not central), ADR-016 v2 end-to-end authority (Sapir 18/07): Phase 0 → implement → self-QA → PR → merge on the 2 required aggregator gates.
+- **Bug A (desync + waste):** was `api.get("/users/me/favorites")` per mount + local state + POST/DELETE that never wrote the shared cache → a save on `/producer` didn't sync to card hearts in-session, plus a redundant full fetch per producer page. Now `ensureFavoritesLoaded` + `subscribeFavorites` + `isFavorited` (alive-guard + unsub cleanup); toggle is optimistic (`setFavorited`+`setFavoritedLocal` **before** the request, revert on failure, idempotent DELETE-404) — mirrors CardHeart.
+- **Bug B (red ink):** saved state was red in all 3 variants (gallery/inline/default) → violated the MEH-636/643 "green, never red" lock. Now `text-primary` (inline pill → `bg-primary/10 text-primary border-primary/30 hover:bg-primary/15`). Unsaved states unchanged.
+- **Preserved:** guest → LoginPromptModal (no cache path for guests), AlertPrefsPanel after save, toasts, aria-pressed/labels, 44px targets. **Scope-strict:** only `FavoriteButton.jsx` + its test — `favorites-cache`/`ProducerCard`/`ImageGallery`/`admin/users` untouched (admin red heart documented out-of-scope). `/adversarial-review` ran (0 REFEREE issues).
+- **Verification:** 6 new regression cases exercise the REAL `favorites-cache` singleton (write-through + subscriber notify = the CardHeart re-read mechanism; off-toggle; POST-fail revert; DELETE-404 idempotency; green-not-red ×3 variants). Full vitest **1307 pass**, `npm run build` green, 0 lint errors. Merged on CI gate + Deploy gate green; Playwright E2E + Vercel non-required (preview rate-limited → E2E had no target).
+- **Deferred to Sapir (staging DoD):** live authenticated `/producer → /producers` cross-surface sync + mobile green-heart QA — the MEH-1241 consumer fixture auths against staging only and the CC sandbox can't reach the staging backend (MEH-360/1276). The fix itself is proven deterministically at the shared-store layer by the regression tests.
+- **Branch note:** the harness default `claude/meh-1325-consumer-fixture-cd73ar` is blocked by the branch-name gate (`^(feature|levismadar80)/meh-…`); cut `feature/meh-1325-favoritebutton-cache-green` off `origin/staging` (0 divergence) per established precedent. This docs entry rides `feature/meh-1325-docs`.
+
 ## 2026-07-18 — MEH-1313 — PR-backlog triage sweep (release-eng, ADR-016 v2)
 
 - **What:** triaged the pre-launch PR backlog under MEH-1074's ADR-016 v2 authority. Full
