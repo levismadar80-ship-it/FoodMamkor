@@ -29,6 +29,10 @@ export async function subscribeToPush() {
   if (!vapidKey) return null;
 
   try {
+    // MEH-1326: register the static /public/sw.js explicitly. next-pwa was
+    // removed in MEH-372, so nothing registers a SW anymore — without this
+    // `navigator.serviceWorker.ready` never resolves and subscribe hangs.
+    await navigator.serviceWorker.register("/sw.js");
     const reg = await navigator.serviceWorker.ready;
     const existing = await reg.pushManager.getSubscription();
     if (existing) return existing.toJSON();

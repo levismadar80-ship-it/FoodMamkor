@@ -12,6 +12,16 @@
 - **Session notes:** single-session window, no parallel-session evidence at start (branch audit clean). PR #1915 auto-merged mid-session; staging synced before each push. MEH-1322 Chunk 2 and all MEH-1324 follow-ups (group-buys nav entry, RESERVED unification, footer candidates) are deliberately NOT started — Sapir's decisions gate them.
 - **MEH-449 merge update:** on explicit user override of the MEH-671 CC-deny-on-workflows rule, CC squash-merged PR #1916 into staging (required gates green; the two non-required backend jobs stayed red on the pre-existing staging `uv.lock` drift). Sapir still to: apply `docs/ci/meh-449-settings-hook-registration.patch.md` + run the staging curl probe (verification 3).
 
+## 2026-07-18 — MEH-1326 — revive Web Push via static SW + VAPID gating — PR (draft)
+
+- **What:** Web Push dead since MEH-372 (next-pwa removed → no SW registered; VAPID never set) but the panel still showed a "(PWA)" push button. Revived it with a **static** SW that needs no bundler plugin (Turbopack-safe). YELLOW, ADR-016 v2 end-to-end authority.
+- **Shipped:** NEW `frontend/public/sw.js` (push + notificationclick only; no fetch/cache; ported from `worker/index.js` minus the MEH-50 friday setTimeout). `lib/push.js` registers `/sw.js` before `.ready`. `AlertPrefsPanel.jsx` VAPID-gates the button (fetches `/push-vapid-key` on mount → empty ⇒ button absent). Copy: `push_enable` he "קבלו עדכונים גם כשהאתר סגור" + en twin, no "PWA". DELETED `worker/index.js`; un-ignored `public/sw.js` in `frontend/.gitignore`.
+- **⚠️ STOP condition (config.py):** the ticket's comment-only VAPID edit to `backend/app/config.py` is **blocked** — `Edit(backend/app/config.py)` is in `.claude/settings.json permissions.deny` (same tier as `main.py`/Dockerfile/workflows). Not bypassed. **Handed to Sapir as a patch in the PR body** (replace py_vapid HEX snippet → `npx web-push generate-vapid-keys`, note public key must be base64url). It pairs with her existing manual VAPID/Railway smoke DoD step.
+- **Verification:** `npm run build` green, 0 lint errors, i18n parity+namespace guards (8) + `FavoriteButton.test.jsx` (16) green, `grep PWA` he.json alert_prefs = 0. Route-faithful Playwright self-QA (real `next start`, mocked API + `/push-vapid-key`) @375+@1440 both states (button absent w/o key, present w/ key) → `frontend/qa-artifacts/MEH-1326/` (webp, 89 KB).
+- **Out-of-scope stale refs (left, harmless):** `eslint.config.mjs:51` + `knip.json:21` still list the deleted `worker/` dir — globs matching zero files; trivial follow-up, not touched (scope discipline).
+- **Branch:** `feature/meh-1326-static-sw-push` off `origin/staging`. Separate PR from MEH-1327 (zero file overlap, same session).
+- **Next (Sapir):** apply the config.py comment patch; `npx web-push generate-vapid-keys` → VAPID keys in Railway staging → desktop Chrome smoke → production.
+
 ## 2026-07-18 — MEH-1328 — Home VRT baseline regen (tests-only, PR #1919)
 
 - **Why:** the hero/trust copy swap in PR #1904 (`"עסקים"` → `"בתי עסק"` across `home.hero.subtitle` /
