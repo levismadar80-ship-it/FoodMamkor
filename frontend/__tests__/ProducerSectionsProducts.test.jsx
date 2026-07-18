@@ -159,6 +159,26 @@ describe("ProducerSections products — imageless canonical placeholder (MEH-113
     expect(screen.getByText("לחם מחמצת כפרי")).toBeInTheDocument();
   });
 
+  it("MEH-1305 F: numeric price is bidi-isolated (formatPrice); free-text price_range renders naturally", () => {
+    const { container } = render(
+      <ProducerSections
+        {...baseProps}
+        producer={producerWith([
+          { id: 40, name: "דבש", image_url: "https://res.cloudinary.com/x/h.jpg", price_min: 35 },
+          { id: 41, name: "ריבה", image_url: "https://res.cloudinary.com/x/j.jpg", price_range: "מ-30₪ לחבילה" },
+        ])}
+      />,
+    );
+    // numeric → canonical "35₪" wrapped in dir="ltr" (bidi isolation).
+    const ltr = container.querySelector('span[dir="ltr"]');
+    expect(ltr).toHaveTextContent("35₪");
+    // free-text price_range → rendered as-is, NOT force-wrapped in dir="ltr"
+    // (which would corrupt the Hebrew "לחבילה").
+    const freeText = screen.getByText("מ-30₪ לחבילה");
+    expect(freeText).toBeInTheDocument();
+    expect(freeText.closest('span[dir="ltr"]')).toBeNull();
+  });
+
   it("no stray indicator/dot renders on an imageless card", () => {
     const { container } = render(
       <ProducerSections
