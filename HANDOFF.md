@@ -3,6 +3,34 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1313 — PR-backlog triage sweep (release-eng, ADR-016 v2)
+
+- **What:** triaged the pre-launch PR backlog under MEH-1074's ADR-016 v2 authority. Full
+  decision table (tier · required-gate CI · age · verdict · file:line evidence) for every
+  open PR in **`docs/session-state.md`**.
+- **Merged (2):** PR #1500 (mutmut) `7983759`, PR #1505 (ruff) `adff9424` — `backend/pyproject.toml`
+  `[dependency-groups] dev`-only floor bumps, GREEN, zero runtime blast radius, both required
+  gates green, conflict-free.
+- **REBASE-THEN-MERGE:** PR #1531 (schemathesis) — `405 conflict` on the shared `pyproject.toml`
+  after #1500/#1505; needs `@dependabot rebase` (no 2nd merge attempt, per rule).
+- **NEEDS-SAPIR:** runtime/major dep bumps (#1501 bleach / #1502 fastapi / #1506 react / #1702
+  npm-group / #1703 eslint-major); `.github/workflows/**` bumps (#1700/#1701, CC-deny MEH-671);
+  drafts #1546/#1729(keep-open, MEH-1249)/#1752; #1492 (MEH-999 audit — branch `claude/*` fails
+  branch-name gate); #1761 (concurrent-session HANDOFF — merge after this docs PR). **Leave-to-owner:**
+  #1906/#1907/#1908 (MEH-1310/1312/1314 — active concurrent sessions; Rule 1/28). **RED-HOLD:**
+  #1807 (release→main, MEH-1105).
+- **Concurrent sessions active this window** — #1904 (MEH-1308) + #1905 (MEH-1309) self-merged
+  mid-sweep; 3 more feature PRs opened. Single-session rule (Rule 1) noted; this sweep touched
+  none of their in-flight work.
+- **Repo-evidence (report-only):** MEH-449 guard PARTIAL (Docker layer `.dockerignore:9-10`;
+  frontend structural; no CI leak-gate found → flag); MEH-784 hooks block INTACT
+  (`.claude/settings.json:3`, security hooks `:44/:55/:88/:99/:110`); MEH-215/217 registration
+  journey covered by e2e specs 09/10/11/18/19/21/22.
+- **Note:** `docs/session-state.md` replaced a stale 2026-05-05 MEH-291 Phase-4 "held for soak"
+  scratch note — that work remains tracked in Linear (MEH-291), nothing lost.
+- **Next (Sapir):** `@dependabot rebase` #1531 then merge; review the runtime/major/workflow dep
+  bumps; triage MEH-999 findings; cut the release (#1807) after staging settles.
+
 ## 2026-07-18 — MEH-1307 / MEH-1308 / MEH-1309 — three LOW-RISK tasks, 3 separate PRs
 
 - **Tier:** MEH-450 LOW-RISK, end-to-end authority (Phase 0→implement→self-QA→PR per task). One logical change per PR; each branched fresh off `origin/staging`. DO-NOT-MERGE — Sapir merges after mobile QA on the previews.
