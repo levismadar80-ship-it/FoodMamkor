@@ -32,7 +32,6 @@ import os
 import secrets
 import sys
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlparse
 
 # Make `backend/` importable as package root when run directly.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -333,10 +332,7 @@ def _assert_not_production() -> None:
     is always allowed (dev/CI/tests); a remote host is allowed only when
     RAILWAY_ENVIRONMENT == "staging". Production ("production") aborts.
     """
-    host = (
-        urlparse(str(engine.url).replace("postgresql+psycopg2", "postgresql")).hostname
-        or ""
-    ).lower()
+    host = (engine.url.host or "").lower()
     if host in ("localhost", "127.0.0.1"):
         return
     if os.getenv("RAILWAY_ENVIRONMENT", "").lower() == "staging":
@@ -475,7 +471,7 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
         return (
             f"  · {biz['name']} [{biz['category']}] — {img}, "
             f"{reviews_count} reviews (avg {avg or '—'}), {kosher}"
-        ), False
+        ), True  # would-insert (this slug does not yet exist)
 
     now = datetime.now(timezone.utc)
     image_url = _upload_hero(biz["slug"], biz["image"])
@@ -517,6 +513,20 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     db.flush()
     db.add(ProducerCategory(producer_id=producer.id, category_id=category.id))
 
+    # Idempotency guard: the reviewer emails are deterministic per slug. If this
+    # producer was deleted externally but its display-only reviewer consumers
+    # survived, re-creating them would hit the users.email UNIQUE constraint.
+    # Clear exactly this business's reviewer rows first (bulk delete — their
+    # ProducerReviews are already gone with the deleted producer). Scoped to the
+    # `demo-{slug}-rev*` emails, so seed_demo_business's demo-* users are safe.
+    reviewer_emails = [
+        f"demo-{biz['slug']}-rev{i}@example.com" for i in range(len(stars))
+    ]
+    if reviewer_emails:
+        db.query(User).filter(User.email.in_(reviewer_emails)).delete(
+            synchronize_session=False
+        )
+
     for i, star in enumerate(stars):
         reviewer = User(
             email=f"demo-{biz['slug']}-rev{i}@example.com",
@@ -545,16 +555,16 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
 
 def _seed(db, confirm: bool) -> None:
     print("── SEED ──────────────────────────────────────────────")
-    inserted = 0
+    new_count = 0
     for biz in DEMO_BUSINESSES:
-        line, was_inserted = _seed_one(db, biz, confirm)
+        line, is_new = _seed_one(db, biz, confirm)
         print(line)
-        if was_inserted:
-            inserted += 1
+        if is_new:
+            new_count += 1
     verb = "Inserted" if confirm else "WOULD insert"
-    print(
-        f"  {verb} {inserted if confirm else len(DEMO_BUSINESSES)} demo business(es)."
-    )
+    skipped = len(DEMO_BUSINESSES) - new_count
+    tail = f" ({skipped} already exist, skipped)" if skipped else ""
+    print(f"  {verb} {new_count} demo business(es){tail}.")
     if not confirm:
         print("  [dry-run] pass --confirm to execute the inserts above.")
 
