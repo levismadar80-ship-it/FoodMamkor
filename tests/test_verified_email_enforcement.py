@@ -28,10 +28,20 @@ from uuid import uuid4
 
 from conftest import auth_header, make_producer, make_user
 
-# The exact Hebrew detail raised by require_verified_email /
-# require_verified_producer (auth.py). Kept as a constant so a copy tweak
-# in auth.py surfaces here as a failing assertion rather than silent drift.
-VERIFY_DETAIL = "יש לאמת את כתובת האימייל תחילה"
+# The structured 403 detail raised by require_verified_email /
+# require_verified_producer (auth.py). MEH-1164 sub-chunk B made this an
+# object {code, message} so the frontend matches on a stable, locale-neutral
+# `code`; `message` keeps the existing Hebrew constant for transition safety.
+# Kept here as constants so a copy/shape tweak in auth.py surfaces as a
+# failing assertion rather than silent drift.
+VERIFY_CODE = "email_unverified"
+VERIFY_MESSAGE = "יש לאמת את כתובת האימייל תחילה"
+
+
+def _assert_verify_detail(resp):
+    """The 403 body carries the structured unverified-email detail."""
+    detail = resp.json()["detail"]
+    assert detail == {"code": VERIFY_CODE, "message": VERIFY_MESSAGE}, resp.text
 
 
 # ---------- helpers ----------
@@ -96,7 +106,7 @@ class TestUnverifiedProducerBlocked:
         _, user = _producer_user(db, email=email, verified=False)
         resp = client.post(path, json=payload_fn(), headers=auth_header(user))
         assert resp.status_code == 403, (path, resp.status_code, resp.text)
-        assert resp.json()["detail"] == VERIFY_DETAIL
+        _assert_verify_detail(resp)
 
     def test_events_blocked(self, client, db):
         self._assert_blocked(client, db, "/events", _event_payload, "ev-unv@example.com")
@@ -179,4 +189,4 @@ class TestExperiencesUnchanged:
         }
         resp = client.post("/experiences", json=payload, headers=auth_header(user))
         assert resp.status_code == 403
-        assert resp.json()["detail"] == VERIFY_DETAIL
+        _assert_verify_detail(resp)

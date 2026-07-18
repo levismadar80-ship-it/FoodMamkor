@@ -25,10 +25,11 @@
 import { useEffect, useId, useState } from "react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { Leaf } from "@phosphor-icons/react";
 import Input from "@/components/ui/Input";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 
 // MEH-1128 Wave B: single-line fields render via ui/Input; baseInput remains
 // for the textareas only (no textarea primitive yet — epic Wave D+).
@@ -66,6 +67,10 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
+  // Create-only concern (the edit PATCH is not verified-gated), but the flag is
+  // harmless in edit mode since that path never sets it.
+  const [unverified, setUnverified] = useState(false);
 
   // Producer's own products for the multi-select picker.
   useEffect(() => {
@@ -118,6 +123,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverified(false);
     setSubmitting(true);
     try {
       const payload = {
@@ -142,7 +148,9 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
       onSaved?.(res.data);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      if (detail?.error === "recipe_rejected") {
+      if (isUnverifiedEmailError(err)) {
+        setUnverified(true);
+      } else if (detail?.error === "recipe_rejected") {
         setError(detail.reason || t("errors.rejected_default"));
       } else if (typeof detail === "string") {
         setError(detail);
@@ -328,6 +336,7 @@ export default function RecipeForm({ mode = "create", initial, onSaved, onCancel
         )}
       </div>
 
+      {unverified && <UnverifiedEmailNotice />}
       {error && (
         <p className="text-sm text-error" role="alert">
           {error}
