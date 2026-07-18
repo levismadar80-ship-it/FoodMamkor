@@ -252,6 +252,10 @@ export default function Footer() {
               // MEH-867: IL IS 5568 — accessibility statement must be reachable
               // from the global footer.
               { href: "/accessibility", label: t("nav.footer.accessibility") },
+              // MEH-1312: "צרו קשר" → contact-form anchor on /about (id="contact",
+              // AboutClient.jsx:388). Sapir-approved ADR-024 exception (18/07) —
+              // contact is a top-3 expected footer utility link.
+              { href: "/about#contact", label: t("nav.footer.contact") },
             ].map((link) => (
               <li key={link.href}>
                 {/* MEH-1103: 11px → 13px (DESIGN.md interactive floor is 14px
