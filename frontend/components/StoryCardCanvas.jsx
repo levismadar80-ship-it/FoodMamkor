@@ -147,7 +147,13 @@ async function drawCard(canvas, producer, strings) {
   wrapText(ctx, producer.name || "", W / 2, nameY, W - 160, 68);
 
   // City + category line
-  const categories = producer.categories?.map((c) => c.name).join("  ·  ") || "";
+  // MEH-1297: cap at the first 2 categories (primary-first order) so a producer
+  // with up to 3 categories can't overflow the fixed-width canvas line.
+  const categories =
+    producer.categories
+      ?.slice(0, 2)
+      .map((c) => c.name)
+      .join("  ·  ") || "";
   const cityLine = [producer.city, categories].filter(Boolean).join("  ·  ");
   ctx.fillStyle = "#EAF3DE";
   ctx.font = `400 28px "DM Sans", sans-serif`;

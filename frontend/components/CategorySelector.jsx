@@ -54,6 +54,12 @@ const HOME_CARE_NAMES = [
   "נרות וארומה",
 ];
 
+// MEH-1297: a producer may pick at most 3 categories (Yelp model). The first
+// selected is the primary — it drives categories[0] on the card/map pin. The
+// selection ORDER is owned by the parent (form.category_ids append-on-select),
+// so selectedIds[0] is the primary here; this component only reflects it.
+const MAX_CATEGORIES = 3;
+
 export default function CategorySelector({ categories, selectedIds, onChange, onRequestCategory }) {
   const t = useTranslations("forms.category_selector");
   const [query, setQuery] = useState("");
@@ -105,9 +111,17 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   return (
     <div role="group" aria-label={t("label")}>
-      <p className="font-medium mb-2 text-sm">
-        {t("label")} <span className="text-red-700">*</span>
-      </p>
+      <div className="flex items-center justify-between mb-1">
+        <p className="font-medium text-sm">
+          {t("label")} <span className="text-red-700">*</span>
+        </p>
+        {/* MEH-1297: live N/3 counter */}
+        <span className="text-xs text-fg-muted tabular-nums" data-testid="category-counter">
+          {t("counter", { count: selectedIds.length, max: MAX_CATEGORIES })}
+        </span>
+      </div>
+      {/* MEH-1297: primary-first + cap hint */}
+      <p className="text-[11px] text-fg-muted mb-2">{t("cap_hint")}</p>
 
       {/* Search — magnifier on the start side, 16px font to avoid iOS zoom. */}
       <label htmlFor="category-search" className="block text-sm font-medium text-text mb-1">
@@ -155,6 +169,9 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               }
               const cat = item.cat;
               const selected = selectedIds.includes(cat.id);
+              // MEH-1297: first-selected = primary; cap blocks new picks at 3.
+              const isPrimary = selectedIds[0] === cat.id;
+              const capDisabled = !selected && selectedIds.length >= MAX_CATEGORIES;
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
               const popular = POPULAR_BY_NAME[cat.name];
@@ -165,13 +182,18 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                   type="button"
                   data-testid={`category-chip-${cat.id}`}
                   aria-pressed={selected}
+                  disabled={capDisabled}
                   onClick={() => onChange(cat.id)}
                   className={[
                     "relative grid grid-cols-[46px_1fr] items-center gap-[14px] text-start",
                     "rounded-[14px] border p-4 md:p-[18px] min-h-[78px] transition",
                     selected
                       ? "border-primary bg-green-50"
-                      : "border-border bg-surface-card hover:border-primary",
+                      : capDisabled
+                        ? "border-border bg-surface-card"
+                        : "border-border bg-surface-card hover:border-primary",
+                    // MEH-1297: cap-disabled cards read as unavailable, not dimmed-by-search.
+                    capDisabled ? "opacity-50 cursor-not-allowed" : "",
                     dimmed ? "opacity-[.32]" : "",
                   ].join(" ")}
                 >
@@ -184,6 +206,15 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">
                       {cat.name}
+                      {/* MEH-1297: "ראשית" pill on the first-selected category */}
+                      {isPrimary && (
+                        <span
+                          data-testid="primary-badge"
+                          className="ms-2 align-middle inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                        >
+                          {t("primary_badge")}
+                        </span>
+                      )}
                     </span>
                     {desc && (
                       <span className="block text-[12.5px] text-fg-muted mt-0.5 leading-snug">{desc}</span>

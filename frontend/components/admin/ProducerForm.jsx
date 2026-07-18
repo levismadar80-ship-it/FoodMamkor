@@ -21,6 +21,11 @@ import {
 
 const KOSHER_OPTIONS = ["", "כשר", "כשר למהדרין", "לא כשר"];
 
+// MEH-1297: a producer may hold at most 3 categories; the first-selected is the
+// primary (drives categories[0] on the card/map pin). Mirrors the backend cap
+// (schemas.MAX_PRODUCER_CATEGORIES) and the register CategorySelector.
+const MAX_CATEGORIES = 3;
+
 // MEH-475 PR-B: map kosher option value → i18n key (label resolved at render)
 const KOSHER_LABEL_KEYS = {
   "": "producers.form.fields.kosher_none",
@@ -526,23 +531,43 @@ export default function ProducerForm({ initial = null, producerId = null }) {
       </Section>
 
       <Section title={t("producers.form.sections.categories_tags")}>
+        {/* MEH-1297: primary-first + ≤3 cap hint (parity with the register CategorySelector) */}
+        <p className="text-[11px] text-fg-muted mb-2">
+          {t("producers.form.category_cap_hint")}
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
-          {categories.map((c) => (
-            <label
-              key={c.id}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={form.category_ids.includes(c.id)}
-                onChange={() => toggleCategory(c.id)}
-                className="w-4 h-4 accent-primary"
-              />
-              <span>
-                {c.name}
-              </span>
-            </label>
-          ))}
+          {categories.map((c) => {
+            // MEH-1297: first-selected = primary; cap blocks new picks at 3.
+            const checked = form.category_ids.includes(c.id);
+            const isPrimary = form.category_ids[0] === c.id;
+            const capDisabled =
+              !checked && form.category_ids.length >= MAX_CATEGORIES;
+            return (
+              <label
+                key={c.id}
+                className={`flex items-center gap-2 text-sm ${
+                  capDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={capDisabled}
+                  onChange={() => toggleCategory(c.id)}
+                  className="w-4 h-4 accent-primary"
+                />
+                <span>{c.name}</span>
+                {isPrimary && (
+                  <span
+                    data-testid="admin-primary-badge"
+                    className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                  >
+                    {t("producers.form.primary_badge")}
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4 border-t border-border">
           <label className="flex items-center gap-2 text-sm cursor-pointer">

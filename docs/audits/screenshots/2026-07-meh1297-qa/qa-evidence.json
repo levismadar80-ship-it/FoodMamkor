@@ -1,0 +1,37 @@
+{
+  "ticket": "MEH-1297",
+  "scope": "Frontend (Chunk B): CategorySelector cap-3 + primary badge + counter, admin ProducerForm cap, StoryCardCanvas slice(0,2).",
+  "automated_coverage": {
+    "vitest": {
+      "files": [
+        "frontend/__tests__/CategorySelectorCap.test.jsx (6 new)",
+        "frontend/__tests__/AdminProducerForm.test.jsx (+1 cap test)",
+        "frontend/__tests__/CategorySelector.test.jsx (7, pre-existing — no regression)"
+      ],
+      "proves": [
+        "4th pick blocked once 3 selected (non-selected card disabled + onChange not fired)",
+        "already-selected cards stay togglable at cap (deselect path)",
+        "below cap all cards enabled",
+        "ראשית badge renders on selectedIds[0] only",
+        "live counter renders 0/3 and 3/3",
+        "admin ProducerForm: 4th checkbox disabled at cap + ראשית badge on first"
+      ],
+      "result": "18 passed"
+    },
+    "build": "npm run build — exit 0",
+    "eslint": "0 errors (warn-mode warnings only, MEH-443)",
+    "backend_pytest": "tests/test_producer_categories.py 10/10 — position order on create+update, cap 422, delete-guard 409/200, license any-match x3 (merged in PR #1882)"
+  },
+  "live_playwright_qa": {
+    "status": "DEFERRED to Sapir (CC sandbox limitation)",
+    "reason": "The register→business-page flow is auth-gated and multi-step (account creation → category step), requiring backend + next start + seeded Postgres up simultaneously. The CC sandbox cannot reliably keep a local Postgres alive across turns and cannot reach the Railway backend (documented pattern, MEH-1276). Screenshots were NOT fabricated.",
+    "manual_qa_checklist": [
+      "Register a producer picking 3 categories in order ב→א→ג",
+      "Business page + producer card show ב (first-selected) as the primary/[0] category",
+      "Refresh twice — the primary stays ב (deterministic, not arbitrary)",
+      "4th category card is disabled (opacity + not-allowed cursor); counter shows 3/3",
+      "ראשית badge sits on the first-selected category",
+      "Capture at 375px + 1440px"
+    ]
+  }
+}
