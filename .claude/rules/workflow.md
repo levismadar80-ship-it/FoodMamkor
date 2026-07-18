@@ -560,6 +560,7 @@ the variant matching the diff; use the base when the class is unknown:
 - `/adversarial-review-types` — diff touches `backend/app/models/`,
   `backend/app/schemas/`, `frontend/lib/schemas.js`, or
   `backend/alembic/versions/` (MEH-283/321 schema-drift family).
+  חריג merge-revision ריק — ראו ADR-025 Amendment 18/07/2026.
 - `/adversarial-review-errors` — diff touches `backend/app/services/`,
   `backend/app/routers/`, background tasks, or any `try:`/`except:` in
   side-effect code (MEH-325 silent-except family).
