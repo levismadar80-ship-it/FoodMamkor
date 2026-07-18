@@ -225,7 +225,7 @@ def fire_alerts(
 # Strip a leading emoji/symbol run, then collapse every whitespace run to a
 # single space.
 _LEADING_EMOJI = re.compile(
-    "^[\\s‍️"  # whitespace + zero-width-joiner + variation-selector-16
+    "^[\\s‍️"  # whitespace + ZWJ (U+200D) + variation-selector-16 (U+FE0F)
     "\U0001f300-\U0001faff"
     "\U00002600-\U000027bf"
     "\U0001f1e6-\U0001f1ff"
@@ -250,7 +250,10 @@ def _send_whatsapp_alert(to: str, producer_name: str, content: AlertContent) -> 
     send_template(
         to,
         FavoriteAlertHeV1(
-            producer_name=producer_name,
+            # Both body params run through the sanitizer — a producer name with a
+            # newline / tab / 4+ spaces (name fields are unvalidated free text)
+            # would otherwise trip Meta 131008 and silently drop the delivery.
+            producer_name=_sanitize_wa_param(producer_name),
             update_line=_sanitize_wa_param(content.title),
             url_path=content.url,
         ),

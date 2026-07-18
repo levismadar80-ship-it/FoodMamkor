@@ -225,12 +225,14 @@ class TestFireAlerts:
         assert button["sub_type"] == "url" and button["index"] == 0
         assert button["parameters"][0]["text"] == "/p/1"
 
-    def test_whatsapp_update_line_strips_leading_emoji(self, db, monkeypatch):
-        """A leading emoji in the title is stripped from the {{2}} template param
-        (Meta parameter hygiene + UTILITY classification)."""
+    def test_whatsapp_params_are_sanitized(self, db, monkeypatch):
+        """Both template params are sanitized: a leading emoji is stripped and
+        whitespace collapsed — for BOTH the title ({{2}}) and the producer name
+        ({{1}}, unvalidated free text) — so neither trips Meta 131008."""
         captured = self._capture_template(monkeypatch)
 
-        producer = make_producer(db, name="Farm Emoji")
+        # Producer name with a leading emoji + doubled internal spaces.
+        producer = make_producer(db, name="🐄 משק  הבקר")
         user = make_user(db, email="emoji@example.com")
         user.phone = "0501112222"
         db.commit()
@@ -240,9 +242,13 @@ class TestFireAlerts:
         fire_alerts(db, producer.id, "new_event", content)
 
         tmpl = captured["template"]
+        # {{2}} — title cleaned
         assert tmpl.update_line == "אירוע חדש: קטיף עצמי"
         assert "🎉" not in tmpl.update_line
         assert "\n" not in tmpl.update_line
+        # {{1}} — producer name cleaned the same way
+        assert tmpl.producer_name == "משק הבקר"
+        assert "🐄" not in tmpl.producer_name
 
     def test_push_sent_when_subscription_set(self, db, monkeypatch):
         """push_subscription set → send_push_notification called with content kwargs."""
