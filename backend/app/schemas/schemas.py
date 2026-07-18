@@ -133,6 +133,21 @@ def _require_categories_validator(value: list[int] | None) -> list[int]:
     return value
 
 
+# MEH-1297: cap a producer's categories at 3 (Yelp model) to stop category
+# stuffing. Enforced at the Pydantic layer only — existing producers may
+# carry more from import, so there is no DB CHECK constraint (see migration).
+MAX_PRODUCER_CATEGORIES = 3
+
+
+def _cap_categories_validator(value: list[int] | None) -> list[int] | None:
+    """MEH-1297: reject >3 categories. `None` (field omitted on a partial
+    update) passes through untouched so it composes with optional fields.
+    """
+    if value is not None and len(value) > MAX_PRODUCER_CATEGORIES:
+        raise ValueError("ניתן לבחור עד 3 קטגוריות לבית עסק")
+    return value
+
+
 # --- Auth ---
 class UserRegister(BaseModel):
     email: EmailStr
@@ -283,7 +298,8 @@ class ProducerRegister(BaseModel):
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
-        return _require_categories_validator(v)
+        # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
+        return _cap_categories_validator(_require_categories_validator(v))
 
 
 class GoogleAuthRequest(BaseModel):
@@ -368,6 +384,15 @@ class ProducerCityOut(BaseModel):
 
     city: str
     count: int
+
+
+class ProducerRandomOut(BaseModel):
+    """MEH-1288 — GET /producers/random: minimal identity of one random
+    approved producer, just enough for the homepage "הפתיעו אותי" button to
+    navigate (slug preferred, id fallback — mirrors ProducerCard's href)."""
+
+    id: UUID
+    slug: str | None = None
 
 
 # --- Delivery Area ---
@@ -511,7 +536,8 @@ class ProducerCreate(BaseModel):
     @field_validator("category_ids")
     @classmethod
     def _require_categories(cls, v):
-        return _require_categories_validator(v)
+        # MEH-1297: enforce the ≤3 cap alongside the MEH-1153 ≥1 requirement.
+        return _cap_categories_validator(_require_categories_validator(v))
 
 
 class ProducerAdminCreate(BaseModel):
@@ -564,6 +590,12 @@ class ProducerAdminCreate(BaseModel):
     # with delivery_nationwide=true (validator below + DB CHECK
     # delivery_excluded_requires_nationwide).
     delivery_excluded_cities: list[str] = []
+
+    # MEH-1297: cap categories at 3 (admin create).
+    @field_validator("category_ids")
+    @classmethod
+    def _cap_categories(cls, v):
+        return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod
@@ -706,6 +738,12 @@ class ProducerUpdate(BaseModel):
     # During the 7-day overlap both fields are accepted and writes mirror to old columns.
     availability_state: str | None = None
     vacation_until: date | None = None
+
+    # MEH-1297: cap categories at 3 (admin/owner update). None passes through.
+    @field_validator("category_ids")
+    @classmethod
+    def _cap_categories(cls, v):
+        return _cap_categories_validator(v)
 
     @field_validator("description")
     @classmethod

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Crosshair } from "@phosphor-icons/react";
+import { Crosshair, Shuffle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import HeroSearch from "@/components/HeroSearch";
 import { optimizeCloudinary } from "@/lib/cloudinary";
@@ -42,13 +42,21 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
  * kenburns-left dividers below; honors prefers-reduced-motion (animation:none).
  *
  * Does NOT: own search routing (HeroSearch), own the near-me handler
- * (onNearMe from use-home-page), or restyle the navbar (parallel track).
+ * (onNearMe from use-home-page), the surprise handler (onSurprise), or
+ * restyle the navbar (parallel track).
  *
  * History: MEH-99 (HeroSearch), MEH-41 (near-me), MEH-643 (Assembly-v2),
  * MEH-788 (#1055 Cloudinary+KB · #1063 scrim token · S14 capped-hero + cream
- * search/CTAs).
+ * search/CTAs), MEH-1288 (surprise-me button beside near-me).
  */
-export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
+export function HomeHero({
+  fridayMode,
+  geoLoading,
+  onNearMe,
+  onSurprise,
+  hasProducers,
+  onScrollDown,
+}) {
   const t = useTranslations();
   // Mirrors the use-home-page.js scrollToProducers pattern (getElementById +
   // smooth scroll); target id added on HomeHowItWorks (HomeStaticBlocks.jsx).
@@ -162,6 +170,20 @@ export function HomeHero({ fridayMode, geoLoading, onNearMe, onScrollDown }) {
           <Crosshair size={18} weight="bold" className={geoLoading ? "animate-spin" : ""} aria-hidden="true" />
           {geoLoading ? t("home.hero.searching") : t("home.hero.near_me")}
         </button>
+
+        {/* MEH-1288: "הפתיעו אותי" — navigates to a random approved producer.
+            Render-gated on hasProducers (statsProducersCount > 0) so an empty
+            catalog shows no button. Secondary treatment mirrors near-me. */}
+        {hasProducers && (
+          <button
+            type="button"
+            onClick={onSurprise}
+            className="inline-flex items-center gap-2 bg-surface-card text-primary-dark border border-primary px-5 py-2.5 rounded-sm hover:bg-green-50 transition-colors duration-base ease-quart font-medium text-sm focus-ring"
+          >
+            <Shuffle size={18} weight="bold" aria-hidden="true" />
+            {t("home.hero.surprise_me")}
+          </button>
+        )}
 
         <button
           type="button"

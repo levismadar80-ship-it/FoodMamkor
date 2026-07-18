@@ -17,6 +17,7 @@ from sqlalchemy import (
     Text,
     Time,
     UniqueConstraint,
+    func,
     text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSON, UUID
@@ -175,6 +176,14 @@ class Producer(Base):
     reviews_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_active_at = Column(DateTime, default=datetime.utcnow)  # for v2 activity check
+    # MEH-1291: "עודכן לאחרונה" freshness signal. Nullable, NO default, NO
+    # server_default, NO backfill — an honest signal: the column stays NULL
+    # until a real UPDATE fires `onupdate=func.now()`, so untouched producers
+    # render nothing on the public page. tz-aware (MEH-762 verified_at
+    # precedent, NOT naive utcnow). Expand-only (ADR-007). Paired migration:
+    # a3f1c9d2e4b7. Exposed public read-only via ProducerDetailOut (MEH-1291
+    # Chunk B).
+    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
     # MEH-51: trust ladder + kashrut badges
     phone_verified = Column(Boolean, default=False)
     ambassador = Column(Boolean, default=False)
@@ -206,8 +215,13 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
 
+    # MEH-1297: order_by position so categories[0] is deterministic (the
+    # producer's primary/first-selected category), not an arbitrary row.
     categories = relationship(
-        "Category", secondary="producer_categories", back_populates="producers"
+        "Category",
+        secondary="producer_categories",
+        back_populates="producers",
+        order_by="ProducerCategory.position",
     )
     products = relationship(
         "Product", back_populates="producer", cascade="all, delete-orphan"
@@ -427,6 +441,10 @@ class ProducerCategory(Base):
     category_id = Column(
         Integer, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True
     )
+    # MEH-1297: 0-based order within the producer's selection; 0 = primary.
+    # server_default text("'0'") mirrors the migration ADD so `alembic check`
+    # sees no model↔schema drift.
+    position = Column(Integer, nullable=False, server_default=text("'0'"))
 
 
 class Product(Base):
