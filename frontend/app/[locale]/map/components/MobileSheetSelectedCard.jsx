@@ -1,5 +1,19 @@
+import { useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Leaf, X, WhatsappLogo, Phone, Globe, EnvelopeSimple, SealCheck, ArrowRight } from "@phosphor-icons/react";
+
+// MEH-1298: nearest scrollable ancestor (the sheet's overflow-y-auto content
+// div in MapBottomSheet). Walk up rather than assume a direct parent so a
+// future wrapper around this panel doesn't silently break the compensation.
+function findScrollParent(node) {
+  let el = node?.parentElement;
+  while (el) {
+    const oy = window.getComputedStyle(el).overflowY;
+    if (oy === "auto" || oy === "scroll") return el;
+    el = el.parentElement;
+  }
+  return null;
+}
 
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
@@ -38,6 +52,32 @@ import {
  */
 export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   const t = useTranslations();
+  const rootRef = useRef(null);
+
+  // MEH-1298: this panel mounts as the FIRST child of the sheet's scroll
+  // container (above {cardList} — MapClient.jsx:590-594), so its height pushes
+  // the whole list DOWN. That moved the just-tapped card out from under the
+  // finger between the two taps of the MEH-1243 select→navigate gesture. Add the
+  // panel's rendered height (incl. its mb-3 gap) to the scroll parent's
+  // scrollTop in useLayoutEffect (before paint) so the list stays visually
+  // fixed; reverse on unmount / re-selection so nothing accumulates and the
+  // close (X) doesn't jump the list. offsetHeight is 0 in the hidden desktop
+  // shell → no-op there. Requires the scroll container's browser scroll-
+  // anchoring to be OFF (`[overflow-anchor:none]` on MapBottomSheet's content
+  // div) — otherwise Chromium anchors the shift itself and this comp double-
+  // shifts (Phase-0 measured −232px). See MapBottomSheet.jsx.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const scroller = findScrollParent(el);
+    if (!scroller) return;
+    const marginBottom = parseFloat(window.getComputedStyle(el).marginBottom) || 0;
+    const shift = el.offsetHeight + marginBottom;
+    if (shift <= 0) return;
+    scroller.scrollTop += shift;
+    return () => { scroller.scrollTop -= shift; };
+  }, [selectedProducer?.id]);
+
   if (!selectedProducer) return null;
   const sp = selectedProducer;
   const spImg = optimizeCloudinary(sp.images?.[0], { aspectRatio: IMAGE_RATIOS.banner, width: 800 });
@@ -51,7 +91,7 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
     { whatsapp: WhatsappLogo, phone: Phone, website: Globe, email: EnvelopeSimple }[primaryMethod] ||
     WhatsappLogo;
   return (
-    <div className="mb-3 bg-surface-floating rounded-md border border-primary">
+    <div ref={rootRef} className="mb-3 bg-surface-floating rounded-md border border-primary">
       {/* MEH-824: clip moved from the card root to the image wrapper so the
           card root is NOT a scroll container — required for the sticky CTA
           below to bind to the sheet's scroll area, not the card. */}
