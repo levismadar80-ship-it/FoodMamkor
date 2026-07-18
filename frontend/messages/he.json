@@ -771,7 +771,8 @@
           "whatsapp_group": "קבוצת וואטסאפ"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
-        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב"
+        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
+        "reveal_phone": "הצגת מספר הטלפון"
       },
       "sticky_bar": {
         "vacation_msg": "שלחו הודעה"
@@ -2966,7 +2967,8 @@
       "ordering_email": "שולחים לנו מייל",
       "ordering_phone_prefix": "מתקשרים:",
       "ordering_link_label": "למעבר",
-      "escalation": "שאלה אחרת? שלחו לנו הודעה"
+      "escalation": "שאלה אחרת? שלחו לנו הודעה",
+      "more_questions": "עוד שאלות"
     }
   },
   "directory": {

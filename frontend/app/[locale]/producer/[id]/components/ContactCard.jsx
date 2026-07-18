@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   EnvelopeSimple,
@@ -129,6 +130,12 @@ export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
 
+  // MEH-1334 chunk 2: desktop phone tap reveals the number inline instead of
+  // dialing (there's no dialer on desktop) — mobile keeps the tel: dial. The
+  // device is read at click time via matchMedia so no unreliable UA sniff /
+  // render-time guess is needed.
+  const [phoneRevealed, setPhoneRevealed] = useState(false);
+
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
   const channels = CHANNELS.filter((c) => c.key !== primaryMethod && c.href(producer));
@@ -155,9 +162,11 @@ export default function ContactCard({ producer, isVacation }) {
         {/* Ready-made questions as quiet text links under the CTA. */}
         <WhatsAppQuestionChips producer={producer} />
 
-        {/* Quiet secondary-channel icon row. */}
+        {/* Quiet secondary-channel icon row — MEH-1334 chunk 2: circular
+            hairline-bordered 44px targets on white, primary-dark glyph (the
+            approved mockup's .iconrow anatomy). */}
         {channels.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1 mb-1" role="list">
+          <div className="flex flex-wrap items-center gap-2 mt-3 mb-1" role="list">
             {channels.map(({ key, Icon, href, track }) => (
               <a
                 key={key}
@@ -168,24 +177,46 @@ export default function ContactCard({ producer, isVacation }) {
                 role="listitem"
                 aria-label={t(`producer.detail.contact_card.aria.${key}`)}
                 title={t(`producer.detail.contact_card.aria.${key}`)}
-                onClick={
-                  track === false
-                    ? undefined
-                    : () => {
-                        // Fires exactly once per click (fallback must not double-track).
-                        trackContactClick(producer.id, key);
-                        // MEH-1221: email-only silent-mailto fallback.
-                        if (key === "email") {
-                          armMailtoFallback(producer.contact_email?.trim(), t);
-                        }
-                      }
-                }
-                className="inline-flex items-center justify-center w-11 h-11 rounded-md text-fg-muted hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={(e) => {
+                  // MEH-1334: on desktop a phone tap reveals the number inline
+                  // (no dialer) — swallow the tel: navigation and show the pill.
+                  if (
+                    key === "phone" &&
+                    typeof window !== "undefined" &&
+                    window.matchMedia("(min-width: 1024px)").matches
+                  ) {
+                    e.preventDefault();
+                    setPhoneRevealed(true);
+                  }
+                  if (track === false) return;
+                  // Fires exactly once per click (fallback must not double-track).
+                  trackContactClick(producer.id, key);
+                  // MEH-1221: email-only silent-mailto fallback.
+                  if (key === "email") {
+                    armMailtoFallback(producer.contact_email?.trim(), t);
+                  }
+                }}
+                className="inline-flex items-center justify-center w-11 h-11 rounded-full border border-border bg-white text-primary-dark hover:text-primary hover:bg-green-50 transition focus-visible:ring-2 focus-visible:ring-primary/40"
               >
-                <Icon size={20} aria-hidden="true" />
+                <Icon size={18} aria-hidden="true" />
               </a>
             ))}
           </div>
+        )}
+
+        {/* Desktop-revealed phone number pill (MEH-1334). Number is dir="ltr"
+            + .numeric so RTL can't reorder the digits; still a tel: link so a
+            desktop softphone / click-to-call extension can act on it. */}
+        {phoneRevealed && producer.phone && (
+          <a
+            href={`tel:${producer.phone}`}
+            dir="ltr"
+            data-testid="revealed-phone"
+            className="numeric inline-flex items-center gap-2 mt-2 px-3 min-h-[44px] rounded-full border border-border bg-white text-sm text-text focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <Phone size={16} className="text-primary-dark" aria-hidden="true" />
+            {producer.phone}
+          </a>
         )}
 
         {/* MEH-1334: the tertiary follow + share row moved to the header's

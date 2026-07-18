@@ -140,52 +140,64 @@ describe("BadgeRow", () => {
   });
 
   // MEH-76 chunk 4 — S12 tier states from the live ADR-022 contract.
+  // MEH-1334 (CLARIFY c): the doc-date tooltip now lives ONLY on the card
+  // surface — the hero popover shows the locked dateless copy. These assert
+  // the date-bearing strings via surface="card" (getVerifiedTooltip owner).
   describe("S12 tier badge", () => {
-    it("license tooltip carries the LTR-isolated d.m.yyyy date", () => {
-      render(<BadgeRow producer={VERIFIED_LICENSE} />);
-      fireEvent.click(screen.getByText("מאומת"));
+    it("license tooltip carries the LTR-isolated d.m.yyyy date (card surface)", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} surface="card" />);
+      fireEvent.click(screen.getByRole("button", { name: /מאומת/ }));
       const tip = screen.getByTestId("badge-tooltip-verified");
       expect(tip.textContent).toContain("רישיון הוגש ונבדק בתאריך");
       expect(tip.textContent).toContain("⁦5.6.2026⁩");
     });
 
-    it("exemption doc type swaps the tooltip string", () => {
+    it("exemption doc type swaps the tooltip string (card surface)", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "exemption" }}
+          surface="card"
         />,
       );
-      fireEvent.click(screen.getByText("מאומת"));
+      fireEvent.click(screen.getByRole("button", { name: /מאומת/ }));
       expect(screen.getByTestId("badge-tooltip-verified").textContent).toContain(
         "אישור פטור",
       );
     });
 
-    // MEH-1334: the hero seal now ALWAYS opens the verification popover
-    // (title + locked body + /about#verification link). The MEH-758 lock is
-    // narrower than before: cosmetics still gets NO date line (its tooltip
-    // key isn't locked), but the popover itself no longer depends on it.
-    it("cosmetics opens the popover WITHOUT the doc-date line (MEH-758 key not locked)", () => {
+    // MEH-1334: the hero seal ALWAYS opens the verification popover with the
+    // LOCKED dateless copy (title + body + /about#verification link) — the
+    // pre-existing MEH-762 doc-date line was dropped from the hero surface
+    // (CLARIFY c). Same content for every doc type; cosmetics included.
+    it("hero popover shows the locked dateless copy for license doc type", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} />);
+      fireEvent.click(screen.getByText("מאומת"));
+      const pop = screen.getByTestId("badge-tooltip-verified");
+      expect(pop.querySelector('a[href="/about#verification"]')).not.toBeNull();
+      expect(pop.textContent).toContain("verified_popover_body");
+      // the pre-existing doc-date line must NOT appear on the hero surface
+      expect(pop.textContent).not.toContain("הוגש ונבדק");
+    });
+
+    it("hero popover copy is identical for a cosmetics doc type (still no date)", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
         />,
       );
-      const btn = screen.getByRole("button", { name: "בית עסק מאומת" });
-      fireEvent.click(btn);
+      fireEvent.click(screen.getByRole("button", { name: "בית עסק מאומת" }));
       const pop = screen.getByTestId("badge-tooltip-verified");
       expect(pop.textContent).toContain("verified_popover_body");
       expect(pop.textContent).not.toContain("הוגש ונבדק");
     });
 
-    it("hero popover links to /about#verification (MEH-1334)", () => {
-      render(<BadgeRow producer={VERIFIED_LICENSE} />);
-      fireEvent.click(screen.getByText("מאומת"));
-      const pop = screen.getByTestId("badge-tooltip-verified");
-      const link = pop.querySelector('a[href="/about#verification"]');
-      expect(link).not.toBeNull();
-      // the license date line still renders for locked doc types
-      expect(pop.textContent).toContain("רישיון הוגש ונבדק");
+    // CLARIFY a/b: the seal — and therefore this popover — never renders for a
+    // non-verified producer, so the "אישור ידני ופועל ברישיון" claim is safe.
+    it("renders NO verified seal (and no popover) when verification_tier !== verified", () => {
+      const { container } = render(
+        <BadgeRow producer={{ verification_tier: "declared" }} />,
+      );
+      expect(container.querySelector('[data-badge="verified"]')).toBeNull();
     });
 
     it("card surface renders the icon-only seal (no word)", () => {

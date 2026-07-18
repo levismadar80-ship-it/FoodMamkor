@@ -776,7 +776,8 @@
           "whatsapp_group": "WhatsApp group"
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
-        "email_copy_failed_toast": "We couldn't open your email app or copy — please try again"
+        "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
+        "reveal_phone": "Show phone number"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -2945,7 +2946,8 @@
       "ordering_email": "Send us an email",
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
-      "escalation": "Another question? Send us a message"
+      "escalation": "Another question? Send us a message",
+      "more_questions": "More questions"
     }
   },
   "directory": {
