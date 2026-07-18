@@ -1,5 +1,6 @@
 from app.models.models import (
     AdminSetting,
+    AlertLog,
     Category,
     ContactClick,
     ContactMessage,
@@ -64,4 +65,6 @@ __all__ = [
     "producer_recipe_products",
     # MEH-509 PR2b — inbound WhatsApp messages (watchdog consumer)
     "InboundMessage",
+    # MEH-1338 — favorite-alert frequency-cap ledger
+    "AlertLog",
 ]
