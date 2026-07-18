@@ -78,6 +78,8 @@ export default function Footer() {
     { href: "/map", label: t("nav.map") },
     { href: "/events", label: t("nav.footer.events") },
     { href: "/about", label: t("nav.footer.about") },
+    // MEH-1289: reader-facing "why local" editorial page.
+    { href: "/about/why-local", label: t("nav.footer.why_local") },
     // MEH-1160: reader-facing share page — the site-level viral loop.
     { href: "/share", label: t("share_page.footer_link") },
   ];

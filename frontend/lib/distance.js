@@ -50,10 +50,13 @@ export function haversineKm(lat1, lng1, lat2, lng2) {
  *     1–9.9 km → "⁦{x.x} km⁩ ממך" (one decimal)
  *     ≥ 10 km  → "⁦{N} km⁩ ממך"   (no decimal — false precision, MEH-1298)
  *
- *   unit:"he" (MEH-1243 🔒 §3 — MapProducerCard meta line): Hebrew unit, digits
- *   first, NO "ממך" suffix (distance is inherently from the user — the word is
- *   noise on the map card). No isolate chars: the caller wraps the token in
- *   <bdi>, which supplies the digits-first isolation:
+ *   unit:"he" (MEH-1243 🔒 §3 — MapProducerCard meta line; MEH-1301 — the Hebrew
+ *   ProducerCard distance pill): Hebrew unit 'ק"מ', digits first. With
+ *   `suffix:false` (map card) there is NO "ממך" tail; ProducerCard keeps the
+ *   default " ממך". No isolate chars — MapProducerCard wraps the token in <bdi>,
+ *   ProducerCard relies on bare-RTL digit isolation (the Latin number self-
+ *   isolates inside the RTL span). Which unit a card renders is chosen by the
+ *   active locale at the call site (next-intl `useLocale`), not hardcoded here:
  *     < 1 km  → "{N} מ'"   ·   1–9.9 km → "{x.x} ק\"מ"   ·   ≥ 10 km → "{N} ק\"מ"
  *
  * `suffix:false` drops the " ממך" tail (independent of `unit`). Returns null for
