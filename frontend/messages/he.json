@@ -348,7 +348,7 @@
           "next_step2": "שיחת היכרות",
           "next_step3": "הדף עולה לאוויר",
           "dashboard_cta": "לדשבורד שלי →",
-          "share_msg": "היי! העסק שלי עכשיו במהמקור — אתר ישראלי שמרכז בתי עסק מקומיים במקום אחד. רוצים להצטרף גם? https://mehamakor.online/register/producer",
+          "share_msg": "היי! העסק שלי עכשיו במהמקור — אתר ישראלי שמרכז בתי עסק מקומיים במקום אחד. רוצים להצטרף גם? https://mehamakor.co.il/register/producer",
           "share_cta": "הזמינו בתי עסק",
           "inbox_title": "בדקו את תיבת האימייל שלך",
           "inbox_body": "אם האימייל פנוי, נשלחה אליכם הודעת אימות. אנא בדקו את תיבת הדואר.",
@@ -2116,7 +2116,7 @@
         "emergency": {
           "title": "תקלות חירום",
           "site_down_title": "האתר לא עולה",
-          "site_down_body": "בדקי <code>mehamakor.online/health</code>. אם זה לא 200 OK, בדקי Railway → healthcheck + logs. ראה CLAUDE.md §\"Railway runtime port = 8080\" לפני כל דיבוג — זה הסעיף הכי נפוץ של 502.",
+          "site_down_body": "בדקי <code>mehamakor.co.il/health</code>. אם זה לא 200 OK, בדקי Railway → healthcheck + logs. ראה CLAUDE.md §\"Railway runtime port = 8080\" לפני כל דיבוג — זה הסעיף הכי נפוץ של 502.",
           "migration_title": "Migration נכשלה אחרי deploy",
           "migration_body": "הסימפטום: ה-container עולה אבל endpoints מחזירים 500 עם <code>UndefinedColumn</code>. הפתרון: בדקי ש-<code>_migrate_columns</code> ב-main.py רשום את העמודה החדשה. אם לא, הוסיפי והעלי commit hotfix.",
           "login_broken_title": "Login שבור לכולם",
@@ -2773,6 +2773,15 @@
     "email_placeholder": "האימייל שלך",
     "notify_cta": "עדכנו אותי כשיושק",
     "notify_submitting": "בשליחה..."
+  },
+  "newsletter_unsubscribe": {
+    "meta_title": "ביטול הרשמה לניוזלטר · מהמקור",
+    "loading": "מבטלים את ההרשמה…",
+    "success_title": "הוסרת מרשימת התפוצה 🌿",
+    "success_body": "לא נשלח לך יותר ניוזלטר. תמיד אפשר לחזור — נשמח לראות אותך שוב.",
+    "error_title": "הקישור אינו תקין",
+    "error_body": "ייתכן שהקישור פג תוקף או נפתח רק חלקית. נסי שוב מהמייל, או פני אלינו.",
+    "cta_home": "חזרה לדף הבית"
   },
   "contact": {
     "title": "דברו איתנו",

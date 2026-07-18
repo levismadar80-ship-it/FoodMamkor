@@ -257,7 +257,7 @@ export default function AdminHelpPage() {
               {t("sections.urls.intro")}
             </p>
             <ul className="space-y-2">
-              <ExternalRow label={t("sections.urls.prod_label")} href="https://mehamakor.online">mehamakor.online</ExternalRow>
+              <ExternalRow label={t("sections.urls.prod_label")} href="https://mehamakor.co.il">mehamakor.co.il</ExternalRow>
               <ExternalRow label={t("sections.urls.staging_label")} href="https://staging.mehamakor.online">staging.mehamakor.online</ExternalRow>
               <ExternalRow label={t("sections.urls.github_label")} href="https://github.com/levismadar80-ship-it/FoodMamkor">{t("sections.urls.github_text")}</ExternalRow>
               <li className="flex items-start gap-3 text-sm">
