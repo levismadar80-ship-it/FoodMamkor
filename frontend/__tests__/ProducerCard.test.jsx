@@ -333,8 +333,9 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    // MEH-1301: Hebrew locale unit + tail; >=10 km integer.
-    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    // MEH-1301: Hebrew locale unit; >=10 km integer. MEH-1307: no "ממך" tail.
+    expect(distance.textContent).toMatch(/ק"מ$/);
+    expect(distance.textContent).not.toContain("ממך");
     expect(distance.textContent).not.toContain("km");
     // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
     expect(distance).not.toHaveAttribute("dir");
