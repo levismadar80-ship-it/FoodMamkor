@@ -3668,7 +3668,8 @@
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
       "states": {
-        "zero_activity": "No activity yet — share your page to get started",
+        "zero_activity_title": "Views & inquiries",
+        "zero_activity": "No views or inquiries yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
@@ -3769,7 +3770,8 @@
           "view": "Profile view"
         },
         "cta": "Open WhatsApp to reply",
-        "zero_state": "No activity yet — share your page to get started"
+        "title": "Recent activity",
+        "zero_state": "New inquiries and views will appear here — we'll update the moment customers start responding"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
