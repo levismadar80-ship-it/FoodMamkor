@@ -7,6 +7,7 @@ import LocationModal from "@/components/LocationModal";
 import LocationBanner from "@/components/LocationBanner";
 import HolidayBanner from "@/components/HolidayBanner";
 import FridayDeliveryStrip from "@/components/FridayDeliveryStrip";
+import BackToTop from "@/components/BackToTop";
 import { UpcomingEventsPreview } from "@/app/[locale]/home/UpcomingEventsPreview";
 import {
   HomeHowItWorks,
@@ -243,6 +244,10 @@ export default function HomePage() {
       <HomeRecentlyViewed items={recentlyViewed} />
 
       <HomeCTA />
+
+      {/* MEH-1309: floating back-to-top for the long home scroll. Stacks above
+          the chat FAB (bottom-END corner) via the shared cookie-banner clearance. */}
+      <BackToTop />
     </div>
   );
 }

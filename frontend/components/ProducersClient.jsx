@@ -9,6 +9,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import ProducerCard from "@/components/ProducerCard";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import LocationModal from "@/components/LocationModal";
+import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
 import { useUserCity } from "@/lib/use-user-city";
@@ -534,6 +535,9 @@ export default function ProducersClient({
         onClose={() => setLocationModalOpen(false)}
         onSelectCity={handleCitySelected}
       />
+
+      {/* MEH-1309: floating back-to-top for the paginated catalog scroll. */}
+      <BackToTop />
     </>
   );
 }
