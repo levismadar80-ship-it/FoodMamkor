@@ -1,0 +1,126 @@
+"""
+Module:   cities
+Purpose:  Canonical static Israeli city + neighborhood list used by
+          GET /cities as the fresh-DB baseline (MEH-1349).
+Does NOT: Own the cities DB table (models.City) — the endpoint unions
+          this list with DB rows at request time; see routers/cities.py.
+Related:  frontend/data/cities.js (ISRAEL_CITIES — the sibling copy),
+          backend/app/routers/cities.py:17
+History:  MEH-1349 (creation — GET /cities empty on fresh DB).
+
+SYNC DUTY: this list is a byte-for-byte copy of ISRAEL_CITIES in
+frontend/data/cities.js. Any city added/removed there must land here in
+the same PR, and vice versa.
+TODO(MEH-1343): when the full CBS localities dataset (~1,270) lands,
+ONE canonical file must feed both frontend and backend — replace this
+copy with that single source.
+"""
+
+# MEH-1349: keep ordering identical to frontend/data/cities.js for easy diffing.
+ISRAEL_CITIES = [
+    # Major cities
+    "ירושלים",
+    "תל אביב-יפו",
+    "חיפה",
+    "ראשון לציון",
+    "פתח תקווה",
+    "אשדוד",
+    "נתניה",
+    "באר שבע",
+    "בני ברק",
+    "רמת גן",
+    "אשקלון",
+    "רחובות",
+    "בת ים",
+    "בית שמש",
+    "כפר סבא",
+    "הרצליה",
+    "חולון",
+    "לוד",
+    "חדרה",
+    "מודיעין-מכבים-רעות",
+    "רמלה",
+    "נצרת",
+    "עפולה",
+    "נהריה",
+    "טבריה",
+    "צפת",
+    "דימונה",
+    "אילת",
+    "קריית גת",
+    "אום אל-פחם",
+    "אופקים",
+    "יבנה",
+    "קריית אתא",
+    "קריית ביאליק",
+    "קריית מוצקין",
+    "קריית ים",
+    "רהט",
+    "הוד השרון",
+    "כפר יונה",
+    "נס ציונה",
+    "קריית שמונה",
+    "ערד",
+    "מגדל העמק",
+    "שדרות",
+    "טירת כרמל",
+    "יקנעם עילית",
+    "זכרון יעקב",
+    "עתלית",
+    "נשר",
+    "קריית טבעון",
+    # Additional cities (FIXES_V2.md fix 1)
+    "אבו גוש",
+    "אבו סנאן",
+    "אור יהודה",
+    "אור עקיבא",
+    "אלעד",
+    "אפרת",
+    "אריאל",
+    "באר יעקב",
+    "בית דגן",
+    "בית שאן",
+    "בני עי״ש",
+    "בקה אל-גרבייה",
+    "גבעת שמואל",
+    "גבעתיים",
+    "גדרה",
+    "גן יבנה",
+    "טייבה",
+    "טירה",
+    "טמרה",
+    "יהוד-מונוסון",
+    "כפר קאסם",
+    "כרמיאל",
+    "מעלה אדומים",
+    "מעלות-תרשיחא",
+    "נצרת עילית",
+    "נתיבות",
+    "סחנין",
+    "עכו",
+    "עראבה",
+    "קלנסווה",
+    "קריית אונו",
+    "קריית מלאכי",
+    "ראש העין",
+    "רמת השרון",
+    "תל מונד",
+    "חצור הגלילית",
+    # Major neighborhoods (תל אביב)
+    "פלורנטין",
+    "נווה צדק",
+    "יפו",
+    "הצפון הישן",
+    "רמת אביב",
+    # Major neighborhoods (ירושלים)
+    "רחביה",
+    "בקעה",
+    "קטמון",
+    "מושבת הגרמנים",
+    "מרכז העיר",
+    # Major neighborhoods (חיפה)
+    "כרמל",
+    "נווה שאנן",
+    "הדר הכרמל",
+    "רמת הנשיא",
+]
