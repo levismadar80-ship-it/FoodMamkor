@@ -380,21 +380,23 @@ def _reset(db, confirm: bool) -> None:
         if ids
         else 0
     )
-    owner_count = (
-        db.query(User).filter(User.producer_id.in_(ids)).count() if ids else 0
-    )
+    owner_count = db.query(User).filter(User.producer_id.in_(ids)).count() if ids else 0
 
     print("── RESET ─────────────────────────────────────────────")
     if not producers:
         print("  No matching TEST producers found — nothing to delete.")
     else:
-        print(f"  {'WOULD delete' if not confirm else 'Deleting'} "
-              f"{len(producers)} producer(s):")
+        print(
+            f"  {'WOULD delete' if not confirm else 'Deleting'} "
+            f"{len(producers)} producer(s):"
+        )
         for p in producers:
             print(f"    · {p.name}  (slug={p.slug}, id={p.id})")
-        print(f"  + {review_count} review(s), {owner_count} owner user(s), "
-              "and all products / favorites / delivery areas / recipes / "
-              "kashrut requests / events (cascade).")
+        print(
+            f"  + {review_count} review(s), {owner_count} owner user(s), "
+            "and all products / favorites / delivery areas / recipes / "
+            "kashrut requests / events (cascade)."
+        )
 
     if not confirm:
         print("  [dry-run] pass --confirm to execute the deletes above.")
@@ -409,8 +411,10 @@ def _reset(db, confirm: bool) -> None:
         for prod in producers:
             db.delete(prod)  # cascade: products/reviews/favorites/areas/recipes
         db.commit()
-        print(f"  Deleted {len(producers)} producer(s), {review_count} review(s), "
-              f"{owner_count} owner user(s).")
+        print(
+            f"  Deleted {len(producers)} producer(s), {review_count} review(s), "
+            f"{owner_count} owner user(s)."
+        )
 
 
 def _upload_hero(slug: str, url: str) -> str | None:
@@ -468,8 +472,10 @@ def _seed_one(db, biz: dict, confirm: bool) -> tuple[str, bool]:
     if not confirm:
         img = "hero→Cloudinary demo/" if biz["image"] else "NO image (leaf placeholder)"
         kosher = f"kashrut={biz['kashrut']}" if biz["kashrut"] else "no kashrut"
-        return (f"  · {biz['name']} [{biz['category']}] — {img}, "
-                f"{reviews_count} reviews (avg {avg or '—'}), {kosher}"), False
+        return (
+            f"  · {biz['name']} [{biz['category']}] — {img}, "
+            f"{reviews_count} reviews (avg {avg or '—'}), {kosher}"
+        ), False
 
     now = datetime.now(timezone.utc)
     image_url = _upload_hero(biz["slug"], biz["image"])
@@ -546,7 +552,9 @@ def _seed(db, confirm: bool) -> None:
         if was_inserted:
             inserted += 1
     verb = "Inserted" if confirm else "WOULD insert"
-    print(f"  {verb} {inserted if confirm else len(DEMO_BUSINESSES)} demo business(es).")
+    print(
+        f"  {verb} {inserted if confirm else len(DEMO_BUSINESSES)} demo business(es)."
+    )
     if not confirm:
         print("  [dry-run] pass --confirm to execute the inserts above.")
 
