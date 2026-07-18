@@ -19,8 +19,9 @@ import { getVacationReturnDate } from "../lib/producer-format";
  * quiet actions row (שמירה · מעקב · desktop שיתוף) and the restyled
  * pull-quote. Removed per decision 4: premium chip, favorites count,
  * TrustBadge, secondary-category chips, grass_fed/delivery highlight chips,
- * contact_name line (relocates to the chunk-3 owner card). Kept: declared
- * explainer (ADR-022 gate 1), full_this_week + vacation banners.
+ * contact_name line (relocated to OwnerCard). Kept: declared explainer
+ * (ADR-022 gate 1) + the full_this_week banner. The vacation banner was
+ * removed in chunk 3 — it repeated the return date the meta status owns.
  *
  * The 3-state order status lives HERE and only here (one green per page —
  * revision-2 #2): open = primary, closed = muted, vacation = gold-deep
@@ -32,7 +33,6 @@ import { getVacationReturnDate } from "../lib/producer-format";
 export default function ProducerHeader({
   producer,
   isVacation,
-  vacationReturnLabel,
   primaryCategory,
   hasImages = true,
   shareUrl,
@@ -189,17 +189,11 @@ export default function ProducerHeader({
         </div>
       )}
 
-      {/* Vacation banner — the page's SINGLE vacation surface beyond the meta
-          status (S6 state a). MEH-1334: heading restyled to gold-deep per the
-          approved palette (5.61:1 on cream, AA ✓). */}
-      {isVacation && (
-        <div className="mx-0 mt-3 bg-background border border-border rounded-xl p-3">
-          <p className="text-sm font-bold text-gold-deep">{t("producer.detail.header.vacation")}</p>
-          <p className="text-xs text-fg-muted mt-1">
-            {t("producer.detail.header.vacation_return", { label: vacationReturnLabel })}
-          </p>
-        </div>
-      )}
+      {/* MEH-1334 chunk 3: the vacation banner was REMOVED — it repeated the
+          return date the gold meta status already owns ("one home per fact").
+          A banner returns here only when an owner-authored free-text vacation
+          message field exists (MEH-1335 family); until then the status line is
+          vacation's single surface. */}
 
       {/* Pull-quote (MEH-1048) — moved below the header groups per the mockup;
           self-guards on reviews_count (zero → hidden entirely, per 1e). */}

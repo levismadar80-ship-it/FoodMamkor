@@ -157,8 +157,10 @@ function VerifiedTierBadge({ producer, surface, t }) {
         <Popover
           trigger={chip}
           role="dialog"
+          sheetOnMobile
           contentTestId="badge-tooltip-verified"
           contentClassName="w-64 flex flex-col gap-1.5"
+          sheetContentClassName="flex flex-col gap-2"
         >
           <span className="flex items-center gap-1.5 font-bold text-sm text-text">
             <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />

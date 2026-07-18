@@ -326,6 +326,34 @@ front matter for the normative token bindings.
   pinned **top-start** (`start-3`) as a single shared overlay across both layouts.
   First image is eager (`priority`); the rest are lazy. Imageless state = the
   Tinted Masthead (MEH-815, unchanged). RTL logical props only.
+- **Producer detail — Quiet Direction v3 (MEH-1334, PR #1936 — ADOPTED; supersedes
+  the stale sub-details in the surrounding pre-1334 blocks where they conflict):**
+  the `/producer/[id]` editorial refresh. **Header = 4 groups:** [name + single
+  ✓מאומתת seal] · [one-liner] · [rating ★ gold + underlined count, or **"חדש"**
+  at zero reviews — a rating-slot fallback, not a badge] · [meta line
+  city · category · **status** + one quiet kosher line]. The page's ONLY order
+  status is colored text in the meta line — open=`primary`,
+  "לא מקבל הזמנות כרגע"=`muted`, "בחופשה · חוזרים ב־{תאריך}"=**`gold-deep`
+  #7a5a10** (5.61:1 on cream, AA; the vacation banner was removed — the status
+  owns the return date, "one home per fact"). Dropped from the header: premium
+  chip, favorites count, TrustBadge, secondary-category chips,
+  grass_fed/delivery chips, contact_name line (→ OwnerCard). **Quiet actions**
+  שמירה·מעקב·שיתוף(lg+) beside the title (borderless icon+label, ≥44px);
+  guests see them and get the login prompt; the intended action auto-completes
+  after sign-in with scroll restore (`lib/pending-action.js`). **Mobile hero
+  overlay = share** (`lg:hidden`; the heart's one home is the actions row);
+  desktop hero clean. **Verified popover** (hero seal): locked dateless copy +
+  link to `/about#verification`; mobile = bottom sheet with focus trap
+  (`ui/Popover` `sheetOnMobile`). **Contact card:** one CTA + quick answers
+  (3 visible + "עוד שאלות", MEH-1302 behavior intact) + circular hairline icon
+  row; desktop phone tap reveals the number inline (dir=ltr pill, no dialing).
+  **Location = one "הגעה ומיקום" section:** city-only address (MEH-829),
+  collapsed neutral hours "היום · 9:00–17:00" (no green, no "פתוח", ranges
+  `dir="ltr"`, expand → weekly table with font-weight-only today), Waze/Google
+  **brand SVGs** (not mirrored, not recolored) on the standard deep links.
+  **OwnerCard "מאחורי העסק":** data-gated — compact (single-letter avatar at
+  inline-start + name + city) is the live variant; bio/photo variants dormant
+  until MEH-1335; hidden entirely without contact_name.
 - **Producer trust strip (`ProducerHeader` + `ReviewExcerpt`, MEH-1048):** social
   proof beside the h1. A `green-50`/`accent` pill **`★ 4.8 · N ביקורות`** (Phosphor
   `Star`) links to the reviews section (`<a href="#reviews">` → `id="reviews"

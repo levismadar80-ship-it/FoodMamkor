@@ -703,6 +703,7 @@
       },
       "sections": {
         "about": "אודות",
+        "location": "הגעה ומיקום",
         "similar": {
           "heading": "עסקים דומים",
           "in_area": "{category} · באזור שלך"
@@ -749,6 +750,9 @@
         },
         "excerpt_footer": "מתוך הביקורות",
         "excerpt_all": "לכל הביקורות"
+      },
+      "owner_card": {
+        "heading": "מאחורי העסק"
       },
       "action_row": {
         "aria": {
@@ -2576,6 +2580,7 @@
     "closed_now": "סגור",
     "opens_at": "· פותח ב-{day} {time}",
     "closed_day": "סגור",
+    "today": "היום",
     "tomorrow": "מחר",
     "weekdays": {
       "sun": "יום ראשון",

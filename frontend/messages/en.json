@@ -708,6 +708,7 @@
       },
       "sections": {
         "about": "About",
+        "location": "Getting there",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -754,6 +755,9 @@
         },
         "excerpt_footer": "From the reviews",
         "excerpt_all": "All reviews"
+      },
+      "owner_card": {
+        "heading": "Behind the business"
       },
       "action_row": {
         "aria": {
@@ -2555,6 +2559,7 @@
     "closed_now": "Closed",
     "opens_at": "· opens {day} {time}",
     "closed_day": "Closed",
+    "today": "Today",
     "tomorrow": "tomorrow",
     "weekdays": {
       "sun": "Sunday",
