@@ -3,6 +3,19 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1305 — Batch עמוד בית עסק II: 6-fix producer-page display batch — 5 code PRs + 1 finding
+
+- **Shipped (all merged to staging):** YELLOW tier, ADR-016 v2 end-to-end (Phase 0→implement→self-QA→PR→auto-merge on the 2 required aggregator gates), PR-per-task, all frontend display-only.
+  - **A — dispatch-day pivot (PR #1896):** new `frontend/lib/deliveryGroups.js` `groupDeliveryAreas` → hoist / group / flat modes on `delivery_areas` so a shared day is stated once and the per-city minimum stands out. `nationwide`/`arranged` unchanged. `deliveryGroups.test.js` (every branch) + `DeliveryBlock.test.jsx` updated.
+  - **B — MiniMap nav chips (PR #1897):** "Waze" / "מפות Google" short labels + Phosphor `MapPin` (pre-approved fallback — official brand SVGs unreachable in sandbox) + `aria-label` purpose for WCAG 2.4.6. `MiniMap.test.jsx` updated (MapPin mock + aria assertions).
+  - **C — delivery CTA (PR #1899):** `WhatsAppButton` optional `label` prop (global default "WhatsApp" unchanged); DeliveryBlock passes "שליחת הודעה בוואטסאפ" (`group_buys.delivery.order_cta`).
+  - **D — green dot (FINDING, no code):** the unlabelled green dot = `availability-dot` in **`ProducerCard.jsx:330`** (`availabilityDot()`, MEH-643) — a **central component OUTSIDE MEH-1305's file_locations** → per STOP condition (b) not modified; needs its own ProducerCard-scoped ticket to add a visible availability label.
+  - **E — product grid (PR #1898):** MEH-1126 resolved in Phase 0 (Done via PR #1627, superseded by MEH-1168 P2's uniform rows — grid already uniform). Replaced the no-photo Leaf glyph with a typographic cell (initial in Frank Ruhl on `bg-primary/[0.06]`), realising MEH-1126's "no icon" intent. B4 signature flag row untouched. MEH-1126 already Done — no description edit needed.
+  - **F — price format (PR #1900):** numeric prices already canonical+bidi (MEH-1168 P1); split the free-text `price_range` path to render in natural direction (MEH-1140: data, not reformatted) instead of a corrupting `dir="ltr"`. Same price cell/position per card.
+- **Parallel-session note:** MEH-1302 (PR #1893) was completed by a **different, concurrent session** (`session_01Uaf…`); per Rule 1 this session STOPPED, reported, and — with Sapir's explicit go — did MEH-1305 ONLY, leaving #1893 and MEH-1302 untouched (no competing PR, no Linear edit). The local MEH-1302 duplicate this session had drafted was discarded.
+- **Verification:** vitest + `npm run build` green per branch; i18n he+en twins for every new key (MEH-978 + MEH-840); 0 physical RTL props; per-task Playwright self-QA @375+@1440 → `qa-artifacts/MEH-1305/`. Two automated-review items on task B (English-only comment + WCAG aria-label) were fixed in-branch before merge.
+- **Next:** Sapir mobile-checks the merged batch on the Vercel preview / staging. `Closes MEH-1305` on this docs PR (last-merged).
+
 ## 2026-07-18 — MEH-1302 — Quick Answers: answer-first disclosure in the contact card — `feature/meh-1302-quick-answers`
 
 - **Shipped:** reworked `WhatsAppQuestionChips` from WhatsApp-only chips into answer-first disclosures — the two ready-made questions answerable from existing public data (delivery + how-to-order) are answered in-page; WhatsApp stays for the dynamic stock question, custom questions, and an "another question?" escalation. YELLOW tier, ADR-016 v2 end-to-end (Phase 0→implement→self-QA→PR→auto-merge on the 2 required aggregator gates).
