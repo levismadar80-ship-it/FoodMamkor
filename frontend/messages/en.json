@@ -1109,8 +1109,8 @@
     },
     "mini": {
       "default_label": "Location",
-      "open_in_waze": "Open in Waze",
-      "open_in_google": "Open in Google Maps"
+      "open_in_waze": "Waze",
+      "open_in_google": "Google Maps"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {No local businesses in this area} one {One local business in this area} other {# local businesses in this area}}"
