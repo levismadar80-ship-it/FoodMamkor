@@ -17,3 +17,21 @@ e2e
 playwright.config.ts
 test-results
 playwright-report
+
+# AI dev artifacts — never ship to production (MEH-449)
+# Canonical pattern list: ../.claude/hooks/check-artifact-location.sh
+# Explicit names only — no *.md blanket glob (README.md must stay shippable).
+# **/ prefix covers nested copies (e.g. e2e/CLAUDE.md) as well as root-level.
+**/.aider.conf.yml
+**/.claude
+**/.cursor
+**/AGENTS.md
+**/CHANGELOG.md
+**/CLAUDE.local.md
+**/CLAUDE.md
+**/HANDOFF.md
+**/ROADMAP.md
+docs/DEPLOYMENT.md
+docs/MANUAL_TESTING.md
+docs/MIGRATIONS.md
+docs/SECURITY.md

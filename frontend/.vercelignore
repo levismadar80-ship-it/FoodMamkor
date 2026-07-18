@@ -1,0 +1,20 @@
+# AI dev artifacts — never ship to production (MEH-449)
+# Vercel's Root Directory is frontend/, so repo-root artifacts are already
+# structurally out of reach; this file closes Gap 1 — a forbidden file
+# accidentally copied INTO frontend/ must never be uploaded to Vercel.
+# Canonical pattern list: ../.claude/hooks/check-artifact-location.sh
+# Explicit names only — no *.md blanket glob (README.md must stay shippable).
+# .gitignore syntax: a bare name matches at every directory level.
+.aider.conf.yml
+.claude/
+.cursor/
+AGENTS.md
+CHANGELOG.md
+CLAUDE.local.md
+CLAUDE.md
+HANDOFF.md
+ROADMAP.md
+docs/DEPLOYMENT.md
+docs/MANUAL_TESTING.md
+docs/MIGRATIONS.md
+docs/SECURITY.md
