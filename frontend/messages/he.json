@@ -2903,8 +2903,27 @@
       "my_area": "האזור שלי",
       "city_placeholder": "[עיר]",
       "ask_us": "שאלו אותנו",
+      "common_questions": "שאלות נפוצות",
       "greeting_template": "שלום {name}, {q}",
-      "delivery_to_city": "אפשר משלוח ל{city}?"
+      "delivery_to_city": "אפשר משלוח ל{city}?",
+      "ordering_q": "איך מזמינים?",
+      "delivery_nationwide": "כן! משלוחים לכל הארץ",
+      "delivery_nationwide_except": "משלוחים לכל הארץ, חוץ מ: {cities}",
+      "delivery_areas": "משלוחים ל: {cities}",
+      "delivery_areas_more": "משלוחים ל: {cities} + עוד {count}",
+      "delivery_sub_min": "מינימום {min}",
+      "delivery_sub_day": "ימי משלוח: {day}",
+      "delivery_pickup_only": "אין משלוחים — איסוף עצמי ב{city}",
+      "delivery_pickup_only_nocity": "אין משלוחים — איסוף עצמי",
+      "ordering_whatsapp": "שולחים הודעת וואטסאפ ומקבלים מענה ישיר",
+      "ordering_external_order": "מזמינים דרך טופס ההזמנות",
+      "ordering_website": "מזמינים דרך האתר",
+      "ordering_instagram": "שולחים הודעה באינסטגרם",
+      "ordering_facebook": "שולחים הודעה בפייסבוק",
+      "ordering_email": "שולחים לנו מייל",
+      "ordering_phone_prefix": "מתקשרים:",
+      "ordering_link_label": "למעבר",
+      "escalation": "שאלה אחרת? שלחו לנו הודעה"
     }
   },
   "directory": {

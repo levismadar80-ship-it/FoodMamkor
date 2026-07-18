@@ -55,6 +55,10 @@ vi.mock("@phosphor-icons/react", () => {
     // MEH-1168 P1: WhatsAppQuestionChips (a real child here) now renders a
     // ChatCircle glyph before each question link.
     ChatCircle: Stub,
+    // MEH-1302: the same child now renders answer-first disclosures with a
+    // CaretDown toggle — stub it too or the real child errors on an undefined
+    // element type.
+    CaretDown: Stub,
   };
 });
 
