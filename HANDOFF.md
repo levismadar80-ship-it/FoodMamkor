@@ -3,6 +3,24 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-449 POST-MERGE closeout (session end)
+
+- **MERGED to staging** — PR #1916, squash `cfe04ac` (18:21:57Z). Merged by CC on **explicit user override** of the MEH-671 CC-deny-on-workflows rule (the batch dispatch said Sapir-merge; the user overrode via AskUserQuestion). Both required gates green; the new `ai-artifact-scan` job passed. Landing took ~10 Accept-Both re-syncs of HANDOFF/CHANGELOG to win the CI-vs-churn race; the `resolve-conflicts` skill drove the resolutions.
+- **Layer status on staging:** Layers 1–3 LIVE (ignore files + `ai-artifact-scan` CI gate + `frontend/e2e/flows/23-ai-artifact-probe.spec.ts`). **Layer 4 (pre-edit hook) INERT** — `.claude/settings.json` registration blocked by MEH-442 self-protect + harness permission; staged for Sapir as `docs/ci/meh-449-settings-hook-registration.patch.md`.
+- **Verification 3 (staging curl probe) — NOT PASSED / inconclusive from CC.** All 6 forbidden paths on `staging.mehamakor.online` return **302 → `vercel.com/sso-api`** (Vercel Deployment Protection auth wall in front of routing) — an unauthenticated client can't observe the underlying 404-vs-200. Sapir must run it authenticated / with a Vercel bypass token / against public prod post-`main`, confirming **404 for all 6**. Recorded honestly on MEH-449; NOT marked pass.
+- **MEH-784 overlap surfaced (RELATED, not duplicate):** the Layer-4 registration and MEH-784 (settings.json hooks integrity / Windows / drift-guard, Backlog) both touch the same `.claude/settings.json` hooks block. Cross-linked both directions (MEH-449 description banner + קשורים; MEH-784 comment). MEH-784's Bash-write-bypass + drift-guard would govern/protect the Layer-4 hook once they land. No hard conflict — additive blocks, merge-don't-overwrite.
+- **Batch recap (this session, all 4 done to their stop points):** MEH-1323 (MERGED #1915, /about→/messages link) · MEH-1324 (READ-ONLY route-audit delta SYNC — MEH-1331 acted on the RESERVED finding) · MEH-1322 (Chunk-1 domain map SYNC + decision box, hard-stop for Sapir's canonical-domain call) · MEH-449 (MERGED #1916).
+- **Next (Sapir):** apply the Layer-4 settings patch; run Verification-3 authenticated; decide MEH-1322 canonical domain to unblock its Chunk 2.
+
+## 2026-07-18 — MEH-1339 — WhatsApp "הסר" opt-out keyword — MERGED (PR #1938)
+
+- **What:** a "הסר" reply to a favorite alert now auto-disables `whatsapp_opt_in` (instead of the customer blocking the number → quality-rating hit). YELLOW, backend-only, ADR-016 v2.
+- **Shipped:** NEW `backend/app/utils/phone.py` `canonical_il_msisdn()` (bidirectional IL canonicalizer; not `_normalize_il_phone`, which stays outbound-only/untouched). `whatsapp_webhook.py`: after HMAC verify + after the always-written inbound row, full-message keyword match (`הסר`/`הסרה`/`עצור`/`STOP`/`UNSUBSCRIBE`, case-insensitive, trimmed, not substring) → turn off `whatsapp_opt_in` on all FavoriteAlert of all users sharing the canonical phone → in-window confirmation; None/no-match → log+no-op; fail-open. HMAC path + schema untouched. Python-side match gated behind the keyword.
+- **Tests:** `tests/test_whatsapp_optout.py` 21 (canonical unit + webhook flow); full baseline parity; ruff check+format clean.
+- **Branch:** `feature/meh-1339-whatsapp-optout-keyword` off staging; code-only (logs backfilled separately — this PR). CI note: the `Backend lint` gate runs `ruff format --check`, not just `ruff check` — one format-fix commit was needed.
+- **Open follow-ups (from claude[bot] review, deferred per the CI-race freeze):** import `_OPTOUT_CONFIRMATION` into the test instead of the hardcoded copy (DRY); a clarifying comment on `phone.py`'s `else = already-national` branch.
+- **Next (Sapir):** smoke — reply "הסר" from your phone → flag off in DB + confirmation received.
+
 ## 2026-07-18 — MEH-1329 — favorite alerts via approved WhatsApp utility template — MERGED (PR #1931)
 
 - **What:** `fire_alerts` sent WhatsApp via free-form `send_text` → only delivered inside the 24h window, which favoriting customers never have open → Meta 131047 `window_expired`, silent loss. Switched to the pre-approved `favorite_alert_he_v1` UTILITY template (MEH-754/MEH-509 pattern). GREEN, backend-only, ADR-016 v2.

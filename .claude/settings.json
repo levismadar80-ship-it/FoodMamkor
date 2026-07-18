@@ -29,6 +29,17 @@
         "hooks": [
           {
             "type": "command",
+            "timeout": 10000,
+            "_comment": "MEH-449 Layer 4 — AI-artifact location guard: blocks writing AI dev artifacts (CLAUDE.md, HANDOFF.md, ROADMAP.md, CHANGELOG.md, AGENTS.md, .claude/, .cursor/, docs/SECURITY.md family — canonical list lives in the hook) into deployable directories (frontend/public/, frontend/app/api/, backend/static/, backend/app/static/). Exit 2 = block. Fail-closed if jq missing or input malformed.",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/check-artifact-location.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
             "_comment": "Central component guard (MEH-128): warns when editing high-risk files. Warning-only, always exits 0. See docs/CENTRAL_COMPONENTS.md.",
             "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/pre-edit-guard.js\""
           }

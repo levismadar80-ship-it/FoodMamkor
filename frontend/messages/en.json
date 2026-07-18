@@ -325,8 +325,8 @@
           "heading": "We've got your details",
           "signature": "Warmly, Sapir",
           "tier_trust": "Every business on Mehamakor goes through a personal introduction — identity, story, and a conversation. A 'Verified' badge is added when an official licensing or exemption document is submitted and we review it.",
-          "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually within 1-2 business days.",
-          "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually within 1-2 business days.",
+          "body_with_whatsapp": "We sent you a WhatsApp message with a link to complete your profile. Your request is pending approval — usually up to 3 business days.",
+          "body_no_whatsapp": "Registration complete! Complete your profile directly from the dashboard. Your request is pending approval — usually up to 3 business days.",
           "whatsapp_warning": "Didn't get a WhatsApp message? The phone number may be incorrect, or you can continue and complete the profile directly from the dashboard.",
           "next_heading": "What's next?",
           "next_step1": "Personal review",
@@ -953,7 +953,7 @@
       "approval_required_hint": "Opening a group buy will be available once the business is approved",
       "loading": "Loading...",
       "empty_title": "Group buys = wholesale price for your customers",
-      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
+      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
       "deadline_prefix": "Deadline: {date}",
@@ -2811,7 +2811,8 @@
       "remove_aria": "Remove {city}",
       "placeholder": "Type a city name...",
       "commit_hint": "Pick a city from the list to add it",
-      "region_added": "Added"
+      "region_added": "Added",
+      "region_remove_title": "Remove {region} cities"
     },
     "city_search": {
       "placeholder": "Search city...",
@@ -3668,7 +3669,8 @@
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
       "states": {
-        "zero_activity": "No activity yet — share your page to get started",
+        "zero_activity_title": "Views & inquiries",
+        "zero_activity": "No views or inquiries yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
@@ -3684,12 +3686,12 @@
         "sent_body": "Your details were sent — we'll update you after the team reviews them."
       },
       "greeting": "Hi {name}",
-      "welcome_subtitle": "Welcome to managing the business {business}",
+      "welcome_subtitle": "Welcome to managing <business>{name}</business>",
+      "welcome_subtitle_generic": "Welcome to managing your business",
       "status": {
         "pending": {
           "title": "Your profile is under review",
-          "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster.",
-          "cta": "Complete profile ←"
+          "body": "Our team is checking the details — usually up to 3 business days. Complete profiles are approved faster."
         },
         "rejected": {
           "title": "⚠️ Application not approved",
@@ -3769,7 +3771,8 @@
           "view": "Profile view"
         },
         "cta": "Open WhatsApp to reply",
-        "zero_state": "No activity yet — share your page to get started"
+        "title": "Recent activity",
+        "zero_state": "New inquiries and views will appear here — we'll update the moment customers start responding"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
@@ -3998,6 +4001,7 @@
         "subtitle": "Your opening hours, shown on your business page.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+        "revert_cta": "Discard changes",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
