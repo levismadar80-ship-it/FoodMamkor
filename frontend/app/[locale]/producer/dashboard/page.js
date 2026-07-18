@@ -599,12 +599,19 @@ export default function ProducerDashboardPage() {
       ) : hasActivity ? (
         <OverviewStatsHero analytics={analytics} />
       ) : (
+        // MEH-1345: this zero-state and ActivityPulse's rendered the SAME
+        // title-less copy — two identical anonymous cards on a fresh
+        // dashboard. Each now carries its own visible title + purpose-
+        // specific copy.
         <div
           data-testid="overview-zero-state"
-          className="bg-white border border-border rounded-[16px] p-6 mb-8 flex items-center gap-3"
+          className="bg-white border border-border rounded-[16px] p-6 mb-8"
         >
-          <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
-          <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+          <p className="font-semibold text-text mb-1">{t("states.zero_activity_title")}</p>
+          <div className="flex items-center gap-3">
+            <Sparkle size={20} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+            <p className="text-sm text-fg-muted">{t("states.zero_activity")}</p>
+          </div>
         </div>
       )}
 
@@ -674,9 +681,12 @@ function ActivityPulse({ analytics }) {
       className="bg-white border border-border rounded-[16px] p-6"
     >
       {rows.length === 0 ? (
-        <p data-testid="activity-pulse-empty" className="text-sm text-fg-muted">
-          {t("zero_state")}
-        </p>
+        // MEH-1345: visible title so the empty pulse card is identifiable
+        // (was an anonymous line identical to the stats zero-state above).
+        <div data-testid="activity-pulse-empty">
+          <p className="font-semibold text-text mb-1">{t("title")}</p>
+          <p className="text-sm text-fg-muted">{t("zero_state")}</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {waCount > 0 && (
