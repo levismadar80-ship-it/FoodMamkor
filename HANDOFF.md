@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1339 — WhatsApp "הסר" opt-out keyword — MERGED (PR #1938)
+
+- **What:** a "הסר" reply to a favorite alert now auto-disables `whatsapp_opt_in` (instead of the customer blocking the number → quality-rating hit). YELLOW, backend-only, ADR-016 v2.
+- **Shipped:** NEW `backend/app/utils/phone.py` `canonical_il_msisdn()` (bidirectional IL canonicalizer; not `_normalize_il_phone`, which stays outbound-only/untouched). `whatsapp_webhook.py`: after HMAC verify + after the always-written inbound row, full-message keyword match (`הסר`/`הסרה`/`עצור`/`STOP`/`UNSUBSCRIBE`, case-insensitive, trimmed, not substring) → turn off `whatsapp_opt_in` on all FavoriteAlert of all users sharing the canonical phone → in-window confirmation; None/no-match → log+no-op; fail-open. HMAC path + schema untouched. Python-side match gated behind the keyword.
+- **Tests:** `tests/test_whatsapp_optout.py` 21 (canonical unit + webhook flow); full baseline parity; ruff check+format clean.
+- **Branch:** `feature/meh-1339-whatsapp-optout-keyword` off staging; code-only (logs backfilled separately — this PR). CI note: the `Backend lint` gate runs `ruff format --check`, not just `ruff check` — one format-fix commit was needed.
+- **Open follow-ups (from claude[bot] review, deferred per the CI-race freeze):** import `_OPTOUT_CONFIRMATION` into the test instead of the hardcoded copy (DRY); a clarifying comment on `phone.py`'s `else = already-national` branch.
+- **Next (Sapir):** smoke — reply "הסר" from your phone → flag off in DB + confirmation received.
+
 ## 2026-07-18 — MEH-1329 — favorite alerts via approved WhatsApp utility template — MERGED (PR #1931)
 
 - **What:** `fire_alerts` sent WhatsApp via free-form `send_text` → only delivered inside the 24h window, which favoriting customers never have open → Meta 131047 `window_expired`, silent loss. Switched to the pre-approved `favorite_alert_he_v1` UTILITY template (MEH-754/MEH-509 pattern). GREEN, backend-only, ADR-016 v2.
