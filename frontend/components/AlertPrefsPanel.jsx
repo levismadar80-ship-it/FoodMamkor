@@ -53,11 +53,23 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
       .catch(() => setPrefs({ ...DEFAULT_PREFS }))
       .finally(() => setLoading(false));
 
-    if ("Notification" in window) {
+    // MEH-1326: gate the push button on a server-provided VAPID key. With no
+    // key configured, Web Push can never deliver, so we keep pushStatus at
+    // "unsupported" (button not rendered) rather than showing a dead promise.
+    let alive = true;
+    (async () => {
+      const { getVapidPublicKey } = await import("@/lib/push");
+      const key = await getVapidPublicKey();
+      if (!alive) return;
+      if (!key || !("Notification" in window)) {
+        setPushStatus("unsupported");
+        return;
+      }
       setPushStatus(Notification.permission === "granted" ? "granted" : "prompt");
-    } else {
-      setPushStatus("unsupported");
-    }
+    })();
+    return () => {
+      alive = false;
+    };
   }, [producerId]);
 
   const toggle = (key) => {
@@ -225,7 +237,7 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
         </div>
       )}
 
-      {pushStatus !== "unsupported" && pushStatus !== "granted" && (
+      {(pushStatus === "prompt" || pushStatus === "denied") && (
         <button
           onClick={enablePush}
           disabled={pushStatus === "denied"}
