@@ -13,6 +13,11 @@ import he from "../messages/he.json";
 import api from "@/lib/api";
 import { ImagesCard } from "@/app/[locale]/producer/dashboard/edit/cards";
 
+// MEH-1306: cards.jsx now imports @/i18n/navigation (view-on-page link);
+// mock it so createNavigation's next/navigation import never loads in jsdom.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
 vi.mock("@/lib/api", () => ({
   default: { get: vi.fn(), put: vi.fn(), post: vi.fn() },
 }));
