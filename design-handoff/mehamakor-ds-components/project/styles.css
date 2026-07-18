@@ -1,0 +1,63 @@
+@import "./_ds_bundle.css";
+/* Tailwind runtime plumbing defaults, registered for the design-system token scan (sync artifact — carry upstream via /design-sync) */
+:root{
+  --tw-backdrop-blur:  ;/* @kind other */ 
+  --tw-backdrop-brightness:  ;/* @kind other */ 
+  --tw-backdrop-contrast:  ;/* @kind other */ 
+  --tw-backdrop-grayscale:  ;/* @kind other */ 
+  --tw-backdrop-hue-rotate:  ;/* @kind other */ 
+  --tw-backdrop-invert:  ;/* @kind other */ 
+  --tw-backdrop-opacity:  ;/* @kind other */ 
+  --tw-backdrop-saturate:  ;/* @kind other */ 
+  --tw-backdrop-sepia:  ;/* @kind other */ 
+  --tw-bg-opacity: 1;/* @kind other */ 
+  --tw-blur:  ;/* @kind other */ 
+  --tw-border-opacity: 1;/* @kind other */ 
+  --tw-border-spacing-x: 0;/* @kind other */ 
+  --tw-border-spacing-y: 0;/* @kind other */ 
+  --tw-brightness:  ;/* @kind other */ 
+  --tw-contain-layout:  ;/* @kind other */ 
+  --tw-contain-paint:  ;/* @kind other */ 
+  --tw-contain-size:  ;/* @kind other */ 
+  --tw-contain-style:  ;/* @kind other */ 
+  --tw-content: '';/* @kind other */ 
+  --tw-contrast:  ;/* @kind other */ 
+  --tw-divide-opacity: 1;/* @kind other */ 
+  --tw-divide-y-reverse: 0;/* @kind other */ 
+  --tw-drop-shadow:  ;/* @kind other */ 
+  --tw-gradient-from-position:  ;/* @kind other */ 
+  --tw-gradient-to-position:  ;/* @kind other */ 
+  --tw-gradient-via-position:  ;/* @kind other */ 
+  --tw-grayscale:  ;/* @kind other */ 
+  --tw-hue-rotate:  ;/* @kind other */ 
+  --tw-invert:  ;/* @kind other */ 
+  --tw-numeric-figure:  ;/* @kind other */ 
+  --tw-numeric-fraction:  ;/* @kind other */ 
+  --tw-numeric-spacing:  ;/* @kind other */ 
+  --tw-ordinal:  ;/* @kind other */ 
+  --tw-pan-x:  ;/* @kind other */ 
+  --tw-pan-y:  ;/* @kind other */ 
+  --tw-pinch-zoom:  ;/* @kind other */ 
+  --tw-ring-color: rgb(59 130 246 / 0.5);/* @kind other */ 
+  --tw-ring-inset:  ;/* @kind other */ 
+  --tw-ring-offset-color: #fff;/* @kind other */ 
+  --tw-ring-offset-shadow: 0 0 #0000;/* @kind other */ 
+  --tw-ring-offset-width: 0px;/* @kind other */ 
+  --tw-ring-opacity: 1;/* @kind other */ 
+  --tw-ring-shadow: 0 0 #0000;/* @kind other */ 
+  --tw-rotate: 0;/* @kind other */ 
+  --tw-saturate:  ;/* @kind other */ 
+  --tw-scale-x: 1;/* @kind other */ 
+  --tw-scale-y: 1;/* @kind other */ 
+  --tw-scroll-snap-strictness: proximity;/* @kind other */ 
+  --tw-sepia:  ;/* @kind other */ 
+  --tw-shadow: 0 0 #0000;/* @kind other */ 
+  --tw-shadow-colored: 0 0 #0000;/* @kind other */ 
+  --tw-skew-x: 0;/* @kind other */ 
+  --tw-skew-y: 0;/* @kind other */ 
+  --tw-slashed-zero:  ;/* @kind other */ 
+  --tw-space-y-reverse: 0;/* @kind other */ 
+  --tw-text-opacity: 1;/* @kind other */ 
+  --tw-translate-x: 0;/* @kind other */ 
+  --tw-translate-y: 0;/* @kind other */ 
+}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="design_doc_mode" content="canvas">
+<title>ProducerDetail Refresh — שקט מדויק v3 (bidi · a11y · chrome)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;family=Cormorant:ital,wght@0,500;1,400;1,500;1,600&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+:root{--p:#2e6853;--pd:#2E4A2E;--bg:#F5F0E8;--ink:#1C1A17;--mut:#6B6860;--ln:#E5DFD3;--gold:#8B6914;--wa:#1FAF54}
+body{margin:0;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--ink)}
+a{color:var(--p);text-decoration:none}a:hover{color:var(--pd)}
+.frame{position:absolute}
+.flabel{font-size:12px;font-weight:600;color:var(--mut);margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.idchip{background:var(--ink);color:#fff;font-size:11px;font-weight:700;line-height:1;padding:5px 9px;border-radius:99px}
+.card{background:var(--bg);border:1px solid var(--ln);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(28,26,23,.10)}
+.m{width:375px}
+.panel{background:var(--bg);border:1px solid var(--ln);border-radius:18px;padding:20px;box-shadow:0 24px 60px rgba(28,26,23,.10);display:flex;flex-direction:column;gap:14px}
+.annot{font-family:ui-monospace,SFMono-Regular,monospace;font-size:10px;line-height:1.6;color:#948e7f;margin:0}
+.ph-strip{background:repeating-linear-gradient(45deg,#ece5d8 0 10px,#e3dbcc 10px 20px);display:flex;align-items:center;justify-content:center}
+.ph-strip span{font-family:ui-monospace,monospace;font-size:10px;color:#8a8478;background:rgba(245,240,232,.85);padding:3px 8px;border-radius:6px}
+.dim{background:#EFE9DD;border-block:1px solid var(--ln);padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.dim p{margin:0;font-size:11px;color:#a39c8c;font-weight:500}
+.pagebar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 0}
+.pagebar button{width:38px;height:38px;border-radius:99px;border:1px solid var(--ln);background:#fff;color:var(--ink);font-size:17px;display:flex;align-items:center;justify-content:center}
+.crumb{margin:0;padding:10px 20px 0;font-size:11.5px;color:var(--mut);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.crumb b{color:var(--ink);font-weight:500}
+.hz{padding:20px 20px 0;display:flex;flex-direction:column;gap:10px}
+.name{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:27px;line-height:1.15;margin:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:8px}
+.vseal{display:inline-flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--p);transform:translateY(-2px)}
+.vseal i{font-size:17px}
+.oneliner{margin:0;font-size:15px;line-height:1.55;color:var(--ink)}
+.rating{display:inline-flex;align-items:center;gap:6px;color:var(--ink);align-self:flex-start}
+.rating i{color:var(--gold);font-size:19px}
+.rating b{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:19px}
+.rating span{font-size:13px;color:var(--mut);text-decoration:underline;text-underline-offset:3px}
+.newmark{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:17px;align-self:flex-start}
+.metas{display:flex;flex-direction:column;gap:4px}
+.meta{margin:0;font-size:13px;color:var(--mut);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.meta .sep{opacity:.55}
+.st-open{color:var(--p);font-weight:600}
+.st-closed{color:var(--mut);font-weight:600}
+.st-vac{color:#7A5A10;font-weight:600}
+.kosher{margin:0;font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:6px}
+.kosher i{font-size:14px}
+.quietacts{display:flex;gap:18px;border-top:1px solid var(--ln);padding:12px 0 14px;margin-top:4px}
+.quietacts a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--ink)}
+.quietacts a i{font-size:17px;color:var(--pd)}
+.pull{display:block;margin:4px 20px 0;padding:16px 18px 14px;border-block:1px solid var(--ln)}
+.pull p{margin:0;font-family:'Cormorant',serif;font-style:italic;font-weight:500;font-size:21px;line-height:1.4;color:var(--ink)}
+.pull p::before{content:"„";color:var(--gold);font-weight:600;margin-inline-end:2px}
+.pull footer{margin-top:8px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--mut);display:flex;align-items:center;gap:5px}
+.pull footer i{font-size:12px}
+.ccard{background:#fff;border:1px solid var(--ln);border-radius:16px;margin:18px 20px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:0 4px 18px rgba(28,26,23,.05)}
+.cta{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--wa);color:#fff;border:0;border-radius:99px;min-height:50px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;width:100%;cursor:pointer}
+.cta i{font-size:21px}
+.faq{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.faq a{border:1px solid var(--ln);border-radius:99px;padding:7px 13px;font-size:12.5px;color:var(--ink);background:var(--bg)}
+.faq a.more{border:0;background:none;color:var(--p);font-weight:600;padding:7px 4px}
+.iconrow{display:flex;gap:10px;border-top:1px solid var(--ln);padding-top:14px}
+.iconrow a{width:44px;height:44px;border-radius:99px;border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--pd);background:#fff}
+.sechead{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:19px;margin:0 0 12px}
+.person{padding:20px}
+.pcard{background:#fff;border:1px solid var(--ln);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 18px rgba(28,26,23,.05)}
+.prow-top{display:flex;align-items:center;gap:14px}
+.pname{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:19px;margin:0}
+.prole{margin:2px 0 0;font-size:12.5px;color:var(--mut)}
+.bio{margin:0;font-size:14px;line-height:1.65;color:var(--ink)}
+.initav{border-radius:99px;background:var(--p);color:#F5F0E8;display:flex;align-items:center;justify-content:center;font-family:'Frank Ruhl Libre',serif;font-weight:700;flex:none}
+.mapz{padding:0 20px 24px}
+.addr{margin:0 0 10px;font-size:13.5px;color:var(--mut);display:flex;align-items:center;gap:6px}
+.hrs{border:1px solid var(--ln);border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}
+.hrs-t{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--ink);cursor:pointer;text-align:start}
+.hrs-t i{font-size:16px;color:var(--pd)}
+.hrs-t .tail{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;color:var(--mut);font-size:12px}
+.hrs-w{border-top:1px solid var(--ln);padding:6px 14px 12px;display:flex;flex-direction:column}
+.hrs-w div{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);padding:5px 0}
+.hrs-w div.today{color:var(--ink);font-weight:600}
+.mapbox{height:150px;border-radius:12px;border:1px solid var(--ln)}
+.navrow{display:flex;gap:10px;margin-top:10px}
+.navbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--ln);border-radius:99px;background:#fff;font-size:14px;font-weight:600;color:var(--ink)}
+.pop{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:16px;box-shadow:0 14px 40px rgba(28,26,23,.16);position:relative;display:flex;flex-direction:column;gap:8px;max-width:280px}
+.pop::before{content:"";position:absolute;top:-6px;inset-inline-end:34px;width:12px;height:12px;background:#fff;border-inline-start:1px solid var(--ln);border-top:1px solid var(--ln);transform:rotate(45deg)}
+.pophead{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px}
+.pophead i{color:var(--p);font-size:19px}
+.pop p{margin:0;font-size:13.5px;line-height:1.6;color:var(--ink)}
+.pop a{font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.pbtn{display:inline-flex;align-items:center;justify-content:center;background:var(--p);color:#fff !important;border-radius:99px;min-height:40px;padding:0 22px;font-size:13.5px;font-weight:600;align-self:flex-start}
+.pbtn:hover{background:var(--pd);color:#fff}
+.h3{font-size:13px;font-weight:700;margin:0}
+.deckhead{max-width:560px}
+.deckhead .kick{font-family:ui-monospace,monospace;font-size:11px;color:#948e7f;margin:0 0 10px;letter-spacing:.04em}
+.deckhead h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:34px;margin:0 0 12px;line-height:1.15}
+.deckhead p{font-size:14px;line-height:1.7;color:var(--mut);margin:0}
+.notes{background:#fff;border:1px solid var(--ln);border-radius:16px;padding:22px 24px;width:560px}
+.notes h2{font-family:'Frank Ruhl Libre',serif;font-size:17px;font-weight:700;margin:0 0 8px}
+.notes ul{margin:0 0 16px;padding-inline-start:18px;font-size:12.5px;line-height:1.7;color:var(--ink)}
+.notes ul:last-child{margin-bottom:0}
+.d{width:1140px}
+.dgrid{display:grid;grid-template-columns:1fr 350px;gap:36px;padding:26px 32px 34px;align-items:start}
+.d .hz{padding:0}
+.d .titlerow{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.d .name{font-size:34px}
+.d .quietacts{border:0;padding:6px 0 0;margin:0;flex:none}
+.d .pull{margin:18px 0 0}
+.d .person{padding:26px 0 0}
+.d .mapz{padding:26px 0 0}
+.d .mapbox{height:210px}
+.d .ccard{margin:0}
+.dtop{display:flex;justify-content:space-between;align-items:center;padding:14px 32px;border-bottom:1px solid var(--ln);font-size:12.5px;color:var(--mut)}
+.dtop .crumb{padding:0}
+.tabbar{display:flex;gap:22px;padding:0 20px;border-bottom:1px solid var(--ln);background:var(--bg)}
+.tabbar a{padding:13px 2px 11px;font-size:13.5px;color:var(--mut);font-weight:500;border-bottom:2px solid transparent}
+.tabbar a.on{color:var(--ink);font-weight:700;border-bottom-color:var(--ink)}
+.stickybar{position:absolute;inset-inline:0;bottom:0;background:#fff;border-top:1px solid var(--ln);padding:10px 16px 14px;box-shadow:0 -10px 26px rgba(28,26,23,.09)}
+</style>
+</head>
+<body>
+
+<div class="frame" style="left:48px;top:48px;">
+  <div class="deckhead">
+    <p class="kick">/producer/[id] · שקט מדויק · revision 2 — bidi · a11y · chrome</p>
+    <h1>v3 — הנדסת ממשק: bidi, נגישות, כרום</h1>
+    <p>כל 12 סעיפי סבב 2 יושמו: טווחי שעות ב־dir="ltr", ירוק אחד בעמוד — שורת השעות ניטרלית (<a href="#1g">1g</a>), זהב כהה #7A5A10 לטקסט קטן (<a href="#1d">1d</a>), טאב־בר סקשנים (<a href="#1i">1i</a>), StickyContactBar (<a href="#1j">1j</a>), hit-areas ‎44×44, מיקרוקופי נעול. מובייל <a href="#1a">1a</a> · דסקטופ <a href="#1b">1b</a> · אימות <a href="#1c">1c</a>.</p>
+  </div>
+</div>
+
+<div class="frame" style="left:660px;top:48px;">
+  <div class="notes">
+    <h2>דפוסים בשימוש</h2>
+    <ul>
+      <li><b>פעולות שקטות ליד הכותרת + כרטיס אדם עם פורטרט</b> — Airbnb DLS; Cornell/Stanford: תמונה + חשיפה עצמית מעלות אמון נתפס.</li>
+      <li><b>רגע אמון רועש אחד</b> — הדירוג בלבד בולט; "חדש" הוא ה־fallback שלו, לא עוד תג. (Airbnb)</li>
+      <li><b>Zoning בשורת מידע אחת</b> — מיקום · קטגוריה · סטטוס כטקסט צבוע, בלי נקודה. (Google Maps M3)</li>
+      <li><b>Progressive disclosure</b> — 3 צ'יפי שאלות + "עוד"; שעות: היום גלוי, שבוע בהקשה. (NN/g)</li>
+    </ul>
+    <h2>אנטי־דפוסים שנמנעו</h2>
+    <ul>
+      <li><b>Badge wall</b> — תג ✓ יחיד בשם; סטטוס טקסט ולא צ'יפ (נדחה טיפול B).</li>
+      <li><b>כפילות</b> — כשרות פעם אחת; שיתוף במובייל בהירו בלבד; סטטוס בכותרת בלבד (נדחה C).</li>
+    </ul>
+    <h2>החלטות RTL ליישום</h2>
+    <ul>
+      <li>ריווח לוגי בלבד: <code>ps-/pe-</code>, <code>ms-/me-</code>; אפס left/right פיזיים.</li>
+      <li>פעולות שקטות בקצה ה־inline-end של שורת הכותרת; שעות — <code>margin-inline-start:auto</code> לזנב.</li>
+      <li>כל שברון "קדימה" מצביע שמאלה: <code>ph-caret-left</code> (‹).</li>
+      <li>Popover מאומתת: החץ ב־<code>inset-inline-end</code>, מיושר לתג שבסוף שורת השם.</li>
+      <li>לוגואים של Waze / מפות Google לא עוברים mirror ולא נצבעים מחדש.</li>
+      <li>כל טווח זמן עטוף <code>dir="ltr"</code> — <span dir="ltr">9:00–17:00</span>, ההתחלה משמאל (תקדים ReviewsSection).</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ======================= 1a · mobile 375 ======================= -->
+<section class="frame" id="1a" style="left:48px;top:560px;">
+  <p class="flabel"><a class="idchip" href="#1a">1a</a> מובייל 375 — היום הטוב (פתוח, יש ביקורות, מחוברת)</p>
+  <article class="card m" data-screen-label="1a מובייל — שקט מדויק v2">
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+    </div>
+    <p class="crumb"><a href="#1a">בית</a><span>‹</span><a href="#1a">חלב וגבינות</a><span>‹</span><b>מחלבת עמק האלה</b></p>
+    <div class="ph-strip" style="height:200px;margin:10px 16px 0;border-radius:14px;"><span>hero photo — ללא שינוי · ❤️ הוסר · ⤴ שיתוף = ה־overlay שלמעלה</span></div>
+    <header class="hz" data-screen-label="Zone 1 — Header">
+      <h1 class="name">מחלבת עמק האלה <a class="vseal" href="#1c"><i class="ph-fill ph-seal-check"></i>מאומתת</a></h1>
+      <p class="oneliner">גבינות עז מחלב המשק, מיושנות במרתף קריר.</p>
+      <a class="rating" href="#reviews"><i class="ph-fill ph-star"></i><b>4.9</b><span>12 ביקורות</span></a>
+      <div class="metas">
+        <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+        <p class="kosher"><i class="ph ph-star-of-david"></i>כשר מהדרין</p>
+      </div>
+      <div class="quietacts">
+        <a href="#1h"><i class="ph ph-heart"></i>שמירה</a>
+        <a href="#1h"><i class="ph ph-bell-simple"></i>מעקב</a>
+      </div>
+      <p class="annot" style="margin:-6px 0 4px;">Z1 · שם+✓ / משפט / דירוג / מטא+כשרות · סטטוס = טקסט צבוע (1d) · שיתוף בהירו בלבד · שמירה/מעקב בלי חשבון → 1h · hit-area ≥44×44 בפדינג שקוף (הגודל הוויזואלי ללא שינוי)</p>
+    </header>
+    <a class="pull" href="#reviews">
+      <p>הכי טעים שאכלנו מזמן. ההזמנה הבאה כבר בדרך.</p>
+      <footer>מתוך הביקורות · לכל הביקורות<i class="ph ph-caret-left"></i></footer>
+    </a>
+    <p class="annot" style="padding:6px 20px 0;">MEH-1048 · עוגן #reviews · באפס ביקורות הבלוק מוסתר (1e)</p>
+    <aside class="ccard" data-screen-label="Zone 2 — Contact Card">
+      <button class="cta"><i class="ph-fill ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+      <div class="faq">
+        <a href="#1a">יש משלוחים לגולן?</a>
+        <a href="#1a">מה מגוון הגבינות?</a>
+        <a href="#1a">אפשר לבקר במחלבה?</a>
+        <a class="more" href="#1a">עוד שאלות</a>
+      </div>
+      <div class="iconrow">
+        <a href="#1a" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+        <a href="#1a" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+        <a href="#1a" aria-label="אתר הבית"><i class="ph ph-globe-simple"></i></a>
+      </div>
+      <p class="annot">Z2 · aria-labels: "טלפון" / "אינסטגרם" / "אתר הבית" · במובייל טלפון = חיוג ישיר · אייקונים 44px, צ׳יפים hit-area ≥44 בפדינג שקוף</p>
+    </aside>
+    <div class="dim"><p>גלריה · מוצרים · משלוחים — ללא שינוי</p><i class="ph ph-dots-three" style="color:#a39c8c;"></i></div>
+    <section class="person" data-screen-label="Zone 4 — מאחורי העסק">
+      <h2 class="sechead">מאחורי העסק</h2>
+      <div class="pcard">
+        <div class="prow-top">
+          <span class="initav" style="width:88px;height:88px;font-size:34px;">נ</span>
+          <div>
+            <h3 class="pname">נועה קרן</h3>
+            <p class="prole">בעלת המחלבה · קצרין</p>
+          </div>
+        </div>
+        <p class="bio">גדלתי בין העיזים במשק המשפחתי בקצרין. אחרי שנים בעיר חזרתי הביתה — היום כל גבינה מבשילה במרתף הקריר שמתחת לבית, בדיוק כמו אצל סבתא.</p>
+      </div>
+      <p class="annot" style="margin-top:8px;">Z4 · placeholder = אווטאר אות אחת בלבד (בלי "or browse") · בפרודקשן: תמונה אמיתית של נועה · וריאנטים — 1f</p>
+    </section>
+    <div class="dim"><p>ביקורות — ללא שינוי</p><i class="ph ph-dots-three" style="color:#a39c8c;"></i></div>
+    <section class="mapz" style="padding-top:20px;" data-screen-label="Zone 3 — Map">
+      <h2 class="sechead">הגעה ומיקום</h2>
+      <p class="addr"><i class="ph ph-map-pin"></i>דרך היין 4, קצרין</p>
+      <div class="hrs">
+        <button class="hrs-t"><i class="ph ph-clock"></i>היום · <span dir="ltr">9:00–17:00</span><span class="tail"><i class="ph ph-caret-down" style="color:var(--mut);font-size:13px;"></i></span></button>
+      </div>
+      <div class="mapbox ph-strip"><span>mini map — ללא שינוי</span></div>
+      <div class="navrow">
+        <a class="navbtn" href="#1a"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="#33CCFF" d="M12 2C6.5 2 2 6.3 2 11.6c0 2.9 1.4 5.5 3.6 7.2-.2.5-.6 1.1-1.3 1.6-.4.3-.3.9.2 1 1.7.4 3.4.1 4.7-.6.9.2 1.8.3 2.8.3 5.5 0 10-4.3 10-9.5S17.5 2 12 2z"></path><circle cx="9" cy="10" r="1.3" fill="#1C1A17"></circle><circle cx="15" cy="10" r="1.3" fill="#1C1A17"></circle><path d="M8.5 13.5c.8 1.5 2 2.3 3.5 2.3s2.7-.8 3.5-2.3" fill="none" stroke="#1C1A17" stroke-width="1.4" stroke-linecap="round"></path></svg>Waze</a>
+        <a class="navbtn" href="#1a"><svg viewBox="0 0 24 34" width="14" height="19" aria-hidden="true"><defs><clipPath id="gp1"><path d="M12 0C5.4 0 0 5.4 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.4 18.6 0 12 0z"></path></clipPath></defs><g clip-path="url(#gp1)"><rect x="-2" y="-2" width="28" height="38" fill="#34A853"></rect><polygon fill="#FBBC04" points="-2,10 26,-8 26,4 -2,24"></polygon><polygon fill="#EA4335" points="-2,-2 13,-2 -2,15"></polygon><polygon fill="#4285F4" points="7,-2 26,-2 26,10 13,5"></polygon></g><circle cx="12" cy="11" r="4.2" fill="#fff"></circle></svg>מפות Google</a>
+      </div>
+      <p class="annot" style="margin-top:8px;">Z3 · deep links: waze.com/ul?ll={lat},{lng}&amp;navigate=yes (universal link) · maps.google.com/maps/dir/?api=1&amp;destination={lat},{lng} · אין כתובת רחוב → "קצרין" בלבד, השורה לעולם לא ריקה · שעות: מקופל/פתוח — 1g</p>
+    </section>
+  </article>
+</section>
+
+<!-- ======================= 1c · verified popover ======================= -->
+<section class="frame" id="1c" style="left:475px;top:560px;width:320px;">
+  <p class="flabel"><a class="idchip" href="#1c">1c</a> popover מאומתת · בידול פעולות</p>
+  <div class="panel" data-screen-label="1c פרטי אימות">
+    <h1 class="name" style="font-size:22px;">מחלבת עמק האלה <a class="vseal" href="#1c" style="color:var(--pd);"><i class="ph-fill ph-seal-check"></i>מאומתת</a></h1>
+    <div class="pop">
+      <div class="pophead"><i class="ph-fill ph-seal-check"></i>עסק מאומת</div>
+      <p>כל עסק במהמקור עובר אישור ידני ופועל ברישיון.</p>
+      <a href="#1c">איך אנחנו מאמתים?<i class="ph ph-caret-left"></i></a>
+    </div>
+    <p class="annot">tap → popover (מובייל: bottom sheet עם focus trap) · Esc סוגר, הפוקוס חוזר לתג · aria-expanded נשמר · הקישור → /about#verification — placeholder עד שהתוכן קיים (משימת תוכן נפרדת)</p>
+    <div style="border-top:1px solid var(--ln);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
+      <p class="h3">בידול הפעולות</p>
+      <p style="margin:0;font-size:12.5px;line-height:1.65;"><i class="ph ph-heart" style="color:var(--pd);"></i> <b>שמירה</b> — Favorite (רשימה אישית)<br><i class="ph ph-bell-simple" style="color:var(--pd);"></i> <b>מעקב</b> — ProducerFollower (התראות)<br><i class="ph ph-share-network" style="color:var(--pd);"></i> <b>שיתוף</b> — מובייל: הירו בלבד · דסקטופ: שורת הפעולות</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 1d · status treatment ======================= -->
+<section class="frame" id="1d" style="left:475px;top:1240px;width:320px;">
+  <p class="flabel"><a class="idchip" href="#1d">1d</a> סטטוס — הטיפול הנבחר בשלושה מצבים</p>
+  <div class="panel" data-screen-label="1d סטטוס">
+    <p class="h3">A · טקסט צבוע בשורת המטא — נבחר</p>
+    <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+    <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-closed">לא מקבל הזמנות כרגע</span></p>
+    <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-vac">בחופשה · חוזרים ב־3 באוגוסט</span></p>
+    <p class="annot">פתוח=#2e6853 (5.7:1) · סגור=#6B6860 (4.9:1) · חופשה=זהב כהה #7A5A10 — 5.6:1 על שמנת, עובר AA (‎#8B6914 נפל: 4.47:1) · תאריך חופשה בעברית מלאה — לא נדרש dir · בלי נקודה, בלי צ'יפ, בלי אדום</p>
+    <div style="border-top:1px solid var(--ln);padding-top:12px;display:flex;flex-direction:column;gap:10px;">
+      <p class="h3" style="color:var(--mut);">שנשקלו ונדחו</p>
+      <p style="margin:0;font-size:12px;color:var(--mut);display:flex;align-items:center;gap:8px;"><span style="background:rgba(46,104,83,.1);color:var(--p);font-weight:600;border-radius:99px;padding:4px 10px;font-size:11.5px;">פתוח להזמנות</span>B · צ'יפ מרוקע — עוד תג בכותרת (badge-wall creep)</p>
+      <p style="margin:0;font-size:12px;color:var(--mut);">C · שורה מעל ה־CTA ("בדרך כלל עונים תוך כמה שעות") — מפצל את הסטטוס לשני בתים; expectation copy יכול להתווסף בהמשך בלי לשאת סטטוס</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 1h · logged-out ======================= -->
+<section class="frame" id="1h" style="left:475px;top:1960px;width:320px;">
+  <p class="flabel"><a class="idchip" href="#1h">1h</a> לא מחוברת — שמירה/מעקב</p>
+  <div class="panel" data-screen-label="1h התחברות">
+    <div class="quietacts" style="border:0;padding:0;margin:0;">
+      <a href="#1h" style="color:var(--p);"><i class="ph-fill ph-heart"></i>שמירה</a>
+      <a href="#1h"><i class="ph ph-bell-simple"></i>מעקב</a>
+    </div>
+    <div class="pop" style="max-width:100%;">
+      <div class="pophead"><i class="ph ph-heart"></i>שמירה דורשת חשבון</div>
+      <p>התחברי כדי לשמור עסקים אהובים ולעקוב אחרי עדכונים חדשים.</p>
+      <a class="pbtn" href="#1h">התחברות</a>
+      <a href="#1h" style="font-size:12.5px;">עוד אין לי חשבון<i class="ph ph-caret-left"></i></a>
+    </div>
+    <p class="annot">מסך אחד: דסקטופ popover · מובייל bottom sheet (focus trap) · Esc סוגר + פוקוס חוזר לטריגר · אחרי התחברות: הפעולה המקורית מושלמת אוטומטית וחוזרים לאותה נקודת גלילה — בלי מבוי סתום במסך ההתחברות · זהה למעקב (כותרת: "מעקב דורש חשבון")</p>
+  </div>
+</section>
+
+<!-- ======================= 1e · zero reviews ======================= -->
+<section class="frame" id="1e" style="left:850px;top:560px;width:430px;">
+  <p class="flabel"><a class="idchip" href="#1e">1e</a> אפס ביקורות — "חדש" במקום דירוג, בלי pull-quote</p>
+  <article class="card" style="width:375px;" data-screen-label="1e אפס ביקורות">
+    <header class="hz" style="padding-bottom:18px;">
+      <h1 class="name">מחלבת עמק האלה <a class="vseal" href="#1c"><i class="ph-fill ph-seal-check"></i>מאומתת</a></h1>
+      <p class="oneliner">גבינות עז מחלב המשק, מיושנות במרתף קריר.</p>
+      <span class="newmark">חדש</span>
+      <div class="metas">
+        <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+        <p class="kosher"><i class="ph ph-star-of-david"></i>כשר מהדרין</p>
+      </div>
+      <div class="quietacts" style="padding-bottom:0;">
+        <a href="#1h"><i class="ph ph-heart"></i>שמירה</a>
+        <a href="#1h"><i class="ph ph-bell-simple"></i>מעקב</a>
+      </div>
+    </header>
+  </article>
+  <p class="annot" style="margin-top:10px;">"חדש" יושב בסלוט של הדירוג (Frank Ruhl 700) — fallback של הדירוג, לא עוד badge · בלי כוכב, בלי צ'יפ "חדש" ליד השם · ה־pull-quote מוסתר לגמרי · שורת המטא זורמת כרגיל</p>
+</section>
+
+<!-- ======================= 1f · owner card variants ======================= -->
+<section class="frame" id="1f" style="left:850px;top:1060px;width:430px;">
+  <p class="flabel"><a class="idchip" href="#1f">1f</a> מאחורי העסק — 3 וריאנטים לנתונים חסרים</p>
+  <div style="display:flex;flex-direction:column;gap:14px;width:375px;" data-screen-label="1f וריאנטים">
+    <div class="pcard">
+      <div class="prow-top">
+        <span class="initav" style="width:88px;height:88px;font-size:34px;">נ</span>
+        <div>
+          <h3 class="pname">נועה קרן</h3>
+          <p class="prole">בעלת המחלבה · קצרין</p>
+        </div>
+      </div>
+      <p class="bio">גדלתי בין העיזים במשק המשפחתי בקצרין. אחרי שנים בעיר חזרתי הביתה — היום כל גבינה מבשילה במרתף הקריר שמתחת לבית, בדיוק כמו אצל סבתא.</p>
+    </div>
+    <p class="annot">אין תמונה → אווטאר אות אחת — "נ", לעולם לא שתי אותיות בעברית (primary על שמנת, Frank Ruhl)</p>
+    <div class="pcard" style="flex-direction:row;align-items:center;">
+      <div class="prow-top" style="gap:14px;">
+        <span class="initav" style="width:56px;height:56px;font-size:24px;">נ</span>
+        <div>
+          <h3 class="pname" style="font-size:17px;">נועה קרן</h3>
+          <p class="prole">בעלת המחלבה · קצרין</p>
+        </div>
+      </div>
+    </div>
+    <p class="annot">אין ביו → וריאנט קומפקטי: שם + תפקיד + עיר בלבד, אווטאר קטן</p>
+    <div style="border:1.5px dashed var(--ln);border-radius:16px;padding:18px;text-align:center;">
+      <p style="margin:0;font-size:12.5px;color:#a39c8c;">אין שם, אין תמונה, אין ביו → הסקשן לא מרונדר כלל</p>
+    </div>
+    <p class="annot">כלל: לעולם לא כרטיס ריק ולא placeholder בפרודקשן</p>
+  </div>
+</section>
+
+<!-- ======================= 1g · hours ======================= -->
+<section class="frame" id="1g" style="left:850px;top:1770px;width:430px;">
+  <p class="flabel"><a class="idchip" href="#1g">1g</a> שעות + סטטוס הזמנות יחד — ירוק אחד בעמוד</p>
+  <div style="display:flex;flex-direction:column;gap:14px;width:375px;" data-screen-label="1g שעות">
+    <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+    <p class="annot">הירוק היחיד בעמוד: זמינות הזמנות בכותרת (וואטסאפ) · שורת השעות שמתחת = פתיחה פיזית — ניטרלית, בלי המילה "פתוח"</p>
+    <div class="hrs">
+      <button class="hrs-t"><i class="ph ph-clock"></i>היום · <span dir="ltr">9:00–17:00</span><span class="tail"><i class="ph ph-caret-down" style="color:var(--mut);font-size:13px;"></i></span></button>
+    </div>
+    <p class="annot">מקופל (ברירת מחדל): היום בלבד, טקסט ניטרלי #1C1A17 — בלי "פתוח", בלי צבע סטטוס · aria-expanded=false</p>
+    <div class="hrs">
+      <button class="hrs-t"><i class="ph ph-clock"></i>היום · <span dir="ltr">9:00–17:00</span><span class="tail"><i class="ph ph-caret-up" style="color:var(--mut);font-size:13px;"></i></span></button>
+      <div class="hrs-w">
+        <div class="today"><span>ראשון</span><span dir="ltr">9:00–17:00</span></div>
+        <div><span>שני</span><span dir="ltr">9:00–17:00</span></div>
+        <div><span>שלישי</span><span dir="ltr">9:00–17:00</span></div>
+        <div><span>רביעי</span><span dir="ltr">9:00–17:00</span></div>
+        <div><span>חמישי</span><span dir="ltr">9:00–17:00</span></div>
+        <div><span>שישי</span><span dir="ltr">8:30–13:00</span></div>
+        <div><span>שבת</span><span>סגור</span></div>
+      </div>
+    </div>
+    <p class="annot">פתוח: שבוע מלא · "היום" מחושב מהיום הנוכחי (לא ראשון קבוע), הדגשה ב־font-weight בלבד — בלי ירוק שלישי · כל טווח עטוף dir="ltr" (תקדים: ReviewsSection) · רכיב OpeningHours הקיים (MEH-1146)</p>
+  </div>
+</section>
+
+<!-- ======================= 1b · desktop ======================= -->
+<section class="frame" id="1b" style="left:1360px;top:560px;">
+  <p class="flabel"><a class="idchip" href="#1b">1b</a> דסקטופ 1140 — שתי עמודות, סיידבר דבוק</p>
+  <article class="card d" data-screen-label="1b דסקטופ — שקט מדויק v2">
+    <div class="dtop"><p class="crumb"><a href="#1b">בית</a><span>‹</span><a href="#1b">חלב וגבינות</a><span>‹</span><b>מחלבת עמק האלה</b></p><span>מהמקור</span></div>
+    <div class="ph-strip" style="height:280px;margin:24px 32px 0;border-radius:16px;"><span>hero photo — ללא שינוי · ❤️ הוסר מהפינה</span></div>
+    <div class="dgrid">
+      <div>
+        <header class="hz" data-screen-label="Zone 1 — Header (desktop)">
+          <div class="titlerow">
+            <h1 class="name">מחלבת עמק האלה <a class="vseal" href="#1c"><i class="ph-fill ph-seal-check"></i>מאומתת</a></h1>
+            <div class="quietacts">
+              <a href="#1h"><i class="ph ph-heart"></i>שמירה</a>
+              <a href="#1h"><i class="ph ph-bell-simple"></i>מעקב</a>
+              <a href="#1b"><i class="ph ph-share-network"></i>שיתוף</a>
+            </div>
+          </div>
+          <p class="oneliner" style="font-size:16px;">גבינות עז מחלב המשק, מיושנות במרתף קריר.</p>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <a class="rating" href="#reviews"><i class="ph-fill ph-star"></i><b>4.9</b><span>12 ביקורות</span></a>
+            <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+          </div>
+          <p class="kosher"><i class="ph ph-star-of-david"></i>כשר מהדרין</p>
+        </header>
+        <a class="pull" href="#reviews">
+          <p>הכי טעים שאכלנו מזמן. ההזמנה הבאה כבר בדרך.</p>
+          <footer>מתוך הביקורות · לכל הביקורות<i class="ph ph-caret-left"></i></footer>
+        </a>
+        <div class="dim" style="margin-top:22px;border:1px solid var(--ln);border-radius:12px;"><p>גלריה · מוצרים · משלוחים — ללא שינוי</p><i class="ph ph-dots-three" style="color:#a39c8c;"></i></div>
+        <section class="person" data-screen-label="Zone 4 — מאחורי העסק (desktop)">
+          <h2 class="sechead">מאחורי העסק</h2>
+          <div class="pcard" style="flex-direction:row;align-items:center;gap:20px;">
+            <span class="initav" style="width:104px;height:104px;font-size:40px;">נ</span>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div>
+                <h3 class="pname">נועה קרן</h3>
+                <p class="prole">בעלת המחלבה · קצרין</p>
+              </div>
+              <p class="bio">גדלתי בין העיזים במשק המשפחתי בקצרין. אחרי שנים בעיר חזרתי הביתה — היום כל גבינה מבשילה במרתף הקריר שמתחת לבית, בדיוק כמו אצל סבתא.</p>
+            </div>
+          </div>
+        </section>
+        <div class="dim" style="border:1px solid var(--ln);border-radius:12px;"><p>ביקורות — ללא שינוי</p><i class="ph ph-dots-three" style="color:#a39c8c;"></i></div>
+        <section class="mapz" data-screen-label="Zone 3 — Map (desktop)">
+          <h2 class="sechead">הגעה ומיקום</h2>
+          <p class="addr"><i class="ph ph-map-pin"></i>דרך היין 4, קצרין</p>
+          <div class="hrs" style="max-width:420px;">
+            <button class="hrs-t"><i class="ph ph-clock"></i>היום · <span dir="ltr">9:00–17:00</span><span class="tail"><i class="ph ph-caret-down" style="color:var(--mut);font-size:13px;"></i></span></button>
+          </div>
+          <div class="mapbox ph-strip"><span>mini map — ללא שינוי</span></div>
+          <div class="navrow" style="max-width:420px;">
+            <a class="navbtn" href="#1b"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path fill="#33CCFF" d="M12 2C6.5 2 2 6.3 2 11.6c0 2.9 1.4 5.5 3.6 7.2-.2.5-.6 1.1-1.3 1.6-.4.3-.3.9.2 1 1.7.4 3.4.1 4.7-.6.9.2 1.8.3 2.8.3 5.5 0 10-4.3 10-9.5S17.5 2 12 2z"></path><circle cx="9" cy="10" r="1.3" fill="#1C1A17"></circle><circle cx="15" cy="10" r="1.3" fill="#1C1A17"></circle><path d="M8.5 13.5c.8 1.5 2 2.3 3.5 2.3s2.7-.8 3.5-2.3" fill="none" stroke="#1C1A17" stroke-width="1.4" stroke-linecap="round"></path></svg>Waze</a>
+            <a class="navbtn" href="#1b"><svg viewBox="0 0 24 34" width="14" height="19" aria-hidden="true"><defs><clipPath id="gp2"><path d="M12 0C5.4 0 0 5.4 0 12c0 8.5 12 22 12 22s12-13.5 12-22C24 5.4 18.6 0 12 0z"></path></clipPath></defs><g clip-path="url(#gp2)"><rect x="-2" y="-2" width="28" height="38" fill="#34A853"></rect><polygon fill="#FBBC04" points="-2,10 26,-8 26,4 -2,24"></polygon><polygon fill="#EA4335" points="-2,-2 13,-2 -2,15"></polygon><polygon fill="#4285F4" points="7,-2 26,-2 26,10 13,5"></polygon></g><circle cx="12" cy="11" r="4.2" fill="#fff"></circle></svg>מפות Google</a>
+          </div>
+        </section>
+      </div>
+      <div style="position:sticky;top:24px;display:flex;flex-direction:column;gap:10px;">
+        <aside class="ccard" data-screen-label="Zone 2 — Contact Card (desktop)">
+          <button class="cta"><i class="ph-fill ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+          <div class="faq">
+            <a href="#1b">יש משלוחים לגולן?</a>
+            <a href="#1b">מה מגוון הגבינות?</a>
+            <a href="#1b">אפשר לבקר במחלבה?</a>
+            <a class="more" href="#1b">עוד שאלות</a>
+          </div>
+          <div class="iconrow">
+            <a href="#1b" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+            <a href="#1b" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+            <a href="#1b" aria-label="אתר הבית"><i class="ph ph-globe-simple"></i></a>
+          </div>
+        </aside>
+        <p class="annot">דסקטופ: הקשה על טלפון חושפת את המספר inline (אין חיוג) — הכפתור מתרחב לגלולה עם המספר · aria-labels כמו במובייל</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ======================= 1i · section tab bar ======================= -->
+<section class="frame" id="1i" style="left:48px;top:2780px;width:430px;">
+  <p class="flabel"><a class="idchip" href="#1i">1i</a> מובייל — טאב־בר סקשנים (MEH-1202)</p>
+  <article class="card m" data-screen-label="1i טאב-בר סקשנים">
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+    </div>
+    <p class="crumb"><a href="#1i">בית</a><span>‹</span><a href="#1i">חלב וגבינות</a><span>‹</span><b>מחלבת עמק האלה</b></p>
+    <div class="ph-strip" style="height:140px;margin:10px 16px 0;border-radius:14px;"><span>hero</span></div>
+    <header class="hz" style="padding-bottom:16px;">
+      <h1 class="name" style="font-size:24px;">מחלבת עמק האלה <a class="vseal" href="#1c"><i class="ph-fill ph-seal-check"></i>מאומתת</a></h1>
+      <p class="meta"><span>קצרין</span><span class="sep">·</span><span>חלב וגבינות</span><span class="sep">·</span><span class="st-open">פתוח להזמנות</span></p>
+    </header>
+    <nav class="tabbar"><a class="on" href="#1i">אודות</a><a href="#1i">מוצרים</a><a href="#1i">משלוחים</a><a href="#1i">ביקורות</a></nav>
+    <div class="dim" style="border-bottom:0;padding:18px 20px 30px;"><p>תוכן הסקשנים — ללא שינוי</p></div>
+  </article>
+  <p class="annot" style="margin-top:10px;">sticky מתחת לכרום העליון · הכותרת החדשה נמוכה מהישנה (9→4 קבוצות) אבל גובה הטאב־בר עצמו ללא שינוי — scroll offsets נשארים --chrome-top + 68px, אין שינוי כרום · טאב פעיל: משקל + קו ink — בלי ירוק נוסף</p>
+</section>
+
+<!-- ======================= 1j · sticky contact bar ======================= -->
+<section class="frame" id="1j" style="left:520px;top:2780px;width:430px;">
+  <p class="flabel"><a class="idchip" href="#1j">1j</a> מובייל — StickyContactBar במצב גלילה</p>
+  <article class="card m" style="position:relative;height:620px;" data-screen-label="1j sticky CTA">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--ln);">
+      <i class="ph ph-caret-right"></i><b style="font-family:'Frank Ruhl Libre',serif;font-size:15px;">מחלבת עמק האלה</b>
+    </div>
+    <nav class="tabbar"><a href="#1j">אודות</a><a class="on" href="#1j">מוצרים</a><a href="#1j">משלוחים</a><a href="#1j">ביקורות</a></nav>
+    <div class="ph-strip" style="height:130px;margin:16px;border-radius:12px;"><span>מוצרים — תוכן גלול</span></div>
+    <div class="ph-strip" style="height:130px;margin:0 16px;border-radius:12px;"><span>· · ·</span></div>
+    <div class="stickybar"><button class="cta" style="min-height:46px;font-size:15px;">שליחת הודעה בוואטסאפ</button></div>
+  </article>
+  <p class="annot" style="margin-top:10px;">מופיע כשכרטיס הקשר האינליין יוצא מה־viewport (useStickyBar הקיים — ההתנהגות לא משתנה) · סטאקינג: כרום עליון &gt; טאב־בר &gt; תוכן; ה־CTA צמוד לתחתית — קצוות מנוגדים, אין התנגשות עם הטאב־בר</p>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MapProducerCard — Pin Echo · Final</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=DM+Sans:wght@400;500;600&family=Cormorant+Garamond:ital@1&family=Heebo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F5F0E8;color:#1C1A17;font-family:"DM Sans","Heebo",sans-serif}
+a{color:#2e6853}a:hover{color:#8B6914}
+.wrap{width:390px;margin:0 auto;padding:28px 16px 96px}
+h1{font-family:"Frank Ruhl Libre",serif;font-size:22px;font-weight:700;margin:0}
+.sub{font-size:12.5px;color:#6B6860;margin:6px 0 0;line-height:1.5}
+.lbl{font-size:11px;letter-spacing:.02em;color:#6B6860;margin:30px 0 8px;display:flex;align-items:center;gap:8px}
+.lbl::after{content:'';flex:1;height:1px;background:#E5DFD3}
+.mc{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #E5DFD3;border-radius:14px;padding:8px;position:relative;cursor:pointer;transition:background .18s,border-color .18s;-webkit-tap-highlight-color:transparent}
+.mc.sel{border:2px solid var(--cat);background:color-mix(in srgb,var(--cat) 6%,#fff);padding:7px}
+.mc-th{width:88px;height:88px;border-radius:9px;overflow:hidden;position:relative;flex:none;background:#EAF3DE;display:flex;align-items:center;justify-content:center}
+.mc-th .gly{color:var(--cat);opacity:.7}
+.mc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.mc-name{font-family:"Frank Ruhl Libre",serif;font-size:18px;font-weight:700;margin:0;line-height:1.25;color:#1C1A17;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-meta{font-size:12.5px;color:#6B6860;margin:0;line-height:1.35;display:flex;align-items:center;gap:4px;min-width:0}
+.mc-meta .glym{flex:none;color:#6B6860}
+.mc-meta .mt{flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-meta .dist{flex:none;white-space:nowrap}
+.mc-rate{font-size:13px;color:#1C1A17;margin:1px 0 0;display:flex;align-items:center;gap:4px}
+.mc-rate.ghost{visibility:hidden}
+.gly{fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;display:block}
+.glym{fill:none;stroke:currentColor;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;display:block}
+.mc-chev{width:44px;align-self:stretch;flex:none;display:flex;align-items:center;justify-content:center;background:none;border:0;padding:0;cursor:pointer;position:relative;border-radius:0 10px 10px 0;-webkit-tap-highlight-color:transparent}
+.mc-chev::before{content:'';position:absolute;inset-inline-start:0;top:16px;bottom:16px;width:1px;background:#EDE7DB}
+.mc.sel .mc-chev::before{background:color-mix(in srgb,var(--cat) 22%,#fff)}
+.mc-chev svg{display:block}
+.mc-chev path{stroke:#6B6860;transition:stroke .18s}
+.mc.sel .mc-chev path{stroke:var(--cat)}
+.mc-chev:active{background:rgba(28,26,23,.05)}
+.stack{display:flex;flex-direction:column;gap:10px}
+.note{font-size:11.5px;color:#6B6860;line-height:1.6;margin:8px 2px 0}
+.note b{color:#1C1A17;font-weight:600}
+#toast{position:fixed;bottom:22px;inset-inline-start:50%;transform:translateX(50%) translateY(70px);background:#1C1A17;color:#F5F0E8;font-size:13px;padding:10px 18px;border-radius:99px;transition:transform .25s ease;pointer-events:none;white-space:nowrap;z-index:9}
+#toast.on{transform:translateX(50%) translateY(0)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="g-veg"><path d="M60,26 C49,30 43,46 43,63 C43,82 50,96 60,96 C70,96 77,82 77,63 C77,46 71,30 60,26 Z"></path><path d="M60,35 C52,39 50,50 50,64 C50,79 54,89 60,89 C66,89 70,79 70,64 C70,50 68,39 60,35 Z"></path><circle cx="60" cy="67" r="9"></circle></g>
+<g id="g-dairy"><path d="M32,82 L86,56 C89,55 90,57 90,60 L90,82 Z"></path><path d="M32,82 L90,82"></path><path d="M86,56 L86,82"></path><circle cx="66" cy="73" r="3.6"></circle><circle cx="50" cy="77" r="2.4"></circle></g>
+<g id="g-bread"><path d="M30,80 C28,52 92,52 90,80 Z"></path><path d="M30,80 L90,80"></path><path d="M45,62 L52,73"></path><path d="M59,59 L66,71"></path><path d="M73,62 L80,73"></path></g>
+</defs></svg>
+<div class="wrap">
+<h1>MapProducerCard — Pin Echo · סופי</h1>
+<p class="sub">נעול: הקשה על גוף כרטיס = בחירה + סנכרון פין · הקשה נוספת על כרטיס נבחר = ניווט לעמוד העסק · שברון ב־end = קיצור דרך קבוע. שורת מטא: קטגוריה · מרחק (וריאנט א) — עוגן המרחק לעולם לא נקטם.</p>
+
+<div class="lbl">ברירת מחדל</div>
+<article class="mc" style="--cat:#2e6853">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-veg"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">רוח השדה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-veg"></use></svg><span class="mt">ירקות, פירות ומשקים</span><span class="dist">· <bdi dir="rtl">1.2 ק״מ</bdi></span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.8 (12)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<p class="note">משטח לבן על הקרם · מסגרת שיער <b>#E5DFD3</b> · ללא צל · המרחק ב־bdi מבודד — נקרא ספרות־קודם ("1.2 ק״מ") בכל הקשר · ללא צילום: משטח <b>#EAF3DE</b> + גליף קטגוריה בצבע הפין ב־70%.</p>
+
+<div class="lbl">נבחר — הכרטיס לובש את צבע הפין</div>
+<article class="mc sel" style="--cat:#2e6853">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-veg"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">רוח השדה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-veg"></use></svg><span class="mt">ירקות, פירות ומשקים</span><span class="dist">· <bdi dir="rtl">1.2 ק״מ</bdi></span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.8 (12)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<p class="note">מסגרת 2px בצבע הקטגוריה + שטיפה של <b>6%</b> · השברון מחליף צבע לצבע הפין · ריפוד מתקזז (8→7px) — אפס קפיצת לייאאוט · <b>הקשה נוספת על הכרטיס הנבחר = ניווט לעמוד העסק</b> (ללא tooltip במוצר; השברון הוא ה־affordance הנראה).</p>
+
+<div class="lbl">קטגוריה ארוכה — המרחק לא נקטם</div>
+<article class="mc" style="--cat:#2e6853">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-veg"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">רוח השדה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-veg"></use></svg><span class="mt">ירקות, פירות ומשקים אורגניים מתוצרת המשק המשפחתי</span><span class="dist">· <bdi dir="rtl">1.2 ק״מ</bdi></span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.8 (12)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<p class="note">קטגוריה סינתטית ארוכה לצורך ההדגמה: הקטגוריה גמישה ומסתיימת ב־… (flex:0 1 auto), עוגן "<bdi dir="rtl">· 1.2 ק״מ</bdi>" קבוע ב־flex:none — שורד תמיד בסוף השורה.</p>
+
+<div class="lbl">ללא הרשאת מיקום — fallback</div>
+<article class="mc" style="--cat:#2e6853">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-veg"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">רוח השדה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-veg"></use></svg><span class="mt">ירקות, פירות ומשקים</span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.8 (12)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<p class="note">ללא הרשאת מיקום — קטגוריה בלבד, אותה שורה.</p>
+
+<div class="lbl">פחות מ־3 ביקורות — שורת דירוג שמורה</div>
+<article class="mc" style="--cat:#8B6914">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-bread"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">לחם אמא</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-bread"></use></svg><span class="mt">לחמים ואפייה</span><span class="dist">· <bdi dir="rtl">3.4 ק״מ</bdi></span></p>
+<p class="mc-rate ghost" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 20 20"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">0.0 (0)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<p class="note">הדירוג מוסתר אך השורה שמורה (visibility:hidden) — <b>גובה זהה לכל הכרטיסים, תמיד</b>. קריטי לקרוסלה.</p>
+
+<div class="lbl">נסי בעצמך — הקשה בוחרת · הקשה נוספת / שברון מנווטים</div>
+<div class="stack" id="demo">
+<article class="mc" style="--cat:#2e6853" data-name="רוח השדה">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-veg"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">רוח השדה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-veg"></use></svg><span class="mt">ירקות, פירות ומשקים</span><span class="dist">· <bdi dir="rtl">1.2 ק״מ</bdi></span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.8 (12)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<article class="mc" style="--cat:#4a90d9" data-name="גבינת נועה">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-dairy"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">גבינת נועה</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-dairy"></use></svg><span class="mt">חלב וגבינות</span><span class="dist">· <bdi dir="rtl">2.7 ק״מ</bdi></span></p>
+<p class="mc-rate"><svg width="13" height="13" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">4.6 (31)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+<article class="mc" style="--cat:#8B6914" data-name="לחם אמא">
+<div class="mc-th"><svg class="gly" viewBox="0 0 120 120" width="46" height="46"><use href="#g-bread"></use></svg></div>
+<div class="mc-body">
+<h3 class="mc-name">לחם אמא</h3>
+<p class="mc-meta"><svg class="glym" viewBox="0 0 120 120" width="14" height="14"><use href="#g-bread"></use></svg><span class="mt">לחמים ואפייה</span><span class="dist">· <bdi dir="rtl">3.4 ק״מ</bdi></span></p>
+<p class="mc-rate ghost" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 20 20"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" fill="#8B6914"></path></svg><span dir="ltr">0.0 (0)</span></p>
+</div>
+<button class="mc-chev" aria-label="לעמוד בית העסק"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</article>
+</div>
+<p class="note">שלושת הכרטיסים בגובה זהה · כרטיס נבחר עוטה את צבע הקטגוריה שלו — כרטיס↔פין כמערכת אחת · הקשה על כרטיס שכבר נבחר מנווטת (נסי: הקשה, ואז עוד אחת).</p>
+</div>
+<div id="toast"></div>
+<script>
+const demo=document.getElementById('demo'),toast=document.getElementById('toast');let tt;
+const nav=n=>{toast.textContent='מעבר לעמוד בית העסק — '+n;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('on'),1600)};
+demo.querySelectorAll('.mc').forEach(c=>{
+c.addEventListener('click',e=>{
+if(e.target.closest('.mc-chev')||c.classList.contains('sel')){nav(c.dataset.name);return}
+demo.querySelectorAll('.mc.sel').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');
+});
+});
+</script>
+</body>
+</html>

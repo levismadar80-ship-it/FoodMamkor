@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="design_doc_mode" content="canvas">
+<title>Producer Page — Action Hierarchy (MEH-1137)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;family=Cormorant:ital,wght@0,500;1,400;1,500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="producer-hierarchy-meh1137.css">
+</head>
+<body>
+
+<!-- ======================= deckhead ======================= -->
+<div class="frame" style="left:48px;top:48px;">
+  <div class="deckhead">
+    <p class="kick">/producer/[id] · MEH-1137 · action hierarchy + section order</p>
+    <h1>פירמידת פעולות — עמוד בית עסק</h1>
+    <p>מ־9 אלמנטים שווי־משקל בסיידבר → פעולה ראשית אחת + אשכולות שקטים. סדר סקשנים לפי שאלות המבקר: מה מוכרים ← משלוחים ← אמון ← מיקום (המפה אחרונה). 4 כיוונים במובייל, דסקטופ לכיוון המומלץ (<a href="#1b" class="idref">1b</a>). ההירו — Tinted Masthead המאושר (MEH-815), ללא שינוי.</p>
+  </div>
+</div>
+
+<!-- ======================= 1a · minimal ======================= -->
+<section class="frame" id="1a" style="left:48px;top:340px;">
+  <p class="flabel"><a class="idchip" href="#1a">1a</a> שקט מינימלי · Mobile 375</p>
+  <p class="faxes"><b>כרטיס:</b> CTA + אייקונים בלבד · <b>שאלות:</b> בתוך בורר ההודעה (<a href="#picker">מוקאפ</a>) · <b>מוצרים:</b> שורות קומפקטיות · <b>כותרת:</b> שורת מטא אחת</p>
+  <article class="card m" data-screen-label="1a שקט מינימלי — mobile">
+    <div class="fold" style="inset-block-start:740px;"><span>קו קיפול · ‎~740px</span></div>
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שמירה"><i class="ph ph-bookmark-simple"></i></button>
+    </div>
+    <header class="mast">
+      <div class="mono">מ·ה</div>
+      <p class="eyebrow"><span>סבונים טבעיים</span><span style="opacity:.5;">·</span><i class="ph ph-map-pin"></i><span>זכרון יעקב</span><span style="opacity:.5;">·</span><span>פתוח להזמנות</span></p>
+      <h1 class="name">טבע פור <span class="vbadge"><i class="ph ph-seal-check"></i>מאומת</span></h1>
+      <hr class="rule">
+      <p class="story">סבונים בעבודת יד משמן זית כתית וצמחי הכרמל.</p>
+    </header>
+    <div class="contact">
+      <button class="cta"><i class="ph ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+      <p class="annot">בלחיצה נפתח בורר הודעה עם שאלות מוכנות — <a href="#picker">מוקאפ הבורר</a></p>
+      <div class="row2">
+        <div class="iconrow">
+          <a href="#1a" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+          <a href="#1a" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+          <a href="#1a" aria-label="אתר"><i class="ph ph-globe-simple"></i></a>
+        </div>
+        <div class="tertiary">
+          <a href="#1a"><i class="ph ph-bell-simple"></i>מעקב</a>
+          <a href="#1a"><i class="ph ph-share-network"></i>שיתוף</a>
+        </div>
+      </div>
+    </div>
+    <section class="sec">
+      <h2>אודות</h2>
+      <p class="body">בסטודיו קטן בזכרון יעקב, טבע פור מייצרת סבונים בתהליך קר — שמן זית כתית מבציר מקומי וצמחי ריח מהכרמל. ייצור בקבוצות קטנות, בלי חומרים משמרים.</p>
+    </section>
+    <section class="sec">
+      <h2>המוצרים <span class="cnt">4</span></h2>
+      <div class="prow"><div><p class="nm">סבון שמן זית ולבנדר</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">35₪</span></div>
+      <div class="prow"><div><p class="nm">סבון גדילן ושיבולת שועל</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">38₪</span></div>
+      <div class="prow"><div><p class="nm">חמאת גוף ורדים</p><p class="unit">צנצנת · 120 מ״ל</p></div><span class="price">52₪</span></div>
+      <div class="prow"><div><p class="nm">מארז שלישייה לבחירה</p><p class="unit">‎3 × 100 ג׳</p></div><span class="price">95₪</span></div>
+    </section>
+    <section class="sec">
+      <h2>משלוחים ואיסוף</h2>
+      <ul class="dl">
+        <li><i class="ph ph-truck"></i><span>זכרון יעקב והסביבה — משלוח עד הבית, א׳–ה׳</span></li>
+        <li><i class="ph ph-map-trifold"></i><span>בנימינה־גבעת עדה, פרדס חנה־כרכור — פעמיים בשבוע</span></li>
+        <li><i class="ph ph-storefront"></i><span>איסוף עצמי מהסטודיו, בתיאום מראש</span></li>
+      </ul>
+    </section>
+    <section class="sec">
+      <h2>ביקורות <span class="cnt">4.9 · 12</span></h2>
+      <blockquote class="rquote">
+        <p>„הסבון לבנדר הפך לקבוע אצלנו. ריח עדין, ומגיע עטוף יפה."</p>
+        <footer>נועה · בנימינה</footer>
+      </blockquote>
+      <a class="rmore" href="#1a">לכל הביקורות<i class="ph ph-caret-left"></i></a>
+    </section>
+    <section class="sec">
+      <h2>הגעה ומיקום</h2>
+      <p class="addr"><i class="ph ph-map-pin"></i>רח׳ המייסדים 12, זכרון יעקב</p>
+      <div class="mapph">GOOGLE MAP EMBED</div>
+      <p class="annot">הוסט לסוף העמוד — עסק משלוחים לא מוכר כתובת</p>
+    </section>
+    <section class="sec disc">
+      <h2>עוד בתי עסק באזור</h2>
+      <div class="gate">
+        <div class="minis">
+          <a class="mini" href="#1a"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">דבש הכרמל</p><p class="ct">דבש · זכרון יעקב</p></div></a>
+          <a class="mini" href="#1a"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מחלבת שורש</p><p class="ct">גבינות עיזים · בנימינה</p></div></a>
+        </div>
+      </div>
+      <p class="gatenote">DATA-GATE · מוצג רק כאשר nearby_count ≥ MIN_NEARBY_BUSINESSES (מוצע: 4) · אחרת הסקשן מוסתר</p>
+      <a class="report" href="#1a"><i class="ph ph-flag"></i>דיווח על בית העסק</a>
+    </section>
+  </article>
+</section>
+
+<!-- ======================= 1b · editorial (recommended) ======================= -->
+<section class="frame" id="1b" style="left:479px;top:340px;">
+  <p class="flabel"><a class="idchip" href="#1b">1b</a> עורכי · Mobile 375 · מומלץ</p>
+  <p class="faxes"><b>כרטיס:</b> סטטוס + שאלות + אשכולות · <b>שאלות:</b> קישורים שקטים מתחת ל־CTA · <b>מוצרים:</b> היברידי (תמונונת + יחידה) · <b>כותרת:</b> שתי שכבות</p>
+  <article class="card m" data-screen-label="1b עורכי — mobile (מומלץ)">
+    <div class="fold" style="inset-block-start:740px;"><span>קו קיפול · ‎~740px</span></div>
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שמירה"><i class="ph ph-bookmark-simple"></i></button>
+    </div>
+    <header class="mast">
+      <div class="mono">מ·ה</div>
+      <p class="eyebrow"><span>סבונים טבעיים</span><span style="opacity:.5;">·</span><i class="ph ph-map-pin"></i><span>זכרון יעקב</span></p>
+      <h1 class="name">טבע פור <span class="vbadge"><i class="ph ph-seal-check"></i>מאומת</span></h1>
+      <hr class="rule">
+      <p class="story">סבונים בעבודת יד משמן זית כתית וצמחי הכרמל.</p>
+    </header>
+    <div class="contact">
+      <p class="statusline"><span class="dot"></span>פתוח להזמנות<span class="sep">·</span><span class="soft">מענה בדרך כלל תוך שעה</span></p>
+      <button class="cta"><i class="ph ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+      <ul class="qlinks">
+        <li><a href="#1b"><i class="ph ph-chat-circle-text"></i>מה זמין השבוע?</a></li>
+        <li><a href="#1b"><i class="ph ph-chat-circle-text"></i>אפשר משלוח לזכרון יעקב?</a></li>
+        <li><a href="#1b"><i class="ph ph-chat-circle-text"></i>יש מארזי מתנה?</a></li>
+      </ul>
+      <div class="row2" style="border-block-start:1px solid var(--hair);padding-block-start:14px;">
+        <div class="iconrow">
+          <a href="#1b" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+          <a href="#1b" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+          <a href="#1b" aria-label="אתר"><i class="ph ph-globe-simple"></i></a>
+        </div>
+        <div class="tertiary">
+          <a href="#1b"><i class="ph ph-bell-simple"></i>מעקב</a>
+          <a href="#1b"><i class="ph ph-share-network"></i>שיתוף</a>
+        </div>
+      </div>
+    </div>
+    <section class="sec">
+      <h2>אודות</h2>
+      <p class="body">בסטודיו קטן בזכרון יעקב, טבע פור מייצרת סבונים בתהליך קר — שמן זית כתית מבציר מקומי וצמחי ריח מהכרמל. ייצור בקבוצות קטנות, בלי חומרים משמרים.</p>
+    </section>
+    <section class="sec">
+      <h2>המוצרים <span class="cnt">4</span></h2>
+      <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">סבון שמן זית ולבנדר</p><p class="ds">הקלאסי של הסטודיו — תהליך קר, לבנדר מזוקק</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">35₪</span></div>
+      <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">סבון גדילן ושיבולת שועל</p><p class="ds">עדין במיוחד, לעור רגיש</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">38₪</span></div>
+      <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">חמאת גוף ורדים</p><p class="unit">צנצנת · 120 מ״ל</p></div><span class="price">52₪</span></div>
+      <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מארז שלישייה לבחירה</p><p class="unit">‎3 × 100 ג׳</p></div><span class="price">95₪</span></div>
+      <p class="annot">המוצר החתום עבר מהכותרת לראש הרשימה · placeholder עלה קנוני כשאין תמונה</p>
+    </section>
+    <section class="sec">
+      <h2>משלוחים ואיסוף</h2>
+      <ul class="dl">
+        <li><i class="ph ph-truck"></i><span>זכרון יעקב והסביבה — משלוח עד הבית, א׳–ה׳</span></li>
+        <li><i class="ph ph-map-trifold"></i><span>בנימינה־גבעת עדה, פרדס חנה־כרכור — פעמיים בשבוע</span></li>
+        <li><i class="ph ph-storefront"></i><span>איסוף עצמי מהסטודיו, בתיאום מראש</span></li>
+      </ul>
+    </section>
+    <section class="sec">
+      <h2>ביקורות <span class="cnt">4.9 · 12</span></h2>
+      <blockquote class="rquote">
+        <p>„הסבון לבנדר הפך לקבוע אצלנו. ריח עדין, ומגיע עטוף יפה."</p>
+        <footer>נועה · בנימינה</footer>
+      </blockquote>
+      <a class="rmore" href="#1b">לכל הביקורות<i class="ph ph-caret-left"></i></a>
+    </section>
+    <section class="sec">
+      <h2>הגעה ומיקום</h2>
+      <p class="addr"><i class="ph ph-map-pin"></i>רח׳ המייסדים 12, זכרון יעקב</p>
+      <div class="mapph">GOOGLE MAP EMBED</div>
+    </section>
+    <section class="sec disc">
+      <h2>עוד בתי עסק באזור</h2>
+      <div class="gate">
+        <div class="minis">
+          <a class="mini" href="#1b"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">דבש הכרמל</p><p class="ct">דבש · זכרון יעקב</p></div></a>
+          <a class="mini" href="#1b"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מחלבת שורש</p><p class="ct">גבינות עיזים · בנימינה</p></div></a>
+        </div>
+      </div>
+      <p class="gatenote">DATA-GATE · מוצג רק כאשר nearby_count ≥ MIN_NEARBY_BUSINESSES (מוצע: 4) · אחרת הסקשן מוסתר</p>
+      <a class="report" href="#1b"><i class="ph ph-flag"></i>דיווח על בית העסק</a>
+    </section>
+  </article>
+</section>
+
+<!-- ======================= 1c · disclosure ======================= -->
+<section class="frame" id="1c" style="left:910px;top:340px;">
+  <p class="flabel"><a class="idchip" href="#1c">1c</a> גילוי הדרגתי · Mobile 375</p>
+  <p class="faxes"><b>כרטיס:</b> סטטוס + disclosure · <b>שאלות:</b> מקופלות תחת „שאלות נפוצות" · <b>מוצרים:</b> כרטיסי תמונה (גריד מאוזן) · <b>כותרת:</b> שתי שכבות</p>
+  <article class="card m" data-screen-label="1c גילוי הדרגתי — mobile">
+    <div class="fold" style="inset-block-start:740px;"><span>קו קיפול · ‎~740px</span></div>
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שמירה"><i class="ph ph-bookmark-simple"></i></button>
+    </div>
+    <header class="mast">
+      <div class="mono">מ·ה</div>
+      <p class="eyebrow"><span>סבונים טבעיים</span><span style="opacity:.5;">·</span><i class="ph ph-map-pin"></i><span>זכרון יעקב</span></p>
+      <h1 class="name">טבע פור <span class="vbadge"><i class="ph ph-seal-check"></i>מאומת</span></h1>
+      <hr class="rule">
+      <p class="story">סבונים בעבודת יד משמן זית כתית וצמחי הכרמל.</p>
+    </header>
+    <div class="contact">
+      <p class="statusline"><span class="dot"></span>פתוח להזמנות<span class="sep">·</span><span class="soft">מענה בדרך כלל תוך שעה</span></p>
+      <button class="cta"><i class="ph ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+      <button class="disclosure"><span>שאלות נפוצות</span><i class="ph ph-caret-down"></i></button>
+      <p class="annot">בפתיחה: שלוש השאלות כקישורים שקטים — נשלחות בוואטסאפ</p>
+      <div class="row2">
+        <div class="iconrow">
+          <a href="#1c" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+          <a href="#1c" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+          <a href="#1c" aria-label="אתר"><i class="ph ph-globe-simple"></i></a>
+        </div>
+        <div class="tertiary">
+          <a href="#1c"><i class="ph ph-bell-simple"></i>מעקב</a>
+          <a href="#1c"><i class="ph ph-share-network"></i>שיתוף</a>
+        </div>
+      </div>
+    </div>
+    <section class="sec">
+      <h2>אודות</h2>
+      <p class="body">בסטודיו קטן בזכרון יעקב, טבע פור מייצרת סבונים בתהליך קר — שמן זית כתית מבציר מקומי וצמחי ריח מהכרמל. ייצור בקבוצות קטנות, בלי חומרים משמרים.</p>
+    </section>
+    <section class="sec">
+      <h2>המוצרים <span class="cnt">4</span></h2>
+      <div class="pgrid">
+        <div class="pcard"><div class="img leaf"><i class="ph ph-leaf"></i></div><p class="nm">סבון שמן זית ולבנדר</p><p class="unit">יח׳ · 100 ג׳</p><span class="price">35₪</span></div>
+        <div class="pcard"><div class="img leaf"><i class="ph ph-leaf"></i></div><p class="nm">סבון גדילן ושיבולת שועל</p><p class="unit">יח׳ · 100 ג׳</p><span class="price">38₪</span></div>
+        <div class="pcard"><div class="img leaf"><i class="ph ph-leaf"></i></div><p class="nm">חמאת גוף ורדים</p><p class="unit">צנצנת · 120 מ״ל</p><span class="price">52₪</span></div>
+        <div class="pcard"><div class="img leaf"><i class="ph ph-leaf"></i></div><p class="nm">מארז שלישייה לבחירה</p><p class="unit">‎3 × 100 ג׳</p><span class="price">95₪</span></div>
+      </div>
+      <p class="annot">גריד 2×2 מאוזן — בלי 2+1 אסימטרי</p>
+    </section>
+    <section class="sec">
+      <h2>משלוחים ואיסוף</h2>
+      <ul class="dl">
+        <li><i class="ph ph-truck"></i><span>זכרון יעקב והסביבה — משלוח עד הבית, א׳–ה׳</span></li>
+        <li><i class="ph ph-map-trifold"></i><span>בנימינה־גבעת עדה, פרדס חנה־כרכור — פעמיים בשבוע</span></li>
+        <li><i class="ph ph-storefront"></i><span>איסוף עצמי מהסטודיו, בתיאום מראש</span></li>
+      </ul>
+    </section>
+    <section class="sec">
+      <h2>ביקורות <span class="cnt">4.9 · 12</span></h2>
+      <blockquote class="rquote">
+        <p>„הסבון לבנדר הפך לקבוע אצלנו. ריח עדין, ומגיע עטוף יפה."</p>
+        <footer>נועה · בנימינה</footer>
+      </blockquote>
+      <a class="rmore" href="#1c">לכל הביקורות<i class="ph ph-caret-left"></i></a>
+    </section>
+    <section class="sec">
+      <h2>הגעה ומיקום</h2>
+      <p class="addr"><i class="ph ph-map-pin"></i>רח׳ המייסדים 12, זכרון יעקב</p>
+      <div class="mapph">GOOGLE MAP EMBED</div>
+    </section>
+    <section class="sec disc">
+      <h2>עוד בתי עסק באזור</h2>
+      <div class="gate">
+        <div class="minis">
+          <a class="mini" href="#1c"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">דבש הכרמל</p><p class="ct">דבש · זכרון יעקב</p></div></a>
+          <a class="mini" href="#1c"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מחלבת שורש</p><p class="ct">גבינות עיזים · בנימינה</p></div></a>
+        </div>
+      </div>
+      <p class="gatenote">DATA-GATE · מוצג רק כאשר nearby_count ≥ MIN_NEARBY_BUSINESSES (מוצע: 4) · אחרת הסקשן מוסתר</p>
+      <a class="report" href="#1c"><i class="ph ph-flag"></i>דיווח על בית העסק</a>
+    </section>
+  </article>
+</section>
+
+<!-- ======================= 1d · bar-first ======================= -->
+<section class="frame" id="1d" style="left:1341px;top:340px;">
+  <p class="flabel"><a class="idchip" href="#1d">1d</a> בר קבוע תחילה · Mobile 375</p>
+  <p class="faxes"><b>כרטיס:</b> אין — רצועת אייקונים בלבד · <b>שאלות:</b> בבורר ההודעה · <b>מוצרים:</b> שורות קומפקטיות · <b>כותרת:</b> שורת מטא אחת · <b>CTA:</b> רק בבר התחתון (IO קיים)</p>
+  <article class="card m" data-screen-label="1d בר קבוע תחילה — mobile">
+    <div class="fold" style="inset-block-start:740px;"><span>קו קיפול · ‎~740px</span></div>
+    <div class="stickybar" style="inset-block-start:672px;">
+      <div class="who"><p class="nm">טבע פור</p><p class="st">פתוח להזמנות · מענה תוך שעה</p></div>
+      <button class="cta"><i class="ph ph-whatsapp-logo"></i>וואטסאפ</button>
+    </div>
+    <div class="pagebar">
+      <button aria-label="חזרה"><i class="ph ph-caret-right"></i></button>
+      <button aria-label="שמירה"><i class="ph ph-bookmark-simple"></i></button>
+    </div>
+    <header class="mast">
+      <div class="mono">מ·ה</div>
+      <p class="eyebrow"><span>סבונים טבעיים</span><span style="opacity:.5;">·</span><i class="ph ph-map-pin"></i><span>זכרון יעקב</span><span style="opacity:.5;">·</span><span>פתוח להזמנות</span></p>
+      <h1 class="name">טבע פור <span class="vbadge"><i class="ph ph-seal-check"></i>מאומת</span></h1>
+      <hr class="rule">
+      <p class="story">סבונים בעבודת יד משמן זית כתית וצמחי הכרמל.</p>
+    </header>
+    <div class="strip">
+      <div class="iconrow">
+        <a href="#1d" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+        <a href="#1d" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+        <a href="#1d" aria-label="אתר"><i class="ph ph-globe-simple"></i></a>
+      </div>
+      <div class="tertiary">
+        <a href="#1d"><i class="ph ph-bell-simple"></i>מעקב</a>
+        <a href="#1d"><i class="ph ph-share-network"></i>שיתוף</a>
+      </div>
+    </div>
+    <section class="sec" style="border-block-start:none;">
+      <h2>אודות</h2>
+      <p class="body">בסטודיו קטן בזכרון יעקב, טבע פור מייצרת סבונים בתהליך קר — שמן זית כתית מבציר מקומי וצמחי ריח מהכרמל. ייצור בקבוצות קטנות, בלי חומרים משמרים.</p>
+      <p class="annot">הפעולה הראשית חיה רק בבר התחתון — StickyContactBar קיים, מנגנון IO נשמר, התוכן מעוצב מחדש</p>
+    </section>
+    <section class="sec">
+      <h2>המוצרים <span class="cnt">4</span></h2>
+      <div class="prow"><div><p class="nm">סבון שמן זית ולבנדר</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">35₪</span></div>
+      <div class="prow"><div><p class="nm">סבון גדילן ושיבולת שועל</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">38₪</span></div>
+      <div class="prow"><div><p class="nm">חמאת גוף ורדים</p><p class="unit">צנצנת · 120 מ״ל</p></div><span class="price">52₪</span></div>
+      <div class="prow"><div><p class="nm">מארז שלישייה לבחירה</p><p class="unit">‎3 × 100 ג׳</p></div><span class="price">95₪</span></div>
+    </section>
+    <section class="sec">
+      <h2>משלוחים ואיסוף</h2>
+      <ul class="dl">
+        <li><i class="ph ph-truck"></i><span>זכרון יעקב והסביבה — משלוח עד הבית, א׳–ה׳</span></li>
+        <li><i class="ph ph-map-trifold"></i><span>בנימינה־גבעת עדה, פרדס חנה־כרכור — פעמיים בשבוע</span></li>
+        <li><i class="ph ph-storefront"></i><span>איסוף עצמי מהסטודיו, בתיאום מראש</span></li>
+      </ul>
+    </section>
+    <section class="sec">
+      <h2>ביקורות <span class="cnt">4.9 · 12</span></h2>
+      <blockquote class="rquote">
+        <p>„הסבון לבנדר הפך לקבוע אצלנו. ריח עדין, ומגיע עטוף יפה."</p>
+        <footer>נועה · בנימינה</footer>
+      </blockquote>
+      <a class="rmore" href="#1d">לכל הביקורות<i class="ph ph-caret-left"></i></a>
+    </section>
+    <section class="sec">
+      <h2>הגעה ומיקום</h2>
+      <p class="addr"><i class="ph ph-map-pin"></i>רח׳ המייסדים 12, זכרון יעקב</p>
+      <div class="mapph">GOOGLE MAP EMBED</div>
+    </section>
+    <section class="sec disc">
+      <h2>עוד בתי עסק באזור</h2>
+      <div class="gate">
+        <div class="minis">
+          <a class="mini" href="#1d"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">דבש הכרמל</p><p class="ct">דבש · זכרון יעקב</p></div></a>
+          <a class="mini" href="#1d"><div class="img leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מחלבת שורש</p><p class="ct">גבינות עיזים · בנימינה</p></div></a>
+        </div>
+      </div>
+      <p class="gatenote">DATA-GATE · מוצג רק כאשר nearby_count ≥ MIN_NEARBY_BUSINESSES (מוצע: 4) · אחרת הסקשן מוסתר</p>
+      <a class="report" href="#1d"><i class="ph ph-flag"></i>דיווח על בית העסק</a>
+    </section>
+  </article>
+</section>
+
+<!-- ======================= picker sheet (1a/1d) ======================= -->
+<section class="frame" id="picker" style="left:1772px;top:340px;">
+  <p class="flabel"><a class="idchip" href="#picker">1a</a> בורר ההודעה · bottom sheet</p>
+  <p class="faxes">נפתח בלחיצה על ה־CTA ב־<a href="#1a">1a</a> / <a href="#1d">1d</a> — השאלות המוכנות עוברות לכאן</p>
+  <aside class="sheet" data-screen-label="בורר הודעה — bottom sheet">
+    <div class="grab"></div>
+    <div class="in">
+      <h3>מה לשאול את טבע פור?</h3>
+      <p class="sub">ההודעה תיפתח בוואטסאפ — אפשר לערוך לפני שליחה</p>
+      <div class="opt"><i class="ph ph-chat-circle-text"></i>מה זמין השבוע?</div>
+      <div class="opt"><i class="ph ph-chat-circle-text"></i>אפשר משלוח לזכרון יעקב?</div>
+      <div class="opt"><i class="ph ph-chat-circle-text"></i>יש מארזי מתנה?</div>
+      <div class="opt free"><i class="ph ph-pencil-simple"></i>כתיבת הודעה חופשית…</div>
+    </div>
+  </aside>
+</section>
+
+<!-- ======================= tradeoffs ======================= -->
+<section class="frame" style="left:1772px;top:880px;">
+  <div class="notes" data-screen-label="Tradeoffs לפי כיוון">
+    <h2>Tradeoffs לפי כיוון</h2>
+    <p class="sub">כל הכיוונים עומדים בסדר הסקשנים החדש, בלולאת הגילוי וב־affordance חזרה יחיד</p>
+    <h3><a class="idref" href="#1a">1a</a> שקט מינימלי</h3>
+    <ul>
+      <li><b>+</b> הכי קרוב למבחן 3 השניות — אפס עומס, הכרטיס הקצר ביותר.</li>
+      <li><b>−</b> השאלות המוכנות (מנוע ההמרה של הדף) נחבאות מאחורי קליק; הבורר הוא flow חדש לפיתוח ולתחזוקה.</li>
+    </ul>
+    <h3><a class="idref" href="#1b">1b</a> עורכי — מומלץ</h3>
+    <ul>
+      <li><b>+</b> השאלות גלויות אך שקטות — נקודות כניסה לאותה פעולה, לא אחיות של ה־CTA; היררכיה מלאה בלי UI חדש.</li>
+      <li><b>−</b> הכרטיס הגבוה מבין הארבעה (~300px); דורש משמעת קופי — שאלות קצרות, לעולם לא יותר משלוש.</li>
+    </ul>
+    <h3><a class="idref" href="#1c">1c</a> גילוי הדרגתי</h3>
+    <ul>
+      <li><b>+</b> כרטיס קצר והשאלות עדיין ליד ה־CTA; דפוס disclosure מוכר.</li>
+      <li><b>−</b> קליק לפני ערך; „שאלות נפוצות" נקרא כתוכן FAQ ולא כנקודת כניסה לשיחה — סיכון לפספוס.</li>
+    </ul>
+    <h3><a class="idref" href="#1d">1d</a> בר קבוע תחילה</h3>
+    <ul>
+      <li><b>+</b> התוכן מקבל את מירב הגובה; ה־CTA נגיש בכל נקודת גלילה מעצם היותו בבר.</li>
+      <li><b>−</b> ה־CTA מנותק מכרטיס הזהות (חורג מדפוס Airbnb בדסקטופ); תלות מלאה במנגנון ה־IO; הבר מסתיר תוכן דרך קבע.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================= recommendation + rule ======================= -->
+<section class="frame" style="left:1772px;top:1900px;">
+  <div class="notes" data-screen-label="המלצה וכלל ההיררכיה">
+    <h2>המלצה — <a class="idref" href="#1b">1b</a> עורכי</h2>
+    <p>עובר את מבחן 3 השניות (שם + מאומת + „סבונים · זכרון יעקב" + סטטוס בשתי שכבות), מציג פעולה ראשית אחת בלבד, ומשאיר את השאלות המוכנות גלויות — הן ה־prefill שממיר, ולכן מורידים אותן מדרגה במקום להחביא. אפס מנגנוני UI חדשים: אותם רכיבים (PrimaryContactButton, WhatsAppQuestionChips מרוסטלים, FollowButton, ShareButton), עיצוב מחדש בלבד. בדסקטופ — כרטיס דביק בדפוס Airbnb: ראשי אחד + חיוניים, הכל השאר בטור התוכן. במובייל — StickyContactBar קיים ממשיך לשאת את ה־CTA בגלילה.</p>
+    <h3>מה הוסר / אוחד</h3>
+    <ul>
+      <li>כפתור „שיתוף עם חברים" שני בטור התוכן — נמחק; שיתוף חי פעם אחת, שלישוני בכרטיס.</li>
+      <li>„הצג במפה" — נמחק; המפה היא הסקשן האחרון (עסקי משלוחים לא מוכרים כתובת).</li>
+      <li>מוצר חתום + מחיר מהכותרת → השורה הראשונה של „המוצרים".</li>
+      <li>מטא הכותרת: מ־10 פיסות → 2 שורות מקובצות (זהות / לוגיסטיקה).</li>
+      <li>חזרה כפולה: breadcrumb בדסקטופ, חץ חזרה במובייל — לעולם לא שניהם באותו viewport.</li>
+    </ul>
+    <h3>כלל ההיררכיה — לתיעוד</h3>
+    <div class="rulebox">
+      <p>1 · בכל נקודת גלילה בדיוק פעולה ראשית אחת (מילוי מלא). הסגנון שמור ל־primary_contact_method בלבד.</p>
+      <p>2 · עד 3 פעולות גלויות לפני קיבוץ; כל השאר — progressive disclosure.</p>
+      <p>3 · פעולות שמובילות לאותו יעד אינן אחיות — הן קישורי כניסה שקטים מתחת לראשית.</p>
+      <p>4 · משני = outline pill, לכל היותר אחד למסך; שלישוני = טקסט או אייקון שקט, לעולם לא pill.</p>
+      <p>5 · affordance חזרה יחיד לכל viewport: breadcrumb בדסקטופ, חץ במובייל.</p>
+    </div>
+    <h3>איפה מתעדים</h3>
+    <p><span class="pill">המלצה: DESIGN.md</span> — סעיף „Action hierarchy". זהו כלל מתמשך שחל על כל מסך, לא החלטה חד־פעמית; ADR קצר מוצדק רק אם בעתיד הופכים את הכלל. ליד הכלל מתעדים גם את משתנה הסף <b>MIN_NEARBY_BUSINESSES = 4</b> של לולאת הגילוי.</p>
+  </div>
+</section>
+
+<!-- ======================= desktop · 1b ======================= -->
+<section class="frame" id="1b-d" style="left:48px;top:3050px;">
+  <p class="flabel"><a class="idchip" href="#1b-d">1b·D</a> עורכי · Desktop 1280 · כרטיס דביק בדפוס Airbnb</p>
+  <article class="card d" data-screen-label="1b עורכי — desktop">
+    <nav class="crumbs">
+      <a href="#1b-d">ראשי</a><span class="sep">‹</span>
+      <a href="#1b-d">בתי עסק</a><span class="sep">‹</span>
+      <a href="#1b-d">זכרון יעקב</a><span class="sep">‹</span>
+      <span class="here">טבע פור</span>
+    </nav>
+    <header class="mast dmast">
+      <div class="mono">מ·ה</div>
+      <p class="eyebrow" style="font-size:14px;"><span>סבונים טבעיים</span><span style="opacity:.5;">·</span><i class="ph ph-map-pin"></i><span>זכרון יעקב</span></p>
+      <h1 class="name">טבע פור <span class="vbadge" style="font-size:14px;transform:translateY(-14px);"><i class="ph ph-seal-check" style="font-size:19px;"></i>מאומת</span></h1>
+      <hr class="rule">
+      <p class="story">סבונים בעבודת יד משמן זית כתית וצמחי הכרמל.</p>
+    </header>
+    <div class="dgrid">
+      <div class="dmain">
+        <section class="sec">
+          <h2>אודות</h2>
+          <p class="body" style="max-width:62ch;">בסטודיו קטן בזכרון יעקב, טבע פור מייצרת סבונים בתהליך קר — שמן זית כתית מבציר מקומי וצמחי ריח מהכרמל. ייצור בקבוצות קטנות, בלי חומרים משמרים.</p>
+        </section>
+        <section class="sec">
+          <h2>המוצרים <span class="cnt">4</span></h2>
+          <div class="dgrid2">
+            <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">סבון שמן זית ולבנדר</p><p class="ds">הקלאסי של הסטודיו — תהליך קר, לבנדר מזוקק</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">35₪</span></div>
+            <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">סבון גדילן ושיבולת שועל</p><p class="ds">עדין במיוחד, לעור רגיש</p><p class="unit">יח׳ · 100 ג׳</p></div><span class="price">38₪</span></div>
+            <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">חמאת גוף ורדים</p><p class="unit">צנצנת · 120 מ״ל</p></div><span class="price">52₪</span></div>
+            <div class="phyb"><div class="thumb leaf"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מארז שלישייה לבחירה</p><p class="unit">‎3 × 100 ג׳</p></div><span class="price">95₪</span></div>
+          </div>
+        </section>
+        <section class="sec">
+          <h2>משלוחים ואיסוף</h2>
+          <ul class="dl">
+            <li><i class="ph ph-truck"></i><span>זכרון יעקב והסביבה — משלוח עד הבית, א׳–ה׳</span></li>
+            <li><i class="ph ph-map-trifold"></i><span>בנימינה־גבעת עדה, פרדס חנה־כרכור — פעמיים בשבוע</span></li>
+            <li><i class="ph ph-storefront"></i><span>איסוף עצמי מהסטודיו, בתיאום מראש</span></li>
+          </ul>
+        </section>
+        <section class="sec">
+          <h2>ביקורות <span class="cnt">4.9 · 12</span></h2>
+          <blockquote class="rquote">
+            <p style="max-width:52ch;">„הסבון לבנדר הפך לקבוע אצלנו. ריח עדין, ומגיע עטוף יפה."</p>
+            <footer>נועה · בנימינה</footer>
+          </blockquote>
+          <a class="rmore" href="#1b-d">לכל הביקורות<i class="ph ph-caret-left"></i></a>
+        </section>
+        <section class="sec">
+          <h2>הגעה ומיקום</h2>
+          <p class="addr"><i class="ph ph-map-pin"></i>רח׳ המייסדים 12, זכרון יעקב</p>
+          <div class="mapph" style="height:200px;">GOOGLE MAP EMBED</div>
+        </section>
+        <section class="sec disc" style="padding-inline:24px;margin-inline:-24px;border-radius:14px;">
+          <h2>עוד בתי עסק באזור</h2>
+          <div class="gate">
+            <div class="minis dminis">
+              <a class="mini" href="#1b-d"><div class="img leaf" style="height:96px;"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">דבש הכרמל</p><p class="ct">דבש · זכרון יעקב</p></div></a>
+              <a class="mini" href="#1b-d"><div class="img leaf" style="height:96px;"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">מחלבת שורש</p><p class="ct">גבינות עיזים · בנימינה</p></div></a>
+              <a class="mini" href="#1b-d"><div class="img leaf" style="height:96px;"><i class="ph ph-leaf"></i></div><div class="tx"><p class="nm">תבליני דרך הים</p><p class="ct">תבלינים · פרדס חנה</p></div></a>
+            </div>
+          </div>
+          <p class="gatenote">DATA-GATE · nearby_count ≥ MIN_NEARBY_BUSINESSES (4)</p>
+          <a class="report" href="#1b-d"><i class="ph ph-flag"></i>דיווח על בית העסק</a>
+        </section>
+      </div>
+      <aside class="dside">
+        <div class="scard">
+          <p class="statusline"><span class="dot"></span>פתוח להזמנות<span class="sep">·</span><span class="soft">מענה בדרך כלל תוך שעה</span></p>
+          <button class="cta"><i class="ph ph-whatsapp-logo"></i>שליחת הודעה בוואטסאפ</button>
+          <ul class="qlinks">
+            <li><a href="#1b-d"><i class="ph ph-chat-circle-text"></i>מה זמין השבוע?</a></li>
+            <li><a href="#1b-d"><i class="ph ph-chat-circle-text"></i>אפשר משלוח לזכרון יעקב?</a></li>
+            <li><a href="#1b-d"><i class="ph ph-chat-circle-text"></i>יש מארזי מתנה?</a></li>
+          </ul>
+          <div class="row2" style="display:flex;align-items:center;gap:10px;border-block-start:1px solid var(--hair);padding-block-start:16px;">
+            <div class="iconrow">
+              <a href="#1b-d" aria-label="טלפון"><i class="ph ph-phone"></i></a>
+              <a href="#1b-d" aria-label="אינסטגרם"><i class="ph ph-instagram-logo"></i></a>
+              <a href="#1b-d" aria-label="אתר"><i class="ph ph-globe-simple"></i></a>
+            </div>
+            <div class="tertiary">
+              <a href="#1b-d"><i class="ph ph-bell-simple"></i>מעקב</a>
+              <a href="#1b-d"><i class="ph ph-share-network"></i>שיתוף</a>
+            </div>
+          </div>
+        </div>
+        <p class="annot" style="margin-block-start:12px;">מ־9 אלמנטים שווי־משקל → ראשי אחד + אשכולות שקטים · sticky, בדפוס Airbnb</p>
+        <p class="annot">affordance חזרה יחיד בדסקטופ: breadcrumb בלבד — „→ חזרה" הוסר</p>
+      </aside>
+    </div>
+  </article>
+</section>
+
+</body>
+</html>

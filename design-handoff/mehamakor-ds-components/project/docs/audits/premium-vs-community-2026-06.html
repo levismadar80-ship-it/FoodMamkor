@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premium ↔ Community Calibration Audit — MEH-537</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<style>
+  :root{
+    --cream:#F5F0E8;
+    --paper:#FBF8F2;
+    --ink:#1C1A17;
+    --primary:#2e6853;
+    --primary-dark:#2E4A2E;
+    --gold:#8B6914;
+    --muted:#6b6b6b;
+    --line:#DED7C9;
+    --line-soft:#E8E2D6;
+  }
+  *{box-sizing:border-box;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0;
+    background:var(--cream);
+    /* flat paper grain — candidate R4 demonstrated on the doc itself; no gradient/blur/glass */
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(28,26,23,.015) 0.5px, transparent 0.6px);
+    background-size:4px 4px;
+    color:var(--ink);
+    font-family:'DM Sans',sans-serif;
+    font-size:16px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .doc{ max-width:920px; margin:0 auto; padding:0 28px 120px; }
+  .band{ max-width:1180px; margin:0 auto; padding:0 28px; }
+
+  /* ---------- typographic system ---------- */
+  h1,h2,h3,h4{ font-family:'Frank Ruhl Libre',serif; color:var(--ink); margin:0; line-height:1.18; }
+  .he{ font-family:'Frank Ruhl Libre',serif; }
+  .num{ font-family:'Cormorant',serif; font-style:italic; font-weight:500; }
+  .kick{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  em.lat{ font-family:'Cormorant',serif; font-style:italic; color:var(--primary); font-weight:500; }
+  a{ color:var(--primary); }
+  code, .mono{ font-family:'DM Mono','SFMono-Regular',ui-monospace,Menlo,monospace; font-size:.82em; }
+
+  /* ---------- cover ---------- */
+  .cover{ padding:84px 0 40px; border-bottom:1px solid var(--line); }
+  .cover .kick{ margin:0 0 22px; }
+  .cover h1{ font-weight:900; font-size:clamp(40px,7vw,76px); letter-spacing:-.01em; }
+  .cover h1 .spectrum-word{ color:var(--primary); }
+  .cover .arrow{ color:var(--gold); font-style:normal; font-family:'DM Sans'; font-weight:400; padding:0 .12em; }
+  .cover .he-sub{ font-size:clamp(19px,3vw,26px); font-weight:500; color:var(--ink); margin:18px 0 0; line-height:1.4; }
+  .cover .lede{ font-size:18px; color:var(--muted); max-width:60ch; margin:26px 0 0; }
+  .cover .lede b{ color:var(--ink); font-weight:600; }
+
+  .meta{ display:flex; flex-wrap:wrap; gap:0; margin:38px 0 0; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--paper); }
+  .meta .cell{ flex:1 1 180px; padding:15px 20px; border-inline-start:1px solid var(--line-soft); }
+  .meta .cell:first-child{ border-inline-start:none; }
+  .meta .cell .lab{ font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .meta .cell .v{ font-size:14px; margin-top:5px; color:var(--ink); font-weight:500; }
+  .meta .cell .v .num{ font-size:18px; color:var(--primary); }
+
+  .callout{ margin:28px 0 0; padding:20px 24px; border-radius:14px; background:var(--paper); border:1px solid var(--line); border-inline-start:3px solid var(--gold); }
+  .callout .h{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--gold); margin:0 0 8px; }
+  .callout p{ margin:0; font-size:14.5px; color:var(--ink); line-height:1.6; }
+  .callout p + p{ margin-top:9px; }
+  .callout .mono{ color:var(--primary); }
+
+  /* ---------- section headers ---------- */
+  .secthead{ margin:78px 0 30px; }
+  .secthead .kick{ display:block; margin:0 0 10px; }
+  .secthead h2{ font-weight:900; font-size:clamp(26px,4.4vw,40px); letter-spacing:-.005em; }
+  .secthead p.intro{ font-size:16.5px; color:var(--muted); max-width:64ch; margin:14px 0 0; }
+
+  /* ---------- spectrum meter ---------- */
+  .spectrum{ background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:34px 38px 30px; margin-top:6px; }
+  .spectrum .ends{ display:flex; justify-content:space-between; font-size:11px; letter-spacing:.13em; text-transform:uppercase; font-weight:600; }
+  .spectrum .ends .cold{ color:var(--muted); }
+  .spectrum .ends .warm{ color:var(--gold); }
+  .plot{ position:relative; height:176px; margin:26px 0 0; }
+  .plot .axis{ position:absolute; left:0; right:0; bottom:30px; height:3px; background:linear-gradient(90deg,#bdb6a8,var(--gold)); border-radius:3px; }
+  .plot .tick{ position:absolute; bottom:24px; width:1px; height:13px; background:rgba(28,26,23,.16); transform:translateX(-50%); }
+  .plot .ticklab{ position:absolute; bottom:0; transform:translateX(-50%); font-family:'Cormorant',serif; font-style:italic; font-size:17px; color:var(--muted); }
+  .plot .avg{ position:absolute; bottom:30px; transform:translate(-50%,50%); width:17px; height:17px; border-radius:50%; background:var(--primary); border:3px solid var(--paper); box-shadow:0 1px 4px rgba(0,0,0,.22); z-index:5; }
+  .plot .mk{ position:absolute; bottom:30px; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; z-index:2; }
+  .plot .mk .stem{ width:1.5px; background:rgba(28,26,23,.22); }
+  .plot .mk .dot{ width:11px; height:11px; border-radius:50%; background:var(--cream); border:2px solid var(--ink); position:absolute; bottom:0; left:50%; transform:translate(-50%,50%); }
+  .plot .mk .pill{ font-size:11px; white-space:nowrap; background:var(--cream); border:1px solid var(--line); border-radius:999px; padding:3px 10px; color:var(--ink); font-weight:500; }
+  .plot .mk .pill b{ font-family:'Cormorant',serif; font-style:italic; font-weight:600; color:var(--primary); font-size:13px; margin-inline-start:3px; }
+  .avgline{ display:flex; align-items:baseline; gap:14px; margin-top:26px; padding-top:22px; border-top:1px solid var(--line-soft); }
+  .avgline .big{ font-family:'Cormorant',serif; font-style:italic; font-weight:600; font-size:46px; color:var(--primary); line-height:1; }
+  .avgline .txt{ font-size:14.5px; color:var(--ink); }
+  .avgline .txt b{ font-weight:600; }
+
+  /* ---------- scorecard rows ---------- */
+  .score{ display:grid; grid-template-columns:64px 1fr; gap:0 26px; padding:28px 0; border-top:1px solid var(--line); align-items:start; }
+  .score:first-of-type{ border-top:none; }
+  .score .chip{ width:64px; height:64px; border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--primary); color:var(--cream); }
+  .score .chip.s2{ background:#9a5a3c; }
+  .score .chip.s3{ background:var(--gold); }
+  .score .chip .n{ font-family:'Cormorant',serif; font-style:italic; font-weight:600; font-size:30px; line-height:1; }
+  .score .chip .of{ font-size:9.5px; letter-spacing:.1em; opacity:.8; margin-top:2px; }
+  .score .body h3{ font-weight:700; font-size:20px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .score .body h3 .qn{ font-size:14px; color:var(--muted); font-weight:400; font-family:'DM Sans'; }
+  .score .body .verdict{ font-size:15px; color:var(--primary); font-weight:600; margin:7px 0 0; }
+  .score .body p{ font-size:15px; color:var(--ink); margin:10px 0 0; max-width:68ch; }
+  .score .body p.reason{ color:var(--muted); }
+  .score .body .ev{ display:inline-flex; align-items:center; gap:7px; margin-top:13px; font-size:12.5px; color:var(--muted); background:var(--paper); border:1px solid var(--line-soft); border-radius:999px; padding:5px 13px; }
+  .score .body .ev i{ color:var(--gold); font-size:14px; }
+  .score .body .ev .mono{ color:var(--ink); }
+  .conf{ display:inline-flex; align-items:center; gap:6px; margin-top:13px; margin-inline-start:8px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; font-weight:600; padding:5px 11px; border-radius:999px; }
+  .conf.high{ background:rgba(46,104,83,.1); color:var(--primary); }
+  .conf.mod{ background:rgba(139,105,20,.12); color:var(--gold); }
+  .conf.low{ background:rgba(28,26,23,.07); color:var(--muted); }
+
+  /* ---------- recommendations ---------- */
+  .rec{ margin-top:30px; border:1px solid var(--line); border-radius:20px; background:var(--paper); overflow:hidden; }
+  .rec > .rhead{ padding:26px 30px 24px; border-bottom:1px solid var(--line-soft); }
+  .rec .rtop{ display:flex; align-items:flex-start; gap:18px; flex-wrap:wrap; }
+  .rec .rid{ font-family:'Cormorant',serif; font-style:italic; font-weight:600; font-size:34px; color:var(--gold); line-height:.9; min-width:54px; }
+  .rec .rtitle{ flex:1 1 320px; }
+  .rec .rtitle h3{ font-weight:800; font-size:23px; letter-spacing:-.005em; }
+  .rec .rtitle .src{ font-size:13px; color:var(--muted); margin-top:6px; font-family:'Cormorant',serif; font-style:italic; }
+  .rec .tags{ display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start; }
+  .rec .tag{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; font-weight:600; padding:7px 12px; border-radius:8px; white-space:nowrap; }
+  .rec .tag .num{ font-style:italic; font-size:13px; }
+  .tag.effort{ background:rgba(46,104,83,.1); color:var(--primary); }
+  .tag.risk-low{ background:rgba(46,104,83,.1); color:var(--primary); }
+  .tag.risk-med{ background:rgba(139,105,20,.14); color:var(--gold); }
+  .rec .rdesc{ font-size:15.5px; color:var(--ink); margin:18px 0 0; max-width:74ch; }
+  .rec .rdesc b{ font-weight:600; }
+
+  .mockwrap{ padding:8px 30px 30px; }
+  .mocklabel{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--gold); font-weight:700; margin:24px 0 14px; display:flex; align-items:center; gap:10px; }
+  .mocklabel::after{ content:''; flex:1; height:1px; background:var(--line-soft); }
+  .pair{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:680px){ .pair{ grid-template-columns:1fr; } }
+  .state{ }
+  .state .st-lab{ font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:600; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .state.now .st-lab{ color:var(--muted); }
+  .state.next .st-lab{ color:var(--primary); }
+  .state .st-lab .dotmark{ width:8px; height:8px; border-radius:50%; }
+  .state.now .dotmark{ background:#bdb6a8; }
+  .state.next .dotmark{ background:var(--primary); }
+
+  /* device frame */
+  .frame{ background:var(--cream); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .frame.desk{ }
+  .barmini{ display:flex; align-items:center; justify-content:space-between; padding:11px 14px; }
+  .barmini .bk{ font-size:17px; color:var(--ink); }
+  .barmini .acts{ display:flex; gap:4px; color:var(--ink); font-size:15px; }
+
+  /* mock content shared */
+  .m-eyebrow{ font-size:11px; letter-spacing:.1em; color:var(--gold); font-weight:600; display:flex; align-items:center; gap:6px; }
+  .m-eyebrow i{ font-size:12px; }
+  .m-name{ font-family:'Frank Ruhl Libre',serif; font-weight:900; color:var(--ink); line-height:1.04; }
+  .m-rule{ height:2px; width:48px; background:var(--gold); border:none; border-radius:2px; margin:14px 0 0; }
+  .m-story{ color:var(--muted); font-size:13.5px; line-height:1.55; margin:12px 0 0; }
+  .chiprow{ display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; }
+  .mchip{ font-size:11.5px; color:var(--ink); background:rgba(46,104,83,.08); padding:5px 11px; border-radius:999px; font-weight:500; }
+
+  /* photo slot placeholder (per 05-photography-style — real producer faces, never stock) */
+  .photoslot{ position:relative; background:
+      repeating-linear-gradient(135deg, rgba(46,104,83,.06) 0 7px, rgba(46,104,83,.11) 7px 14px);
+      border:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+  .photoslot .cap{ font-family:'DM Mono',ui-monospace,monospace; font-size:9.5px; letter-spacing:.04em; color:var(--primary); text-align:center; line-height:1.5; padding:8px 10px; background:rgba(251,248,242,.82); border-radius:6px; max-width:80%; }
+
+  /* handwriting accent */
+  .sig{ font-family:'Caveat',cursive; color:var(--primary); line-height:1; }
+  .sig-note{ font-family:'DM Mono',ui-monospace,monospace; font-size:9px; color:var(--muted); letter-spacing:.03em; }
+
+  /* trust mock */
+  .trust8{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .trust8.col2{ grid-template-columns:repeat(2,1fr); }
+  .tcell{ text-align:center; padding:10px 4px; border:1px solid var(--line-soft); border-radius:8px; background:var(--cream); }
+  .tcell i{ font-size:18px; color:var(--primary); }
+  .tcell .tt{ font-size:9px; color:var(--ink); margin-top:5px; line-height:1.25; }
+  .tcell .prov{ font-size:7.5px; color:var(--gold); margin-top:3px; font-family:'DM Mono',monospace; }
+
+  /* brand-lock check */
+  .lockcheck{ margin:8px 30px 30px; padding:22px 24px; border-radius:14px; background:var(--cream); border:1px solid var(--line); }
+  .lockcheck h4{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); font-weight:700; font-family:'DM Sans'; margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+  .lockcheck ul{ list-style:none; margin:0; padding:0; display:grid; gap:11px; }
+  .lockcheck li{ display:grid; grid-template-columns:22px 1fr; gap:10px; font-size:13.5px; line-height:1.5; color:var(--ink); }
+  .lockcheck li i{ font-size:16px; margin-top:1px; }
+  .lockcheck li i.ok{ color:var(--primary); }
+  .lockcheck li i.warn{ color:var(--gold); }
+  .lockcheck li b{ font-weight:600; }
+  .lockcheck li .he{ font-weight:500; }
+  .verdict-tag{ display:inline-block; margin-top:16px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; padding:7px 14px; border-radius:8px; }
+  .verdict-tag.ship{ background:var(--primary); color:var(--cream); }
+  .verdict-tag.constrained{ background:var(--gold); color:#fff; }
+
+  /* generic boxes */
+  .justify-box{ margin:8px 30px 24px; padding:22px 24px; border-radius:14px; background:rgba(139,105,20,.06); border:1px dashed var(--gold); }
+  .justify-box .h{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--gold); font-weight:700; margin:0 0 10px; }
+  .justify-box p{ font-size:14px; line-height:1.6; margin:0 0 10px; color:var(--ink); }
+  .justify-box p:last-child{ margin-bottom:0; }
+  .justify-box .he{ font-weight:500; }
+
+  /* verification / footer */
+  .checklist{ background:var(--paper); border:1px solid var(--line); border-radius:18px; padding:30px 34px; }
+  .checklist ol{ margin:0; padding:0; counter-reset:v; list-style:none; }
+  .checklist li{ display:grid; grid-template-columns:30px 1fr; gap:12px; padding:13px 0; border-top:1px solid var(--line-soft); align-items:start; }
+  .checklist li:first-child{ border-top:none; }
+  .checklist li .vn{ font-family:'Cormorant',serif; font-style:italic; font-size:19px; color:var(--gold); }
+  .checklist li .vt{ font-size:14.5px; line-height:1.5; }
+  .checklist li .vt b{ font-weight:600; }
+  .checklist li .vt .st{ display:inline-block; font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; padding:2px 8px; border-radius:6px; margin-inline-start:8px; vertical-align:middle; }
+  .st.done{ background:rgba(46,104,83,.12); color:var(--primary); }
+  .st.handoff{ background:rgba(139,105,20,.14); color:var(--gold); }
+
+  .colophon{ margin-top:50px; padding-top:26px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; font-size:12.5px; color:var(--muted); }
+  .colophon .mono{ color:var(--ink); }
+
+  @media print{
+    body{ background:#fff; }
+    .rec, .spectrum, .checklist, .meta, .callout, .frame{ box-shadow:none; }
+    .secthead{ break-after:avoid; }
+    .rec, .score{ break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <!-- ============ COVER ============ -->
+  <header class="cover">
+    <p class="kick">Brand Calibration Audit · Not a Redesign</p>
+    <h1>Premium <span class="arrow">↔</span> <span class="spectrum-word">Community</span></h1>
+    <p class="he-sub" dir="rtl">מתח המותג — יוקרה עריכתית מול חום קהילתי</p>
+    <p class="lede">Where does the live home page sit on the spectrum, and which <b>low-effort warmth moves</b> nudge it toward warm-community — <b>without touching brand tokens or the editorial-premium thesis?</b></p>
+
+    <div class="meta">
+      <div class="cell"><div class="lab">Ticket</div><div class="v">MEH-537 <span style="color:var(--muted)">· refs MEH-519</span></div></div>
+      <div class="cell"><div class="lab">Date</div><div class="v">Round 2 · <span class="num">26 Jun 26</span></div></div>
+      <div class="cell"><div class="lab">Tested at</div><div class="v">Mobile-first <span class="num">375px</span></div></div>
+      <div class="cell"><div class="lab">Branch</div><div class="v"><span class="mono">feature/meh-537…</span></div></div>
+    </div>
+
+    <div class="callout">
+      <p class="h"><i class="ph ph-shield-check"></i>&nbsp; Confidence calibration — read first</p>
+      <p><b>Round 2 — fed live production evidence.</b> Round 1 was scored without live-DOM access (flagged honestly); the orchestrator then fetched the live <span class="mono">mehamakor.co.il</span> home page (26 Jun 2026). The scores below are reconciled against the real server-rendered strings — three sections changed (§3, §4, §5).</p>
+      <p>One section stays <b>provisional</b>: the founder quote (§4) is <em>not</em> in the home server DOM (lazy/client-mounted), so it's scored on component form only, not confirmed on home. Mockups follow the brand's photography rule — real producer faces only — so photo positions are labelled slots, and all producer names/quotes shown are <b>illustrative placeholders</b> (no DB access).</p>
+    </div>
+
+    <div class="callout" style="border-inline-start-color:var(--primary);">
+      <p class="h" style="color:var(--primary)"><i class="ph ph-lock-simple"></i>&nbsp; Scope</p>
+      <p>Recommendations only — implementation is a separate ticket. <b>Untouched:</b> brand tokens, logo, hero copy, production code. The thesis holds: <span class="he" dir="rtl">מגזין, לא marketplace</span> — three words carry every move: <span class="he" dir="rtl"><b>חום (בית) · שייכות · סיפור</b></span>.</p>
+    </div>
+  </header>
+
+  <!-- ============ PHASE 1 — SCORECARD ============ -->
+  <section>
+    <div class="secthead">
+      <span class="kick">Phase 1 — The Spectrum</span>
+      <h2>Five surfaces, scored cold-premium to warm-community</h2>
+      <p class="intro">A score of <em class="lat">1</em> is cold luxury (faceless, catalog-perfect, claims without people). <em class="lat">5</em> is warm community (faces, founder voice, earned trust, a story you can touch). The brand should live around <em class="lat">3.5</em> — premium <em>and</em> warm. Here is where it sits today.</p>
+    </div>
+
+    <div class="spectrum">
+      <div class="ends"><span class="cold">← Cold premium</span><span class="warm">Warm community →</span></div>
+      <div class="plot">
+        <span class="axis"></span>
+        <span class="tick" style="left:0%"></span><span class="ticklab" style="left:0%">1</span>
+        <span class="tick" style="left:25%"></span><span class="ticklab" style="left:25%">2</span>
+        <span class="tick" style="left:50%"></span><span class="ticklab" style="left:50%">3</span>
+        <span class="tick" style="left:75%"></span><span class="ticklab" style="left:75%">4</span>
+        <span class="tick" style="left:100%"></span><span class="ticklab" style="left:100%">5</span>
+        <span class="avg" style="left:50%" title="average 3.0"></span>
+        <!-- lollipop markers; ties stack by stem height -->
+        <span class="mk" style="left:25%"><span class="pill">Hero<b>2</b></span><span class="stem" style="height:30px"></span><span class="dot"></span></span>
+        <span class="mk" style="left:75%"><span class="pill">CTA<b>4</b></span><span class="stem" style="height:30px"></span><span class="dot"></span></span>
+        <span class="mk" style="left:50%"><span class="pill">Categories<b>3</b></span><span class="stem" style="height:34px"></span><span class="dot"></span></span>
+        <span class="mk" style="left:50%"><span class="pill">Filter<b>3</b></span><span class="stem" style="height:76px"></span><span class="dot"></span></span>
+        <span class="mk" style="left:50%"><span class="pill">Quote<b>3*</b></span><span class="stem" style="height:116px"></span><span class="dot"></span></span>
+      </div>
+      <div class="avgline">
+        <span class="big">3.0</span>
+        <span class="txt"><b>Warmer than round 1 read — and correctly premium.</b> Live-DOM evidence (26 Jun 2026) lifts two scores: §3 is an honest <em>filter bar</em>, not a promises-wall, and the §5 producer invite already leads with belonging + story + a human sign-off. The remaining gap is faces and a founder hand on already-warm copy. <span class="num">*</span>§4 scored on component form only — not in the home server DOM (lazy/client). Projected after the recs: <strong style="color:var(--primary)">≈ 3.6</strong>.</span>
+      </div>
+    </div>
+
+    <!-- Scorecard rows -->
+    <div style="margin-top:16px">
+
+      <div class="score">
+        <div class="chip s2"><span class="n">2</span><span class="of">/ 5</span></div>
+        <div class="body">
+          <h3>Hero <span class="qn">— magazine cover, or luxury catalog?</span></h3>
+          <p class="verdict">Magazine cover — but a faceless one.</p>
+          <p>The imageless masthead is genuinely editorial: <span class="he" dir="rtl">Frank Ruhl Libre 900</span> set huge and start-aligned, a gold hairline, a green tint ≤7% on cream standing in for the empty photo slot. That is Kinfolk-grade restraint, and it reads as a <em>cover</em>, not a catalog.</p>
+          <p class="reason">The live subtitle does warm work in words — <span class="he">„ישר מהמקור אלייך. עסקים שכבר בדקנו בשבילך"</span> (feminine address + curation). But the warmth ceiling is structural: with no producer face, the first thing a skeptical mother sees in her 3-second scan is typography, not a person. Cover ≠ catalog earns the point above cold; facelessness caps it at 2.</p>
+          <span class="ev"><i class="ph ph-check"></i>live-confirmed 26 Jun · H1 <span class="he">„אוכל מקומי, במקום אחד"</span> · imageless</span>
+          <span class="conf high"><i class="ph ph-circle-fill" style="font-size:8px"></i> High confidence</span>
+        </div>
+      </div>
+
+      <div class="score">
+        <div class="chip s3"><span class="n">3</span><span class="of">/ 5</span></div>
+        <div class="body">
+          <h3>Categories grid <span class="qn">— market, or boutique?</span></h3>
+          <p class="verdict">Boutique — and the craft is real.</p>
+          <p>Hand-drawn single-weight line glyphs (per ADR-013 tier 2) read as a curated boutique, not a market aisle. The drawn-by-hand quality is itself a warmth signal — someone made these, they aren't an icon-pack.</p>
+          <p class="reason">It lands at 3 rather than higher because monochrome line-on-cream stays gallery-cool: beautiful, restrained, but it doesn't yet carry a person or a place. The warmth is in the craft, not in belonging.</p>
+          <span class="ev"><i class="ph ph-check"></i>live 26 Jun · 6 categories (<span class="he">בשר ועוף · ירקות · חלב וגבינות · אפייה · שמנים · טיפוח</span>)</span>
+          <span class="conf high"><i class="ph ph-circle-fill" style="font-size:8px"></i> High confidence</span>
+        </div>
+      </div>
+
+      <div class="score">
+        <div class="chip s3"><span class="n">3</span><span class="of">/ 5</span></div>
+        <div class="body">
+          <h3>Filter row <span class="qn">— claims-wall, or honest utility?</span></h3>
+          <p class="verdict">A dietary filter bar — not the promises-wall I assumed.</p>
+          <p>The live DOM shows <b>7 functional filter chips</b> under <span class="he" dir="rtl">„בתי עסק מומלצים"</span>: <span class="he" dir="rtl">כשר · אורגני · ללא גלוטן · טבעוני · ללא לקטוז · משלוח · מאומת בלבד</span>. These are dietary/verification <em>filters</em> a shopper toggles, not marketing badges asserting qualities. My round-1 read — an 8-attribute claims-wall with labels like <span class="he" dir="rtl">מקומי/מומלץ/טרי יומי/משפחתי</span> — was wrong; those labels don't exist on home. Discarded.</p>
+          <p class="reason">As a filter bar it's honest functional UX — fairly neutral on the spectrum, with one quiet curation signal in <span class="he" dir="rtl">„מאומת בלבד"</span> (verified-only). If the brief's 8-attribute trust strip exists, it lives elsewhere (/about values or producer detail), not here — I won't score a home claims-wall that isn't there. Earn the one trust chip: see R-D.</p>
+          <span class="ev"><i class="ph ph-check"></i>live DOM 26 Jun · <span class="he">„בתי עסק מומלצים"</span> filter row · 7 chips</span>
+          <span class="conf high"><i class="ph ph-circle-fill" style="font-size:8px"></i> High — live evidence</span>
+        </div>
+      </div>
+
+      <div class="score">
+        <div class="chip s3"><span class="n">3</span><span class="of">/ 5</span></div>
+        <div class="body">
+          <h3>Sapir's quote <span class="qn">— personal, or testimonial? <span style="color:var(--gold)">· provisional</span></span></h3>
+          <p class="verdict">Founder voice in a campaign frame — but not confirmed on home.</p>
+          <p>The quote (<span class="he" dir="rtl">„כל בית עסק כאן עבר דרכי"</span>) is <b>not in the home server-rendered DOM</b> — it's lazy/client-mounted, so I can't confirm it appears on home at all. Scored on component form only: <span class="mono">ParallaxQuote</span> renders it <em>centered</em>, white italic, over a <span class="mono">rgba(46,74,46,.6)</span> overlay with a Ken Burns push — the grammar of a hero-campaign testimonial, not a personal aside.</p>
+          <p class="reason">If/where it mounts, left-set, signed, smaller beside her face would read as a letter — same words, warmer register (R-B). Held provisional until live placement is confirmed.</p>
+          <span class="ev"><i class="ph ph-warning-circle"></i><span class="mono">ParallaxQuote</span> form (_ds_bundle.js L51443) · absent from home server DOM</span>
+          <span class="conf mod"><i class="ph ph-circle-half" style="font-size:11px"></i> Provisional — not in home DOM</span>
+        </div>
+      </div>
+
+      <div class="score">
+        <div class="chip"><span class="n">4</span><span class="of">/ 5</span></div>
+        <div class="body">
+          <h3>Producer CTA <span class="he" dir="rtl" style="font-weight:500">— „יש לך עסק? בואו אלינו"</span> <span class="qn">— inviting, or transactional?</span></h3>
+          <p class="verdict">Already warm — corrected upward from round 1.</p>
+          <p>The live copy does the warm work itself: <span class="he" dir="rtl">„מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר."</span> That is belonging (<span class="he" dir="rtl">„הבית של"</span>), curation (<span class="he" dir="rtl">„נבחר אישית"</span>), story-is-yours (<span class="he" dir="rtl">„סיפור — שלכם"</span>) and a human sign-off (<span class="he" dir="rtl">„נשמח להכיר"</span>) — an invite, not a qualification gate. It also avoids category enumeration.</p>
+          <p class="reason">My round-1 score of 2 was wrong — I hadn't seen the body copy. Held back from 5 only by being text-only: no founder face or hand yet. R-B's signature is the small remaining lift.</p>
+          <span class="ev"><i class="ph ph-check"></i>live DOM 26 Jun · producer-invite block (full copy)</span>
+          <span class="conf high"><i class="ph ph-circle-fill" style="font-size:8px"></i> High — live evidence</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ PHASE 2 — RECOMMENDATIONS ============ -->
+  <section>
+    <div class="secthead">
+      <span class="kick">Phase 2 — Warmth opportunities</span>
+      <h2>Four low-effort moves toward warm-community</h2>
+      <p class="intro">Each shifts the feel warmer while passing an explicit check against every brand LOCK. Ordered by warmth-per-hour. None touches a token, the logo, or hero copy.</p>
+    </div>
+
+    <div class="callout" style="border-inline-start-color:var(--gold)">
+      <p class="h"><i class="ph ph-flask"></i>&nbsp; Mockups use illustrative placeholders</p>
+      <p>Producer names, stories and quotes in the mockups below (e.g. <span class="he" dir="rtl">„מאפיית רותם"</span>) are <b>illustrative placeholders</b>, not real listings — this environment has no DB access. Strings are plausible Hebrew for layout only; production must bind real producer data and the verified kashrut-authority name.</p>
+    </div>
+
+    <!-- ===== R-A : Producer faces ===== -->
+    <article class="rec">
+      <div class="rhead">
+        <div class="rtop">
+          <div class="rid">R·A</div>
+          <div class="rtitle">
+            <h3>Producer faces on cards &amp; producer-detail — <em>not</em> the home hero</h3>
+            <div class="src">warmth-token: real producer photos · aligns Natoora producer-first · per 05-photography-style</div>
+          </div>
+          <div class="tags">
+            <span class="tag effort">Effort <span class="num">6–10h</span></span>
+            <span class="tag risk-med">Risk · Medium</span>
+          </div>
+        </div>
+        <p class="rdesc">The single biggest warmth lever — applied to the <b>producer card grid and the producer-detail page</b>, never the home hero. The home hero stays imageless by <span class="mono">ADR-018</span> (locked Direction A); this rec does not touch it. Where a producer has a real portrait, the card and detail lead with a <b>face</b> — a person looking out — with the FRL-900 name beside it. The typographic treatment stays the fallback when there's no photo, so the system never breaks.</p>
+      </div>
+
+      <div class="mockwrap">
+        <div class="mocklabel">Mobile · 375px — producer card</div>
+        <div class="pair">
+          <!-- NOW -->
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Current — imageless producer card</div>
+            <div class="frame" dir="rtl">
+              <div class="barmini"><span class="bk"><i class="ph ph-caret-right"></i></span><span class="acts"><i class="ph ph-bookmark-simple"></i><i class="ph ph-share-network"></i></span></div>
+              <div style="background:rgba(46,104,83,.06); padding:30px 22px 26px; min-height:188px; display:flex; flex-direction:column; justify-content:flex-end;">
+                <div class="m-eyebrow"><span>מאפים</span><span style="opacity:.4">·</span><i class="ph ph-map-pin"></i><span>מזכרת בתיה</span></div>
+                <div class="m-name" style="font-size:38px; margin-top:12px">מאפיית רותם</div>
+                <hr class="m-rule">
+                <p class="m-story">לחם מחמצת בתנור אבן, אפייה יומית קטנה.</p>
+              </div>
+            </div>
+          </div>
+          <!-- NEXT -->
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — portrait on the card</div>
+            <div class="frame" dir="rtl">
+              <div class="barmini"><span class="bk"><i class="ph ph-caret-right"></i></span><span class="acts"><i class="ph ph-bookmark-simple"></i><i class="ph ph-share-network"></i></span></div>
+              <div class="photoslot" style="height:150px"><span class="cap">PRODUCER PORTRAIT<br>face · per 05-photography-style<br>real, never stock</span></div>
+              <div style="padding:18px 22px 24px;">
+                <div class="m-eyebrow"><span>מאפים</span><span style="opacity:.4">·</span><i class="ph ph-map-pin"></i><span>מזכרת בתיה</span></div>
+                <div class="m-name" style="font-size:34px; margin-top:10px">מאפיית רותם</div>
+                <hr class="m-rule">
+                <p class="m-story"><b style="color:var(--ink);font-weight:600">רותם</b> אופה כאן לבד כל בוקר מאז 2019.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mocklabel">Desktop · 1180px — producer-detail page · home hero stays locked (ADR-018)</div>
+        <div class="frame desk" dir="rtl">
+          <div style="display:grid; grid-template-columns:1.05fr 1fr;">
+            <div class="photoslot" style="min-height:240px"><span class="cap">PRODUCER PORTRAIT · landscape crop<br>face + hands at work · per 05-photography-style</span></div>
+            <div style="padding:44px 48px; display:flex; flex-direction:column; justify-content:center;">
+              <div class="m-eyebrow"><span>מאפים</span><span style="opacity:.4">·</span><i class="ph ph-map-pin"></i><span>מזכרת בתיה</span></div>
+              <div class="m-name" style="font-size:60px; margin-top:14px">מאפיית רותם</div>
+              <hr class="m-rule" style="width:72px; margin-top:22px">
+              <p class="m-story" style="font-size:16px; max-width:34ch"><b style="color:var(--ink);font-weight:600">רותם</b> אופה כאן לבד כל בוקר מאז 2019 — לחם מחמצת בתנור אבן.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lockcheck">
+        <h4><i class="ph ph-lock-simple-open"></i> Brand-LOCK check</h4>
+        <ul>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Stock farm photos — forbidden:</b> respected. Mockup shows a labelled slot, not invented imagery; rule is "real producer faces, per 05-photography-style" — exactly Natoora's producer-first model.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>ADR-018 home hero:</b> untouched — target is the producer card + detail only; the locked imageless home hero (Direction A) is out of scope. Tokens, name, FRL-900 preserved; photo is additive.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>No shadow-lift / glassmorphism:</b> flat photo, flat crop — no hover elevation, no blur.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Imageless thesis intact:</b> typographic masthead remains the fallback for producers without a portrait — system degrades gracefully.</span></li>
+        </ul>
+        <span class="verdict-tag ship">Ship — passes all LOCKs</span>
+      </div>
+    </article>
+
+    <!-- ===== R-B : Sapir handwriting ===== -->
+    <article class="rec">
+      <div class="rhead">
+        <div class="rtop">
+          <div class="rid">R·B</div>
+          <div class="rtitle">
+            <h3>Sapir's handwriting as a sparing accent</h3>
+            <div class="src">warmth-token: handwriting digitized · 1–2 placements only · Cherry Bombe founder accountability</div>
+          </div>
+          <div class="tags">
+            <span class="tag effort">Effort <span class="num">2–3h</span></span>
+            <span class="tag risk-low">Risk · Low</span>
+          </div>
+        </div>
+        <p class="rdesc">Digitize Sapir's actual signature once as a single-weight SVG, placed in <b>exactly two</b> spots: signing the founder quote wherever it mounts (turning a centered testimonial into a letter — §4), and adding her hand to the producer-invite block. Note the invite is <b>already warm in copy</b> (§5 scores 4) — the signature isn't a rescue, it supplies the one human element the text-only block still lacks. Restraint is the point — two placements, never decorative repetition.</p>
+      </div>
+
+      <div class="mockwrap">
+        <div class="mocklabel">Mobile · 375px — placement 1: the quote becomes a letter (wherever it mounts — not in home server DOM)</div>
+        <div class="pair">
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Current — centered overlay testimonial</div>
+            <div class="frame" dir="rtl">
+              <div class="photoslot" style="min-height:172px; position:relative">
+                <div style="position:absolute; inset:0; background:rgba(46,74,46,.6)"></div>
+                <div style="position:relative; text-align:center; padding:0 22px;">
+                  <div class="he" style="color:#fff; font-style:italic; font-size:19px; font-weight:700; line-height:1.3;">„כל בית עסק כאן עבר דרכי."</div>
+                  <div style="color:rgba(255,255,255,.75); font-size:11px; margin-top:10px">ספיר, מייסדת</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — left-set, signed aside</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:26px 22px 22px; background:rgba(139,105,20,.05)">
+                <i class="ph ph-quotes" style="color:var(--gold); font-size:22px"></i>
+                <div class="he" style="font-style:italic; font-size:20px; font-weight:700; line-height:1.34; margin-top:8px; color:var(--ink);">כל בית עסק כאן עבר דרכי — ביקרתי, טעמתי, ואז הזמנתי.</div>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:18px;">
+                  <span class="sig" style="font-size:30px">Sapir</span>
+                  <span style="color:var(--muted); font-size:12px">ספיר · מייסדת</span>
+                </div>
+                <div class="sig-note" style="margin-top:6px">↑ digitized signature · single-weight SVG · placement 1 of 2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mocklabel">Desktop · 1180px — placement 2: signature added to the live invite (copy unchanged)</div>
+        <div class="pair">
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Live — text-only invite</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:30px 30px 28px; background:rgba(46,104,83,.05);">
+                <div class="he" style="font-size:26px; font-weight:900; line-height:1.15;">יש לך עסק? בואו אלינו</div>
+                <p style="color:var(--muted); font-size:13.5px; margin:12px 0 0; line-height:1.6;">מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם. נשמח להכיר.</p>
+                <button style="margin-top:18px; background:var(--primary); color:var(--cream); border:none; border-radius:999px; padding:12px 26px; font-family:'DM Sans'; font-size:14px; font-weight:600; min-height:44px; cursor:pointer;">הוסיפו את העסק שלך</button>
+              </div>
+            </div>
+          </div>
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — same copy + Sapir's hand</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:30px 30px 28px; background:rgba(46,104,83,.05);">
+                <div class="he" style="font-size:26px; font-weight:900; line-height:1.15;">יש לך עסק? בואו אלינו</div>
+                <p style="color:var(--muted); font-size:13.5px; margin:12px 0 0; line-height:1.6;">מהמקור הוא הבית של בתי עסק מקומיים בישראל. כל עסק כאן נבחר אישית. עמוד מלא, תמונות, סיפור — שלכם.</p>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+                  <span style="color:var(--muted); font-size:13.5px;">נשמח להכיר.</span>
+                  <span class="sig" style="font-size:26px">Sapir</span>
+                </div>
+                <button style="margin-top:16px; background:var(--primary); color:var(--cream); border:none; border-radius:999px; padding:12px 26px; font-family:'DM Sans'; font-size:14px; font-weight:600; min-height:44px; cursor:pointer;">הוסיפו את העסק שלך</button>
+                <div class="sig-note" style="margin-top:12px">only change: digitized signature beside „נשמח להכיר" · copy untouched</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin:14px 2px 0; font-family:'DM Mono',monospace;">Signature shown via Caveat as a stand-in for the production asset — a one-off digitized SVG illustration (ADR-013 editorial tier), not a new UI typeface. Live invite copy is preserved verbatim; the signature is the only addition.</p>
+      </div>
+
+      <div class="lockcheck">
+        <h4><i class="ph ph-lock-simple-open"></i> Brand-LOCK check</h4>
+        <ul>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Type LOCK:</b> not a new font on the type scale — a single illustrative SVG asset (ADR-013 editorial/illustration tier). Hebrew headlines stay FRL; body stays DM Sans.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>"Sparing accent — 1–2 places":</b> honored literally — two placements, governed; reject any third use in review.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Voice ADR-014:</b> live CTA stays plural/gerund (<span class="he">„הוסיפו את העסק שלך"</span>, <span class="he">„בואו אלינו"</span>) — untouched; founder narrative-"we" (<span class="he">„נשמח להכיר"</span>) feminine-allowed. Owner noun <span class="he">„בית עסק"</span>, never <span class="he">„יצרן"</span>.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>No emoji, no gradient/blur:</b> flat ink signature on cream.</span></li>
+        </ul>
+        <span class="verdict-tag ship">Ship — passes all LOCKs</span>
+      </div>
+    </article>
+
+    <!-- ===== R-C : Founder visit-date (CANDIDATE-NEEDS-JUSTIFICATION) ===== -->
+    <article class="rec">
+      <div class="rhead">
+        <div class="rtop">
+          <div class="rid">R·C</div>
+          <div class="rtitle">
+            <h3>Founder visit signal — <span class="he" dir="rtl" style="font-weight:800">„ביקרתי כאן…"</span></h3>
+            <div class="src">CANDIDATE-NEEDS-JUSTIFICATION · run explicitly against the "no time-stamped framing" LOCK</div>
+          </div>
+          <div class="tags">
+            <span class="tag effort">Effort <span class="num">3–4h</span></span>
+            <span class="tag risk-med">Risk · Medium</span>
+          </div>
+        </div>
+        <p class="rdesc">A per-producer line stating that Sapir personally visited — the strongest accountability signal a curated directory can carry. But it sits one inch from a brand LOCK, so it ships only in a <b>constrained</b> form. The justification is below; read it before the mockup.</p>
+      </div>
+
+      <div class="justify-box">
+        <p class="h"><i class="ph ph-scales"></i>&nbsp; LOCK check: is this accountability, or periodical-stamping?</p>
+        <p><b>The LOCK:</b> no time-stamped periodical framing — <span class="mono">"ISSUE 01"</span>, <span class="mono">"SPRING 2026"</span> — because Mehamakor is a magazine in <em>voice</em>, not a dated edition you subscribe to.</p>
+        <p><b>The distinction that clears it:</b> a periodical stamp dates the <em>whole publication</em> ("this is the spring edition"), framing the site as perishable content. A founder-visit line dates <em>one relationship</em> ("I, Sapir, stood in this kitchen") — it is bound to a single producer, accountability metadata, not an edition marker. It says <em>who vouches and that they showed up</em>, which is the curated-approval DNA, not <em>when this issue dropped</em>.</p>
+        <p><b>The constraint that keeps it clear:</b> ① attach to the producer story, <b>never the masthead/home</b>; ② phrase as a personal act, not a publication date — <span class="he">„ביקרתי כאן"</span> + season, never a bare <span class="mono">"02/2026"</span> chip; ③ no recency decay UI (no "visited 4 months ago" countdown — that re-introduces perishability). Ship constrained, with Sapir's sign-off.</p>
+      </div>
+
+      <div class="mockwrap">
+        <div class="mocklabel">Mobile · 375px — on the producer story, not the masthead</div>
+        <div class="pair">
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Current — no founder presence</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:22px;">
+                <div class="m-name" style="font-size:26px">מאפיית רותם</div>
+                <hr class="m-rule">
+                <p class="m-story" style="font-size:13px; margin-top:14px">לחם מחמצת בתנור אבן, אפייה יומית קטנה. הזמנות עד יום חמישי.</p>
+                <div class="chiprow"><span class="mchip">פרטי קשר</span><span class="mchip">שעות</span><span class="mchip">משלוחים</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — constrained visit line</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:22px;">
+                <div class="m-name" style="font-size:26px">מאפיית רותם</div>
+                <hr class="m-rule">
+                <p class="m-story" style="font-size:13px; margin-top:14px">לחם מחמצת בתנור אבן, אפייה יומית קטנה. הזמנות עד יום חמישי.</p>
+                <div style="display:flex; align-items:flex-start; gap:10px; margin-top:16px; padding:12px 14px; background:rgba(139,105,20,.07); border-radius:10px;">
+                  <i class="ph ph-fingerprint" style="color:var(--gold); font-size:18px; margin-top:1px"></i>
+                  <div>
+                    <div class="he" style="font-size:13.5px; font-weight:600; line-height:1.45;">„ביקרתי כאן בחורף האחרון. טעמתי לפני שהזמנתי."</div>
+                    <div style="display:flex; align-items:center; gap:7px; margin-top:7px;"><span class="sig" style="font-size:20px">Sapir</span><span style="color:var(--muted); font-size:11px">— ספיר</span></div>
+                  </div>
+                </div>
+                <div class="sig-note" style="margin-top:8px">season, not date · story-level, not home · no recency countdown</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mocklabel">Desktop · 1180px — sits inside the story column</div>
+        <div class="frame desk" dir="rtl">
+          <div style="padding:38px 48px; display:grid; grid-template-columns:1fr 320px; gap:40px; align-items:start;">
+            <div>
+              <div class="m-name" style="font-size:38px">מאפיית רותם</div>
+              <hr class="m-rule" style="width:64px; margin-top:18px">
+              <p class="m-story" style="font-size:15px; max-width:48ch; margin-top:16px">רותם אופה לבד כל בוקר מאז 2019. לחם מחמצת בתנור אבן, כמויות קטנות, הזמנה מראש עד יום חמישי.</p>
+            </div>
+            <div style="padding:18px 20px; background:rgba(139,105,20,.07); border-radius:12px;">
+              <i class="ph ph-fingerprint" style="color:var(--gold); font-size:22px"></i>
+              <div class="he" style="font-size:15px; font-weight:600; line-height:1.5; margin-top:10px;">„ביקרתי כאן בחורף האחרון. טעמתי את הלחם לפני שהזמנתי אותו לכאן."</div>
+              <div style="display:flex; align-items:center; gap:9px; margin-top:14px;"><span class="sig" style="font-size:26px">Sapir</span><span style="color:var(--muted); font-size:12px">— ספיר, מייסדת</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lockcheck">
+        <h4><i class="ph ph-lock-simple-open"></i> Brand-LOCK check</h4>
+        <ul>
+          <li><i class="ph ph-check-circle ok"></i><span><b>No time-stamped periodical framing:</b> cleared <em>by constraint</em> — relationship-level ("I visited this kitchen"), seasonal not dated, never on the masthead, no recency-decay UI. Accountability, not an edition stamp.</span></li>
+          <li><i class="ph ph-warning warn"></i><span><b>Residual risk:</b> a bare date chip or a homepage placement would re-trip the LOCK. <b>Guardrail:</b> season-phrasing + story-scope only; needs Sapir's explicit sign-off before ship.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Voice / noun:</b> feminine founder narrative allowed; pairs with the R-B signature; no <span class="he">„יצרן"</span>.</span></li>
+        </ul>
+        <span class="verdict-tag constrained">Ship — constrained, founder sign-off required</span>
+      </div>
+    </article>
+
+    <!-- ===== R-D : Earned trust + warm ambient ===== -->
+    <article class="rec">
+      <div class="rhead">
+        <div class="rtop">
+          <div class="rid">R·D</div>
+          <div class="rtitle">
+            <h3>Earn the <span class="he" dir="rtl">„מאומת בלבד"</span> filter chip + a flat paper ground</h3>
+            <div class="src">warmth-token: warmer ambient (flat grain only) · earn the one trust chip, not the diet filters · The Infatuation anti-Yelp</div>
+          </div>
+          <div class="tags">
+            <span class="tag effort">Effort <span class="num">2–4h</span></span>
+            <span class="tag risk-low">Risk · Low</span>
+          </div>
+        </div>
+        <p class="rdesc">Two small moves that compound. <b>(1)</b> The home row is a real <b>dietary/verification filter bar</b> (7 chips) — leave it a filter. But <span class="he" dir="rtl">„מאומת בלבד"</span> is the one chip that's a <em>trust claim</em>, not a diet, so give <em>only that chip</em> a tap-through explaining what verification means (personally selected, checked before listing). Do <b>not</b> bolt provenance onto <span class="he" dir="rtl">„טבעוני"</span> / <span class="he" dir="rtl">„ללא גלוטן"</span> — those are facts the shopper filters by, not things to vouch for. <b>(2)</b> Lay a single flat paper-grain under the cream page (this document uses it) — <b>flat only, never gradient/blur/glass.</b></p>
+      </div>
+
+      <div class="mockwrap">
+        <div class="mocklabel">Mobile · 375px — the real filter row, with one chip earned</div>
+        <div class="pair">
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Live — 7 filter chips, „מאומת בלבד" silent</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:18px;">
+                <div class="he" style="font-size:15px; font-weight:700; margin-bottom:12px;">בתי עסק מומלצים</div>
+                <div style="display:flex; gap:7px; flex-wrap:wrap;">
+                  <span class="mchip">כשר</span><span class="mchip">אורגני</span><span class="mchip">ללא גלוטן</span><span class="mchip">טבעוני</span><span class="mchip">ללא לקטוז</span><span class="mchip">משלוח</span><span class="mchip" style="background:rgba(139,105,20,.12); color:var(--gold); font-weight:600;">מאומת בלבד</span>
+                </div>
+                <div class="sig-note" style="margin-top:12px">„מאומת בלבד" is a trust claim sitting silent among diet filters</div>
+              </div>
+            </div>
+          </div>
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — one chip taps through to its meaning</div>
+            <div class="frame" dir="rtl">
+              <div style="padding:18px;">
+                <div class="he" style="font-size:15px; font-weight:700; margin-bottom:12px;">בתי עסק מומלצים</div>
+                <div style="display:flex; gap:7px; flex-wrap:wrap;">
+                  <span class="mchip">כשר</span><span class="mchip">אורגני</span><span class="mchip">ללא גלוטן</span><span class="mchip">טבעוני</span><span class="mchip">ללא לקטוז</span><span class="mchip">משלוח</span><span class="mchip" style="background:var(--gold); color:#fff; font-weight:600;">מאומת בלבד&nbsp;<i class="ph ph-info" style="font-size:11px"></i></span>
+                </div>
+                <div style="display:flex; align-items:flex-start; gap:10px; margin-top:14px; padding:12px 14px; background:rgba(139,105,20,.07); border-radius:10px;">
+                  <i class="ph ph-seal-check" style="color:var(--gold); font-size:18px; margin-top:1px"></i>
+                  <div class="he" style="font-size:12.5px; line-height:1.55; font-weight:500;">כל עסק כאן נבחר אישית. בדקנו לפני שהוספנו — בלי תשלום על מקום ברשימה.</div>
+                </div>
+                <div class="sig-note" style="margin-top:10px">qualitative — who &amp; how, no date · diet chips left untouched</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mocklabel">Desktop · 1180px — flat paper ground (R-D pt.2)</div>
+        <div class="pair">
+          <div class="state now">
+            <div class="st-lab"><span class="dotmark"></span> Current — flat cream</div>
+            <div class="frame" style="background:#F5F0E8; min-height:120px; display:flex; align-items:center; justify-content:center;">
+              <span class="sig-note" style="color:var(--muted)">#F5F0E8 · perfectly flat</span>
+            </div>
+          </div>
+          <div class="state next">
+            <div class="st-lab"><span class="dotmark"></span> Proposed — cream + ≤2% paper grain</div>
+            <div class="frame" style="background:#F5F0E8; background-image:radial-gradient(circle at 50% 50%, rgba(28,26,23,.02) 0.5px, transparent 0.6px); background-size:3px 3px; min-height:120px; display:flex; align-items:center; justify-content:center;">
+              <span class="sig-note" style="color:var(--primary)">same hex · flat grain only · no gradient/blur/glass</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="justify-box" style="background:rgba(46,104,83,.06); border-color:var(--primary)">
+        <p class="h" style="color:var(--primary)"><i class="ph ph-arrows-merge"></i>&nbsp; Reconciling R-C and R-D — no double date-stamp</p>
+        <p>These two must not collide. <b>R-C</b> puts a founder-visit line on the <em>producer page</em> — seasonal, never dated, sign-off-gated. <b>R-D</b> explains the <span class="he" dir="rtl">„מאומת בלבד"</span> chip at the <em>filter level</em> — purely qualitative ("selected personally, checked before listing"), with <b>no date and no per-visit claim</b>. My round-1 R-D carried a home date-chip (<span class="mono">„ספיר ביקרה · חורף 26'"</span>) — that re-tripped the very time-stamp LOCK R-C is built to honor, so it's <b>removed</b>. Dates live nowhere on home; the only time signal is R-C's seasonal phrasing, on the producer story, behind Sapir's sign-off.</p>
+      </div>
+
+      <div class="lockcheck">
+        <h4><i class="ph ph-lock-simple-open"></i> Brand-LOCK check</h4>
+        <ul>
+          <li><i class="ph ph-check-circle ok"></i><span><b>No gradient orbs / blur / glassmorphism:</b> the ambient is a single flat grain at the same <span class="mono">#F5F0E8</span> — never pure white, never a gradient. The warmth-token's explicit constraint, honored.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Filters stay filters:</b> the explainer touches only the <span class="he" dir="rtl">„מאומת בלבד"</span> trust chip — never <span class="he" dir="rtl">„טבעוני"</span>/<span class="he" dir="rtl">„ללא גלוטן"</span>; dietary facts aren't vouched for.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>Phosphor regular, no Lucide, no duotone:</b> chip set and info glyph unchanged in weight.</span></li>
+          <li><i class="ph ph-check-circle ok"></i><span><b>No date on home:</b> the round-1 home date-chip is removed (see reconciliation above); the explainer is qualitative only. Dated/visit signals live solely on the producer page via R-C — ADR-019 colors (gold + <span class="mono">--fg-muted</span>) only, no new semantic tokens.</span></li>
+        </ul>
+        <span class="verdict-tag ship">Ship — passes all LOCKs</span>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ============ VERIFICATION ============ -->
+  <section>
+    <div class="secthead">
+      <span class="kick">Closeout</span>
+      <h2>Verification &amp; handoff</h2>
+      <p class="intro">Against the brief's verification step. Items that are repo/PR operations are marked <span style="color:var(--gold);font-weight:600">handoff</span> — they belong to the implementation ticket, not this design artifact, and I won't claim git actions I didn't perform.</p>
+    </div>
+
+    <div class="checklist">
+      <ol>
+        <li><span class="vn">1</span><span class="vt"><b>Repo markdown emitted</b> — <span class="mono">docs/audits/premium-vs-community-2026-06.md</span> (deliverable of record, DoD #1); this designed HTML is its linked attachment. <span class="st done">Done</span></span></li>
+        <li><span class="vn">2</span><span class="vt"><b>5 sections scored 1–5</b> with file/section evidence + reasoning + per-section confidence. <span class="st done">Done</span></span></li>
+        <li><span class="vn">3</span><span class="vt"><b>4 recommendations</b> (within 3–5), each with current+proposed mockup (mobile &amp; desktop), effort hours, risk, and a LOCK check. <span class="st done">Done</span></span></li>
+        <li><span class="vn">4</span><span class="vt"><b>Every recommendation passes the brand-LOCK check</b> — R-C ships constrained (with the time-stamp-LOCK argument made explicit) and founder sign-off; the rest ship clean. None dropped. <span class="st done">Done</span></span></li>
+        <li><span class="vn">5</span><span class="vt"><b>CHANGELOG</b> entry — <span class="mono">"design-audit: premium vs community calibration"</span>. <span class="st handoff">Handoff</span> — add on the implementation branch.</span></li>
+        <li><span class="vn">6</span><span class="vt"><b>PR body</b> ends with <span class="mono">Refs MEH-519</span> (line above) then <span class="mono">Closes MEH-537</span>. <span class="st handoff">Handoff</span> — set when the PR opens.</span></li>
+      </ol>
+    </div>
+
+    <div class="callout" style="margin-top:24px; border-inline-start-color:var(--gold)">
+      <p class="h"><i class="ph ph-arrow-counter-clockwise"></i>&nbsp; Round 2 — corrections applied vs live DOM (26 Jun 2026)</p>
+      <p>§3 re-scored as a <b>filter bar</b> (not a claims-wall) 2→3 · §5 re-scored up 2→4 (already leads with belonging + story + human sign-off) · §4 held provisional (absent from home server DOM) · R-A retargeted to <b>producer card/detail</b>, home hero stays locked · R-B copy de-enumerated + claim reduced · R-D home date-chip removed and reconciled with R-C. Average <span class="num">2.4 → 3.0</span>.</p>
+    </div>
+
+    <div class="callout" style="margin-top:24px; border-inline-start-color:var(--primary)">
+      <p class="h" style="color:var(--primary)"><i class="ph ph-git-branch"></i>&nbsp; For the implementation ticket (Sapir opens after selecting)</p>
+      <p>Suggested order by warmth-per-hour: <b>R-B</b> (signature, 2–3h) and <b>R-D</b> (chip explainer + grain, 2–4h) first — lowest risk, immediate warmth. <b>R-A</b> (faces on card/detail) next, gated on the photography pipeline. <b>R-C</b> (visit line) last, after Sapir signs off on the constrained form. Projected spectrum move: <span class="num" style="font-size:17px; color:var(--primary)">3.0 → ≈3.6</span>, thesis untouched.</p>
+    </div>
+
+    <div class="colophon">
+      <span>Mehamakor <span class="he" dir="rtl">מהמקור</span> · brand calibration audit · <span class="mono">MEH-537</span></span>
+      <span>Inspiration locked: Kinfolk · Natoora · Cherry Bombe · The Infatuation · Smitten Kitchen</span>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

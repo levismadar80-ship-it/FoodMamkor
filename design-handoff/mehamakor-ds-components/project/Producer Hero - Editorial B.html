@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="design_doc_mode" content="canvas">
+<title>Producer Hero — Editorial B (imaged state)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+  :root{
+    --color-cream:#F5F0E8;
+    --color-ink:#1C1A17;
+    --color-primary:#2e6853;
+    --color-gold:#896714;
+    --color-muted:#6b6b6b;
+    --radius-img:12px;
+    --gap-grid:8px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:'DM Sans',sans-serif;color:var(--color-ink);}
+  a{color:var(--color-primary);}
+  a:hover{color:var(--color-gold);}
+
+  .frame{position:absolute;}
+  .flabel{
+    font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#8a857c;
+    margin:0 0 12px;font-weight:500;font-family:'DM Sans',sans-serif;
+  }
+  .card{
+    background:var(--color-cream);
+    box-shadow:0 1px 2px rgba(0,0,0,.06),0 18px 40px -20px rgba(0,0,0,.28);
+    overflow:hidden;position:relative;border-radius:3px;
+  }
+
+  /* page chrome */
+  .pagebar{display:flex;align-items:center;justify-content:space-between;padding-block:14px;padding-inline:20px;}
+  .pagebar .back,.pagebar .acts button{
+    width:44px;height:44px;display:grid;place-items:center;font-size:21px;
+    color:var(--color-ink);background:transparent;border:none;cursor:pointer;border-radius:8px;
+  }
+  .pagebar .acts{display:flex;gap:4px;}
+  .pagebar .acts button:hover,.pagebar .back:hover{background:rgba(46,104,83,.08);}
+
+  /* ---------- gallery grid (desktop) ---------- */
+  .gal{position:relative;padding-inline:20px;}
+  .gal-grid{
+    display:grid;gap:var(--gap-grid);
+    grid-template-columns:3fr 2fr;
+    grid-template-rows:repeat(2, 226px);   /* 226*2 + 8 = 460 max */
+    border-radius:var(--radius-img);overflow:hidden;
+  }
+  .gal-grid .cell{position:relative;overflow:hidden;background:#DED8CC;}
+  .gal-grid .cell.hero{grid-row:1 / span 2;}
+  .gal-grid .cell.tall{grid-row:1 / span 2;}
+  .gal img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cell button.zoom{position:absolute;inset:0;background:transparent;border:none;cursor:pointer;padding:0;}
+  .cell:hover img{filter:brightness(.96);}
+
+  /* single-image density: current full-width behavior */
+  .gal-single{border-radius:var(--radius-img);overflow:hidden;max-height:460px;position:relative;background:#DED8CC;}
+  .gal-single img{width:100%;height:460px;object-fit:cover;display:block;}
+
+  /* FavoriteButton — existing contract: top-start on hero */
+  .fav{
+    position:absolute;inset-block-start:12px;inset-inline-start:12px;
+    width:44px;height:44px;border-radius:999px;border:none;cursor:pointer;
+    background:rgba(245,240,232,.92);color:var(--color-ink);
+    display:grid;place-items:center;font-size:20px;
+    box-shadow:0 1px 4px rgba(0,0,0,.18);z-index:2;
+    transition:transform .15s ease;
+  }
+  .fav:hover{transform:scale(1.06);}
+  .fav.on{color:#B4442C;}
+
+  /* "כל התמונות" pill — cream + gold ring, bottom-end over last cell */
+  .allpics{
+    position:absolute;inset-block-end:12px;inset-inline-end:12px;z-index:2;
+    display:flex;align-items:center;gap:8px;
+    min-height:44px;padding-block:10px;padding-inline:16px;
+    background:var(--color-cream);color:var(--color-ink);
+    border:1.5px solid var(--color-gold);border-radius:999px;white-space:nowrap;
+    font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);
+  }
+  .allpics i{font-size:17px;color:var(--color-gold);}
+  .allpics:hover{background:#fff;}
+
+  /* ---------- editorial name block (Tinted-Masthead echo) ---------- */
+  .mast{padding-block:26px 8px;padding-inline:20px;max-width:720px;}
+  .mast .eyebrow{
+    font-size:12.5px;letter-spacing:.14em;font-weight:500;color:var(--color-gold);
+    margin:0 0 14px;display:flex;align-items:center;gap:7px;
+  }
+  .mast .name{
+    font-family:'Frank Ruhl Libre',serif;font-weight:900;color:var(--color-ink);
+    margin:0;line-height:1.06;font-size:44px;letter-spacing:-.005em;
+  }
+  .mast .rule{height:2px;background:var(--color-gold);border:none;margin:18px 0 0;border-radius:2px;max-width:340px;margin-inline:0;}
+  .mast .meta{display:flex;gap:8px;margin-block-start:16px;flex-wrap:wrap;}
+  .mast .chip{
+    font-size:13px;color:var(--color-ink);background:rgba(46,104,83,.08);
+    padding-block:7px;padding-inline:14px;border-radius:999px;font-weight:500;
+    display:flex;align-items:center;gap:6px;
+  }
+  .mast .chip i{color:var(--color-primary);font-size:15px;}
+  .mast .meta.oos{position:relative;width:fit-content;outline:1.5px dashed rgba(137,103,20,.55);outline-offset:8px;border-radius:6px;margin-block-start:24px;}
+  .mast .meta.oos::before{
+    content:"שכבה נפרדת — מחוץ לסקופ MEH-1047 (רפרנס בלבד)";
+    position:absolute;inset-block-start:-26px;inset-inline-start:-4px;
+    font-size:10.5px;letter-spacing:.06em;color:var(--color-gold);font-weight:600;
+  }
+  .peek{padding-block:10px 26px;padding-inline:20px;}
+  .peek .ln{height:11px;background:rgba(28,26,23,.07);border-radius:3px;margin-block-end:10px;}
+
+  /* ---------- mobile pager ---------- */
+  .pager{position:relative;}
+  .pager .track{
+    display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding-inline:12px;scrollbar-width:none;
+  }
+  .pager .track::-webkit-scrollbar{display:none;}
+  .pager .slide{
+    flex:0 0 88%;scroll-snap-align:center;position:relative;
+    border-radius:var(--radius-img);overflow:hidden;background:#DED8CC;height:280px;
+  }
+  .pager .slide img{width:100%;height:100%;object-fit:cover;display:block;}
+  .counter{
+    position:absolute;inset-block-end:12px;inset-inline-end:48px;z-index:2;
+    background:rgba(28,26,23,.72);color:#fff;font-size:12.5px;font-weight:500;
+    padding-block:5px;padding-inline:11px;border-radius:999px;letter-spacing:.04em;
+    font-variant-numeric:tabular-nums;pointer-events:none;
+  }
+  .dots{display:flex;justify-content:center;margin-block-start:2px;}
+  .dots button{
+    width:44px;height:44px;display:grid;place-items:center;
+    background:transparent;border:none;cursor:pointer;padding:0;
+  }
+  .dots button::after{
+    content:"";width:7px;height:7px;border-radius:999px;
+    background:rgba(28,26,23,.22);transition:all .2s ease;display:block;
+  }
+  .dots button.on::after{background:var(--color-gold);width:20px;border-radius:4px;}
+
+  /* ---------- lightbox stub (= existing ImageGallery) ---------- */
+  .lb{position:fixed;inset:0;background:rgba(28,26,23,.9);z-index:50;display:none;padding:48px;overflow:auto;}
+  .lb.open{display:block;}
+  .lb .lb-head{display:flex;justify-content:space-between;align-items:center;color:#F5F0E8;max-width:960px;margin-inline:auto;margin-block-end:20px;}
+  .lb .lb-head h2{font-family:'Frank Ruhl Libre',serif;font-weight:700;font-size:22px;margin:0;}
+  .lb .lb-head button{width:44px;height:44px;border-radius:999px;border:1px solid rgba(245,240,232,.4);background:transparent;color:#F5F0E8;font-size:20px;cursor:pointer;}
+  .lb .lb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:960px;margin-inline:auto;}
+  .lb .lb-grid img{width:100%;border-radius:8px;display:block;}
+
+  .note{
+    position:absolute;font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.55;color:#6b6b6b;
+    background:#fff;border:1px solid #d8d4cc;border-radius:10px;padding:12px 14px;width:300px;
+  }
+  .note b{color:var(--color-ink);}
+</style>
+</head>
+<body>
+
+<!-- ===================== DESKTOP · 4+ IMAGES ===================== -->
+<div class="frame" style="inset-inline-start:48px;inset-block-start:48px;width:1200px;" data-screen-label="Desktop — 4+ images">
+  <p class="flabel">Desktop · ‎4+ תמונות (hero + stacked pair)</p>
+  <div class="card">
+    <div class="pagebar">
+      <button class="back" aria-label="חזרה"><i class="ph ph-arrow-right"></i></button>
+      <div class="acts">
+        <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+        <button aria-label="דיווח"><i class="ph ph-flag"></i></button>
+      </div>
+    </div>
+    <div class="gal">
+      <div class="gal-grid">
+        <div class="cell hero">
+          <button class="fav on" aria-label="הסרה ממועדפים"><i class="ph-fill ph-heart"></i></button>
+          <button class="zoom" aria-label="פתיחת גלריה" onclick="openLB(5)"></button>
+          <img src="https://picsum.photos/seed/meh-a1/1080/860" alt="" loading="eager" fetchpriority="high">
+        </div>
+        <div class="cell">
+          <button class="zoom" aria-label="פתיחת גלריה" onclick="openLB(5)"></button>
+          <img src="https://picsum.photos/seed/meh-a2/720/420" alt="" loading="lazy">
+        </div>
+        <div class="cell">
+          <button class="zoom" aria-label="פתיחת גלריה" onclick="openLB(5)"></button>
+          <img src="https://picsum.photos/seed/meh-a3/720/420" alt="" loading="lazy">
+          <button class="allpics" onclick="openLB(5)"><i class="ph ph-images"></i>כל התמונות (5)</button>
+        </div>
+      </div>
+    </div>
+    <div class="mast">
+      <p class="eyebrow"><i class="ph ph-map-pin"></i>מושב כפר ידידיה · השרון</p>
+      <h1 class="name">גבינות משק רוזנברג</h1>
+      <hr class="rule">
+      <div class="meta oos">
+        <span class="chip"><i class="ph ph-cheese"></i>מחלבה</span>
+        <span class="chip"><i class="ph ph-seal-check"></i>בית עסק מאומת</span>
+        <span class="chip"><i class="ph ph-star"></i>4.9 · 38 ביקורות</span>
+      </div>
+    </div>
+    <div class="peek">
+      <div class="ln" style="width:72%;"></div>
+      <div class="ln" style="width:64%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DESKTOP · 2–3 IMAGES ===================== -->
+<div class="frame" style="inset-inline-start:48px;inset-block-start:1010px;width:1200px;" data-screen-label="Desktop — 2–3 images">
+  <p class="flabel">Desktop · ‎2 תמונות (hero + tall secondary — ‎3 תמונות = כמו 4+ ללא ספירה)</p>
+  <div class="card">
+    <div class="pagebar">
+      <button class="back" aria-label="חזרה"><i class="ph ph-arrow-right"></i></button>
+      <div class="acts">
+        <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+        <button aria-label="דיווח"><i class="ph ph-flag"></i></button>
+      </div>
+    </div>
+    <div class="gal">
+      <div class="gal-grid">
+        <div class="cell hero">
+          <button class="fav" aria-label="הוספה למועדפים"><i class="ph ph-heart"></i></button>
+          <button class="zoom" aria-label="פתיחת גלריה" onclick="openLB(2)"></button>
+          <img src="https://picsum.photos/seed/meh-b1/1080/860" alt="" loading="eager" fetchpriority="high">
+        </div>
+        <div class="cell tall">
+          <button class="zoom" aria-label="פתיחת גלריה" onclick="openLB(2)"></button>
+          <img src="https://picsum.photos/seed/meh-b2/720/860" alt="" loading="lazy">
+          <button class="allpics" onclick="openLB(2)"><i class="ph ph-images"></i>כל התמונות</button>
+        </div>
+      </div>
+    </div>
+    <div class="mast">
+      <p class="eyebrow"><i class="ph ph-map-pin"></i>צפת · הגליל העליון</p>
+      <h1 class="name">דבש הרי מירון</h1>
+      <hr class="rule">
+      <div class="meta oos">
+        <span class="chip"><i class="ph ph-drop"></i>מכוורת</span>
+        <span class="chip"><i class="ph ph-star"></i>4.7 · 12 ביקורות</span>
+      </div>
+    </div>
+    <div class="peek">
+      <div class="ln" style="width:72%;"></div>
+      <div class="ln" style="width:64%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== DESKTOP · 1 IMAGE ===================== -->
+<div class="frame" style="inset-inline-start:48px;inset-block-start:1972px;width:1200px;" data-screen-label="Desktop — 1 image">
+  <p class="flabel">Desktop · תמונה אחת (התנהגות נוכחית — full-width)</p>
+  <div class="card">
+    <div class="pagebar">
+      <button class="back" aria-label="חזרה"><i class="ph ph-arrow-right"></i></button>
+      <div class="acts">
+        <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+        <button aria-label="דיווח"><i class="ph ph-flag"></i></button>
+      </div>
+    </div>
+    <div class="gal">
+      <div class="gal-single">
+        <button class="fav" aria-label="הוספה למועדפים"><i class="ph ph-heart"></i></button>
+        <img src="https://picsum.photos/seed/meh-c1/1800/700" alt="" loading="eager" fetchpriority="high">
+      </div>
+    </div>
+    <div class="mast">
+      <p class="eyebrow"><i class="ph ph-map-pin"></i>באר שבע · הנגב</p>
+      <h1 class="name">מאפיית שורשים</h1>
+      <hr class="rule">
+      <div class="meta oos">
+        <span class="chip"><i class="ph ph-bread"></i>מאפייה</span>
+        <span class="chip"><i class="ph ph-seal-check"></i>בית עסק מאומת</span>
+      </div>
+    </div>
+    <div class="peek">
+      <div class="ln" style="width:72%;"></div>
+      <div class="ln" style="width:64%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MOBILE 375 ===================== -->
+<div class="frame" style="inset-inline-start:1320px;inset-block-start:48px;width:375px;" data-screen-label="Mobile 375 — swipe pager">
+  <p class="flabel">Mobile 375 · pager עם peek, מונה ונקודות (‎44px)</p>
+  <div class="card" style="width:375px;">
+    <div class="pagebar" style="padding-inline:8px;">
+      <button class="back" aria-label="חזרה"><i class="ph ph-arrow-right"></i></button>
+      <div class="acts">
+        <button aria-label="שיתוף"><i class="ph ph-share-network"></i></button>
+      </div>
+    </div>
+    <div class="pager" id="pager">
+      <button class="fav" style="inset-block-start:12px;inset-inline-start:24px;" aria-label="הוספה למועדפים"><i class="ph ph-heart"></i></button>
+      <div class="track" id="track">
+        <div class="slide"><img src="https://picsum.photos/seed/meh-a1/760/560" alt="" loading="eager" fetchpriority="high"></div>
+        <div class="slide"><img src="https://picsum.photos/seed/meh-a2/760/560" alt="" loading="lazy"></div>
+        <div class="slide"><img src="https://picsum.photos/seed/meh-a3/760/560" alt="" loading="lazy"></div>
+        <div class="slide"><img src="https://picsum.photos/seed/meh-a4/760/560" alt="" loading="lazy"></div>
+        <div class="slide"><img src="https://picsum.photos/seed/meh-a5/760/560" alt="" loading="lazy"></div>
+      </div>
+      <span class="counter" id="counter">1/5</span>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="mast" style="padding-block-start:8px;">
+      <p class="eyebrow"><i class="ph ph-map-pin"></i>מושב כפר ידידיה · השרון</p>
+      <h1 class="name" style="font-size:32px;">גבינות משק רוזנברג</h1>
+      <hr class="rule" style="max-width:220px;">
+      <div class="meta oos">
+        <span class="chip"><i class="ph ph-cheese"></i>מחלבה</span>
+        <span class="chip"><i class="ph ph-star"></i>4.9</span>
+      </div>
+    </div>
+    <div class="peek">
+      <div class="ln" style="width:82%;"></div>
+      <div class="ln" style="width:70%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- annotations -->
+<div class="note" style="inset-inline-start:1320px;inset-block-start:900px;">
+  <b>חוזה קוד:</b> התאים ממופים ל־producer.images[]‎ דרך optimizeCloudinary (f_auto,q_auto). תמונה ראשונה eager + fetchpriority=high, השאר lazy. הפיל "כל התמונות" קורא ל־ImageGallery הקיים; FavoriteButton נשאר top-start על תא ה־hero. מצב ללא תמונות = Tinted Masthead (נעול, לא נגעתי).
+</div>
+
+<!-- lightbox stub = existing ImageGallery -->
+<div class="lb" id="lb">
+  <div class="lb-head">
+    <h2>כל התמונות</h2>
+    <button onclick="document.getElementById('lb').classList.remove('open')" aria-label="סגירה"><i class="ph ph-x"></i></button>
+  </div>
+  <div class="lb-grid" id="lbGrid"></div>
+</div>
+
+<script>
+  function openLB(n){
+    const g = document.getElementById('lbGrid');
+    g.innerHTML = '';
+    const seeds = ['meh-a1','meh-a2','meh-a3','meh-a4','meh-a5'];
+    for(let i=0;i<n;i++){
+      const img = document.createElement('img');
+      img.src = 'https://picsum.photos/seed/'+seeds[i]+'/900/620';
+      img.loading = 'lazy';
+      g.appendChild(img);
+    }
+    document.getElementById('lb').classList.add('open');
+  }
+  // mobile pager: counter + dots
+  (function(){
+    const track = document.getElementById('track');
+    const slides = Array.from(track.children);
+    const dots = document.getElementById('dots');
+    const counter = document.getElementById('counter');
+    slides.forEach((s,i)=>{
+      const b = document.createElement('button');
+      b.setAttribute('aria-label','תמונה '+(i+1));
+      if(i===0) b.classList.add('on');
+      b.addEventListener('click',()=>{
+        s.scrollIntoView; // no-op guard
+        track.scrollTo({left: s.offsetLeft - track.offsetLeft - 22, behavior:'smooth'});
+      });
+      dots.appendChild(b);
+    });
+    let cur = 0;
+    track.addEventListener('scroll', ()=>{
+      const mid = track.scrollLeft + track.clientWidth/2 * (document.dir==='rtl'?-1:1);
+      let best = 0, bestD = Infinity;
+      slides.forEach((s,i)=>{
+        const c = s.offsetLeft + s.offsetWidth/2 - track.offsetLeft;
+        const d = Math.abs(Math.abs(track.scrollLeft) + track.clientWidth/2 - c);
+        if(d < bestD){bestD = d; best = i;}
+      });
+      if(best !== cur){
+        cur = best;
+        counter.textContent = (cur+1)+'/'+slides.length;
+        Array.from(dots.children).forEach((b,i)=>b.classList.toggle('on', i===cur));
+      }
+    }, {passive:true});
+  })();
+</script>
+</body>
+</html>

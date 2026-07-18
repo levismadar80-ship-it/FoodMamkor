@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="design_doc_mode" content="canvas">
+<title>Visit Line — 3 Variants (Producer Story)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;family=Cormorant:ital,wght@0,500;1,400;1,500&amp;display=swap" rel="stylesheet">
+<style>
+:root{--cream:#F5F0E8;--ink:#1C1A17;--primary:#2e6853;--gold:#896714;--muted:#6b6b6b;--hair:rgba(28,26,23,.12);}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'DM Sans',sans-serif;color:var(--ink);}
+a{color:var(--primary);}a:hover{color:var(--gold);}
+.frame{position:absolute;width:375px;}
+.deckhead{width:560px;}
+.deckhead .kick{font-family:'Cormorant',serif;font-style:italic;font-size:15px;color:var(--gold);margin:0 0 8px;direction:ltr;text-align:right;}
+.deckhead h1{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:34px;margin:0 0 12px;color:var(--ink);}
+.deckhead p{font-size:14px;line-height:1.7;color:var(--muted);margin:0 0 8px;}
+.flabel{font-size:12.5px;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:8px;}
+.idchip{font-family:'Cormorant',serif;font-style:italic;font-weight:500;font-size:15px;color:var(--gold);text-decoration:none;border:1px solid var(--hair);border-radius:999px;padding:1px 9px;}
+.trade{font-size:12.5px;line-height:1.6;color:var(--muted);margin:0 0 12px;max-width:375px;}
+.trade b{color:var(--ink);font-weight:600;}
+.card{background:var(--cream);border:1px solid var(--hair);width:375px;padding:28px 20px 34px;}
+.eyebrow{display:flex;gap:7px;font-size:12.5px;color:var(--muted);letter-spacing:.02em;margin:0 0 6px;}
+.name{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:32px;margin:0 0 22px;line-height:1.1;}
+.sec h2{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:21px;margin:0 0 14px;padding-block-start:22px;border-block-start:1px solid var(--hair);}
+.sec p.body{font-size:14.5px;line-height:1.7;margin:0 0 14px;}
+.visit{font-size:14px;line-height:1.65;color:var(--muted);margin:0;}
+.visit .sig{display:block;margin-block-start:6px;font-size:13px;color:var(--gold);}
+.mark{width:26px;height:1px;background:var(--gold);border:0;margin:22px 0 12px;}
+.annot{font-family:'Cormorant',serif;font-style:italic;font-size:13px;color:var(--muted);margin:10px 0 0;direction:ltr;text-align:right;}
+</style>
+</head>
+<body>
+
+<div class="frame deckhead" style="left:48px;top:48px;">
+  <p class="kick">/producers/[slug] · founder visit line · RED ship-gate</p>
+  <h1>שורת הביקור — 3 גרסאות</h1>
+  <p>הערת־שוליים של ספיר בתוך עמודת הסיפור: „ביקרתי לפני שצירפתי". עונה, לא תאריך · לא תג ולא CTA · קול ראשון נקבה (ADR-024) · מוצגת רק לעסקים שבוקרו — כשאין ביקור, השורה פשוט נעדרת.</p>
+  <p>שלוש הגרסאות נבדלות במיקום, באורך ובטיפול: <a href="#1a">1a</a> פתיחה שקטה · <a href="#1b">1b</a> הערת־שוליים עם קו · <a href="#1c">1c</a> סיום עם חתימה. עסק לדוגמה: מחלבת שורש, בנימינה.</p>
+</div>
+
+<!-- 1a -->
+<section class="frame" id="1a" style="left:48px;top:330px;">
+  <p class="flabel"><a class="idchip" href="#1a">1a</a> שורה אחת · פותחת את הסיפור · ללא סימן</p>
+  <p class="trade"><b>Tradeoff:</b> המאופקת ביותר — נקראת כשורת פתיחה אישית של הסיפור. הסיכון: נטמעת בטקסט ועלולה להתפספס.</p>
+  <article class="card" data-screen-label="1a פתיחה שקטה">
+    <p class="eyebrow"><span>גבינות עיזים</span><span style="opacity:.5;">·</span><span>בנימינה</span></p>
+    <h1 class="name">מחלבת שורש</h1>
+    <div class="sec">
+      <h2>אודות</h2>
+      <p class="visit" style="margin:0 0 16px;">ביקרתי במחלבה בחורף האחרון. טעמתי לפני שהמלצתי.</p>
+      <p class="body">בחצר משק בבנימינה, רותם מגבנת גבינות עיזים בקבוצות קטנות — חלב מהעדר של המשפחה, בלי חומרים משמרים.</p>
+      <p class="body" style="margin:0;">את רוב הגבינות אפשר להזמין למשלוח באזור, וחלקן נמכרות רק במכירה החודשית במשק.</p>
+    </div>
+  </article>
+  <p class="annot">DM Sans 400 · 14px · #6b6b6b · no rule, no icon</p>
+</section>
+
+<!-- 1b -->
+<section class="frame" id="1b" style="left:479px;top:330px;">
+  <p class="flabel"><a class="idchip" href="#1b">1b</a> שתי שורות · אחרי הפסקה הראשונה · קו־שיער זהב</p>
+  <p class="trade"><b>Tradeoff:</b> החמה והאישית ביותר — הערת־שוליים של כותבת, ברוח Natoora. הסיכון: קוטעת לרגע את רצף הסיפור.</p>
+  <article class="card" data-screen-label="1b הערת שוליים">
+    <p class="eyebrow"><span>גבינות עיזים</span><span style="opacity:.5;">·</span><span>בנימינה</span></p>
+    <h1 class="name">מחלבת שורש</h1>
+    <div class="sec">
+      <h2>אודות</h2>
+      <p class="body">בחצר משק בבנימינה, רותם מגבנת גבינות עיזים בקבוצות קטנות — חלב מהעדר של המשפחה, בלי חומרים משמרים.</p>
+      <hr class="mark" style="margin:18px 0 10px;">
+      <p class="visit" style="margin:0 0 18px;">ביקרתי אצל רותם במחלבה בחורף האחרון.<br>טעמתי הכול לפני שהזמנתי — וחזרתי מאז פעמיים.</p>
+      <p class="body" style="margin:0;">את רוב הגבינות אפשר להזמין למשלוח באזור, וחלקן נמכרות רק במכירה החודשית במשק.</p>
+    </div>
+  </article>
+  <p class="annot">26px hairline #896714 · DM Sans 400 · 14px · #6b6b6b</p>
+</section>
+
+<!-- 1c -->
+<section class="frame" id="1c" style="left:910px;top:330px;">
+  <p class="flabel"><a class="idchip" href="#1c">1c</a> שורה + חתימה · סוגרת את הסיפור</p>
+  <p class="trade"><b>Tradeoff:</b> סוגרת כמו סוף מכתב — סמכות שקטה ובעלות אישית. הסיכון: חתימה שחוזרת בכל עמוד עלולה להישחק.</p>
+  <article class="card" data-screen-label="1c סיום עם חתימה">
+    <p class="eyebrow"><span>גבינות עיזים</span><span style="opacity:.5;">·</span><span>בנימינה</span></p>
+    <h1 class="name">מחלבת שורש</h1>
+    <div class="sec">
+      <h2>אודות</h2>
+      <p class="body">בחצר משק בבנימינה, רותם מגבנת גבינות עיזים בקבוצות קטנות — חלב מהעדר של המשפחה, בלי חומרים משמרים.</p>
+      <p class="body">את רוב הגבינות אפשר להזמין למשלוח באזור, וחלקן נמכרות רק במכירה החודשית במשק.</p>
+      <p class="visit" style="margin-block-start:22px;">ביקרתי כאן בחורף האחרון — טעמתי לפני שצירפתי את המחלבה למפה.<span class="sig">— ספיר, מהמקור</span></p>
+    </div>
+  </article>
+  <p class="annot">signature: DM Sans 400 · 13px · #896714 · no italic (Hebrew)</p>
+</section>
+
+</body>
+</html>
