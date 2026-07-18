@@ -14,7 +14,7 @@
 const RESERVED = new Set([
   "about", "admin", "favorites", "login", "map",
   "p", "producer", "rate", "register", "settings", "terms",
-  "upgrade", "messages", "discover", "publish",
+  "upgrade", "messages", "discover", "publish", "newsletter",
   "api", "_next", "favicon.ico", "manifest.json",
   "robots.txt", "sitemap.xml", "sw.js",
 ]);
