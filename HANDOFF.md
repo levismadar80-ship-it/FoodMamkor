@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 (night) — MEH-999 audit fix wave — 11/13 shipped (batch executor session)
+
+- **Merged to staging (10):** #1944 (MEH-1347 overview greeting/CTA/review-time) · #1946 (MEH-1344 hours revert) · #1947 (MEH-1345 empty-state titles) · #1949 (MEH-1346 region-chip toggle) · #1951 (MEH-1350 group-buys copy) · #1952 (MEH-1352 image-cap UI) · #1953 (MEH-1354 category descs) · #1954 (MEH-1348 arrow sweep) · #1956 (MEH-1353 voice) — plus #1943 (MEH-1349 cities union) + #1955 (MEH-1351 review-ready ping) re-kicked and auto-merge-armed after the #1950/#1945 EXPECTED_TABLES ordering break resolved (see CI note in CHANGELOG).
+- **MEH-1355 STOPPED** per its own Phase 0 gate — business tab is not a one-link panel (rejected/suspended banners + SupportModal live there, `settings/page.jsx:774-845`); options A (conditional deep-link) / B (relocate banners to dashboard) / C (leave) posted on the Linear ticket, Sapir picks.
+- **MEH-1343 SKIPPED** — localities file not attached; note on ticket cross-references the MEH-1349 TODO (single canonical source when the CBS dataset lands).
+- **Phase D findings (read-only, no tickets opened — Sapir triages):** table in the wave final report. Sev-3: `he.json:862` producer-card pending_eta "מאושר בתוך 24 שעות" — third conflicting approval-time value. Sev-2: DescriptionCard AI-generate no-revert (cards.jsx:740); /search/trending fresh-DB empty (search.py:173-205); report-window drift 48h vs 3 ימי עסקים (he.json:2899 vs :3337); 8 static-ArrowLeft forward CTAs backward in en locale (About/join/HomeStaticBlocks/RegisterPreflight/AboutProcess); PageOverflowState anonymous empty branch (ProducersClient.jsx:630); stale יום-יומיים at he.json:228 + join step3. P5: 27-string consumer/marketing voice inventory awaiting the brand decision (separate from ADR-024's producer-journey scope).
+- **QA infra built this session (reusable):** local full stack in the CC sandbox — /tmp/pgdata Postgres + uvicorn :8000 + `next start` :3000, seeded pending producers (qa-producer[-b/-c/-d]@example.com / QaLocal12345!), in-page-login Playwright harness (`frontend/qa-*.local.mjs`, untracked). Screenshots under `qa-artifacts/MEH-13xx/`.
+- **Known CI trap re-confirmed (MEH-1339 precedent):** `Backend lint` gate = `ruff check` AND `ruff format --check` — run both locally before push.
+- **Next:** Sapir mobile pass on staging.mehamakor.online; decide MEH-1355 option; triage Phase D table into tickets; MEH-1347/1350/1353/1354 YELLOW copy tables await her async review in the PR descriptions.
+
 ## 2026-07-18 — MEH-449 POST-MERGE closeout (session end)
 
 - **MERGED to staging** — PR #1916, squash `cfe04ac` (18:21:57Z). Merged by CC on **explicit user override** of the MEH-671 CC-deny-on-workflows rule (the batch dispatch said Sapir-merge; the user overrode via AskUserQuestion). Both required gates green; the new `ai-artifact-scan` job passed. Landing took ~10 Accept-Both re-syncs of HANDOFF/CHANGELOG to win the CI-vs-churn race; the `resolve-conflicts` skill drove the resolutions.
