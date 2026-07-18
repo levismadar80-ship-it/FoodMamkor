@@ -49,8 +49,12 @@ from app.schemas.schemas import (
     ProductOut,
     ProductUpdate,
 )
+from app.services.auth_notifications import notify_admin_producer_review_ready
 from app.services.delivery_validation import ensure_exclusion_requires_nationwide
-from app.services.license_validation import ensure_license_for_categories
+from app.services.license_validation import (
+    categories_require_license,
+    ensure_license_for_categories,
+)
 from app.services.trust_tier import VALID_BADGE_CODES
 from app.slug_utils import RESERVED_SLUGS, slugify as _slugify_me
 
@@ -153,6 +157,32 @@ def _enforce_owner_license_gate(db, producer, payload, category_ids):
         ensure_license_for_categories(db, final_category_ids, None)
 
 
+# MEH-1351: approvability = the admin approve gate's definition, REUSED not
+# reimplemented — ≥1 image (MEH-799) AND license present when the categories
+# require one (MEH-971). Keep in sync with admin.py:approve_producer.
+def _is_approvable(db, producer) -> bool:
+    if not producer.images:
+        return False
+    category_ids = [c.id for c in producer.categories]
+    license_missing = not (producer.producer_license_number or "").strip()
+    return not (categories_require_license(db, category_ids) and license_missing)
+
+
+def _pending_and_approvable(db, producer) -> bool:
+    return producer.status == "pending" and _is_approvable(db, producer)
+
+
+def _maybe_fire_review_ready(background_tasks, db, producer, was_approvable) -> None:
+    """MEH-1351: review-ready ping on the false→true approvability transition
+    of a pending producer (first image / license completed). Fire-and-forget
+    BackgroundTask mirroring the resubmit ping's contract; the transition
+    check (not a sent-flag) is the idempotency guard — no schema change."""
+    if not was_approvable and _pending_and_approvable(db, producer):
+        background_tasks.add_task(
+            notify_admin_producer_review_ready, producer.name, producer.city
+        )
+
+
 @router.put("", response_model=ProducerOwnerOut)
 @limiter.limit("30/hour")
 def update_my_producer(
@@ -165,6 +195,10 @@ def update_my_producer(
     producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
     if not producer:
         raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    # MEH-1351: snapshot approvability BEFORE mutation — the review-ready ping
+    # fires only on the false→true transition of a pending producer (below).
+    was_approvable = _pending_and_approvable(db, producer)
 
     _PRODUCER_WRITABLE_FIELDS = {
         "name",
@@ -289,6 +323,8 @@ def update_my_producer(
                 url=f"/producer/{producer.id}",
             ),
         )
+
+    _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
 
     return producer
 
