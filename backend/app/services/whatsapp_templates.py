@@ -145,3 +145,46 @@ class OtpCodeV1(WhatsAppTemplate):
                 "parameters": [{"type": "text", "text": self.code}],
             },
         ]
+
+
+class FavoriteAlertHeV1(WhatsAppTemplate):
+    """Favorite-alert notification (MEH-1329). UTILITY category, dynamic-URL button.
+
+    Delivered business-initiated (outside the 24h service window), so free-form
+    `send_text` — which 131047/window_expires for a customer who never messaged
+    us — is replaced by this approved template. Two body params in {{n}} order
+    plus a URL-button param that is NOT a body parameter:
+
+        {{1}} producer_name — the saved business's name
+        {{2}} update_line   — the sanitized headline (emoji-stripped, single-line)
+        url_path            — the "/…" path for the dynamic button URL
+                              (https://mehamakor.co.il{{1}}; the domain lives on
+                              the Meta side, so we pass only the leading-"/" path)
+
+    Like `OtpCodeV1`, `to_components()` is overridden — the base builder would
+    (wrongly) emit `url_path` as a third body parameter. Here the body carries
+    only producer_name + update_line, and url_path goes solely to the button
+    (`sub_type="url"`, `index=0`), mirroring the OtpCodeV1 precedent.
+    """
+
+    name: ClassVar[str] = "favorite_alert_he_v1"
+    producer_name: str
+    update_line: str
+    url_path: str
+
+    def to_components(self) -> list[dict[str, object]]:
+        return [
+            {
+                "type": "body",
+                "parameters": [
+                    {"type": "text", "text": self.producer_name},
+                    {"type": "text", "text": self.update_line},
+                ],
+            },
+            {
+                "type": "button",
+                "sub_type": "url",
+                "index": 0,
+                "parameters": [{"type": "text", "text": self.url_path}],
+            },
+        ]
