@@ -3998,6 +3998,7 @@
         "subtitle": "Your opening hours, shown on your business page.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+        "revert_cta": "Discard changes",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
