@@ -425,7 +425,7 @@
       "map_link": "View on map",
       "filter_prefix": "Filtering by:",
       "counter": "Showing {shown} of {total}",
-      "hint_favorites": "Tap on a business card to save favourites",
+      "hint_favorites": "Tap the heart to save businesses you love",
       "filter_showing": "Showing:",
       "clear_filter": "Clear filter",
       "empty_heading": "No businesses found in this area — yet",
