@@ -686,6 +686,16 @@
         "cta": "Edit business",
         "aria": "Edit your business"
       },
+      "section_edit": {
+        "aria": "Edit {section}",
+        "labels": {
+          "bio": "description",
+          "images": "photos",
+          "products": "products",
+          "contact": "contact details",
+          "location": "location"
+        }
+      },
       "tabs": {
         "about": "About",
         "products": "Products",
@@ -4004,12 +4014,13 @@
         "saving": "Saving…",
         "saved": "✓ Saved"
       },
+      "view_on_page": "View this section on your page",
       "description_card": {
         "heading": "Business description",
         "intro": "Your description appears on your business page — tell customers who you are and what they'll find.",
         "desc_label": "Full description",
         "desc_where": "Appears on your business page",
-        "desc_placeholder": "Write a few sentences about your business — what you make, how, and for whom.",
+        "desc_placeholder": "No description yet — share what makes you special. It's the first thing customers read on your page.",
         "tagline_label": "Tagline",
         "tagline_where": "Appears on your business card in search and listings",
         "tagline_placeholder": "One line that sums you up — e.g. Boutique Galilee jams, handmade",
