@@ -393,6 +393,16 @@ export default function AboutPage() {
           <p className="font-body-md text-fg-muted text-lg mt-3 max-w-[48ch] leading-relaxed">
             {t("contact.subtitle")}
           </p>
+          {/* MEH-1323: quiet cross-link to /messages ("how contacting businesses
+              works") — closes the desktop ORPHAN from the MEH-1311 route audit.
+              Mirrors the testimonials-CTA link treatment. */}
+          <Link
+            href="/messages"
+            className="inline-flex items-center gap-2 mt-4 text-primary font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+          >
+            {t("messages_link")}
+            <ArrowLeft size={18} aria-hidden="true" />
+          </Link>
 
           <form onSubmit={handleContact} className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-x-6 max-w-[560px]">
             {/* MEH-1145 Wave E2: plain labeled fields → ui/Input (canon). Each
