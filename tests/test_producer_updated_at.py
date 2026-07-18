@@ -58,3 +58,40 @@ def test_owner_edit_stamps_updated_at(client, db):
     assert detail.status_code == 200
     # The edit stamped updated_at; the public page will now render the line.
     assert detail.json()["updated_at"] is not None
+
+
+def test_admin_edit_stamps_updated_at(client, db):
+    """PUT /admin/producers/{id} is the same setattr+commit path -> stamp fires.
+
+    Guards the admin path against a future refactor to a bulk
+    `update()` execute (which would skip the ORM onupdate).
+    """
+    producer = make_producer(db, name="חוות בעריכת אדמין")
+    admin = make_user(db, role="admin")
+
+    r = client.put(
+        f"/admin/producers/{producer.id}",
+        json={"description": "תיאור מעודכן על ידי מנהלת"},
+        headers=auth_header(admin),
+    )
+    assert r.status_code == 200
+
+    detail = client.get(f"/producers/{producer.id}")
+    assert detail.status_code == 200
+    assert detail.json()["updated_at"] is not None
+
+
+def test_list_endpoint_does_not_expose_updated_at(client, db):
+    """Scope guard: updated_at is detail-page-only — never on ProducerListOut.
+
+    Locks the 'detail-only' contract so a future edit to ProducerListOut
+    (schemas.py) that adds updated_at trips this test.
+    """
+    make_producer(db, name="חוות ברשימה")  # approved -> appears in the public list
+
+    r = client.get("/producers")
+
+    assert r.status_code == 200
+    body = r.json()
+    assert isinstance(body, list) and body
+    assert "updated_at" not in body[0]
