@@ -102,14 +102,17 @@ export function useMapSync({
     setMapBounds(bounds);
   }, []);
 
-  // Card click → fly map to producer + open popup + highlight card
+  // Card click → select + pin-sync + fly map to producer (NO page scroll).
   const handleCardClick = useCallback((producer) => {
     if (!producer?.lat || !producer?.lng) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
-    document
-      .getElementById("map-container")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // MEH-1298: removed the legacy `#map-container` scrollIntoView — a
+    // stacked-layout page-scroll that moved the list under the pointer between
+    // the two taps of the MEH-1243 Direction-B select→navigate gesture, so the
+    // second tap landed on a different card. It is a no-op on today's
+    // full-screen /map (no page scroll), but keeping it risks the bug if the
+    // layout ever becomes scrollable. Selection + pin-sync + focusProducer stay.
     setTimeout(() => mapApiRef.current?.focusProducer(producer.id), 250);
   }, [setActiveProducerId, setSelectedProducer]);
 

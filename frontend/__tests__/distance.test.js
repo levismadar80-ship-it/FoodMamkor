@@ -59,15 +59,16 @@ describe("formatDistance", () => {
     expect(formatDistance(0.02)).toBe("פחות מ-50 \u2066m\u2069 ממך");
   });
 
-  it("uses one decimal for 1–99 km", () => {
+  it("uses one decimal for 1–9.9 km", () => {
     expect(formatDistance(1)).toBe("\u20661.0 km\u2069 ממך");
     expect(formatDistance(3.24)).toBe("\u20663.2 km\u2069 ממך");
-    expect(formatDistance(54.7)).toBe("\u206654.7 km\u2069 ממך");
-    expect(formatDistance(99.94)).toBe("\u206699.9 km\u2069 ממך");
+    expect(formatDistance(9.94)).toBe("\u20669.9 km\u2069 ממך");
   });
 
-  it("uses no decimal for ≥100 km (avoids false precision)", () => {
-    expect(formatDistance(100)).toBe("\u2066100 km\u2069 ממך");
+  it("rounds to a whole number for ≥10 km (MEH-1298 — false precision)", () => {
+    expect(formatDistance(10)).toBe("\u206610 km\u2069 ממך");
+    expect(formatDistance(54.7)).toBe("\u206655 km\u2069 ממך");
+    expect(formatDistance(99.94)).toBe("\u2066100 km\u2069 ממך");
     expect(formatDistance(312.5)).toBe("\u2066313 km\u2069 ממך");
     expect(formatDistance(20015)).toBe("\u206620015 km\u2069 ממך");
   });
@@ -76,10 +77,11 @@ describe("formatDistance", () => {
 describe("formatDistance — Hebrew unit / no suffix (MEH-1243 §3)", () => {
   it('renders "{x.x} ק"מ" for 1-99 km, digits-first, no ממך', () => {
     expect(formatDistance(1.2, { unit: "he", suffix: false })).toBe('1.2 ק"מ');
-    expect(formatDistance(53.9, { unit: "he", suffix: false })).toBe('53.9 ק"מ');
+    expect(formatDistance(9.9, { unit: "he", suffix: false })).toBe('9.9 ק"מ'); // <10 keeps decimal
   });
 
   it('renders whole ק"מ for >=100 km and מ for <1 km', () => {
+    expect(formatDistance(53.9, { unit: "he", suffix: false })).toBe('54 ק"מ'); // ≥10 rounds
     expect(formatDistance(312.5, { unit: "he", suffix: false })).toBe('313 ק"מ');
     expect(formatDistance(0.45, { unit: "he", suffix: false })).toBe("450 מ'");
   });
