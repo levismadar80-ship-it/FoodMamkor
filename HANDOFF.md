@@ -3,6 +3,27 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1328 — Home VRT baseline regen (tests-only, PR #1919)
+
+- **Why:** the hero/trust copy swap in PR #1904 (`"עסקים"` → `"בתי עסק"` across `home.hero.subtitle` /
+  `cta_primary` / `home.trust.lead`) red-lined `parity.spec.ts:90 › home` — the viewport-only home
+  baseline went stale. Ran the documented **MEH-991 self-service regen flow**: a comment-only touch to
+  the home spec re-fired `vrt-update.yml`, which regenerated the baselines on-runner (run `29651582259`,
+  success) and auto-committed them (`881411db`, `github-actions[bot]`).
+- **Phase-0 gate (delta = hero-region only):** the home shot is viewport-only (no `fullPage`), so the
+  footer link (PR #1907), BackToTop (PR #1905, hidden on load), and filter chips (PR #1908) all sit below
+  the fold; `#producers-grid` / mini-map / cards are masked; the desktop UserMenu favorites row (PR #1906)
+  is a closed logged-out dropdown. Source-range analysis from the last home baseline (`01ff4793`, the
+  MEH-1295 regen) → staging tip confirmed the only in-frame home change is the PR #1904 copy. (Runner diff
+  PNG was not pullable — its Azure blob host is egress-blocked from the CC sandbox.)
+- **Regenerated (3 baselines):** `home-mobile-linux.png` (PR #1904 copy; exceeded the 2% tolerance on
+  Pixel 5 — desktop stayed within tolerance so `home-desktop` was untouched, matching the original
+  `[mobile]`-only failure), plus `about-{mobile,desktop}-linux.png` swept in by the regen — driven by
+  PR #1915's in-content /messages link on /about (a fullPage shot). Both drivers are legitimate merged
+  features; no regression baked in.
+- **Gates:** required aggregators (`CI gate`, `Deploy gate`) + `Playwright E2E` re-run against the fresh
+  baselines via a self-authored HANDOFF follow-up (bot commits don't fire workflows — MEH-1112/1113).
+
 ## 2026-07-18 — MEH-1313 — PR-backlog triage sweep (release-eng, ADR-016 v2)
 
 - **What:** triaged the pre-launch PR backlog under MEH-1074's ADR-016 v2 authority. Full
