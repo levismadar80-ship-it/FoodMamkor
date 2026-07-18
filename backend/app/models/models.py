@@ -215,8 +215,13 @@ class Producer(Base):
     email_followup_4_sent_at = Column(DateTime(timezone=True), nullable=True)
     email_followup_5_sent_at = Column(DateTime(timezone=True), nullable=True)
 
+    # MEH-1297: order_by position so categories[0] is deterministic (the
+    # producer's primary/first-selected category), not an arbitrary row.
     categories = relationship(
-        "Category", secondary="producer_categories", back_populates="producers"
+        "Category",
+        secondary="producer_categories",
+        back_populates="producers",
+        order_by="ProducerCategory.position",
     )
     products = relationship(
         "Product", back_populates="producer", cascade="all, delete-orphan"
@@ -436,6 +441,10 @@ class ProducerCategory(Base):
     category_id = Column(
         Integer, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True
     )
+    # MEH-1297: 0-based order within the producer's selection; 0 = primary.
+    # server_default text("'0'") mirrors the migration ADD so `alembic check`
+    # sees no model↔schema drift.
+    position = Column(Integer, nullable=False, server_default=text("'0'"))
 
 
 class Product(Base):

@@ -230,6 +230,18 @@ def delete_category(
     cat = db.query(Category).filter(Category.id == category_id).first()
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
+    # MEH-1297: block deleting a category still linked to producers — a silent
+    # cascade would orphan those businesses (uncategorised → invisible).
+    linked = (
+        db.query(func.count(ProducerCategory.producer_id))
+        .filter(ProducerCategory.category_id == category_id)
+        .scalar()
+    )
+    if linked:
+        raise HTTPException(
+            status_code=409,
+            detail=f"לא ניתן למחוק — {linked} בתי עסק משויכים לקטגוריה זו",
+        )
     db.delete(cat)
     db.commit()
     return {"detail": "Category deleted"}
