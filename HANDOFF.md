@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1312 — footer utility-bar "צרו קשר" contact link — MERGED PR #1907
+
+- **Shipped (merged to staging, squash `e4da62d`):** added a `nav.footer.contact` link ("צרו קשר" / "Contact us") to the Footer **utility bar** (`Footer.jsx` login·terms·privacy·accessibility array), after the accessibility statement → `/about#contact`. The contact-form section already carries `id="contact"` (`AboutClient.jsx:388`) so **no AboutClient edit was needed** — the pre-approved conditional anchor add did not apply. New i18n key `nav.footer.contact` he+en (plural imperative per ADR-014). Sapir-approved **ADR-024 exception (18/07)**; the "גלו" discover group stays at 7 links.
+- **Tier/flow:** GREEN/LOW-RISK, end-to-end authority granted by Sapir 18/07. Branch cut fresh off `origin/staging` as `feature/meh-1312-footer-contact-link` (the harness default `claude/meh-1310-1312-1311-qdwk7u` was 53 commits divergent — cut off `main` — and `claude/*` is blocked by the branch-name gate).
+- **Verification:** `npm run build` green (exit 0); i18n parity guards (`en-parity-guard`+`en-locale-guard`+`I18nNamespaceResolution`, 8) + `FooterNavGroups.test.jsx` (3) green; diff = 3 files / 6 insertions / 0 deletions; RTL-clean. Merged on the 2 required aggregator gates (`mergeable_state:"unstable"` = required green, non-required red); **Vercel preview rate-limited** (free-tier 24h cap) → on-device mobile QA deferred to Sapir on staging.
+- **Parallel-session note (Rule 1):** a concurrent session is active on `feature/meh-1314-chip-scroll-snap` (different ticket, chip scroll-snap — no overlap with the footer files) and `staging` was churning with rapid merges during this work. No file conflict with MEH-1312; proceeded on this ticket only, per the MEH-1305 precedent.
+- **Batch context:** original dispatch named MEH-1310→MEH-1312→MEH-1311; user re-scoped mid-session to MEH-1312 (this ticket). MEH-1310 (UserMenu/favorites) and MEH-1311 (routes audit, READ-ONLY) not started this session.
+
 ## 2026-07-18 — MEH-1307 / MEH-1308 / MEH-1309 — three LOW-RISK tasks, 3 separate PRs
 
 - **Tier:** MEH-450 LOW-RISK, end-to-end authority (Phase 0→implement→self-QA→PR per task). One logical change per PR; each branched fresh off `origin/staging`. DO-NOT-MERGE — Sapir merges after mobile QA on the previews.
