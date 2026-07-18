@@ -2832,7 +2832,8 @@
       "remove_aria": "הסר {city}",
       "placeholder": "הקלידו שם עיר...",
       "commit_hint": "בחרי עיר מהרשימה כדי להוסיף",
-      "region_added": "נוסף"
+      "region_added": "נוסף",
+      "region_remove_title": "הסרת ערי {region}"
     },
     "city_search": {
       "placeholder": "חפשו עיר...",
