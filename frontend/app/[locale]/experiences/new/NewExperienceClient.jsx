@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
+import { isUnverifiedEmailError } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { Leaf, Warning, Lightbulb, XCircle } from "@phosphor-icons/react";
 import { useAuth } from "@/lib/auth-context";
 import Breadcrumb from "@/components/Breadcrumb";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 import { EXPERIENCE_CATEGORIES } from "@/lib/event-categories";
 
 /**
@@ -66,6 +68,8 @@ export default function NewExperienceClient() {
   const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  // MEH-1164 B: verified-email 403 → resend CTA notice instead of a dead-end.
+  const [unverified, setUnverified] = useState(false);
   const debounceRef = useRef(null);
 
   // Gate: must be logged in to submit
@@ -137,6 +141,7 @@ export default function NewExperienceClient() {
   const submit = async (e) => {
     e.preventDefault();
     setServerError("");
+    setUnverified(false);
 
     if (form.title.trim().length < 4) {
       setServerError(t("error_title_short"));
@@ -188,7 +193,9 @@ export default function NewExperienceClient() {
       router.push(`/experiences/${r.data.id}?pending=1`);
     } catch (err) {
       const detail = err.response?.data?.detail;
-      if (detail && typeof detail === "object" && detail.reason) {
+      if (isUnverifiedEmailError(err)) {
+        setUnverified(true);
+      } else if (detail && typeof detail === "object" && detail.reason) {
         setServerError(detail.reason);
       } else if (typeof detail === "string") {
         setServerError(detail);
@@ -230,6 +237,7 @@ export default function NewExperienceClient() {
         onSubmit={submit}
         className="bg-background border border-border rounded-[16px] p-6 space-y-5"
       >
+        {unverified && <UnverifiedEmailNotice />}
         {serverError && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-[12px] p-3 text-sm">
             {serverError}
