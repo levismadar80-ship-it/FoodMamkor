@@ -2876,8 +2876,27 @@
       "my_area": "My area",
       "city_placeholder": "[city]",
       "ask_us": "Ask us",
+      "common_questions": "Common questions",
       "greeting_template": "Hi {name}, {q}",
-      "delivery_to_city": "Delivery to {city}?"
+      "delivery_to_city": "Delivery to {city}?",
+      "ordering_q": "How do I order?",
+      "delivery_nationwide": "Yes! We deliver nationwide",
+      "delivery_nationwide_except": "Nationwide delivery, except: {cities}",
+      "delivery_areas": "Delivery to: {cities}",
+      "delivery_areas_more": "Delivery to: {cities} + {count} more",
+      "delivery_sub_min": "Minimum {min}",
+      "delivery_sub_day": "Delivery days: {day}",
+      "delivery_pickup_only": "No delivery — self-pickup in {city}",
+      "delivery_pickup_only_nocity": "No delivery — self-pickup",
+      "ordering_whatsapp": "Send a WhatsApp message and get a direct reply",
+      "ordering_external_order": "Order through the order form",
+      "ordering_website": "Order through the website",
+      "ordering_instagram": "Message us on Instagram",
+      "ordering_facebook": "Message us on Facebook",
+      "ordering_email": "Send us an email",
+      "ordering_phone_prefix": "Call:",
+      "ordering_link_label": "Open",
+      "escalation": "Another question? Send us a message"
     }
   },
   "directory": {

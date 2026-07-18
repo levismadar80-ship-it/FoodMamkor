@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1302 — Quick Answers: answer-first disclosure in the contact card — `feature/meh-1302-quick-answers`
+
+- **Shipped:** reworked `WhatsAppQuestionChips` from WhatsApp-only chips into answer-first disclosures — the two ready-made questions answerable from existing public data (delivery + how-to-order) are answered in-page; WhatsApp stays for the dynamic stock question, custom questions, and an "another question?" escalation. YELLOW tier, ADR-016 v2 end-to-end (Phase 0→implement→self-QA→PR→auto-merge on the 2 required aggregator gates).
+- **New pure helper** `frontend/lib/quickAnswers.js` — `buildDeliveryAnswer` / `buildOrderingAnswer` return render-ready descriptors (no React/i18n) from the PUBLIC `ProducerDetailOut` (`delivery_nationwide`/`delivery_excluded_cities`/`delivery_areas`/`offers_delivery`/`has_physical_location`/`primary_contact_method` — all confirmed public on `schemas.py:924-941`; **zero backend/schema change**). Ordering reuses `getPrimaryContactHref` so the channel link matches the primary CTA.
+- **Component** (`components/WhatsAppQuestionChips.jsx`): Q1 delivery + Q2 ordering → `CaretDown` disclosures (button + `aria-expanded`, min-h 44px, rotate on open); no-data / missing-field → WhatsApp fallback (today's behaviour). Removed the blanket `if (!digits) return null` — data answers render even without a phone; WhatsApp items hide; whole block null only when nothing renders. Q3+ stock/custom stay WhatsApp (category-aware via `getProducerQuestions`). Heading "שאלו אותנו:"→"שאלות נפוצות:".
+- **i18n:** 19 new `whatsapp.question_chips.*` keys, he + en twins (MEH-978 parity + MEH-840 en-locale both green — verified). `ContactCard.test.jsx` Phosphor mock got `CaretDown` (the real child now renders it, else the suite errors — one-line fixture fix).
+- **Verification:** `npm run build` green; full vitest **1269 pass** (new `__tests__/quickAnswers.test.js` covers every delivery/ordering branch + component render, disclosure toggle, no-phone edge, null-render); 0 lint errors; knip unchanged (pre-existing baseline). Route-faithful Playwright self-QA (local `next start` + mock backend, `/producer` with `delivery_areas`) @375 + @1440, open+closed → `qa-artifacts/MEH-1302/` (webp, 110 KB).
+- **Next:** draft PR + preview URL; on-device mobile QA deferred to Sapir. `Closes MEH-1302`.
+
 ## 2026-07-17 — MEH-1289 — new /about/why-local editorial page — `feature/meh-1289-why-local-page`
 
 - **Shipped:** new reader-facing static page `/about/why-local` ("למה מקומי?") making the consumer case for local food. GREEN autonomy end-to-end (Phase 0 → implement → self-QA → PR → merge on the 2 required aggregator gates). Copy **LOCKED by Sapir**, shipped word-for-word.
