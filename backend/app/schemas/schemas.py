@@ -1026,6 +1026,12 @@ class ProducerDetailOut(ProducerListOut):
     delivery_areas: list[DeliveryAreaOut] = []
     report_count: int = 0
     created_at: datetime | None = None
+    # MEH-1291: public freshness signal ("עודכן לאחרונה"). Nullable — NULL for
+    # producers never edited since the Chunk A migration (a3f1c9d2e4b7 added the
+    # column without backfill), so the page renders nothing for them. Stamped by
+    # the model-level onupdate=func.now() (models.py:186) on every owner/admin
+    # edit. Read-only exposure — never accepted as input.
+    updated_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
