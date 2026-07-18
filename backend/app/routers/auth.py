@@ -505,10 +505,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(
@@ -603,10 +611,18 @@ async def register_producer(
         )
         db.add(producer)
         db.flush()
+        # MEH-1297: payload order = stored order; position advances only on a
+        # valid category so it stays contiguous when an invalid id is skipped.
+        _pos = 0
         for cid in data.category_ids:
             cat = db.query(Category).filter(Category.id == cid).first()
             if cat:
-                db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+                db.add(
+                    ProducerCategory(
+                        producer_id=producer.id, category_id=cid, position=_pos
+                    )
+                )
+                _pos += 1
         for da in data.delivery_areas:
             db.add(
                 DeliveryArea(

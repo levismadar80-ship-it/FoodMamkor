@@ -171,8 +171,9 @@ def create_producer_with_relations(db: Session, data: ProducerCreate) -> Produce
     db.add(producer)
     db.flush()
 
-    for cid in data.category_ids:
-        db.add(ProducerCategory(producer_id=producer.id, category_id=cid))
+    # MEH-1297: payload order = stored order (position 0 = primary).
+    for pos, cid in enumerate(data.category_ids):
+        db.add(ProducerCategory(producer_id=producer.id, category_id=cid, position=pos))
 
     for da in data.delivery_areas:
         db.add(

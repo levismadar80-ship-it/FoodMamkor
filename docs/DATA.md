@@ -134,7 +134,8 @@ users (
 )
 
 categories     (id, name unique, emoji)
-producer_categories (producer_id FK, category_id FK, PK(both))
+producer_categories (producer_id FK, category_id FK, PK(both),
+                     position INT NOT NULL default 0)  -- MEH-1297: 0 = primary (first selected); categories ordered by it
 products       (id, producer_id FK, name, description,
                 price_range,                        -- LEGACY free-text; drop tracked in MEH-295 follow-up
                 image_url,
