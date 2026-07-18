@@ -189,14 +189,20 @@ export default function ProducerSections({
                           sizes="80px"
                         />
                       ) : (
-                        // MEH-1138 / MEH-1168 P1: cream surface + leaf glyph only
-                        // (no "מהמקור" wordmark inside a business's own products).
+                        // MEH-1305 E: typographic no-photo cell — the product's
+                        // initial in Frank Ruhl (font-headline-md) on a
+                        // bg-primary/[0.06] tint, NO leaf glyph. Realises
+                        // MEH-1126's "אין placeholder אייקון" intent for the grid
+                        // (supersedes the MEH-1168 P1 leaf), so photo and
+                        // no-photo grid cells read as one calm, uniform system.
                         <div
-                          className="w-full h-full bg-background flex items-center justify-center"
+                          className="w-full h-full bg-primary/[0.06] flex items-center justify-center"
                           aria-label={t("producer.card.aria.image_missing", { name: product.name })}
                           role="img"
                         >
-                          <Leaf size={32} weight="light" className="text-primary/[0.32]" data-testid="leaf-icon" aria-hidden="true" />
+                          <span className="font-headline-md text-2xl text-primary/40" aria-hidden="true">
+                            {product.name?.trim()?.[0] || "•"}
+                          </span>
                         </div>
                       )}
                     </div>
