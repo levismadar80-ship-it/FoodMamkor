@@ -983,6 +983,9 @@
       "arranged": "משלוחים בתיאום מראש — צרו קשר לפרטים",
       "min_order": "מינימום",
       "delivery_day_label": "משלוח ביום {day}",
+      "dispatch_days": "יוצאים בימי {day}",
+      "delivery_day_group": "ימי {day}",
+      "arranged_group": "בתיאום מראש",
       "pickup": "איסוף עצמי"
     },
     "follow": {

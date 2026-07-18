@@ -985,6 +985,9 @@
       "arranged": "Delivery by arrangement — contact for details",
       "min_order": "Minimum",
       "delivery_day_label": "Delivery on {day}",
+      "dispatch_days": "Dispatch on {day}",
+      "delivery_day_group": "{day}",
+      "arranged_group": "By arrangement",
       "pickup": "Self pickup"
     },
     "follow": {
