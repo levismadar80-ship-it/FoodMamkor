@@ -3,6 +3,61 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1326 — revive Web Push via static SW + VAPID gating — PR (draft)
+
+- **What:** Web Push dead since MEH-372 (next-pwa removed → no SW registered; VAPID never set) but the panel still showed a "(PWA)" push button. Revived it with a **static** SW that needs no bundler plugin (Turbopack-safe). YELLOW, ADR-016 v2 end-to-end authority.
+- **Shipped:** NEW `frontend/public/sw.js` (push + notificationclick only; no fetch/cache; ported from `worker/index.js` minus the MEH-50 friday setTimeout). `lib/push.js` registers `/sw.js` before `.ready`. `AlertPrefsPanel.jsx` VAPID-gates the button (fetches `/push-vapid-key` on mount → empty ⇒ button absent). Copy: `push_enable` he "קבלו עדכונים גם כשהאתר סגור" + en twin, no "PWA". DELETED `worker/index.js`; un-ignored `public/sw.js` in `frontend/.gitignore`.
+- **⚠️ STOP condition (config.py):** the ticket's comment-only VAPID edit to `backend/app/config.py` is **blocked** — `Edit(backend/app/config.py)` is in `.claude/settings.json permissions.deny` (same tier as `main.py`/Dockerfile/workflows). Not bypassed. **Handed to Sapir as a patch in the PR body** (replace py_vapid HEX snippet → `npx web-push generate-vapid-keys`, note public key must be base64url). It pairs with her existing manual VAPID/Railway smoke DoD step.
+- **Verification:** `npm run build` green, 0 lint errors, i18n parity+namespace guards (8) + `FavoriteButton.test.jsx` (16) green, `grep PWA` he.json alert_prefs = 0. Route-faithful Playwright self-QA (real `next start`, mocked API + `/push-vapid-key`) @375+@1440 both states (button absent w/o key, present w/ key) → `frontend/qa-artifacts/MEH-1326/` (webp, 89 KB).
+- **Out-of-scope stale refs (left, harmless):** `eslint.config.mjs:51` + `knip.json:21` still list the deleted `worker/` dir — globs matching zero files; trivial follow-up, not touched (scope discipline).
+- **Branch:** `feature/meh-1326-static-sw-push` off `origin/staging`. Separate PR from MEH-1327 (zero file overlap, same session).
+- **Next (Sapir):** apply the config.py comment patch; `npx web-push generate-vapid-keys` → VAPID keys in Railway staging → desktop Chrome smoke → production.
+
+## 2026-07-18 — MEH-1328 — Home VRT baseline regen (tests-only, PR #1919)
+
+- **Why:** the hero/trust copy swap in PR #1904 (`"עסקים"` → `"בתי עסק"` across `home.hero.subtitle` /
+  `cta_primary` / `home.trust.lead`) red-lined `parity.spec.ts:90 › home` — the viewport-only home
+  baseline went stale. Ran the documented **MEH-991 self-service regen flow**: a comment-only touch to
+  the home spec re-fired `vrt-update.yml`, which regenerated the baselines on-runner (run `29651582259`,
+  success) and auto-committed them (`881411db`, `github-actions[bot]`).
+- **Phase-0 gate (delta = hero-region only):** the home shot is viewport-only (no `fullPage`), so the
+  footer link (PR #1907), BackToTop (PR #1905, hidden on load), and filter chips (PR #1908) all sit below
+  the fold; `#producers-grid` / mini-map / cards are masked; the desktop UserMenu favorites row (PR #1906)
+  is a closed logged-out dropdown. Source-range analysis from the last home baseline (`01ff4793`, the
+  MEH-1295 regen) → staging tip confirmed the only in-frame home change is the PR #1904 copy. (Runner diff
+  PNG was not pullable — its Azure blob host is egress-blocked from the CC sandbox.)
+- **Regenerated (3 baselines):** `home-mobile-linux.png` (PR #1904 copy; exceeded the 2% tolerance on
+  Pixel 5 — desktop stayed within tolerance so `home-desktop` was untouched, matching the original
+  `[mobile]`-only failure), plus `about-{mobile,desktop}-linux.png` swept in by the regen — driven by
+  PR #1915's in-content /messages link on /about (a fullPage shot). Both drivers are legitimate merged
+  features; no regression baked in.
+- **Gates:** required aggregators (`CI gate`, `Deploy gate`) + `Playwright E2E` re-run against the fresh
+  baselines via a self-authored HANDOFF follow-up (bot commits don't fire workflows — MEH-1112/1113).
+
+## 2026-07-18 — Audit batch 18/07 (F1–F7) — 7 tickets, 3 code PRs + 1 merged + 2 verified-no-op + 1 config-STOP
+
+- **Scope:** MEH-1315 · 1316 · 1317 · 1318 · 1321 · 1319 · 1320, executed sequentially (no parallel branches). Authority per MEH-450/ADR-016: MEH-1315 auth → Sapir-merge; the rest LOW-RISK end-to-end. Single session.
+- **MEH-1315 (F1) — axios retry-once guard — PR #1912, AWAITS SAPIR (auth).** `frontend/lib/api.js` 401 branch now sets `error.config._retry` before the retry; a 401 on an already-retried config → `_expireSession()` + reject (no 2nd `/auth/refresh`). Breaks the infinite refresh→retry→401 loop (corrupt fingerprint cookie / clock skew). NEW `__tests__/api-refresh-retry.test.js` (4, real interceptor via mock adapter; pre-fix the loop case hangs the runner). CVE web-check: axios 1.18.1 clear of the 2025–26 set. `/adversarial-review` 0 issues. **Follow-up fix pushed:** the API-contract static auditor scans test files — the initial dummy URL `/users/me` is PATCH-only backend → method-mismatch failed the Deploy gate; swapped to `GET /auth/me` (real route, not in SKIP_REFRESH). `CI gate` green; Deploy gate re-running green after the swap. **Do not auto-merge — auth flow, Sapir merges.**
+- **MEH-1316 (F4) — workflow.md Bug-Protocol stale line — MERGED PR #1913** (docs-only, both required aggregator gates green, backend jobs skipped). Replaced the "Sibling gaps not yet fixed: ProducerCreate.name / HomeProductCreate.title / ExperienceCreate.title" sentence — all three carry `_min_letters_validator` (`schemas.py:528`, `:1270`, `:1466`). Merged by CC on GREEN.
+- **MEH-1317 (F3) — dead `bump_user_last_active` removed — PR #1914, BLOCKED (see uv.lock note).** Zero live call sites (grep evidence in PR); removed the function + `__all__` entry + false docstring + unused `datetime` import from `services/analytics.py`. Sole live updater `_maybe_bump_last_active` (`auth.py:120`) untouched. `py_compile` clean; adversarial 0 issues.
+- **MEH-1319 (F2) — single-replica boot guard — PR #1920, BLOCKED (see uv.lock note).** New pure helper `_check_single_replica()` in `startup.py` (reads `WEB_CONCURRENCY`/`UVICORN_WORKERS`, fail-open, logs loud ERROR on >1 naming: duplicate APScheduler emails / per-worker rate limits / fragmented metrics). Log-only, never crashes. NEW `tests/test_single_replica_guard.py` (11, helper validated 11/11 in isolation). `docs/DEPLOYMENT.md` §D-bis. `/adversarial-review-errors` 0 BLOCK/0 WARN.
+- **⚠️ BLOCKER for #1914 + #1920 (staging-wide, not caused by these diffs): `uv.lock` drift.** Both backend PRs' `CI gate` is red solely because `Backend lint (ruff)` + `Backend tests (pytest)` die at `uv sync --frozen` → `error: The lockfile at uv.lock needs to be updated, but --check was provided`. #1920's base is the current staging tip and fails identically → staging's committed `uv.lock` is out of sync with `pyproject.toml`. Most likely root cause: the MEH-1313 sweep merged the `[dependency-groups] dev` floor bumps (PR #1500 mutmut / #1505 ruff) into `pyproject.toml` **without re-running `uv lock`**. Fix = `cd backend && uv lock` then commit `uv.lock` to staging (Sapir — `pyproject.toml`/`uv.lock` are CC-deny, and this is out of these tickets' scope). Once staging re-locks, both PRs go green and merge on the 2 required gates.
+- **MEH-1318 (F5) — ruff DTZ ratchet — STOP, patch in Linear + this session.** Target `backend/pyproject.toml` is CC-deny (MEH-442 lint-config self-protection blocks Edit/Write). Baseline measured: **50 DTZ violations (44 DTZ003 utcnow + 6 DTZ011 date.today) across 21 files.** Ready-to-apply patch (extend-select `"DTZ"` + a 21-entry per-file-ignores baseline block) handed to Sapir. Note: existing PLR/C901 model is blocking-baselined (ruff has no warn level), so the ratchet is baselined-blocking, not global warn-only — new DTZ in any unlisted file fails.
+- **MEH-1321 (F7) — chat content cap — VERIFIED NO-OP (Linear comment).** `ChatMessage.content = Field(min_length=1, max_length=2000)` (`schemas.py:2269`) already exactly the spec; `ChatRequest.messages` capped at 40 + handler trims to 20. No code change (acceptance criteria STOP). Flagged: no regression test locks the caps (out of STOP scope).
+- **MEH-1320 (F-gap) — scheduled dependency audit — VERIFIED NO-OP / doc-pointer (Linear comment).** `.github/workflows/dependency-audit.yml` (MEH-336) already runs weekly-cron pip-audit + npm audit → `GITHUB_STEP_SUMMARY`. Existing is *stricter* (blocking, no `--omit=dev`) than the warn-only spec — a twin would regress the gate + add a two-mechanisms smell. No new file. No `.github/workflows/**` write attempted (L1-deny moot).
+- **PR table:** #1912 (MEH-1315, auth, awaits Sapir) · #1913 (MEH-1316, MERGED) · #1914 (MEH-1317, blocked on uv.lock) · #1920 (MEH-1319, blocked on uv.lock).
+- **Next (Sapir):** (1) `cd backend && uv lock` + commit to staging → unblocks #1914/#1920; (2) review + merge auth PR #1912; (3) apply the MEH-1318 DTZ patch to `pyproject.toml`; (4) MEH-1321/1320 → close as verified-no-op.
+
+## 2026-07-18 — MEH-1325 — FavoriteButton favorites-cache sync + green ink — MERGED PR #1918
+
+- **Shipped (merged to staging, squash `a084b302`):** aligned the producer-page `FavoriteButton.jsx` with the canonical `CardHeart` (`ProducerCard.jsx`) — one bug ticket, two defects, single file → one PR. Bug fix, YELLOW-ish single-file (not central), ADR-016 v2 end-to-end authority (Sapir 18/07): Phase 0 → implement → self-QA → PR → merge on the 2 required aggregator gates.
+- **Bug A (desync + waste):** was `api.get("/users/me/favorites")` per mount + local state + POST/DELETE that never wrote the shared cache → a save on `/producer` didn't sync to card hearts in-session, plus a redundant full fetch per producer page. Now `ensureFavoritesLoaded` + `subscribeFavorites` + `isFavorited` (alive-guard + unsub cleanup); toggle is optimistic (`setFavorited`+`setFavoritedLocal` **before** the request, revert on failure, idempotent DELETE-404) — mirrors CardHeart.
+- **Bug B (red ink):** saved state was red in all 3 variants (gallery/inline/default) → violated the MEH-636/643 "green, never red" lock. Now `text-primary` (inline pill → `bg-primary/10 text-primary border-primary/30 hover:bg-primary/15`). Unsaved states unchanged.
+- **Preserved:** guest → LoginPromptModal (no cache path for guests), AlertPrefsPanel after save, toasts, aria-pressed/labels, 44px targets. **Scope-strict:** only `FavoriteButton.jsx` + its test — `favorites-cache`/`ProducerCard`/`ImageGallery`/`admin/users` untouched (admin red heart documented out-of-scope). `/adversarial-review` ran (0 REFEREE issues).
+- **Verification:** 6 new regression cases exercise the REAL `favorites-cache` singleton (write-through + subscriber notify = the CardHeart re-read mechanism; off-toggle; POST-fail revert; DELETE-404 idempotency; green-not-red ×3 variants). Full vitest **1307 pass**, `npm run build` green, 0 lint errors. Merged on CI gate + Deploy gate green; Playwright E2E + Vercel non-required (preview rate-limited → E2E had no target).
+- **Deferred to Sapir (staging DoD):** live authenticated `/producer → /producers` cross-surface sync + mobile green-heart QA — the MEH-1241 consumer fixture auths against staging only and the CC sandbox can't reach the staging backend (MEH-360/1276). The fix itself is proven deterministically at the shared-store layer by the regression tests.
+- **Branch note:** the harness default `claude/meh-1325-consumer-fixture-cd73ar` is blocked by the branch-name gate (`^(feature|levismadar80)/meh-…`); cut `feature/meh-1325-favoritebutton-cache-green` off `origin/staging` (0 divergence) per established precedent. This docs entry rides `feature/meh-1325-docs`.
+
 ## 2026-07-18 — MEH-1313 — PR-backlog triage sweep (release-eng, ADR-016 v2)
 
 - **What:** triaged the pre-launch PR backlog under MEH-1074's ADR-016 v2 authority. Full
