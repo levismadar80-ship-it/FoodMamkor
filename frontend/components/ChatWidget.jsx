@@ -65,13 +65,13 @@ const SUGGESTED_PROMPTS = [
 // v2 rewrite (feature/chatbot-plain-hebrew-v2): plain everyday Hebrew,
 // active voice on approval ("הצוות שלנו בודק ומאשר" not "מאושר"),
 // explicit about WHAT is being approved ("העסק שלך" / "המוצר שלך"),
-// and specific timeframes ("תוך יום-יומיים" / "תוך שעות ספורות")
+// and specific timeframes ("עד 3 ימי עסקים" per MEH-1347 / "תוך שעות ספורות")
 // instead of vague "תוך זמן קצר". No tech jargon like "מודרציה" /
 // "פרופיל" — we say "העסק שלך" because that's what the user thinks
 // they're registering.
 const HARDCODED_ANSWERS = {
   "איך נרשמים כבית עסק?":
-    "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nבדרך כלל תוך יום-יומיים הצוות שלנו בודק את הפרטים ומאשר את העסק שלך, ואז הוא מופיע באתר.",
+    "נרשמים דרך טופס פשוט בן 3 שלבים — חינם לגמרי!\nהצוות שלנו בודק את הפרטים ומאשר את העסק שלך בדרך כלל עד 3 ימי עסקים, ואז הוא מופיע באתר.",
   "איך מוצאים עסקים קרובים אליי?":
     "יש שתי דרכים קלות:\n\n1. המפה שלנו — לחצו על 'קרוב אלי' ותראו את כל בתי העסק סביבכם, עם אפשרות לסינון לפי קטגוריה (בשר, חלב, ירקות וכו').\n2. דף הבית — חפשו לפי קטגוריה או עיר.\n\nבכל עסק יש כפתור WhatsApp שפותח שיחה ישירה עם בית העסק",
 };
