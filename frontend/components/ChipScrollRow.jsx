@@ -89,15 +89,22 @@ export default function ChipScrollRow({
         style={{ background: `linear-gradient(to left, ${fadeBg}, transparent)` }}
         aria-hidden="true"
       />
-      {/* Inline-end (left in RTL) fade — signals more chips off-screen */}
+      {/* Inline-end (left in RTL) fade — signals more chips off-screen.
+          Widened (w-12) so the scroll hint reads on a cream background
+          (/map) where a slimmer gradient was near-invisible (MEH-1314). */}
       <div
-        className="pointer-events-none absolute inset-y-0 end-0 w-8 z-10"
+        className="pointer-events-none absolute inset-y-0 end-0 w-12 z-10"
         style={{ background: `linear-gradient(to right, ${fadeBg}, transparent)` }}
         aria-hidden="true"
       />
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4"
+        // MEH-1314: snap-proximity (NOT mandatory) so a chip rests aligned to
+        // the edge at rest instead of clipped mid-way, while the partial peek
+        // stays natural at the far edge and existing scrollIntoView is not
+        // fought. scroll-ps-4 keeps the snap target clear of the ps-4 inset.
+        // snap-start / scroll-ps-* are flow-relative — RTL-safe (logical).
+        className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide min-w-0 ps-4 snap-x snap-proximity scroll-ps-4"
         role={variant === "category" ? "radiogroup" : "toolbar"}
         aria-label={variant === "category" ? t("category_aria") : t("attribute_aria")}
       >
@@ -115,7 +122,7 @@ export default function ChipScrollRow({
               aria-pressed={active}
               // MEH-764: chips are rounded-md + state-selected on ALL surfaces
               // (/home, /producers, /map) per DESIGN §Shapes / BRAND §3 (no pill on rectangles).
-              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 ${
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap px-4 py-2.5 rounded-md text-sm font-medium border transition shrink-0 snap-start ${
                 active
                   ? "bg-state-selected text-white border-state-selected"
                   : "bg-white text-text border-border hover:border-primary hover:text-primary"
