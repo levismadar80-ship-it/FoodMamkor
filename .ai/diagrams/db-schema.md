@@ -107,6 +107,7 @@ erDiagram
     producer_categories {
         uuid producer_id FK "composite PK"
         int category_id FK "composite PK"
+        int position "MEH-1297: 0 = primary (first selected)"
     }
 ```
 

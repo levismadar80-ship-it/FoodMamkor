@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EnvelopeSimple, X } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
-import api from "@/lib/api";
+import { useResendVerification } from "@/lib/use-resend-verification";
 
 // MEH-1071: per-session dismiss key. sessionStorage (not localStorage) so the
 // nudge returns in a fresh browser session but stays gone for the current one.
@@ -33,9 +33,10 @@ const DISMISS_KEY = "verify-banner-dismissed";
 export default function VerifyBanner() {
   const { user } = useAuth();
   const t = useTranslations();
-  const [resendSent, setResendSent] = useState(false);
-  const [resendSending, setResendSending] = useState(false);
-  const [resendError, setResendError] = useState("");
+  // MEH-1164 B: resend action + status extracted to a shared hook so this
+  // banner and the per-form UnverifiedEmailNotice drive the same flow.
+  const { resendSent, resendSending, resendError, handleResend } =
+    useResendVerification();
   // SSR-safe lazy init: sessionStorage is only touched behind a typeof-window
   // guard. The banner never renders on the server (user is null there), so no
   // hydration mismatch — the client is the first place this runs with a user.
@@ -52,23 +53,6 @@ export default function VerifyBanner() {
       sessionStorage.setItem(DISMISS_KEY, "1");
     }
     setDismissed(true);
-  };
-
-  const handleResend = async () => {
-    if (resendSending) return;
-    setResendSending(true);
-    setResendError("");
-    try {
-      await api.post("/auth/resend-verify");
-      setResendSent(true);
-    } catch (err) {
-      if (err.response?.status === 429) {
-        setResendError(t("auth.verify.rate_limited"));
-      } else {
-        setResendError(t("error.try_again"));
-      }
-    }
-    setResendSending(false);
   };
 
   return (

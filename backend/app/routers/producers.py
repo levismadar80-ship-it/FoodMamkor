@@ -26,6 +26,7 @@ from app.schemas.schemas import (
     ProducerCreate,
     ProducerDetailOut,
     ProducerListOut,
+    ProducerRandomOut,
 )
 from app.services.analytics import ViewContext, hash_ip, track_producer_view
 from app.services.license_validation import ensure_license_for_categories
@@ -161,6 +162,30 @@ def producers_cities(request: Request, db: Session = Depends(get_db)):
         .all()
     )
     return [{"city": city, "count": count} for city, count in rows]
+
+
+@router.get("/producers/random", response_model=ProducerRandomOut)
+@limiter.limit("60/minute")
+def random_producer(request: Request, db: Session = Depends(get_db)):
+    """MEH-1288 — one random approved producer for the homepage "הפתיעו אותי"
+    button. Returns only {id, slug} (enough for the client to navigate). 404
+    when the catalog is empty — the button is render-gated on the approved
+    count client-side, so 404 is only reachable via a race / direct call.
+
+    DECLARED BEFORE ``/producers/{producer_id}`` on purpose: FastAPI matches in
+    declaration order, and "random" would otherwise 422 against the UUID path
+    param. Mirrors the ordering of /count, /cities, /by-slug above.
+    """
+    row = (
+        db.query(Producer.id, Producer.slug)
+        .filter(Producer.status == "approved")
+        .order_by(func.random())
+        .limit(1)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="אין בתי עסק זמינים")
+    return ProducerRandomOut(id=row.id, slug=row.slug)
 
 
 @router.get("/producers/by-slug/{slug}", response_model=ProducerDetailOut)

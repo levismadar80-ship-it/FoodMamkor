@@ -63,7 +63,8 @@
       "banner": "Verify your email to publish content",
       "resend": "Resend",
       "sent": "✓ Sent!",
-      "rate_limited": "Rate limited — try again in an hour"
+      "rate_limited": "Rate limited — try again in an hour",
+      "publish_gate": "Please verify your email address first to publish."
     },
     "toasts": {
       "favoriteSaved": "Saved to favorites",
@@ -381,6 +382,7 @@
       "main_label": "Home — discover local businesses",
       "search_area_label": "Search businesses",
       "near_me": "Near me",
+      "surprise_me": "Surprise me",
       "searching": "Searching...",
       "scroll_down_label": "Scroll to business listing",
       "geo_failure": "We couldn't detect your location — you can pick a city manually"
