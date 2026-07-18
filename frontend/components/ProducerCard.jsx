@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import Image from "next/image";
 import { HeartStraight, Leaf, Star } from "@phosphor-icons/react";
@@ -176,10 +176,14 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
   const category = producer.categories?.[0]?.name;
 
   const userLoc = useUserLocation();
+  // MEH-1301: distance unit follows the active locale — Hebrew renders 'ק"מ'
+  // (digits-first, keeps the default " ממך" tail), English keeps the Latin "km".
+  const locale = useLocale();
   const distanceLabel =
     userLoc && producer.lat != null && producer.lng != null
       ? formatDistance(
           haversineKm(userLoc.lat, userLoc.lng, producer.lat, producer.lng),
+          { unit: locale === "he" ? "he" : "latin" },
         )
       : null;
 
@@ -334,9 +338,7 @@ export default function ProducerCard({ producer, active, onClick, referrer, frid
             {distanceLabel && (
               <>
                 {" · "}
-                <span dir="ltr" data-testid="distance-pill">
-                  {distanceLabel}
-                </span>
+                <span data-testid="distance-pill">{distanceLabel}</span>
               </>
             )}
           </span>

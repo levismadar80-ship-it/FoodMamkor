@@ -49,43 +49,49 @@ describe("formatDistance", () => {
   });
 
   it("rounds sub-kilometer distances to the nearest 50 m", () => {
-    expect(formatDistance(0.45)).toBe("\u2066450 m\u2069 ממך");
-    expect(formatDistance(0.475)).toBe("\u2066500 m\u2069 ממך"); // rounds up
-    expect(formatDistance(0.999)).toBe("\u20661000 m\u2069 ממך");
+    expect(formatDistance(0.45)).toBe("⁦450 m⁩ ממך");
+    expect(formatDistance(0.475)).toBe("⁦500 m⁩ ממך"); // rounds up
+    expect(formatDistance(0.999)).toBe("⁦1000 m⁩ ממך");
   });
 
   it("uses 'less than 50m' label for very close distances", () => {
-    expect(formatDistance(0.01)).toBe("פחות מ-50 \u2066m\u2069 ממך");
-    expect(formatDistance(0.02)).toBe("פחות מ-50 \u2066m\u2069 ממך");
+    expect(formatDistance(0.01)).toBe("פחות מ-50 ⁦m⁩ ממך");
+    expect(formatDistance(0.02)).toBe("פחות מ-50 ⁦m⁩ ממך");
   });
 
-  it("uses one decimal for 1–99 km", () => {
-    expect(formatDistance(1)).toBe("\u20661.0 km\u2069 ממך");
-    expect(formatDistance(3.24)).toBe("\u20663.2 km\u2069 ממך");
-    expect(formatDistance(54.7)).toBe("\u206654.7 km\u2069 ממך");
-    expect(formatDistance(99.94)).toBe("\u206699.9 km\u2069 ממך");
+  // MEH-1301 🔒 18/07: precision threshold moved from 100 km → 10 km.
+  it("uses one decimal for 1–9 km", () => {
+    expect(formatDistance(1)).toBe("⁦1.0 km⁩ ממך");
+    expect(formatDistance(3.24)).toBe("⁦3.2 km⁩ ממך");
+    expect(formatDistance(9.44)).toBe("⁦9.4 km⁩ ממך");
   });
 
-  it("uses no decimal for ≥100 km (avoids false precision)", () => {
-    expect(formatDistance(100)).toBe("\u2066100 km\u2069 ממך");
-    expect(formatDistance(312.5)).toBe("\u2066313 km\u2069 ממך");
-    expect(formatDistance(20015)).toBe("\u206620015 km\u2069 ממך");
+  it("uses no decimal for ≥10 km (avoids false precision)", () => {
+    expect(formatDistance(10)).toBe("⁦10 km⁩ ממך");
+    expect(formatDistance(38.3)).toBe("⁦38 km⁩ ממך");
+    expect(formatDistance(54.7)).toBe("⁦55 km⁩ ממך");
+    expect(formatDistance(100)).toBe("⁦100 km⁩ ממך");
+    expect(formatDistance(312.5)).toBe("⁦313 km⁩ ממך");
+    expect(formatDistance(20015)).toBe("⁦20015 km⁩ ממך");
   });
 });
 
-describe("formatDistance — Hebrew unit / no suffix (MEH-1243 §3)", () => {
-  it('renders "{x.x} ק"מ" for 1-99 km, digits-first, no ממך', () => {
+describe("formatDistance — Hebrew unit / no suffix (MEH-1243 §3, MEH-1301)", () => {
+  it('renders "{x.x} ק"מ" for 1-9 km, digits-first, no ממך', () => {
     expect(formatDistance(1.2, { unit: "he", suffix: false })).toBe('1.2 ק"מ');
-    expect(formatDistance(53.9, { unit: "he", suffix: false })).toBe('53.9 ק"מ');
+    expect(formatDistance(9.9, { unit: "he", suffix: false })).toBe('9.9 ק"מ');
   });
 
-  it('renders whole ק"מ for >=100 km and מ for <1 km', () => {
+  it('renders whole ק"מ for >=10 km and מ for <1 km', () => {
+    expect(formatDistance(38.3, { unit: "he", suffix: false })).toBe('38 ק"מ');
+    expect(formatDistance(53.9, { unit: "he", suffix: false })).toBe('54 ק"מ');
     expect(formatDistance(312.5, { unit: "he", suffix: false })).toBe('313 ק"מ');
     expect(formatDistance(0.45, { unit: "he", suffix: false })).toBe("450 מ'");
   });
 
-  it("keeps the ממך suffix when suffix is not disabled", () => {
+  it("keeps the ממך suffix when suffix is not disabled (ProducerCard pill)", () => {
     expect(formatDistance(1.2, { unit: "he" })).toBe('1.2 ק"מ ממך');
+    expect(formatDistance(38.3, { unit: "he" })).toBe('38 ק"מ ממך');
   });
 
   it("default (latin) output is unchanged for existing callers", () => {
