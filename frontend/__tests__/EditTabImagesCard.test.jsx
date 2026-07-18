@@ -144,3 +144,43 @@ describe("Edit-tab ImagesCard (isolation)", () => {
     expect(onSave).toHaveBeenCalledWith({ images: ["https://cdn/a.jpg"] });
   });
 });
+
+// MEH-1352: free-plan cap surfaced in the UI (X/3 counter + full-state zone).
+describe("ImagesCard free-plan cap UI (MEH-1352)", () => {
+  it("shows the X/3 counter for a free-plan profile", () => {
+    renderCard(["https://cdn/a.jpg"]);
+    const counter = screen.getByTestId("images-cap-counter");
+    expect(counter.textContent).toContain("1/3");
+  });
+
+  it("at 3/3 the zone reads full and the picker is disabled", () => {
+    const { container } = renderCard([
+      "https://cdn/a.jpg",
+      "https://cdn/b.jpg",
+      "https://cdn/c.jpg",
+    ]);
+    expect(screen.getByText(I.zone_full)).toBeInTheDocument();
+    expect(container.querySelector('input[type="file"]')).toBeDisabled();
+  });
+
+  it("below the cap the picker stays enabled with the formats line", () => {
+    const { container } = renderCard(["https://cdn/a.jpg"]);
+    expect(screen.getByText(I.add_cta)).toBeInTheDocument();
+    expect(I.add_cta).toContain("HEIC");
+    expect(container.querySelector('input[type="file"]')).not.toBeDisabled();
+  });
+
+  it("no counter and no cap gating on a non-free plan", () => {
+    const onSave = vi.fn();
+    const { container } = render(
+      <NextIntlClientProvider locale="he" messages={he} onError={() => {}}>
+        <ImagesCard
+          profile={{ images: ["a", "b", "c"], plan: "premium" }}
+          onSave={onSave}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("images-cap-counter")).not.toBeInTheDocument();
+    expect(container.querySelector('input[type="file"]')).not.toBeDisabled();
+  });
+});
