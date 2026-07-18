@@ -1372,6 +1372,8 @@
         "submit_create": "Create business",
         "submit_update": "Save changes",
         "uploading": "Uploading...",
+        "category_cap_hint": "Your first pick shows on the business card · up to 3 categories",
+        "primary_badge": "Primary",
         "sections": {
           "basic": "Basic details",
           "categories_tags": "Categories and tags",
@@ -2579,6 +2581,9 @@
       },
       "section_results": "Results",
       "section_popular": "Popular",
+      "counter": "{count}/{max}",
+      "cap_hint": "Your first pick shows on the business card · up to 3 categories",
+      "primary_badge": "Primary",
       "group_food": "Food",
       "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
