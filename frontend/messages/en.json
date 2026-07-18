@@ -2402,6 +2402,7 @@
         "explore": "Discover businesses near you",
         "why_local_link": "Why local?"
       },
+      "messages_link": "How does contacting businesses work?",
       "contact": {
         "heading": "Talk to us",
         "subtitle": "Questions, ideas, or just hi — we'd love to hear from you",
@@ -4089,7 +4090,7 @@
       "phone_save_cta": "Save and enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
-      "push_enable": "Enable push notifications (PWA)",
+      "push_enable": "Get updates even when the site is closed",
       "push_active": "Push notifications active",
       "save_cta": "Save settings",
       "saving": "Saving…",
