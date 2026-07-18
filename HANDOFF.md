@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1327 — pytest coverage for the favorites-alerts chain — PR (draft)
+
+- **What:** added the missing dedicated pytest coverage for `backend/app/routers/alerts.py` (GET/PUT alert prefs + `fire_alerts()` fan-out). GREEN/tests-only (ADR-016 v2 authority).
+- **Phase 0:** `tests/test_alerts_optin.py:16-53` covered ONLY the MEH-1191 422 guard; `tests/test_api.py` had zero `/alerts` or `fire_alerts` coverage. → **extended** (new file), did not duplicate the 422 test.
+- **Shipped:** NEW `tests/test_alerts.py` (8 tests) — GET-empty (all-false), PUT-400 (un-favorited), PUT-valid (persist + `has_push`), and 5 `fire_alerts` cases: alert_type filter, WhatsApp args, push kwargs, fail-open loop, unknown-type no-op. Monkeypatch boundaries `app.routers.alerts.send_text` + `app.services.push.send_push_notification` (call-time import). ZERO production-code changes.
+- **Verification:** `pytest tests/test_alerts.py` 8 green; `test_api.py`+`test_alerts.py`+`test_alerts_optin.py` = **227 passed** (baseline parity). DoD exception: tests-only, no mobile/preview.
+- **Branch:** `feature/meh-1327-alerts-pytest` off `origin/staging`. Separate PR from MEH-1326 (zero file overlap, same session).
+- **Next (Sapir):** merge on green CI (auto-merge per GREEN tier authority).
+
 ## 2026-07-18 — MEH-1326 — revive Web Push via static SW + VAPID gating — PR (draft)
 
 - **What:** Web Push dead since MEH-372 (next-pwa removed → no SW registered; VAPID never set) but the panel still showed a "(PWA)" push button. Revived it with a **static** SW that needs no bundler plugin (Turbopack-safe). YELLOW, ADR-016 v2 end-to-end authority.
