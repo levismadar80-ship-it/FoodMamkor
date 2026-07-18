@@ -295,6 +295,11 @@ and MEH-374 (62 commits)._
    landed; corrected in MEH-1012 after a rejected push on 2026-07-03.)
 8. **Never add new env vars without listing them explicitly**
    **and waiting for confirmation.**
+9. **Test dummy URLs must be real backend routes (matching method).**
+   The static API-contract audit scans `frontend/__tests__/**` and reds
+   the Deploy gate on orphan/method-mismatch paths. Full rule:
+   [.claude/rules/testing.md](./testing.md) → "Test dummy URLs must be
+   real backend routes".
 
 ---
 

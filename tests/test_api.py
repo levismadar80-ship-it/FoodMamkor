@@ -1828,6 +1828,31 @@ class TestReservedSlugs:
         for route in ("about", "map", "login", "admin", "search", "api"):
             assert route in RESERVED_SLUGS
 
+    def test_reserved_slug_set_contains_meh_1324_live_routes(self, client, db):
+        """MEH-1324 §3 (dirs B+C): 13 live routes must be claim-blocked."""
+        from app.slug_utils import RESERVED_SLUGS
+        for route in (
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
+        ):
+            assert route in RESERVED_SLUGS, f"{route!r} missing from RESERVED_SLUGS"
+
+    def test_admin_create_meh_1324_reserved_slug_variants_rejected(self, client, db):
+        """A producer cannot claim any of the MEH-1324 live-route slugs."""
+        admin = make_user(db, role="admin")
+        for reserved in (
+            "p", "rate", "upgrade", "messages", "discover", "publish",
+            "share", "join", "ref", "verify-email", "accessibility",
+            "dev", "newsletter",
+        ):
+            resp = client.post(
+                "/admin/producers",
+                json={"name": "עסק", "slug": reserved, "city": "חיפה"},
+                headers=auth_header(admin),
+            )
+            assert resp.status_code == 400, f"Expected 400 for slug '{reserved}'"
+
 
 # ---------- MEH-146: double-submit idempotency ----------
 
