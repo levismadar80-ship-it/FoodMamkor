@@ -41,7 +41,9 @@ def list_cities(
     db_cities = [row[0] for row in base.order_by(City.name_he).limit(MAX_RESULTS).all()]
 
     static_cities = (
-        [c for c in ISRAEL_CITIES if c.startswith(clean)] if clean else list(ISRAEL_CITIES)
+        [c for c in ISRAEL_CITIES if c.startswith(clean)]
+        if clean
+        else list(ISRAEL_CITIES)
     )
 
     seen = set()
