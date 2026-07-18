@@ -83,6 +83,16 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
     setErrorMsg(null);
   };
 
+  // MEH-1344: revert-to-saved — the preset (and any edit) had no way back
+  // short of manually re-toggling 7 day rows. Mirrors the GBP pattern of an
+  // explicit Cancel next to Save. Restores the last-saved seed; rendered
+  // only while dirty, so it can never clobber a clean editor.
+  const revertChanges = () => {
+    setDays(daysFromString(seed));
+    setSaved(false);
+    setErrorMsg(null);
+  };
+
   const handleSave = async () => {
     if (badDays.length > 0) {
       setErrorMsg(t("invalid_range"));
@@ -185,13 +195,26 @@ export default function HoursEditor({ profile, onSave, reportDirty = () => {} })
         </p>
       )}
 
-      <button
-        onClick={handleSave}
-        disabled={saving || !dirty}
-        className="mt-4 bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
-      >
-        {saving ? t("saving") : t("save_cta")}
-      </button>
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving || !dirty}
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition disabled:opacity-60"
+        >
+          {saving ? t("saving") : t("save_cta")}
+        </button>
+        {dirty && (
+          <button
+            type="button"
+            onClick={revertChanges}
+            disabled={saving}
+            data-testid="hours-revert"
+            className="border border-border text-fg-muted px-4 py-2 rounded-[10px] text-sm font-medium hover:border-primary hover:text-text transition disabled:opacity-60"
+          >
+            {t("revert_cta")}
+          </button>
+        )}
+      </div>
 
       {/* MEH-1270 persistent success confirmation (single live region). */}
       {saved && !errorMsg && (
