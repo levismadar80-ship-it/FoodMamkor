@@ -17,9 +17,15 @@
  *     the dashboard or admin approval, not at signup.
  *
  * The backend also contributes its own cities at runtime via GET /cities
- * (union of producer.city + delivery_areas.city), which CitySearch merges
- * with this static list and de-duplicates. This file is the "known good"
- * baseline so the autocomplete works even before any data exists in the DB.
+ * (canonical static list ∪ cities table since MEH-1349), which CitySearch
+ * merges with this static list and de-duplicates. This file is the "known
+ * good" baseline so the autocomplete works even before any data exists in
+ * the DB.
+ *
+ * SYNC DUTY (MEH-1349): backend/app/data/cities.py holds a byte-for-byte
+ * copy of ISRAEL_CITIES. Any change here must land there in the same PR.
+ * TODO(MEH-1343): the full CBS localities dataset replaces both copies
+ * with one canonical source.
  */
 export const ISRAEL_CITIES = [
   // Major cities
