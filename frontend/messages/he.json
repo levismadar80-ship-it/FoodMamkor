@@ -323,9 +323,9 @@
           "farmer_declaration": "התוצרת שאציע דרך מהמקור היא תוצרת שגידלתי בחלקתי בלבד."
         },
         "actions": {
-          "next": "הבא →",
+          "next": "הבא ←",
           "back": "שלב קודם",
-          "submit": "הצטרפו →",
+          "submit": "הצטרפו ←",
           "submitting": "בשליחה...",
           "write_later": "אני אכתוב אחר כך",
           "edit_description": "ערכו תיאור",
@@ -347,7 +347,7 @@
           "next_step1": "בדיקה אישית",
           "next_step2": "שיחת היכרות",
           "next_step3": "הדף עולה לאוויר",
-          "dashboard_cta": "לדשבורד שלי →",
+          "dashboard_cta": "לדשבורד שלי ←",
           "share_msg": "היי! העסק שלי עכשיו במהמקור — אתר ישראלי שמרכז בתי עסק מקומיים במקום אחד. רוצים להצטרף גם? https://mehamakor.co.il/register/producer",
           "share_cta": "הזמינו בתי עסק",
           "inbox_title": "בדקו את תיבת האימייל שלך",
@@ -482,7 +482,7 @@
     },
     "events": {
       "heading": "אירועים קרובים",
-      "all_events": "לכל האירועים →",
+      "all_events": "לכל האירועים ←",
       "free": "חינם"
     }
   },
@@ -499,10 +499,10 @@
       "per_page_label": "הצגה לעמוד",
       "per_page_aria": "פריטים לעמוד",
       "prev_aria": "עמוד קודם",
-      "prev": "← הקודם",
+      "prev": "→ הקודם",
       "page_aria": "עמוד {page}",
       "next_aria": "עמוד הבא",
-      "next": "הבא →"
+      "next": "הבא ←"
     },
     "breadcrumb": {
       "aria": "נתיב ניווט"
@@ -675,7 +675,7 @@
         "back": "חזרה לעמוד הקודם",
         "tab_nav": "ניווט מהיר בפרופיל"
       },
-      "back_label": "← חזרה",
+      "back_label": "→ חזרה",
       "last_updated": "עודכן לאחרונה: {date}",
       "owner_bar": {
         "label": "זהו עמוד העסק שלכם",
@@ -710,7 +710,7 @@
         "events": {
           "heading": "אירועים קרובים",
           "free": "חינם",
-          "register": "הרשמה לאירוע →",
+          "register": "הרשמה לאירוע ←",
           "show_all_count": "הצגת כל האירועים"
         },
         "products": {
@@ -811,7 +811,7 @@
       "related_products_heading": "המוצרים שלנו במתכון",
       "producer_cta_heading": "כל הפריטים מהמתכון — אצל {name}",
       "producer_cta_link": "לעמוד המלא של {name}",
-      "back_to_producer": "← חזרה לדף בית העסק",
+      "back_to_producer": "→ חזרה לדף בית העסק",
       "meta_title_not_found": "מתכון לא נמצא | מהמקור",
       "meta_title_template": "{recipeTitle} | {producerName} | מהמקור"
     },
@@ -846,7 +846,7 @@
       }
     },
     "dashboard": {
-      "back": "← לוח הבקרה",
+      "back": "→ לוח הבקרה",
       "heading": "המתכונים שלי",
       "btn_close_form": "סגרו",
       "btn_open_form": "+ פרסום מתכון חדש",
@@ -869,7 +869,7 @@
       "toast_delete_error": "שגיאה במחיקה"
     },
     "edit": {
-      "back": "← חזרה למתכונים",
+      "back": "→ חזרה למתכונים",
       "heading": "עריכת מתכון",
       "loading": "בטעינה...",
       "not_found": "המתכון לא נמצא"
@@ -902,7 +902,7 @@
       "loading": "בטעינה...",
       "not_found_title": "קבוצת הרכש לא נמצאה",
       "back_to_list": "חזרה לקבוצות הרכש",
-      "back_to_list_arrow": "← חזרה לקבוצות הרכש",
+      "back_to_list_arrow": "→ חזרה לקבוצות הרכש",
       "funded_title": "המחיר נפתח!",
       "funded_subtitle": "{name} תצור קשר עם המשתתפות בקרוב",
       "cancelled": "קבוצת הרכש בוטלה",
@@ -941,7 +941,7 @@
         "cancelled": "בוטלה",
         "fulfilled": "הושלמה ✅"
       },
-      "back": "← לוח הבקרה",
+      "back": "→ לוח הבקרה",
       "heading": "קבוצות הרכש שלי",
       "btn_close_form": "סגרו",
       "btn_open_form": "+ קבוצת רכש חדשה",
@@ -952,7 +952,7 @@
       "empty_cta": "+ צרו קבוצה ראשונה",
       "progress_label": "{commits} / {min} משתתפות",
       "deadline_prefix": "מועד אחרון: {date}",
-      "view_public": "צפו בדף הציבורי →",
+      "view_public": "צפו בדף הציבורי ←",
       "form": {
         "heading": "קבוצת רכש חדשה",
         "concept_intro": "קבוצת רכש: כשמספיק לקוחות מצטרפים, כולם מקבלים מחיר סיטונאי.",
@@ -1157,9 +1157,9 @@
       "reject": "דחה",
       "search": "חפש",
       "submit": "אישור",
-      "back": "← חזרה לפאנל הניהול",
-      "back_to_dashboard": "← לוח אדמין",
-      "back_home": "← חזרה לאתר",
+      "back": "→ חזרה לפאנל הניהול",
+      "back_to_dashboard": "→ לוח אדמין",
+      "back_home": "→ חזרה לאתר",
       "error_loading": "שגיאה בטעינת המידע",
       "error_generic": "שגיאה",
       "no_data": "אין נתונים להצגה",
@@ -1217,7 +1217,7 @@
       },
       "pending_panel": {
         "heading": "בקשות ממתינות",
-        "view_all": "צפה בכל →",
+        "view_all": "צפה בכל ←",
         "empty": "אין בקשות ממתינות",
         "check": "בדוק"
       },
@@ -1585,7 +1585,7 @@
     "experiences": {
       "title": "חוויות קהילתיות",
       "subtitle": "מודרציה לחוויות שהגישו משתמשים",
-      "public_link": "דף ציבורי →",
+      "public_link": "דף ציבורי ←",
       "tabs": {
         "pending": "ממתינות",
         "changes_requested": "שינויים נדרשים",
@@ -1854,7 +1854,7 @@
         "tests": "בדיקות חיבור",
         "categories": "ניהול קטגוריות",
         "categories_hint": "להוספה, עריכה ומחיקה — מסך התוכן.",
-        "categories_link": "לעמוד תוכן →"
+        "categories_link": "לעמוד תוכן ←"
       },
       "fields": {
         "admin_email": "אימייל אדמין לקבלת התראות",
@@ -1972,7 +1972,7 @@
       "empty": "אין קבוצות רכש",
       "until": "עד {date}",
       "change_status": "שנה סטטוס:",
-      "view_page": "צפי בדף →"
+      "view_page": "צפי בדף ←"
     },
     "analytics": {
       "title": "אנליטיקס",
@@ -2130,7 +2130,7 @@
         }
       },
       "footer": "צ'קליסט יומי/שבועי/חודשי + אנשי קשר לחירום — ראה <code>docs/ADMIN.md</code> (סקציה \"Handover checklist\").",
-      "footer_back": "← חזרה ללוח המחוונים"
+      "footer_back": "→ חזרה ללוח המחוונים"
     }
   },
   "events": {
@@ -2184,10 +2184,10 @@
     "detail": {
       "loading": "טעינת האירוע...",
       "not_found": "לא מצאנו את האירוע הזה",
-      "back_to_all": "← חזרה לכל האירועים",
-      "register": "להרשמה →",
+      "back_to_all": "→ חזרה לכל האירועים",
+      "register": "להרשמה ←",
       "contact_producer": "יצירת קשר עם בית העסק",
-      "all_events": "← כל האירועים",
+      "all_events": "→ כל האירועים",
       "organized_by": "מאורגן על ידי",
       "participants_limit": "עד {n} משתתפים",
       "free": "חינם",
@@ -2217,12 +2217,12 @@
       "submit_cta": "הגישו חוויה משלך",
       "breadcrumb_home": "בית",
       "breadcrumb_experiences": "חוויות",
-      "cross_link_events": "מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד →",
+      "cross_link_events": "מחפשים גם אירועים בחוות? כל האירועים והחוויות ביחד ←",
       "filter_city_label": "סננו לפי עיר",
       "filter_city_placeholder": "חפשו עיר...",
       "loading": "טעינת חוויות...",
       "empty_title": "לא מצאנו חוויות שתואמות לסינון — עדיין",
-      "empty_cta": "הגישו את החוויה הראשונה →"
+      "empty_cta": "הגישו את החוויה הראשונה ←"
     },
     "categories": {
       "all": "הכל",
@@ -2237,8 +2237,8 @@
     "detail": {
       "loading": "טעינת החוויה...",
       "not_found": "לא מצאנו את החוויה הזו",
-      "back_to_all": "← חזרה לכל החוויות",
-      "all_experiences": "← כל החוויות",
+      "back_to_all": "→ חזרה לכל החוויות",
+      "all_experiences": "→ כל החוויות",
       "status_pending": "החוויה שלך בהמתנה לאישור צוות מהמקור",
       "status_changes_requested": "נדרשים שינויים לפני שנוכל לפרסם",
       "status_rejected": "החוויה לא אושרה לפרסום",
@@ -2641,7 +2641,7 @@
       "group_food": "מזון",
       "group_home": "בית וטיפוח",
       "no_results_prefix": "לא מצאת את הקטגוריה שלך?",
-      "no_results_cta": "ספרו לנו →",
+      "no_results_cta": "ספרו לנו ←",
       "show_more": "← עוד קטגוריות ({count})",
       "show_less": "↑ פחות קטגוריות"
     }
@@ -2702,8 +2702,8 @@
     },
     "pagination": {
       "aria": "עימוד",
-      "prev": "← עמוד קודם",
-      "next": "עמוד הבא →",
+      "prev": "→ עמוד קודם",
+      "next": "עמוד הבא ←",
       "page_of": "עמוד {page} מתוך {totalPages}"
     }
   },
@@ -2797,7 +2797,7 @@
     "field_message_label": "איך נוכל לעזור? *",
     "submit": "שליחה",
     "submit_loading": "בשליחה...",
-    "open_mail_fallback": "פתיחת אימייל ישירות →",
+    "open_mail_fallback": "פתיחת אימייל ישירות ←",
     "error_default": "שליחת הטופס נכשלה. ניתן לשלוח אלינו אימייל ישירות לכתובת למטה.",
     "mailto_subject": "פנייה דרך האתר",
     "mailto_body_prefix": "שם:",
@@ -3367,7 +3367,7 @@
       "heading": "שלושה מדריכים לחודש הראשון",
       "intro": "הצטרפת לאחרונה? אלה שלושת המדריכים שאני שולחת לכל בעלת עסק חדשה במהמקור. קצרים, ישירים, בלי הבטחות גדולות — רק מה שעובד.",
       "minutes_label": "קריאה כ-{minutes} דקות",
-      "cta": "קראו את המדריך →",
+      "cta": "קראו את המדריך ←",
       "footer_prefix": "יש שאלה שמדריך לא ענה עליה? כתבי לי באינסטגרם",
       "footer_suffix": ".",
       "card_previews": {
@@ -3731,7 +3731,7 @@
         "rejected": {
           "title": "⚠️ הבקשה לא אושרה",
           "body": "צרו קשר איתנו לפרטים נוספים ולבדיקה מחדש.",
-          "cta": "צרו קשר →"
+          "cta": "צרו קשר ←"
         },
         "pending_whatsapp": {
           "title": "ברוכים הבאים! כמעט שם.",
@@ -3754,7 +3754,7 @@
         "error_generic": "משהו השתבש. נסו שוב.",
         "error_rate_limited": "יותר מדי ניסיונות. נסו שוב עוד מעט."
       },
-      "holiday_catalog_cta": "עדכנו את הקטלוג →",
+      "holiday_catalog_cta": "עדכנו את הקטלוג ←",
       "availability": {
         "tooltip_line_default": "פתוח להזמנות = ברירת מחדל.",
         "tooltip_line_today": "זמין היום = מלאי טרי עכשיו.",
@@ -4117,7 +4117,7 @@
       "cta_favorites": "המועדפים שלי"
     },
     "followers": {
-      "back_link": "← לוח הבקרה",
+      "back_link": "→ לוח הבקרה",
       "heading": "העוקבות שלי",
       "loading": "בטעינה...",
       "empty_title": "עוד אין עוקבות — וזה בסדר",
@@ -4151,7 +4151,7 @@
       "skip_to_main": "דילוג לתוכן"
     },
     "event_new": {
-      "back_link": "← לוח הבקרה",
+      "back_link": "→ לוח הבקרה",
       "heading": "פרסום אירוע חדש",
       "field_title_label": "כותרת *",
       "field_description_label": "תיאור",
@@ -4236,7 +4236,7 @@
       "rejected_tip_details": "ודאו שכל פרטי העסק מלאים ומדויקים",
       "rejected_tip_photos": "הוסיפו תמונות ברורות של המוצרים",
       "rejected_tip_address": "בדקו שכתובת העסק נכונה",
-      "support_cta": "דברו איתנו →",
+      "support_cta": "דברו איתנו ←",
       "status_suspended": "החשבון מושעה זמנית.",
       "support_cta_short": "צרו קשר",
       "stats_heading": "סטטיסטיקות",
@@ -4248,7 +4248,7 @@
       "stat_products": "מוצרים",
       "stat_orders": "הזמנות",
       "stats_unavailable": "הנתונים אינם זמינים כרגע.",
-      "edit_profile_link": "ערכו פרופיל עסק →"
+      "edit_profile_link": "ערכו פרופיל עסק ←"
     },
     "products": {
       "section_heading": "מוצרים",
