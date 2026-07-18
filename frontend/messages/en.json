@@ -953,7 +953,7 @@
       "approval_required_hint": "Opening a group buy will be available once the business is approved",
       "loading": "Loading...",
       "empty_title": "Group buys = wholesale price for your customers",
-      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
+      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
       "deadline_prefix": "Deadline: {date}",
