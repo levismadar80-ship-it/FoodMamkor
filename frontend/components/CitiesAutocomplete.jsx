@@ -96,7 +96,11 @@ export default function CitiesAutocomplete({
   };
 
   // MEH-1256: region quick-add — union (dedupe) of value + the region's
-  // cities. A region whose cities are all selected renders disabled.
+  // cities. MEH-1346: the chip is now a TOGGLE — a fully-added region is
+  // clickable again and removes exactly its city list (mirrors the
+  // addCity/removeCity symmetry). Cities the user added individually that
+  // happen to belong to the region ARE removed too — simplest correct
+  // semantics, noted in the PR.
   const regionDone = (region) => region.cities.every((c) => value.includes(c));
 
   const addRegion = (region) => {
@@ -105,6 +109,10 @@ export default function CitiesAutocomplete({
       if (!merged.includes(c)) merged.push(c);
     }
     if (merged.length !== value.length) onChange(merged);
+  };
+
+  const removeRegion = (region) => {
+    onChange(value.filter((c) => !region.cities.includes(c)));
   };
 
   // MEH-1254: a fully typed city counts as a selection when it exactly
@@ -177,15 +185,16 @@ export default function CitiesAutocomplete({
               <button
                 key={region.key}
                 type="button"
-                disabled={done}
-                onClick={() => addRegion(region)}
-                className={`rounded-full border border-border text-[12px] px-2.5 py-0.5 transition ${
+                aria-pressed={done}
+                title={done ? t("region_remove_title", { region: region.name }) : undefined}
+                onClick={() => (done ? removeRegion(region) : addRegion(region))}
+                className={`rounded-full border text-[12px] px-2.5 py-0.5 transition ${
                   done
-                    ? "bg-green-50 text-fg-muted cursor-default"
-                    : "bg-white text-text hover:bg-background"
+                    ? "bg-green-50 border-primary/40 text-text hover:bg-red-50 hover:border-red-300"
+                    : "bg-white border-border text-text hover:bg-background"
                 }`}
               >
-                {done ? `${region.name} · ${t("region_added")}` : region.name}
+                {done ? `${region.name} · ✓ ${t("region_added")}` : region.name}
               </button>
             );
           })}
