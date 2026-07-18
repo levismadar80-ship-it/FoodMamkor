@@ -109,6 +109,15 @@ jobs:
           CI: "true"
 
       - name: Commit updated baselines
+        # MEH-1295: run even if the Regenerate step "failed" on an unrelated,
+        # non-target spec (e.g. the /producer/[id] nav flake). --update-snapshots
+        # still writes every baseline that DID render, so a single failing spec
+        # must not block committing the regenerated ones. `git add` only stages
+        # the snapshot dir + the diff-quiet guard no-ops when nothing changed.
+        # success() || failure() (not always()) so a concurrency-CANCELLED run
+        # — cancel-in-progress is true — can't commit a partially-rendered
+        # snapshot set mid-`--update-snapshots`. (PR #1891 review.)
+        if: ${{ success() || failure() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
