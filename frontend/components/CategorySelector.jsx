@@ -42,6 +42,27 @@ const POPULAR = [
 const POPULAR_BY_NAME = Object.fromEntries(POPULAR.map((p) => [p.name, p]));
 const POPULAR_NAMES = POPULAR.map((p) => p.name);
 
+// MEH-1354: desc slugs for the 12 non-popular categories, so every card in
+// the expanded grid carries a short example line (and the search filter can
+// match synonyms — e.g. "גרנולה" → מוצרים מוכנים). Keys track the DB names
+// in backend/seed_data.py CATEGORIES verbatim; copy lives in
+// forms.category_selector.rest_descs (i18n). A future rename in the seed
+// must update this map in the same PR (same contract as POPULAR above).
+const REST_DESC_SLUGS = {
+  "ביצים": "eggs",
+  "פירות": "fruit",
+  "מותססים וכבושים": "ferments",
+  "מוצרים מוכנים": "prepared",
+  "צמחי מרפא ותוספים": "herbs",
+  "קוסמטיקה טבעית": "cosmetics",
+  "נרות וארומה": "candles",
+  "יין, בירה ומשקאות": "drinks",
+  "תבלינים וצמחי תיבול": "spices",
+  "שוקולד וממתקים בוטיק": "chocolate",
+  "דבש": "honey",
+  "דגים": "fish",
+};
+
 // MEH-1098 (B1): the non-food (home & personal-care) categories. Names track the
 // DB values verbatim. They surface under a "בית וטיפוח" subheader in the expanded
 // grid; everything else falls under "מזון". Presentational grouping only — the
@@ -75,7 +96,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
 
   const descFor = (c) => {
     const p = POPULAR_BY_NAME[c.name];
-    return p ? t(`popular_descs.${p.glyph}`) : "";
+    if (p) return t(`popular_descs.${p.glyph}`);
+    // MEH-1354: non-popular rows get their own desc line (uniform expanded
+    // grid + synonym search). Unknown name (admin-created category) → no desc.
+    const slug = REST_DESC_SLUGS[c.name];
+    return slug ? t(`rest_descs.${slug}`) : "";
   };
   const isMatch = (c) => `${c.name} ${descFor(c)}`.toLowerCase().includes(q);
 
