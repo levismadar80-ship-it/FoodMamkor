@@ -19,7 +19,6 @@ from app.database import get_db
 from app.models import (
     Category,
     ContactMessage,
-    DeliveryArea,
     NewsletterSubscriber,
     Producer,
 )
@@ -209,39 +208,11 @@ def unsubscribe_newsletter(
     return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
 
 
-# ============================================================
-# CITIES — GET /cities
-# ============================================================
-
-
-@router.get("/cities", response_model=list[str])
-def list_cities(db: Session = Depends(get_db)):
-    """Return a de-duplicated list of all cities in use — pulls from both
-    approved producer cities and delivery-area cities. Sorted alphabetically.
-    """
-    producer_rows = (
-        db.query(Producer.city)
-        .filter(Producer.status == "approved", Producer.city.isnot(None))
-        .distinct()
-        .all()
-    )
-    delivery_rows = (
-        db.query(DeliveryArea.city)
-        .filter(DeliveryArea.city.isnot(None))
-        .distinct()
-        .all()
-    )
-    seen = set()
-    out = []
-    for (city,) in list(producer_rows) + list(delivery_rows):
-        if not city:
-            continue
-        city = city.strip()
-        if city and city not in seen:
-            seen.add(city)
-            out.append(city)
-    out.sort()
-    return out
+# MEH-1349: the duplicate GET /cities that lived here (producer ∪ delivery-area
+# union) was DEAD CODE — routers/cities.py registers first in router_registry.py,
+# so this route never matched. Removed per the single-authority rule
+# (.claude/rules/db.md § two parallel mechanisms). The live endpoint is
+# backend/app/routers/cities.py.
 
 
 @router.post("/contact", status_code=200)
