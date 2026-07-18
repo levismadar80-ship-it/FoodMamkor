@@ -24,6 +24,25 @@ for frontend), then make it pass. See
 - Color / spacing tweaks
 - Minor UI adjustments
 
+### Test dummy URLs must be real backend routes with a matching method
+
+`scripts/check_api_contract.py` (the "API contract audit (static)" job
+that feeds the **Deploy gate**) scans `frontend/__tests__/**` too, not
+just app code. An `api.get(...)` / `api.post(...)` in a test with an
+arbitrary path fails the gate: a path the backend doesn't serve →
+orphan-frontend (404 risk); a path served under a different verb →
+method mismatch. Pick a route that exists with the verb you call — e.g.
+`GET /auth/me`, **not** `GET /users/me` which is PATCH-only. Local check
+before pushing any test that hits the API:
+
+```
+python scripts/check_api_contract.py   # expect: Method mismatches: 0 · Orphan frontend … 0
+```
+
+_Source: MEH-1315 (2026-07-18) — `api.get("/users/me")` in the new
+retry-once test tripped a method mismatch and reddened the Deploy gate;
+swapped to `GET /auth/me` (a real route, not in `SKIP_REFRESH`)._
+
 ---
 
 ## Rule 5a — Adversarial review before every merge to staging
