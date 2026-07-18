@@ -6,11 +6,12 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { X } from "@phosphor-icons/react";
 import api from "@/lib/api";
-import { detailToMessage } from "@/lib/errors";
+import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
 import Input from "@/components/ui/Input";
+import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 // MEH-869: shared category set — aliased on import (no transform; the
 // create-form select reads the base {key,labelKey} shape directly, no "all").
 import { EVENT_CATEGORIES as CATEGORY_KEYS } from "@/lib/event-categories";
@@ -34,6 +35,10 @@ export default function NewEventPage() {
     registration_url: "",
   });
   const [error, setError] = useState("");
+  // MEH-1164 B: verified-email 403 → show the resend CTA notice, not the
+  // plain error string (which since the code-field change would collapse to
+  // the generic fallback anyway).
+  const [unverified, setUnverified] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   // MEH-1161: a pending producer's event is hidden from the public until the
@@ -81,6 +86,7 @@ export default function NewEventPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setUnverified(false);
     setSubmitting(true);
     try {
       const payload = {
@@ -97,7 +103,11 @@ export default function NewEventPage() {
       }
       router.push(`/events/${r.data.id}`);
     } catch (err) {
-      setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
+      if (isUnverifiedEmailError(err)) {
+        setUnverified(true);
+      } else {
+        setError(detailToMessage(err.response?.data?.detail) || t("error_generic"));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -136,6 +146,7 @@ export default function NewEventPage() {
       <h1 className="font-headline-lg text-4xl font-bold text-text mb-2">{t("heading")}</h1>
       <p className="text-fg-muted mb-8">{t("subtitle")}</p>
 
+      {unverified && <UnverifiedEmailNotice className="mb-4" />}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-[8px] p-3 mb-4 text-sm" role="alert">
           {error}
