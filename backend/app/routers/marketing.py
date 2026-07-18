@@ -6,7 +6,10 @@ about page contact form). All endpoints are anonymous — no auth required.
 
 import logging
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from joserfc import jwt as jose_jwt
+from joserfc.errors import JoseError
+from joserfc.jwk import OctKey
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -23,11 +26,57 @@ from app.models import (
 from app.rate_limit import limiter
 
 # MEH-460 Pkg 5 (FINAL): schemas relocated to app.schemas.schemas per ADR-006 R1.
-from app.schemas.schemas import CONTACT_TOPIC_LABELS, ContactIn, NewsletterIn, StatsOut
+from app.schemas.schemas import (
+    CONTACT_TOPIC_LABELS,
+    ContactIn,
+    NewsletterIn,
+    NewsletterUnsubscribeIn,
+    StatsOut,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["marketing"])
+
+
+# ============================================================
+# NEWSLETTER UNSUBSCRIBE TOKEN (MEH-1330)
+# ============================================================
+# Stateless signed token so the unsubscribe link needs no DB column and never
+# puts a raw (forgeable) email in a GET URL. Reuses the existing joserfc/JWT
+# util + SECRET_KEY (same key derivation as app/auth.py:_jwt_key) — no new
+# dependency. Scope-namespaced so an access/refresh token can't unsubscribe,
+# and vice-versa. No `exp`: unsubscribe links must keep working months later
+# (compliance) — the token only ever authorizes removing its own address.
+_UNSUBSCRIBE_SCOPE = "newsletter_unsubscribe"
+
+
+def _unsubscribe_key() -> OctKey:
+    return OctKey.import_key(settings.secret_key.encode())
+
+
+def create_unsubscribe_token(email: str) -> str:
+    payload = {"sub": email, "scope": _UNSUBSCRIBE_SCOPE}
+    return jose_jwt.encode({"alg": settings.algorithm}, payload, _unsubscribe_key())
+
+
+def decode_unsubscribe_token(token: str) -> str | None:
+    """Return the subscriber email for a valid unsubscribe token, else None.
+
+    Never raises — mirrors app/auth.py:decode_refresh_token. Any failure
+    (bad signature, wrong/absent scope, malformed) resolves to None so the
+    endpoint returns a calm error state instead of a 500.
+    """
+    try:
+        token_obj = jose_jwt.decode(
+            token, _unsubscribe_key(), algorithms=[settings.algorithm]
+        )
+    except (JoseError, ValueError):
+        return None
+    if token_obj.claims.get("scope") != _UNSUBSCRIBE_SCOPE:
+        return None
+    sub = token_obj.claims.get("sub")
+    return sub if isinstance(sub, str) and sub else None
 
 
 # ============================================================
@@ -79,8 +128,10 @@ def _send_newsletter_welcome(email: str) -> None:
     """Send a welcome email to new newsletter subscribers. Fail-open."""
     # MEH-1322: derive the host from the single backend URL constant
     # (settings.frontend_url, canonical mehamakor.co.il) instead of hardcoding.
-    # MEH-1330 makes /newsletter/unsubscribe a real, tokenized route.
-    unsubscribe_url = f"{settings.frontend_url}/newsletter/unsubscribe"
+    # MEH-1330: /newsletter/unsubscribe is now a real route carrying a signed
+    # token so one click removes the address (RFC-8058-style one-click).
+    token = create_unsubscribe_token(email)
+    unsubscribe_url = f"{settings.frontend_url}/newsletter/unsubscribe?token={token}"
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -132,6 +183,30 @@ def _send_newsletter_welcome(email: str) -> None:
         "מהמקור — בתי עסק מקומיים, כולם במקום אחד."
     )
     send_email(email, "ברוכה הבאה למהמקור 🌿", plain, html=html_body)
+
+
+@router.post("/newsletter/unsubscribe", status_code=200)
+@limiter.limit("20/hour")
+def unsubscribe_newsletter(
+    request: Request, data: NewsletterUnsubscribeIn, db: Session = Depends(get_db)
+):
+    """One-click newsletter unsubscribe via the signed token in the email link.
+
+    Idempotent: a valid token whose address is already gone still returns 200
+    (the desired end-state — not subscribed — is reached either way). An
+    invalid/expired/wrong-scope token returns 400 with a gentle Hebrew message
+    and no stack trace. Never reveals whether the address existed.
+    """
+    email = decode_unsubscribe_token(data.token)
+    if not email:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או שפג תוקפו.")
+    (
+        db.query(NewsletterSubscriber)
+        .filter(NewsletterSubscriber.email == email.lower().strip())
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return {"detail": "הוסרת מרשימת התפוצה. 🌿"}
 
 
 # ============================================================
