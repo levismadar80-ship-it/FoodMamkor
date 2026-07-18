@@ -100,6 +100,46 @@ def _check_email_delivery_config(env: str, resend_api_key: str) -> str | None:
     return None
 
 
+# MEH-1319: the app assumes a SINGLE Railway replica / single Uvicorn worker.
+# Everything in-process depends on it: the APScheduler jobs (MEH-539 onboarding
+# follow-ups + the auto-reply watchdog → a 2nd worker sends DUPLICATE emails),
+# the slowapi in-memory rate-limit store (per-worker → effective limit ×N),
+# the analytics metrics deque, the trending cache, and the JWKS cache. No
+# distributed lock coordinates workers. Railway's worker count is Sapir-domain,
+# so this is a loud boot ERROR, never a crash.
+_WORKER_COUNT_ENV_VARS = ("WEB_CONCURRENCY", "UVICORN_WORKERS")
+
+
+def _check_single_replica(worker_values: dict[str, str | None]) -> str | None:
+    """MEH-1319: warn (log-only) when the process is configured for >1 worker.
+
+    `worker_values` maps each recognized worker-count env var name to its raw
+    value (None when unset). Returns a loud message naming the consequences
+    when any value parses to an int > 1; None otherwise. Fail-open: unset or
+    unparseable values are treated as "not >1" (the platform default is a
+    single worker), so a typo never blocks boot. Never raises. Mirrors the
+    pure-helper structure of _check_frontend_url_consistency above.
+    """
+    for name, raw in worker_values.items():
+        if raw is None:
+            continue
+        try:
+            count = int(str(raw).strip())
+        except (TypeError, ValueError):
+            continue
+        if count > 1:
+            return (
+                f"{name}={count} configures {count} workers, but mehamakor "
+                "assumes a SINGLE replica/worker. Multiple workers cause: "
+                "duplicate APScheduler jobs (double onboarding emails + "
+                "watchdog runs), per-worker slowapi rate limits (effective "
+                f"limit ×{count}), and fragmented in-memory metrics/caches "
+                "(analytics deque, trending, JWKS). Keep the count at 1, or "
+                "move these mechanisms to a shared store first."
+            )
+    return None
+
+
 def _run_db_init_sync() -> None:
     log.info("[bg 1/2] importing models...")
     from app.models import models  # noqa: F401
@@ -207,6 +247,15 @@ async def lifespan(app: FastAPI):
             issue,
             settings.frontend_url,
         )
+
+    # MEH-1319: single-replica invariant guard. Log-only (never crashes) —
+    # Railway's worker/replica count is Sapir-domain. Logged among the boot
+    # diagnostics, before the email fail-loud below.
+    _replica_issue = _check_single_replica(
+        {name: os.getenv(name) for name in _WORKER_COUNT_ENV_VARS}
+    )
+    if _replica_issue:
+        log.error("SINGLE-REPLICA INVARIANT: %s", _replica_issue)
 
     # MEH-1164 (F6): fail-loud if the email delivery pipe is unconfigured in an
     # environment that must send email. Raised AFTER the diagnostics above so
