@@ -47,6 +47,14 @@ import * as path from "path";
  * carry the MEH-1145/MEH-1128 ui/Input adoption (resting-state invisible).
  * Classified intended drift, no regression. This touch re-triggers the
  * vrt-update bot to regenerate the baselines on the runner.
+ * MEH-1295 (2026-07-17): the MEH-1177/1278/1281 footer cluster (nav audience
+ * split, mobile 2-col grid, 13px semibold group headings) shifted every
+ * fullPage route's height (mobile −61px, desktop +82px) since the last regen,
+ * red-lining the /about /login /register trio. Verified footer-only (A/B render
+ * of 25b990e8 vs staging HEAD — first diff row 62–92% down each page, no shift
+ * above). This touch re-fires vrt-update to regenerate the trio on the runner
+ * (the earlier delete-trigger run regenerated them but its commit step was
+ * skipped when the unrelated /producer/[id] nav flake failed the suite).
  */
 
 const STYLE_PATH = path.join(__dirname, "parity.css");
