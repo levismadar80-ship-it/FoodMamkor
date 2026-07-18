@@ -306,6 +306,56 @@ def notify_admin_producer_resubmit(producer_name: str, city: str | None) -> None
         )
 
 
+def notify_admin_producer_review_ready(producer_name: str, city: str | None) -> None:
+    """Ping admin (WhatsApp + email) that a pending producer first became
+    APPROVABLE — has ≥1 image and a license when its categories require one.
+
+    MEH-1351 — the registration-time ping (notify_admin_new_producer) fires
+    when the profile is ~25% and the approve gate (admin.py MEH-799 photo /
+    MEH-971 license 422s) still blocks action. This is the actionable ping,
+    fired on the false→true approvability transition during PUT /producers/me
+    (producer_me.py). Notification-only: NO schema change, no sent-flag —
+    the transition check is the idempotency guard, so repeated toggling
+    (remove image → re-add) can re-ping; accepted trade-off.
+    REUSES: notify_admin_producer_resubmit above 1:1 — sanitizer, per-channel
+    guards, fail-open, BackgroundTask contract.
+    """
+    safe_name = _sanitize_wa_param(producer_name)
+    safe_city = _sanitize_wa_param(city) if city else "לא צוין"
+    message = (
+        f"העסק {safe_name} מוכן לאישור — יש תמונה וכל הפרטים הדרושים\n"
+        f"עיר: {safe_city}\n"
+        f"לבדיקה: {settings.frontend_url}/admin/producers"
+    )
+    try:
+        if settings.admin_whatsapp_to:
+            if send_text(settings.admin_whatsapp_to, message):
+                logger.info(
+                    "[WHATSAPP] Producer review-ready notification sent to admin"
+                )
+            else:
+                logger.warning(
+                    "[WHATSAPP] Producer review-ready notification NOT delivered for "
+                    f"'{safe_name}'"
+                )
+        else:
+            logger.debug(f"[WHATSAPP] Would send: {message}")
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(
+            f"[NOTIFY] Admin review-ready WhatsApp FAILED for '{safe_name}': {e}"
+        )
+
+    try:
+        if settings.admin_email:
+            send_email(
+                settings.admin_email,
+                f"מהמקור - {safe_name} מוכן לאישור",
+                message,
+            )
+    except Exception as e:  # noqa: BLE001 — fire-and-forget, log with context
+        logger.error(f"[NOTIFY] Admin review-ready email FAILED for '{safe_name}': {e}")
+
+
 def notify_admin_new_category_request(
     requested_name: str, producer_name: str | None
 ) -> None:
