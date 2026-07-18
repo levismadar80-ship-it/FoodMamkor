@@ -48,7 +48,14 @@ export default function StickyContactBar({
         boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
         opacity: isVacation ? 0.85 : 1,
       }}
-      aria-hidden={!isBarVisible}
+      // MEH-1333: when parked off-screen the bar must be non-focusable, not just
+      // aria-hidden — a bare aria-hidden left the sticky CTA tabbable inside a
+      // hidden subtree (axe aria-hidden-focus, serious). `inert` removes the whole
+      // subtree from tab order AND the a11y tree (implies aria-hidden), so the
+      // rule can't fire and the CTA is truly unreachable while hidden. React
+      // 18.3.1 has no first-class `inert` prop → string idiom ("" = present,
+      // undefined = removed).
+      inert={!isBarVisible ? "" : undefined}
     >
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Social proof — hidden if < 3 reviews. MEH-76 chunk 1: the vacation
