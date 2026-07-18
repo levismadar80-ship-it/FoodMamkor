@@ -39,11 +39,13 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import InboundMessage
+from app.models import FavoriteAlert, InboundMessage, User
 
 # MEH-771 Chunk B — REUSES: app/services/whatsapp.py:185 — same direct path
 # (OutboundMessage is intentionally not in app.models.__init__.__all__).
 from app.models.models import OutboundMessage
+from app.services.whatsapp import send_text
+from app.utils.phone import canonical_il_msisdn
 
 logger = logging.getLogger(__name__)
 
@@ -362,10 +364,84 @@ def _process_messages(db: Session, messages: list, counters: dict[str, int]) -> 
         result = _persist_message(db, message)
         if result == "persisted":
             counters["persisted"] += 1
+            # MEH-1339: opt-out only on the FIRST persist — Meta redelivers
+            # at-least-once, and "duplicate" means we already handled this id.
+            _maybe_process_optout(db, message)
         elif result == "duplicate":
             counters["duplicates"] += 1
         else:
             counters["failed"] += 1
+
+
+# MEH-1339: full-message opt-out keywords (case-insensitive after trim; a
+# whole-body match only — "אל תסיר אותי בבקשה" must NOT opt out). Hebrew has
+# no case, so `.lower()` only normalizes the Latin STOP/UNSUBSCRIBE.
+_OPTOUT_KEYWORDS = frozenset({"הסר", "הסרה", "עצור", "stop", "unsubscribe"})
+_OPTOUT_CONFIRMATION = (
+    "העדכונים בוואטסאפ הופסקו. אפשר להפעיל אותם מחדש בעמוד המועדפים באתר."
+)
+
+
+def _maybe_process_optout(db: Session, message: dict) -> None:
+    """MEH-1339: honor a WhatsApp "הסר" reply by turning off every
+    `whatsapp_opt_in` flag for the sender.
+
+    Runs AFTER the inbound row is persisted and AFTER HMAC verification. The
+    sender's `from` phone (Meta international, no "+") is canonicalized and
+    matched against `User.phone` (unvalidated + non-unique) — so opt-out
+    applies to *every* user sharing that physical number (they all deliver to
+    the one device that asked to stop). Fail-open: any error here is logged
+    and swallowed — the webhook must never 5xx Meta and the inbound row is
+    already saved by the caller.
+    """
+    try:
+        if (message.get("type") or "") != "text":
+            return
+        body = ((message.get("text") or {}).get("body") or "").strip()
+        if body.lower() not in _OPTOUT_KEYWORDS:
+            return
+
+        from_phone = message.get("from")
+        canonical = canonical_il_msisdn(from_phone)
+        if canonical is None:
+            logger.warning(
+                "[WEBHOOK] opt-out: sender phone not canonicalizable — no-op"
+            )
+            return
+
+        # Python-side canonical match: `User.phone` has no uniform stored
+        # format and no unique index, so no SQL predicate is reliable. The
+        # full-scan is gated behind the (rare) opt-out keyword above.
+        users = [
+            u
+            for u in db.query(User).filter(User.phone.isnot(None)).all()
+            if canonical_il_msisdn(u.phone) == canonical
+        ]
+        if not users:
+            logger.info("[WEBHOOK] opt-out: no user matches sender — no-op")
+            return
+
+        flipped = 0
+        for user in users:
+            flipped += (
+                db.query(FavoriteAlert)
+                .filter(
+                    FavoriteAlert.user_id == user.id,
+                    FavoriteAlert.whatsapp_opt_in.is_(True),
+                )
+                .update({FavoriteAlert.whatsapp_opt_in: False})
+            )
+        db.commit()
+        logger.info(
+            "[WEBHOOK] opt-out: disabled whatsapp for %d user(s), %d alert row(s)",
+            len(users),
+            flipped,
+        )
+        # In-window free-form reply is allowed — she just messaged us.
+        send_text(from_phone, _OPTOUT_CONFIRMATION)
+    except Exception as exc:  # noqa: BLE001 — webhook must never 5xx Meta
+        db.rollback()
+        logger.warning("[WEBHOOK] opt-out processing failed: %s", exc)
 
 
 def _persist_message(db: Session, message: dict) -> str:
