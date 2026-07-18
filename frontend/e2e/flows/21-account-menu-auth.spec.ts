@@ -49,10 +49,13 @@ test.describe("producer account menu — desktop (MEH-1226)", () => {
     const menu = page.getByRole("menu");
     await expect(menu).toBeVisible();
 
+    // MEH-1310: favorites row now sits between profile and settings for every
+    // logged-in role → producer order is dashboard → profile → מועדפים → הגדרות.
     const items = menu.getByRole("menuitem");
     await expect(items.nth(0)).toHaveText("לוח הבקרה שלי");
     await expect(items.nth(1)).toHaveText("הפרופיל שלי");
-    await expect(items.nth(2)).toHaveText("הגדרות");
+    await expect(items.nth(2)).toHaveText("מועדפים");
+    await expect(items.nth(3)).toHaveText("הגדרות");
 
     await expect(menu.getByRole("menuitem", { name: "לוח הבקרה שלי" })).toHaveAttribute(
       "href",
@@ -62,6 +65,11 @@ test.describe("producer account menu — desktop (MEH-1226)", () => {
     await expect(menu.getByRole("menuitem", { name: "הפרופיל שלי" })).toHaveAttribute(
       "href",
       /^\/producer\/[0-9a-f-]{36}$/,
+    );
+    // MEH-1310: favorites links to /favorites (shared with the mobile AccountSheet).
+    await expect(menu.getByRole("menuitem", { name: "מועדפים" })).toHaveAttribute(
+      "href",
+      "/favorites",
     );
     await expect(menu.getByRole("menuitem", { name: "הגדרות" })).toHaveAttribute(
       "href",
@@ -74,7 +82,7 @@ test.describe("consumer account menu — desktop (MEH-1226)", () => {
   test.skip(isLocal || !fs.existsSync(consumerAuth), skipReason);
   test.use({ storageState: consumerAuth, viewport: { width: 1280, height: 900 } });
 
-  test("settings → logout only; no profile / dashboard row", async ({ page }, testInfo) => {
+  test("favorites → settings → logout; no profile / dashboard row", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop", "desktop UserMenu — desktop-project-only");
     await page.goto("/");
     await page.locator(accountTrigger).click();
@@ -83,12 +91,22 @@ test.describe("consumer account menu — desktop (MEH-1226)", () => {
 
     await expect(menu.getByText("הפרופיל שלי")).toHaveCount(0);
     await expect(menu.getByText("לוח הבקרה שלי")).toHaveCount(0);
+    // MEH-1310: consumers now have a favorites row → /favorites (was orphaned
+    // on desktop pre-1310; the mobile AccountSheet always had it).
+    await expect(menu.getByRole("menuitem", { name: "מועדפים" })).toHaveAttribute(
+      "href",
+      "/favorites",
+    );
     await expect(menu.getByRole("menuitem", { name: "הגדרות" })).toHaveAttribute(
       "href",
       "/settings",
     );
-    // Exactly two menuitems: settings (link) + logout (button).
-    await expect(menu.getByRole("menuitem")).toHaveCount(2);
+    // Order: favorites sits above settings.
+    const items = menu.getByRole("menuitem");
+    await expect(items.nth(0)).toHaveText("מועדפים");
+    await expect(items.nth(1)).toHaveText("הגדרות");
+    // Exactly three menuitems: favorites (link) + settings (link) + logout (button).
+    await expect(menu.getByRole("menuitem")).toHaveCount(3);
   });
 });
 
@@ -115,5 +133,11 @@ test.describe("producer AccountSheet — mobile 375px (MEH-1228)", () => {
     );
     // First row of the sheet (above favorites).
     await expect(sheet.getByRole("link").first()).toHaveText("לוח הבקרה שלי");
+    // MEH-1310 regression guard: the mobile sheet's favorites row is UNTOUCHED
+    // by the desktop-only Header change — it must still link /favorites.
+    await expect(sheet.getByRole("link", { name: "מועדפים" })).toHaveAttribute(
+      "href",
+      "/favorites",
+    );
   });
 });

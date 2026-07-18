@@ -40,6 +40,8 @@ vi.mock("next-intl", () => {
     "nav.search_label": "חיפוש",
     "nav.trust_strip": "שיחה אישית עם כל בית עסק",
     "nav.add_business": "הוסיפו את העסק שלך",
+    // MEH-1310: favorites row shares AccountSheet's nav.favorites key.
+    "nav.favorites": "מועדפים",
     "account.menu.profile": "הפרופיל שלי",
     "account.menu.settings": "הגדרות",
     "account.menu.dashboard": "לוח הבקרה שלי",
@@ -182,23 +184,30 @@ describe("Header", () => {
       expect(screen.queryByText("התנתקות")).toBeNull();
     });
 
-    it("opens the dropdown on avatar click with settings / logout items", () => {
+    it("opens the dropdown on avatar click with favorites / settings / logout items", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
       expect(screen.getByRole("menu")).toBeInTheDocument();
+      expect(screen.getByText("מועדפים")).toBeInTheDocument();
       expect(screen.getByText("הגדרות")).toBeInTheDocument();
       expect(screen.getByText("התנתקות")).toBeInTheDocument();
     });
 
-    // MEH-1226: consumers have no public page, so the profile row is dropped —
-    // the menu is settings → logout, and settings lands on plain /settings
-    // (same target as the mobile AccountSheet).
-    it("consumer menu = settings → logout only, settings → /settings", () => {
+    // MEH-1226: consumers have no public page, so the profile row is dropped.
+    // MEH-1310: favorites row is present for EVERY logged-in role and lands
+    // on /favorites (shared nav.favorites key with the mobile AccountSheet);
+    // order is מועדפים → הגדרות. settings lands on plain /settings.
+    it("consumer menu = favorites → settings → logout, links resolve", () => {
       render(<Header />);
       fireEvent.click(screen.getByLabelText("תפריט — דנה"));
       expect(screen.queryByText("הפרופיל שלי")).toBeNull();
+      const favoritesLink = screen.getByText("מועדפים").closest("a");
+      expect(favoritesLink.getAttribute("href")).toBe("/favorites");
       const settingsLink = screen.getByText("הגדרות").closest("a");
       expect(settingsLink.getAttribute("href")).toBe("/settings");
+      // favorites sits above settings in the menu
+      const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
+      expect(menuItems.indexOf("מועדפים")).toBeLessThan(menuItems.indexOf("הגדרות"));
     });
 
     it("hides producer/admin items for plain consumers", () => {
@@ -232,9 +241,11 @@ describe("Header", () => {
       expect(profileLink.getAttribute("href")).toBe("/producer/p-42");
       const settingsLink = screen.getByText("הגדרות").closest("a");
       expect(settingsLink.getAttribute("href")).toBe("/settings");
-      // dashboard sits above the profile row in the menu
+      // MEH-1310: full producer order is dashboard → profile → מועדפים → הגדרות
       const menuItems = screen.getAllByRole("menuitem").map((el) => el.textContent);
       expect(menuItems.indexOf("לוח הבקרה שלי")).toBeLessThan(menuItems.indexOf("הפרופיל שלי"));
+      expect(menuItems.indexOf("הפרופיל שלי")).toBeLessThan(menuItems.indexOf("מועדפים"));
+      expect(menuItems.indexOf("מועדפים")).toBeLessThan(menuItems.indexOf("הגדרות"));
     });
 
     it("admin sees ממשק אדמין in the dropdown", () => {
