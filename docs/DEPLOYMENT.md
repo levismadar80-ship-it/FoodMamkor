@@ -383,6 +383,32 @@ is ever added in front of Railway, revisit the XFF fallback path
 (`X-Real-IP` primary stays correct — Railway still sets it).
 
 
+### D-bis. Single-replica invariant (MEH-1319) — **keep workers at 1**
+
+The backend is designed to run as a **single Railway replica with a
+single Uvicorn worker.** Several mechanisms live in process memory with
+no cross-worker coordination and would misbehave if a second worker
+were ever started:
+
+| Mechanism | Second worker breaks it by… |
+|---|---|
+| APScheduler jobs — onboarding follow-ups (MEH-539) + auto-reply watchdog | Each worker runs its own scheduler → **duplicate emails** and double watchdog runs |
+| slowapi rate limiter (in-memory store) | Per-worker counters → effective limit multiplied by the worker count (login/abuse limits weaken ×N) |
+| Analytics request-metrics deque + trending cache | Fragmented per worker → the admin dashboard sees only one worker's slice |
+| JWKS cache | Redundant fetches; no correctness break, but wasted work |
+
+Because Railway's worker/replica count is a platform setting (Sapir
+domain), the app does **not** crash on a misconfiguration — instead a
+boot-time guard (`_check_single_replica` in
+[`backend/app/startup.py`](../backend/app/startup.py)) reads
+`WEB_CONCURRENCY` / `UVICORN_WORKERS` and logs a loud **ERROR** naming
+these consequences whenever the count parses to `>1`. It fail-opens on
+unset/garbage values (the platform default is one worker). If you ever
+genuinely need horizontal scale, move the scheduler to a leader-elected
+/ locked job and the rate limiter + metrics to a shared store (Redis)
+**before** raising the worker count — do not silence the guard.
+
+
 ### E. Verify deploys actually ran (MEH-260)
 
 Merging to `staging` or `main` does not guarantee the runtime changed.
