@@ -376,7 +376,10 @@ def _reset(db, confirm: bool) -> None:
         if ids
         else 0
     )
-    owner_count = db.query(User).filter(User.producer_id.in_(ids)).count() if ids else 0
+    # role=="producer" only — an admin who happened to register a test business
+    # to their own account must not be swept (their producer_id just goes NULL).
+    owner_filter = (User.producer_id.in_(ids), User.role == "producer")
+    owner_count = db.query(User).filter(*owner_filter).count() if ids else 0
 
     print("── RESET ─────────────────────────────────────────────")
     if not producers:
@@ -402,7 +405,7 @@ def _reset(db, confirm: bool) -> None:
         db.query(Event).filter(Event.producer_id.in_(ids)).delete(
             synchronize_session=False
         )
-        for user in db.query(User).filter(User.producer_id.in_(ids)).all():
+        for user in db.query(User).filter(*owner_filter).all():
             db.delete(user)  # ORM delete keeps the identity map consistent
         for prod in producers:
             db.delete(prod)  # cascade: products/reviews/favorites/areas/recipes
