@@ -125,17 +125,18 @@ export default function Popover({
       e.stopPropagation();
       e.preventDefault();
       trigger.props?.onClick?.(e);
-      setOpen((v) => {
-        const next = !v;
-        if (next) {
-          setSheetActive(
-            sheetOnMobile &&
-              typeof window !== "undefined" &&
-              window.matchMedia("(max-width: 1023px)").matches,
-          );
-        }
-        return next;
-      });
+      // Presentation decided at tap time, OUTSIDE the state updater —
+      // updaters must stay pure (adversarial-review fix; StrictMode
+      // double-invokes them).
+      const next = !open;
+      if (next) {
+        setSheetActive(
+          sheetOnMobile &&
+            typeof window !== "undefined" &&
+            window.matchMedia("(max-width: 1023px)").matches,
+        );
+      }
+      setOpen(next);
     },
     "aria-haspopup": role === "dialog" ? "dialog" : "true",
     "aria-expanded": open,

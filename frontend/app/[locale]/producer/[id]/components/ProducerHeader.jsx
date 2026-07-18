@@ -72,9 +72,12 @@ export default function ProducerHeader({
         <BadgeRow producer={producer} hideKeys={badgeHideKeys} />
       </div>
 
-      {/* Group 2 — one-liner */}
+      {/* Group 2 — one-liner. Imageless profiles have no h1 row here (the
+          masthead owns it), so the one-liner is the header's FIRST line and
+          must clear the absolutely-pinned desktop actions row itself —
+          adversarial-review fix (imageless-desktop overlap). */}
       {producer.short_description && (
-        <p className="text-[15px] leading-relaxed text-text mt-2">
+        <p className={`text-[15px] leading-relaxed text-text mt-2${hasImages ? "" : " lg:pe-56"}`}>
           {producer.short_description}
         </p>
       )}
