@@ -511,6 +511,12 @@ function UserMenu({ user, logout, open, setOpen, menuRef }) {
             : []),
         ]
       : []),
+    // MEH-1310: favorites row for EVERY logged-in role — desktop parity with
+    // the mobile AccountSheet, which already links /favorites via the SAME
+    // nav.favorites key (AccountSheet.jsx:148-151). Without it /favorites was
+    // orphaned on desktop (reachable only by typing the URL). No icon — the
+    // existing dropdown rows are text-only, so this matches their anatomy.
+    { href: "/favorites", label: t("nav.favorites") },
     { href: "/settings", label: t("account.menu.settings") },
     ...(isAdmin ? [{ href: "/admin", label: t("account.menu.admin") }] : []),
   ];
