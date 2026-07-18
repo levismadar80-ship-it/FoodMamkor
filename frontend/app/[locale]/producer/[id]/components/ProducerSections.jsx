@@ -14,6 +14,9 @@ import DeliveryBlock from "@/components/DeliveryBlock";
 import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 import DirectoryDisclaimer from "@/components/DirectoryDisclaimer";
 import OpeningHours from "@/components/OpeningHours";
+// MEH-1306: owner-only per-section pencil → deep-links into the edit
+// accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
+import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
@@ -102,8 +105,13 @@ export default function ProducerSections({
       {/* Description — MEH-788: scroll-reveal (motion.section keeps the
           sectionRefs callback ref for the tab-scroll IO). */}
       {producer.description && (
-        <FadeInSection as="section" {...REVEAL_PRESET} className="mt-8" ref={(el) => { sectionRefs.current.about = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-3">{t("producer.detail.sections.about")}</h2>
+        // MEH-1306: stable id (deep-link target of the edit tab's view-link)
+        // + scroll-mt clearing the sticky header/tab bar (the #reviews idiom).
+        <FadeInSection as="section" {...REVEAL_PRESET} id="section-bio" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24" ref={(el) => { sectionRefs.current.about = el; }}>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.about")}</h2>
+            <OwnerSectionEditLink producerId={producer.id} anchor="bio" sectionKey="bio" />
+          </div>
           <p className="text-text/85 leading-relaxed whitespace-pre-line">
             {producer.description}
           </p>
@@ -115,8 +123,12 @@ export default function ProducerSections({
           product exists (no product entries) so the moved-out header
           signature never vanishes. */}
       {(producer.products?.length > 0 || hasSignature) && (
-        <section className="mt-8" ref={(el) => { sectionRefs.current.products = el; }}>
-          <h2 className="font-headline-md text-2xl font-bold text-text mb-4">{t("producer.detail.sections.products.heading")}</h2>
+        <section id="section-products" className="mt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24" ref={(el) => { sectionRefs.current.products = el; }}>
+          {/* MEH-1306: owner pencil beside the heading → #products card. */}
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-headline-md text-2xl font-bold text-text">{t("producer.detail.sections.products.heading")}</h2>
+            <OwnerSectionEditLink producerId={producer.id} anchor="products" sectionKey="products" />
+          </div>
 
           {/* Signature product — moved from ProducerHeader (MEH-1146 chunk B).
               MEH-1233 B4: rendered as a real highlight CARD (thumbnail + name +
@@ -385,7 +397,20 @@ export default function ProducerSections({
 
       {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
       {producer.has_physical_location !== false && producer.lat && producer.lng && (
-        <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+        // MEH-1306: the map block is the location card's public counterpart.
+        // MiniMap owns its own heading (MiniMap.jsx:42), so the owner pencil is
+        // absolutely pinned to the inline-end of that heading row (top-8 =
+        // MiniMap's pt-8; the section's mt-8 collapses outside this wrapper).
+        // Absolute positioning → zero layout shift for every viewer.
+        <div id="section-location" className="relative scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
+          <OwnerSectionEditLink
+            producerId={producer.id}
+            anchor="location"
+            sectionKey="location"
+            className="absolute top-8 end-0"
+          />
+          <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+        </div>
       )}
 
       {/* Directory-only disclaimer — required by Israeli consumer
