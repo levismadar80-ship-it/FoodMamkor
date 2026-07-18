@@ -172,6 +172,78 @@ jobs:
           }
 
   # ─────────────────────────────────────────────
+  # JOB 1b: ai-artifact-scan (MEH-449 Layer 2)
+  # ─────────────────────────────────────────────
+  # Fails the PR if any AI development artifact (by filename) or any
+  # sensitive internal literal reaches the frontend build output. Runs its
+  # own build: GitHub jobs don't share workspaces and the build job doesn't
+  # upload .next; a self-contained rebuild keeps the two jobs independent.
+  # Canonical pattern list: .claude/hooks/check-artifact-location.sh.
+  ai-artifact-scan:
+    name: AI artifact scan (build output)
+    needs: [changes, build]
+    if: ${{ (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true') && github.event.pull_request.draft == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (scan target)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      - name: "Scan 2a — forbidden AI-artifact filenames in deployable output"
+        run: |
+          set -euo pipefail
+          # public/ is scanned alongside .next: next build does NOT copy
+          # public/ into .next (no standalone output), and on Vercel
+          # public/ IS the served static root — a CLAUDE.md planted there
+          # ships without ever touching .next.
+          hits=$(find .next public -type f \( \
+            -iname "CLAUDE.md" -o -iname "CLAUDE.local.md" \
+            -o -iname "HANDOFF.md" -o -iname "ROADMAP.md" \
+            -o -iname "AGENTS.md" \) 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::MEH-449 scan 2a — AI dev artifact file(s) found in deployable output:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "Scan 2a clean — no forbidden filenames in .next or public/"
+
+      - name: "Scan 2b — forbidden content literals in deployable output"
+        run: |
+          set -euo pipefail
+          # Known-legitimate exception: the admin-help runbook i18n copy
+          # contains the string "_migrate_columns" (messages/he.json +
+          # en.json, admin.help.* namespace) and is bundled into the
+          # messages_* chunks. Those chunks are excluded; the same literal
+          # anywhere else still fails.
+          for lit in "_migrate_columns" "MEH-265" "JWT_SECRET_KEY="; do
+            hits=$(grep -rl --binary-files=text -- "$lit" .next public 2>/dev/null | grep -v "messages_.*json" || true)
+            if [ -n "$hits" ]; then
+              echo "::error::MEH-449 scan 2b — forbidden literal '$lit' found in deployable output:"
+              echo "$hits"
+              exit 1
+            fi
+          done
+          echo "Scan 2b clean — no forbidden literals in .next or public/"
+
+  # ─────────────────────────────────────────────
   # JOB 2: pytest
   # ─────────────────────────────────────────────
   pytest:
@@ -527,6 +599,7 @@ jobs:
       - do-not-merge-gate
       - qa-artifacts-size
       - build
+      - ai-artifact-scan
       - pytest
       - lint-backend
       - env-drift
@@ -545,6 +618,7 @@ jobs:
           R_DNM: ${{ needs.do-not-merge-gate.result }}
           R_QA_SIZE: ${{ needs.qa-artifacts-size.result }}
           R_BUILD: ${{ needs.build.result }}
+          R_AI_SCAN: ${{ needs.ai-artifact-scan.result }}
           R_PYTEST: ${{ needs.pytest.result }}
           R_LINT_BACKEND: ${{ needs.lint-backend.result }}
           R_ENV_DRIFT: ${{ needs.env-drift.result }}
@@ -596,6 +670,7 @@ jobs:
           if [ "$FRONTEND_TOUCHED" = "true" ]; then
             echo "Frontend stack touched — enforcing frontend checks:"
             check "Frontend build (Next.js)" "$R_BUILD"
+            check "AI artifact scan (MEH-449)" "$R_AI_SCAN"
             check "Frontend Knip (warn-only)" "$R_FRONTEND_KNIP"
             check "Frontend tsc strict (warn-only)" "$R_FRONTEND_TSC"
             check "Frontend unit tests (vitest)" "$R_FRONTEND_VITEST"
