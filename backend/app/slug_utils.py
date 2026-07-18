@@ -40,6 +40,20 @@ RESERVED_SLUGS: frozenset[str] = frozenset(
         "experiences",
         # Technical
         "api",
+        # MEH-1324 audit — live routes claimable as slugs (directions B+C)
+        "accessibility",
+        "dev",
+        "discover",
+        "join",
+        "messages",
+        "newsletter",
+        "p",
+        "publish",
+        "rate",
+        "ref",
+        "share",
+        "upgrade",
+        "verify-email",
     }
 )
 
