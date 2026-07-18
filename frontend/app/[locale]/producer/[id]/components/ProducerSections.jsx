@@ -170,10 +170,16 @@ export default function ProducerSections({
                 const img = product.image_url
                   ? optimizeCloudinary(product.image_url, { aspectRatio: IMAGE_RATIOS.square, width: 160 })
                   : null;
-                const price =
+                // MEH-1305 F: numeric prices go through the canonical
+                // formatPriceRange (MEH-1140) and are bidi-isolated; a free-text
+                // price_range is DATA (MEH-1140 — never reformatted) and renders
+                // in the natural direction, since forcing dir="ltr" corrupts a
+                // Hebrew-bearing label like "מ-30₪" / "30₪ לחבילה".
+                const numericPrice =
                   product.price_min != null
                     ? formatPriceRange(product.price_min, product.price_max)
-                    : product.price_range || null;
+                    : null;
+                const freeTextPrice = numericPrice ? null : product.price_range || null;
                 return (
                   <div
                     key={product.id}
@@ -211,9 +217,15 @@ export default function ProducerSections({
                       {product.description && (
                         <p className="text-sm text-fg-muted mt-0.5 line-clamp-1">{product.description}</p>
                       )}
-                      {/* MEH-1168 P1 (bidi): the ₪-suffixed amount is bidi-
-                          isolated so RTL flow can't render "35₪" as "₪35". */}
-                      {price && <p className="text-accent font-medium mt-1"><span dir="ltr">{price}</span></p>}
+                      {/* Same price cell/position for every card. MEH-1168 P1:
+                          the ₪-suffixed numeric amount is bidi-isolated so RTL
+                          flow can't render "35₪" as "₪35". */}
+                      {numericPrice && (
+                        <p className="text-accent font-medium mt-1"><span dir="ltr">{numericPrice}</span></p>
+                      )}
+                      {freeTextPrice && (
+                        <p className="text-accent font-medium mt-1">{freeTextPrice}</p>
+                      )}
                     </div>
                   </div>
                 );
