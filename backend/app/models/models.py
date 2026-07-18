@@ -567,6 +567,50 @@ class FavoriteAlert(Base):
     producer = relationship("Producer")
 
 
+class AlertLog(Base):
+    """MEH-1338: append-only ledger of delivered favorite-alerts, per channel —
+    the frequency-cap backing store for `fire_alerts`.
+
+    The cap is "at most one message per (user, producer, channel) in a rolling
+    24h window", so the cap check is an EXISTS on
+    (user_id, producer_id, channel, sent_at >= now-24h) — the composite index
+    below serves exactly that lookup. `alert_type` is recorded but is NOT part
+    of the cap key (a new_product and a new_event from the same producer on the
+    same channel within 24h still collapse to one send); it is kept for a
+    future digest / analytics.
+
+    Append-only: nothing prunes this table yet — a retention/purge policy is a
+    separate follow-up (see the MEH-1338 exec report). Rows CASCADE-delete with
+    their user/producer.
+    """
+
+    __tablename__ = "alert_log"
+    __table_args__ = (
+        Index(
+            "ix_alert_log_cap_lookup",
+            "user_id",
+            "producer_id",
+            "channel",
+            "sent_at",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    producer_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("producers.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    channel = Column(String(16), nullable=False)  # "push" | "whatsapp"
+    alert_type = Column(
+        String(32), nullable=False
+    )  # new_event|new_product|delivery_area
+    sent_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class ProducerFollower(Base):
     """docs/archive/FEEDBACK_FIXES.md new feature — follow a producer to get notified
     about new products / back-in-stock events. Distinct from Favorite:
