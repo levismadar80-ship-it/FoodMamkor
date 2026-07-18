@@ -3,6 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — Audit batch 18/07 — FINAL CLOSEOUT (7/7 resolved, 5 merged)
+
+Closeout of the F1–F7 batch after the staging `uv.lock` drift was fixed (by the MEH-1332 re-lock, PR #1925). Final state:
+
+| Ticket | Outcome | PR / evidence | Merge SHA |
+|---|---|---|---|
+| MEH-1315 (F1, axios retry-once guard, auth) | **MERGED** (Sapir-approved) → Linear **Done** | PR #1912 | `eea72ed1` |
+| MEH-1316 (F4, workflow.md sibling-gaps line) | **MERGED** → **Done** | PR #1913 | `b082bff3` |
+| MEH-1317 (F3, dead `bump_user_last_active` removed) | **MERGED** → **Done** | PR #1914 | `96448f08` |
+| MEH-1319 (F2, single-replica boot guard) | **MERGED** → **Done** | PR #1920 | `71927d54` |
+| MEH-1318 (F5, ruff DTZ ratchet) | **STOP — Sapir applies** (`pyproject.toml` CC-deny, MEH-442). 50-violation baseline + full patch delivered | — | — |
+| MEH-1321 (F7, chat content cap) | **Verified no-op** — cap already `schemas.py:2269` | Linear comment | — |
+| MEH-1320 (F-gap, scheduled dep audit) | **Verified no-op / doc-pointer** — `dependency-audit.yml` (MEH-336) already covers it, stricter | Linear comment | — |
+
+Plus: retro rule merged (PR #1926 — "test dummy URLs must be real backend routes", `testing.md` + `workflow.md` pointer); batch HANDOFF/CHANGELOG (PR #1922).
+
+- **`uv.lock` blocker (resolved):** the two backend PRs (#1914/#1920) were initially red on `uv sync --frozen` → `uv.lock needs update` — a staging-wide drift from the MEH-1313 sweep's `[dependency-groups] dev` bumps merged without re-locking. Fixed on staging by the MEH-1332 re-lock PR #1925; a fresh CC `uv lock` was a confirmed no-op afterward. Both PRs then rebased green and merged.
+- **Rebase churn note:** rapid concurrent staging merges repeatedly re-conflicted the append-only logs (CHANGELOG/HANDOFF/DEPLOYMENT) on #1912/#1920 mid-CI (Rule 25 Accept-Both each time). #1920 took 3 rebases — flagged as the >2-attempt STOP mid-flight, then landed once the churn quieted after #1912 merged.
+- **Linear Closes automation** flipped MEH-1315/1316/1317/1319 → Done on merge; no manual status edits.
+
 ## 2026-07-18 — MEH-1327 — pytest coverage for the favorites-alerts chain — PR (draft)
 
 - **What:** added the missing dedicated pytest coverage for `backend/app/routers/alerts.py` (GET/PUT alert prefs + `fire_alerts()` fan-out). GREEN/tests-only (ADR-016 v2 authority).
