@@ -427,8 +427,8 @@ punctuation-only strings (e.g. "???") unless explicitly validated.
 When adding a `String` field visible to admins or users, add a
 `field_validator` requiring ≥ 3 letter chars via `[א-תa-zA-Z]` regex.
 Count letters AFTER `strip()`, not before. Return the stripped value.
-Sibling gaps not yet fixed: `ProducerCreate.name`, `HomeProductCreate.title`,
-`ExperienceCreate.title` — track in follow-up tickets.
+Sibling gaps closed (verified 18/07/26): all three schemas carry the
+letters validator.
 
 ---
 
