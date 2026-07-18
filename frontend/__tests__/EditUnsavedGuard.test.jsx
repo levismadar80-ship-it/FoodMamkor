@@ -25,8 +25,11 @@ vi.mock("@/lib/auth-context", () => ({
 }));
 const routerStub = { push: vi.fn() };
 // MEH-1157: the page's login redirect moved to the locale-aware router.
+// MEH-1306: cards.jsx now renders LocaleLink (the view-on-page back-link),
+// so the mock factory must also provide Link.
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => routerStub,
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
 }));
 // ProductsSection is self-fetching CRUD, irrelevant to the guard.
 vi.mock("@/components/ProductsSection", () => ({ default: () => null }));

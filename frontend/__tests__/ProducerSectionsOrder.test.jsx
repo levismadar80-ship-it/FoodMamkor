@@ -25,6 +25,9 @@ vi.mock("@/components/ReviewsSection", () => ({ default: () => <div data-testid=
 vi.mock("@/components/OpeningHours", () => ({ default: () => <div data-testid="hours" /> }));
 vi.mock("@/components/DirectoryDisclaimer", () => ({ default: () => <div data-testid="disclaimer" /> }));
 vi.mock("@/components/ReportButton", () => ({ default: () => <div data-testid="report" /> }));
+// MEH-1306: the owner pencil is self-gating chrome irrelevant to these
+// assertions — mock it out so its @/i18n/navigation import never loads.
+vi.mock("@/components/OwnerSectionEditLink", () => ({ default: () => null }));
 vi.mock("@/components/ProducerCard", () => ({ default: () => null }));
 vi.mock("@/components/public/RecipeCard", () => ({ default: () => null }));
 vi.mock("@/components/FadeInSection", () => ({
