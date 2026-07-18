@@ -77,7 +77,10 @@ def subscribe_newsletter(
 
 def _send_newsletter_welcome(email: str) -> None:
     """Send a welcome email to new newsletter subscribers. Fail-open."""
-    unsubscribe_url = "https://mehamakor.co.il/newsletter/unsubscribe"
+    # MEH-1322: derive the host from the single backend URL constant
+    # (settings.frontend_url, canonical mehamakor.co.il) instead of hardcoding.
+    # MEH-1330 makes /newsletter/unsubscribe a real, tokenized route.
+    unsubscribe_url = f"{settings.frontend_url}/newsletter/unsubscribe"
     html_body = f"""\
 <!DOCTYPE html>
 <html dir="rtl" lang="he">

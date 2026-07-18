@@ -32,6 +32,16 @@ Plus: retro rule merged (PR #1926 — "test dummy URLs must be real backend rout
 - **Rebase churn note:** rapid concurrent staging merges repeatedly re-conflicted the append-only logs (CHANGELOG/HANDOFF/DEPLOYMENT) on #1912/#1920 mid-CI (Rule 25 Accept-Both each time). #1920 took 3 rebases — flagged as the >2-attempt STOP mid-flight, then landed once the churn quieted after #1912 merged.
 - **Linear Closes automation** flipped MEH-1315/1316/1317/1319 → Done on merge; no manual status edits.
 
+## 2026-07-18 — MEH-1340 — ChipScrollRow dynamic edge fades (active chip no longer washed) — PR (draft)
+
+- **What:** follow-up to MEH-1314. The active filter chip could rest under the widened `w-12` end fade and look clipped (Sapir's /map screenshot, "לחמים ואפייה"). YELLOW (shared component /map · /producers · /home), ADR-016 v2 end-to-end authority.
+- **Phase 0 (premise verified — no drift):** live `ChipScrollRow.jsx` still matched all three premises — end fade `w-12` (:96), end spacer `w-8` (:138), scroller had `scroll-ps-4` but **no** `scroll-pe-*` (:107). MEH-1314 merged today but didn't move the file since. No STOP.
+- **Shipped (1 component + 1 new test):** `scroll-pe-12` on the scroller (matches end fade → `scrollIntoView` stops clear of the fade, no JS math); end spacer `w-8 → w-12`; **dynamic fades** via two `w-px` edge sentinels + one `IntersectionObserver` (root = scroller) — each fade renders only while its sentinel is off-screen; non-overflowing row → zero fades; far end → end fade gone. SSR-safe, disconnects on cleanup, no scroll listeners, no new deps. Public API + all 6 callers untouched. RTL-clean (logical props only).
+- **Tests:** NEW `frontend/__tests__/ChipScrollRow.test.jsx` (13, IO mocked) — fade visibility per sentinel state, clearance structure (`scroll-pe-12`/`w-12`/2 sentinels), API parity. Full vitest **1324 pass**; `npm run build` green; 0 lint errors; adversarial self-review (Rule 5a) 0 issues.
+- **Self-QA:** route-faithful Playwright @375+@1440 across all four states → `frontend/qa-artifacts/MEH-1340/` (webp, 60 KB, compressed per MEH-1156). Live mobile /map QA deferred to Sapir (sandbox can't reach staging backend — MEH-360).
+- **Branch:** the harness default `claude/meh-1340-…` is blocked by the branch-name gate; cut `feature/meh-1340-chip-end-fade` off `origin/staging` (0 divergence) per the MEH-1325 precedent + the Linear spec's branch name.
+- **Next (Sapir):** merge on the 2 required aggregator gates (auto-merge per YELLOW authority); live mobile /map sanity on staging.
+
 ## 2026-07-18 — MEH-1327 — pytest coverage for the favorites-alerts chain — PR (draft)
 
 - **What:** added the missing dedicated pytest coverage for `backend/app/routers/alerts.py` (GET/PUT alert prefs + `fire_alerts()` fan-out). GREEN/tests-only (ADR-016 v2 authority).
