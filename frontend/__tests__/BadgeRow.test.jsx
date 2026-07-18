@@ -20,6 +20,12 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+// MEH-1334: BadgeRow's hero popover links to /about#verification via the
+// locale-aware Link — mock the wrapper directly (BottomNav.test precedent).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+
 import BadgeRow from "@/components/BadgeRow";
 
 // Live ADR-022 contract fields (MEH-762) — the S12 chip renders from these.
@@ -155,7 +161,11 @@ describe("BadgeRow", () => {
       );
     });
 
-    it("cosmetics renders the seal WITHOUT a tooltip (key not yet locked)", () => {
+    // MEH-1334: the hero seal now ALWAYS opens the verification popover
+    // (title + locked body + /about#verification link). The MEH-758 lock is
+    // narrower than before: cosmetics still gets NO date line (its tooltip
+    // key isn't locked), but the popover itself no longer depends on it.
+    it("cosmetics opens the popover WITHOUT the doc-date line (MEH-758 key not locked)", () => {
       render(
         <BadgeRow
           producer={{ ...VERIFIED_LICENSE, verification_doc_type: "cosmetics" }}
@@ -163,7 +173,19 @@ describe("BadgeRow", () => {
       );
       const btn = screen.getByRole("button", { name: "בית עסק מאומת" });
       fireEvent.click(btn);
-      expect(screen.queryByTestId("badge-tooltip-verified")).not.toBeInTheDocument();
+      const pop = screen.getByTestId("badge-tooltip-verified");
+      expect(pop.textContent).toContain("verified_popover_body");
+      expect(pop.textContent).not.toContain("הוגש ונבדק");
+    });
+
+    it("hero popover links to /about#verification (MEH-1334)", () => {
+      render(<BadgeRow producer={VERIFIED_LICENSE} />);
+      fireEvent.click(screen.getByText("מאומת"));
+      const pop = screen.getByTestId("badge-tooltip-verified");
+      const link = pop.querySelector('a[href="/about#verification"]');
+      expect(link).not.toBeNull();
+      // the license date line still renders for locked doc types
+      expect(pop.textContent).toContain("רישיון הוגש ונבדק");
     });
 
     it("card surface renders the icon-only seal (no word)", () => {

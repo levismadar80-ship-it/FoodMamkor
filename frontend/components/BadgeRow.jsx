@@ -2,7 +2,8 @@
 
 import { cloneElement } from "react";
 import { useTranslations } from "next-intl";
-import { SealCheck } from "@phosphor-icons/react";
+import { CaretLeft, SealCheck } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import { allBadges, topBadges } from "@/lib/badges";
 import Popover from "@/components/ui/Popover";
 
@@ -139,6 +140,39 @@ function VerifiedTierBadge({ producer, surface, t }) {
       </span>
     </button>
   );
+
+  // MEH-1334: the hero seal gets the richer verification popover — the manual
+  // approval + licensing story (DNA-LOCK differentiator) was invisible behind
+  // a date-only tooltip. Title + locked body + optional doc-date line + link
+  // to /about#verification (placeholder target until MEH-1336 ships the
+  // section). Cards keep the compact date tooltip (surface unchanged).
+  if (surface === "hero") {
+    return (
+      <span role="listitem" className="inline-block">
+        <Popover
+          trigger={chip}
+          role="dialog"
+          contentTestId="badge-tooltip-verified"
+          contentClassName="w-64 flex flex-col gap-1.5"
+        >
+          <span className="flex items-center gap-1.5 font-bold text-sm text-text">
+            <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
+            {t("verified_popover_title")}
+          </span>
+          <span className="block text-[13px] leading-relaxed">{t("verified_popover_body")}</span>
+          {tooltip && <span className="block text-fg-muted">{tooltip}</span>}
+          <LocaleLink
+            href="/about#verification"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
+          >
+            {t("verified_popover_link")}
+            {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
+            <CaretLeft size={13} aria-hidden="true" />
+          </LocaleLink>
+        </Popover>
+      </span>
+    );
+  }
 
   return (
     <span role="listitem" className="inline-block">

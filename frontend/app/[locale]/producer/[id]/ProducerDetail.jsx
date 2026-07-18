@@ -129,6 +129,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           producerId={producer.id}
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
+          shareUrl={shareUrl}
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -183,6 +184,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             vacationReturnLabel={vacationReturnLabel}
             primaryCategory={primaryCategory}
             hasImages={hasImages}
+            shareUrl={shareUrl}
           />
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
@@ -199,12 +201,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
-            <ContactCard
-              producer={producer}
-              isVacation={isVacation}
-              primaryCategory={primaryCategory}
-              shareUrl={shareUrl}
-            />
+            <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections
             producer={producer}
@@ -219,12 +216,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         </div>
 
         {/* ================= Sticky contact sidebar ================= */}
-        <ContactSidebar
-          producer={producer}
-          isVacation={isVacation}
-          primaryCategory={primaryCategory}
-          shareUrl={shareUrl}
-        />
+        <ContactSidebar producer={producer} isVacation={isVacation} />
       </div>
 
       {/* StickyContactBar — mobile only, IO-driven, always mounted. */}

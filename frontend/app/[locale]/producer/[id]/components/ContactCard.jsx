@@ -9,9 +9,7 @@ import {
   WhatsappLogo,
 } from "@phosphor-icons/react";
 
-import FollowButton from "@/components/FollowButton";
 import PrimaryContactButton from "@/components/PrimaryContactButton";
-import ShareButton from "@/components/ShareButton";
 import WhatsAppQuestionChips from "@/components/WhatsAppQuestionChips";
 import { getPrimaryMethod } from "@/lib/contact-method";
 import { markWhatsAppClickedLocal, pingWhatsAppBeacon, trackContactClick } from "@/lib/contact-tracking";
@@ -74,23 +72,21 @@ function armMailtoFallback(email, t) {
 /**
  * Module:   ContactCard
  * Purpose:  The single editorial contact card for the producer detail
- *           page — one status line, exactly one primary CTA, ready-made
- *           question links, a quiet secondary-channel icon row, and
- *           tertiary follow + share. Rendered twice by ProducerDetail:
- *           once inline on mobile/tablet (the IntersectionObserver target
- *           for the sticky bar) and once as the desktop sticky sidebar.
+ *           page — exactly one primary CTA, ready-made question links, and
+ *           a quiet secondary-channel icon row. Rendered twice by
+ *           ProducerDetail: once inline on mobile/tablet (the
+ *           IntersectionObserver target for the sticky bar) and once as
+ *           the desktop sticky sidebar.
  * Touches:  contact-tracking (WhatsApp beacon + per-channel click ping).
- * Does NOT: own the sticky-bar visibility (StickyContactBar +
- *           useStickyBar) or the header availability badge (ProducerHeader).
+ * Does NOT: own the sticky-bar visibility (StickyContactBar + useStickyBar),
+ *           the order-status line, or follow/save/share — status + quiet
+ *           actions moved to ProducerHeader (MEH-1334: one status home,
+ *           one home per action).
  * Related:  ContactSidebar.jsx (desktop wrapper), StickyContactBar.jsx.
  * History:  MEH-1146 chunk A (creation — action-hierarchy rebuild,
- *           consolidates the old ContactSidebar + ActionRow CTAs).
+ *           consolidates the old ContactSidebar + ActionRow CTAs);
+ *           MEH-1334 chunk 1 (status line + follow/share row removed).
  */
-
-// Availability states that honestly read as "open for orders" — the status
-// line (invention-fix 2) is suppressed for full/busy/vacation so it never
-// contradicts the header AvailabilityBadge.
-const OPEN_STATES = ["available", "accepting_orders", "available_today"];
 
 // Secondary contact channels rendered as the quiet icon row. Each entry
 // resolves its own href from the producer with the trim/prefix guards the
@@ -129,12 +125,9 @@ function httpUrl(raw) {
   return v.startsWith("http") ? v : `https://${v}`;
 }
 
-export default function ContactCard({ producer, isVacation, primaryCategory, shareUrl }) {
+export default function ContactCard({ producer, isVacation }) {
   const t = useTranslations();
   const primaryMethod = getPrimaryMethod(producer);
-
-  const availState = producer.availability_state || producer.availability_status;
-  const showOpenStatus = !isVacation && (!availState || OPEN_STATES.includes(availState));
 
   // whatsapp primary has no matching row icon (its CTA is phone-derived), so
   // the phone tel: icon — a distinct "call" action — is intentionally kept.
@@ -143,14 +136,8 @@ export default function ContactCard({ producer, isVacation, primaryCategory, sha
   return (
     <div className="bg-white rounded-lg p-6 border border-border">
       <div className={isVacation ? "opacity-50 pointer-events-auto" : ""}>
-        {/* Status line — invention-fix 2: "פתוח להזמנות" only, no
-            response-time claim; suppressed for full/busy/vacation. */}
-        {showOpenStatus && (
-          <p className="flex items-center gap-1.5 text-sm text-fg-muted mb-3">
-            <span className="inline-block w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
-            {t("producer.detail.contact_card.status_open")}
-          </p>
-        )}
+        {/* MEH-1334: the "פתוח להזמנות" status line moved to the header meta
+            line (3 states, one status home per page — revision-2 #2). */}
 
         {/* The one primary CTA — color/label driven by primary_contact_method
             (WhatsApp green only on WhatsApp). */}
@@ -201,19 +188,8 @@ export default function ContactCard({ producer, isVacation, primaryCategory, sha
           </div>
         )}
 
-        {/* Tertiary: follow (shared component, unchanged per fix 8) + share. */}
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-          <div className="flex-1">
-            <FollowButton producerId={producer.id} />
-          </div>
-          <ShareButton
-            url={shareUrl}
-            title={producer.name}
-            description={producer.description}
-            city={producer.city}
-            category={primaryCategory?.name}
-          />
-        </div>
+        {/* MEH-1334: the tertiary follow + share row moved to the header's
+            quiet actions row (שמירה · מעקב · שיתוף) — one home per action. */}
       </div>
     </div>
   );

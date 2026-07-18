@@ -670,7 +670,10 @@
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
-      "aria_verified_plain": "Verified business"
+      "aria_verified_plain": "Verified business",
+      "verified_popover_title": "Verified business",
+      "verified_popover_body": "Every business on Mehamakor is manually approved and operates under license.",
+      "verified_popover_link": "How do we verify?"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
@@ -741,7 +744,16 @@
         "vacation": "🌙 This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
-        "vacation_back_soon": "Back soon"
+        "vacation_back_soon": "Back soon",
+        "new_mark": "New",
+        "status": {
+          "open": "Open for orders",
+          "closed": "Not taking orders right now",
+          "vacation": "On break · back on {date}",
+          "vacation_no_date": "On break"
+        },
+        "excerpt_footer": "From the reviews",
+        "excerpt_all": "All reviews"
       },
       "action_row": {
         "aria": {
@@ -1007,7 +1019,9 @@
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
-      "followed_toast": "You'll now get updates about new products"
+      "followed_toast": "You'll now get updates about new products",
+      "quiet_label": "Follow",
+      "login_prompt_message": "To follow businesses and get updates — sign in"
     },
     "friday_delivery": {
       "today": "today",
@@ -2829,6 +2843,7 @@
       "add_aria": "Add to favorites",
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",
+      "quiet_label": "Save",
       "login_prompt_message": "To save businesses you love — sign in"
     }
   },
@@ -2861,7 +2876,8 @@
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
-    "copied_toast": "Link copied"
+    "copied_toast": "Link copied",
+    "quiet_label": "Share"
   },
   "share_page": {
     "h1": "Spread the word",

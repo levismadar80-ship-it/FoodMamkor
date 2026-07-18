@@ -46,6 +46,21 @@ export function getVacationReturnLabel(producer, t, locale) {
   }
 }
 
+// MEH-1334: bare return date for the header's 3-state status line
+// ("בחופשה · חוזרים ב־{date}"). Same local-date parse + FSI…PDI isolation as
+// getVacationReturnLabel (which keeps owning the banner label); null when no
+// vacation_until → caller falls back to the date-less status string.
+export function getVacationReturnDate(producer, locale) {
+  if (!producer.vacation_until) return null;
+  try {
+    const [y, m, d] = producer.vacation_until.split("-").map(Number);
+    const date = new Date(y, m - 1, d).toLocaleDateString(locale, { day: "numeric", month: "long" });
+    return `\u2068${date}\u2069`;
+  } catch {
+    return null;
+  }
+}
+
 export function buildShowOnMapHandler(producer, router) {
   return () => {
     try {

@@ -2,9 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // MEH-1146 chunk A — the editorial contact card: exactly one primary CTA,
-// the "פתוח להזמנות" status line (fix 2), ready-made question links that lead
-// with the dynamic city delivery question (fix 11), a quiet secondary-channel
-// icon row that excludes the primary method, and tertiary follow + share.
+// ready-made question links that lead with the dynamic city delivery question
+// (fix 11), and a quiet secondary-channel icon row that excludes the primary
+// method. MEH-1334 chunk 1: the status line moved to the header meta line and
+// the tertiary follow/share row moved to the header quiet-actions row — this
+// suite now guards their ABSENCE here (one home per element).
 
 vi.mock("next-intl", () => ({
   useTranslations: (ns) => (key, vars) => {
@@ -62,14 +64,6 @@ vi.mock("@phosphor-icons/react", () => {
   };
 });
 
-// Follow + share are separately tested; stub so this suite stays focused.
-vi.mock("@/components/FollowButton", () => ({
-  default: () => <button data-testid="follow-button">follow</button>,
-}));
-vi.mock("@/components/ShareButton", () => ({
-  default: () => <button data-testid="share-button">share</button>,
-}));
-
 import ContactCard from "@/app/[locale]/producer/[id]/components/ContactCard";
 
 const base = {
@@ -84,26 +78,20 @@ const base = {
 };
 
 const render1 = (extra = {}) =>
-  render(<ContactCard producer={{ ...base, ...extra }} isVacation={false} primaryCategory={{ name: "ירקות" }} shareUrl="https://x/y" />);
+  render(<ContactCard producer={{ ...base, ...extra }} isVacation={false} />);
 
-describe("ContactCard (MEH-1146 chunk A)", () => {
+describe("ContactCard (MEH-1146 chunk A · MEH-1334 chunk 1)", () => {
   it("renders exactly one primary CTA", () => {
     render1();
     expect(screen.getAllByTestId("primary-contact-button")).toHaveLength(1);
   });
 
-  it("shows the 'פתוח להזמנות' status line when open, hidden on vacation and when full", () => {
+  // MEH-1334: the status line's ONE home is the header meta line — the card
+  // must not render it in any availability state (one green per page).
+  it("does not render the status line (moved to the header, MEH-1334)", () => {
     const { unmount } = render1();
-    expect(screen.getByText("פתוח להזמנות")).toBeInTheDocument();
-    unmount();
-
-    render(
-      <ContactCard producer={base} isVacation={true} primaryCategory={null} shareUrl="x" />,
-    );
     expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
-  });
-
-  it("suppresses the status line for a busy/full producer", () => {
+    unmount();
     render1({ availability_state: "full_this_week" });
     expect(screen.queryByText("פתוח להזמנות")).not.toBeInTheDocument();
   });
@@ -133,9 +121,11 @@ describe("ContactCard (MEH-1146 chunk A)", () => {
     expect(screen.getByLabelText("התקשרו")).toBeInTheDocument();
   });
 
-  it("renders tertiary follow + share", () => {
+  // MEH-1334: follow + share moved to the header quiet-actions row — the card
+  // must not mount them anymore (one home per action).
+  it("does not render follow/share in the card (moved to the header, MEH-1334)", () => {
     render1();
-    expect(screen.getByTestId("follow-button")).toBeInTheDocument();
-    expect(screen.getByTestId("share-button")).toBeInTheDocument();
+    expect(screen.queryByTestId("follow-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("share-button")).not.toBeInTheDocument();
   });
 });
