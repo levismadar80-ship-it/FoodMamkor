@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { showToast } from "@/lib/toast";
 import { LinkSimple, Plant } from "@phosphor-icons/react";
 import EmptyState from "@/components/ui/EmptyState";
+import { SITE_URL } from "@/lib/env";
 
 export default function FollowersPage() {
   const router = useRouter();
@@ -40,7 +41,9 @@ export default function FollowersPage() {
 
   if (authLoading || !user) return null;
 
-  const profileUrl = slug ? `https://mehamakor.online/p/${slug}` : null;
+  // MEH-1322: use the single frontend URL constant (SITE_URL, canonical
+  // mehamakor.co.il) — matches the sibling dashboard vanity card (page.js:27).
+  const profileUrl = slug ? `${SITE_URL}/p/${slug}` : null;
 
   const handleCopy = () => {
     if (!profileUrl) return;

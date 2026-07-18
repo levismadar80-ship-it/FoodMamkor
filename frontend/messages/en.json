@@ -333,7 +333,7 @@
           "next_step2": "Intro call",
           "next_step3": "Your page goes live",
           "dashboard_cta": "Go to my dashboard ←",
-          "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.online/register/producer",
+          "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
           "share_cta": "Invite a neighbour",
           "inbox_title": "Check your inbox",
           "inbox_body": "If the email is available, a verification message has been sent. Please check your inbox.",
@@ -2081,7 +2081,7 @@
         "emergency": {
           "title": "Emergencies",
           "site_down_title": "Site is down",
-          "site_down_body": "Check <code>mehamakor.online/health</code>. If it's not 200 OK, check Railway → healthcheck + logs. See CLAUDE.md §\"Railway runtime port = 8080\" before any debugging — this is the most common source of 502.",
+          "site_down_body": "Check <code>mehamakor.co.il/health</code>. If it's not 200 OK, check Railway → healthcheck + logs. See CLAUDE.md §\"Railway runtime port = 8080\" before any debugging — this is the most common source of 502.",
           "migration_title": "Migration failed after deploy",
           "migration_body": "Symptom: the container starts but endpoints return 500 with <code>UndefinedColumn</code>. Fix: verify that <code>_migrate_columns</code> in main.py lists the new column. If not, add it and push a hotfix commit.",
           "login_broken_title": "Login is broken for everyone",
