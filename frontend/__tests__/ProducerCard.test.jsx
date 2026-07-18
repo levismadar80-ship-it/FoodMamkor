@@ -32,6 +32,9 @@ vi.mock("next-intl", () => ({
     }
     return key;
   },
+  // MEH-1301: ProducerCard reads useLocale() to pick the distance unit
+  // ('ק"מ' on the Hebrew card). ExperienceCard.test.jsx precedent.
+  useLocale: () => "he",
 }));
 
 vi.mock("next/link", () => ({
@@ -330,8 +333,11 @@ describe("ProducerCard — Phase B anatomy", () => {
       <ProducerCard producer={{ ...fullProducer, lat: 31.7683, lng: 35.2137 }} />,
     );
     const distance = screen.getByTestId("distance-pill");
-    expect(distance.textContent).toMatch(/km\u2069 ממך$/);
-    expect(distance).toHaveAttribute("dir", "ltr");
+    // MEH-1301: Hebrew locale unit + tail; >=10 km integer.
+    expect(distance.textContent).toMatch(/ק"מ ממך$/);
+    expect(distance.textContent).not.toContain("km");
+    // dir="ltr" removed - Latin digits self-isolate inside the RTL span.
+    expect(distance).not.toHaveAttribute("dir");
   });
 
   it("prefers short_description over top_product_name", () => {

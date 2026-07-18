@@ -86,8 +86,9 @@ describe("formatDistance — Hebrew unit / no suffix (MEH-1243 §3)", () => {
     expect(formatDistance(0.45, { unit: "he", suffix: false })).toBe("450 מ'");
   });
 
-  it("keeps the ממך suffix when suffix is not disabled", () => {
+  it("keeps the ממך suffix when suffix is not disabled (MEH-1301 ProducerCard pill)", () => {
     expect(formatDistance(1.2, { unit: "he" })).toBe('1.2 ק"מ ממך');
+    expect(formatDistance(38.3, { unit: "he" })).toBe('38 ק"מ ממך');
   });
 
   it("default (latin) output is unchanged for existing callers", () => {
