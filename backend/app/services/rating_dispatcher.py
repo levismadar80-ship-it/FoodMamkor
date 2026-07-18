@@ -129,7 +129,10 @@ def _default_sender(click: HomeProductWhatsAppClick) -> None:
     listing = click.home_product
     seller_name = listing.user.name if listing and listing.user else "המוכר"
     product_title = listing.title if listing else "המוצר"
-    rate_url = f"https://mehamakor.co.il/rate/{click.rating_token}"
+    # MEH-1322: derive from the single backend URL constant (settings.frontend_url,
+    # canonical mehamakor.co.il) instead of hardcoding the host — keeps rating
+    # links on the same domain as every other outbound-email link per env.
+    rate_url = f"{settings.frontend_url}/rate/{click.rating_token}"
     body = (
         f"היי! קנית מ{seller_name} ({product_title})? איך היה?\nדרגי כאן 👇\n{rate_url}"
     )

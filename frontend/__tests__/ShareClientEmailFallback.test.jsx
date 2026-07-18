@@ -11,7 +11,7 @@ import ShareClient from "@/app/[locale]/share/ShareClient";
 // reference must be hoisted too.
 const { SHARE_MESSAGE, SITE, FALLBACK_TOAST } = vi.hoisted(() => ({
   SHARE_MESSAGE: "הכירו את מהמקור {url}",
-  SITE: "https://mehamakor.online",
+  SITE: "https://mehamakor.co.il",
   FALLBACK_TOAST:
     "לא הצלחנו לפתוח אפליקציית מייל — ההודעה הועתקה, הדביקו אותה במייל",
 }));
