@@ -1,19 +1,20 @@
 """
 Module:   cities
-Purpose:  Canonical static Israeli city + neighborhood list used by
-          GET /cities as the fresh-DB baseline (MEH-1349).
-Does NOT: Own the cities DB table (models.City) — the endpoint unions
-          this list with DB rows at request time; see routers/cities.py.
+Purpose:  Static Israeli city + neighborhood fallback list (~100 entries)
+          used by GET /cities ONLY while the cities table is unseeded
+          (MEH-1349 baseline, demoted to fallback in MEH-1343 Chunk A).
+Does NOT: Serve seeded environments — there the canonical source is the
+          cities TABLE (models.City, ~1,270 official data.gov.il
+          localities via scripts/seed_cities.py / POST /admin/seed-cities);
+          see routers/cities.py.
 Related:  frontend/data/cities.js (ISRAEL_CITIES — the sibling copy),
-          backend/app/routers/cities.py:17
-History:  MEH-1349 (creation — GET /cities empty on fresh DB).
+          backend/app/routers/cities.py, backend/scripts/seed_cities.py
+History:  MEH-1349 (creation — GET /cities empty on fresh DB);
+          MEH-1343 (demoted to unseeded-env fallback).
 
 SYNC DUTY: this list is a byte-for-byte copy of ISRAEL_CITIES in
 frontend/data/cities.js. Any city added/removed there must land here in
 the same PR, and vice versa.
-TODO(MEH-1343): when the full CBS localities dataset (~1,270) lands,
-ONE canonical file must feed both frontend and backend — replace this
-copy with that single source.
 """
 
 # MEH-1349: keep ordering identical to frontend/data/cities.js for easy diffing.
