@@ -1108,7 +1108,9 @@
     "mini": {
       "default_label": "מיקום",
       "open_in_waze": "Waze",
-      "open_in_google": "מפות Google"
+      "open_in_google": "מפות Google",
+      "open_in_waze_aria": "פתיחה ב-Waze",
+      "open_in_google_aria": "פתיחה במפות Google"
     },
     "bottom_sheet": {
       "count": "{count, plural, =0 {אין בתי עסק מקומיים באזור} one {בית עסק מקומי אחד באזור} two {שני בתי עסק מקומיים באזור} other {# בתי עסק מקומיים באזור}}"

@@ -71,14 +71,15 @@ export default function MiniMap({ lat, lng, name }) {
         <div className="flex gap-3 mt-3">
           {/* MEH-1233 B5: Waze sits next to Google on ALL viewports (was
               mobile-only, so the desktop audit saw only Google). The Israeli
-              audience defaults to Waze for navigation. MEH-1305 B: labels
-              shortened to the bare brand name ("Waze" / "מפות Google") — the
-              repeated "פתיחה ב-" ×2 was pure bloat; the destination is obvious
-              from the section. Full label lives in the i18n value. */}
+              audience defaults to Waze for navigation. MEH-1305 B: the visible
+              label is shortened to the bare brand name — the repeated "open in"
+              prefix ×2 was pure bloat; the accessible name keeps the full
+              "open in ..." purpose via aria-label (WCAG 2.4.6 link purpose). */}
           <a
             href={wazeUrl}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={t("open_in_waze_aria")}
             className="flex items-center gap-1.5 border border-text text-text px-4 py-2 min-h-[44px] rounded-sm text-sm hover:bg-green-50 transition"
           >
             <MapPin size={16} weight="regular" aria-hidden="true" />
@@ -88,6 +89,7 @@ export default function MiniMap({ lat, lng, name }) {
             href={gmapsUrl}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={t("open_in_google_aria")}
             className="flex items-center gap-1.5 border border-text text-text px-4 py-2 min-h-[44px] rounded-sm text-sm hover:bg-green-50 transition"
           >
             <MapPin size={16} weight="regular" aria-hidden="true" />
