@@ -7,6 +7,7 @@ import { render, screen } from "@testing-library/react";
 vi.mock("next-intl", () => ({
   useTranslations: () => (key) => key,
   useFormatter: () => ({ dateTime: () => "" }),
+  useLocale: () => "he",
 }));
 
 vi.mock("next/image", () => ({ default: (p) => <img alt={p.alt} src={p.src} /> }));
@@ -143,5 +144,32 @@ describe("ProducerSections order (MEH-1146 chunk B)", () => {
     );
     expect(screen.getByText("גבינה כפרית")).toBeInTheDocument();
     expect(screen.getByText("מ-35₪")).toBeInTheDocument();
+  });
+});
+
+// MEH-1291 — the "עודכן לאחרונה" freshness line renders only after a real edit
+// stamps producer.updated_at (nullable, no backfill). The next-intl mock returns
+// the key literal, so we assert on the key string.
+describe("ProducerSections last-updated line (MEH-1291)", () => {
+  const freshnessProps = (overrides) => ({
+    producer: { id: 7, name: "חוות", products: [], ...overrides },
+    events: [],
+    similarProducers: [],
+    sectionRefs: { current: {} },
+    reviewsContainerRef: { current: null },
+    reviewsVisible: false,
+  });
+
+  it("renders the freshness line, after the report, when updated_at is set", () => {
+    render(<ProducerSections {...freshnessProps({ updated_at: "2026-07-18T10:00:00Z" })} />);
+    const line = screen.getByText("producer.detail.last_updated");
+    const report = screen.getByTestId("report");
+    expect(line).toBeInTheDocument();
+    expect(before(report, line)).toBe(true); // page-end footnote, below the report
+  });
+
+  it("renders nothing when updated_at is null (untouched producer)", () => {
+    render(<ProducerSections {...freshnessProps({ updated_at: null })} />);
+    expect(screen.queryByText("producer.detail.last_updated")).not.toBeInTheDocument();
   });
 });
