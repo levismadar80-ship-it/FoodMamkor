@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 — MEH-1374 — Bug Protocol sibling-grep → i18n copy + VRT baselines (docs-only)
+
+- **What:** extended the "Grep for siblings" rule (Bug Protocol step 2 in `.claude/rules/workflow.md`) to cover the two classes it was missing — i18n copy in `frontend/messages/he.json`/`en.json` and stale VRT baselines. Root cause of the churn: the step-2 grep `--include` list was code-only (`*.py *.jsx *.js *.tsx`), so copy sweeps left residue that returned as a separate follow-up ticket the next day (8 of ~25 tickets closed 18/07 were this class).
+- **Shipped (1 rule file + 2 logs):** step-2 grep now carries `--include="*.json"`; NEW **2a** — grep the rendered STRING VALUE (not just the code identifier) across `he.json`+`en.json` before marking done (evidence MEH-1308); NEW **2b** — regenerate `frontend/e2e/visual/parity.spec.ts-snapshots/` in the SAME PR when a `he.json` value on a VRT-covered route changes, never a follow-up; the 6 routes named literally (`/`, `/map`, `/about`, `/login`, `/register`, producer detail) (evidence MEH-1328). Prose rule only — no hook/CI (deliberate follow-up, not scope creep). Section stays 40 lines (< 45 cap); no other workflow.md section touched.
+- **Branch:** `feature/meh-1374-sibling-grep-i18n-vrt` off `origin/staging` (the harness-designated `claude/*` branch would fail the branch-name gate). GREEN, docs-only under `.claude/rules/`; `git diff --stat` = exactly 3 files (workflow.md + CHANGELOG + HANDOFF). DoD "נבדק בנייד" N/A (no UI).
+- **Next:** Sapir merges (or CC on green if authorized). Open follow-up (out of scope here): a mechanical enforcement hook for 2a/2b.
+
 ## 2026-07-18 (night) — MEH-999 audit fix wave — 11/13 shipped (batch executor session)
 
 - **Merged to staging (10):** #1944 (MEH-1347 overview greeting/CTA/review-time) · #1946 (MEH-1344 hours revert) · #1947 (MEH-1345 empty-state titles) · #1949 (MEH-1346 region-chip toggle) · #1951 (MEH-1350 group-buys copy) · #1952 (MEH-1352 image-cap UI) · #1953 (MEH-1354 category descs) · #1954 (MEH-1348 arrow sweep) · #1956 (MEH-1353 voice) — plus #1943 (MEH-1349 cities union) + #1955 (MEH-1351 review-ready ping) re-kicked and auto-merge-armed after the #1950/#1945 EXPECTED_TABLES ordering break resolved (see CI note in CHANGELOG).

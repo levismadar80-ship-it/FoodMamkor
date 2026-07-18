@@ -426,8 +426,18 @@ When a bug is found and fixed:
 1. **Identify the root cause** — don't just fix the symptom. Document
    *why* the bug happened.
 2. **Grep for siblings (MANDATORY before closing task).**
-   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx"`
+   `grep -r "[pattern]" . --include="*.py" --include="*.jsx" --include="*.js" --include="*.tsx" --include="*.json"`
    and report findings to user before marking done.
+   - **2a — i18n copy siblings (MEH-1308).** When the fix changes a
+     user-visible string, grep the STRING VALUE (the rendered text, not
+     just the code identifier) across `frontend/messages/he.json` and
+     `frontend/messages/en.json`; report every occurrence before marking
+     done. _MEH-1301's sweep missed the hero subtitle + trust strip in `he.json`._
+   - **2b — VRT baselines (MEH-1328).** When any `he.json` value rendered
+     on a VRT-covered route changes, regenerate
+     `frontend/e2e/visual/parity.spec.ts-snapshots/` in the SAME PR —
+     never a follow-up ticket. Routes: `/`, `/map`, `/about`, `/login`,
+     `/register`, producer detail. _Home baselines went stale after MEH-1308._
 3. **Add a regression rule** to this file (workflow.md) if the pattern
    is likely to recur.
 4. **Add a test** that would have caught the bug. If no automated test
