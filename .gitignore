@@ -50,3 +50,7 @@ headers.txt
 runs-may6-7.json
 = [
 OVERNIGHT-REPORT.md
+
+# Local CC self-QA harness scripts (regenerated per session; never committed —
+# the deliverable is the compressed screenshot under qa-artifacts/, not the driver)
+*.local.mjs
