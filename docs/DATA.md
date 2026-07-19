@@ -706,7 +706,9 @@ POST /contact                    public — { name, email, message, topic? } →
                                  the Hebrew label is prepended to the stored message
                                  ("נושא: <label>") and to the email subject. Single source:
                                  CONTACT_TOPIC_LABELS in schemas.py:2074.
-GET  /cities                     public — deduped producer+listing city list
+GET  /cities                     public — canonical cities table (data.gov.il seed,
+                                 MEH-1343) ∪ live producer/delivery cities; static
+                                 list only as unseeded-env fallback (MEH-1349)
 ```
 
 ### Search (`app/routers/search.py` — MEH-99)

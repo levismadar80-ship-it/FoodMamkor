@@ -10,6 +10,16 @@
 - **Branch:** `feature/meh-1374-sibling-grep-i18n-vrt` off `origin/staging` (the harness-designated `claude/*` branch would fail the branch-name gate). GREEN, docs-only under `.claude/rules/`; `git diff --stat` = exactly 3 files (workflow.md + CHANGELOG + HANDOFF). DoD "נבדק בנייד" N/A (no UI).
 - **Next:** Sapir merges (or CC on green if authorized). Open follow-up (out of scope here): a mechanical enforcement hook for 2a/2b.
 
+## 2026-07-18 (night) — MEH-1359 — /favorites alert panel overlay — MERGED (PR #1959)
+
+- **MERGED to staging** — PR #1959 (squash), auto-merge on green. YELLOW frontend layout-bug fix (`Refs MEH-1359`).
+- **Fix:** `AlertPrefsPanel` moved out of grid flow — `fixed` bottom-sheet on mobile / `absolute` anchored to the bell on `sm+`, `z-[1150]` (clears BottomNav:1000 + cookie:1100, below filter-sheet:1200) — so opening it no longer stretches the sibling card or leaves a white gap. Plus: open state lifted to the parent (one panel at a time), Esc + outside-click dismissal with focus return to the bell, header name truncation (fixed "הודיעו לי כש…" label never truncates), disabled phone-save button helper text (`phone_helper` he+en), one `×` at a time. Locked 4-file scope.
+- **Self-QA (Playwright 375 + 1440):** neighbour card bbox height **identical** closed vs open — 319.50px @375, 406.50px @1440. Screenshots in `qa-artifacts/MEH-1359/`.
+- **No Vercel preview** — free-tier "100 deploys/day" cap hit today (Ignored); the self-QA screenshots stand in until the quota resets.
+- **This PR** = the code-only-branch docs backfill for #1959 (CHANGELOG + HANDOFF), #1937 pattern.
+- **Also this session:** MEH-1338 alert_log frequency cap MERGED (#1945) after relocating Sapir's misplaced Alembic revision onto the correct branch (cherry-pick `9cd9df54`, staging re-sync for `EXPECTED_TABLES=37`, closed redundant #1948; `alembic upgrade head` + `alembic check` clean, no drift). Its own CHANGELOG/HANDOFF backfill + retention-policy report are **parked** pending re-queue. `levismadar80-ship-it-patch-1` is a stale June commit (not MEH-1338) — left untouched; both stale branches need a manual delete (git server 403'd the delete).
+- **Next (Sapir):** MEH-1371 (`EXPECTED_TABLES=37` vs actual 36 — CC-deny workflows, manual); mobile pass on staging once Vercel quota resets.
+
 ## 2026-07-18 (night) — MEH-999 audit fix wave — 11/13 shipped (batch executor session)
 
 - **Merged to staging (10):** #1944 (MEH-1347 overview greeting/CTA/review-time) · #1946 (MEH-1344 hours revert) · #1947 (MEH-1345 empty-state titles) · #1949 (MEH-1346 region-chip toggle) · #1951 (MEH-1350 group-buys copy) · #1952 (MEH-1352 image-cap UI) · #1953 (MEH-1354 category descs) · #1954 (MEH-1348 arrow sweep) · #1956 (MEH-1353 voice) — plus #1943 (MEH-1349 cities union) + #1955 (MEH-1351 review-ready ping) re-kicked and auto-merge-armed after the #1950/#1945 EXPECTED_TABLES ordering break resolved (see CI note in CHANGELOG).
