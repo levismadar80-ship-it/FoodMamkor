@@ -3,6 +3,32 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-18 (night) — MEH-1359 — /favorites alert panel overlay — MERGED (PR #1959)
+
+- **MERGED to staging** — PR #1959 (squash), auto-merge on green. YELLOW frontend layout-bug fix (`Refs MEH-1359`).
+- **Fix:** `AlertPrefsPanel` moved out of grid flow — `fixed` bottom-sheet on mobile / `absolute` anchored to the bell on `sm+`, `z-[1150]` (clears BottomNav:1000 + cookie:1100, below filter-sheet:1200) — so opening it no longer stretches the sibling card or leaves a white gap. Plus: open state lifted to the parent (one panel at a time), Esc + outside-click dismissal with focus return to the bell, header name truncation (fixed "הודיעו לי כש…" label never truncates), disabled phone-save button helper text (`phone_helper` he+en), one `×` at a time. Locked 4-file scope.
+- **Self-QA (Playwright 375 + 1440):** neighbour card bbox height **identical** closed vs open — 319.50px @375, 406.50px @1440. Screenshots in `qa-artifacts/MEH-1359/`.
+- **No Vercel preview** — free-tier "100 deploys/day" cap hit today (Ignored); the self-QA screenshots stand in until the quota resets.
+- **This PR** = the code-only-branch docs backfill for #1959 (CHANGELOG + HANDOFF), #1937 pattern.
+- **Also this session:** MEH-1338 alert_log frequency cap MERGED (#1945) after relocating Sapir's misplaced Alembic revision onto the correct branch (cherry-pick `9cd9df54`, staging re-sync for `EXPECTED_TABLES=37`, closed redundant #1948; `alembic upgrade head` + `alembic check` clean, no drift). Its own CHANGELOG/HANDOFF backfill + retention-policy report are **parked** pending re-queue. `levismadar80-ship-it-patch-1` is a stale June commit (not MEH-1338) — left untouched; both stale branches need a manual delete (git server 403'd the delete).
+- **Next (Sapir):** MEH-1371 (`EXPECTED_TABLES=37` vs actual 36 — CC-deny workflows, manual); mobile pass on staging once Vercel quota resets.
+
+## 2026-07-19 (early) — MEH-1343 Chunk A + MEH-1356 (audit-wave follow-ups)
+
+- **MEH-1343 Chunk A — MERGED PR #1960** (armed after the wave; the un-gated task from the batch — Sapir confirmed the localities source was already in-repo, no file needed). `GET /cities` canonical source = the data.gov.il-seeded cities table ∪ live business cities; static list = unseeded-env fallback. Phase 0: register free-text leak confirmed YES (`CitySearch.jsx:143-147`) → Chunk B. **Sapir: (1) run the one-time seed on staging + prod (`POST /admin/seed-cities` or `python scripts/seed_cities.py`), verify `q=פוריידיס`; (2) Chunk B go/defer — `היישוב לא ברשימה` fallback may need a schema flag (options first).** Record correction filed: MEH-1349's "nothing seeds the table" Phase 0 line was wrong (manual seeders exist).
+- **MEH-1356 — armed PR #1962** (followers share CTA). Gated on approved+slug (MEH-1101 pattern), clipboard `.catch`, dropped the WhatsApp promise. Live QA both states.
+- **Note:** the earlier session's MEH-1359 (#1959) + its docs (#1961) also landed on staging in this window — not part of this batch, no conflict.
+
+## 2026-07-18 (night) — MEH-999 audit fix wave — 11/13 shipped (batch executor session)
+
+- **Merged to staging (10):** #1944 (MEH-1347 overview greeting/CTA/review-time) · #1946 (MEH-1344 hours revert) · #1947 (MEH-1345 empty-state titles) · #1949 (MEH-1346 region-chip toggle) · #1951 (MEH-1350 group-buys copy) · #1952 (MEH-1352 image-cap UI) · #1953 (MEH-1354 category descs) · #1954 (MEH-1348 arrow sweep) · #1956 (MEH-1353 voice) — plus #1943 (MEH-1349 cities union) + #1955 (MEH-1351 review-ready ping) re-kicked and auto-merge-armed after the #1950/#1945 EXPECTED_TABLES ordering break resolved (see CI note in CHANGELOG).
+- **MEH-1355 STOPPED** per its own Phase 0 gate — business tab is not a one-link panel (rejected/suspended banners + SupportModal live there, `settings/page.jsx:774-845`); options A (conditional deep-link) / B (relocate banners to dashboard) / C (leave) posted on the Linear ticket, Sapir picks.
+- **MEH-1343 SKIPPED** — localities file not attached; note on ticket cross-references the MEH-1349 TODO (single canonical source when the CBS dataset lands).
+- **Phase D findings (read-only, no tickets opened — Sapir triages):** table in the wave final report. Sev-3: `he.json:862` producer-card pending_eta "מאושר בתוך 24 שעות" — third conflicting approval-time value. Sev-2: DescriptionCard AI-generate no-revert (cards.jsx:740); /search/trending fresh-DB empty (search.py:173-205); report-window drift 48h vs 3 ימי עסקים (he.json:2899 vs :3337); 8 static-ArrowLeft forward CTAs backward in en locale (About/join/HomeStaticBlocks/RegisterPreflight/AboutProcess); PageOverflowState anonymous empty branch (ProducersClient.jsx:630); stale יום-יומיים at he.json:228 + join step3. P5: 27-string consumer/marketing voice inventory awaiting the brand decision (separate from ADR-024's producer-journey scope).
+- **QA infra built this session (reusable):** local full stack in the CC sandbox — /tmp/pgdata Postgres + uvicorn :8000 + `next start` :3000, seeded pending producers (qa-producer[-b/-c/-d]@example.com / QaLocal12345!), in-page-login Playwright harness (`frontend/qa-*.local.mjs`, untracked). Screenshots under `qa-artifacts/MEH-13xx/`.
+- **Known CI trap re-confirmed (MEH-1339 precedent):** `Backend lint` gate = `ruff check` AND `ruff format --check` — run both locally before push.
+- **Next:** Sapir mobile pass on staging.mehamakor.online; decide MEH-1355 option; triage Phase D table into tickets; MEH-1347/1350/1353/1354 YELLOW copy tables await her async review in the PR descriptions.
+
 ## 2026-07-18 (night) — MEH-1334 — ProducerDetail Quiet Direction v3, chunks 1-3 — DRAFT PR #1936, DO-NOT-MERGE
 
 - **What:** the approved "Quiet Direction v3" redesign of `/producer/[id]`, executed chunk-by-chunk (HIGH-RISK central component) with Smadar's explicit go between chunks. Branch `levismadar80/meh-1334-producerdetail-refresh-quiet-direction-v3-header-sidebar` off staging (ASCII-trimmed — the Linear-generated name ends in Hebrew, which the MEH-1141 branch-name gate rejects).

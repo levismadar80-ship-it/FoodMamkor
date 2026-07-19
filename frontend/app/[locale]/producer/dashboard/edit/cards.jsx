@@ -209,6 +209,11 @@ export function CategoriesCard({ profile, onSave, reportDirty = () => {} }) {
 // REUSES: components/admin/ProducerForm.jsx:219-243,630-662.
 // ============================================================
 
+// MEH-1352: free-plan image cap surfaced in the UI. Single source for the
+// magic number in JSX — the authoritative enforcement is the 403 in
+// backend/app/routers/upload.py (free plan, len(images) >= 3); keep in sync.
+const FREE_IMAGE_CAP = 3;
+
 // Exported for isolation tests (EditTabImagesCard.test.jsx) — see CategoriesCard.
 export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const t = useTranslations("dashboard.producer.images");
@@ -219,6 +224,11 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+
+  // MEH-1352: cap applies to the free plan only (mirrors the upload.py 403
+  // guard). atCap disables the picker; the backend 403 stays as safety net.
+  const capApplies = (profile?.plan ?? "free") === "free";
+  const atCap = capApplies && images.length >= FREE_IMAGE_CAP;
 
   // Dirty when the list differs from the seeded set (order-sensitive: a reorder
   // would count as dirty, but this editor has no reorder — add/remove only).
@@ -322,6 +332,19 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
       {/* MEH-1306: back-link to the public gallery section. */}
       <ViewOnPageLink producerId={profile?.id} anchor="section-images" />
 
+      {/* MEH-1352: the free-plan cap was invisible until the 403 on the 4th
+          upload. Show X/cap upfront; numeric span is dir="ltr" so the bidi
+          algorithm can't flip "1/3" in the RTL sentence. */}
+      {capApplies && (
+        <p className="text-xs text-fg-muted mb-2" data-testid="images-cap-counter">
+          {t.rich("counter", {
+            num: () => (
+              <span dir="ltr" className="numeric">{`${images.length}/${FREE_IMAGE_CAP}`}</span>
+            ),
+          })}
+        </p>
+      )}
+
       <label
         data-testid="images-dropzone"
         onDragOver={(e) => {
@@ -333,9 +356,13 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           // the drop state when the cursor truly exits the zone.
           if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false);
         }}
-        onDrop={handleDrop}
-        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 cursor-pointer transition ${
-          dragOver ? "border-primary bg-green-50" : "border-border hover:bg-green-50"
+        onDrop={atCap ? (e) => e.preventDefault() : handleDrop}
+        className={`inline-flex items-center text-sm border border-dashed rounded-[10px] px-4 py-3 transition ${
+          atCap
+            ? "border-border text-fg-muted cursor-not-allowed"
+            : dragOver
+              ? "border-primary bg-green-50 cursor-pointer"
+              : "border-border hover:bg-green-50 cursor-pointer"
         }`}
       >
         <input
@@ -343,10 +370,16 @@ export function ImagesCard({ profile, onSave, reportDirty = () => {} }) {
           accept="image/*"
           multiple
           className="hidden"
-          disabled={uploading}
+          disabled={uploading || atCap}
           onChange={handleUpload}
         />
-        {uploading ? t("uploading") : dragOver ? t("drop_here") : t("add_cta")}
+        {atCap
+          ? t("zone_full")
+          : uploading
+            ? t("uploading")
+            : dragOver
+              ? t("drop_here")
+              : t("add_cta")}
       </label>
 
       {/* MEH-1099: photography tips — wording from Brand Hub 05-photography-style

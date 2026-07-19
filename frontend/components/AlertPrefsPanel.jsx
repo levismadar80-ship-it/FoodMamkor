@@ -5,7 +5,7 @@
  * Allows users to choose which notifications to receive and opt in to push.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Bell, BellSlash, Check, Confetti, Handbag, Truck, ChatCircle } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import api from "@/lib/api";
@@ -22,6 +22,7 @@ const DEFAULT_PREFS = {
 
 export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   const t = useTranslations("sweep_tail.alert_prefs");
+  const headingId = useId();
   const { user, updateProfile } = useAuth();
   const [prefs, setPrefs] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -181,17 +182,32 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
   );
 
   return (
-    <div className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm" dir="rtl">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-text text-sm flex items-center gap-1.5">
-          <Bell size={16} weight="fill" className="text-primary" aria-hidden="true" />
-          {t("heading")}
-          <span className="font-normal text-fg-muted">({producerName})</span>
+    <div
+      role="dialog"
+      aria-labelledby={headingId}
+      className="rounded-[12px] border border-border bg-white p-4 space-y-3 shadow-sm max-h-[70vh] overflow-y-auto"
+      dir="rtl"
+    >
+      <div className="flex items-center justify-between gap-2">
+        {/* MEH-1359: the fixed "הודיעו לי כש…" label (+ bell) stays shrink-0 so it
+            never truncates; only the business name ellipsizes, with a title
+            attribute exposing the full name on hover. */}
+        <h3
+          id={headingId}
+          className="font-semibold text-text text-sm flex items-center gap-1.5 min-w-0"
+        >
+          <Bell size={16} weight="fill" className="text-primary shrink-0" aria-hidden="true" />
+          <span className="shrink-0">{t("heading")}</span>
+          <span className="font-normal text-fg-muted truncate min-w-0" title={producerName}>
+            ({producerName})
+          </span>
         </h3>
-        {onClose && (
+        {/* MEH-1359: exactly one dismissal affordance at a time — while the phone
+            sub-field is open its own × is the active one, so hide the header ×. */}
+        {onClose && !showPhoneField && (
           <button
             onClick={onClose}
-            className="text-fg-muted hover:text-text text-lg leading-none"
+            className="text-fg-muted hover:text-text text-lg leading-none shrink-0"
             aria-label={t("close_aria")}
           >
             ×
@@ -218,6 +234,11 @@ export default function AlertPrefsPanel({ producerId, producerName, onClose }) {
             aria-label={t("phone_required_prompt")}
             className="w-full border border-border rounded-[8px] px-3 py-2 text-sm text-start outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 transition"
           />
+          {/* MEH-1359: the save button is disabled until the phone is valid — say
+              why, so the greyed-out state isn't an unexplained dead end. */}
+          {!phoneValid && !phoneSaving && (
+            <p className="text-xs text-fg-muted">{t("phone_helper")}</p>
+          )}
           <div className="flex items-center gap-2">
             <button
               onClick={savePhoneAndEnable}

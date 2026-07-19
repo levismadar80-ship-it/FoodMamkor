@@ -409,6 +409,22 @@ genuinely need horizontal scale, move the scheduler to a leader-elected
 **before** raising the worker count — do not silence the guard.
 
 
+### D-ter. Cities dataset seed (MEH-1343) — one-time per environment
+
+The `cities` table exists everywhere (Alembic baseline `ef8fb1858f5b`) but
+starts **empty**; the official ~1,270 data.gov.il localities are loaded by a
+one-time, idempotent seed (`ON CONFLICT DO NOTHING` — safe to re-run):
+
+- **From the admin panel / API:** `POST /admin/seed-cities` (admin JWT).
+- **From a shell with `DATABASE_URL`:** `cd backend && python scripts/seed_cities.py`.
+
+Run it once on **staging** and once on **production**. Until an env is
+seeded, `GET /cities` falls back to the ~100-entry static list
+(`backend/app/data/cities.py`), so autocomplete works but small localities
+(מושבים/כפרים) are missing. Verify: `GET /cities?q=פוריידיס` returns a result
+on a seeded env. Local dev: same script against the local DB.
+
+
 ### E. Verify deploys actually ran (MEH-260)
 
 Merging to `staging` or `main` does not guarantee the runtime changed.

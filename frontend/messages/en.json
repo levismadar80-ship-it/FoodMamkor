@@ -332,7 +332,7 @@
           "next_step1": "Personal review",
           "next_step2": "Intro call",
           "next_step3": "Your page goes live",
-          "dashboard_cta": "Go to my dashboard ←",
+          "dashboard_cta": "Go to my dashboard →",
           "share_msg": "Hi, I just joined Mehamakor — local food businesses across Israel, all in one place. Come join: https://mehamakor.co.il/register/producer",
           "share_cta": "Invite a neighbour",
           "inbox_title": "Check your inbox",
@@ -970,11 +970,11 @@
       "approval_required_hint": "Opening a group buy will be available once the business is approved",
       "loading": "Loading...",
       "empty_title": "Group buys = wholesale price for your customers",
-      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for whole-lamb slaughter, basket-packing day, or a bulk veal order.",
+      "empty_description": "You set the minimum participants and the deadline. If the minimum isn't reached, no one pays. Perfect for a weekly neighborhood veggie box, a family cheese bundle, or a group order of harvest olive oil.",
       "empty_cta": "+ Create first group",
       "progress_label": "{commits} / {min} participants",
       "deadline_prefix": "Deadline: {date}",
-      "view_public": "View public page ←",
+      "view_public": "View public page →",
       "form": {
         "heading": "New group buy",
         "title_label": "Title",
@@ -1871,7 +1871,7 @@
         "tests": "Connection tests",
         "categories": "Manage categories",
         "categories_hint": "To add, edit, and delete — the content screen.",
-        "categories_link": "Go to content ←"
+        "categories_link": "Go to content →"
       },
       "fields": {
         "admin_email": "Admin email for notifications",
@@ -1970,7 +1970,7 @@
       "empty": "No group buys",
       "until": "until {date}",
       "change_status": "Change status:",
-      "view_page": "View page ←"
+      "view_page": "View page →"
     },
     "analytics": {
       "title": "Analytics",
@@ -2220,7 +2220,7 @@
       "filter_city_placeholder": "Search city...",
       "loading": "Loading experiences...",
       "empty_title": "No experiences match this filter — yet",
-      "empty_cta": "Submit the first experience ←"
+      "empty_cta": "Submit the first experience →"
     },
     "categories": {
       "all": "All",
@@ -2618,6 +2618,20 @@
         "veg": "From the field, seasonal, organic",
         "care": "Soaps, bath products"
       },
+      "rest_descs": {
+        "eggs": "Free-range and pasture eggs",
+        "fruit": "From the orchard, seasonal, fresh",
+        "ferments": "Pickles, kimchi, kombucha",
+        "prepared": "Granola, spreads, ready dishes",
+        "herbs": "Infusions, tinctures, supplements",
+        "cosmetics": "Creams, skincare oils",
+        "candles": "Wax candles, home scents",
+        "drinks": "Boutique winery, beer, cider",
+        "spices": "Spice blends, cooking herbs",
+        "chocolate": "Pralines, handmade sweets",
+        "honey": "Hive honey, pollen, honeycomb",
+        "fish": "Fresh and smoked fish"
+      },
       "section_results": "Results",
       "section_popular": "Popular",
       "counter": "{count}/{max}",
@@ -2626,8 +2640,8 @@
       "group_food": "Food",
       "group_home": "Home & care",
       "no_results_prefix": "Can't find your category?",
-      "no_results_cta": "Tell us ←",
-      "show_more": "← More categories ({count})",
+      "no_results_cta": "Tell us →",
+      "show_more": "→ More categories ({count})",
       "show_less": "↑ Fewer categories"
     }
   },
@@ -2831,7 +2845,8 @@
       "remove_aria": "Remove {city}",
       "placeholder": "Type a city name...",
       "commit_hint": "Pick a city from the list to add it",
-      "region_added": "Added"
+      "region_added": "Added",
+      "region_remove_title": "Remove {region} cities"
     },
     "city_search": {
       "placeholder": "Search city...",
@@ -3691,7 +3706,8 @@
         "wa_text_template": "My profile on Mehamakor: {url}"
       },
       "states": {
-        "zero_activity": "No activity yet — share your page to get started",
+        "zero_activity_title": "Views & inquiries",
+        "zero_activity": "No views or inquiries yet — share your page to get started",
         "share_locked": "You'll be able to share soon — let's finish approval and details first",
         "availability_disabled": "You'll be able to update availability once the business is approved and published",
         "view_public": "View your page"
@@ -3717,7 +3733,7 @@
         "rejected": {
           "title": "⚠️ Application not approved",
           "body": "Contact us for more details and a re-review.",
-          "cta": "Contact us ←"
+          "cta": "Contact us →"
         },
         "pending_whatsapp": {
           "title": "Welcome! Almost there.",
@@ -3740,7 +3756,7 @@
         "error_generic": "Something went wrong. Please try again.",
         "error_rate_limited": "Too many attempts. Please try again shortly."
       },
-      "holiday_catalog_cta": "Update the catalog ←",
+      "holiday_catalog_cta": "Update the catalog →",
       "availability": {
         "tooltip_line_default": "Open to orders = default.",
         "tooltip_line_today": "Available today = fresh inventory now.",
@@ -3792,7 +3808,8 @@
           "view": "Profile view"
         },
         "cta": "Open WhatsApp to reply",
-        "zero_state": "No activity yet — share your page to get started"
+        "title": "Recent activity",
+        "zero_state": "New inquiries and views will appear here — we'll update the moment customers start responding"
       },
       "analytics": {
         "stats_window_label": "7 days / 30 days / total",
@@ -3953,7 +3970,9 @@
       "images": {
         "heading": "Images",
         "subtitle": "Upload photos of your business and products — they appear in the gallery on your business page.",
-        "add_cta": "Add images · JPG / PNG / WebP",
+        "add_cta": "Add images · JPG / PNG / WebP / HEIC",
+        "counter": "Images: <num></num>",
+        "zone_full": "Gallery is full — remove an existing image to add a new one",
         "drop_here": "Drop here to upload",
         "tips": {
           "light": "Natural light, no flash",
@@ -4021,6 +4040,7 @@
         "subtitle": "Your opening hours, shown on your business page.",
         "field_label": "Opening hours",
         "placeholder": "Sun-Thu 09:00-18:00, Fri 09:00-14:00",
+        "revert_cta": "Discard changes",
         "save_cta": "Save",
         "saving": "Saving…",
         "saved": "Saved",
@@ -4103,10 +4123,12 @@
       "heading": "My followers",
       "loading": "Loading…",
       "empty_title": "No followers yet — and that's fine",
-      "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — share your profile link on WhatsApp.",
+      "empty_description": "Followers are customers who want to stay updated on what's new with you. They'll appear here as soon as they start following. In the meantime — copy your profile link and share it with customers.",
       "share_cta": "Copy share link",
       "share_cta_copied": "Copied! ✓",
       "share_toast": "Link copied!",
+      "share_error": "Couldn't copy the link. Please try again.",
+      "share_locked": "Your share link will be available once your business is approved and published.",
       "followers_label": "followers",
       "share_hint": "A detailed list of followers is coming soon — share your profile to reach more customers."
     },
@@ -4120,6 +4142,7 @@
       "row_whatsapp_opt_in": "Send via WhatsApp",
       "phone_required_prompt": "To get WhatsApp updates we'll need your phone number",
       "phone_save_cta": "Save and enable",
+      "phone_helper": "Enter a valid Israeli phone number to enable",
       "push_denied_toast": "Notifications permission denied",
       "push_blocked": "Push notifications blocked in the browser",
       "push_enable": "Get updates even when the site is closed",
