@@ -13,6 +13,12 @@
 - **Also this session:** MEH-1338 alert_log frequency cap MERGED (#1945) after relocating Sapir's misplaced Alembic revision onto the correct branch (cherry-pick `9cd9df54`, staging re-sync for `EXPECTED_TABLES=37`, closed redundant #1948; `alembic upgrade head` + `alembic check` clean, no drift). Its own CHANGELOG/HANDOFF backfill + retention-policy report are **parked** pending re-queue. `levismadar80-ship-it-patch-1` is a stale June commit (not MEH-1338) — left untouched; both stale branches need a manual delete (git server 403'd the delete).
 - **Next (Sapir):** MEH-1371 (`EXPECTED_TABLES=37` vs actual 36 — CC-deny workflows, manual); mobile pass on staging once Vercel quota resets.
 
+## 2026-07-19 (early) — MEH-1343 Chunk A + MEH-1356 (audit-wave follow-ups)
+
+- **MEH-1343 Chunk A — MERGED PR #1960** (armed after the wave; the un-gated task from the batch — Sapir confirmed the localities source was already in-repo, no file needed). `GET /cities` canonical source = the data.gov.il-seeded cities table ∪ live business cities; static list = unseeded-env fallback. Phase 0: register free-text leak confirmed YES (`CitySearch.jsx:143-147`) → Chunk B. **Sapir: (1) run the one-time seed on staging + prod (`POST /admin/seed-cities` or `python scripts/seed_cities.py`), verify `q=פוריידיס`; (2) Chunk B go/defer — `היישוב לא ברשימה` fallback may need a schema flag (options first).** Record correction filed: MEH-1349's "nothing seeds the table" Phase 0 line was wrong (manual seeders exist).
+- **MEH-1356 — armed PR #1962** (followers share CTA). Gated on approved+slug (MEH-1101 pattern), clipboard `.catch`, dropped the WhatsApp promise. Live QA both states.
+- **Note:** the earlier session's MEH-1359 (#1959) + its docs (#1961) also landed on staging in this window — not part of this batch, no conflict.
+
 ## 2026-07-18 (night) — MEH-999 audit fix wave — 11/13 shipped (batch executor session)
 
 - **Merged to staging (10):** #1944 (MEH-1347 overview greeting/CTA/review-time) · #1946 (MEH-1344 hours revert) · #1947 (MEH-1345 empty-state titles) · #1949 (MEH-1346 region-chip toggle) · #1951 (MEH-1350 group-buys copy) · #1952 (MEH-1352 image-cap UI) · #1953 (MEH-1354 category descs) · #1954 (MEH-1348 arrow sweep) · #1956 (MEH-1353 voice) — plus #1943 (MEH-1349 cities union) + #1955 (MEH-1351 review-ready ping) re-kicked and auto-merge-armed after the #1950/#1945 EXPECTED_TABLES ordering break resolved (see CI note in CHANGELOG).
