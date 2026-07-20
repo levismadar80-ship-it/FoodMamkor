@@ -970,7 +970,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={optimizeCloudinary(photoUrl, { width: 160 })}
-              alt=""
+              alt={t("photo_alt")}
               className="w-full h-full object-cover"
             />
           ) : (
