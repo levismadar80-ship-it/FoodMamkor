@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+
+// MEH-1383: arrow click pages ~80% of the visible row width per press.
+const SCROLL_STEP_RATIO = 0.8;
+const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 
 /**
  * Scrollable chip row for filter bars.
@@ -25,6 +30,15 @@ import { useTranslations } from "next-intl";
  * fade width) and the scroller carries scroll-pe-12, so scrollIntoView on
  * an active chip stops clear of the fade zone with no JS offset math.
  * Shrink-0 spacer at scroll-end also fixes RTL padding-inline-end clipping.
+ *
+ * MEH-1383: desktop-pointer (hover:hover + pointer:fine) devices also get
+ * round edge scroll-arrow buttons above the fades. Each arrow reuses its
+ * side's sentinel signal (showStartFade/showEndFade) — the sentinels ARE
+ * the can-scroll-in-that-direction fact, and they already live-update on
+ * scroll and resize via the IntersectionObserver, so no second overflow
+ * mechanism (scroll listener + ResizeObserver) is added. Touch devices
+ * render zero extra DOM. Vertical wheel over the row translates to
+ * horizontal scroll (desktop only), passing through at the edges.
  */
 export default function ChipScrollRow({
   chips,
@@ -47,6 +61,9 @@ export default function ChipScrollRow({
   const endSentinelRef = useRef(null);
   const [showStartFade, setShowStartFade] = useState(false);
   const [showEndFade, setShowEndFade] = useState(false);
+  // MEH-1383: desktop-pointer gate for the edge scroll arrows. False on
+  // the server and on touch devices — those render zero arrow DOM.
+  const [hasFinePointer, setHasFinePointer] = useState(false);
 
   function isActive(chip) {
     return variant === "category" ? chip.key === activeKey : !!activeKeys[chip.key];
@@ -122,6 +139,53 @@ export default function ChipScrollRow({
     return () => io.disconnect();
   }, []);
 
+  // MEH-1383: matchMedia gates the arrows' rendering; the `change`
+  // listener keeps hybrids (convertible laptops, external mouse plugged
+  // into a tablet) live-correct without a reload.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mq = window.matchMedia(DESKTOP_POINTER_QUERY);
+    setHasFinePointer(mq.matches);
+    const onChange = (e) => setHasFinePointer(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  // MEH-1383 bonus: vertical wheel over the row → horizontal scroll,
+  // desktop-pointer only. Native listener because React's root-attached
+  // wheel handler is passive — preventDefault would be ignored. At either
+  // edge the event is left alone so the page keeps scrolling normally.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!hasFinePointer || !el) return;
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 0) return;
+      // dir="rtl": scrollLeft is 0 at inline-start and grows NEGATIVE
+      // toward inline-end (Chrome/Firefox), hence Math.abs + negated delta.
+      const scrolled = Math.abs(el.scrollLeft);
+      const towardEnd = e.deltaY > 0;
+      if (towardEnd ? scrolled >= maxScroll - 1 : scrolled <= 1) return;
+      e.preventDefault();
+      el.scrollBy({ left: -e.deltaY });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [hasFinePointer]);
+
+  // MEH-1383: arrow click. dir="rtl" is fixed on the wrapper, so a
+  // negative left delta always moves toward the inline-end (see the RTL
+  // scrollLeft note in the wheel handler above).
+  function scrollStep(towardEnd) {
+    const el = scrollRef.current;
+    if (!el) return;
+    const delta = Math.round(el.clientWidth * SCROLL_STEP_RATIO);
+    el.scrollBy({ left: towardEnd ? -delta : delta, behavior: "smooth" });
+  }
+
   return (
     <div className={`relative min-w-0 ${className}`} dir="rtl">
       {/* Inline-start (right in RTL) fade — slim so the first chip isn't
@@ -145,6 +209,36 @@ export default function ChipScrollRow({
           style={{ background: `linear-gradient(to right, ${fadeBg}, transparent)` }}
           aria-hidden="true"
         />
+      )}
+      {/* MEH-1383: desktop-only edge scroll arrows, above the fades
+          (z-20 > fade z-10). Each renders only while its side's sentinel
+          reports hidden content — same signal as the fades, so an arrow
+          vanishes exactly when scroll in its direction is exhausted.
+          tabIndex=-1 + aria-hidden: pointer affordance only; chips are
+          already keyboard-reachable, and no i18n label is needed. */}
+      {hasFinePointer && showStartFade && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => scrollStep(false)}
+          className="absolute start-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
+        >
+          {/* Inline-start = physical RIGHT in RTL — caret points at the hidden content. */}
+          <CaretRight size={16} weight="bold" />
+        </button>
+      )}
+      {hasFinePointer && showEndFade && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => scrollStep(true)}
+          className="absolute end-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
+        >
+          {/* Inline-end = physical LEFT in RTL. */}
+          <CaretLeft size={16} weight="bold" />
+        </button>
       )}
       <div
         ref={scrollRef}
