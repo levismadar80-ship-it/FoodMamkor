@@ -3,6 +3,29 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1375 — model-name refresh across docs/templates/ (docs-only)
+
+- **What:** refreshed stale model names in `docs/templates/` — `Sonnet 4.6`→`Sonnet 5`, `Opus 4.7`→`Opus 4.8`. Template 00 was partially migrated (29 Opus 4.8 already); the other 9 templates never touched — 113 stale occurrences hiding behind one migrated file (single-symptom-hides-systemic-gap).
+- **Phase 0 deviations from the ticket (surfaced, not silently absorbed):** (1) the ticket's per-file table matched grep exactly, but its Sonnet-4.6 **total-row said 53 while the column sums to 51** (ticket arithmetic typo). (2) **`docs/templates/README.md` is an 11th sibling** the ticket's 10-file inventory missed — its index table carried 1 `Sonnet 4.6` + 3 `Opus 4.7`. Included it (in-scope dir; grep-siblings per MEH-1374). AskUserQuestion couldn't reach Sapir (non-interactive session), so proceeded on the documented default and flagged both deviations in the PR body/CHANGELOG.
+- **Shipped:** 11 files (10 named templates + README) + CHANGELOG + HANDOFF. Mechanical bump everywhere EXCEPT **7 historical/citation sentences reworded** so a blind `sed` couldn't assert false claims about the new models: 00:129 (Adaptive-Thinking history), 00:227 + 02:228 (over-engineering generational), 01:319 + 02:247 (dated Anthropic doc citations → version+date dropped), 00:272 ("feels slow" quote), 06:301 (pre-fill removed) → all generalized to "earlier generations"; 03:284 bug-finding baseline "vs 4.6"→"vs previous generation". 05:26 GPQA benchmark kept its numbers under the new names (matches 00's table convention). **No Fable 5** (MEH-1376, Sapir's call).
+- **QA:** `grep Sonnet 4.6` → 0 · `grep Opus 4.7` → 0 · `grep -i fable` → 0 · residual bare versions only `Haiku 4.5` (current model) + a GPS coord (`34.78`). `git diff --stat` = 13 files, symmetric 113/113 line swaps.
+- **Branch:** `feature/meh-1375-template-model-names` off `origin/staging`. GREEN docs-only. DoD "נבדק בנייד" N/A.
+- **Out of scope (separate tickets):** `docs/templates/09-council-mode.md` missing/404 (MEH-690).
+
+## 2026-07-18 (night) — MEH-1360 delivery-alert city targeting (alerts-chain batch, item C)
+
+- **Shipped:** `fire_alerts` gains optional `target_cities` — delivery_area alerts now reach only users whose `User.city` is among the newly added cities, with a per-recipient body naming only their city (`{cities}` placeholder, copy stays at the `producer_me.py` call site). Geo-filtered users skip BEFORE the MEH-1338 cap → no `AlertLog` row for suppressed alerts. No schema change. Files: `backend/app/routers/alerts.py`, `backend/app/routers/producer_me.py`, `tests/test_alerts.py` (+6 tests).
+- **Batch context:** MEH-1359 was found already merged (#1959, parallel dispatch — stopped, no duplicate PR; self-corrected the "two ×" gap claim: `!showPhoneField` at `AlertPrefsPanel.jsx:207` already enforces one dismissal). MEH-1371 cancelled (resolved by #1945's merge). Next: **MEH-1361 (new_recipe alert, RED)** after 1360 merges — Alembic revision printed in full + STOP for Sapir; the MEH-1338 cap covers new_recipe automatically via fire_alerts, no extra cap mechanism.
+- **Held:** MEH-1363 (collision with #1936, Sapir decides) · MEH-1364 (blocked on 1363 + orphan-rows query, Sapir/Railway).
+- **Verification honesty:** ruff check+format clean locally; normalization helper 12/12 in isolation; **pytest deferred to CI** (sandbox lacks backend deps, pip denied — MEH-360 class). Hebrew copy (unchanged sentence, per-recipient city list) proposed in PR body for Sapir.
+
+## 2026-07-18 — MEH-1374 — Bug Protocol sibling-grep → i18n copy + VRT baselines (docs-only)
+
+- **What:** extended the "Grep for siblings" rule (Bug Protocol step 2 in `.claude/rules/workflow.md`) to cover the two classes it was missing — i18n copy in `frontend/messages/he.json`/`en.json` and stale VRT baselines. Root cause of the churn: the step-2 grep `--include` list was code-only (`*.py *.jsx *.js *.tsx`), so copy sweeps left residue that returned as a separate follow-up ticket the next day (8 of ~25 tickets closed 18/07 were this class).
+- **Shipped (1 rule file + 2 logs):** step-2 grep now carries `--include="*.json"`; NEW **2a** — grep the rendered STRING VALUE (not just the code identifier) across `he.json`+`en.json` before marking done (evidence MEH-1308); NEW **2b** — regenerate `frontend/e2e/visual/parity.spec.ts-snapshots/` in the SAME PR when a `he.json` value on a VRT-covered route changes, never a follow-up; the 6 routes named literally (`/`, `/map`, `/about`, `/login`, `/register`, producer detail) (evidence MEH-1328). Prose rule only — no hook/CI (deliberate follow-up, not scope creep). Section stays 40 lines (< 45 cap); no other workflow.md section touched.
+- **Branch:** `feature/meh-1374-sibling-grep-i18n-vrt` off `origin/staging` (the harness-designated `claude/*` branch would fail the branch-name gate). GREEN, docs-only under `.claude/rules/`; `git diff --stat` = exactly 3 files (workflow.md + CHANGELOG + HANDOFF). DoD "נבדק בנייד" N/A (no UI).
+- **Next:** Sapir merges (or CC on green if authorized). Open follow-up (out of scope here): a mechanical enforcement hook for 2a/2b.
+
 ## 2026-07-18 (night) — MEH-1359 — /favorites alert panel overlay — MERGED (PR #1959)
 
 - **MERGED to staging** — PR #1959 (squash), auto-merge on green. YELLOW frontend layout-bug fix (`Refs MEH-1359`).
