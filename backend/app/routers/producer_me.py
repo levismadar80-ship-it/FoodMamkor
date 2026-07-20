@@ -25,7 +25,6 @@ from app.models import (
     HomeProduct,
     Producer,
     Product,
-    ProducerFollower,
     ProducerPageView,
     ProducerWhatsAppClick,
     User,
@@ -620,19 +619,24 @@ def producer_analytics(
     whatsapp_clicks = windowed(ProducerWhatsAppClick, ProducerWhatsAppClick.clicked_at)
     contact_clicks = windowed(ContactClick, ContactClick.clicked_at)
 
-    # Followers
+    # Followers — MEH-1364 (decision A, MEH-1362): counted from `favorites`,
+    # the canonical interest record, since MEH-1363 removed the follow button
+    # and producer_followers stopped receiving writes (Expand half only —
+    # the table + producer_follows.py stay until the Contract ticket).
+    # favorites has a composite PK (user_id, producer_id) and NO id column —
+    # count on a key column (REUSES: :510 func.count(Favorite.producer_id)).
     follower_count = (
-        db.query(func.count(ProducerFollower.id))
-        .filter(ProducerFollower.producer_id == pid)
+        db.query(func.count(Favorite.producer_id))
+        .filter(Favorite.producer_id == pid)
         .scalar()
         or 0
     )
     week_ago = datetime.utcnow() - timedelta(days=7)
     new_followers_this_week = (
-        db.query(func.count(ProducerFollower.id))
+        db.query(func.count(Favorite.producer_id))
         .filter(
-            ProducerFollower.producer_id == pid,
-            ProducerFollower.created_at >= week_ago,
+            Favorite.producer_id == pid,
+            Favorite.created_at >= week_ago,
         )
         .scalar()
         or 0
