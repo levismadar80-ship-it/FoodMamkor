@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1375 — model-name refresh across docs/templates/ (docs-only)
+
+- **What:** refreshed stale model names in `docs/templates/` — `Sonnet 4.6`→`Sonnet 5`, `Opus 4.7`→`Opus 4.8`. Template 00 was partially migrated (29 Opus 4.8 already); the other 9 templates never touched — 113 stale occurrences hiding behind one migrated file (single-symptom-hides-systemic-gap).
+- **Phase 0 deviations from the ticket (surfaced, not silently absorbed):** (1) the ticket's per-file table matched grep exactly, but its Sonnet-4.6 **total-row said 53 while the column sums to 51** (ticket arithmetic typo). (2) **`docs/templates/README.md` is an 11th sibling** the ticket's 10-file inventory missed — its index table carried 1 `Sonnet 4.6` + 3 `Opus 4.7`. Included it (in-scope dir; grep-siblings per MEH-1374). AskUserQuestion couldn't reach Sapir (non-interactive session), so proceeded on the documented default and flagged both deviations in the PR body/CHANGELOG.
+- **Shipped:** 11 files (10 named templates + README) + CHANGELOG + HANDOFF. Mechanical bump everywhere EXCEPT **7 historical/citation sentences reworded** so a blind `sed` couldn't assert false claims about the new models: 00:129 (Adaptive-Thinking history), 00:227 + 02:228 (over-engineering generational), 01:319 + 02:247 (dated Anthropic doc citations → version+date dropped), 00:272 ("feels slow" quote), 06:301 (pre-fill removed) → all generalized to "earlier generations"; 03:284 bug-finding baseline "vs 4.6"→"vs previous generation". 05:26 GPQA benchmark kept its numbers under the new names (matches 00's table convention). **No Fable 5** (MEH-1376, Sapir's call).
+- **QA:** `grep Sonnet 4.6` → 0 · `grep Opus 4.7` → 0 · `grep -i fable` → 0 · residual bare versions only `Haiku 4.5` (current model) + a GPS coord (`34.78`). `git diff --stat` = 13 files, symmetric 113/113 line swaps.
+- **Branch:** `feature/meh-1375-template-model-names` off `origin/staging`. GREEN docs-only. DoD "נבדק בנייד" N/A.
+- **Out of scope (separate tickets):** `docs/templates/09-council-mode.md` missing/404 (MEH-690).
+
 ## 2026-07-18 (night) — MEH-1360 delivery-alert city targeting (alerts-chain batch, item C)
 
 - **Shipped:** `fire_alerts` gains optional `target_cities` — delivery_area alerts now reach only users whose `User.city` is among the newly added cities, with a per-recipient body naming only their city (`{cities}` placeholder, copy stays at the `producer_me.py` call site). Geo-filtered users skip BEFORE the MEH-1338 cap → no `AlertLog` row for suppressed alerts. No schema change. Files: `backend/app/routers/alerts.py`, `backend/app/routers/producer_me.py`, `tests/test_alerts.py` (+6 tests).

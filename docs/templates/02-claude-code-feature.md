@@ -23,17 +23,17 @@
 
 |סוג פיצ'ר                     |מודל        |למה                              |
 |------------------------------|------------|---------------------------------|
-|Single-component CRUD         |🟢 Sonnet 4.6|routine, מולטי-step אבל לא מורכב |
-|Backend + frontend coupled    |🟣 Opus 4.7  |multi-file context               |
-|External integration (API חדש)|🟣 Opus 4.7  |architecture decisions           |
-|Hebrew NLP / Search logic     |🟣 Opus 4.7  |reasoning-heavy                  |
-|Auth / Security / Payment     |🟣 Opus 4.7  |high stakes, easy to miss vectors|
+|Single-component CRUD         |🟢 Sonnet 5|routine, מולטי-step אבל לא מורכב |
+|Backend + frontend coupled    |🟣 Opus 4.8  |multi-file context               |
+|External integration (API חדש)|🟣 Opus 4.8  |architecture decisions           |
+|Hebrew NLP / Search logic     |🟣 Opus 4.8  |reasoning-heavy                  |
+|Auth / Security / Payment     |🟣 Opus 4.8  |high stakes, easy to miss vectors|
 
 ראי `00-model-selection-guide.md` ל-decision flow.
 
 -----
 
-## 🧱 Prompt Structure (Opus 4.7 version — recommended)
+## 🧱 Prompt Structure (Opus 4.8 version — recommended)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
@@ -113,7 +113,7 @@ Before declaring done:
 
 -----
 
-## 🧱 Prompt Structure (Sonnet 4.6 version)
+## 🧱 Prompt Structure (Sonnet 5 version)
 
 זהה למבנה Opus, **אבל הוסיפי**:
 
@@ -128,13 +128,13 @@ Think before coding. Output your plan first, wait for "go".
 </thinking_guidance>
 ```
 
-**ולמה:** Sonnet 4.6 לא חושב אדפטיבית כברירת מחדל. הוראת `<thinking_guidance>` עוזרת לאיכות.
+**ולמה:** Sonnet 5 לא חושב אדפטיבית כברירת מחדל. הוראת `<thinking_guidance>` עוזרת לאיכות.
 
-ב-Opus 4.7 — **דלגי על זה.** xhigh = adaptive thinking פעיל אוטומטית.
+ב-Opus 4.8 — **דלגי על זה.** xhigh = adaptive thinking פעיל אוטומטית.
 
 -----
 
-## 📊 דוגמה מלאה — MEH-103 Reviews System (Opus 4.7)
+## 📊 דוגמה מלאה — MEH-103 Reviews System (Opus 4.8)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md. Read docs/DATA.md.
@@ -221,11 +221,11 @@ Before PR:
 
 ## 🚨 Anti-patterns
 
-❌ **לא להוסיף `<thinking>` blocks ב-Opus 4.7 prompts.** xhigh = automatic.
+❌ **לא להוסיף `<thinking>` blocks ב-Opus 4.8 prompts.** xhigh = automatic.
 ❌ **לא לכתוב `<role>` של 5 שורות "expert with PhD".** Wharton 2025: לא עוזר factual recall.
 ❌ **לא לתת prompt עמום ולתקן אחר כך.** Multi-turn ambiguity מוריד איכות. Bundle הכל ב-turn 1.
 ❌ **לא לדלג על `<acceptance_criteria>`.** זה ההבדל בין "כן עבד" ל-"DoD מאומת".
-❌ **לא לשכוח `<over_engineering_guard>`.** Opus 4.5/4.6 ידועים בלהוסיף קבצים מיותרים.
+❌ **לא לשכוח `<over_engineering_guard>`.** בדורות קודמים המודלים נודעו בלהוסיף קבצים מיותרים.
 ❌ **לא להציע עריכה של `_migrate_columns()` ב-`backend/app/main.py`** — נמחק ב-MEH-267 (PR #311), root cause של MEH-265 incident. כל schema change דרך Alembic revision (ADR-003 + ADR-007 + docs/MIGRATIONS.md).
 
 -----
@@ -244,7 +244,7 @@ Before PR:
 
 ## 📚 מקורות
 
-- Anthropic Best Practices for Claude Code with Opus 4.7 (Apr 2026)
+- Anthropic Best Practices for Claude Code with Opus
 - Wharton 2025 "Playing Pretend" — אל תשתמשי ב-expert persona embellishment
 - Schulhoff "Prompt Report" arXiv 2406.06608 — XML structure תקפה
 - ADR-003 (Alembic sole schema authority) · ADR-007 (Expand-Contract pattern) · docs/MIGRATIONS.md (operational guide)
