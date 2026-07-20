@@ -21,7 +21,7 @@
 **חדש בגרסה 2:** כל issue ב-Linear מציין **explicit model recommendation**:
 
 ```
-**Model:** 🟢 Sonnet 4.6 [או] 🟣 Opus 4.7
+**Model:** 🟢 Sonnet 5 [או] 🟣 Opus 4.8
 **Effort:** medium / high / xhigh / max
 ```
 
@@ -69,7 +69,7 @@
 ---
 
 ## Model + Effort + Thinking
-- **Model:** 🟢 Sonnet 4.6 [או] 🟣 Opus 4.7
+- **Model:** 🟢 Sonnet 5 [או] 🟣 Opus 4.8
 - **Effort:** medium / high / xhigh / max
 - **Adaptive Thinking:** ON / OFF (ראי 00-model-selection-guide.md)
 - **Reasoning:** [1-line — למה הבחירה הזאת]
@@ -164,7 +164,7 @@
 ---
 
 ## Model + Effort + Thinking
-- **Model:** 🟣 Opus 4.7
+- **Model:** 🟣 Opus 4.8
 - **Effort:** xhigh
 - **Adaptive Thinking:** ON
 - **Reasoning:** Multi-layer feature (DB schema + JWT click_token + 2 endpoints + 2 components + integration). Security-sensitive (verification logic). Worth Opus + thinking for trade-off reasoning.
@@ -284,7 +284,7 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 
 ❌ **Issue בלי model/effort** — Claude Code לא יודעת לבחור אוטומטית.
 
-❌ **Prompt בלי file_locations** — Opus 4.7 literal interpretation, ה-context הזה קריטי.
+❌ **Prompt בלי file_locations** — Opus 4.8 literal interpretation, ה-context הזה קריטי.
 
 ❌ **DoD ללא observable outcomes** — "feature works" ≠ DoD. צריך bullet points מדידים.
 
@@ -298,7 +298,7 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 
 ❌ **Heavy persona embellishment ב-`<role>`** — Wharton 2025: לא משפר accuracy.
 
-❌ **Pre-fill** — Opus 4.6+ הסיר תמיכה.
+❌ **Pre-fill** — דורות אחרונים הסירו תמיכה.
 
 ---
 
@@ -317,6 +317,6 @@ v1: no moderation, no replies, no upvotes. Use existing patterns.
 
 ## 📚 מקורות
 
-- Anthropic 2026: "intent, constraints, acceptance criteria, and relevant file locations" (Opus 4.7 docs)
+- Anthropic 2026: "intent, constraints, acceptance criteria, and relevant file locations" (Opus 4.8 docs)
 - MEH-342 retrospective — pre-go scope-match rule
 - Mehamakor Linear conventions (this template)

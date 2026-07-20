@@ -20,9 +20,9 @@
 
 ## 🎯 מודל מומלץ
 
-**Quick task = Sonnet 4.6 always.**
+**Quick task = Sonnet 5 always.**
 
-למה: localized scope, mechanical change. Opus 4.7 = overkill, מבזבז tokens על thinking שלא נחוץ.
+למה: localized scope, mechanical change. Opus 4.8 = overkill, מבזבז tokens על thinking שלא נחוץ.
 
 Effort: `low` או `medium` — לא יותר.
 
@@ -39,7 +39,7 @@ Effort: `low` או `medium` — לא יותר.
 - Line: [number, אם ידוע]
 
 ## Model + Effort
-- 🟢 Sonnet 4.6
+- 🟢 Sonnet 5
 - Effort: low
 
 ## Prompt לClaude Code
@@ -77,7 +77,7 @@ Constraints:
 - Find: `<Leaf />` element
 
 ## Model + Effort
-- 🟢 Sonnet 4.6
+- 🟢 Sonnet 5
 - Effort: low
 
 ## Prompt לClaude Code
@@ -119,7 +119,7 @@ Do not touch any other files.
 | Tests | לא חובה | חובה |
 | Docs update | לא חובה | חובה |
 | Design review | לא | כן (אם UI) |
-| Model | Sonnet 4.6 | Opus 4.7 לרוב |
+| Model | Sonnet 5 | Opus 4.8 לרוב |
 | Effort | low | high/xhigh |
 
 ---
@@ -142,7 +142,7 @@ Do not touch any other files.
 
 ## 🚨 Anti-patterns
 
-❌ **Quick task ל-Opus 4.7.** ה-token cost לא מצדיק. Sonnet 4.6 מספיק.
+❌ **Quick task ל-Opus 4.8.** ה-token cost לא מצדיק. Sonnet 5 מספיק.
 
 ❌ **DoD מורחב.** Quick = build + visible + preview. Don't add tests/docs.
 
@@ -158,7 +158,7 @@ Do not touch any other files.
 - [ ] Fix ב-1-3 קבצים maksimum (1 עדיף)
 - [ ] Prompt ב-5-10 שורות
 - [ ] DoD: רק build + visible + preview
-- [ ] Sonnet 4.6, effort low
+- [ ] Sonnet 5, effort low
 - [ ] Branch from staging
 ```
 
