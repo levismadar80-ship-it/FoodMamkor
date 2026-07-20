@@ -73,6 +73,8 @@ vi.mock("@phosphor-icons/react", () => ({
   Confetti: (props) => <span data-testid="phosphor-icon" {...props} />,
   Handbag: (props) => <span data-testid="phosphor-icon" {...props} />,
   Truck: (props) => <span data-testid="phosphor-icon" {...props} />,
+  // MEH-1361: the new_recipe toggle row's icon.
+  CookingPot: (props) => <span data-testid="phosphor-icon" {...props} />,
   ChatCircle: (props) => <span data-testid="phosphor-icon" {...props} />,
 }));
 
