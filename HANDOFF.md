@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1364 follower count from favorites (alerts-chain batch, item D — closes decision A)
+
+- **Shipped:** the two `producer_analytics` follower queries repointed `ProducerFollower` → `Favorite` (`func.count(Favorite.producer_id)` — composite PK, no id column; week window on `Favorite.created_at`). `ProducerFollower` import dropped from `producer_me.py`. Followers page: **zero changes needed** (renders `analytics.follower_count`; no per-follower list endpoint exists) — ticket file_location narrowed, surfaced in PR.
+- **Data prerequisite:** handled by Sapir 20/07 (1 orphan → upsert with original `created_at` → 0 verified). No data-migration code in the PR, per ticket.
+- **Tests:** `test_analytics_follower_counts` → Favorite fixtures across the week boundary + a legacy `producer_followers` row proving the frozen table no longer counts. Pre-existing `test_analytics.py` F401/PLR0913 left alone (outside CI's backend-scoped ruff; verified pre-existing via stash-diff).
+- **This closes the MEH-1362 batch** (decision A: 1363 removed the button, 1364 repointed the reads). Contract step (drop `producer_followers` + `producer_follows.py`) = separate post-launch RED ticket.
+
 ## 2026-07-20 — MEH-1383 — ChipScrollRow desktop scroll arrows (PR #1977, auto-merge armed)
 
 - **What:** desktop-pointer edge arrow buttons on the shared chip row — single code file (`frontend/components/ChipScrollRow.jsx`) + 7 new vitest cases in its suite. PR #1977 opened **ready** (not draft — a draft skips the backend jobs and yields a fake green, rule 21) with auto-merge per the ticket's YELLOW authority.
