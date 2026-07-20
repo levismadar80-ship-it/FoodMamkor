@@ -33,6 +33,13 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 // JSX + i18n keys kept intact for revival; flip to true when content lands.
 const SHOW_TESTIMONIALS = false;
 
+// MEH-1336: "איך אנחנו מאמתים" section render-gated OFF — the Hebrew body copy
+// awaits Sapir's brand ✓ (brand-before-code). The #verification anchor is the
+// target of the verified-badge popover (MEH-1334, PR #1936, also unmerged).
+// Flip to true in the copy-approval PR: swap the placeholder value of
+// about.consumer.verification.body in he.json/en.json for the approved text.
+const SHOW_VERIFICATION = false;
+
 // MEH-1113: contact-form topic whitelist (mirrors backend CONTACT_TOPIC_LABELS
 // keys). "general" is the default; labels resolve from contact.topic_options.*.
 const CONTACT_TOPICS = ["general", "business", "correction", "other"];
@@ -274,6 +281,22 @@ export default function AboutPage() {
           </div>
         </div>
       </FadeInSection>
+
+      {/* ======== Verification — "איך אנחנו מאמתים" (MEH-1336 · render-gated until copy ✓) ========
+          id="verification" is the anchor target of /about#verification (verified-badge
+          popover, MEH-1334). scroll-mt-24 offsets the sticky header (same as #contact). */}
+      {SHOW_VERIFICATION && (
+        <FadeInSection id="verification" as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">
+          <div className="max-w-3xl mx-auto px-4 md:px-12">
+            <h2 className="font-headline-lg font-bold text-text text-[clamp(23px,4vw,30px)] leading-tight">
+              {t("verification.heading")}
+            </h2>
+            <p className="font-body-md text-fg-muted text-lg leading-relaxed mt-4 max-w-[58ch]">
+              {t("verification.body")}
+            </p>
+          </div>
+        </FadeInSection>
+      )}
 
       {/* ======== 05 — Tips accordion ======== */}
       <FadeInSection as="section" {...REVEAL_PRESET} className="bg-background py-9 md:py-14 scroll-mt-24">

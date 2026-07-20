@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — AskUserQuestion delivery failure — observed once (LOUD, not silent) — MEH-1377 investigation closed
+
+- **What happened:** during MEH-1375 (GREEN, docs-only) CC hit a scope question (include the 11th sibling `README.md`?) and called `AskUserQuestion` to confirm with Sapir. In this non-interactive session the tool **failed to deliver** — but it failed **LOUDLY**, returning `Tool permission request failed: AbortError: Tool permission stream closed before response received`, not a fake success.
+- **Why that matters:** this is **not** the silent auto-resolve class tracked upstream in `anthropics/claude-code` #50728 / #29618 / #46515 (where the agent "sees success" with an empty answer and continues unaware). Here the call errored visibly, CC **knew** it failed, proceeded on the documented default, and flagged it in the PR/CHANGELOG/HANDOFF. Correct behavior — the §2.2 "fail-open by design" signature never applied to us.
+- **Version:** installed Claude Code **2.1.211**, past the **v2.1.200** change where dialogs stopped auto-continuing by default. No settings re-enable timed auto-continue.
+- **MEH-1377 disposition:** investigated Phase-0-only and **closed Done, no hook.** A PreToolUse hook can't see delivery outcome (it fires before the tool runs), so the originally-proposed guard was not implementable at that layer.
+- **Recurrence rule (meta-patterns.md "observed ≥2 times"):** this is occurrence **#1**. If a delivery failure like this recurs on a **YELLOW or RED** ticket — where proceeding on a default is a real scope/architecture risk — the 2-occurrence threshold is met: **write the rule then, at the `Stop`/`SubagentStop` layer (not PreToolUse).** Until then, no rule, no hook (a prose rule on a loud-failing tool would be a no-op guard).
+
 ## 2026-07-20 — MEH-1361 new_recipe alert — implemented to the RED STOP point (alerts-chain batch, item E)
 
 - **MEH-1360 MERGED** — staging squash `93beaec4` (PR #1966; one slow-runner pytest timeout re-kicked + one HANDOFF Accept-Both against MEH-1375 on the way).
