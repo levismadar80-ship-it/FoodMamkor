@@ -4,10 +4,13 @@ import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Images, SealCheck } from "@phosphor-icons/react";
 import ImageWithFallback from "./ImageWithFallback";
-import FavoriteButton from "./FavoriteButton";
+import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
 
-export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false }) {
+// MEH-1334 (decision 6): the hero corner overlay is now SHARE, mobile-only —
+// the heart's one home is the header quiet-actions row (שמירה), and desktop
+// share lives there too, so the desktop hero stays clean.
+export default function ImageGallery({ images = [], producerId = null, producerName = "", verified = false, shareUrl = "" }) {
   const t = useTranslations("gallery");
   // MEH-1168 P2: the verified "מאומת" seal anchors to the name. For imageless
   // producers the name lives here in the Tinted Masthead (ProducerHeader omits
@@ -112,8 +115,8 @@ export default function ImageGallery({ images = [], producerId = null, producerN
           </div>
         </div>
         {producerId && (
-          <div className="absolute top-3 start-3 z-10">
-            <FavoriteButton producerId={producerId} variant="gallery" />
+          <div className="absolute top-3 start-3 z-10 lg:hidden">
+            <ShareButton variant="overlay" url={shareUrl} title={producerName} />
           </div>
         )}
       </div>
@@ -253,12 +256,12 @@ export default function ImageGallery({ images = [], producerId = null, producerN
         </>
       )}
     </div>
-    {/* MEH-1047: single FavoriteButton for the imaged state — pinned top-start
-        (right, RTL) over the visible layout's hero corner. z-20 clears the
-        counter chip / pill (z-10). */}
+    {/* MEH-1334: single mobile SHARE overlay for the imaged state — pinned
+        top-start (right, RTL) over the hero corner where the heart used to
+        sit (MEH-1047 slot). z-20 clears the counter chip / pill (z-10). */}
     {producerId && (
-      <div className="absolute top-3 start-3 z-20">
-        <FavoriteButton producerId={producerId} variant="gallery" />
+      <div className="absolute top-3 start-3 z-20 lg:hidden">
+        <ShareButton variant="overlay" url={shareUrl} title={producerName} />
       </div>
     )}
     </div>

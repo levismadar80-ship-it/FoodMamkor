@@ -4,7 +4,14 @@ import { useTranslations } from "next-intl";
 import { ShareNetwork } from "@phosphor-icons/react";
 import { BRAND_NAME } from "@/lib/constants";
 
-export default function ShareButton({ url, title, description, city, category }) {
+/**
+ * Variants (MEH-1334):
+ *   - "default" — bordered box (legacy surfaces)
+ *   - "quiet"   — header quiet-actions row: borderless icon + "שיתוף"
+ *   - "overlay" — mobile hero overlay: white circle, icon-only (the share
+ *                 affordance's single mobile home; heart moved to actions row)
+ */
+export default function ShareButton({ url, title, description, city, category, variant = "default" }) {
   const t = useTranslations("share");
   const resolvedTitle = title || t("wa_message_business_fallback");
   const metaSep = t("wa_meta_separator");
@@ -44,6 +51,37 @@ export default function ShareButton({ url, title, description, city, category })
     // No native share (desktop / older browsers) → wa.me fallback.
     window.open(waHref, "_blank", "noopener,noreferrer");
   };
+
+  if (variant === "overlay") {
+    return (
+      <button
+        onClick={handleShare}
+        // Mirrors FavoriteButton's gallery circle so the hero corner control
+        // swap (heart → share, MEH-1334 decision 6) is visually seamless.
+        className="bg-white/95 hover:bg-white rounded-full w-11 h-11 flex items-center justify-center shadow-md hover:scale-105 transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={t("modal_title")}
+      >
+        <ShareNetwork size={20} className="text-text" aria-hidden="true" />
+      </button>
+    );
+  }
+
+  if (variant === "quiet") {
+    // MEH-1334: header quiet-actions row — borderless icon + locked label
+    // "שיתוף"; ≥44px hit-area via min-h + transparent padding (revision-2 #5).
+    return (
+      <button
+        onClick={handleShare}
+        className="inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium text-text hover:text-primary rounded transition focus-visible:ring-2 focus-visible:ring-primary/40"
+        title={t("copy_link")}
+        aria-label={t("modal_title")}
+      >
+        <ShareNetwork size={17} className="text-primary-dark" aria-hidden="true" />
+        {t("quiet_label")}
+      </button>
+    );
+  }
 
   return (
     <button

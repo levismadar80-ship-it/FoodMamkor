@@ -665,7 +665,10 @@
       "declared_explainer": "אין תג 'מאומת'? זה לא אומר פחות. חלק מהקטגוריות פטורות מרישיון לפי החוק — אין מסמך להציג, פשוט כי הוא לא נדרש. העסק חתם על הצהרה מחייבת שהוא פועל כדין, ועבר את אותה היכרות אישית כמו כולם.",
       "verified_label": "מאומת",
       "aria_verified": "בית עסק מאומת. {tooltip}",
-      "aria_verified_plain": "בית עסק מאומת"
+      "aria_verified_plain": "בית עסק מאומת",
+      "verified_popover_title": "עסק מאומת",
+      "verified_popover_body": "כל עסק במהמקור עובר אישור ידני ופועל ברישיון.",
+      "verified_popover_link": "איך אנחנו מאמתים?"
     },
     "detail": {
       "loading_fresh": "בטעינה…",
@@ -700,6 +703,7 @@
       },
       "sections": {
         "about": "אודות",
+        "location": "הגעה ומיקום",
         "similar": {
           "heading": "עסקים דומים",
           "in_area": "{category} · באזור שלך"
@@ -736,7 +740,19 @@
         "vacation": "🌙 בית עסק זה בהפסקה כרגע",
         "vacation_return": "{label} — ניתן להשאיר הודעה",
         "vacation_back": "חוזרת ב-{date}",
-        "vacation_back_soon": "חוזרת בקרוב"
+        "vacation_back_soon": "חוזרת בקרוב",
+        "new_mark": "חדש",
+        "status": {
+          "open": "פתוח להזמנות",
+          "closed": "לא מקבל הזמנות כרגע",
+          "vacation": "בחופשה · חוזרים ב־{date}",
+          "vacation_no_date": "בחופשה"
+        },
+        "excerpt_footer": "מתוך הביקורות",
+        "excerpt_all": "לכל הביקורות"
+      },
+      "owner_card": {
+        "heading": "מאחורי העסק"
       },
       "action_row": {
         "aria": {
@@ -759,7 +775,8 @@
           "whatsapp_group": "קבוצת וואטסאפ"
         },
         "email_fallback_toast": "לא הצלחנו לפתוח אפליקציית מייל — הכתובת הועתקה",
-        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב"
+        "email_copy_failed_toast": "לא הצלחנו לפתוח אפליקציית מייל ולא להעתיק — נסו שוב",
+        "reveal_phone": "הצגת מספר הטלפון"
       },
       "sticky_bar": {
         "vacation_msg": "שלחו הודעה"
@@ -1005,7 +1022,9 @@
       "following": "עוקבת",
       "follow_aria": "עקבו אחרי עסק זה",
       "unfollowed_toast": "הפסקת לעקוב",
-      "followed_toast": "מעכשיו תקבלו עדכונים על מוצרים חדשים"
+      "followed_toast": "מעכשיו תקבלו עדכונים על מוצרים חדשים",
+      "quiet_label": "מעקב",
+      "login_prompt_message": "כדי לעקוב אחרי עסקים ולקבל עדכונים — היכנסו"
     },
     "friday_delivery": {
       "today": "היום",
@@ -2565,6 +2584,7 @@
     "closed_now": "סגור",
     "opens_at": "· פותח ב-{day} {time}",
     "closed_day": "סגור",
+    "today": "היום",
     "tomorrow": "מחר",
     "weekdays": {
       "sun": "יום ראשון",
@@ -2878,6 +2898,7 @@
       "add_aria": "הוסיפו למועדפים",
       "remove_aria": "הסר ממועדפים",
       "inline_label": "שמרו",
+      "quiet_label": "שמירה",
       "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו"
     }
   },
@@ -2910,7 +2931,8 @@
     "wa_message_with_meta": "גיליתי את {title} במהמקור 🌿",
     "wa_message_business_fallback": "בית עסק",
     "wa_meta_separator": " • ",
-    "copied_toast": "הקישור הועתק"
+    "copied_toast": "הקישור הועתק",
+    "quiet_label": "שיתוף"
   },
   "share_page": {
     "h1": "ספרו עלינו",
@@ -2969,7 +2991,8 @@
       "ordering_email": "שולחים לנו מייל",
       "ordering_phone_prefix": "מתקשרים:",
       "ordering_link_label": "למעבר",
-      "escalation": "שאלה אחרת? שלחו לנו הודעה"
+      "escalation": "שאלה אחרת? שלחו לנו הודעה",
+      "more_questions": "עוד שאלות"
     }
   },
   "directory": {
@@ -4141,6 +4164,7 @@
       "row_new_event": "אירועים חדשים",
       "row_new_product": "מוצרים חדשים",
       "row_delivery_area": "אזורי משלוח חדשים",
+      "row_new_recipe": "מתכונים חדשים",
       "row_whatsapp_opt_in": "שלחו ב-WhatsApp",
       "phone_required_prompt": "כדי לקבל עדכונים בוואטסאפ נצטרך את מספר הטלפון שלכם",
       "phone_save_cta": "שמירה והפעלה",

@@ -24,6 +24,12 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
 }));
 
+// MEH-1334: BadgeRow (in the ProducerCard import chain) now imports the
+// locale-aware Link for its hero popover — mock the wrapper.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+
 const stableUser = { id: "u1", role: "user" };
 vi.mock("@/lib/auth-context", () => ({
   useAuth: () => ({ user: stableUser, loading: false }),
