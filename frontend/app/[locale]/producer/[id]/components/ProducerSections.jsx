@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Leaf } from "@phosphor-icons/react";
+import { Leaf, MapPin } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 import { useTranslations, useFormatter, useLocale } from "next-intl";
 import api from "@/lib/api";
@@ -17,6 +17,8 @@ import OpeningHours from "@/components/OpeningHours";
 // MEH-1306: owner-only per-section pencil → deep-links into the edit
 // accordion. Self-gating (0 DOM for non-owners), mounted unconditionally.
 import OwnerSectionEditLink from "@/components/OwnerSectionEditLink";
+// MEH-1334 chunk 3: "מאחורי העסק" — data-gated owner card (Z4).
+import OwnerCard from "./OwnerCard";
 import ProducerCard from "@/components/ProducerCard";
 import RecipeCard from "@/components/public/RecipeCard";
 import ReportButton from "@/components/ReportButton";
@@ -29,6 +31,12 @@ const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 // back — below it the section hides entirely so it never shows a thin 1-2 card
 // row. Documented const per the spec.
 const MIN_NEARBY_BUSINESSES = 4;
+
+// MEH-1334 chunk 3: single owner of "does this producer have a mappable
+// location" — gates both the merged location section and the MiniMap mount.
+function parseHasLocation(producer) {
+  return producer.has_physical_location !== false && !!producer.lat && !!producer.lng;
+}
 
 /**
  * The middle of the main column. MEH-1146 chunk B reorders the sections to
@@ -358,6 +366,11 @@ export default function ProducerSections({
         </div>
       )}
 
+      {/* MEH-1334 chunk 3: owner card — between delivery and reviews per the
+          approved mockup (a NEW section; the MEH-1146 order of existing
+          sections is untouched). Self-gates on contact_name (null without). */}
+      <OwnerCard producer={producer} />
+
       {/* Reviews — IO-lazy: only mounts the fetch when the section
           scrolls within 300px of the viewport (saves ~300ms on 3G).
           MEH-1048: id="reviews" is the anchor target for the header trust
@@ -407,28 +420,36 @@ export default function ProducerSections({
         </FadeInSection>
       )}
 
-      {/* MEH-1146 chunk B: location is the LAST content section — opening hours
-          + the Leaflet MiniMap (never a Google embed, fix 1) with the
-          "פתיחה במפות Google" navigation link inside MiniMap. */}
-      {/* MEH-102: Opening hours */}
-      <OpeningHours opening_hours={producer.opening_hours} />
-
-      {/* MEH-102: Mini-map with navigation — hidden for delivery-only */}
-      {producer.has_physical_location !== false && producer.lat && producer.lng && (
-        // MEH-1306: the map block is the location card's public counterpart.
-        // MiniMap owns its own heading (MiniMap.jsx:42), so the owner pencil is
-        // absolutely pinned to the inline-end of that heading row (top-8 =
-        // MiniMap's pt-8; the section's mt-8 collapses outside this wrapper).
-        // Absolute positioning → zero layout shift for every viewer.
-        <div id="section-location" className="relative scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24">
-          <OwnerSectionEditLink
-            producerId={producer.id}
-            anchor="location"
-            sectionKey="location"
-            className="absolute top-8 end-0"
-          />
-          <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
-        </div>
+      {/* MEH-1146 chunk B: location is the LAST content section. MEH-1334
+          chunk 3: merged into ONE "הגעה ומיקום" section (mockup Z3) — heading
+          + address line (city ONLY — street address is admin/owner-private
+          per MEH-829, decision 3) + collapsed OpeningHours + the Leaflet
+          MiniMap (never a Google embed) with brand nav buttons. The owner
+          pencil (MEH-1306) moved inline beside the heading, matching the
+          bio/products idiom. */}
+      {(parseHasLocation(producer) || producer.opening_hours) && (
+        <section
+          id="section-location"
+          className="mt-8 border-t border-border pt-8 scroll-mt-[calc(var(--chrome-top,82px)_+_68px)] md:scroll-mt-24"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="font-headline-md text-2xl font-bold text-text">
+              {t("producer.detail.sections.location")}
+            </h2>
+            <OwnerSectionEditLink producerId={producer.id} anchor="location" sectionKey="location" />
+          </div>
+          {/* Address line — city-only fallback, never empty (revision-1 #5). */}
+          {producer.city && (
+            <p className="flex items-center gap-1.5 text-[13.5px] text-muted mb-3">
+              <MapPin size={14} aria-hidden="true" />
+              {producer.city}
+            </p>
+          )}
+          <OpeningHours opening_hours={producer.opening_hours} />
+          {parseHasLocation(producer) && (
+            <MiniMap lat={producer.lat} lng={producer.lng} name={producer.name} />
+          )}
+        </section>
       )}
 
       {/* Directory-only disclaimer — required by Israeli consumer

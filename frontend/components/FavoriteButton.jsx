@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HeartStraight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,13 @@ import {
   setFavoritedLocal,
   subscribeFavorites,
 } from "@/lib/favorites-cache";
+// MEH-1334: post-login auto-complete — a guest's save intent survives the
+// login round-trip and finishes automatically (revision-2 #7).
+import {
+  clearPendingAction,
+  consumePendingAction,
+  setPendingAction,
+} from "@/lib/pending-action";
 import LoginPromptModal from "./LoginPromptModal";
 import AlertPrefsPanel from "./AlertPrefsPanel";
 
@@ -66,9 +73,26 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
     };
   }, [user, producerId]);
 
+  // MEH-1334 (revision-2 #7): finish a guest's save intent after sign-in.
+  // consumePendingAction is one-shot (key removed on first match), so a
+  // StrictMode double-effect or re-mount can't save twice; scroll restores
+  // to where the guest tapped — no dead-end at the login screen.
+  const toggleRef = useRef(null);
+  useEffect(() => {
+    if (!user) return;
+    const intent = consumePendingAction("favorite", producerId);
+    if (!intent) return;
+    ensureFavoritesLoaded().then(() => {
+      if (!isFavoritedCache(producerId)) toggleRef.current?.();
+    });
+    window.scrollTo({ top: intent.scrollY });
+  }, [user, producerId]);
+
   const toggle = async () => {
-    // Guest: open the login modal and stop — don't hit the API.
+    // Guest: open the login modal and stop — don't hit the API. The intent is
+    // stored so the save completes automatically after sign-in (MEH-1334).
     if (!user) {
+      setPendingAction("favorite", producerId);
       setShowLoginModal(true);
       return;
     }
@@ -82,7 +106,10 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
     try {
       if (next) {
         await api.post(`/users/me/favorites/${producerId}`);
-        if (variant !== "gallery") setShowAlertPanel(true);
+        // MEH-1334: quiet (header actions row) suppresses the inline panel
+        // like gallery — a block panel inside the flex row breaks the layout,
+        // and this page never showed it before (its only mount was gallery).
+        if (variant !== "gallery" && variant !== "quiet") setShowAlertPanel(true);
         if (!localStorage.getItem("favorite_hint_shown")) {
           localStorage.setItem("favorite_hint_shown", "1");
           showToast.success(t("saved_toast_first_time"), {
@@ -115,6 +142,8 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
     setLoading(false);
   };
 
+  toggleRef.current = toggle;
+
   const label = favorited ? t("remove_aria") : t("add_aria");
   const commonProps = {
     onClick: toggle,
@@ -145,6 +174,26 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
           className={favorited ? "text-primary" : "text-text"}
           aria-hidden="true"
         />
+      </button>
+    );
+  } else if (variant === "quiet") {
+    // MEH-1334: header quiet-actions row — borderless icon + locked label
+    // "שמירה"; ≥44px hit-area via min-h + transparent padding (visual size
+    // unchanged, revision-2 #5). Saved state = filled primary heart.
+    button = (
+      <button
+        {...commonProps}
+        className={`inline-flex items-center gap-1.5 min-h-[44px] py-2 text-[13px] font-medium rounded transition disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          favorited ? "text-primary" : "text-text hover:text-primary"
+        }`}
+      >
+        <HeartStraight
+          size={17}
+          weight={favorited ? "fill" : "regular"}
+          className={favorited ? "text-primary" : "text-primary-dark"}
+          aria-hidden="true"
+        />
+        {t("quiet_label")}
       </button>
     );
   } else if (variant === "inline") {
@@ -196,7 +245,12 @@ export default function FavoriteButton({ producerId, producerName = "", variant 
       )}
       <LoginPromptModal
         open={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
+        onClose={() => {
+          // Dismissed without signing in — drop the stored intent so a later
+          // unrelated login doesn't surprise-save (MEH-1334).
+          clearPendingAction();
+          setShowLoginModal(false);
+        }}
         message={t("login_prompt_message")}
         nextPath={nextPath}
       />

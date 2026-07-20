@@ -21,8 +21,12 @@ vi.mock("next-intl", () => ({
 
 import ImageGallery from "@/components/ImageGallery";
 
-vi.mock("@/components/FavoriteButton", () => ({
-  default: (props) => <div data-testid="favorite-btn" data-producer-id={props.producerId} />,
+// MEH-1334 (decision 6): the hero corner overlay is now the mobile SHARE
+// button — the heart moved to the header quiet-actions row.
+vi.mock("@/components/ShareButton", () => ({
+  default: (props) => (
+    <div data-testid="share-overlay" data-variant={props.variant} data-url={props.url} />
+  ),
 }));
 
 // Forward the props we assert on (priority for LCP, src for identity).
@@ -90,17 +94,20 @@ describe("ImageGallery imaged state — desktop editorial grid (MEH-1047)", () =
     secondaryImgs.forEach((img) => expect(img).toHaveAttribute("data-priority", "0"));
   });
 
-  it("renders exactly one FavoriteButton, pinned top-start (shared across grid + carousel)", () => {
-    // Regression guard: the favorite must not be trapped inside the md:hidden
-    // carousel (it would vanish on desktop for 2+ images) nor mounted twice
-    // (double /users/me/favorites fetch). One instance, hoisted to the wrapper.
-    render(<ImageGallery images={urls(4)} producerId="p-1" />);
-    const favs = screen.getAllByTestId("favorite-btn");
-    expect(favs).toHaveLength(1);
-    expect(favs[0]).toHaveAttribute("data-producer-id", "p-1");
-    expect(favs[0].parentElement.className).toMatch(/start-3/);
-    expect(favs[0].parentElement.className).toMatch(/top-3/);
-    expect(favs[0].parentElement.className).toMatch(/z-20/);
+  it("renders exactly one mobile share overlay, pinned top-start (MEH-1334)", () => {
+    // Regression guard: the overlay must not be trapped inside the md:hidden
+    // carousel nor mounted twice. One instance, hoisted to the wrapper —
+    // and mobile-only (lg:hidden): desktop share lives in the header
+    // quiet-actions row, so the desktop hero stays clean (decision 6).
+    render(<ImageGallery images={urls(4)} producerId="p-1" shareUrl="https://x/p-1" />);
+    const shares = screen.getAllByTestId("share-overlay");
+    expect(shares).toHaveLength(1);
+    expect(shares[0]).toHaveAttribute("data-variant", "overlay");
+    expect(shares[0]).toHaveAttribute("data-url", "https://x/p-1");
+    expect(shares[0].parentElement.className).toMatch(/start-3/);
+    expect(shares[0].parentElement.className).toMatch(/top-3/);
+    expect(shares[0].parentElement.className).toMatch(/z-20/);
+    expect(shares[0].parentElement.className).toMatch(/lg:hidden/);
   });
 });
 

@@ -96,4 +96,89 @@ describe("ui/Popover", () => {
     fireEvent.click(screen.getByText("פתחי"));
     expect(screen.getByTestId("pop-content").className).toContain("top-full");
   });
+
+  // MEH-1334 chunk 3: opt-in mobile bottom-sheet presentation.
+  describe("sheetOnMobile (MEH-1334)", () => {
+    const mobileMatchMedia = () => {
+      const prev = window.matchMedia;
+      window.matchMedia = vi.fn().mockImplementation((query) => ({
+        matches: true, // (max-width: 1023px) → mobile
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }));
+      return () => {
+        window.matchMedia = prev;
+      };
+    };
+
+    it("presents as a modal dialog sheet with a backdrop on mobile", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        fireEvent.click(screen.getByText("פתחי"));
+        const panel = screen.getByTestId("pop-content");
+        expect(panel).toHaveAttribute("role", "dialog");
+        expect(panel).toHaveAttribute("aria-modal", "true");
+        expect(panel.className).toContain("fixed");
+        expect(screen.getByTestId("pop-content-backdrop")).toBeInTheDocument();
+      } finally {
+        restore();
+      }
+    });
+
+    it("backdrop click closes the sheet; Esc still returns focus to trigger", () => {
+      const restore = mobileMatchMedia();
+      try {
+        renderPopover({ sheetOnMobile: true });
+        const btn = screen.getByText("פתחי");
+        fireEvent.click(btn);
+        fireEvent.click(screen.getByTestId("pop-content-backdrop"));
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        // reopen → Esc path
+        fireEvent.click(btn);
+        fireEvent.keyDown(globalThis, { key: "Escape" });
+        expect(screen.queryByTestId("pop-content")).not.toBeInTheDocument();
+        expect(document.activeElement).toBe(btn);
+      } finally {
+        restore();
+      }
+    });
+
+    it("traps Tab inside the sheet (wraps from last to first focusable)", () => {
+      const restore = mobileMatchMedia();
+      try {
+        render(
+          <Popover
+            trigger={<button type="button">פתחי</button>}
+            contentTestId="pop-content"
+            sheetOnMobile
+          >
+            <a href="/a">ראשון</a>
+            <a href="/b">אחרון</a>
+          </Popover>,
+        );
+        fireEvent.click(screen.getByText("פתחי"));
+        const last = screen.getByText("אחרון");
+        last.focus();
+        fireEvent.keyDown(globalThis, { key: "Tab" });
+        expect(document.activeElement).toBe(screen.getByText("ראשון"));
+      } finally {
+        restore();
+      }
+    });
+
+    it("desktop (matchMedia false) keeps the anchored popover — no dialog, no backdrop", () => {
+      // setup.js matchMedia shim returns matches:false by default.
+      renderPopover({ sheetOnMobile: true });
+      fireEvent.click(screen.getByText("פתחי"));
+      const panel = screen.getByTestId("pop-content");
+      expect(panel).toHaveAttribute("role", "tooltip");
+      expect(panel.className).toContain("absolute");
+      expect(screen.queryByTestId("pop-content-backdrop")).not.toBeInTheDocument();
+    });
+  });
 });

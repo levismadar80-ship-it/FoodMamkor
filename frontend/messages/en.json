@@ -670,7 +670,10 @@
       "declared_explainer": "No 'Verified' badge? It doesn't mean less. Some categories are legally exempt from licensing — there's no document to show, simply because none is required. The business signed a binding declaration that it operates lawfully, and went through the same personal introduction as everyone else.",
       "verified_label": "Verified",
       "aria_verified": "Verified business. {tooltip}",
-      "aria_verified_plain": "Verified business"
+      "aria_verified_plain": "Verified business",
+      "verified_popover_title": "Verified business",
+      "verified_popover_body": "Every business on Mehamakor is manually approved and operates under license.",
+      "verified_popover_link": "How do we verify?"
     },
     "detail": {
       "loading_fresh": "Loading fresh businesses...",
@@ -705,6 +708,7 @@
       },
       "sections": {
         "about": "About",
+        "location": "Getting there",
         "similar": {
           "heading": "Similar businesses",
           "in_area": "{category} · in your area"
@@ -741,7 +745,19 @@
         "vacation": "🌙 This business is on break right now",
         "vacation_return": "{label} — you can leave a message",
         "vacation_back": "Back on {date}",
-        "vacation_back_soon": "Back soon"
+        "vacation_back_soon": "Back soon",
+        "new_mark": "New",
+        "status": {
+          "open": "Open for orders",
+          "closed": "Not taking orders right now",
+          "vacation": "On break · back on {date}",
+          "vacation_no_date": "On break"
+        },
+        "excerpt_footer": "From the reviews",
+        "excerpt_all": "All reviews"
+      },
+      "owner_card": {
+        "heading": "Behind the business"
       },
       "action_row": {
         "aria": {
@@ -764,7 +780,8 @@
           "whatsapp_group": "WhatsApp group"
         },
         "email_fallback_toast": "We couldn't open your email app — the address was copied",
-        "email_copy_failed_toast": "We couldn't open your email app or copy — please try again"
+        "email_copy_failed_toast": "We couldn't open your email app or copy — please try again",
+        "reveal_phone": "Show phone number"
       },
       "sticky_bar": {
         "vacation_msg": "Send a message — they will respond soon"
@@ -1007,7 +1024,9 @@
       "following": "Following",
       "follow_aria": "Follow this business",
       "unfollowed_toast": "You've stopped following",
-      "followed_toast": "You'll now get updates about new products"
+      "followed_toast": "You'll now get updates about new products",
+      "quiet_label": "Follow",
+      "login_prompt_message": "To follow businesses and get updates — sign in"
     },
     "friday_delivery": {
       "today": "today",
@@ -2544,6 +2563,7 @@
     "closed_now": "Closed",
     "opens_at": "· opens {day} {time}",
     "closed_day": "Closed",
+    "today": "Today",
     "tomorrow": "tomorrow",
     "weekdays": {
       "sun": "Sunday",
@@ -2857,6 +2877,7 @@
       "add_aria": "Add to favorites",
       "remove_aria": "Remove from favorites",
       "inline_label": "Save",
+      "quiet_label": "Save",
       "login_prompt_message": "To save businesses you love — sign in"
     }
   },
@@ -2889,7 +2910,8 @@
     "wa_message_with_meta": "I found {title} on Mehamakor 🌿",
     "wa_message_business_fallback": "a business",
     "wa_meta_separator": " • ",
-    "copied_toast": "Link copied"
+    "copied_toast": "Link copied",
+    "quiet_label": "Share"
   },
   "share_page": {
     "h1": "Spread the word",
@@ -2948,7 +2970,8 @@
       "ordering_email": "Send us an email",
       "ordering_phone_prefix": "Call:",
       "ordering_link_label": "Open",
-      "escalation": "Another question? Send us a message"
+      "escalation": "Another question? Send us a message",
+      "more_questions": "More questions"
     }
   },
   "directory": {

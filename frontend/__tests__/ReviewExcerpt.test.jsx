@@ -8,7 +8,11 @@ const mockGet = vi.fn();
 vi.mock("@/lib/api", () => ({ default: { get: (...args) => mockGet(...args) } }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key) => key }));
-vi.mock("@phosphor-icons/react", () => ({ Quotes: () => <span data-testid="quotes-icon" /> }));
+// MEH-1334: the restyled pull-quote adds a CaretLeft chevron in its footer.
+vi.mock("@phosphor-icons/react", () => ({
+  Quotes: () => <span data-testid="quotes-icon" />,
+  CaretLeft: () => <span data-testid="caret-icon" />,
+}));
 
 import ReviewExcerpt from "@/app/[locale]/producer/[id]/components/ReviewExcerpt";
 

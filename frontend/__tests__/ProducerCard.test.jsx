@@ -107,6 +107,12 @@ vi.mock("@/lib/favorites-cache", () => ({
   subscribeFavorites: () => () => {},
 }));
 
+// MEH-1334: BadgeRow (a real child) now imports the locale-aware Link for its
+// hero popover — mock the wrapper so the import chain stays jsdom-safe.
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => <a href={href} {...props}>{children}</a>,
+}));
+
 // Phosphor icons — render as identifiable spans
 vi.mock("@phosphor-icons/react", () => ({
   Leaf: (props) => <span data-testid="leaf-icon" {...props} />,

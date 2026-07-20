@@ -8,16 +8,11 @@ import ContactCard from "./ContactCard";
  * per viewport (MEH-1146 chunk A). All card chrome + contact affordances
  * live in ContactCard.
  */
-export default function ContactSidebar({ producer, isVacation, primaryCategory, shareUrl }) {
+export default function ContactSidebar({ producer, isVacation }) {
   return (
     <aside className="hidden lg:block">
       <div className="lg:sticky lg:top-24">
-        <ContactCard
-          producer={producer}
-          isVacation={isVacation}
-          primaryCategory={primaryCategory}
-          shareUrl={shareUrl}
-        />
+        <ContactCard producer={producer} isVacation={isVacation} />
       </div>
     </aside>
   );

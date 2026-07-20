@@ -9,6 +9,8 @@ vi.mock("next-intl", () => ({
     if (key === "producer.detail.header.review_count") return `${vars?.count} ביקורות`;
     return key;
   },
+  // MEH-1334: ProducerHeader reads the locale for the vacation return date.
+  useLocale: () => "he",
 }));
 
 // ReviewExcerpt (chunk 2) is a child of ProducerHeader — stub its api so the
@@ -28,6 +30,17 @@ vi.mock("@phosphor-icons/react", () => ({
   Star: () => <span data-testid="star" />,
   Truck: () => <span />,
   StarOfDavid: () => <span />,
+}));
+// MEH-1334: the quiet-actions row children are separately tested — stub them
+// so this suite stays focused on the header's own render logic.
+vi.mock("@/components/FavoriteButton", () => ({
+  default: () => <button data-testid="fav-quiet" />,
+}));
+vi.mock("@/components/FollowButton", () => ({
+  default: () => <button data-testid="follow-quiet" />,
+}));
+vi.mock("@/components/ShareButton", () => ({
+  default: () => <button data-testid="share-quiet" />,
 }));
 
 import ProducerHeader from "@/app/[locale]/producer/[id]/components/ProducerHeader";
@@ -107,5 +120,57 @@ describe("ProducerHeader declared explainer (MEH-1170)", () => {
       />,
     );
     expect(screen.queryByText("producer.badge.declared_explainer")).not.toBeInTheDocument();
+  });
+});
+
+// MEH-1334 chunk 1: the page's single order-status line lives in the header
+// meta line — 3 states (open / closed / vacation), plus the zero-reviews
+// "חדש" fallback in the rating slot.
+describe("ProducerHeader status line + חדש fallback (MEH-1334)", () => {
+  it("renders the open status by default (accepting_orders)", () => {
+    render(<ProducerHeader producer={baseProducer} primaryCategory={null} hasImages />);
+    expect(screen.getByTestId("status-open")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-closed")).not.toBeInTheDocument();
+  });
+
+  it("renders the closed status for full_this_week (and no open status)", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, availability_state: "full_this_week" }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByTestId("status-closed")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
+  });
+
+  it("renders the gold vacation status when on vacation", () => {
+    render(
+      <ProducerHeader
+        producer={{
+          ...baseProducer,
+          availability_state: "on_vacation",
+          vacation_until: "2026-08-03",
+        }}
+        isVacation
+        vacationReturnLabel="x"
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByTestId("status-vacation")).toBeInTheDocument();
+    expect(screen.queryByTestId("status-open")).not.toBeInTheDocument();
+  });
+
+  it("shows the 'חדש' fallback in the rating slot when there are zero reviews", () => {
+    render(
+      <ProducerHeader
+        producer={{ ...baseProducer, reviews_count: 0 }}
+        primaryCategory={null}
+        hasImages
+      />,
+    );
+    expect(screen.getByTestId("new-mark")).toBeInTheDocument();
   });
 });

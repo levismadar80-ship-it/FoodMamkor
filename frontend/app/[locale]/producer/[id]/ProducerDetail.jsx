@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Info, Package, Truck, ChatCircleText } from "@phosphor-icons/react";
 
 import Breadcrumb from "@/components/Breadcrumb";
@@ -21,11 +21,7 @@ import { useLazyReviews } from "./hooks/useLazyReviews";
 import { useProducerData } from "./hooks/useProducerData";
 import { useStickyBar } from "./hooks/useStickyBar";
 import { useTabScroll } from "./hooks/useTabScroll";
-import {
-  buildShareUrl,
-  getRenderableImages,
-  getVacationReturnLabel,
-} from "./lib/producer-format";
+import { buildShareUrl, getRenderableImages } from "./lib/producer-format";
 
 /**
  * Producer detail page (docs/archive/ALL_PAGES_DESIGN.md עמוד 2).
@@ -42,7 +38,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const params = useParams();
   const { user } = useAuth();
   const t = useTranslations();
-  const locale = useLocale();
 
   const { producer, loading, events, similarProducers, nearbyProducers } = useProducerData({
     params,
@@ -88,7 +83,6 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
   const isVacation =
     producer.availability_state === "on_vacation" ||
     (!producer.availability_state && producer.availability_status === "vacation");
-  const vacationReturnLabel = getVacationReturnLabel(producer, t, locale);
   // MEH-815: imageless profiles render the Tinted Masthead hero (name as h1);
   // ProducerHeader omits its own name h1 in that case to keep the name singular.
   // MEH-1121 (Task D): blank/whitespace image entries are filtered out so a
@@ -129,6 +123,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           producerId={producer.id}
           producerName={producer.name}
           verified={producer.verification_tier === "verified"}
+          shareUrl={shareUrl}
         />
         <div className="flex justify-end">
           <OwnerSectionEditLink producerId={producer.id} anchor="images" sectionKey="images" />
@@ -180,9 +175,9 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
           <ProducerHeader
             producer={producer}
             isVacation={isVacation}
-            vacationReturnLabel={vacationReturnLabel}
             primaryCategory={primaryCategory}
             hasImages={hasImages}
+            shareUrl={shareUrl}
           />
           {/* Mobile/tablet inline contact card — the IntersectionObserver
               target for useStickyBar. Must stay the first child after
@@ -199,12 +194,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
             <div className="flex justify-end">
               <OwnerSectionEditLink producerId={producer.id} anchor="contact-channels" sectionKey="contact" />
             </div>
-            <ContactCard
-              producer={producer}
-              isVacation={isVacation}
-              primaryCategory={primaryCategory}
-              shareUrl={shareUrl}
-            />
+            <ContactCard producer={producer} isVacation={isVacation} />
           </div>
           <ProducerSections
             producer={producer}
@@ -219,12 +209,7 @@ export default function ProducerDetail({ initialProducer = null, fetchPath = nul
         </div>
 
         {/* ================= Sticky contact sidebar ================= */}
-        <ContactSidebar
-          producer={producer}
-          isVacation={isVacation}
-          primaryCategory={primaryCategory}
-          shareUrl={shareUrl}
-        />
+        <ContactSidebar producer={producer} isVacation={isVacation} />
       </div>
 
       {/* StickyContactBar — mobile only, IO-driven, always mounted. */}

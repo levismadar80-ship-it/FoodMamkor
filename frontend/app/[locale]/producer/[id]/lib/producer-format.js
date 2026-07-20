@@ -30,19 +30,23 @@ export function getRenderableImages(images) {
   return images.filter((src) => typeof src === "string" && src.trim() !== "");
 }
 
-// MEH-76 chunk 1: label moved to i18n (producer.detail.header.vacation_back*) —
-// the hardcoded Hebrew here rendered on /en too. Callers pass next-intl's
-// t + locale. The date is wrapped FSI…PDI (⁨…⁩, the string-level
-// <bdi>) so it never reorders inside the surrounding RTL sentence.
-export function getVacationReturnLabel(producer, t, locale) {
-  if (!producer.vacation_until) return t("producer.detail.header.vacation_back_soon");
+// MEH-1334 chunk 3: getVacationReturnLabel (the vacation banner's sentence
+// builder, MEH-76) was deleted with the banner — it duplicated the return
+// date now owned by the meta status ("one home per fact"). The date's single
+// source is getVacationReturnDate below.
+
+// MEH-1334: bare return date for the header's 3-state status line
+// ("בחופשה · חוזרים ב־{date}"). Local-date parse (not UTC) +
+// FSI…PDI isolation so the date never reorders in RTL; null when no
+// vacation_until → caller falls back to the date-less status string.
+export function getVacationReturnDate(producer, locale) {
+  if (!producer.vacation_until) return null;
   try {
-    // Parse as local date (not UTC) to avoid off-by-one in UTC+2/+3 (Israel).
     const [y, m, d] = producer.vacation_until.split("-").map(Number);
     const date = new Date(y, m - 1, d).toLocaleDateString(locale, { day: "numeric", month: "long" });
-    return t("producer.detail.header.vacation_back", { date: `\u2068${date}\u2069` });
+    return `\u2068${date}\u2069`;
   } catch {
-    return t("producer.detail.header.vacation_back_soon");
+    return null;
   }
 }
 
