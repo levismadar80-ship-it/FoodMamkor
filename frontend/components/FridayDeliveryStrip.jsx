@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ShoppingCart } from "@phosphor-icons/react";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
 import api from "@/lib/api";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 function ProducerMiniCard({ producer }) {
   // Strings live under group_buys.friday_delivery (today/title/title_alt) —
@@ -49,7 +50,10 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
   // Same namespace note as ProducerMiniCard above.
   const t = useTranslations("group_buys.friday_delivery");
   const [producers, setProducers] = useState([]);
-  const scrollRef = useRef(null);
+  // MEH-1391: desktop scroll arrows via the shared hook. The previous
+  // local scrollRef was attached but never read — the hook's ref
+  // replaces it (same element, now actually consumed).
+  const affordance = useScrollAffordance();
 
   useEffect(() => {
     // MEH-291 Phase 3 — switched from is_available_today=true to the unified
@@ -91,14 +95,18 @@ export default function FridayDeliveryStrip({ city, onVisibilityChange }) {
             </span>
           )}
         </div>
-        <div
-          ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {producers.map((p) => (
-            <ProducerMiniCard key={p.id} producer={p} />
-          ))}
+        {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
+        <div className="relative">
+          <ScrollArrows affordance={affordance} />
+          <div
+            ref={affordance.scrollRef}
+            className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {producers.map((p) => (
+              <ProducerMiniCard key={p.id} producer={p} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

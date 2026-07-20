@@ -219,10 +219,13 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
   });
 });
 
-describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
+describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383/MEH-1391)", () => {
   // The arrows are gated on (hover: hover) and (pointer: fine); each
   // matchMedia mock records its change listeners so a test can flip the
   // pointer capability live (hybrid devices).
+  // MEH-1391: visibility moved from the IO sentinels to the shared
+  // useScrollAffordance hook (scroll listener + RO math), so these tests
+  // drive scroll geometry + scroll events instead of firing the IO mock.
   let mqChangeListeners;
   let savedMatchMedia;
 
@@ -245,13 +248,24 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     };
   }
 
-  // Both sentinels off-screen = overflowing row scrolled to the middle.
-  function reportOverflowBothSides(container) {
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: false },
-    ]);
+  // Give the scroller real geometry (jsdom defaults everything to 0)
+  // and fire a scroll event so the hook recomputes.
+  function setScroll(container, { scrollWidth, clientWidth, scrollLeft }) {
+    const scroller = container.querySelector("div.overflow-x-auto");
+    Object.defineProperty(scroller, "scrollWidth", { value: scrollWidth, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: clientWidth, configurable: true });
+    Object.defineProperty(scroller, "scrollLeft", {
+      value: scrollLeft,
+      configurable: true,
+      writable: true,
+    });
+    fireEvent.scroll(scroller);
+    return scroller;
+  }
+
+  // Overflowing row scrolled to the middle (RTL: scrollLeft negative).
+  function setOverflowMid(container) {
+    return setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -100 });
   }
 
   beforeEach(() => {
@@ -268,7 +282,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -278,7 +292,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     const { start, end } = getArrows(container);
     expect(start).not.toBeNull();
     expect(end).not.toBeNull();
@@ -295,11 +309,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    const { start, end } = getSentinels(container);
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: true },
-    ]);
+    setScroll(container, { scrollWidth: 500, clientWidth: 500, scrollLeft: 0 });
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -309,19 +319,12 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    const { start, end } = getSentinels(container);
     // At the start edge: can only scroll toward the end.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: true },
-      { target: end, isIntersecting: false },
-    ]);
+    setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: 0 });
     expect(getArrows(container).start).toBeNull();
     expect(getArrows(container).end).not.toBeNull();
-    // At the far end: can only scroll back toward the start.
-    ioInstances[0].fire([
-      { target: start, isIntersecting: false },
-      { target: end, isIntersecting: true },
-    ]);
+    // At the far end (RTL: scrollLeft at -max): only back toward the start.
+    setScroll(container, { scrollWidth: 1000, clientWidth: 500, scrollLeft: -500 });
     expect(getArrows(container).start).not.toBeNull();
     expect(getArrows(container).end).toBeNull();
   });
@@ -331,9 +334,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
-    const scroller = container.querySelector("div.overflow-x-auto");
-    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    const scroller = setOverflowMid(container);
     scroller.scrollBy = vi.fn();
     // dir="rtl": toward inline-end = NEGATIVE left delta.
     fireEvent.click(getArrows(container).end);
@@ -373,7 +374,7 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     const { container } = render(
       <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
     );
-    reportOverflowBothSides(container);
+    setOverflowMid(container);
     expect(getArrows(container).end).not.toBeNull();
     expect(mqChangeListeners.length).toBeGreaterThan(0);
     act(() => mqChangeListeners.forEach((cb) => cb({ matches: false })));
