@@ -3945,7 +3945,9 @@
         "hours_empty": "No hours set yet",
         "products_summary": "{count, plural, =0 {No products yet} one {1 product} other {# products}}",
         "more_group": "More options",
-        "next_step_aria": "Next step to complete"
+        "next_step_aria": "Next step to complete",
+        "owner_present": "Owner story added",
+        "owner_missing": "Not told yet"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4117,6 +4119,21 @@
         "error_generate": "Something went wrong creating the description. Try again.",
         "error_session_expired": "Your session has expired. Log in again to continue.",
         "error_save": "Save failed — check your connection and try again."
+      },
+      "owner_story": {
+        "heading": "Behind the business",
+        "intro": "The people behind the business are what customers connect with. Add a few words about yourself and a photo.",
+        "photo_label": "Your photo",
+        "photo_cta": "Upload photo",
+        "photo_replace": "Replace photo",
+        "uploading": "Uploading…",
+        "bio_label": "A few words about you",
+        "bio_placeholder": "Briefly tell customers who you are and what makes your business special.",
+        "save_cta": "Save",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "save_error": "Save failed — please try again in a moment.",
+        "upload_error": "Photo upload failed — please try again in a moment."
       }
     }
   },

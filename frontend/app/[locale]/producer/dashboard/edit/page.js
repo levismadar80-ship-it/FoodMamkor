@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -355,6 +355,15 @@ export default function ProducerDashboardEditPage() {
     ) : (
       <PreviewEmpty />
     ),
+    // MEH-1385: owner story — bio first line, else empty (a photo-only owner
+    // still reads as "present" in the accordion summary below).
+    owner: (profile.owner_bio || "").trim() ? (
+      <span className="block text-xs font-normal text-fg-muted truncate">
+        {(profile.owner_bio || "").trim()}
+      </span>
+    ) : (
+      <PreviewEmpty />
+    ),
     products:
       productsForMarker > 0 ? (
         firstProductName ? (
@@ -561,6 +570,27 @@ export default function ProducerDashboardEditPage() {
         onToggle={() => toggleKey("bio")}
       >
         <DescriptionCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* MEH-1385: owner-story card — bio + owner photo. Data path shipped in
+          MEH-1335 (#1969); this is the dormant fields' first UI. */}
+      <EditAccordionCard
+        anchorId="owner"
+        title={t("owner_story.heading")}
+        summary={
+          (profile.owner_bio || "").trim() || profile.owner_photo_url
+            ? tAcc("owner_present")
+            : tAcc("owner_missing")
+        }
+        preview={previews.owner}
+        open={openKey === "owner"}
+        onToggle={() => toggleKey("owner")}
+      >
+        <OwnerStoryCard
           profile={profile}
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}

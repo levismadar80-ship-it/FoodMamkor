@@ -23,7 +23,7 @@ import { useState, useEffect } from "react";
 // MEH-1306: locale-aware link for the "view on page" back-link below.
 import { Link as LocaleLink } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Warning, X, Sparkle, CheckCircle, Eye } from "@phosphor-icons/react";
+import { Warning, X, Sparkle, CheckCircle, Eye, UserCircle, Camera } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import { showToast } from "@/lib/toast";
 import { detailToMessage } from "@/lib/errors";
@@ -874,6 +874,159 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// MEH-1385: owner-story card — "מאחורי העסק". The data path (owner_bio +
+// owner_photo_url + POST /upload/owner-photo) shipped in MEH-1335 (#1969) but
+// had no UI, so the fields were dormant. The bio persists via PUT /producers/me
+// (owner_bio is in _PRODUCER_WRITABLE_FIELDS); the photo persists server-side
+// atomically on upload — POST /upload/owner-photo writes producer.owner_photo_url
+// (mirrors /upload/avatar), so it needs no separate PUT and no dirty flag.
+// REUSES: cards.jsx:246 ImagesCard.uploadFiles (upload loop + auto-persist);
+//         cards.jsx:686 DescriptionCard (textarea + counter + save/dirty contract).
+// ============================================================
+
+// Matches the server-side sanitize cap (schemas.ProducerUpdate._sanitize_owner_bio,
+// max_length=300). Over-limit is blocked client-side, not truncated on save.
+const OWNER_BIO_MAX = 300;
+
+// Exported for isolation tests (EditTabOwnerStoryCard.test.jsx) — see CategoriesCard.
+export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.owner_story");
+  const [bio, setBio] = useState(profile?.owner_bio || "");
+  const [savedBio, setSavedBio] = useState(profile?.owner_bio || "");
+  const [photoUrl, setPhotoUrl] = useState(profile?.owner_photo_url || "");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  // Only the bio is part of the explicit-save/dirty contract; the photo
+  // auto-persists on upload (below), like ImagesCard's gallery.
+  const dirty = bio !== savedBio;
+  useEffect(() => {
+    reportDirty("owner_story", dirty);
+    return () => reportDirty("owner_story", false);
+  }, [dirty, reportDirty]);
+
+  // The photo persists the instant upload succeeds — POST /upload/owner-photo
+  // writes producer.owner_photo_url atomically (mirrors /upload/avatar). Sync
+  // the page profile like ImagesCard does; no separate PUT, no dirty flag.
+  const uploadPhoto = async (file) => {
+    if (!file) return;
+    setSaved(false);
+    setErrorMsg(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api.post("/upload/owner-photo", fd);
+      setPhotoUrl(r.data.url);
+      onSave({ owner_photo_url: r.data.url });
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUpload = async (e) => {
+    await uploadPhoto((e.target.files || [])[0]);
+    e.target.value = "";
+  };
+
+  const save = async () => {
+    if (!dirty) return;
+    setSaving(true);
+    setErrorMsg(null);
+    // Trimmed; empty clears the field (server sanitize returns None on blank).
+    const owner_bio = bio.trim() || null;
+    try {
+      await api.put("/producers/me", { owner_bio });
+      onSave({ owner_bio });
+      setSavedBio(bio);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setErrorMsg(detailToMessage(err?.response?.data?.detail) || t("save_error"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* MEH-1116: card chrome + heading live in the EditAccordionCard header. */}
+      <p className="text-xs text-fg-muted">{t("intro")}</p>
+
+      {/* Photo — round preview + upload affordance. Empty state shows a calm
+          person placeholder, not a broken frame. */}
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-full overflow-hidden border border-border bg-primary/5 shrink-0 inline-flex items-center justify-center">
+          {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={optimizeCloudinary(photoUrl, { width: 160 })}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <UserCircle size={40} weight="thin" aria-hidden="true" className="text-fg-muted" />
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium">{t("photo_label")}</label>
+          <label className="inline-flex items-center gap-2 text-sm border border-dashed border-border rounded-[10px] px-4 py-2 cursor-pointer hover:bg-primary/5 transition">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading}
+              onChange={handleUpload}
+            />
+            <Camera size={16} weight="regular" aria-hidden="true" />
+            {uploading ? t("uploading") : photoUrl ? t("photo_replace") : t("photo_cta")}
+          </label>
+        </div>
+      </div>
+
+      {/* Bio — textarea + live counter, hard 300 cap matching the server. */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium">{t("bio_label")}</label>
+        <textarea
+          value={bio}
+          onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
+          placeholder={t("bio_placeholder")}
+          className="w-full rounded-[10px] px-3 py-2 text-sm resize-none h-24 border border-primary/30 bg-primary/5"
+          dir="auto"
+          maxLength={OWNER_BIO_MAX}
+        />
+        <div className="flex items-center justify-end">
+          <span className="text-xs text-fg-muted tabular-nums" dir="ltr">
+            {bio.length}/{OWNER_BIO_MAX}
+          </span>
+        </div>
+      </div>
+
+      {errorMsg && (
+        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        onClick={save}
+        disabled={saving || uploading || !dirty}
+        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
     </div>
   );
 }
