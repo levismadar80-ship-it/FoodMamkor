@@ -2025,6 +2025,18 @@ class TestOwnerStoryFields:
         assert resp.status_code == 200
         assert "<script>" not in (resp.json()["owner_bio"] or "")
 
+    def test_owner_photo_url_capped_at_500(self, client, db):
+        """Field(max_length=500) on ProducerUpdate → 422 for an over-long URL
+        (parallel to the bio cap test; column is VARCHAR(500))."""
+        user, _ = self._producer_user(db, email="owner_url_cap@test.com")
+        long_url = "https://res.cloudinary.com/test/" + "a" * 500 + ".jpg"
+        resp = client.put(
+            "/producers/me",
+            json={"owner_photo_url": long_url},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
     def test_owner_photo_url_rejects_bad_scheme(self, client, db):
         """Non-http(s) URL → 422 (MEH-1222 image-URL guard)."""
         user, _ = self._producer_user(db, email="owner_url_bad@test.com")
