@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1361 new_recipe alert — implemented to the RED STOP point (alerts-chain batch, item E)
+
+- **MEH-1360 MERGED** — staging squash `93beaec4` (PR #1966; one slow-runner pytest timeout re-kicked + one HANDOFF Accept-Both against MEH-1375 on the way).
+- **MEH-1361 implemented, NOT pushed — waiting at the RED STOP:** the Alembic revision is delivered as a handoff artifact in the session report (CC-deny on `alembic/versions/**`); Sapir approves/applies before anything moves. All code is committed locally on `feature/meh-1361-new-recipe-alert`.
+- **Phase 0 deviation (surfaced):** the ticket's file_locations pointed the trigger at `producer_recipes.py`, but the ONLY publicly-visible flip is `admin_recipes.py:approve_recipe` (producers can't set `published` — no such field in `ProducerRecipeUpdate`) → trigger implemented there on the false→true `published` transition. Re-approve idempotent; edit→re-approve refires (+MEH-1338 cap dedupes). URL: `/{slug}/recipes/{id}`, slug-less fallback `/producer/{id}`.
+- **Scope:** models + schemas + alerts.py (map/handlers) + admin_recipes.py (trigger) + AlertPrefsPanel 4th toggle (CookingPot) + he/en twins + 9 new tests (`test_meh1361_recipe_alert.py`) + exact-shape fix in `test_alerts.py` + phosphor mock in `FavoriteButton.test.jsx`. No separate cap. EXPECTED_TABLES unchanged.
+- **Verified locally:** ruff check+format clean · build green · vitest 1337 pass. pytest runs in CI once the revision lands (sandbox has no backend deps).
+- **Pending Sapir:** approve+apply the revision · Hebrew copy (title `🍲 מתכון חדש: <שם>` / body `מתכון חדש מחכה לכן באתר`) · decide who commits the revision file (MEH-836 allows CC-authored; batch dispatch says CC-deny — her call). Known gap flagged: `favorite_alerts` undocumented in DATA.md/db-schema.md (pre-existing).
+
 ## 2026-07-20 — MEH-1375 — model-name refresh across docs/templates/ (docs-only)
 
 - **What:** refreshed stale model names in `docs/templates/` — `Sonnet 4.6`→`Sonnet 5`, `Opus 4.7`→`Opus 4.8`. Template 00 was partially migrated (29 Opus 4.8 already); the other 9 templates never touched — 113 stale occurrences hiding behind one migrated file (single-symptom-hides-systemic-gap).

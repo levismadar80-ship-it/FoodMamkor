@@ -558,6 +558,10 @@ class FavoriteAlert(Base):
     notify_new_product = Column(Boolean, default=True)
     notify_new_event = Column(Boolean, default=True)
     notify_delivery_area = Column(Boolean, default=True)
+    # MEH-1361: 4th alert type — fires when a favorited producer's recipe
+    # first becomes publicly visible (admin approve). server_default in the
+    # migration opts existing rows in, matching the sibling columns' default.
+    notify_new_recipe = Column(Boolean, default=True)
     push_subscription = Column(JSON, nullable=True)
     whatsapp_opt_in = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
