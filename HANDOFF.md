@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1392 — producer write-surface gap audit (read-only, docs-only)
+
+- **What:** systematic map of "backend/data exists — producer has no write-UI" gaps. Output: `docs/audits/2026-07-producer-write-surface-gaps.md`. Zero code edits.
+- **Pass A** (`check_api_contract.py --json`): 37 orphan-backend, only **1** is a real producer write gap — `POST /producers/me/kashrut-request` (`producer_me.py:906`). Legacy `/availability` + `/availability-status` (`:370,405`) are by-design dead (superseded by live `/availability-state`, `dashboard/page.js:204`); the 15 `home-products`/`follow` orphans are dynamic-path false-negatives; 18 admin/infra.
+- **Pass B** (producer-owned column matrix): 5 findings. **F0** kashrut-request UI (MEH-1167), **F1** owner_bio/owner_photo_url dashboard form — schema+`POST /upload/owner-photo` shipped, form didn't (MEH-1385), **F2** contact_name admin-only (new), **F3** slug admin-only (new, likely by-design), **F4** events create-only, no edit/cancel (MEH-1166). Covered: products, delivery, recipes, group-buys, review-reply, custom_questions, license, availability.
+- **Pass C** (Linear MCP available — all verified): F0/F1/F4 already-ticketed, F2/F3 new.
+- **F0 severity note (per acceptance):** verified-only chain now closed (MEH-986 removed free-text kosher from public; MEH-1087 map chip verified-only) → kashrut-request UI is the *only* producer path to a public kashrut badge. Recommend Sapir revisit its post-launch/Low classification (recommendation only).
+- **Branch:** `feature/meh-1392-producer-gap-audit` off `origin/staging` (the harness-assigned `claude/*` branch would fail the branch-name gate — MEH-1141). Docs-only PR: 3 files (audit + CHANGELOG + HANDOFF). No tickets opened — report proposes, Sapir disposes.
+
 ## 2026-07-20 — MEH-1364 follower count from favorites (alerts-chain batch, item D — closes decision A)
 
 - **Shipped:** the two `producer_analytics` follower queries repointed `ProducerFollower` → `Favorite` (`func.count(Favorite.producer_id)` — composite PK, no id column; week window on `Favorite.created_at`). `ProducerFollower` import dropped from `producer_me.py`. Followers page: **zero changes needed** (renders `analytics.follower_count`; no per-follower list endpoint exists) — ticket file_location narrowed, surfaced in PR.
