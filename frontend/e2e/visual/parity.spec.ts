@@ -143,6 +143,8 @@ test.describe("Visual parity — MEH-991", () => {
   // after the 13:37 baseline — MEH-1186 (#1732, one visual language per behavior)
   // and MEH-1173 (#1727) — red-lining producer-detail-mobile against a now-stale
   // snapshot. This touch re-triggers vrt-update.yml to refresh the baselines.
+  // MEH-991 regen (2026-07-20): Quiet Direction v3 (MEH-1334, #1936) redesigned
+  // the page — both producer-detail baselines are stale by design. Re-trigger.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
