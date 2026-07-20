@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1383 — ChipScrollRow desktop scroll arrows (PR #1977, auto-merge armed)
+
+- **What:** desktop-pointer edge arrow buttons on the shared chip row — single code file (`frontend/components/ChipScrollRow.jsx`) + 7 new vitest cases in its suite. PR #1977 opened **ready** (not draft — a draft skips the backend jobs and yields a fake green, rule 21) with auto-merge per the ticket's YELLOW authority.
+- **Key decision (deviation, surfaced in PR + CHANGELOG):** arrow visibility reuses the existing IO sentinel signal (the dynamic-fade state) instead of the ticket's suggested ResizeObserver + scroll listener — one authority for "can scroll in that direction", per the two-parallel-mechanisms smell. RTL scrollLeft sign verified live with Playwright (`-9 → -44`, negative toward inline-end), not assumed.
+- **Adversarial review:** 1 real finding fixed (Firefox `deltaMode=DOM_DELTA_LINE` wheel deltas normalized ×16 to px; regression test added). Disproven: aria-hidden focus, old-Safari MQL listener (ChatWidget/BackToTop precedent), legacy RTL scrollLeft, hidden-instance arrow DOM (pre-existing fade parity).
+- **Findings for Sapir:** homepage (6 chips) + /producers **fit at 1440** → no overflow → correctly zero arrows; /map sidebar is the real desktop-arrows surface. Pre-existing cosmetic: `CustomCursor.jsx` recomputes hover only on mousemove, so any button unmounting under a stationary pointer leaves the cursor scaled ×3 until the mouse moves (not filed — same class exists for chips; file if it bothers).
+- **Phase 2 discovery table** (overflow-x-auto surfaces + recommendations) delivered in the session report for pasting into the ticket description.
+- **Next:** watch PR #1977 CI; mobile QA on the Vercel preview is Sapir's (375px touch verified via Playwright emulation only).
+
 ## 2026-07-20 — MEH-1379 — rule 29 → warn-only CI check (Linear auto-reopen guard)
 
 - **What:** made `workflow.md` rule 29 mechanical. New `.claude/scripts/check-linear-mentions.sh` flags any bare `MEH-[0-9]+` in a PR title/body not preceded by `Closes`/`Fixes`/`Resolves` (case-insensitive, optional colon). Motivated by 5 observed violations of the prose rule — including two in this same 20/07 batch (one reopened a just-closed ticket and had to be hand-remediated).
