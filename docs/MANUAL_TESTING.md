@@ -1911,6 +1911,12 @@ The task spec dictates the exact Hebrew error text for each rule. Verify the str
 - [ ] CitySearch dropdown above map tiles
 - [ ] Map pan/zoom works above the sheet
 
+### Leaflet attribution rides the sheet edge (MEH-1365)
+- [ ] נייד, sheet ב-PEEK — `Leaflet | © OpenStreetMap` גלוי **מעל** קצה ה-sheet, בלי לגעת בתוכן — תוצאה מצופה: פער קטן (~6px) בין הכיתוב לקצה
+- [ ] נייד, sheet ב-HALF — ה-attribution רוכב למעלה עם הקצה, אפס חפיפה עם כרטיסים — תוצאה מצופה: הכיתוב צף מעל קצה ה-sheet, לא על "שליחת הודעה"
+- [ ] נייד, באמצע drag — ה-attribution עוקב אחרי הקצה בלי קפיצות (drag=0ms, snap=300ms)
+- [ ] דסקטופ (lg+) — ה-attribution בפינה התחתונה בדיוק כמו היום (הכלל scoped ל-<1024px)
+
 ### Mobile top-banner height reservation (MEH-1019)
 _(Desktop top-banner case is covered by the legend assertion above, MEH-1009.)_
 - [ ] Mobile WITH top banner — log in as an **unverified** user (email-verification banner shows atop `<main>`) → open `/he/map` on a phone → the map + bottom controls (קרוב אליי pill, bottom sheet) sit fully inside the viewport, no spill below the fold, page not scrollable past the map. תוצאה מצופה: המפה מסתיימת בדיוק בתחתית המסך.
