@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1391 — useScrollAffordance extraction + 2 card strips (PR pending, auto-merge)
+
+- **What:** NEW `frontend/hooks/useScrollAffordance.js` (hook + `<ScrollArrows>` pair) extracted from the MEH-1383 ChipScrollRow arrows; applied to `FridayDeliveryStrip` + `HomeRecentlyViewed` (real path `app/[locale]/home/HomeStaticBlocks.jsx` — ticket's `components/` path was wrong, surfaced). ChipScrollRow arrows consume the hook; fades stay on the MEH-1340 sentinels (deliberate dual-authority, documented in the component header).
+- **Behavior fix from live QA:** rest offset scrollLeft≈−9 (snap+scroll-ps-4) made a 1px epsilon grow a phantom start-arrow → `EDGE_EPSILON_PX=16`. Verified 1440 /map: one end arrow at rest, click −9→−44.
+- **Gotchas hit (for future QA sessions):** the app's API base is `/api` on port 3000 — Playwright route mocks must target `/api/producers` and NEVER glob `**/producers?*` (it intercepts the /producers page's RSC prefetch and breaks hydration); rebuild while `next start` runs corrupts chunk serving (MIME text/plain) — kill the server before `npm run build`; Friday strip renders only Thu 18:00→Fri 14:00 unless `friday_mode_override=1`.
+- **Lint-hook note:** the per-edit lint-feedback 3-strike tripped mid-refactor on transient no-undef (MEH-763 class, exec §8); resolved by completing the refactor — final file lints 0 errors.
+- **Known scope note:** recently-viewed caps at 5 cards → arrows will rarely render there (only ~850–900px desktop windows). Not a bug.
+
 ## 2026-07-20 (evening) — Sweep 2 stop-report (launch-sweep session, PR #1978 merged; sweep halted by the parallel-session gate after 3 cycles)
 
 - **Merged this sweep:** PR #1978 (map attribution rides the sheet edge — staging `f3837b5f`). Earlier the same session (sweep 1): PR #1970 (/about verification scaffold), whose copy-flip landed later as PR #1982 from another session.
