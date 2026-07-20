@@ -308,7 +308,10 @@ def update_my_producer(
             context="producer_me.update_my_producer images",
         )
 
-    # MEH-54: fire delivery area alerts for newly added cities
+    # MEH-54: fire delivery area alerts for newly added cities.
+    # MEH-1360: targeted — only users whose User.city is among new_cities
+    # receive it; fire_alerts fills "{cities}" per recipient with only THEIR
+    # matched cities (a user in כרמיאל no longer hears about אילת).
     if new_cities:
         from app.routers.alerts import AlertContent, fire_alerts
 
@@ -319,9 +322,10 @@ def update_my_producer(
             "delivery_area",
             AlertContent(
                 title=f"🚚 משלוחים חדשים: {producer.name}",
-                body=f"עכשיו מגיעים גם ל: {', '.join(new_cities)}",
+                body="עכשיו מגיעים גם ל: {cities}",
                 url=f"/producer/{producer.id}",
             ),
+            new_cities,
         )
 
     _maybe_fire_review_ready(background_tasks, db, producer, was_approvable)
