@@ -20,14 +20,14 @@
 
 | סוג באג | מודל | למה |
 |---|---|---|
-| Single-file, root cause clear | 🟢 Sonnet 4.6 | localized, fast |
-| Cross-file, non-obvious | 🟣 Opus 4.7 | reasoning-heavy investigation |
-| Email/transport/encoding bugs | 🟣 Opus 4.7 | MEH-331 lesson — easy to miss vectors |
-| Race condition / async timing | 🟣 Opus 4.7 | requires deep mental model |
-| Bug שלא נפתר אחרי 2 ניסיונות ב-Sonnet | 🟣 Opus 4.7 | escalate, don't double-down |
-| CSS / styling issue | 🟢 Sonnet 4.6 | visual + iteration-friendly |
-| Security / auth bug | 🟣 Opus 4.7 | high stakes |
-| Hebrew/RTL display bug | 🟢 Sonnet 4.6 | well-known patterns |
+| Single-file, root cause clear | 🟢 Sonnet 5 | localized, fast |
+| Cross-file, non-obvious | 🟣 Opus 4.8 | reasoning-heavy investigation |
+| Email/transport/encoding bugs | 🟣 Opus 4.8 | MEH-331 lesson — easy to miss vectors |
+| Race condition / async timing | 🟣 Opus 4.8 | requires deep mental model |
+| Bug שלא נפתר אחרי 2 ניסיונות ב-Sonnet | 🟣 Opus 4.8 | escalate, don't double-down |
+| CSS / styling issue | 🟢 Sonnet 5 | visual + iteration-friendly |
+| Security / auth bug | 🟣 Opus 4.8 | high stakes |
+| Hebrew/RTL display bug | 🟢 Sonnet 5 | well-known patterns |
 
 ---
 
@@ -50,7 +50,7 @@ TRAP's verify command straight into your `<verification_step>`.
 
 ---
 
-## 🧱 Prompt Structure (Opus 4.7 — recommended for non-trivial bugs)
+## 🧱 Prompt Structure (Opus 4.8 — recommended for non-trivial bugs)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md.
@@ -126,7 +126,7 @@ Before declaring done:
 
 ---
 
-## 🧱 Prompt Structure (Sonnet 4.6 — single-file, scope clear)
+## 🧱 Prompt Structure (Sonnet 5 — single-file, scope clear)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md.
@@ -166,7 +166,7 @@ Output your reasoning before patching.
 
 ---
 
-## 📊 דוגמה מלאה — MEH-78 Map opens on Golan instead of Tel Aviv (Opus 4.7)
+## 📊 דוגמה מלאה — MEH-78 Map opens on Golan instead of Tel Aviv (Opus 4.8)
 
 ```xml
 Read .claude/rules/. Read HANDOFF.md.
@@ -262,7 +262,7 @@ Centroid math + outlier producers = bad default.
 ❌ **"It probably works now" בלי לרוץ repro steps.**
 ❌ **לא להוסיף regression test.**
 ❌ **לתקן עוד באג "בדרך".** Document, separate ticket.
-❌ **להריץ Opus 4.7 על באג טריוויאלי.** Sonnet 4.6 חזק מספיק.
+❌ **להריץ Opus 4.8 על באג טריוויאלי.** Sonnet 5 חזק מספיק.
 ❌ **להישאר ב-Sonnet אחרי 2 ניסיונות כושלים.** Escalate ל-Opus.
 
 ---
@@ -281,6 +281,6 @@ Centroid math + outlier producers = bad default.
 
 ## 📚 מקורות
 
-- Anthropic Bug Finding with Opus 4.7 (+11pp recall vs 4.6)
+- Anthropic Bug Finding with Opus 4.8 (+11pp recall vs previous generation)
 - MEH-331 / MEH-352 / MEH-78 retrospectives in HANDOFF.md
 - Skeptic Mode pattern (workflow.md)

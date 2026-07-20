@@ -6,17 +6,17 @@
 
 ## 🧠 TL;DR
 
-> **Default: Sonnet 4.6.** לכל עבודה יומיומית. 80% מהמשימות במהמקור.
+> **Default: Sonnet 5.** לכל עבודה יומיומית. 80% מהמשימות במהמקור.
 >
 > **Upgrade ל-Opus 4.8** רק כש: קוד מורכב מולטי-קובץ, vision/screenshots, החלטה אסטרטגית, design taste, או PR review של PR גדול.
 
-זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 4.6 מפגר אחרי Opus 4.8 רק במרווח צר ב-SWE-bench, ועולה פי 5 פחות.
+זה לא דעה — זו ההמלצה הרשמית של Anthropic ב-2026. Sonnet 5 מפגר אחרי Opus 4.8 רק במרווח צר ב-SWE-bench, ועולה פי 5 פחות.
 
 ---
 
 ## 📊 השוואה מהירה — אפריל 2026
 
-| ממד | Sonnet 4.6 | Opus 4.8 |
+| ממד | Sonnet 5 | Opus 4.8 |
 |---|---|---|
 | **מחיר (MTok input/output)** | $3 / $15 | $5 / $25 |
 | **SWE-bench Verified** | 79.6% | ~93%+ · SWE-bench Pro 69.2% |
@@ -33,7 +33,7 @@
 
 ## 🎨 מטריצה למהמקור — מה לאיזה מודל
 
-### 🟢 **Sonnet 4.6** — Default (80% מהמשימות שלך)
+### 🟢 **Sonnet 5** — Default (80% מהמשימות שלך)
 
 **מתי:**
 - ✅ Bug fix בקובץ אחד (למשל MEH-78 Map default location)
@@ -90,17 +90,17 @@
 
 | Issue | המודל הנכון | למה |
 |---|---|---|
-| **MEH-78** Map default location | 🟢 Sonnet 4.6 | bug יחיד, קובץ אחד (MapClient) |
+| **MEH-78** Map default location | 🟢 Sonnet 5 | bug יחיד, קובץ אחד (MapClient) |
 | **MEH-76** ProducerDetail redesign | 🟣 Opus 4.8 | design taste + multi-file (component+page+styles) |
 | **MEH-99** Smart Search | 🟣 Opus 4.8 | Hebrew morphology = reasoning-heavy |
 | **MEH-103** Reviews system | 🟣 Opus 4.8 | feature מולטי-לייר (DB + API + UI + verification) |
 | **MEH-122** Map redesign | 🟣 Opus 4.8 | design + multi-file + vision (screenshot review) |
-| **MEH-191** verify-email bug | 🟢 Sonnet 4.6 | localized fix in email.py |
+| **MEH-191** verify-email bug | 🟢 Sonnet 5 | localized fix in email.py |
 | **MEH-296** Multi-channel contact | 🟣 Opus 4.8 | architecture decision (primary channel logic) |
 | **MEH-329** XSS sanitization sweep | 🟣 Opus 4.8 | security-critical, multi-file, easy to miss vectors |
-| **MEH-330** Dependabot CI | 🟢 Sonnet 4.6 | config files, well-known pattern |
-| **MEH-100** About page photo | 🟢 Sonnet 4.6 | quick task, single component |
-| **MEH-94** Yellow badge → slate | 🟢 Sonnet 4.6 | 1-line CSS |
+| **MEH-330** Dependabot CI | 🟢 Sonnet 5 | config files, well-known pattern |
+| **MEH-100** About page photo | 🟢 Sonnet 5 | quick task, single component |
+| **MEH-94** Yellow badge → slate | 🟢 Sonnet 5 | 1-line CSS |
 | Skeptic Mode reviews | 🟣 Opus 4.8 | bug-finding strength matters |
 
 ---
@@ -117,7 +117,7 @@ fast routine (copy, i18n, token cleanup) → /fast
 ```
 
 **אצל Sapir (Claude Code Max):**
-- Sonnet 4.6 → השאירי על default (high)
+- Sonnet 5 → השאירי על default (high)
 - Opus 4.8 → השאירי על high (default). `xhigh` ל-hard/async, `max` (session-only) רק ל-MEH-99 / MEH-122 / MEH-329 רמה.
 
 ---
@@ -126,7 +126,7 @@ fast routine (copy, i18n, token cleanup) → /fast
 
 ### מה זה Adaptive Thinking?
 
-Anthropic החליפה את "Extended Thinking" הישן ב-**Adaptive Thinking** ב-Claude 4.6+ (Feb 2026). בOpus 4.7 (Apr 2026) זה **הmode היחיד** — ה-extended thinking toggle הישן הוסר.
+Anthropic החליפה את "Extended Thinking" הישן ב-**Adaptive Thinking** בדורות האחרונים. כיום זה **הmode היחיד** — ה-extended thinking toggle הישן הוסר.
 
 ההבדל המרכזי: במקום *budget קבוע* (1024/8192/32000 tokens), המודל **בוחר בעצמו** כמה להשקיע ב-reasoning per turn — מ-0 tokens לעד 100,000+, לפי מורכבות הquery.
 
@@ -145,7 +145,7 @@ Anthropic החליפה את "Extended Thinking" הישן ב-**Adaptive Thinking*
 |---|---|
 | 🟣 **כל משימה ב-Opus 4.8** | Off by default — חייבת להפעיל אחרת זה Opus בלי הסופר-כוח שלו |
 | 🔍 Research / אסטרטגיה | Multi-step reasoning הכרחי |
-| 🐛 Hard bugs | Sonnet 4.6 + thinking = upgrade לפני שעוברים לOpus |
+| 🐛 Hard bugs | Sonnet 5 + thinking = upgrade לפני שעוברים לOpus |
 | 🎨 Design decisions (לא execution) | Trade-offs דורשים reasoning |
 | 📐 Architecture / DB schema | Implications לטווח ארוך |
 | 📊 בדיקת תשובות Claude Code (Skeptic Mode) | Bug-finding דורש reasoning |
@@ -158,7 +158,7 @@ Anthropic החליפה את "Extended Thinking" הישן ב-**Adaptive Thinking*
 |---|---|
 | 💬 שיחה רגילה ("מה השעה?", "תסבירי X") | Latency גוברת על תועלת |
 | 📝 כתיבת copy / תרגום עברית | אין צורך ב-reasoning |
-| 🔧 Quick task (template 07) | Overkill — Sonnet 4.6 בלי thinking מספיק |
+| 🔧 Quick task (template 07) | Overkill — Sonnet 5 בלי thinking מספיק |
 | 🎯 משימה ברורה לחלוטין עם spec מלא | Reasoning כבר נעשה ב-spec |
 | 📋 סיכום / טבלת השוואה פשוטה | Mechanical, לא reasoning-heavy |
 | ⚡ urgency — צריך תשובה מהירה | OFF נותן תשובה ב-2-3 שניות |
@@ -185,7 +185,7 @@ Stella Laurenzo (AMD) ניתחה 6,852 sessions של Claude Code אחרי Feb 20
 
 ```
 Opus 4.8  → adaptive thinking ON תמיד
-Sonnet 4.6 → ON ל-reasoning tasks, OFF ל-mechanical tasks
+Sonnet 5 → ON ל-reasoning tasks, OFF ל-mechanical tasks
 Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 
 כשבספק → ON. הcost לא משמעותי כי המודל בוחר.
@@ -199,7 +199,7 @@ Haiku 4.5  → אין adaptive thinking (manual mode בלבד)
 | **Claude Code CLI** | אוטומטי לפי effort level | xhigh = always thinks |
 | **API** | `thinking: {type: "adaptive"}` | תמיד מומלץ ל-Opus 4.8+ |
 
-**אצל Sapir (Claude.ai Max):** Opus 4.8 → **תמיד ON**. Sonnet 4.6 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
+**אצל Sapir (Claude.ai Max):** Opus 4.8 → **תמיד ON**. Sonnet 5 → ON אם יש "למה" / "איך" / "מה הקומפרומיס" בשאלה.
 
 ### 🤝 Opus 4.8 honesty shift
 
@@ -209,7 +209,7 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 
 ## 🧠 הבדלים פסיכולוגיים — איך לכתוב prompts לכל אחד
 
-### 🟢 Sonnet 4.6 — "engineer מהיר וזריז"
+### 🟢 Sonnet 5 — "engineer מהיר וזריז"
 
 - **More structure helps.** ה-XML tags, examples, success criteria — חשובים יותר מ-Opus.
 - **Multishot חזק.** 3-5 examples — לא דבר של מותרות, זה הgame.
@@ -224,7 +224,7 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 - **More LITERAL.** Anthropic 2026 רשמי: "will not silently generalize". Over-specify the scope.
 - **No "think step by step".** xhigh = adaptive thinking auto. בקשה ידנית = רעש.
 - **Bundle context up front.** Multi-turn ambiguity מוריד איכות. תני הכל ב-turn 1.
-- **Over-engineering guard.** Opus 4.5/4.6 דווח כ-overengineering, 4.7 פחות אבל עדיין. תוסיפי `<over_engineering_guard>: minimal change, no unrequested abstractions`.
+- **Over-engineering guard.** בדורות קודמים דווח על נטייה ל-overengineering; פחתה מאז אבל עדיין קיימת. תוסיפי `<over_engineering_guard>: minimal change, no unrequested abstractions`.
 
 ---
 
@@ -247,7 +247,7 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
    → כן: Opus 4.8 (bug finding strength)
    → לא: ↓
 
-5. הכל אחר → Sonnet 4.6
+5. הכל אחר → Sonnet 5
 ```
 
 ---
@@ -269,7 +269,7 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 
 ## 🚨 anti-patterns — מה לא לעשות
 
-❌ **לא ל-Opus כל דבר** — `max` reflex burning tokens. Anthropic 2026: "Most '4.7 feels slow' reports trace back to people running max by reflex."
+❌ **לא ל-Opus כל דבר** — `max` reflex burning tokens. Anthropic 2026: "Most 'feels slow' reports trace back to people running max by reflex."
 
 ❌ **לא לכתוב prompts זהים לשני המודלים** — Sonnet זקוק ליותר structure, Opus זקוק לפחות role.
 
@@ -284,9 +284,9 @@ Opus 4.8 מדגיש uncertainty במפורש (אומר "לא בטוח" במקו�
 ## 📚 מקורות
 
 - [Anthropic Opus 4.8 announcement (May 28, 2026)](https://claude.com/blog/claude-opus-4-8)
-- [Anthropic Opus 4.7 announcement (Apr 16, 2026)](https://www.anthropic.com/news/claude-opus-4-7)
+- [Anthropic Opus 4.8 announcement (Apr 16, 2026)](https://www.anthropic.com/news/claude-opus-4-7)
 - [Anthropic Prompting Best Practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)
-- [Best practices for Claude Opus 4.7 with Claude Code](https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code)
+- [Best practices for Claude Opus 4.8 with Claude Code](https://claude.com/blog/best-practices-for-using-claude-opus-4-7-with-claude-code)
 - [Effort docs](https://platform.claude.com/docs/en/build-with-claude/effort)
 - Wharton 2025 "Playing Pretend" (arXiv 2512.05858)
 
