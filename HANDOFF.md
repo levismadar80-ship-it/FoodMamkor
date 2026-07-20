@@ -3,6 +3,23 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1379 — rule 29 → warn-only CI check (Linear auto-reopen guard)
+
+- **What:** made `workflow.md` rule 29 mechanical. New `.claude/scripts/check-linear-mentions.sh` flags any bare `MEH-[0-9]+` in a PR title/body not preceded by `Closes`/`Fixes`/`Resolves` (case-insensitive, optional colon). Motivated by 5 observed violations of the prose rule — including two in this same 20/07 batch (one reopened a just-closed ticket and had to be hand-remediated).
+- **Design (no network):** the rule-29 remedy is textual ("write PR #NNNN or prose"), independent of Linear state — so **no Linear API, no token, no env var, no network**. Reads title/body from `$1`/`$2` file paths; the workflow writes them from `github.event.pull_request.title/.body` via `env:` (injection-safe). Exit 0 clean / 1 lists offenders / 2 missing input.
+- **Fixtures + self-test:** 4 fixtures (clean · Closes-only · bare-mention · mixed) under `.claude/scripts/test/fixtures/linear-mentions/`, run by `--self-test`. QA all green: self-test 0, own PR body 0, `Refs`-style bare mention 1 (named), missing file 2.
+- **A2 delivery:** `.github/workflows/**` is CC-deny — the `pr-checks.yml` job block (warn-only: `|| true` + `continue-on-error: true`, gated docs-only) is printed **verbatim in the PR body** for Sapir to paste manually. This PR touches **no** file under `.github/`.
+- **Self-applying:** this PR is docs-only, so the check runs on it; its body carries exactly one bare id (`Closes MEH-1379`) and passes its own check. The QA-3 demo masks the sample id's digits (`MEH-####`) precisely so the body stays clean — the masking is the demonstration.
+- **Branch:** `feature/meh-1379-linear-mention-check` off `origin/staging`. Manual next step (Sapir): paste the job into `pr-checks.yml`; do **not** add to ruleset 15240090 yet (warn-only calibration).
+
+## 2026-07-20 — MEH-1335 — owner story fields (chunks 1+2 done, chunk 3 pending)
+
+- **Branch:** `levismadar80/meh-1335-owner-story-fields` off `origin/staging` (Linear's generated name had underscores — blocked by the MEH-1141 gate; renamed with Sapir's approval). Commits local: chunk 1 = Alembic revision `f7d2a9c4b1e8` (approved by Sapir pre-apply; **Sapir runs `alembic upgrade head`**, CC never does), chunk 2 = model + schemas + `_PRODUCER_WRITABLE_FIELDS` + NEW `POST /upload/owner-photo` + delete-cascade extension + 10 tests + docs (DATA.md, db-schema/api-routes diagrams).
+- **Key decisions locked (Linear SYNC 20/07):** new upload endpoint approved (gallery-cap gap: free-plan + 3 images must still upload owner photo — asserted in test); fields are PUBLIC on ProducerDetailOut (unlike address); chunks 1+2 in ONE PR (alembic drift gate, MEH-492); `_image_url_validator` upgrade over plain scheme check approved.
+- **Verified this session:** admin PUT has NO allowlist (admin.py:227 model_dump → :276-277 bare setattr) → fields flow automatically; Sapir decides symmetry ticket separately. `check_api_contract`: 0 mismatches / 0 orphan-frontend (new route = orphan-backend until chunk 3). CVE check (rule 5a) clean at pins.
+- **Pending:** push + draft PR (chunks 1+2) → `/adversarial-review` after CI → chunk 3 (dashboard card "מאחורי העסק" after DescriptionCard, ImagesCard upload + ContactChannelsCard save contracts, he.json + en.json twins — MEH-978 parity gate) on the same branch/PR unless Smadar splits.
+- **Out of scope (locked):** producer.address + schemas.py:1013-1016 exclusion (MEH-829); contact_name dashboard editability (orchestrator opening follow-up ticket); ProducerDetail display components (MEH-1334 / PR #1936, still Draft DO-NOT-MERGE).
+
 ## 2026-07-20 — AskUserQuestion delivery failure — observed once (LOUD, not silent) — MEH-1377 investigation closed
 
 - **What happened:** during MEH-1375 (GREEN, docs-only) CC hit a scope question (include the 11th sibling `README.md`?) and called `AskUserQuestion` to confirm with Sapir. In this non-interactive session the tool **failed to deliver** — but it failed **LOUDLY**, returning `Tool permission request failed: AbortError: Tool permission stream closed before response received`, not a fake success.
