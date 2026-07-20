@@ -16,6 +16,16 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+// MEH-1358: ImageGallery now imports LocaleLink (masthead seal popover link);
+// mock the i18n wrapper directly (BadgeRow.test / BottomNav.test precedent).
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ children, href, ...props }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 import ImageGallery from "@/components/ImageGallery";
 
 // MEH-1334 (decision 6): the masthead corner overlay is now the mobile SHARE
