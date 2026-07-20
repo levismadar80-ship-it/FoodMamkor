@@ -145,6 +145,9 @@ test.describe("Visual parity — MEH-991", () => {
   // snapshot. This touch re-triggers vrt-update.yml to refresh the baselines.
   // MEH-991 regen (2026-07-20): Quiet Direction v3 (MEH-1334, #1936) redesigned
   // the page — both producer-detail baselines are stale by design. Re-trigger.
+  // MEH-1336 follow-up (2026-07-20, same day): SHOW_VERIFICATION flipped on in
+  // #1982 and exposed the new /about verification section — about-{desktop,mobile}
+  // baselines stale (rule 2b miss: should have shipped in #1982). Re-trigger.
   test("producer detail", async ({ page }) => {
     await preparePage(page);
     await page.goto("/producers");
