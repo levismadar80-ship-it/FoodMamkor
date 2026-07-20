@@ -5,9 +5,13 @@ Endpoints (all require auth):
   PUT  /users/me/favorites/{producer_id}/alerts  — upsert prefs + optional push sub
 
 Exported helper:
-  fire_alerts(db, producer_id, alert_type, content)
+  fire_alerts(db, producer_id, alert_type, content, target_cities=None)
     alert_type: "new_event" | "new_product" | "delivery_area"
     content: AlertContent(title, body, url)
+    target_cities: optional list[str] — when provided (delivery_area), only
+      users whose User.city normalizes to one of them receive the alert
+      (MEH-1360); "{cities}" in content.body is replaced per-recipient with
+      their matched cities only.
     Called from events.py + producer_me.py via FastAPI BackgroundTasks.
 """
 
@@ -195,8 +199,68 @@ def _record_alert_send(
     db.commit()
 
 
+# MEH-1360: geographic targeting for delivery_area alerts. City strings come
+# from two unvalidated sources (User.city free text vs the producer's city
+# picker), so equality must survive the notation drift the cities data already
+# carries: surrounding whitespace, letter case (latin entries), and the
+# hyphen/maqaf/en-dash family ("תל אביב-יפו" vs "תל אביב – יפו"). Hebrew
+# geresh/gershayim are mapped to their ASCII lookalikes for the same reason.
+_CITY_SEPARATORS = re.compile(r"[-־–—]")  # hyphen, maqaf, en/em dash
+_CITY_QUOTE_MAP = str.maketrans({"׳": "'", "״": '"'})  # geresh, gershayim
+
+
+def _normalize_city(value: str | None) -> str:
+    """Collapse a city string to a comparison form; "" when unusable."""
+    if not value:
+        return ""
+    text = _CITY_SEPARATORS.sub(" ", value.translate(_CITY_QUOTE_MAP))
+    return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+def _matched_target_cities(
+    user: User | None, targets: list[tuple[str, str]]
+) -> list[str]:
+    """The original target-city strings whose normalized form equals the
+    user's normalized city; [] when the user has no usable city or no match."""
+    norm = _normalize_city(user.city if user else None)
+    if not norm:
+        return []
+    return [orig for norm_t, orig in targets if norm_t == norm]
+
+
+def _normalize_targets(target_cities: list[str] | None) -> list[tuple[str, str]] | None:
+    """(normalized, original) pairs; None passes through (targeting off).
+    Entries that normalize to "" are dropped — they can never match a city."""
+    if target_cities is None:
+        return None
+    return [(_normalize_city(c), c) for c in target_cities if _normalize_city(c)]
+
+
+def _recipient_body(
+    alert: FavoriteAlert, content: AlertContent, targets: list[tuple[str, str]] | None
+) -> str | None:
+    """The per-recipient push body, or None when the recipient is geo-filtered.
+
+    MEH-1360: with targeting on, a non-matching (or city-less) user returns
+    None — the caller skips them BEFORE the MEH-1338 cap check, so a
+    suppressed alert never writes an AlertLog row (which would silently cap
+    a future, genuinely relevant one). "{cities}" is filled with only the
+    recipient's matched cities.
+    """
+    if targets is None:
+        return content.body
+    matched = _matched_target_cities(alert.user, targets)
+    if not matched:
+        return None
+    return content.body.replace("{cities}", ", ".join(matched))
+
+
 def fire_alerts(
-    db: Session, producer_id: UUID, alert_type: str, content: AlertContent
+    db: Session,
+    producer_id: UUID,
+    alert_type: str,
+    content: AlertContent,
+    target_cities: list[str] | None = None,
 ) -> None:
     """Fan-out notifications to all users who opted in for alert_type on producer_id.
 
@@ -206,6 +270,12 @@ def fire_alerts(
 
     MEH-1338: each channel is frequency-capped to at most one message per
     (user, producer, channel) in a rolling 24h window (AlertLog ledger).
+
+    MEH-1360: when target_cities is provided, only users whose User.city
+    normalizes to one of them are considered at all — a geo-filtered user is
+    skipped BEFORE the cap check, so no AlertLog row is written for an alert
+    that was never sent. "{cities}" in content.body is replaced per recipient
+    with only THEIR matched cities. target_cities=None → behavior unchanged.
 
     Fail-open: exceptions are logged but never re-raised so the background
     task never crashes the request that triggered it.
@@ -236,7 +306,15 @@ def fire_alerts(
 
     producer_name = alerts[0].producer.name if alerts and alerts[0].producer else ""
 
+    targets = _normalize_targets(target_cities)
+
     for alert in alerts:
+        # MEH-1360: None → geo-filtered, skip this recipient entirely (before
+        # the cap check — rationale in _recipient_body).
+        body = _recipient_body(alert, content, targets)
+        if body is None:
+            continue
+
         # MEH-1338: each channel is capped independently — skip a channel that
         # already delivered to this (user, producer) within the last 24h. The
         # AlertLog row is written only after a non-raising send, so a failed
@@ -248,7 +326,7 @@ def fire_alerts(
                 send_push_notification(
                     alert.push_subscription,
                     title=content.title,
-                    body=content.body,
+                    body=body,
                     url=content.url,
                 )
                 _record_alert_send(
