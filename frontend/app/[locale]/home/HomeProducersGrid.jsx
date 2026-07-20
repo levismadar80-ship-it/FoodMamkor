@@ -10,6 +10,7 @@ import OnboardingTip from "@/components/OnboardingTip";
 import ChipScrollRow from "@/components/ChipScrollRow";
 import { ActiveFilterChip } from "@/app/[locale]/home/ActiveFilterChip";
 import { CHIPS_CONFIG } from "@/lib/producer-filters";
+import { LOAD_MORE_CAP } from "@/lib/use-home-page";
 
 /**
  * Producers grid section — heading + map link, onboarding tips,
@@ -216,12 +217,24 @@ export function HomeProducersGrid({
           )}
           {hasMore && (
             <div className="text-center mt-8">
-              <button
-                onClick={onLoadMore}
-                className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
-              >
-                {t("home.producers.load_more")}
-              </button>
+              {/* MEH-1387: one expansion max — at the cap (reached by clicking
+                  or restored from sessionStorage) the button becomes a link to
+                  the full /producers listing, same outline-pill style. */}
+              {visibleCount >= LOAD_MORE_CAP ? (
+                <Link
+                  href="/producers"
+                  className="inline-block bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                >
+                  {t("home.producers.all_businesses")}
+                </Link>
+              ) : (
+                <button
+                  onClick={onLoadMore}
+                  className="bg-white text-primary border-2 border-primary px-8 py-3 rounded-sm hover:bg-green-50 transition font-medium"
+                >
+                  {t("home.producers.load_more")}
+                </button>
+              )}
             </div>
           )}
         </>
