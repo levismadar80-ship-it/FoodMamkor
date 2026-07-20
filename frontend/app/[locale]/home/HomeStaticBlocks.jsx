@@ -6,22 +6,32 @@ import { Leaf, ArrowLeft } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import FadeInSection from "@/components/FadeInSection";
 import { optimizeCloudinary, IMAGE_RATIOS } from "@/lib/cloudinary";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
 /**
  * RECENTLY VIEWED (task 13) — horizontal scroll strip of producers
  * the user opened recently (7-day TTL applied by the hook). Hidden
- * when the list is empty.
+ * when the list is empty. MEH-1391: desktop scroll arrows via the
+ * shared useScrollAffordance hook.
  */
 export function HomeRecentlyViewed({ items }) {
   const t = useTranslations();
+  // Hook must run unconditionally (rules of hooks) — before the empty-list return.
+  const affordance = useScrollAffordance();
   if (!items.length) return null;
   return (
     <section className="max-w-7xl mx-auto px-4 pb-10">
       <h2 className="font-headline-md text-headline-md text-text mb-4">
         {t("home.recent.heading")}
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4">
-        {items.map((p) => {
+      {/* MEH-1391: relative wrapper hosts the absolute arrow pair. */}
+      <div className="relative">
+        <ScrollArrows affordance={affordance} />
+        <div
+          ref={affordance.scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide -mx-1 ps-1 after:content-[''] after:shrink-0 after:w-4"
+        >
+          {items.map((p) => {
           const href = p.slug ? `/${p.slug}` : `/producer/${p.id}`;
           const imgSrc = optimizeCloudinary(p.images?.[0], { aspectRatio: IMAGE_RATIOS.strip, width: 320 });
           return (
@@ -51,7 +61,8 @@ export function HomeRecentlyViewed({ items }) {
               </div>
             </Link>
           );
-        })}
+          })}
+        </div>
       </div>
     </section>
   );

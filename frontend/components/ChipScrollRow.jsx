@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import useScrollAffordance, { ScrollArrows } from "@/hooks/useScrollAffordance";
 
-// MEH-1383: arrow click pages ~80% of the visible row width per press.
-const SCROLL_STEP_RATIO = 0.8;
-const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
 // Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
 // ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
 // the conventional equivalence.
@@ -36,13 +33,17 @@ const WHEEL_LINE_PX = 16;
  * Shrink-0 spacer at scroll-end also fixes RTL padding-inline-end clipping.
  *
  * MEH-1383: desktop-pointer (hover:hover + pointer:fine) devices also get
- * round edge scroll-arrow buttons above the fades. Each arrow reuses its
- * side's sentinel signal (showStartFade/showEndFade) — the sentinels ARE
- * the can-scroll-in-that-direction fact, and they already live-update on
- * scroll and resize via the IntersectionObserver, so no second overflow
- * mechanism (scroll listener + ResizeObserver) is added. Touch devices
- * render zero extra DOM. Vertical wheel over the row translates to
- * horizontal scroll (desktop only), passing through at the edges.
+ * round edge scroll-arrow buttons above the fades. Touch devices render
+ * zero extra DOM. Vertical wheel over the row translates to horizontal
+ * scroll (desktop only), passing through at the edges.
+ *
+ * MEH-1391: the arrow logic moved to the shared useScrollAffordance hook
+ * (also used by FridayDeliveryStrip + HomeRecentlyViewed). Arrows are now
+ * driven by the hook's scroll+ResizeObserver math; the FADES stay on the
+ * MEH-1340 IO sentinels (they also feed the scrollIntoView clearance
+ * design). Two signals for overlapping facts is a known, deliberate
+ * trade: the hook is the single authority for ARROW affordance across
+ * all strips, the sentinels remain the single authority for fades here.
  */
 export default function ChipScrollRow({
   chips,
@@ -55,7 +56,9 @@ export default function ChipScrollRow({
 }) {
   const t = useTranslations("map.chip_scroll");
   const chipRefs = useRef(new Map());
-  const scrollRef = useRef(null);
+  // MEH-1391: scrollRef + arrow state come from the shared hook.
+  const affordance = useScrollAffordance();
+  const { scrollRef, showArrows } = affordance;
   const prevActiveKeysRef = useRef(null);
   // MEH-1340: sentinels observed by one IntersectionObserver to drive the
   // dynamic edge fades. A fade shows only while its sentinel is off-screen
@@ -65,9 +68,6 @@ export default function ChipScrollRow({
   const endSentinelRef = useRef(null);
   const [showStartFade, setShowStartFade] = useState(false);
   const [showEndFade, setShowEndFade] = useState(false);
-  // MEH-1383: desktop-pointer gate for the edge scroll arrows. False on
-  // the server and on touch devices — those render zero arrow DOM.
-  const [hasFinePointer, setHasFinePointer] = useState(false);
 
   function isActive(chip) {
     return variant === "category" ? chip.key === activeKey : !!activeKeys[chip.key];
@@ -143,27 +143,15 @@ export default function ChipScrollRow({
     return () => io.disconnect();
   }, []);
 
-  // MEH-1383: matchMedia gates the arrows' rendering; the `change`
-  // listener keeps hybrids (convertible laptops, external mouse plugged
-  // into a tablet) live-correct without a reload.
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
-    }
-    const mq = window.matchMedia(DESKTOP_POINTER_QUERY);
-    setHasFinePointer(mq.matches);
-    const onChange = (e) => setHasFinePointer(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
   // MEH-1383 bonus: vertical wheel over the row → horizontal scroll,
-  // desktop-pointer only. Native listener because React's root-attached
-  // wheel handler is passive — preventDefault would be ignored. At either
-  // edge the event is left alone so the page keeps scrolling normally.
+  // desktop-pointer only (showArrows = the hook's matchMedia gate).
+  // Native listener because React's root-attached wheel handler is
+  // passive — preventDefault would be ignored. At either edge the event
+  // is left alone so the page keeps scrolling normally. Stays here (not
+  // in the hook): ChipScrollRow-only behavior per MEH-1391 scope.
   useEffect(() => {
     const el = scrollRef.current;
-    if (!hasFinePointer || !el) return;
+    if (!showArrows || !el) return;
     const onWheel = (e) => {
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       const maxScroll = el.scrollWidth - el.clientWidth;
@@ -179,17 +167,7 @@ export default function ChipScrollRow({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [hasFinePointer]);
-
-  // MEH-1383: arrow click. dir="rtl" is fixed on the wrapper, so a
-  // negative left delta always moves toward the inline-end (see the RTL
-  // scrollLeft note in the wheel handler above).
-  function scrollStep(towardEnd) {
-    const el = scrollRef.current;
-    if (!el) return;
-    const delta = Math.round(el.clientWidth * SCROLL_STEP_RATIO);
-    el.scrollBy({ left: towardEnd ? -delta : delta, behavior: "smooth" });
-  }
+  }, [showArrows]);
 
   return (
     <div className={`relative min-w-0 ${className}`} dir="rtl">
@@ -215,36 +193,10 @@ export default function ChipScrollRow({
           aria-hidden="true"
         />
       )}
-      {/* MEH-1383: desktop-only edge scroll arrows, above the fades
-          (z-20 > fade z-10). Each renders only while its side's sentinel
-          reports hidden content — same signal as the fades, so an arrow
-          vanishes exactly when scroll in its direction is exhausted.
-          tabIndex=-1 + aria-hidden: pointer affordance only; chips are
-          already keyboard-reachable, and no i18n label is needed. */}
-      {hasFinePointer && showStartFade && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => scrollStep(false)}
-          className="absolute start-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
-        >
-          {/* Inline-start = physical RIGHT in RTL — caret points at the hidden content. */}
-          <CaretRight size={16} weight="bold" />
-        </button>
-      )}
-      {hasFinePointer && showEndFade && (
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => scrollStep(true)}
-          className="absolute end-1 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary"
-        >
-          {/* Inline-end = physical LEFT in RTL. */}
-          <CaretLeft size={16} weight="bold" />
-        </button>
-      )}
+      {/* MEH-1383/MEH-1391: desktop-only edge scroll arrows, above the
+          fades (z-20 > fade z-10), rendered by the shared hook pair —
+          per-direction visibility from the hook's scroll+RO math. */}
+      <ScrollArrows affordance={affordance} />
       <div
         ref={scrollRef}
         // MEH-1314: snap-proximity (NOT mandatory) so a chip rests aligned to
