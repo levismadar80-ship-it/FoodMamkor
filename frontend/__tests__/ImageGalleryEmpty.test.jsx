@@ -18,9 +18,12 @@ vi.mock("next-intl", () => ({
 
 import ImageGallery from "@/components/ImageGallery";
 
-// Mock FavoriteButton so we don't need auth context + api
-vi.mock("@/components/FavoriteButton", () => ({
-  default: (props) => <div data-testid="favorite-btn" data-producer-id={props.producerId} />,
+// MEH-1334 (decision 6): the masthead corner overlay is now the mobile SHARE
+// button — the heart moved to the header quiet-actions row.
+vi.mock("@/components/ShareButton", () => ({
+  default: (props) => (
+    <div data-testid="share-overlay" data-variant={props.variant} data-url={props.url} />
+  ),
 }));
 
 // Mock ImageWithFallback — only rendered in the non-empty branch
@@ -75,14 +78,17 @@ describe("ImageGallery empty state — Tinted Masthead (MEH-815)", () => {
     expect(wrapper.className).not.toMatch(/h-\[180px\]/);
   });
 
-  it("still shows the gallery-variant FavoriteButton when producerId is passed", () => {
-    render(<ImageGallery images={[]} producerId={"p-123"} producerName="חוות הדבש" />);
-    const fav = screen.getByTestId("favorite-btn");
-    expect(fav).toHaveAttribute("data-producer-id", "p-123");
+  it("shows the mobile share overlay when producerId is passed (MEH-1334)", () => {
+    render(
+      <ImageGallery images={[]} producerId={"p-123"} producerName="חוות הדבש" shareUrl="https://x/p" />,
+    );
+    const share = screen.getByTestId("share-overlay");
+    expect(share).toHaveAttribute("data-variant", "overlay");
+    expect(share.parentElement.className).toMatch(/lg:hidden/);
   });
 
-  it("omits the FavoriteButton when no producerId", () => {
+  it("omits the share overlay when no producerId", () => {
     render(<ImageGallery images={[]} producerName="חוות הדבש" />);
-    expect(screen.queryByTestId("favorite-btn")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("share-overlay")).not.toBeInTheDocument();
   });
 });

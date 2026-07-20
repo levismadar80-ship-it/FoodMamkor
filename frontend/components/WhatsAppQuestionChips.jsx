@@ -203,14 +203,47 @@ export default function WhatsAppQuestionChips({ producer }) {
   if (items.length === 0 && !digits) return null;
 
   return (
-    <div className="mb-4">
+    <QuestionList items={items} showEscalation={!!digits} escalationHref={waHref(t("escalation"))} t={t} />
+  );
+}
+
+// MEH-1334 chunk 2: progressive-disclosure wrapper — the first VISIBLE_MAX
+// ready-made questions render immediately; the rest hide behind one "עוד
+// שאלות" expander (single level, no pagination). MEH-1302's answer-first
+// behavior of each item is untouched — this only caps how many show at once.
+// The container was restyled to the quiet card idiom (hairline top rule,
+// tighter row rhythm) per the approved mockup.
+const VISIBLE_MAX = 3;
+
+function QuestionList({ items, showEscalation, escalationHref, t }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMore = items.length > VISIBLE_MAX;
+  const visible = expanded ? items : items.slice(0, VISIBLE_MAX);
+
+  return (
+    <div className="mb-4 border-t border-border pt-3">
       <p className="text-xs mb-1.5 font-body-md text-fg-muted">{t("common_questions")}:</p>
-      <ul className="flex flex-col">{items}</ul>
+      <ul className="flex flex-col">{visible}</ul>
+
+      {/* "עוד שאלות" — reveals the remaining ready-made questions in place.
+          ≥44px hit-area via min-h + transparent padding (revision-2 #5). */}
+      {hasMore && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          data-testid="more-questions"
+          aria-expanded={false}
+          className="flex items-center gap-2 min-h-[44px] font-body-md text-sm font-medium text-primary transition hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+        >
+          <CaretDown size={16} weight="bold" className="flex-shrink-0" aria-hidden="true" />
+          {t("more_questions")}
+        </button>
+      )}
 
       {/* Escalation — reuses the greeting template; only when a phone exists. */}
-      {digits && (
+      {showEscalation && (
         <a
-          href={waHref(t("escalation"))}
+          href={escalationHref}
           target="_blank"
           rel="noopener noreferrer"
           data-testid="escalation-link"
