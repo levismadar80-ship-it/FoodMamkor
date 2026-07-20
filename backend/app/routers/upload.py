@@ -215,3 +215,85 @@ async def upload_avatar(
         raise HTTPException(
             status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
         )
+
+
+@router.post("/owner-photo")
+@limiter.limit("10/hour")
+async def upload_owner_photo(
+    request: Request,
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload the producer-owner's photo to Cloudinary (MEH-1335).
+
+    Mirrors /upload/avatar: same magic-byte validation, square 400px
+    face-gravity crop, dedicated folder — but writes
+    `producer.owner_photo_url` (the /avatar endpoint writes
+    `users.avatar_url`, the wrong table for this field). Deliberately NO
+    freemium gate: the /upload/image 3-image cap is a GALLERY cap, and a
+    free-plan producer with a full gallery must still be able to upload
+    her owner photo — that gap is the reason this endpoint exists.
+    Fixed public_id per producer + overwrite=True (MEH-375: a re-upload
+    reuses the same Cloudinary slot, zero orphaned assets). Saves the URL
+    atomically so the dashboard needs no separate PUT /producers/me call.
+    """
+    if not user.producer_id:
+        raise HTTPException(status_code=403, detail="אין בית עסק משויך לחשבון")
+    producer = db.query(Producer).filter(Producer.id == user.producer_id).first()
+    if not producer:
+        raise HTTPException(status_code=404, detail="בית עסק לא נמצא")
+
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+
+    detected = _sniff_image_type(contents[:32])
+    if detected is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
+        )
+
+    if not settings.cloudinary_cloud_name:
+        url = f"/placeholder-image.png?owner={uuid.uuid4().hex[:8]}"
+        producer.owner_photo_url = url
+        db.commit()
+        return {"url": url}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/owner",
+            public_id=f"owner_{producer.id}",
+            overwrite=True,
+            invalidate=True,
+            resource_type="image",
+            transformation=[
+                {"width": 400, "height": 400, "crop": "fill", "gravity": "face"}
+            ],
+        )
+        url = result["secure_url"]
+        producer.owner_photo_url = url
+        db.commit()
+        return {"url": url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("Cloudinary upload failed: %s", e)
+        raise HTTPException(
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+        )

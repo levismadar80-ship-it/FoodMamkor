@@ -694,6 +694,13 @@ class ProducerUpdate(BaseModel):
     top_product_name: str | None = None
     starting_price_label: str | None = None
     price_range: str | None = None
+    # MEH-1335: owner story fields (public OwnerCard data path). owner_bio is
+    # bleach-stripped + capped at 300 below (mirrors short_description);
+    # owner_photo_url gets the MEH-1222 image-URL guard (http(s) scheme + the
+    # "https://bread.jpg" bare-filename-host rejection) — it feeds next/image
+    # on the public producer page, same surface class as images[].
+    owner_bio: str | None = None
+    owner_photo_url: str | None = Field(default=None, max_length=500)
     # MEH-1242 PR5: owner-editable opening hours (free text). Was absent from
     # ProducerUpdate — so both the owner PUT and the admin PUT (admin.py:214,
     # same schema) silently dropped it. Present on ProducerOwnerOut already.
@@ -761,6 +768,19 @@ class ProducerUpdate(BaseModel):
     @classmethod
     def _sanitize_address(cls, v):
         return sanitize_text(v, max_length=255)
+
+    # MEH-1335: owner bio — strip HTML + cap at 300 (spec: "כמה מילים עלייך",
+    # dashboard textarea counter matches this server-side cap).
+    @field_validator("owner_bio")
+    @classmethod
+    def _sanitize_owner_bio(cls, v):
+        return sanitize_text(v, max_length=300)
+
+    # MEH-1335: owner photo — image-URL guard, not just scheme (MEH-1222 class).
+    @field_validator("owner_photo_url")
+    @classmethod
+    def _validate_owner_photo_url(cls, v):
+        return _image_url_validator(v)
 
     @field_validator("availability_status")
     @classmethod
@@ -1034,6 +1054,11 @@ class ProducerDetailOut(ProducerListOut):
     updated_at: datetime | None = None
     # MEH-53: Instagram story card URL (Cloudinary).
     story_card_url: str | None = None
+    # MEH-1335: owner story fields — deliberately PUBLIC (unlike address just
+    # above): the OwnerCard "מאחורי העסק" renders them on the public producer
+    # page (MEH-1334, dormant variants). NULL = card stays compact.
+    owner_bio: str | None = None
+    owner_photo_url: str | None = None
     # MEH-826: opening_hours now inherited from ProducerListOut (moved up so
     # the /map card can read it too).
     # MEH-210 Phase 2 — custom WhatsApp question chips

@@ -90,6 +90,8 @@ producers (
   plan: free|premium,
   slug text unique,
   contact_name, top_product_name,
+  -- MEH-1335: owner story (public OwnerCard data; bio app-capped at 300)
+  owner_bio text nullable, owner_photo_url varchar(500) nullable,
   starting_price_label, price_range,
   grass_fed bool, organic_certified bool, kosher,
   has_delivery bool, pickup_points bool,
@@ -731,6 +733,9 @@ POST /chat                       public — one-shot Claude Haiku Q&A about the 
 
 ```
 POST /upload/image               auth — Cloudinary direct upload with magic-byte validation
+POST /upload/owner-photo         auth+producer — MEH-1335 owner photo; no freemium gate, square crop,
+                                 folder mehamakor/owner, public_id=owner_{producer_id} overwrite=True,
+                                 writes producers.owner_photo_url atomically
 ```
 
 ---

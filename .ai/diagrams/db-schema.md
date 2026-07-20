@@ -69,6 +69,8 @@ erDiagram
         timestamp changes_requested_at "nullable — MEH-1011, tz-aware; when the completion request was sent"
         timestamp created_at
         timestamp updated_at "nullable — MEH-1291, tz-aware; onupdate=func.now() stamp, no backfill; public freshness signal (ProducerDetailOut)"
+        text owner_bio "nullable — MEH-1335, app-capped 300; public OwnerCard story (NULL = compact variant)"
+        string owner_photo_url "nullable — MEH-1335, VARCHAR(500); Cloudinary mehamakor/owner, written by POST /upload/owner-photo"
     }
 
     categories {

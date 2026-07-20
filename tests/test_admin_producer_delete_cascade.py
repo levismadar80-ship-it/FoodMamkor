@@ -97,3 +97,46 @@ def test_admin_delete_producer_with_no_story_card_still_calls_destroy(
         f"expected exactly one bypass=True call with url=None for the "
         f"story-card slot; full call list: {calls}"
     )
+
+
+# MEH-1335: same cascade class for the owner photo. Unlike the story card,
+# mehamakor/owner/* is NOT in RESERVED_PUBLIC_ID_PREFIXES, so the destroy
+# must succeed WITHOUT bypass_reserved (default False) — asserting the flag
+# stays False also guards against someone "fixing" it into the reserved
+# reject list later.
+_OWNER_PHOTO_URL = (
+    "https://res.cloudinary.com/mehamakor/image/upload/v1/"
+    "mehamakor/owner/owner_abc-uuid.jpg"
+)
+
+
+def test_admin_delete_producer_cascades_owner_photo_destroy(client, db, monkeypatch):
+    admin = make_user(db, role="admin")
+    producer = make_producer(db)
+    producer.owner_photo_url = _OWNER_PHOTO_URL
+    db.commit()
+    producer_id = str(producer.id)
+
+    calls: list[dict] = []
+
+    def fake_destroy(url, bypass_reserved=False, context=""):
+        calls.append({"url": url, "bypass_reserved": bypass_reserved})
+        return True
+
+    from app import cloudinary_utils
+
+    monkeypatch.setattr(cloudinary_utils, "destroy_image", fake_destroy)
+
+    resp = client.delete(f"/admin/producers/{producer_id}", headers=auth_header(admin))
+
+    assert resp.status_code == 200
+
+    owner_photo_calls = [c for c in calls if c["url"] == _OWNER_PHOTO_URL]
+    assert len(owner_photo_calls) == 1, (
+        f"expected exactly one destroy call for owner_photo_url, got "
+        f"{len(owner_photo_calls)}; full call list: {calls}"
+    )
+    assert owner_photo_calls[0]["bypass_reserved"] is False, (
+        f"owner-photo destroy must use the DEFAULT reject list — "
+        f"mehamakor/owner/* is not reserved; got: {owner_photo_calls[0]}"
+    )

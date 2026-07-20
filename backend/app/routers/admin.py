@@ -360,6 +360,11 @@ def admin_delete_producer(
     products = db.query(Product).filter(Product.producer_id == producer.id).all()
     old_product_urls = [p.image_url for p in products if p.image_url]
     old_story_card_url = producer.story_card_url
+    # MEH-1335: owner photo lives at mehamakor/owner/owner_{producer_id} —
+    # NOT in RESERVED_PUBLIC_ID_PREFIXES (only mehamakor/producers/ is), so
+    # its destroy below needs no bypass. Same orphan class as story_card:
+    # overwrite=True on upload prevents duplicates, not delete-orphans.
+    old_owner_photo_url = producer.owner_photo_url
 
     # MEH-747: unlink any user pointing at this producer BEFORE db.delete.
     # User.producer_id has no ondelete (models.py), so deleting the producer
@@ -400,6 +405,11 @@ def admin_delete_producer(
         old_story_card_url,
         bypass_reserved=True,
         context="admin.admin_delete_producer story_card",
+    )
+    # MEH-1335: owner photo — non-reserved namespace, default reject list OK.
+    destroy_image(
+        old_owner_photo_url,
+        context="admin.admin_delete_producer owner_photo",
     )
 
     return {"detail": "Producer deleted"}
