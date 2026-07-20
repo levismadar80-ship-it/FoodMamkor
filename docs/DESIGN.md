@@ -17,6 +17,7 @@ colors:
   muted: "#6B6860"
   fg-muted: "#5c584f"
   accent: "#896714"
+  gold-deep: "#7A5A10"
   honey: "#C8821E"
   gold-on-dark: "#E7C88A"
   border: "#E5DFD3"
