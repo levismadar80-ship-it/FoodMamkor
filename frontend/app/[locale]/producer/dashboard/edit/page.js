@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -83,6 +83,9 @@ const ANCHOR_TO_KEY = {
   pricing: "pricing",
   delivery: "delivery",
   hours: "hours",
+  // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
+  // "מאחורי העסק" card).
+  "owner-story": "ownerStory",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
   // under the accordion they resolve to the same cards, auto-expanded.
@@ -561,6 +564,27 @@ export default function ProducerDashboardEditPage() {
         onToggle={() => toggleKey("bio")}
       >
         <DescriptionCard
+          profile={profile}
+          onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
+          reportDirty={reportDirty}
+        />
+      </EditAccordionCard>
+
+      {/* ④b MEH-1335 chunk 3 — owner-story editor (bio + photo). The public
+          "מאחורי העסק" card (OwnerCard, MEH-1334) wakes its bio/photo variants
+          up on its own once these fields hold data. */}
+      <EditAccordionCard
+        anchorId="owner-story"
+        title={t("owner_story.heading")}
+        summary={
+          (profile.owner_bio || "").trim() || profile.owner_photo_url
+            ? tAcc("owner_present")
+            : tAcc("owner_missing")
+        }
+        open={openKey === "ownerStory"}
+        onToggle={() => toggleKey("ownerStory")}
+      >
+        <OwnerStoryCard
           profile={profile}
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}

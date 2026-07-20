@@ -879,6 +879,155 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
 }
 
 // ============================================================
+// MEH-1335 chunk 3: owner-story editor — the data source for the public
+// "מאחורי העסק" card (OwnerCard, MEH-1334; bio/photo variants wake up on
+// their own once these fields hold data). Bio persists via PUT /producers/me
+// (owner_bio is in _PRODUCER_WRITABLE_FIELDS); the photo goes through the
+// dedicated POST /upload/owner-photo which persists owner_photo_url
+// atomically server-side (no follow-up PUT — and deliberately NO freemium
+// gate, unlike the /upload/image gallery cap).
+// REUSES: edit/cards.jsx DescriptionCard (save/dirty/counter contract) +
+// ImagesCard uploadFiles (upload error surface via detailToMessage).
+// ============================================================
+
+// Server-side sanitize cap (schemas.py owner_bio validator) — keep in sync.
+const OWNER_BIO_MAX = 300;
+
+// Exported for isolation tests (EditTabOwnerStoryCard.test.jsx) — see CategoriesCard.
+export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
+  const t = useTranslations("dashboard.producer.owner_story");
+  const [bio, setBio] = useState(profile.owner_bio || "");
+  const [savedBio, setSavedBio] = useState(profile.owner_bio || "");
+  const [photoUrl, setPhotoUrl] = useState(profile.owner_photo_url || "");
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const dirty = bio !== savedBio;
+  useEffect(() => {
+    reportDirty("ownerStory", dirty);
+    return () => reportDirty("ownerStory", false);
+  }, [dirty, reportDirty]);
+
+  // The endpoint saves owner_photo_url itself (atomic, MEH-375 fixed-slot
+  // overwrite) — success here needs no explicit Save click, mirroring the
+  // ImagesCard MEH-1236 "upload≠save trap" fix.
+  const uploadPhoto = async (e) => {
+    const file = (e.target.files || [])[0];
+    e.target.value = "";
+    if (!file) return;
+    setError("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await api.post("/upload/owner-photo", fd);
+      setPhotoUrl(r.data.url);
+      onSave({ owner_photo_url: r.data.url });
+    } catch (err) {
+      setError(detailToMessage(err?.response?.data?.detail) || t("upload_error"));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const save = async () => {
+    if (!dirty) return;
+    setSaving(true);
+    setError("");
+    const owner_bio = bio.trim() || null;
+    try {
+      await api.put("/producers/me", { owner_bio });
+      onSave({ owner_bio });
+      setSavedBio(bio);
+      setSaved(true);
+    } catch {
+      setError(t("error_save"));
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Card chrome + heading live in the EditAccordionCard header (MEH-1116). */}
+      <p className="text-xs text-fg-muted">{t("intro")}</p>
+
+      {/* Photo — locked spec label "תמונה שלך". Square face-gravity crop is
+          server-side; the round preview mirrors the public OwnerCard avatar. */}
+      <div className="space-y-1.5">
+        <span className="text-sm font-medium block">{t("photo_label")}</span>
+        <div className="flex items-center gap-3">
+          {photoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={photoUrl}
+              alt={t("photo_label")}
+              className="w-16 h-16 rounded-full object-cover border border-border"
+            />
+          ) : (
+            <span className="w-16 h-16 rounded-full bg-primary/10 border border-border" aria-hidden="true" />
+          )}
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary-dark cursor-pointer transition">
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={uploadPhoto}
+              disabled={uploading}
+              data-testid="owner-photo-input"
+            />
+            <span aria-live="polite">
+              {uploading ? t("uploading") : photoUrl ? t("photo_replace_cta") : t("photo_cta")}
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {/* Bio — locked spec label "כמה מילים עלייך" + 300 counter. */}
+      <div className="space-y-1.5">
+        <div className="flex items-baseline gap-2">
+          <label className="text-sm font-medium">{t("bio_label")}</label>
+          <span className="text-[11px] text-fg-muted">{t("bio_where")}</span>
+        </div>
+        <textarea
+          value={bio}
+          onChange={(e) => { setBio(e.target.value.slice(0, OWNER_BIO_MAX)); setSaved(false); }}
+          placeholder={t("bio_placeholder")}
+          className="w-full border border-primary/30 bg-primary/5 rounded-[10px] px-3 py-2 text-sm resize-none h-24"
+          dir="auto"
+          maxLength={OWNER_BIO_MAX}
+          data-testid="owner-bio-input"
+        />
+        <div className="flex items-center justify-end">
+          <span className="text-xs text-fg-muted tabular-nums" dir="ltr">
+            {bio.length}/{OWNER_BIO_MAX}
+          </span>
+        </div>
+      </div>
+
+      {/* ONE explicit save for the bio (the photo self-persists on upload). */}
+      <button
+        onClick={save}
+        disabled={saving || !dirty}
+        className="bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium disabled:opacity-60 hover:bg-primary-dark transition"
+      >
+        <span aria-live="polite" aria-atomic="true">
+          {saving ? t("saving") : saved ? t("saved") : t("save_cta")}
+        </span>
+      </button>
+
+      {error && (
+        <p className="text-xs text-error flex items-start gap-1.5" role="alert">
+          <Warning size={15} weight="fill" aria-hidden="true" className="shrink-0 mt-px" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
 // MEH-1242 PR3: producer-facing price-range + top-product editor.
 // Frontend-only gap: the owner whitelist (_PRODUCER_WRITABLE_FIELDS,
 // producer_me.py) already accepts `price_range` + `top_product_name` — there
