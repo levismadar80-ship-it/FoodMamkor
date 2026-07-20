@@ -92,6 +92,7 @@ graph TD
     Dashboard --> Avail[POST /producers/me/availability<br/>👤 toggle is_available_today]
     Dashboard --> Update[PUT /producers/me<br/>👤 edit own profile]
     Dashboard --> UploadImg[POST /upload/image<br/>🔑 Cloudinary, magic-byte validated]
+    Dashboard --> UploadOwner[POST /upload/owner-photo<br/>👤 MEH-1335 owner photo — no freemium gate,<br/>square crop, writes producers.owner_photo_url]
     Dashboard --> ReqReview[POST /producers/me/request-review<br/>👤 MEH-1236 resubmit ping — pending-only 409, 3/hr,<br/>notification-only, no DB write]
 
     NeighborList[/neighbor + create home product] --> HPCreate[POST /home-products<br/>🔑 Claude Opus moderation on write]
