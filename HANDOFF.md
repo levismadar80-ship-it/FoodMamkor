@@ -12,6 +12,13 @@
 - **Branch:** `feature/meh-1375-template-model-names` off `origin/staging`. GREEN docs-only. DoD "נבדק בנייד" N/A.
 - **Out of scope (separate tickets):** `docs/templates/09-council-mode.md` missing/404 (MEH-690).
 
+## 2026-07-18 (night) — MEH-1360 delivery-alert city targeting (alerts-chain batch, item C)
+
+- **Shipped:** `fire_alerts` gains optional `target_cities` — delivery_area alerts now reach only users whose `User.city` is among the newly added cities, with a per-recipient body naming only their city (`{cities}` placeholder, copy stays at the `producer_me.py` call site). Geo-filtered users skip BEFORE the MEH-1338 cap → no `AlertLog` row for suppressed alerts. No schema change. Files: `backend/app/routers/alerts.py`, `backend/app/routers/producer_me.py`, `tests/test_alerts.py` (+6 tests).
+- **Batch context:** MEH-1359 was found already merged (#1959, parallel dispatch — stopped, no duplicate PR; self-corrected the "two ×" gap claim: `!showPhoneField` at `AlertPrefsPanel.jsx:207` already enforces one dismissal). MEH-1371 cancelled (resolved by #1945's merge). Next: **MEH-1361 (new_recipe alert, RED)** after 1360 merges — Alembic revision printed in full + STOP for Sapir; the MEH-1338 cap covers new_recipe automatically via fire_alerts, no extra cap mechanism.
+- **Held:** MEH-1363 (collision with #1936, Sapir decides) · MEH-1364 (blocked on 1363 + orphan-rows query, Sapir/Railway).
+- **Verification honesty:** ruff check+format clean locally; normalization helper 12/12 in isolation; **pytest deferred to CI** (sandbox lacks backend deps, pip denied — MEH-360 class). Hebrew copy (unchanged sentence, per-recipient city list) proposed in PR body for Sapir.
+
 ## 2026-07-18 — MEH-1374 — Bug Protocol sibling-grep → i18n copy + VRT baselines (docs-only)
 
 - **What:** extended the "Grep for siblings" rule (Bug Protocol step 2 in `.claude/rules/workflow.md`) to cover the two classes it was missing — i18n copy in `frontend/messages/he.json`/`en.json` and stale VRT baselines. Root cause of the churn: the step-2 grep `--include` list was code-only (`*.py *.jsx *.js *.tsx`), so copy sweeps left residue that returned as a separate follow-up ticket the next day (8 of ~25 tickets closed 18/07 were this class).
