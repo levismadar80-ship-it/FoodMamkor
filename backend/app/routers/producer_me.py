@@ -221,6 +221,10 @@ def update_my_producer(
         "top_product_name",
         "starting_price_label",
         "price_range",
+        # MEH-1335: owner story fields (public OwnerCard data path). Validated
+        # in ProducerUpdate (bio sanitize ≤300, photo image-URL guard).
+        "owner_bio",
+        "owner_photo_url",
         "grass_fed",
         "organic_certified",
         "has_delivery",

@@ -80,6 +80,17 @@ class Producer(Base):
     is_recommended = Column(Boolean, default=False)
     # MEH-53: URL of the auto-generated Instagram story card (Cloudinary).
     story_card_url = Column(String(500), nullable=True)
+    # MEH-1335: owner story fields consumed by the public OwnerCard
+    # ("מאחורי העסק", MEH-1334 — dormant until data exists). Both nullable,
+    # Expand-only, no backfill: NULL = owner hasn't told her story yet and
+    # the card stays in its compact variant. owner_bio caps at 300 chars at
+    # the app layer (schemas.ProducerUpdate sanitize validator), mirroring
+    # short_description (Text column + app cap, no DB CHECK). owner_photo_url
+    # is written by POST /upload/owner-photo (Cloudinary, mehamakor/owner,
+    # fixed public_id + overwrite — MEH-375 zero-orphan pattern). Paired
+    # migration: f7d2a9c4b1e8.
+    owner_bio = Column(Text, nullable=True)
+    owner_photo_url = Column(String(500), nullable=True)
     plan = Column(String(20), default="free")  # free | premium
     slug = Column(String(100), unique=True, nullable=True)  # custom URL: /[slug]
     top_product_name = Column(
