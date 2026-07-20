@@ -1956,6 +1956,167 @@ class TestCloudinaryHebrewErrors:
         assert "Upload failed" not in detail
 
 
+# ---------- MEH-1335: owner story fields (owner_bio + owner_photo_url) ----------
+
+class TestOwnerStoryFields:
+    """MEH-1335: owner story data path — owner write, PUBLIC read, dedicated
+    upload endpoint. The fields feed the OwnerCard "מאחורי העסק" variants
+    (dormant in PR #1936 / MEH-1334); absence must change nothing."""
+
+    def _producer_user(self, db, *, plan="free", images=None, email="owner_story@test.com"):
+        user = make_user(db, role="producer", email=email)
+        producer = make_producer(db, images=images)
+        producer.plan = plan
+        user.producer_id = producer.id
+        db.commit()
+        return user, producer
+
+    def test_owner_put_and_public_get_roundtrip(self, client, db):
+        """Owner PUT writes both fields; the PUBLIC detail GET returns them —
+        they are deliberately public, unlike address (MEH-829)."""
+        user, producer = self._producer_user(db)
+        resp = client.put(
+            "/producers/me",
+            json={
+                "owner_bio": "גדלתי בין העיזים.",
+                "owner_photo_url": "https://res.cloudinary.com/test/image/upload/owner/noa.jpg",
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        public = client.get(f"/producers/{producer.id}")
+        assert public.status_code == 200
+        body = public.json()
+        assert body["owner_bio"] == "גדלתי בין העיזים."
+        assert (
+            body["owner_photo_url"]
+            == "https://res.cloudinary.com/test/image/upload/owner/noa.jpg"
+        )
+        # MEH-829 regression guard: the same public payload still must NOT
+        # carry the street address.
+        assert "address" not in body
+
+    def test_absence_changes_nothing(self, client, db):
+        """Fields never set → public GET returns null for both (the dormant
+        OwnerCard contract: NULL = compact variant)."""
+        _, producer = self._producer_user(db, email="owner_absent@test.com")
+        body = client.get(f"/producers/{producer.id}").json()
+        assert body["owner_bio"] is None
+        assert body["owner_photo_url"] is None
+
+    def test_owner_bio_capped_at_300(self, client, db):
+        """Server-side cap: 400 chars in → ≤300 stored (sanitize_text truncation,
+        mirrors the short_description 200-cap pattern)."""
+        user, _ = self._producer_user(db, email="owner_bio_cap@test.com")
+        resp = client.put(
+            "/producers/me", json={"owner_bio": "א" * 400}, headers=auth_header(user)
+        )
+        assert resp.status_code == 200
+        assert len(resp.json()["owner_bio"]) <= 300
+
+    def test_owner_bio_html_stripped(self, client, db):
+        """Bleach strips tags at the input layer (ASVS V13 / MEH-329 pattern)."""
+        user, _ = self._producer_user(db, email="owner_bio_html@test.com")
+        resp = client.put(
+            "/producers/me",
+            json={"owner_bio": "<script>alert(1)</script>שלום"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        assert "<script>" not in (resp.json()["owner_bio"] or "")
+
+    def test_owner_photo_url_rejects_bad_scheme(self, client, db):
+        """Non-http(s) URL → 422 (MEH-1222 image-URL guard)."""
+        user, _ = self._producer_user(db, email="owner_url_bad@test.com")
+        resp = client.put(
+            "/producers/me",
+            json={"owner_photo_url": "javascript:alert(1)"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 422
+
+    def test_free_plan_full_gallery_can_upload_owner_photo(self, client, db):
+        """THE justification for /upload/owner-photo: the 3-image gallery cap
+        blocks /upload/image but must NOT block the owner photo."""
+        import io
+
+        user, producer = self._producer_user(
+            db,
+            plan="free",
+            images=[
+                "https://res.cloudinary.com/test/img/0.jpg",
+                "https://res.cloudinary.com/test/img/1.jpg",
+                "https://res.cloudinary.com/test/img/2.jpg",
+            ],
+            email="owner_upload_cap@test.com",
+        )
+        fake_jpg = b"\xff\xd8\xff" + b"\x00" * 100
+        # Control: the gallery endpoint IS capped for this exact user…
+        blocked = client.post(
+            "/upload/image",
+            files={"file": ("photo.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert blocked.status_code == 403
+        # …but the owner-photo endpoint is not (no freemium gate).
+        resp = client.post(
+            "/upload/owner-photo",
+            files={"file": ("me.jpg", io.BytesIO(fake_jpg), "image/jpeg")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 200
+        url = resp.json()["url"]
+        assert url
+        db.refresh(producer)
+        assert producer.owner_photo_url == url
+
+    def test_owner_photo_upload_requires_auth(self, client):
+        """POST /upload/owner-photo without JWT → 401 (schema-valid file body)."""
+        import io
+
+        resp = client.post(
+            "/upload/owner-photo",
+            files={
+                "file": (
+                    "me.jpg",
+                    io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100),
+                    "image/jpeg",
+                )
+            },
+        )
+        assert resp.status_code == 401
+
+    def test_owner_photo_upload_without_producer_403(self, client, db):
+        """A logged-in user with no producer attached cannot upload."""
+        import io
+
+        user = make_user(db, email="owner_no_producer@test.com")
+        resp = client.post(
+            "/upload/owner-photo",
+            files={
+                "file": (
+                    "me.jpg",
+                    io.BytesIO(b"\xff\xd8\xff" + b"\x00" * 100),
+                    "image/jpeg",
+                )
+            },
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 403
+
+    def test_owner_photo_rejects_non_image(self, client, db):
+        """Magic-byte sniff applies to the new endpoint too."""
+        import io
+
+        user, _ = self._producer_user(db, email="owner_bad_file@test.com")
+        resp = client.post(
+            "/upload/owner-photo",
+            files={"file": ("doc.pdf", io.BytesIO(b"%PDF-1.4 nope"), "application/pdf")},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 400
+
+
 # ---------- MEH-155: Vacation badge auto-clear after return_date ----------
 
 class TestVacationBadgeClear:

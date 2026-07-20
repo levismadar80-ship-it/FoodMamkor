@@ -3,6 +3,14 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1335 — owner story fields (chunks 1+2 done, chunk 3 pending)
+
+- **Branch:** `levismadar80/meh-1335-owner-story-fields` off `origin/staging` (Linear's generated name had underscores — blocked by the MEH-1141 gate; renamed with Sapir's approval). Commits local: chunk 1 = Alembic revision `f7d2a9c4b1e8` (approved by Sapir pre-apply; **Sapir runs `alembic upgrade head`**, CC never does), chunk 2 = model + schemas + `_PRODUCER_WRITABLE_FIELDS` + NEW `POST /upload/owner-photo` + delete-cascade extension + 10 tests + docs (DATA.md, db-schema/api-routes diagrams).
+- **Key decisions locked (Linear SYNC 20/07):** new upload endpoint approved (gallery-cap gap: free-plan + 3 images must still upload owner photo — asserted in test); fields are PUBLIC on ProducerDetailOut (unlike address); chunks 1+2 in ONE PR (alembic drift gate, MEH-492); `_image_url_validator` upgrade over plain scheme check approved.
+- **Verified this session:** admin PUT has NO allowlist (admin.py:227 model_dump → :276-277 bare setattr) → fields flow automatically; Sapir decides symmetry ticket separately. `check_api_contract`: 0 mismatches / 0 orphan-frontend (new route = orphan-backend until chunk 3). CVE check (rule 5a) clean at pins.
+- **Pending:** push + draft PR (chunks 1+2) → `/adversarial-review` after CI → chunk 3 (dashboard card "מאחורי העסק" after DescriptionCard, ImagesCard upload + ContactChannelsCard save contracts, he.json + en.json twins — MEH-978 parity gate) on the same branch/PR unless Smadar splits.
+- **Out of scope (locked):** producer.address + schemas.py:1013-1016 exclusion (MEH-829); contact_name dashboard editability (orchestrator opening follow-up ticket); ProducerDetail display components (MEH-1334 / PR #1936, still Draft DO-NOT-MERGE).
+
 ## 2026-07-18 (night) — MEH-1359 — /favorites alert panel overlay — MERGED (PR #1959)
 
 - **MERGED to staging** — PR #1959 (squash), auto-merge on green. YELLOW frontend layout-bug fix (`Refs MEH-1359`).
