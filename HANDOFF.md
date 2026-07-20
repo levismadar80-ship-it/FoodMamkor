@@ -10,6 +10,14 @@
 - **Verified this session:** admin PUT has NO allowlist (admin.py:227 model_dump → :276-277 bare setattr) → fields flow automatically; Sapir decides symmetry ticket separately. `check_api_contract`: 0 mismatches / 0 orphan-frontend (new route = orphan-backend until chunk 3). CVE check (rule 5a) clean at pins.
 - **Pending:** push + draft PR (chunks 1+2) → `/adversarial-review` after CI → chunk 3 (dashboard card "מאחורי העסק" after DescriptionCard, ImagesCard upload + ContactChannelsCard save contracts, he.json + en.json twins — MEH-978 parity gate) on the same branch/PR unless Smadar splits.
 - **Out of scope (locked):** producer.address + schemas.py:1013-1016 exclusion (MEH-829); contact_name dashboard editability (orchestrator opening follow-up ticket); ProducerDetail display components (MEH-1334 / PR #1936, still Draft DO-NOT-MERGE).
+## 2026-07-20 — AskUserQuestion delivery failure — observed once (LOUD, not silent) — MEH-1377 investigation closed
+
+- **What happened:** during MEH-1375 (GREEN, docs-only) CC hit a scope question (include the 11th sibling `README.md`?) and called `AskUserQuestion` to confirm with Sapir. In this non-interactive session the tool **failed to deliver** — but it failed **LOUDLY**, returning `Tool permission request failed: AbortError: Tool permission stream closed before response received`, not a fake success.
+- **Why that matters:** this is **not** the silent auto-resolve class tracked upstream in `anthropics/claude-code` #50728 / #29618 / #46515 (where the agent "sees success" with an empty answer and continues unaware). Here the call errored visibly, CC **knew** it failed, proceeded on the documented default, and flagged it in the PR/CHANGELOG/HANDOFF. Correct behavior — the §2.2 "fail-open by design" signature never applied to us.
+- **Version:** installed Claude Code **2.1.211**, past the **v2.1.200** change where dialogs stopped auto-continuing by default. No settings re-enable timed auto-continue.
+- **MEH-1377 disposition:** investigated Phase-0-only and **closed Done, no hook.** A PreToolUse hook can't see delivery outcome (it fires before the tool runs), so the originally-proposed guard was not implementable at that layer.
+- **Recurrence rule (meta-patterns.md "observed ≥2 times"):** this is occurrence **#1**. If a delivery failure like this recurs on a **YELLOW or RED** ticket — where proceeding on a default is a real scope/architecture risk — the 2-occurrence threshold is met: **write the rule then, at the `Stop`/`SubagentStop` layer (not PreToolUse).** Until then, no rule, no hook (a prose rule on a loud-failing tool would be a no-op guard).
+
 ## 2026-07-20 — MEH-1375 — model-name refresh across docs/templates/ (docs-only)
 
 - **What:** refreshed stale model names in `docs/templates/` — `Sonnet 4.6`→`Sonnet 5`, `Opus 4.7`→`Opus 4.8`. Template 00 was partially migrated (29 Opus 4.8 already); the other 9 templates never touched — 113 stale occurrences hiding behind one migrated file (single-symptom-hides-systemic-gap).
@@ -18,6 +26,13 @@
 - **QA:** `grep Sonnet 4.6` → 0 · `grep Opus 4.7` → 0 · `grep -i fable` → 0 · residual bare versions only `Haiku 4.5` (current model) + a GPS coord (`34.78`). `git diff --stat` = 13 files, symmetric 113/113 line swaps.
 - **Branch:** `feature/meh-1375-template-model-names` off `origin/staging`. GREEN docs-only. DoD "נבדק בנייד" N/A.
 - **Out of scope (separate tickets):** `docs/templates/09-council-mode.md` missing/404 (MEH-690).
+
+## 2026-07-18 (night) — MEH-1360 delivery-alert city targeting (alerts-chain batch, item C)
+
+- **Shipped:** `fire_alerts` gains optional `target_cities` — delivery_area alerts now reach only users whose `User.city` is among the newly added cities, with a per-recipient body naming only their city (`{cities}` placeholder, copy stays at the `producer_me.py` call site). Geo-filtered users skip BEFORE the MEH-1338 cap → no `AlertLog` row for suppressed alerts. No schema change. Files: `backend/app/routers/alerts.py`, `backend/app/routers/producer_me.py`, `tests/test_alerts.py` (+6 tests).
+- **Batch context:** MEH-1359 was found already merged (#1959, parallel dispatch — stopped, no duplicate PR; self-corrected the "two ×" gap claim: `!showPhoneField` at `AlertPrefsPanel.jsx:207` already enforces one dismissal). MEH-1371 cancelled (resolved by #1945's merge). Next: **MEH-1361 (new_recipe alert, RED)** after 1360 merges — Alembic revision printed in full + STOP for Sapir; the MEH-1338 cap covers new_recipe automatically via fire_alerts, no extra cap mechanism.
+- **Held:** MEH-1363 (collision with #1936, Sapir decides) · MEH-1364 (blocked on 1363 + orphan-rows query, Sapir/Railway).
+- **Verification honesty:** ruff check+format clean locally; normalization helper 12/12 in isolation; **pytest deferred to CI** (sandbox lacks backend deps, pip denied — MEH-360 class). Hebrew copy (unchanged sentence, per-recipient city list) proposed in PR body for Sapir.
 
 ## 2026-07-18 — MEH-1374 — Bug Protocol sibling-grep → i18n copy + VRT baselines (docs-only)
 

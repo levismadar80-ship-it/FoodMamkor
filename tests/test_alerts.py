@@ -15,11 +15,12 @@ Monkeypatch boundaries:
     not free-form send_text)
   - app.services.push.send_push_notification (call-time import)
 """
+
 from uuid import uuid4
 
 from conftest import auth_header, make_producer, make_user
 
-from app.models import Favorite, FavoriteAlert
+from app.models import AlertLog, Favorite, FavoriteAlert
 from app.routers.alerts import fire_alerts
 from app.schemas.schemas import AlertContent
 
@@ -158,12 +159,18 @@ class TestFireAlerts:
         opted_out = make_user(db, email="out@example.com")
         # Both have a push subscription so the ONLY difference is the alert_type flag.
         _make_alert(
-            db, opted_in, producer,
-            notify_new_event=True, push_subscription={"endpoint": "in"},
+            db,
+            opted_in,
+            producer,
+            notify_new_event=True,
+            push_subscription={"endpoint": "in"},
         )
         _make_alert(
-            db, opted_out, producer,
-            notify_new_event=False, push_subscription={"endpoint": "out"},
+            db,
+            opted_out,
+            producer,
+            notify_new_event=False,
+            push_subscription={"endpoint": "out"},
         )
 
         fire_alerts(db, producer.id, "new_event", self._content())
@@ -194,11 +201,11 @@ class TestFireAlerts:
         user = make_user(db, email="wa@example.com")
         user.phone = "0501234567"
         db.commit()
-        _make_alert(
-            db, user, producer, notify_new_product=True, whatsapp_opt_in=True
-        )
+        _make_alert(db, user, producer, notify_new_product=True, whatsapp_opt_in=True)
 
-        content = AlertContent(title="מוצר חדש: גבינת עיזים", body="טרי מהיום", url="/p/1")
+        content = AlertContent(
+            title="מוצר חדש: גבינת עיזים", body="טרי מהיום", url="/p/1"
+        )
         fire_alerts(db, producer.id, "new_product", content)
 
         tmpl = captured["template"]
@@ -269,8 +276,12 @@ class TestFireAlerts:
         user.phone = "0503334444"
         db.commit()
         _make_alert(
-            db, user, producer,
-            notify_new_product=True, whatsapp_opt_in=True, push_subscription=_SUB,
+            db,
+            user,
+            producer,
+            notify_new_product=True,
+            whatsapp_opt_in=True,
+            push_subscription=_SUB,
         )
 
         fire_alerts(db, producer.id, "new_product", self._content())
@@ -290,9 +301,7 @@ class TestFireAlerts:
 
         producer = make_producer(db, name="Farm Push")
         user = make_user(db, email="push@example.com")
-        _make_alert(
-            db, user, producer, notify_new_event=True, push_subscription=_SUB
-        )
+        _make_alert(db, user, producer, notify_new_event=True, push_subscription=_SUB)
 
         content = AlertContent(title="אירוע", body="שוק", url="/e/9")
         fire_alerts(db, producer.id, "new_event", content)
@@ -343,7 +352,9 @@ class TestFireAlerts:
         user.phone = "0509999999"
         db.commit()
         _make_alert(
-            db, user, producer,
+            db,
+            user,
+            producer,
             notify_new_event=True,
             whatsapp_opt_in=True,
             push_subscription=_SUB,
@@ -356,3 +367,139 @@ class TestFireAlerts:
 
         assert push_calls == []
         assert wa_calls == []
+
+
+# ============================================================
+# MEH-1360 — delivery_area geographic targeting (target_cities)
+# ============================================================
+
+
+class TestDeliveryAreaTargeting:
+    """fire_alerts(..., target_cities=[...]) — only users whose User.city is
+    among the newly added cities receive the alert; everyone else is skipped
+    BEFORE the MEH-1338 cap, so no AlertLog row is written for them."""
+
+    _BODY = "עכשיו מגיעים גם ל: {cities}"
+
+    def _capture_push(self, monkeypatch):
+        calls = []
+
+        def fake_push(sub, *, title, body, url):
+            calls.append({"sub": sub, "title": title, "body": body, "url": url})
+
+        monkeypatch.setattr("app.services.push.send_push_notification", fake_push)
+        monkeypatch.setattr("app.routers.alerts.send_template", lambda to, tmpl: True)
+        return calls
+
+    def _delivery_alert(self, db, producer, *, email, city, **extra):
+        user = make_user(db, email=email)
+        user.city = city
+        db.commit()
+        _make_alert(
+            db,
+            user,
+            producer,
+            notify_delivery_area=True,
+            push_subscription=extra.get("push_subscription", {"endpoint": email}),
+            whatsapp_opt_in=extra.get("whatsapp_opt_in", False),
+        )
+        return user
+
+    def _content(self):
+        return AlertContent(
+            title="🚚 משלוחים חדשים", body=self._BODY, url="/producer/x"
+        )
+
+    def test_matching_city_receives_only_own_city_in_body(self, db, monkeypatch):
+        """Two users in different added cities → each gets a body naming only
+        THEIR city, never the full added-cities list."""
+        calls = self._capture_push(monkeypatch)
+        producer = make_producer(db, name="Farm Geo")
+        self._delivery_alert(db, producer, email="haifa@example.com", city="חיפה")
+        self._delivery_alert(db, producer, email="eilat@example.com", city="אילת")
+
+        fire_alerts(db, producer.id, "delivery_area", self._content(), ["חיפה", "אילת"])
+
+        assert len(calls) == 2
+        by_sub = {c["sub"]["endpoint"]: c["body"] for c in calls}
+        assert by_sub["haifa@example.com"] == "עכשיו מגיעים גם ל: חיפה"
+        assert by_sub["eilat@example.com"] == "עכשיו מגיעים גם ל: אילת"
+
+    def test_non_matching_city_skipped_and_no_alertlog_row(self, db, monkeypatch):
+        """A user outside the added cities gets nothing on ANY channel — and no
+        AlertLog row is written (a suppressed alert must not cap a future one)."""
+        calls = self._capture_push(monkeypatch)
+        producer = make_producer(db, name="Farm GeoSkip")
+        user = self._delivery_alert(
+            db,
+            producer,
+            email="karmiel@example.com",
+            city="כרמיאל",
+            whatsapp_opt_in=True,
+        )
+        user.phone = "0501234567"
+        db.commit()
+
+        fire_alerts(db, producer.id, "delivery_area", self._content(), ["אילת"])
+
+        assert calls == []
+        assert db.query(AlertLog).count() == 0
+
+    def test_null_or_empty_city_skipped_when_targeted(self, db, monkeypatch):
+        """User.city None / whitespace-only → no targeted delivery_area alert."""
+        calls = self._capture_push(monkeypatch)
+        producer = make_producer(db, name="Farm NoCity")
+        self._delivery_alert(db, producer, email="nocity@example.com", city=None)
+        self._delivery_alert(db, producer, email="blank@example.com", city="   ")
+
+        fire_alerts(db, producer.id, "delivery_area", self._content(), ["חיפה"])
+
+        assert calls == []
+
+    def test_normalization_tolerates_city_variants(self, db, monkeypatch):
+        """Matching survives the notation drift in the cities data: surrounding
+        whitespace, hyphen-vs-spaced-dash ("תל אביב-יפו" / "תל אביב – יפו"),
+        and letter case for latin entries."""
+        calls = self._capture_push(monkeypatch)
+        producer = make_producer(db, name="Farm Norm")
+        self._delivery_alert(
+            db, producer, email="tlv@example.com", city="תל אביב – יפו"
+        )
+        self._delivery_alert(db, producer, email="latin@example.com", city="  haifa ")
+
+        fire_alerts(
+            db, producer.id, "delivery_area", self._content(), ["תל אביב-יפו", "HAIFA"]
+        )
+
+        assert len(calls) == 2
+
+    def test_untargeted_call_behavior_unchanged(self, db, monkeypatch):
+        """target_cities omitted → pre-MEH-1360 behavior: a user WITHOUT a city
+        still receives, and the body is passed through verbatim."""
+        calls = self._capture_push(monkeypatch)
+        producer = make_producer(db, name="Farm Untargeted")
+        self._delivery_alert(db, producer, email="legacy@example.com", city=None)
+
+        content = AlertContent(title="ט", body="גוף כמו שהוא", url="/p/9")
+        fire_alerts(db, producer.id, "delivery_area", content)
+
+        assert len(calls) == 1
+        assert calls[0]["body"] == "גוף כמו שהוא"
+
+    def test_other_alert_types_unaffected(self, db, monkeypatch):
+        """new_event / new_product call sites don't pass target_cities — a user
+        with no city keeps receiving them exactly as before. Two producers so
+        the MEH-1338 per-(user, producer, channel) cap can't mask the result."""
+        calls = self._capture_push(monkeypatch)
+        p_event = make_producer(db, name="Farm OtherEvent")
+        p_product = make_producer(db, name="Farm OtherProduct")
+        user = make_user(db, email="event@example.com")
+        _make_alert(db, user, p_event, notify_new_event=True, push_subscription=_SUB)
+        _make_alert(
+            db, user, p_product, notify_new_product=True, push_subscription=_SUB
+        )
+
+        fire_alerts(db, p_event.id, "new_event", self._content())
+        fire_alerts(db, p_product.id, "new_product", self._content())
+
+        assert len(calls) == 2
