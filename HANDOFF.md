@@ -3,6 +3,15 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-20 — MEH-1383 — ChipScrollRow desktop scroll arrows (PR #1977, auto-merge armed)
+
+- **What:** desktop-pointer edge arrow buttons on the shared chip row — single code file (`frontend/components/ChipScrollRow.jsx`) + 7 new vitest cases in its suite. PR #1977 opened **ready** (not draft — a draft skips the backend jobs and yields a fake green, rule 21) with auto-merge per the ticket's YELLOW authority.
+- **Key decision (deviation, surfaced in PR + CHANGELOG):** arrow visibility reuses the existing IO sentinel signal (the dynamic-fade state) instead of the ticket's suggested ResizeObserver + scroll listener — one authority for "can scroll in that direction", per the two-parallel-mechanisms smell. RTL scrollLeft sign verified live with Playwright (`-9 → -44`, negative toward inline-end), not assumed.
+- **Adversarial review:** 1 real finding fixed (Firefox `deltaMode=DOM_DELTA_LINE` wheel deltas normalized ×16 to px; regression test added). Disproven: aria-hidden focus, old-Safari MQL listener (ChatWidget/BackToTop precedent), legacy RTL scrollLeft, hidden-instance arrow DOM (pre-existing fade parity).
+- **Findings for Sapir:** homepage (6 chips) + /producers **fit at 1440** → no overflow → correctly zero arrows; /map sidebar is the real desktop-arrows surface. Pre-existing cosmetic: `CustomCursor.jsx` recomputes hover only on mousemove, so any button unmounting under a stationary pointer leaves the cursor scaled ×3 until the mouse moves (not filed — same class exists for chips; file if it bothers).
+- **Phase 2 discovery table** (overflow-x-auto surfaces + recommendations) delivered in the session report for pasting into the ticket description.
+- **Next:** watch PR #1977 CI; mobile QA on the Vercel preview is Sapir's (375px touch verified via Playwright emulation only).
+
 ## 2026-07-20 — MEH-1379 — rule 29 → warn-only CI check (Linear auto-reopen guard)
 
 - **What:** made `workflow.md` rule 29 mechanical. New `.claude/scripts/check-linear-mentions.sh` flags any bare `MEH-[0-9]+` in a PR title/body not preceded by `Closes`/`Fixes`/`Resolves` (case-insensitive, optional colon). Motivated by 5 observed violations of the prose rule — including two in this same 20/07 batch (one reopened a just-closed ticket and had to be hand-remediated).
@@ -27,6 +36,14 @@
 - **Version:** installed Claude Code **2.1.211**, past the **v2.1.200** change where dialogs stopped auto-continuing by default. No settings re-enable timed auto-continue.
 - **MEH-1377 disposition:** investigated Phase-0-only and **closed Done, no hook.** A PreToolUse hook can't see delivery outcome (it fires before the tool runs), so the originally-proposed guard was not implementable at that layer.
 - **Recurrence rule (meta-patterns.md "observed ≥2 times"):** this is occurrence **#1**. If a delivery failure like this recurs on a **YELLOW or RED** ticket — where proceeding on a default is a real scope/architecture risk — the 2-occurrence threshold is met: **write the rule then, at the `Stop`/`SubagentStop` layer (not PreToolUse).** Until then, no rule, no hook (a prose rule on a loud-failing tool would be a no-op guard).
+
+## 2026-07-20 — MEH-1363 FollowButton removal (alerts-chain batch, item A — decision A of MEH-1362)
+
+- **Shipped:** FollowButton mount removed from `ProducerHeader.jsx` (quiet row now שמירה · שיתוף), `components/FollowButton.jsx` DELETED, `group_buys.follow` keys dropped he+en, MEH-996 i18n test case removed. Consequence files beyond the ticket's list (surfaced in the PR): `FollowButtonGuest.test.jsx` deleted, stale FollowButton mocks removed from two test files, `pending-action.js` doc-comments updated. Backend follow endpoints/model/dashboard-count untouched (MEH-1364's domain).
+- **Phase 0:** exactly one live mount (`ProducerHeader.jsx:173`) — no extra-mount STOP; no open PR on ProducerHeader.
+- **Verified:** build green · vitest 1355 pass · zero-grep clean · stub-API SSR Playwright QA @375/@1440 (single interest control, intact row) → `qa-artifacts/MEH-1363/`.
+- **⚠️ Expected VRT red post-merge:** #1975 baselines include the follow button — producer-detail parity spec reds until the next vrt-update regen (intended change; E2E is not a required gate).
+- **MEH-1361 MERGED earlier today** — staging squash `1298e2b8` (#1972; revision c8f3a6d1e9b2 landed via Sapir, MEH-759/762 pattern). **MEH-1364 still held** — awaiting Sapir's orphan-rows query + this ticket's merge.
 
 ## 2026-07-20 — MEH-1361 new_recipe alert — implemented to the RED STOP point (alerts-chain batch, item E)
 

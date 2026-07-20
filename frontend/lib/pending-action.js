@@ -6,11 +6,12 @@
  *           button that owns the action consumes the intent, completes the
  *           original action automatically, and restores the scroll position —
  *           no dead-end at the login screen.
- * Does NOT: perform the action itself (FavoriteButton / FollowButton own
- *           their API calls) or persist beyond the tab (sessionStorage).
- * Related:  components/FavoriteButton.jsx, components/FollowButton.jsx,
+ * Does NOT: perform the action itself (FavoriteButton owns its API call)
+ *           or persist beyond the tab (sessionStorage).
+ * Related:  components/FavoriteButton.jsx,
  *           components/LoginPromptModal.jsx (the login hand-off).
- * History:  MEH-1334 chunk 1 (creation).
+ * History:  MEH-1334 chunk 1 (creation); MEH-1363 (follow intent retired
+ *           with the follow button — a stored one expires unconsumed).
  */
 
 const KEY = "pending_action";
