@@ -11,6 +11,21 @@
 - **Lint-hook note:** the per-edit lint-feedback 3-strike tripped mid-refactor on transient no-undef (MEH-763 class, exec §8); resolved by completing the refactor — final file lints 0 errors.
 - **Known scope note:** recently-viewed caps at 5 cards → arrows will rarely render there (only ~850–900px desktop windows). Not a bug.
 
+## 2026-07-20 (evening) — Sweep 2 stop-report (launch-sweep session, PR #1978 merged; sweep halted by the parallel-session gate after 3 cycles)
+
+- **Merged this sweep:** PR #1978 (map attribution rides the sheet edge — staging `f3837b5f`). Earlier the same session (sweep 1): PR #1970 (/about verification scaffold), whose copy-flip landed later as PR #1982 from another session.
+- **Why the sweep halted:** the parallel-session gate (workflow rule 1) failed 3 consecutive 30-min cycles — at least two other CC sessions were live-merging the SAME backlog queue while this one ran (observed: PR #1977 mid-push of #1978; PR #1979 executing this sweep's own queue item; then #1980/#1982/#1983/#1984 inside the final window). No double-implementation occurred — collision guards held every time — but the sweep protocol correctly refused to keep merging into a churning staging.
+- **Queue state at stop (for whichever single session resumes):** UNSTARTED, premises need re-validation at dispatch: /map chips clipping (re-measure against the new ChipScrollRow arrows from PR #1977) · /map imageless-card compaction · homepage session-expired toast (diagnose-first; auth-layer fix = RED/Sapir) · tools-page reduction · settings business-tab CTA · alerts.py review minors (invisible-char escapes + race comment) · the CHANGELOG-backfill rule codification · i18n he/en parity sweep (45 gaps measured 20/07 morning — re-run the flat-key diff first, the number moved with the day's merges) · Sapir's extension: hero-search double-mount re-diagnosis, analytics bot filtering, admin rejection-reason UI (placeholder keys), eslint 9→10 (resolve the open dependabot bump), ui/Popover primitive consolidation (premise partly consumed by the v3 `sheetOnMobile` work — re-validate).
+- **Waiting on Sapir (STOP comments posted on the tickets):** map filter-bar consolidation (approve a mockup + paste the spec) · hero CTA hierarchy (choose א/ב/ג) · real-404 spike (enable `experimental.globalNotFound` in next.config.js) · aria-label sweep (needs axe against a populated backend).
+- **Process recommendation (repeat of the sweep-1 finding, now with 4 observed sessions):** exactly ONE sweep session at a time on this repo. The single-session rule kept catching it after the fact; the cost today was gate-churn and idle cycles, not corruption — but MEH-1215/1216 shows the failure mode when luck runs out.
+
+## 2026-07-20 — MEH-1364 follower count from favorites (alerts-chain batch, item D — closes decision A)
+
+- **Shipped:** the two `producer_analytics` follower queries repointed `ProducerFollower` → `Favorite` (`func.count(Favorite.producer_id)` — composite PK, no id column; week window on `Favorite.created_at`). `ProducerFollower` import dropped from `producer_me.py`. Followers page: **zero changes needed** (renders `analytics.follower_count`; no per-follower list endpoint exists) — ticket file_location narrowed, surfaced in PR.
+- **Data prerequisite:** handled by Sapir 20/07 (1 orphan → upsert with original `created_at` → 0 verified). No data-migration code in the PR, per ticket.
+- **Tests:** `test_analytics_follower_counts` → Favorite fixtures across the week boundary + a legacy `producer_followers` row proving the frozen table no longer counts. Pre-existing `test_analytics.py` F401/PLR0913 left alone (outside CI's backend-scoped ruff; verified pre-existing via stash-diff).
+- **This closes the MEH-1362 batch** (decision A: 1363 removed the button, 1364 repointed the reads). Contract step (drop `producer_followers` + `producer_follows.py`) = separate post-launch RED ticket.
+
 ## 2026-07-20 — MEH-1383 — ChipScrollRow desktop scroll arrows (PR #1977, auto-merge armed)
 
 - **What:** desktop-pointer edge arrow buttons on the shared chip row — single code file (`frontend/components/ChipScrollRow.jsx`) + 7 new vitest cases in its suite. PR #1977 opened **ready** (not draft — a draft skips the backend jobs and yields a fake green, rule 21) with auto-merge per the ticket's YELLOW authority.
