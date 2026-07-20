@@ -33,12 +33,10 @@ import FadeInSection, { REVEAL_PRESET } from "@/components/FadeInSection";
 // JSX + i18n keys kept intact for revival; flip to true when content lands.
 const SHOW_TESTIMONIALS = false;
 
-// MEH-1336: "איך אנחנו מאמתים" section render-gated OFF — the Hebrew body copy
-// awaits Sapir's brand ✓ (brand-before-code). The #verification anchor is the
-// target of the verified-badge popover (MEH-1334, PR #1936, also unmerged).
-// Flip to true in the copy-approval PR: swap the placeholder value of
-// about.consumer.verification.body in he.json/en.json for the approved text.
-const SHOW_VERIFICATION = false;
+// MEH-1336: "איך אנחנו מאמתים" — live since the copy-approval PR (Sapir-approved
+// body in he.json/en.json). The #verification anchor is the target of the
+// verified-badge popover link (MEH-1334, PR #1936).
+const SHOW_VERIFICATION = true;
 
 // MEH-1113: contact-form topic whitelist (mirrors backend CONTACT_TOPIC_LABELS
 // keys). "general" is the default; labels resolve from contact.topic_options.*.
