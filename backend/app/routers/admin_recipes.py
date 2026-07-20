@@ -130,6 +130,14 @@ def approve_recipe(
             if producer and producer.slug
             else f"/producer/{recipe.producer_id}"
         )
+        # Copy approved by Sapir 20/07 (singular "לך"; business name gives the
+        # notification its context, consistent with the 🚚 delivery template).
+        producer_name = producer.name if producer else ""
+        body = (
+            f"מתכון חדש מ{producer_name} מחכה לך באתר"
+            if producer_name
+            else "מתכון חדש מחכה לך באתר"
+        )
         background_tasks.add_task(
             fire_alerts,
             db,
@@ -137,7 +145,7 @@ def approve_recipe(
             "new_recipe",
             AlertContent(
                 title=f"🍲 מתכון חדש: {recipe.title}",
-                body="מתכון חדש מחכה לכן באתר",
+                body=body,
                 url=url,
             ),
         )
