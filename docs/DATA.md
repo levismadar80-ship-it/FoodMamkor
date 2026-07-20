@@ -465,7 +465,9 @@ GET    /producers/me/dashboard                    producer  — stable legacy: f
 GET    /producers/me/analytics                    producer  — feature/producer-analytics (April 2026)
                                                               profile_views / search_appearances / whatsapp_clicks
                                                               as {last_7d, last_30d, total}; follower_count +
-                                                              new_followers_this_week; average_rating + total_reviews;
+                                                              new_followers_this_week (MEH-1364: counted from
+                                                              favorites, the canonical interest record — decision A);
+                                                              average_rating + total_reviews;
                                                               home_products_count; views_by_day (30-entry zero-filled
                                                               series); top_cities (top 5, excludes NULL city)
 
