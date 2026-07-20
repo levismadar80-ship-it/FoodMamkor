@@ -1,6 +1,6 @@
 # 🎨 Template 01 — Claude Design (v2.1)
 
-לעיצוב חדש: דפים, קומפוננטות, לוגו, אייקונים. **גרסה 2.1** — מבוססת Anthropic Opus 4.7 design defaults + 2026 best practices. חדש ב-v2.1 (MEH-1004): בלוק `<code_truth>` חובה + data-bindings ב-deliverables — אמת-קוד נכנסת לפני שמעצבים, לא רק ביקורת אחרי.
+לעיצוב חדש: דפים, קומפוננטות, לוגו, אייקונים. **גרסה 2.1** — מבוססת Anthropic Opus 4.8 design defaults + 2026 best practices. חדש ב-v2.1 (MEH-1004): בלוק `<code_truth>` חובה + data-bindings ב-deliverables — אמת-קוד נכנסת לפני שמעצבים, לא רק ביקורת אחרי.
 
 ---
 
@@ -18,17 +18,17 @@
 
 ## 🎯 מודל מומלץ
 
-**Design = always Opus 4.7.** ללא יוצא מן הכלל.
+**Design = always Opus 4.8.** ללא יוצא מן הכלל.
 
-למה: Anthropic 2026 רשמי — Opus 4.7 is "more tasteful and creative when completing professional tasks, producing higher-quality interfaces, slides, and docs."
+למה: Anthropic 2026 רשמי — Opus 4.8 is "more tasteful and creative when completing professional tasks, producing higher-quality interfaces, slides, and docs."
 
-Sonnet 4.6 = פונקציונלי, אבל אסתטיקה fades to "AI slop" patterns מהר יותר.
+Sonnet 5 = פונקציונלי, אבל אסתטיקה fades to "AI slop" patterns מהר יותר.
 
 ---
 
-## ⚠️ Critical: Opus 4.7 design defaults
+## ⚠️ Critical: Opus 4.8 design defaults
 
-Opus 4.7 יש לו **default house style חזק**:
+Opus 4.8 יש לו **default house style חזק**:
 - Cream/off-white backgrounds (~#F4F1EA)
 - Serif display (Georgia/Fraunces/Playfair)
 - Italic accents
@@ -38,7 +38,7 @@ Opus 4.7 יש לו **default house style חזק**:
 
 ---
 
-## 🧱 Prompt Structure (Opus 4.7)
+## 🧱 Prompt Structure (Opus 4.8)
 
 ```xml
 <role>
@@ -287,7 +287,7 @@ Real Hebrew copy from existing producers in DB.
 
 ## 🚨 Anti-patterns
 
-❌ **לתת ל-Opus 4.7 לבחור צבעים בעצמו.** Default = cream/terracotta. נעלי את הbrand.
+❌ **לתת ל-Opus 4.8 לבחור צבעים בעצמו.** Default = cream/terracotta. נעלי את הbrand.
 
 ❌ **לדלג על options-first.** מקבלים direction אחד שיכול להיות לא נכון, וצריך iteration. Options-first חוסך זמן.
 
@@ -295,7 +295,7 @@ Real Hebrew copy from existing producers in DB.
 
 ❌ **Inspiration sources כלליות.** "Awwwards-style" → לא ברור. "natoora.com header treatment" → ברור.
 
-❌ **לבקש Hebrew copy ב-Lorem Ipsum.** Opus 4.7 יודע עברית, ה-copy האמיתי משפיע על העיצוב (RTL, ניקוד, אורך).
+❌ **לבקש Hebrew copy ב-Lorem Ipsum.** Opus 4.8 יודע עברית, ה-copy האמיתי משפיע על העיצוב (RTL, ניקוד, אורך).
 
 ❌ **לבקש logo + page באותו prompt.** Logo = brand level (חודשים). Page = product level (שעות). הפרידי.
 
@@ -316,6 +316,6 @@ Real Hebrew copy from existing producers in DB.
 
 ## 📚 מקורות
 
-- Anthropic Opus 4.7 design behavior section (Apr 2026)
+- Anthropic Opus design behavior guidance
 - Mehamakor brand strategy memo
 - natoora.com / Kinfolk / Airbnb 2023+ pattern library
