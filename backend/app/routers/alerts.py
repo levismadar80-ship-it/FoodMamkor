@@ -6,7 +6,7 @@ Endpoints (all require auth):
 
 Exported helper:
   fire_alerts(db, producer_id, alert_type, content, target_cities=None)
-    alert_type: "new_event" | "new_product" | "delivery_area"
+    alert_type: "new_event" | "new_product" | "delivery_area" | "new_recipe"
     content: AlertContent(title, body, url)
     target_cities: optional list[str] — when provided (delivery_area), only
       users whose User.city normalizes to one of them receive the alert
@@ -67,6 +67,7 @@ def get_alert_prefs(
             notify_new_product=False,
             notify_new_event=False,
             notify_delivery_area=False,
+            notify_new_recipe=False,
             whatsapp_opt_in=False,
             has_push=False,
         )
@@ -75,6 +76,7 @@ def get_alert_prefs(
         notify_new_product=bool(alert.notify_new_product),
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
+        notify_new_recipe=bool(alert.notify_new_recipe),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -123,6 +125,7 @@ def upsert_alert_prefs(
         alert.notify_new_product = data.notify_new_product
         alert.notify_new_event = data.notify_new_event
         alert.notify_delivery_area = data.notify_delivery_area
+        alert.notify_new_recipe = data.notify_new_recipe
         alert.whatsapp_opt_in = data.whatsapp_opt_in
         if data.push_subscription is not None:
             alert.push_subscription = data.push_subscription
@@ -133,6 +136,7 @@ def upsert_alert_prefs(
             notify_new_product=data.notify_new_product,
             notify_new_event=data.notify_new_event,
             notify_delivery_area=data.notify_delivery_area,
+            notify_new_recipe=data.notify_new_recipe,
             whatsapp_opt_in=data.whatsapp_opt_in,
             push_subscription=data.push_subscription,
         )
@@ -145,6 +149,7 @@ def upsert_alert_prefs(
         notify_new_product=bool(alert.notify_new_product),
         notify_new_event=bool(alert.notify_new_event),
         notify_delivery_area=bool(alert.notify_delivery_area),
+        notify_new_recipe=bool(alert.notify_new_recipe),
         whatsapp_opt_in=bool(alert.whatsapp_opt_in),
         has_push=bool(alert.push_subscription),
     )
@@ -158,6 +163,9 @@ _ALERT_COL = {
     "new_event": "notify_new_event",
     "new_product": "notify_new_product",
     "delivery_area": "notify_delivery_area",
+    # MEH-1361: fired from admin_recipes.approve_recipe at the moment a
+    # recipe first becomes publicly visible (published AND approved).
+    "new_recipe": "notify_new_recipe",
 }
 
 # MEH-1338: frequency cap — at most one message per (user, producer, channel)

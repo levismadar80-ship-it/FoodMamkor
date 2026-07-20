@@ -2260,6 +2260,8 @@ class AlertPrefsIn(BaseModel):
     notify_new_product: bool = True
     notify_new_event: bool = True
     notify_delivery_area: bool = True
+    # MEH-1361: new_recipe alert type; defaults mirror the sibling flags.
+    notify_new_recipe: bool = True
     whatsapp_opt_in: bool = False
     push_subscription: dict | None = None
 
@@ -2269,6 +2271,7 @@ class AlertPrefsOut(BaseModel):
     notify_new_product: bool
     notify_new_event: bool
     notify_delivery_area: bool
+    notify_new_recipe: bool
     whatsapp_opt_in: bool
     has_push: bool
 

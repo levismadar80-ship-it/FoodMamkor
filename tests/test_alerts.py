@@ -70,6 +70,7 @@ class TestGetAlertPrefs:
             "notify_new_product": False,
             "notify_new_event": False,
             "notify_delivery_area": False,
+            "notify_new_recipe": False,
             "whatsapp_opt_in": False,
             "has_push": False,
         }
