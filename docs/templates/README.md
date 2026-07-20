@@ -9,15 +9,15 @@ These templates are referenced from every Linear issue, every CC prompt, and eve
 | # | File | Purpose | Recommended model |
 |---|------|---------|-------------------|
 | 00 | `00-model-selection-guide.md` | Which Claude model for which task (Sonnet vs Opus) + Adaptive Thinking guidance | Meta — reference all |
-| 01 | `01-claude-design.md` | Design tasks (pages, components, logo) | Opus 4.7 always |
+| 01 | `01-claude-design.md` | Design tasks (pages, components, logo) | Opus 4.8 always |
 | 02 | `02-claude-code-feature.md` | New feature implementation | Sonnet or Opus per scope |
 | 03 | `03-claude-code-bug.md` | Bug investigation + fix | Sonnet or Opus per scope |
 | 04 | `04-claude-code-refactor.md` | Behavior-preserving refactor | Sonnet or Opus per scope |
-| 05 | `05-claude-research.md` | Strategic research (decisions, audits) | Opus 4.7 always |
+| 05 | `05-claude-research.md` | Strategic research (decisions, audits) | Opus 4.8 always |
 | 06 | `06-linear-issue.md` | Full Linear issue (8 sections + XML structure) | Meta — reference all |
-| 07 | `07-linear-quick.md` | Quick task (<1h, single file, 1-20 LOC) | Sonnet 4.6 always |
+| 07 | `07-linear-quick.md` | Quick task (<1h, single file, 1-20 LOC) | Sonnet 5 always |
 | 08 | `08-linear-issue-examples.md` | 10 backlog examples with model recommendations | Meta — reference all |
-| 10 | `10-testimonial-intake.md` | Testimonial intake -> on-brand draft (verbatim quote + ADR-014 guardrails) | Opus 4.7 always |
+| 10 | `10-testimonial-intake.md` | Testimonial intake -> on-brand draft (verbatim quote + ADR-014 guardrails) | Opus 4.8 always |
 
 ## Template 09 — deferred
 
