@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import ChipScrollRow from "@/components/ChipScrollRow";
 
@@ -216,5 +216,168 @@ describe("ChipScrollRow — public API unchanged (MEH-1340)", () => {
       "aria-pressed",
       "true",
     );
+  });
+});
+
+describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
+  // The arrows are gated on (hover: hover) and (pointer: fine); each
+  // matchMedia mock records its change listeners so a test can flip the
+  // pointer capability live (hybrid devices).
+  let mqChangeListeners;
+  let savedMatchMedia;
+
+  function mockMatchMedia(matchesDesktop) {
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: matchesDesktop && query === "(hover: hover) and (pointer: fine)",
+      media: query,
+      addEventListener: (evt, cb) => {
+        if (evt === "change") mqChangeListeners.push(cb);
+      },
+      removeEventListener: vi.fn(),
+    }));
+  }
+
+  // Arrows are the only absolutely-positioned buttons at the edges.
+  function getArrows(container) {
+    return {
+      start: container.querySelector("button.start-1"),
+      end: container.querySelector("button.end-1"),
+    };
+  }
+
+  // Both sentinels off-screen = overflowing row scrolled to the middle.
+  function reportOverflowBothSides(container) {
+    const { start, end } = getSentinels(container);
+    ioInstances[0].fire([
+      { target: start, isIntersecting: false },
+      { target: end, isIntersecting: false },
+    ]);
+  }
+
+  beforeEach(() => {
+    mqChangeListeners = [];
+    savedMatchMedia = window.matchMedia;
+  });
+
+  afterEach(() => {
+    window.matchMedia = savedMatchMedia;
+  });
+
+  it("touch pointer → zero arrows even when the row overflows", () => {
+    mockMatchMedia(false);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    reportOverflowBothSides(container);
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).toBeNull();
+  });
+
+  it("fine pointer + overflow on both sides → both arrows, above the fades, out of the a11y tree", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    reportOverflowBothSides(container);
+    const { start, end } = getArrows(container);
+    expect(start).not.toBeNull();
+    expect(end).not.toBeNull();
+    for (const arrow of [start, end]) {
+      expect(arrow.className).toContain("z-20"); // fades are z-10
+      expect(arrow.className).toContain("rounded-full");
+      expect(arrow).toHaveAttribute("tabindex", "-1");
+      expect(arrow).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("fine pointer but no overflow → zero arrows", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    const { start, end } = getSentinels(container);
+    ioInstances[0].fire([
+      { target: start, isIntersecting: true },
+      { target: end, isIntersecting: true },
+    ]);
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).toBeNull();
+  });
+
+  it("an arrow disappears when scroll in its direction is exhausted", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    const { start, end } = getSentinels(container);
+    // At the start edge: can only scroll toward the end.
+    ioInstances[0].fire([
+      { target: start, isIntersecting: true },
+      { target: end, isIntersecting: false },
+    ]);
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).not.toBeNull();
+    // At the far end: can only scroll back toward the start.
+    ioInstances[0].fire([
+      { target: start, isIntersecting: false },
+      { target: end, isIntersecting: true },
+    ]);
+    expect(getArrows(container).start).not.toBeNull();
+    expect(getArrows(container).end).toBeNull();
+  });
+
+  it("click pages ~80% of the container width, smooth, RTL-correct sign", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    reportOverflowBothSides(container);
+    const scroller = container.querySelector("div.overflow-x-auto");
+    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    scroller.scrollBy = vi.fn();
+    // dir="rtl": toward inline-end = NEGATIVE left delta.
+    fireEvent.click(getArrows(container).end);
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -400, behavior: "smooth" });
+    fireEvent.click(getArrows(container).start);
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: 400, behavior: "smooth" });
+  });
+
+  it("vertical wheel → horizontal scroll with RTL sign; Firefox line-mode deltas normalized to px", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    const scroller = container.querySelector("div.overflow-x-auto");
+    // Overflowing row scrolled to the middle (RTL: scrollLeft negative).
+    Object.defineProperty(scroller, "scrollWidth", { value: 1000, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    Object.defineProperty(scroller, "scrollLeft", { value: -100, configurable: true });
+    scroller.scrollBy = vi.fn();
+
+    // Pixel-mode wheel (deltaMode 0): toward inline-end = negated deltaY.
+    fireEvent.wheel(scroller, { deltaY: 50, deltaMode: 0 });
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -50 });
+
+    // Line-mode wheel (Firefox, deltaMode 1): 3 lines × 16px, same sign rule.
+    fireEvent.wheel(scroller, { deltaY: 3, deltaMode: 1 });
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -48 });
+
+    // Horizontal-dominant wheel passes through untouched.
+    scroller.scrollBy.mockClear();
+    fireEvent.wheel(scroller, { deltaY: 5, deltaX: 40, deltaMode: 0 });
+    expect(scroller.scrollBy).not.toHaveBeenCalled();
+  });
+
+  it("matchMedia change → arrows unmount live (hybrid device loses its mouse)", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    reportOverflowBothSides(container);
+    expect(getArrows(container).end).not.toBeNull();
+    expect(mqChangeListeners.length).toBeGreaterThan(0);
+    act(() => mqChangeListeners.forEach((cb) => cb({ matches: false })));
+    expect(getArrows(container).start).toBeNull();
+    expect(getArrows(container).end).toBeNull();
   });
 });
