@@ -1021,14 +1021,6 @@
       "order_cta": "Send a WhatsApp message",
       "pickup": "Self pickup"
     },
-    "follow": {
-      "following": "Following",
-      "follow_aria": "Follow this business",
-      "unfollowed_toast": "You've stopped following",
-      "followed_toast": "You'll now get updates about new products",
-      "quiet_label": "Follow",
-      "login_prompt_message": "To follow businesses and get updates — sign in"
-    },
     "friday_delivery": {
       "today": "today",
       "title": "Businesses delivering today",
@@ -3145,12 +3137,30 @@
       "example_name": "Ruach HaSadeh Bakery",
       "example_tagline": "Slow-fermented sourdough, stone-milled flour, baked daily in a stone oven.",
       "items": {
-        "photos": { "title": "Real photos", "desc": "Three real photos — the product, the place, the hands at work." },
-        "story": { "title": "A short story", "desc": "A few personal sentences about your journey. This is what makes customers choose you." },
-        "verified": { "title": "Verified badge", "desc": "A checked, valid license — customers see a clear trust mark next to your name." },
-        "products": { "title": "Items with price ranges", "desc": "What to order and for how much — no surprises in chat." },
-        "delivery": { "title": "Delivery areas", "desc": "Where you deliver, minimum order, and on which day." },
-        "reviews": { "title": "Reviews and your reply", "desc": "Real feedback — and a warm reply from you that shows someone is home." }
+        "photos": {
+          "title": "Real photos",
+          "desc": "Three real photos — the product, the place, the hands at work."
+        },
+        "story": {
+          "title": "A short story",
+          "desc": "A few personal sentences about your journey. This is what makes customers choose you."
+        },
+        "verified": {
+          "title": "Verified badge",
+          "desc": "A checked, valid license — customers see a clear trust mark next to your name."
+        },
+        "products": {
+          "title": "Items with price ranges",
+          "desc": "What to order and for how much — no surprises in chat."
+        },
+        "delivery": {
+          "title": "Delivery areas",
+          "desc": "Where you deliver, minimum order, and on which day."
+        },
+        "reviews": {
+          "title": "Reviews and your reply",
+          "desc": "Real feedback — and a warm reply from you that shows someone is home."
+        }
       },
       "nudge": "After signing up, the profile-completeness meter in your dashboard shows exactly what is still missing on the way to 100%."
     },
@@ -4447,13 +4457,36 @@
         "honey": "Honey"
       },
       "catB": {
-        "vegetables": { "label": "Vegetables", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
-        "fruits": { "label": "Fruits", "doc": "Verified: an exemption approval from the local authority.", "declare": "Declared: a declaration that this is self-grown produce." },
-        "oils": { "label": "Olive oil & oils", "doc": "Verified: an official exemption approval from the business-licensing department." },
-        "spices": { "label": "Spices & culinary herbs", "doc": "Verified: an official exemption approval." },
-        "soaps": { "label": "Natural soaps", "doc": "Verified: registration in the cosmetics registry (Ministry of Health)." },
-        "creams": { "label": "Skin creams & oils", "doc": "Verified: registration in the cosmetics registry." },
-        "candles": { "label": "Candles & aroma", "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine." }
+        "vegetables": {
+          "label": "Vegetables",
+          "doc": "Verified: an exemption approval from the local authority.",
+          "declare": "Declared: a declaration that this is self-grown produce."
+        },
+        "fruits": {
+          "label": "Fruits",
+          "doc": "Verified: an exemption approval from the local authority.",
+          "declare": "Declared: a declaration that this is self-grown produce."
+        },
+        "oils": {
+          "label": "Olive oil & oils",
+          "doc": "Verified: an official exemption approval from the business-licensing department."
+        },
+        "spices": {
+          "label": "Spices & culinary herbs",
+          "doc": "Verified: an official exemption approval."
+        },
+        "soaps": {
+          "label": "Natural soaps",
+          "doc": "Verified: registration in the cosmetics registry (Ministry of Health)."
+        },
+        "creams": {
+          "label": "Skin creams & oils",
+          "doc": "Verified: registration in the cosmetics registry."
+        },
+        "candles": {
+          "label": "Candles & aroma",
+          "note": "In this category there's no path to a badge — there's simply no document to verify, and that's perfectly fine."
+        }
       }
     },
     "closing": {

@@ -3,7 +3,6 @@ import { Star, StarOfDavid } from "@phosphor-icons/react";
 
 import BadgeRow from "@/components/BadgeRow";
 import FavoriteButton from "@/components/FavoriteButton";
-import FollowButton from "@/components/FollowButton";
 import KashrutBadgeStrip from "@/components/KashrutBadgeStrip";
 import ShareButton from "@/components/ShareButton";
 import { allBadges } from "@/lib/badges";
@@ -163,14 +162,15 @@ export default function ProducerHeader({
         </p>
       )}
 
-      {/* Quiet actions row (MEH-1334): שמירה · מעקב · שיתוף-on-desktop.
+      {/* Quiet actions row (MEH-1334): שמירה · שיתוף-on-desktop.
           Mobile/tablet: hairline-topped row under the meta block; desktop:
-          absolutely pinned to the title row's inline-end (single mount, so
-          FollowButton's follow-status GET fires once). Mobile share lives in
-          the hero overlay only (decision 6), hence hidden lg:inline-flex. */}
+          absolutely pinned to the title row's inline-end. MEH-1363 (decision
+          A, MEH-1362): FollowButton removed — the heart is the single
+          interest control; its toast promised updates that were never wired.
+          Mobile share lives in the hero overlay only (decision 6), hence
+          hidden lg:inline-flex. */}
       <div className="flex items-center gap-5 border-t border-border mt-3 lg:absolute lg:top-0 lg:end-0 lg:border-t-0 lg:mt-0">
         <FavoriteButton producerId={producer.id} producerName={producer.name} variant="quiet" />
-        <FollowButton producerId={producer.id} variant="quiet" />
         <span className="hidden lg:inline-flex">
           <ShareButton
             variant="quiet"

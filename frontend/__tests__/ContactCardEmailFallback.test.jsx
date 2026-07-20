@@ -48,7 +48,6 @@ vi.mock("@phosphor-icons/react", () => {
   };
 });
 // Focus the suite on the icon row — stub the heavy children.
-vi.mock("@/components/FollowButton", () => ({ default: () => <button>follow</button> }));
 vi.mock("@/components/ShareButton", () => ({ default: () => <button>share</button> }));
 vi.mock("@/components/PrimaryContactButton", () => ({ default: () => <button>cta</button> }));
 vi.mock("@/components/WhatsAppQuestionChips", () => ({ default: () => null }));

@@ -37,6 +37,14 @@
 - **MEH-1377 disposition:** investigated Phase-0-only and **closed Done, no hook.** A PreToolUse hook can't see delivery outcome (it fires before the tool runs), so the originally-proposed guard was not implementable at that layer.
 - **Recurrence rule (meta-patterns.md "observed ≥2 times"):** this is occurrence **#1**. If a delivery failure like this recurs on a **YELLOW or RED** ticket — where proceeding on a default is a real scope/architecture risk — the 2-occurrence threshold is met: **write the rule then, at the `Stop`/`SubagentStop` layer (not PreToolUse).** Until then, no rule, no hook (a prose rule on a loud-failing tool would be a no-op guard).
 
+## 2026-07-20 — MEH-1363 FollowButton removal (alerts-chain batch, item A — decision A of MEH-1362)
+
+- **Shipped:** FollowButton mount removed from `ProducerHeader.jsx` (quiet row now שמירה · שיתוף), `components/FollowButton.jsx` DELETED, `group_buys.follow` keys dropped he+en, MEH-996 i18n test case removed. Consequence files beyond the ticket's list (surfaced in the PR): `FollowButtonGuest.test.jsx` deleted, stale FollowButton mocks removed from two test files, `pending-action.js` doc-comments updated. Backend follow endpoints/model/dashboard-count untouched (MEH-1364's domain).
+- **Phase 0:** exactly one live mount (`ProducerHeader.jsx:173`) — no extra-mount STOP; no open PR on ProducerHeader.
+- **Verified:** build green · vitest 1355 pass · zero-grep clean · stub-API SSR Playwright QA @375/@1440 (single interest control, intact row) → `qa-artifacts/MEH-1363/`.
+- **⚠️ Expected VRT red post-merge:** #1975 baselines include the follow button — producer-detail parity spec reds until the next vrt-update regen (intended change; E2E is not a required gate).
+- **MEH-1361 MERGED earlier today** — staging squash `1298e2b8` (#1972; revision c8f3a6d1e9b2 landed via Sapir, MEH-759/762 pattern). **MEH-1364 still held** — awaiting Sapir's orphan-rows query + this ticket's merge.
+
 ## 2026-07-20 — MEH-1361 new_recipe alert — implemented to the RED STOP point (alerts-chain batch, item E)
 
 - **MEH-1360 MERGED** — staging squash `93beaec4` (PR #1966; one slow-runner pytest timeout re-kicked + one HANDOFF Accept-Both against MEH-1375 on the way).

@@ -36,9 +36,6 @@ vi.mock("@phosphor-icons/react", () => ({
 vi.mock("@/components/FavoriteButton", () => ({
   default: () => <button data-testid="fav-quiet" />,
 }));
-vi.mock("@/components/FollowButton", () => ({
-  default: () => <button data-testid="follow-quiet" />,
-}));
 vi.mock("@/components/ShareButton", () => ({
   default: () => <button data-testid="share-quiet" />,
 }));
