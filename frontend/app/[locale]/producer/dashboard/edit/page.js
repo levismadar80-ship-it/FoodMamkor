@@ -84,7 +84,7 @@ const ANCHOR_TO_KEY = {
   delivery: "delivery",
   hours: "hours",
   // MEH-1335 chunk 3: owner-story editor (bio + photo behind the public
-  // "מאחורי העסק" card).
+  // OwnerCard).
   "owner-story": "ownerStory",
   // MEH-1106 (PR #1621) alias anchors — ProfileCompletenessCard's checklist
   // steps deep-link #profile-* (it merged in parallel with wrapper-div ids);
@@ -571,8 +571,9 @@ export default function ProducerDashboardEditPage() {
       </EditAccordionCard>
 
       {/* ④b MEH-1335 chunk 3 — owner-story editor (bio + photo). The public
-          "מאחורי העסק" card (OwnerCard, MEH-1334) wakes its bio/photo variants
-          up on its own once these fields hold data. */}
+          owner card (OwnerCard, MEH-1334 — heading key owner_story.heading)
+          wakes its bio/photo variants up on its own once these fields hold
+          data. */}
       <EditAccordionCard
         anchorId="owner-story"
         title={t("owner_story.heading")}

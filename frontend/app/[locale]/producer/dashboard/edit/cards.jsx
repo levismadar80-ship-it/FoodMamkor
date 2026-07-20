@@ -880,8 +880,8 @@ export function DescriptionCard({ profile, onSave, reportDirty = () => {} }) {
 
 // ============================================================
 // MEH-1335 chunk 3: owner-story editor — the data source for the public
-// "מאחורי העסק" card (OwnerCard, MEH-1334; bio/photo variants wake up on
-// their own once these fields hold data). Bio persists via PUT /producers/me
+// owner card (OwnerCard, MEH-1334; bio/photo variants wake up on their own
+// once these fields hold data). Bio persists via PUT /producers/me
 // (owner_bio is in _PRODUCER_WRITABLE_FIELDS); the photo goes through the
 // dedicated POST /upload/owner-photo which persists owner_photo_url
 // atomically server-side (no follow-up PUT — and deliberately NO freemium
@@ -940,7 +940,11 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
     try {
       await api.put("/producers/me", { owner_bio });
       onSave({ owner_bio });
-      setSavedBio(bio);
+      // Track (and show) the normalized value that was actually persisted —
+      // storing the raw textarea value would leave a phantom-dirty gap when
+      // the input carried trailing whitespace (PR review nit).
+      setBio(owner_bio ?? "");
+      setSavedBio(owner_bio ?? "");
       setSaved(true);
     } catch {
       setError(t("error_save"));
@@ -953,7 +957,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
       {/* Card chrome + heading live in the EditAccordionCard header (MEH-1116). */}
       <p className="text-xs text-fg-muted">{t("intro")}</p>
 
-      {/* Photo — locked spec label "תמונה שלך". Square face-gravity crop is
+      {/* Photo — locked spec label (photo_label). Square face-gravity crop is
           server-side; the round preview mirrors the public OwnerCard avatar. */}
       <div className="space-y-1.5">
         <span className="text-sm font-medium block">{t("photo_label")}</span>
@@ -984,7 +988,7 @@ export function OwnerStoryCard({ profile, onSave, reportDirty = () => {} }) {
         </div>
       </div>
 
-      {/* Bio — locked spec label "כמה מילים עלייך" + 300 counter. */}
+      {/* Bio — locked spec label (bio_label) + 300 counter. */}
       <div className="space-y-1.5">
         <div className="flex items-baseline gap-2">
           <label className="text-sm font-medium">{t("bio_label")}</label>
