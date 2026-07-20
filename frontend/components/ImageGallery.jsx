@@ -2,10 +2,12 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Images, SealCheck } from "@phosphor-icons/react";
+import { CaretLeft, Images, SealCheck } from "@phosphor-icons/react";
+import { Link as LocaleLink } from "@/i18n/navigation";
 import ImageWithFallback from "./ImageWithFallback";
 import ShareButton from "./ShareButton";
 import Lightbox from "./Lightbox";
+import Popover from "./ui/Popover";
 
 // MEH-1334 (decision 6): the hero corner overlay is now SHARE, mobile-only —
 // the heart's one home is the header quiet-actions row (שמירה), and desktop
@@ -103,14 +105,49 @@ export default function ImageGallery({ images = [], producerId = null, producerN
             <h1 className="font-headline-lg text-5xl md:text-6xl font-black text-text leading-tight">
               {producerName}
             </h1>
+            {/* MEH-1358: the masthead seal opens the SAME verification popover
+                as the header seal (BadgeRow hero branch) — imageless verified
+                producers previously had a static span and no way to open the
+                verification story. Content/copy keys and a11y (sheetOnMobile,
+                Esc, focus-return) are byte-identical to BadgeRow.jsx; gating
+                is unchanged (`verified` = verification_tier === "verified",
+                ProducerDetail.jsx). Pill visuals unchanged from MEH-1168. */}
             {verified && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-sm px-2.5 py-0.5 font-medium"
-                data-testid="masthead-verified"
+              <Popover
+                role="dialog"
+                sheetOnMobile
+                contentTestId="badge-tooltip-verified"
+                contentClassName="w-64 flex flex-col gap-1.5"
+                sheetContentClassName="flex flex-col gap-2"
+                trigger={
+                  <button
+                    type="button"
+                    aria-label={tBadge("aria_verified_plain")}
+                    data-testid="masthead-verified"
+                    data-badge="verified"
+                    className="group inline-flex items-center justify-center focus:outline-none"
+                  >
+                    <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 text-accent text-sm px-2.5 py-0.5 font-medium group-focus-visible:ring-2 group-focus-visible:ring-accent/40 transition">
+                      <SealCheck size={16} aria-hidden="true" />
+                      {tBadge("verified_label")}
+                    </span>
+                  </button>
+                }
               >
-                <SealCheck size={16} aria-hidden="true" />
-                {tBadge("verified_label")}
-              </span>
+                <span className="flex items-center gap-1.5 font-bold text-sm text-text">
+                  <SealCheck size={18} className="text-primary" weight="fill" aria-hidden="true" />
+                  {tBadge("verified_popover_title")}
+                </span>
+                <span className="block text-[13px] leading-relaxed">{tBadge("verified_popover_body")}</span>
+                <LocaleLink
+                  href="/about#verification"
+                  className="inline-flex items-center gap-1 font-semibold text-primary hover:text-primary-dark"
+                >
+                  {tBadge("verified_popover_link")}
+                  {/* Forward chevron points LEFT in RTL (MEH-1334 revision-1 #11) */}
+                  <CaretLeft size={13} aria-hidden="true" />
+                </LocaleLink>
+              </Popover>
             )}
           </div>
         </div>
