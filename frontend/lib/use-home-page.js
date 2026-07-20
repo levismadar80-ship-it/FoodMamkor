@@ -25,6 +25,11 @@ import {
 } from "@/lib/api-schemas";
 
 const PAGE_SIZE = 8;
+// MEH-1387: cap the home grid at ONE "עוד בתי עסק" expansion. Once
+// visibleCount hits the cap the grid swaps the load-more button for a
+// link to /producers (the full listing owns deep browsing, not home).
+// Exported so HomeProducersGrid can compare against visibleCount.
+export const LOAD_MORE_CAP = PAGE_SIZE * 2;
 // MEH-521: minimum approved count before showing numeric stats.
 const STATS_DISPLAY_THRESHOLD = 5;
 // MEH-1269: "קרוב אליי" geo radius (km). First pass at 15; the empty-guard
@@ -158,7 +163,11 @@ export function useHomePage() {
       verified: p.get("verified") === "1",
     };
     const savedCount = Number(window.sessionStorage?.getItem("home_visible_count"));
-    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) setVisibleCount(savedCount);
+    // MEH-1387: clamp a restored count to the cap — sessions saved before the
+    // cap existed (or tampered values) must not restore an over-cap grid.
+    if (Number.isFinite(savedCount) && savedCount >= PAGE_SIZE) {
+      setVisibleCount(Math.min(savedCount, LOAD_MORE_CAP));
+    }
     setFilters(initFilters);
     setChips(initChips);
 
@@ -481,7 +490,9 @@ export function useHomePage() {
     loadProducers(buildChipParams(chips));
   };
 
-  const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
+  // MEH-1387: never grow past the cap — one expansion, then the grid shows
+  // the /producers link instead of the button.
+  const handleLoadMore = () => setVisibleCount((c) => Math.min(c + PAGE_SIZE, LOAD_MORE_CAP));
 
   // MEH-1288: "הפתיעו אותי" — fetch one random approved producer from the
   // backend (ORDER BY random(), full catalog — not just the loaded page) and
