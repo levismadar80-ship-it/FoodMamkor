@@ -342,6 +342,32 @@ describe("ChipScrollRow — desktop edge scroll arrows (MEH-1383)", () => {
     expect(scroller.scrollBy).toHaveBeenCalledWith({ left: 400, behavior: "smooth" });
   });
 
+  it("vertical wheel → horizontal scroll with RTL sign; Firefox line-mode deltas normalized to px", () => {
+    mockMatchMedia(true);
+    const { container } = render(
+      <ChipScrollRow variant="category" activeKey="all" chips={CHIPS} onChipClick={() => {}} />,
+    );
+    const scroller = container.querySelector("div.overflow-x-auto");
+    // Overflowing row scrolled to the middle (RTL: scrollLeft negative).
+    Object.defineProperty(scroller, "scrollWidth", { value: 1000, configurable: true });
+    Object.defineProperty(scroller, "clientWidth", { value: 500, configurable: true });
+    Object.defineProperty(scroller, "scrollLeft", { value: -100, configurable: true });
+    scroller.scrollBy = vi.fn();
+
+    // Pixel-mode wheel (deltaMode 0): toward inline-end = negated deltaY.
+    fireEvent.wheel(scroller, { deltaY: 50, deltaMode: 0 });
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -50 });
+
+    // Line-mode wheel (Firefox, deltaMode 1): 3 lines × 16px, same sign rule.
+    fireEvent.wheel(scroller, { deltaY: 3, deltaMode: 1 });
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -48 });
+
+    // Horizontal-dominant wheel passes through untouched.
+    scroller.scrollBy.mockClear();
+    fireEvent.wheel(scroller, { deltaY: 5, deltaX: 40, deltaMode: 0 });
+    expect(scroller.scrollBy).not.toHaveBeenCalled();
+  });
+
   it("matchMedia change → arrows unmount live (hybrid device loses its mouse)", () => {
     mockMatchMedia(true);
     const { container } = render(

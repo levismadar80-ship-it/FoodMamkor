@@ -7,6 +7,10 @@ import { useTranslations } from "next-intl";
 // MEH-1383: arrow click pages ~80% of the visible row width per press.
 const SCROLL_STEP_RATIO = 0.8;
 const DESKTOP_POINTER_QUERY = "(hover: hover) and (pointer: fine)";
+// Firefox mouse wheels report deltaMode=DOM_DELTA_LINE (units = lines,
+// ~3/notch) — normalize to px or the wheel-scroll crawls. 16px/line is
+// the conventional equivalence.
+const WHEEL_LINE_PX = 16;
 
 /**
  * Scrollable chip row for filter bars.
@@ -164,13 +168,14 @@ export default function ChipScrollRow({
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       const maxScroll = el.scrollWidth - el.clientWidth;
       if (maxScroll <= 0) return;
+      const dy = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * WHEEL_LINE_PX : e.deltaY;
       // dir="rtl": scrollLeft is 0 at inline-start and grows NEGATIVE
       // toward inline-end (Chrome/Firefox), hence Math.abs + negated delta.
       const scrolled = Math.abs(el.scrollLeft);
-      const towardEnd = e.deltaY > 0;
+      const towardEnd = dy > 0;
       if (towardEnd ? scrolled >= maxScroll - 1 : scrolled <= 1) return;
       e.preventDefault();
-      el.scrollBy({ left: -e.deltaY });
+      el.scrollBy({ left: -dy });
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
