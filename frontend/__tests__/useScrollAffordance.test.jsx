@@ -117,6 +117,25 @@ describe("useScrollAffordance (MEH-1391)", () => {
     expect(scroller.scrollBy).toHaveBeenCalledWith({ left: 320, behavior: "smooth" });
   });
 
+  it("LTR context (e.g. /en, layout dir=ltr) → mirrored scroll sign", () => {
+    mockMatchMedia(true);
+    // dir attr on a wrapper mirrors <html dir="ltr"> — isRtlContext walks
+    // closest("[dir]").
+    const { container, getByTestId } = render(
+      <div dir="ltr">
+        <Probe />
+      </div>,
+    );
+    const scroller = getByTestId("scroller");
+    // LTR: scrollLeft is POSITIVE, 0 at start.
+    setScroll(scroller, { scrollWidth: 1000, clientWidth: 400, scrollLeft: 300 });
+    scroller.scrollBy = vi.fn();
+    fireEvent.click(getArrows(container).end); // toward end = POSITIVE in LTR
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: 320, behavior: "smooth" });
+    fireEvent.click(getArrows(container).start);
+    expect(scroller.scrollBy).toHaveBeenCalledWith({ left: -320, behavior: "smooth" });
+  });
+
   it("matchMedia change flips showArrows live", () => {
     mockMatchMedia(true);
     const { container, getByTestId } = render(<Probe />);

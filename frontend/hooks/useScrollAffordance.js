@@ -41,11 +41,24 @@ const EDGE_EPSILON_PX = 16;
  *   showArrows: boolean,      // fine-pointer device (matchMedia-gated)
  * }}
  */
+// Direction of the scroller's context. Attribute-based rather than
+// getComputedStyle: deterministic in jsdom AND it matches how this app
+// switches direction (<html dir> in app/[locale]/layout.js:191 + local
+// dir attrs on ChipScrollRow / FridayDeliveryStrip). Fallback "rtl" —
+// the app is RTL-first and every real page carries an <html dir>.
+function isRtlContext(el) {
+  return (el.closest("[dir]")?.getAttribute("dir") || "rtl") !== "ltr";
+}
+
 export default function useScrollAffordance() {
   const scrollRef = useRef(null);
   const [showArrows, setShowArrows] = useState(false);
   const [canScrollStart, setCanScrollStart] = useState(false);
   const [canScrollEnd, setCanScrollEnd] = useState(false);
+  // MEH-1391 review fix: /en renders dir="ltr" — HomeRecentlyViewed
+  // follows the page direction, so sign and carets can't be hardcoded
+  // RTL. True until the element reports otherwise (RTL-first app).
+  const [rtl, setRtl] = useState(true);
 
   // matchMedia gates everything; the `change` listener keeps hybrids
   // (convertible laptops, mouse plugged into a tablet) live-correct.
@@ -72,6 +85,7 @@ export default function useScrollAffordance() {
     const scrolled = Math.abs(el.scrollLeft);
     setCanScrollStart(maxScroll > 0 && scrolled > EDGE_EPSILON_PX);
     setCanScrollEnd(maxScroll > 0 && scrolled < maxScroll - EDGE_EPSILON_PX);
+    setRtl(isRtlContext(el));
   }
 
   // Scroll listener + ResizeObserver, attached only on fine-pointer
@@ -101,11 +115,17 @@ export default function useScrollAffordance() {
     const el = scrollRef.current;
     if (!el) return;
     const delta = Math.round(el.clientWidth * SCROLL_STEP_RATIO);
-    // RTL: negative left delta moves toward the inline-end (see above).
-    el.scrollBy({ left: towardEnd ? -delta : delta, behavior: "smooth" });
+    // RTL: scrollLeft grows NEGATIVE toward inline-end, so toward-end is
+    // a negative delta; LTR is the mirror. Read live (not from state) so
+    // a click can never use a stale direction.
+    const towardEndSign = isRtlContext(el) ? -1 : 1;
+    el.scrollBy({
+      left: (towardEnd ? towardEndSign : -towardEndSign) * delta,
+      behavior: "smooth",
+    });
   }
 
-  return { scrollRef, canScrollStart, canScrollEnd, scrollByAmount, showArrows };
+  return { scrollRef, canScrollStart, canScrollEnd, scrollByAmount, showArrows, rtl };
 }
 
 /**
@@ -116,10 +136,14 @@ export default function useScrollAffordance() {
  * stays keyboard-reachable, and no i18n label is needed.
  */
 export function ScrollArrows({ affordance }) {
-  const { canScrollStart, canScrollEnd, scrollByAmount, showArrows } = affordance;
+  const { canScrollStart, canScrollEnd, scrollByAmount, showArrows, rtl } = affordance;
   if (!showArrows) return null;
   const cls =
     "absolute top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-white text-text shadow-sm transition hover:border-primary hover:text-primary";
+  // Carets point at the hidden content past their edge. RTL: inline-start
+  // is the physical RIGHT (CaretRight) and inline-end the LEFT; LTR mirrors.
+  const StartCaret = rtl ? CaretRight : CaretLeft;
+  const EndCaret = rtl ? CaretLeft : CaretRight;
   return (
     <>
       {canScrollStart && (
@@ -130,8 +154,7 @@ export function ScrollArrows({ affordance }) {
           onClick={() => scrollByAmount(false)}
           className={`${cls} start-1`}
         >
-          {/* Inline-start = physical RIGHT in RTL — caret points at the hidden content. */}
-          <CaretRight size={16} weight="bold" />
+          <StartCaret size={16} weight="bold" />
         </button>
       )}
       {canScrollEnd && (
@@ -142,8 +165,7 @@ export function ScrollArrows({ affordance }) {
           onClick={() => scrollByAmount(true)}
           className={`${cls} end-1`}
         >
-          {/* Inline-end = physical LEFT in RTL. */}
-          <CaretLeft size={16} weight="bold" />
+          <EndCaret size={16} weight="bold" />
         </button>
       )}
     </>
