@@ -592,6 +592,35 @@ jobs:
       - name: Run vitest unit suite
         run: npx vitest run
 
+  # ─────────────────────────────────────────────
+  # JOB: linear-mentions — workflow.md rule 29 (Linear auto-reopen guard)
+  # Warn-only ratchet (mirrors backend-mypy):
+  #   1. `|| true` on the script → step exits 0 even on a finding
+  #   2. `continue-on-error: true` at the job → belt-and-braces
+  # Docs-only scope (rule 29 only bans mentions in docs/HANDOFF PRs):
+  # runs when neither frontend nor backend nor workflows changed.
+  # Findings surface as ::warning:: annotations. NOT added to the
+  # required-checks ruleset at this stage.
+  # ─────────────────────────────────────────────
+  linear-mentions:
+    name: Linear mention guard (rule 29, warn-only)
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend != 'true' && needs.changes.outputs.backend != 'true' && needs.changes.outputs.workflows != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - name: Write PR title and body to files
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s' "$PR_TITLE" > "$RUNNER_TEMP/pr_title.txt"
+          printf '%s' "$PR_BODY"  > "$RUNNER_TEMP/pr_body.txt"
+      - name: Check for bare Linear identifiers (warn-only)
+        run: bash .claude/scripts/check-linear-mentions.sh "$RUNNER_TEMP/pr_title.txt" "$RUNNER_TEMP/pr_body.txt" || true
+
   ci-gate:
     name: CI gate (required)
     if: always()
