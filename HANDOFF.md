@@ -28,6 +28,15 @@
 - **MEH-1377 disposition:** investigated Phase-0-only and **closed Done, no hook.** A PreToolUse hook can't see delivery outcome (it fires before the tool runs), so the originally-proposed guard was not implementable at that layer.
 - **Recurrence rule (meta-patterns.md "observed ≥2 times"):** this is occurrence **#1**. If a delivery failure like this recurs on a **YELLOW or RED** ticket — where proceeding on a default is a real scope/architecture risk — the 2-occurrence threshold is met: **write the rule then, at the `Stop`/`SubagentStop` layer (not PreToolUse).** Until then, no rule, no hook (a prose rule on a loud-failing tool would be a no-op guard).
 
+## 2026-07-20 — MEH-1361 new_recipe alert — implemented to the RED STOP point (alerts-chain batch, item E)
+
+- **MEH-1360 MERGED** — staging squash `93beaec4` (PR #1966; one slow-runner pytest timeout re-kicked + one HANDOFF Accept-Both against MEH-1375 on the way).
+- **MEH-1361 implemented, NOT pushed — waiting at the RED STOP:** the Alembic revision is delivered as a handoff artifact in the session report (CC-deny on `alembic/versions/**`); Sapir approves/applies before anything moves. All code is committed locally on `feature/meh-1361-new-recipe-alert`.
+- **Phase 0 deviation (surfaced):** the ticket's file_locations pointed the trigger at `producer_recipes.py`, but the ONLY publicly-visible flip is `admin_recipes.py:approve_recipe` (producers can't set `published` — no such field in `ProducerRecipeUpdate`) → trigger implemented there on the false→true `published` transition. Re-approve idempotent; edit→re-approve refires (+MEH-1338 cap dedupes). URL: `/{slug}/recipes/{id}`, slug-less fallback `/producer/{id}`.
+- **Scope:** models + schemas + alerts.py (map/handlers) + admin_recipes.py (trigger) + AlertPrefsPanel 4th toggle (CookingPot) + he/en twins + 9 new tests (`test_meh1361_recipe_alert.py`) + exact-shape fix in `test_alerts.py` + phosphor mock in `FavoriteButton.test.jsx`. No separate cap. EXPECTED_TABLES unchanged.
+- **Verified locally:** ruff check+format clean · build green · vitest 1337 pass. pytest runs in CI once the revision lands (sandbox has no backend deps).
+- **Sapir decided (20/07):** revision approved verbatim (incl. `server_default=true`) · landing = MEH-759/762 pattern — PR pushed WITHOUT the revision file, drift gate red by design, Sapir adds the file to the branch from her terminal → CI greens → auto-merge · copy corrected to singular + business name: title `🍲 מתכון חדש: <שם>` / body `מתכון חדש מ<שם העסק> מחכה לך באתר` (applied before push) · admin_recipes.py trigger placement ratified. Known gap flagged: `favorite_alerts` undocumented in DATA.md/db-schema.md (pre-existing).
+
 ## 2026-07-20 — MEH-1375 — model-name refresh across docs/templates/ (docs-only)
 
 - **What:** refreshed stale model names in `docs/templates/` — `Sonnet 4.6`→`Sonnet 5`, `Opus 4.7`→`Opus 4.8`. Template 00 was partially migrated (29 Opus 4.8 already); the other 9 templates never touched — 113 stale occurrences hiding behind one migrated file (single-symptom-hides-systemic-gap).
