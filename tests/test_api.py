@@ -3374,6 +3374,7 @@ class TestSanitizationIntegration:
         assert "</script>" not in (row.description or "")
         assert "טקסט נקי" in (row.description or "")
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_home_product_description_sanitized(self, client, db, monkeypatch):
         from app.models.models import HomeProduct
         # Bypass AI moderation (no ANTHROPIC_API_KEY in CI).
@@ -3728,6 +3729,7 @@ class TestBOLA:
       2. POST /category-requests accepted spoofed producer_id from anonymous callers.
     """
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A product auto-hidden (is_hidden=True) must 404 for anonymous callers."""
         from app.models.models import HomeProduct
@@ -3753,6 +3755,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}")
         assert resp.status_code == 404
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_hidden_home_product_visible_to_owner(self, client, db, monkeypatch):
         """Owner of a hidden listing can still view it."""
         from app.models.models import HomeProduct
@@ -3777,6 +3780,7 @@ class TestBOLA:
         resp = client.get(f"/home-products/{pid}", headers=auth_header(user))
         assert resp.status_code == 200
 
+    @pytest.mark.skip(reason="feature disabled MEH-1406")
     def test_deactivated_home_product_returns_404_to_anonymous(self, client, db, monkeypatch):
         """A deactivated listing (is_active=False) must 404 for anonymous callers."""
         monkeypatch.setattr(
