@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — Map selected-pin card → compact MapProducerCard (Refs MEH-1243, PR pending, auto-merge)
+
+- **What:** mobile `/map` pin tap now pins the existing compact `<MapProducerCard active/>` at the top of the sheet instead of the expanded card (hero image + green WhatsApp button). `frontend/app/[locale]/map/components/MobileSheetSelectedCard.jsx` reduced to a thin wrapper around the central `MapProducerCard` (consumed as-is — NOT modified), keeping the MEH-1298 scroll-compensation `useLayoutEffect`. Deselect preserved via a minimal top-START X on the wrapper (pin re-tap does not deselect — `useMapSync.handleMarkerClick` always selects). Removed the hero+CTA JSX + imports; deleted orphaned i18n key `map.sheet.badge.verified` from `he.json`+`en.json`.
+- **Scope note:** the expanded card's CTA was **already** dynamic (MEH-826, not hardcoded WhatsApp) — the intent's "hardcoded WhatsApp" premise was stale, but the compact redesign still applies (contact moves to the profile). Touched only: MobileSheetSelectedCard.jsx, he.json/en.json (deletions), CHANGELOG, HANDOFF. MapClient call site unchanged (same `{selectedProducer, onClose}` props).
+- **QA:** local `next start` on :3000 with route-mocked `/api/producers` (per the 20/07 gotcha below — target `/api/producers`, never glob `**/producers?*`). Screenshots 375 + 1440 in `qa-artifacts/map-selected-card/`.
+- **Verify:** build green, 1374 vitest pass, eslint 0 errors, 0 physical RTL classes.
+
 ## 2026-07-20 — MEH-1391 — useScrollAffordance extraction + 2 card strips (PR pending, auto-merge)
 
 - **What:** NEW `frontend/hooks/useScrollAffordance.js` (hook + `<ScrollArrows>` pair) extracted from the MEH-1383 ChipScrollRow arrows; applied to `FridayDeliveryStrip` + `HomeRecentlyViewed` (real path `app/[locale]/home/HomeStaticBlocks.jsx` — ticket's `components/` path was wrong, surfaced). ChipScrollRow arrows consume the hook; fades stay on the MEH-1340 sentinels (deliberate dual-authority, documented in the component header).
