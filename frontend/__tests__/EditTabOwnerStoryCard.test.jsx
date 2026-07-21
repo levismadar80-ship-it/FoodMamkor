@@ -51,9 +51,13 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
     await waitFor(() =>
       expect(api.put).toHaveBeenCalledWith("/producers/me", {
         owner_bio: "גדלתי בין העיזים במשק המשפחתי.",
+        contact_name: null,
       }),
     );
-    expect(onSave).toHaveBeenCalledWith({ owner_bio: "גדלתי בין העיזים במשק המשפחתי." });
+    expect(onSave).toHaveBeenCalledWith({
+      owner_bio: "גדלתי בין העיזים במשק המשפחתי.",
+      contact_name: null,
+    });
   });
 
   it("clearing the bio saves owner_bio: null", async () => {
@@ -61,8 +65,38 @@ describe("Edit-tab OwnerStoryCard (isolation)", () => {
     fireEvent.change(screen.getByTestId("owner-bio-input"), { target: { value: "  " } });
     fireEvent.click(screen.getByRole("button", { name: O.save_cta }));
     await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith("/producers/me", { owner_bio: null }),
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        owner_bio: null,
+        contact_name: null,
+      }),
     );
+  });
+
+  it("MEH-1385 addendum: saves contact_name via the same PUT and patches the parent", async () => {
+    const { onSave } = renderCard({ owner_bio: "ביו קיים" });
+    fireEvent.change(screen.getByTestId("owner-contact-name-input"), {
+      target: { value: "נועה כהן" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: O.save_cta }));
+    await waitFor(() =>
+      expect(api.put).toHaveBeenCalledWith("/producers/me", {
+        owner_bio: "ביו קיים",
+        contact_name: "נועה כהן",
+      }),
+    );
+    expect(onSave).toHaveBeenCalledWith({
+      owner_bio: "ביו קיים",
+      contact_name: "נועה כהן",
+    });
+  });
+
+  it("MEH-1385 addendum: contact_name change alone makes the card dirty", () => {
+    renderCard({ contact_name: "שם ישן" });
+    expect(screen.getByRole("button", { name: O.save_cta })).toBeDisabled();
+    fireEvent.change(screen.getByTestId("owner-contact-name-input"), {
+      target: { value: "שם חדש" },
+    });
+    expect(screen.getByRole("button", { name: O.save_cta })).toBeEnabled();
   });
 
   it("save button is disabled until the bio is dirty", () => {

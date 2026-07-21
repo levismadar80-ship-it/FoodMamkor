@@ -12,6 +12,20 @@
 - **Left for Sapir:** mobile QA on the Vercel preview (admin login → pending producer → checklist + approve-confirm). Phase 2 (persistence / per-item timestamps / editing UI) is a separate ticket, explicitly out of scope.
 - **Branch:** `feature/meh-1396-admin-review-checklist` off `origin/staging` (merged `02216e40`); the harness `claude/*` branch is blocked by the branch-name gate (MEH-1141), so used the task-specified `feature/meh-*` name.
 
+## 2026-07-21 — MEH-918 — soft-404 spike → unmatched-route portion landed; matched-route fix split to MEH-1398 (PR #1995, auto-merge)
+
+- **What:** enabled `experimental.globalNotFound` (one-key diff in `frontend/next.config.js`) + added `frontend/app/global-not-found.js` (Next 16 global 404 boundary; self-owned `<html>/<body>` + hardcoded copy like `global-error.js`, since next-intl can't be used at a boundary that replaces the root layout; branded + auto-noindex). Branch `feature/meh-918-real-404` off `origin/staging` (the harness `claude/*` branch would fail the MEH-1141 branch-name gate).
+- **Spike result (measured, `next build && next start`, `curl -I`, `/en/*` = clean signal, no locale redirect):** truly-unmatched routes (`/en/foo/bar/baz`, `/en/zzz/deep/unmatched`) → **404 ✓** via global-not-found; matched-route `notFound()` (`/en/__nope`, `/en/producer/<bad-uuid>`) → **still 200**. **Control experiment:** removed `[locale]/not-found.js` so global-not-found was the *sole* boundary, rebuilt → matched routes **still 200**. Proves the soft-404 is a **streaming artifact** (`[locale]/loading.js` + layout shell flush a 200 before `notFound()` throws mid-render), NOT a not-found-boundary problem → `globalNotFound` cannot fix the matched case. (Restored `[locale]/not-found.js` from git after the experiment; working tree clean.)
+- **Decision (Sapir, 21/07):** land Option 2 — the unmatched-route robustness + auto-noindex only. The matched-route hard-404 (pre-streaming `notFound()` in `generateMetadata`, extends MEH-1045; SEO trade-off vs MEH-476 hreflang-on-404, and those 200s already carry `robots: noindex`) is deferred to a fresh ticket.
+- **New ticket:** **MEH-1398** (YELLOW, central) carries the real matched-route fix — full measured evidence + draft CC prompt baked in. Sapir dispatches fresh after usage reset. Do NOT stack it on #1995.
+- **Verify:** `npm run build` green. DoD exception: no visual change → verification = status codes (`curl -I`), not mobile screenshots. `Refs MEH-918`.
+
+## 2026-07-21 — MEH-1385 addendum — contact_name field on owner-story card
+
+- **Shipped:** one `Input` "שם איש/אשת הקשר" at the top of the shipped owner-story card (`OwnerStoryCard`, `edit/cards.jsx`), saved on the same `PUT /producers/me` as the bio. `contact_name` was already in `_PRODUCER_WRITABLE_FIELDS` → **zero backend change**. Closes MEH-1392 F2 (public-read on OwnerCard, was admin-write only).
+- **Verify:** build exit 0 · vitest 8/8 (2 new contact cases + existing PUT-payload assertions updated for `{owner_bio, contact_name}`) · he/en parity · Playwright 375+1440 → `qa-artifacts/MEH-1385/`.
+- **Gate finding:** the owner-story card itself shipped via **PR #1990** (`6976f6b7`), NOT PR #1988. **PR #1988 is a stale open duplicate** (its content already on staging) — recommend closing it. So the contact_name follow-up went off staging (the effectively-merged path), PR body `Refs MEH-1385` (not `Closes` — a separate contact_name gate; if auto-close fired it's a MEH-1240 artifact).
+- **Branch:** `feature/meh-1385-contact-name` off staging.
 ## 2026-07-21 — MEH-1167 — kashrut-request card (dashboard) + 2 backend endpoints
 
 - **Shipped:** producer can request a verified kashrut badge from `/producer/dashboard/edit` — pick badge type, upload a cert photo, submit, see pending/rejected status. Closes the MEH-1392 F0 supply gap (verified-only chain = MEH-986 + MEH-1087; this was the missing producer entry point).
