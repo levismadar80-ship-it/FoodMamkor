@@ -3,25 +3,26 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
-## 2026-07-21 — MEH-1398 — STOOD DOWN (no urgency; misses already noindex, only crawl-budget left). Resume-ready.
+## 2026-07-21 — MEH-1398 — RESUMED + FINISHED; DO-NOT-MERGE stripped; awaiting Sapir merge call.
 
-**State:** PR #2001 open, **DO-NOT-MERGE intact** (branch `feature/meh-1398-hard-404-matched-route`, tip `58d0a15a`). Approach **decided + measured**: a **middleware existence-check** is the only mechanism that produces a real HTTP 404 for matched-route producer misses (page-level `notFound()` streams 200 — `[locale]/loading.js` flushes the shell first; measured 3× incl. control probe `/en/wp-admin`). Sapir chose it (Option 1, hard-404 locked).
+**State:** PR #2001 open, branch `feature/meh-1398-hard-404-matched-route`. The resume steps from the earlier stand-down note are **done**: the middleware.js unlock reached this session, the clean guarded-registry `middleware.js` is written, both guards are wired, the superseded patch doc is deleted, and the measurement is green. **DO-NOT-MERGE removed — Sapir makes the final merge call on the raw `curl -I` output** (in the PR body + the session report).
 
-**What's on the branch (committed, coherent):**
-- `frontend/lib/static-routes.json` — the guarded route manifest (complete list of `app/[locale]/*/` segments minus `[slug]`).
-- `docs/ci/meh-1398-middleware.patch.md` — **the final CLEAN `middleware.js`** (imports the registry, no inline list, no SPIKE comments). This is the source of truth to apply.
-- Page-level `generateMetadata` changes **reverted** to staging (middleware is the single 404 mechanism); `ProducerIdPageHardening.test.jsx` removed.
-- `frontend/middleware.js` is **still the SPIKE version** (inline list + SPIKE comments) — needs replacing with the clean patch-doc version on resume.
+**Landed this session (on top of the earlier branch work):**
+- `frontend/middleware.js` — replaced the SPIKE with the **clean hardened version** (imports `lib/static-routes.json`, no inline list, no SPIKE comments; file-header contract). Behaviour byte-identical to the measured spike (same 30 route segments, now sourced from the guarded JSON).
+- `frontend/__tests__/RouteManifestSync.test.js` — **new**; bidirectional filesystem↔manifest sync guard (`static-routes.json.routes` set === `app/[locale]/*/` dirs minus dynamic/private/group dirs), CI-gated via `frontend-vitest`. 4/4 green.
+- `scripts/validate-registry-paths.py` — registered `frontend/lib/static-routes.json` as a 3rd guarded registry (custom parser maps each segment → `app/[locale]/<seg>/`, asserts the dir exists). `.pre-commit-config.yaml` `files:` regex extended to re-fire on manifest edits.
+- `docs/ci/meh-1398-middleware.patch.md` — **deleted** (its JS now == the shipped `middleware.js`; keeping it = "two docs own one fact" smell; provenance lives in git + the file-header History line).
+- Page-level `generateMetadata` reverts were already complete on the branch (both page files `git diff`-empty vs staging) — nothing to redo.
 
-**Measured (spike middleware, `next build && next start`, curl -I, logging stub):** misses (`/en/__nope`, `/en/producer/<bad-uuid>`) → **404** ✓ (rewrite → `globalNotFound`); static routes (search/contact/events/privacy/…) → **200** ✓; valid → **200**, hreflang intact; **+1 backend lookup only on cold valid producer pages** (middleware↔page don't share the Data Cache; amortized by the 60s `revalidate` negative-cache). Sapir accepted this cost.
+**Measured (clean middleware, `next build` ✓ + `next start`, GET+HEAD, logging stub):** `/__nope`, `/en/__nope`, `/producer/<bad-uuid>`, `/en/producer/<bad-uuid>` → **404** ✓ (via `x-middleware-rewrite: /__mm_not_found__` → `globalNotFound`); `/`, `/en`, `/about`, `/en/about`, `/real-biz`, `/en/real-biz`, `/producer/<good-uuid>` → **200** ✓ with the next-intl hreflang `Link` header intact (he/en/x-default). hreflang is byte-identical by construction — it comes from next-intl's `intlResponse`, which the middleware returns untouched on valid pages, and the hreflang-emitting page files are unchanged vs staging. (Hebrew is the unprefixed default locale under `localePrefix: as-needed`, so `/he/*` 307-redirects to the canonical unprefixed path — the `/he/*` DoD paths measure the same via the canonical URLs above.)
 
-**BLOCKER when paused:** `frontend/middleware.js` is in `permissions.deny` (`.claude/settings.json`) — CC can't write it. Unlock attempt didn't take effect (settings loaded at session start).
+**Known limitation surfaced (out of scope — do NOT expand here):** scanner-shaped probes (`/wp-admin`, dotted paths) still return **200** soft-404 — `isSlugShaped()` rejects them so the middleware skips the existence check by design; this is the exact MEH-1045 soft-404 gap PR #2001 flagged as "worth a follow-up", separate from MEH-1398's producer-miss scope.
 
-**RESUME STEPS (exact):**
-1. Remove `"Edit(frontend/middleware.js)"` from `permissions.deny` in `.claude/settings.json` (that file is itself CC-deny → human-only).
-2. **Reload/restart the session** so the permission layer re-reads settings.
-3. CC: write the clean `middleware.js` (the `js` block in `docs/ci/meh-1398-middleware.patch.md`, verbatim) → wire `frontend/__tests__/RouteManifestSync.test.js` (bidirectional: `static-routes.json.routes` set === `app/[locale]/*/` dirs minus `[slug]`; CI-gated via `frontend-vitest`) → register the manifest in `scripts/validate-registry-paths.py` → delete the now-superseded `docs/ci/meh-1398-middleware.patch.md` → confirm page reverts → `next build && next start` + **paste raw `curl -I`** (`/he/__nope` + `/he/producer/<bad-uuid>` → 404; `/he`, `/he/about`, a real producer → 200; hreflang byte-identical) → strip DO-NOT-MERGE → Sapir makes the merge call on the raw output.
-4. **After merge:** re-add `"Edit(frontend/middleware.js)"` to `permissions.deny`.
+**Two pre-existing issues to report (neither caused by this branch):**
+- `.claude/hooks/rtl-allowlist.txt:10` lists `frontend/app/[locale]/map/components/DesktopMiniPopup.jsx`, which does not exist on `origin/staging` either — the registry validator reds on it (unrelated to MEH-1398; own fix/ticket).
+- PR #2001's *body* was stale (described the abandoned generateMetadata dead-end); updated this session to the middleware solution + measurement.
+
+**After merge:** re-add `"Edit(frontend/middleware.js)"` to `permissions.deny` in `.claude/settings.json`.
 
 ## 2026-07-21 — MEH-1396 — admin pre-approval review checklist (Phase 1, static config)
 

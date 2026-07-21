@@ -23,7 +23,7 @@ repos:
         entry: python3 scripts/validate-registry-paths.py
         language: system
         pass_filenames: false
-        files: ^(\.claude/central-components\.json|\.claude/hooks/rtl-allowlist\.txt|scripts/validate-registry-paths\.py)$
+        files: ^(\.claude/central-components\.json|\.claude/hooks/rtl-allowlist\.txt|frontend/lib/static-routes\.json|scripts/validate-registry-paths\.py)$
       - id: eslint
         name: ESLint (frontend)
         # MEH-616: no --max-warnings=0. Per MEH-443 the frontend lint rules

@@ -2,35 +2,41 @@ import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import { routing } from "./i18n/routing";
 import { isSlugShaped } from "./lib/slug";
+import staticRoutes from "./lib/static-routes.json";
 
-// ---- MEH-1398 SPIKE (middleware existence-check → real 404) ----------------
-// Turn matched-route producer misses (/[locale]/<slug>, /[locale]/producer/<id>)
-// into a REAL HTTP 404 by checking existence in the edge middleware — which
-// runs ABOVE the [locale]/loading.js streaming boundary that pins page-level
-// notFound() at 200 (measured, MEH-918/1398). On a miss we rewrite to a
-// guaranteed-unmatched path so experimental.globalNotFound (PR #1995) renders
-// its real-404 page.
-//
-// SPIKE CAVEAT (Phase 0): the middleware must NOT existence-check real static
-// routes. lib/slug.js RESERVED is INCOMPLETE, so this spike hardcodes the
-// current static-route manifest — a drift-prone registry that must stay in
-// sync with app/[locale]/*/ (architectural smell; noted for the report).
-const STATIC_ROUTES = new Set([
-  "about", "accessibility", "admin", "contact", "dev", "events",
-  "experiences", "favorites", "forgot-password", "group-buys", "home",
-  "join", "login", "map", "messages", "newsletter", "p", "privacy",
-  "producer", "producers", "rate", "ref", "register", "reset-password",
-  "search", "settings", "share", "terms", "upgrade", "verify-email",
-]);
+/**
+ * Module:   middleware
+ * Purpose:  next-intl locale routing + MEH-1398 real-HTTP-404 for matched-route
+ *           producer misses. A miss on /[locale]/<slug> or /[locale]/producer/
+ *           <id> is detected here (edge, ABOVE the [locale]/loading.js streaming
+ *           boundary that pins page-level notFound() at 200 — measured MEH-918/
+ *           1398) and rewritten to an unmatched path so experimental.
+ *           globalNotFound (PR #1995) renders a real 404.
+ * Does NOT: own the 404 status for VALID pages (those pass straight through).
+ *           Producer data-loading + not-found UI still live in [slug]/page.js +
+ *           producer/[id]/page.js.
+ * Related:  lib/static-routes.json (the guarded manifest this skips),
+ *           app/global-not-found.js (real-404 renderer), lib/slug.js.
+ * History:  MEH-1398 (creation — middleware existence-check).
+ */
+
+// Real static route segments under app/[locale]/ (excluding the [slug]
+// catch-all). The middleware must NOT existence-check these — lib/slug.js
+// RESERVED is INCOMPLETE, so we use the full manifest. Kept honest by
+// __tests__/RouteManifestSync.test.js (bidirectional filesystem sync, CI-gated
+// via frontend-vitest) + scripts/validate-registry-paths.py.
+const STATIC_ROUTES = new Set(staticRoutes.routes);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const intlMiddleware = createMiddleware(routing);
 
 async function producerExists(url) {
   try {
-    // revalidate:60 mirrors the page fetches so the Data Cache CAN dedupe
-    // (whether edge-middleware and node-page fetches share the cache is
-    // exactly what the spike measures).
+    // revalidate:60 matches the page fetches — it is ALSO the negative cache:
+    // a 404 response is cached for 60s, so repeated misses on the same path do
+    // NOT re-query the backend. On a VALID cold page the middleware fetch and
+    // the page fetch don't share a cache entry (edge vs node), so a cold valid
+    // page pays 1 extra lookup; within the 60s window it is served from cache.
     const res = await fetch(url, { next: { revalidate: 60 } });
     return res.ok;
   } catch {
@@ -61,6 +67,7 @@ export default async function middleware(request) {
   }
 
   if (existsUrl && !(await producerExists(existsUrl))) {
+    // Rewrite to a guaranteed-unmatched path → globalNotFound renders a real 404.
     const nf = request.nextUrl.clone();
     nf.pathname = "/__mm_not_found__";
     return NextResponse.rewrite(nf, { status: 404 });
