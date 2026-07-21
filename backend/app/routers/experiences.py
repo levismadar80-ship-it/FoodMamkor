@@ -308,9 +308,12 @@ def update_experience(
         setattr(ex, field, value)
 
     # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
-    # re-trigger moderation or reset an approved experience to `pending` —
+    # re-trigger moderation or reset the experience to `pending` —
     # cancelling is a reversible host action, not a content edit, so a
-    # reactivated experience returns to the public feed immediately. Events
+    # reactivated approved experience returns to the public feed immediately.
+    # This intentionally holds for ALL statuses, not just `approved`: a bare
+    # is_active flip on a changes_requested/rejected row has no public effect
+    # (those never reach the feed) and still must not re-run Claude. Events
     # have no moderation, so their toggle is a plain PUT (events.py:238); the
     # experience toggle needs this guard because content edits below reset.
     content_changed = any(field != "is_active" for field in payload)
