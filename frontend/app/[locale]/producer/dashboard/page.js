@@ -574,10 +574,13 @@ export default function ProducerDashboardPage() {
       {/* MEH-288: profile-completeness card — surfaces the existing
           producerCompleteness() heuristic to the owner, above the analytics
           stats. Guarded on `profile` (the full /producers/me record carries
-          the fields the heuristic reads). MEH-1134: this slot serves only the
-          approved+complete state — otherwise the card mounts above the
-          availability card instead (see completenessFirst). */}
-      {!completenessFirst && profile && <ProfileCompletenessCard producer={profile} />}
+          the fields the heuristic reads). MEH-1134: this slot served the
+          approved+complete state; MEH-1397 removes it — once the business is
+          approved AND complete the collapsed "הפרופיל מלא ✓" card is noise with
+          no action (reverses MEH-288's "never fully disappears", per Sapir
+          21/07). The card now mounts ONLY in the completenessFirst slot above
+          (pending OR incomplete), where the green collapse still gives value
+          ("סיימת הכל, מחכים לאישור" while complete-but-pending). */}
 
       {/* MEH-964 1B: locked top-line 4-KPI strip + quiet conversion line.
           Deep analytics (windowed cards + charts) live in the insights tab

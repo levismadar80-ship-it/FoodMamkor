@@ -13,7 +13,9 @@
  * This test pins the page-level ORDER contract only:
  *   - pending  + incomplete → completeness above availability
  *   - approved + incomplete → completeness above availability
- *   - approved + complete   → availability above completeness (unchanged)
+ *   - approved + complete   → completeness card NOT rendered (MEH-1397 —
+ *     the collapsed "profile complete ✓" card is noise once approved, so
+ *     it no longer mounts; reverses MEH-288's "never fully disappears")
  *   - exactly ONE completeness mount per state (no duplicate)
  *
  * ProfileCompletenessCard is mocked to a testid stub — its internals are
@@ -188,12 +190,14 @@ describe("Producer dashboard — conditional card order (MEH-1134)", () => {
     expect(screen.getAllByTestId("completeness-card")).toHaveLength(1);
   });
 
-  it("approved + complete → today's order preserved (availability first)", async () => {
+  it("approved + complete → completeness card NOT rendered (MEH-1397)", async () => {
     producerStatus = "approved";
     profileFixture = completeProfile;
-    const { completeness, availabilityHeading } = await renderAndLocate();
+    render(<ProducerDashboardPage />);
 
-    expect(precedes(availabilityHeading, completeness)).toBe(true);
-    expect(screen.getAllByTestId("completeness-card")).toHaveLength(1);
+    // Wait for the page to finish loading (availability card is present in
+    // every state) before asserting the completeness card's absence.
+    await screen.findByText("availability.heading");
+    expect(screen.queryByTestId("completeness-card")).not.toBeInTheDocument();
   });
 });
