@@ -2899,17 +2899,6 @@
       "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו"
     }
   },
-  "rate": {
-    "invalid_link": "קישור לא תקין",
-    "error_generic": "שגיאה בשליחה",
-    "loading": "בטעינה...",
-    "thanks_title": "תודה!",
-    "thanks_message": "הדירוג שלך נשמר. זה עוזר לקהילה.",
-    "heading": "איך היה?",
-    "bought_from": "קנית מ<seller>{name}</seller>",
-    "comment_placeholder": "תגובה קצרה (אופציונלי)",
-    "submit": "שלחו דירוג"
-  },
   "report": {
     "trigger": "דיווח על עסק",
     "form_heading": "דווח על עסק",
