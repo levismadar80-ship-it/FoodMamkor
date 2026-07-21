@@ -3,6 +3,13 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1411 — producer-detail header polish (YELLOW)
+
+- **Shipped (a/b/d; c skipped):** `/producer/[id]` header polish. **(a)** collapsed the orphan mobile "שמירה" hairline row and folded the heart into the meta cluster (`ProducerHeader.jsx`; desktop absolute-pin unchanged). **(b)** "חדש" fallback → small **neutral** pill (`bg-surface-card border border-border text-fg-muted`, ProducerCard idiom; `data-testid="new-mark"` kept). NOT green — overrode the ticket's literal `text-primary` per review to protect MEH-1334's one-green-per-page (Sapir confirmed). **(d)** added the per-method WhatsApp icon to the mobile `StickyContactBar` CTA, mirroring `PrimaryContactButton` (`#25D366` untouched). **(c) SKIPPED** — "פתוח להזמנות" is already a non-link `<span>`; its green+bold is MEH-1334's locked "one green per page / no dot, no chip" decision (Sapir confirmed skip rather than reverse it).
+- **Phase 0 re-validation (post-MEH-1334, merged today):** (a) `ProducerHeader.jsx:172` · (b) `ProducerHeader.jsx:104-109` · (c) `ProducerHeader.jsx:130-134` (conflict, skipped) · (d) `StickyContactBar.jsx` CTA. Full report in the PR.
+- **Verify:** build exit 0 · vitest 13/13 (`ProducerHeaderTrustStrip` + `StickyContactBarInert`, presence assertions preserved) · self-QA @375/@1440 (client API route-mocked) → `qa-artifacts/MEH-1411/` (5 WebP, 271 KB). Styling/markup only, no copy/i18n changes, RTL logical-only.
+- **VRT:** producer-detail baselines shift by design → this PR touches `e2e/visual/parity.spec.ts` to re-fire `vrt-update.yml`; the bot regenerates `producer-detail-{desktop,mobile}-linux` on-runner and commits to the branch (MEH-991 flow). **Merge manually after fresh baselines land + VRT green** (auto-merge on the 2 required gates would ship stale baselines — E2E/VRT is not a required gate).
+- **Branch:** `feature/meh-1411-producer-detail-polish` off `origin/staging`. Third of the 1409/1410/1411 UX-polish batch (1409=#2010, 1410=#2012 both merged).
 ## 2026-07-21 — MEH-1405 — producer manage pages for events + experiences (list "mine" + edit + cancel/delete)
 
 - **Shipped:** full producer manage UI over the existing owner-scoped PUT/DELETE. Events get list + edit + **cancel toggle (is_active)** + delete; experiences get list + edit + delete.
