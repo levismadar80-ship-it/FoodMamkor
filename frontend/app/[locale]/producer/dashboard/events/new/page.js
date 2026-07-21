@@ -10,6 +10,7 @@ import { detailToMessage, isUnverifiedEmailError } from "@/lib/errors";
 import { showToast } from "@/lib/toast";
 import { useAuth } from "@/lib/auth-context";
 import CitySearch from "@/components/CitySearch";
+import AddressSearch from "@/components/AddressSearch";
 import Input from "@/components/ui/Input";
 import UnverifiedEmailNotice from "@/components/UnverifiedEmailNotice";
 // MEH-869: shared category set — aliased on import (no transform; the
@@ -27,6 +28,10 @@ export default function NewEventPage() {
     event_date: "",
     event_time: "",
     location: "",
+    // MEH-1404: coords from AddressSearch pick (null when free-text only).
+    // Backend EventCreate accepts lat/lng (schemas.py); payload spreads form.
+    lat: null,
+    lng: null,
     city: "",
     image_url: "",
     category: "סדנה",
@@ -203,14 +208,29 @@ export default function NewEventPage() {
           />
         </div>
 
-        <Input
-          id="location"
-          type="text"
-          label={t("field_location_label")}
-          value={form.location}
-          onChange={update("location")}
-          placeholder={t("field_location_simple_placeholder")}
-        />
+        <div>
+          <label htmlFor="location" className="block text-sm font-medium text-text mb-1">
+            {t("field_location_label")}
+          </label>
+          {/* MEH-1404: AddressSearch fills location text (onChange) + lat/lng
+              (onSelect). Free-text still allowed — coords stay null unless a
+              suggestion is picked. REUSES: edit/cards.jsx LocationCard pattern. */}
+          <AddressSearch
+            id="location"
+            label={t("field_location_label")}
+            value={form.location}
+            onChange={(val) => setForm((f) => ({ ...f, location: val }))}
+            onSelect={(picked) =>
+              setForm((f) => ({
+                ...f,
+                location: picked.street || picked.displayName || f.location,
+                lat: picked.lat ?? null,
+                lng: picked.lng ?? null,
+              }))
+            }
+            placeholder={t("field_location_simple_placeholder")}
+          />
+        </div>
 
         <div>
           <label htmlFor="city" className="block text-sm font-medium text-text mb-1">{t("field_city_label")}</label>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Leaf, MapPin, Calendar, CurrencyCircleDollar, Users } from "@phosphor-icons/react";
 import { useTranslations, useLocale } from "next-intl";
@@ -10,6 +11,10 @@ import { formatEventDate } from "@/lib/format-date";
 import { formatPrice } from "@/lib/utils";
 import api from "@/lib/api";
 import Breadcrumb from "@/components/Breadcrumb";
+
+// MEH-1404: reuse the producer-detail static map + Waze/Gmaps block on
+// experiences with coords. ssr:false — leaflet touches window at module eval.
+const MiniMap = dynamic(() => import("@/components/MiniMap"), { ssr: false });
 
 function formatDate(iso, locale) {
   if (!iso) return "";
@@ -170,6 +175,17 @@ export default function ExperienceDetailClient() {
             </p>
           )}
         </div>
+
+        {/* MEH-1404: map + navigation buttons when the experience has coords.
+            Without coords the city/address line above stays text-only. Note:
+            the backend returns lat/lng publicly (only the street address is
+            gated to owner/admin — experiences.py:189), so strangers see the
+            pin but not the exact address text. */}
+        {ex.lat != null && ex.lng != null && (
+          <div className="mb-6">
+            <MiniMap lat={ex.lat} lng={ex.lng} name={ex.title} />
+          </div>
+        )}
 
         {ex.description && (
           <div className="bg-white border border-border rounded-[16px] p-6 mb-6 leading-relaxed whitespace-pre-line text-text/90">
