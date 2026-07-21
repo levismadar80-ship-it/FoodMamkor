@@ -3,6 +3,16 @@
 > Read this before starting any work.
 > Decision capture is now proactive — see [ADR-009](./docs/decisions/ADR-009-decision-capture-proactive.md) (MEH-678): Claude offers to write an ADR when a conversation produces an architectural decision.
 
+## 2026-07-21 — MEH-1418 — toggle-chip Phosphor icons + "רישוי מאומת" + FilterSheet explainers — PR opened, awaiting Sapir merge.
+
+- **Shipped:** branch `feature/meh-1418-toggle-chip-icons` off `staging`. Attribute/toggle filter chips get 16px Phosphor leading icons on all 3 surfaces (home · /producers · /map quick + FilterSheet); category chips untouched (byte-identical, text-only per MEH-683 D4).
+- **NEW `frontend/lib/chip-icons.js`** — key→icon map + `withChipIcons()`. Phase 0 verified all 7 glyphs (`SealCheck/Truck/Certificate/Leaf/GrainsSlash/Barn/DropSlash`) exist in `@phosphor-icons/react@2.1.10` → no STOP. Kept separate from the React-free data modules on purpose.
+- **`ChipScrollRow` needed no edit** — it already renders `chip.icon` (aria-hidden span, gap-1.5). Threaded via `withChipIcons` at `HomeProducersGrid` (useMemo), `ProducersClient` (`allChips`), `FilterChipsBar` (module-level `QUICK_CHIPS`).
+- **Labels:** `ATTRIBUTE_LABELS.verified` "מאומתים"→**"רישוי מאומת"**; `kosher` unified into the shared map as Sapir-LOCKED **"כשרות מאומתת"** (MEH-1087), sourced by both `producer-filters.js` + `map-chips.js`.
+- **FilterSheet:** stacked rows, each toggle gets a muted subtext from `BADGE_CONFIG[key].tooltip` (has_delivery→delivery key; no new copy). Icon inside aria-hidden span → label stays the accessible name.
+- **Gates:** build exit 0 · full vitest 1437 pass / 10 skip · RTL clean (the 2 scan hits are pre-existing `MapPane.jsx` map controls, untouched) · lucide 0 · no "יצרן" · en-parity green.
+- **VRT note:** home + /map chip rows change pixels (new label + icons); E2E/VRT is not a required gate (testing.md — E2E gate not wired to ruleset). Baseline regen for `/` + `/map` is a follow-up if the parity suite is run; not blocking merge.
+- **Next:** Sapir mobile-QA the preview, then merge. `Closes MEH-1418`.
 ## 2026-07-21 — MEH-1417 — privacy: home-experience map pin leaked residence to strangers (YELLOW)
 
 - **Shipped:** closed a location-privacy leak MEH-1404 opened. The public experience-detail serializer nulled only the street `address` for strangers, not `lat`/`lng` — and MEH-1404's new MiniMap draws a precise pin from those coords, so a `location_type=="home"` experience exposed the host's residence despite the address being hidden. **Backend-only, single serializer.**

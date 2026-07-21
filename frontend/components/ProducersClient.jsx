@@ -12,6 +12,7 @@ import LocationModal from "@/components/LocationModal";
 import BackToTop from "@/components/BackToTop";
 import { SkeletonProducerGrid } from "@/components/Skeleton";
 import { buildChipParams, CHIPS_CONFIG, CHIPS_DEFAULT } from "@/lib/producer-filters";
+import { withChipIcons } from "@/lib/chip-icons";
 import { useUserCity } from "@/lib/use-user-city";
 import { trackEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
@@ -296,7 +297,9 @@ export default function ProducersClient({
   };
 
   const cityChip = cityFilter ? { ...cityChipDef, label: cityFilter } : cityChipDef;
-  const allChips = [...CHIPS_CONFIG, cityChip];
+  // MEH-1418: Phosphor leading icons on the attribute chips; the city chip has
+  // no icon entry, so it passes through text-only (byte-identical).
+  const allChips = withChipIcons([...CHIPS_CONFIG, cityChip]);
   const activeKeys = { ...chips, city: !!cityFilter };
   // MEH-1081: radio row data — "all" sentinel first, then the DB categories.
   const categoryChips = [
