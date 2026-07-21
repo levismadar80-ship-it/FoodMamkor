@@ -1,9 +1,34 @@
 import { useTranslations } from "next-intl";
-import { Star } from "@phosphor-icons/react";
+import {
+  Star,
+  WhatsappLogo,
+  Phone,
+  Globe,
+  EnvelopeSimple,
+  InstagramLogo,
+  FacebookLogo,
+  Receipt,
+} from "@phosphor-icons/react";
 
 import { getPrimaryContactHref, getPrimaryContactLabel, getPrimaryMethod, isPrimaryExternal } from "@/lib/contact-method";
 
 import { pingWhatsAppBeacon } from "@/lib/contact-tracking";
+
+// MEH-1411: the sticky CTA carried a label with no icon while the inline CTA
+// showed one. Mirror PrimaryContactButton.jsx's per-method icon so the sticky
+// bar matches the inline button — same WhatsappLogo (weight="fill") for the
+// common whatsapp case, method-appropriate icon otherwise. Colors are owned by
+// the className fork below (btn-whatsapp keeps #25D366) — icon only, no recolor.
+// REUSES: components/PrimaryContactButton.jsx VARIANTS icon set.
+const METHOD_ICON = {
+  whatsapp: WhatsappLogo,
+  phone: Phone,
+  website: Globe,
+  email: EnvelopeSimple,
+  instagram: InstagramLogo,
+  facebook: FacebookLogo,
+  external_order: Receipt,
+};
 
 /**
  * Mobile-only sticky bar that slides in from the bottom when the
@@ -27,6 +52,8 @@ export default function StickyContactBar({
   isBarVisible,
 }) {
   const t = useTranslations();
+  // MEH-1411: per-method icon for the sticky CTA (matches the inline button).
+  const CtaIcon = METHOD_ICON[getPrimaryMethod(producer)] || WhatsappLogo;
   return (
     <div
       // MEH-76 chunk 3: border hex literal -> border-border token class; the
@@ -104,6 +131,7 @@ export default function StickyContactBar({
                 : "bg-white text-text border border-primary hover:bg-green-50"
             }`}
           >
+            <CtaIcon size={20} weight="fill" aria-hidden="true" />
             {isVacation ? t("producer.detail.sticky_bar.vacation_msg") : getPrimaryContactLabel(producer)}
           </a>
         )}
