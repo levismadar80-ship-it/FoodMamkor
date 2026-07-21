@@ -719,7 +719,7 @@ def revoke_verified(
 # MEH-1406: admin home-products moderation endpoints removed from the live
 # surface (was: GET /home-products/hidden, POST .../restore, DELETE .../{id},
 # GET /home-products/flagged, POST .../approve, POST .../remove). The
-# consumer "מהמטבח של השכן" feature was retired per brand LOCK (licensed
+# consumer home-cook feature was retired per brand LOCK (licensed
 # businesses only), so its admin moderation queue is unmounted too. The
 # HomeProduct model/schemas/tables are retained (no Alembic) — the /admin/stats
 # counts below still read them; only the writable/queue endpoints are gone.

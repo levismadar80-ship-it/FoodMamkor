@@ -3721,6 +3721,40 @@ class TestAppleTokenVerification:
 # MEH-386: BOLA regression tests
 # ---------------------------------------------------------------------------
 
+class TestHomeProductsKillSwitch:
+    """MEH-1406: the home-products feature is unmounted (router not included,
+    admin endpoints removed). These POSITIVE assertions prove the public +
+    admin surfaces 404 — they encode the ticket's core acceptance criterion
+    ("all /home-products* endpoints return 404") as a runnable guard, and will
+    fail loudly if the router is ever re-mounted WITHOUT also un-skipping the
+    BOLA / sanitization tests below (silent-guard-loss guard).
+    """
+
+    def test_public_home_products_list_is_404(self, client):
+        assert client.get("/home-products").status_code == 404
+
+    def test_public_home_product_create_is_404(self, client, db):
+        # A verified-email user previously could POST here (the write hole
+        # MEH-1406 closed). The route no longer exists → 404 regardless of auth.
+        user = make_user(db, email="killswitch@example.com")
+        resp = client.post(
+            "/home-products",
+            json={"title": "עוגה", "description": "טעימה", "price": "25"},
+            headers=auth_header(user),
+        )
+        assert resp.status_code == 404
+
+    def test_admin_home_products_flagged_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin@example.com", role="admin")
+        resp = client.get("/admin/home-products/flagged", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+    def test_admin_home_products_hidden_is_404(self, client, db):
+        admin = make_user(db, email="ks-admin2@example.com", role="admin")
+        resp = client.get("/admin/home-products/hidden", headers=auth_header(admin))
+        assert resp.status_code == 404
+
+
 class TestBOLA:
     """Regression suite for MEH-386 — Broken Object Level Authorization.
 
