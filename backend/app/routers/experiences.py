@@ -82,6 +82,7 @@ def _serialize_detail(ex: Experience) -> dict:
         "requirements": ex.requirements,
         "lat": ex.lat,
         "lng": ex.lng,
+        "is_active": bool(ex.is_active),  # MEH-1419
         "moderation_status": ex.moderation_status,
         "moderation_reason": ex.moderation_reason,
         "moderation_suggestion": ex.moderation_suggestion,
@@ -125,6 +126,9 @@ def list_experiences(
         .filter(
             Experience.status == "approved",
             Experience.event_date >= date.today(),
+            # MEH-1419: a host-cancelled experience drops from the public feed
+            # (mirrors events.py:73). It stays visible on GET /experiences/mine.
+            Experience.is_active.is_(True),
         )
     )
     if category:
@@ -295,10 +299,18 @@ def update_experience(
     for field, value in payload.items():
         setattr(ex, field, value)
 
-    # Any edit after a negative moderation verdict sends the experience
-    # back to `pending` and clears the admin-written feedback so the
-    # admin queue shows a fresh card. Claude re-runs on the new content.
-    if ex.status in ("changes_requested", "rejected", "approved"):
+    # MEH-1419: a pure cancel/reactivate toggle (is_active only) must NOT
+    # re-trigger moderation or reset an approved experience to `pending` —
+    # cancelling is a reversible host action, not a content edit, so a
+    # reactivated experience returns to the public feed immediately. Events
+    # have no moderation, so their toggle is a plain PUT (events.py:238); the
+    # experience toggle needs this guard because content edits below reset.
+    content_changed = any(field != "is_active" for field in payload)
+
+    # Any content edit after a negative moderation verdict sends the
+    # experience back to `pending` and clears the admin-written feedback so
+    # the admin queue shows a fresh card. Claude re-runs on the new content.
+    if content_changed and ex.status in ("changes_requested", "rejected", "approved"):
         ex.status = "pending"
         ex.admin_feedback = None
         ex.rejection_reason = None

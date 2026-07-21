@@ -186,6 +186,7 @@ erDiagram
         numeric price
         int capacity
         string status "pending|changes_requested|approved|rejected"
+        boolean is_active "MEH-1419: reversible host cancel; public list filters true"
         text moderation_notes "Claude Haiku pre-check output"
         timestamp created_at
     }

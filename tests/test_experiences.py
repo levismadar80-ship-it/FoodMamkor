@@ -587,6 +587,96 @@ class TestExperienceEdit:
         assert client.get("/experiences/mine").status_code == 401
 
 
+# ---------- Reversible cancel (is_active) — MEH-1419 ----------
+
+
+class TestExperienceCancelToggle:
+    """MEH-1419 — a host can reversibly cancel/reactivate an approved
+    experience via PUT {is_active}. Mirrors Event.is_active: cancelled drops
+    from the public feed, stays on /mine, and a pure toggle must NOT re-run
+    moderation (an approved experience stays approved)."""
+
+    def test_public_list_hides_cancelled(self, client, db):
+        host = make_user(db)
+        _make_experience(db, host, title="Live", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        resp = client.get("/experiences")
+        assert resp.status_code == 200
+        assert [e["title"] for e in resp.json()] == ["Live"]
+
+    def test_mine_includes_cancelled_with_flag(self, client, db):
+        host = make_user(db)
+        _make_experience(db, host, title="Live", status="approved", is_active=True)
+        _make_experience(db, host, title="Off", status="approved", is_active=False)
+        resp = client.get("/experiences/mine", headers=auth_header(host))
+        assert resp.status_code == 200
+        by_title = {e["title"]: e for e in resp.json()}
+        assert by_title["Off"]["is_active"] is False
+        assert by_title["Live"]["is_active"] is True
+
+    def test_owner_can_cancel_and_reactivate(self, client, db, monkeypatch):
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, title="Toggle", status="approved")
+
+        # Cancel → drops from public feed
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["is_active"] is False
+        assert [e["title"] for e in client.get("/experiences").json()] == []
+
+        # Reactivate → returns to the public feed
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": True},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["is_active"] is True
+        assert [e["title"] for e in client.get("/experiences").json()] == ["Toggle"]
+
+    def test_pure_toggle_does_not_re_moderate_approved(self, client, db, monkeypatch):
+        """A cancel that only flips is_active must keep status=approved —
+        it must NOT reset to pending like a content edit does."""
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={"is_active": False},
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "approved"  # not bumped back to pending
+        assert ex.is_active is False
+
+    def test_content_edit_still_re_moderates(self, client, db, monkeypatch):
+        """Guard is scoped: a real content edit on an approved experience
+        still resets it to pending (existing behaviour preserved)."""
+        _mock_moderation(monkeypatch, status="APPROVED")
+        host = make_user(db)
+        ex = _make_experience(db, host, status="approved")
+
+        resp = client.put(
+            f"/experiences/{ex.id}",
+            json={
+                "description": (
+                    "תיאור חדש וארוך דיו שמכיל יותר מעשרים תווים אמיתיים."
+                )
+            },
+            headers=auth_header(host),
+        )
+        assert resp.status_code == 200
+        db.refresh(ex)
+        assert ex.status == "pending"
+
+
 # ---------- Cross-feature: existing /events is untouched ----------
 
 
