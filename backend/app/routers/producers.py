@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.auth import get_current_user_optional, require_verified_email
 from app.database import get_db
@@ -197,6 +197,9 @@ def get_producer_by_slug(slug: str, request: Request, db: Session = Depends(get_
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
+            # so it doesn't widen the 3-way collection joinedload cartesian).
+            selectinload(Producer.locations),
         )
         .filter(Producer.slug == slug, Producer.status == "approved")
         .first()
@@ -231,6 +234,9 @@ def get_producer(
             joinedload(Producer.categories),
             joinedload(Producer.products),
             joinedload(Producer.delivery_areas),
+            # MEH-1402 — locations[] for ProducerDetailOut (separate SELECT,
+            # so it doesn't widen the 3-way collection joinedload cartesian).
+            selectinload(Producer.locations),
         )
         .filter(Producer.id == producer_id)
         .first()

@@ -3944,7 +3944,15 @@
         "owner_present": "Owner story added",
         "owner_missing": "No photo and story yet",
         "kashrut_has": "Kosher badge active",
-        "kashrut_none": "No kosher badge yet"
+        "kashrut_none": "No kosher badge yet",
+        "hub_title": "Edit business",
+        "hub_back": "Back to all sections",
+        "hub_group_profile": "Your profile",
+        "hub_group_trust": "Trust & certifications",
+        "hub_group_location": "Location, delivery & hours",
+        "hub_group_contact": "Contact & questions",
+        "hub_trust_card": "Certifications & documents",
+        "hub_progress": "{done} of {total} completed"
       },
       "contact_channels": {
         "heading": "Contact channels",
@@ -4188,6 +4196,8 @@
       "loading": "Loading…",
       "heading": "Notify me when…",
       "close_aria": "Close",
+      "group_what": "When to notify you?",
+      "group_how": "How to receive?",
       "row_new_event": "New events",
       "row_new_product": "New products",
       "row_delivery_area": "New delivery areas",
@@ -4306,7 +4316,7 @@
       "stat_products": "Products",
       "stat_orders": "Orders",
       "stats_unavailable": "Data not available right now.",
-      "edit_profile_link": "Edit business profile →"
+      "edit_business_cta": "Edit business page"
     },
     "products": {
       "section_heading": "Products",
