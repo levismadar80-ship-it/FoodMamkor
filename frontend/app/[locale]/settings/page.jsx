@@ -8,6 +8,7 @@ import {
   UserCircle,
   Lock,
   Storefront,
+  ArrowRight,
   Eye,
   EyeSlash,
   WhatsappLogo,
@@ -781,6 +782,20 @@ function BusinessTab() {
 
   return (
     <div className="space-y-6">
+      {/* MEH-1355: primary navigation CTA at the top of the business status
+          tab — jumps straight to the edit surface. Kept ABOVE the status
+          banners (deliberately NOT a redirect) so a rejected/suspended owner
+          still sees her banner below. Mirrors the ProfileCompletenessCard edit
+          CTA: bg-action-primary + ArrowRight rtl:rotate-180 forward indicator
+          (MEH-1348/MEH-938 convention). */}
+      <Link
+        href="/producer/dashboard/edit"
+        className="flex w-full items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-[12px] font-semibold bg-action-primary hover:bg-action-primary-hover text-white transition-colors focus-ring"
+      >
+        {t("edit_business_cta")}
+        <ArrowRight size={18} weight="bold" aria-hidden="true" className="rtl:rotate-180" />
+      </Link>
+
       {/* Status banner */}
       {status === "pending" && (
         <div className="rounded-[12px] bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
@@ -821,24 +836,9 @@ function BusinessTab() {
         </div>
       )}
 
-      {/* MEH-963: the canonical analytics + profile-management surface is
-          /producer/dashboard. The old statistics grid here read fields the
-          /producers/me/dashboard endpoint never returns (views / reviews /
-          products / orders / avg_rating), so it rendered a permanent 0/- wall
-          for every owner — new or established. Removed in favor of an
-          always-visible pointer to the real dashboard (un-gated from
-          status === "approved" — owners need it while pending too). */}
-      <div className="text-center">
-        {/* MEH-1209: the copy is "ערכו פרופיל עסק" — it must land on the edit
-            surface, not the dashboard overview. Repointed to /edit so every
-            entry into editing (owner bar, completeness card, this link) is
-            consistent (the MEH-963 pointer intent is preserved — /edit is
-            reachable from the dashboard, and the copy now matches the target). */}
-        <Link href="/producer/dashboard/edit" className="text-sm text-primary hover:underline">
-          {t("edit_profile_link")}
-        </Link>
-      </div>
-
+      {/* MEH-1355: the old bottom "ערכו פרופיל עסק ←" text link (the MEH-963 /
+          MEH-1209 pointer to /edit) was absorbed into the primary CTA at the
+          top of the tab — one clear navigation path, no duplicate link. */}
       {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
