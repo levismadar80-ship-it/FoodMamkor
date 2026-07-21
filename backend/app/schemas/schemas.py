@@ -411,6 +411,33 @@ class DeliveryAreaOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProducerLocationOut(BaseModel):
+    """MEH-1402 (MEH-1388 chunk 2): one physical presence point (branch /
+    pickup / market_stand) serialized on `ProducerListOut.locations[]`. Read
+    straight off the `ProducerLocation` ORM rows (selectinload'd in
+    producer_listing.py — no N+1). Expand-phase serialization only; the
+    Producer.lat/lng column stays the primary mirror (chunk-3 map UI consumes
+    this array). `precision` is emitted from the ORM's `location_precision`
+    column (serialization_alias) to match the epic's map contract shape.
+    Street `address` is intentionally NOT exposed here — MEH-829 keeps the
+    exact address admin/owner-only; the map pins on lat/lng + city.
+    """
+
+    kind: str
+    label: str | None = None
+    city: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    is_primary: bool = False
+    precision: str = Field(
+        default="exact",
+        validation_alias="location_precision",
+        serialization_alias="precision",
+    )
+
+    model_config = {"from_attributes": True, "populate_by_name": True}
+
+
 # --- Product ---
 # MEH-295: price_min/price_max are the canonical pricing fields.
 # price_range is kept Optional for legacy back-compat — drop tracked as
@@ -959,6 +986,14 @@ class ProducerListOut(BaseModel):
     # is currently unused (live producers have it empty while the relation
     # has rows) — separate cleanup ticket, not addressed here.
     delivery_areas: list[DeliveryAreaOut] = []
+    # MEH-1402 (MEH-1388 chunk 2): physical presence points (branch / pickup /
+    # market_stand). selectinload'd on both LIST branches + the DETAIL query
+    # (producer_listing.py + producers.py) so from_attributes reads the loaded
+    # relationship with no N+1. Empty for producers with no location rows yet
+    # (Expand overlap — Producer.lat/lng still drives their single map pin).
+    # Chunk 3 (map UI) is the consumer; the frontend ProducerSchema (non-strict
+    # z.object, schemas.js:7) silently strips this until chunk 3 declares it.
+    locations: list[ProducerLocationOut] = []
     # MEH-530: public-facing boolean signal. Computed in attach_badge_fields
     # (`producer_queries.py`) from `producer.producer_license_number is not
     # None and stripped`. The raw number is admin-only via ProducerAdminOut.
