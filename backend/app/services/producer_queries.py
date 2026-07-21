@@ -11,7 +11,7 @@ from uuid import UUID
 
 import structlog
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -81,6 +81,15 @@ def haversine_min_km(lat: float, lng: float):
     create, the fallback becomes dead weight and can be dropped in Contract.
     A producer with neither a location nor a Producer point yields NULL, which
     fails `<= radius` and is correctly excluded.
+
+    # DO NOT drop the CASE guard on the own-point fallback — Postgres LEAST()
+    #        IGNORES NULL args, so func.least(1.0, cos_delta) returns 1.0 (not
+    #        NULL) when Producer.lat/lng are NULL, making acos(1.0)=0 → a
+    #        coordinate-less producer would falsely match at distance 0. The
+    #        pre-MEH-1402 code guarded this with an explicit
+    #        `Producer.lat IS NOT NULL` filter in _build_base_queries; the CASE
+    #        below re-establishes the same guard inside the coalesced expr so
+    #        NULL correctly propagates to `<= radius` (MEH-1402).
     """
     nearest_location_km = (
         select(
@@ -96,9 +105,14 @@ def haversine_min_km(lat: float, lng: float):
         .correlate(Producer)
         .scalar_subquery()
     )
-    return func.coalesce(
-        nearest_location_km, _haversine_expr(lat, lng, Producer.lat, Producer.lng)
+    own_point_km = case(
+        (
+            and_(Producer.lat.isnot(None), Producer.lng.isnot(None)),
+            _haversine_expr(lat, lng, Producer.lat, Producer.lng),
+        ),
+        else_=None,
     )
+    return func.coalesce(nearest_location_km, own_point_km)
 
 
 def attach_badge_fields(producer):
