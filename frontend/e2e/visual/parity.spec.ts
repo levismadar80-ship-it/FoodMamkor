@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import * as path from "path";
-
+// MEH-1369: regen home baselines after hero-CTA hierarchy change (#1991).
 /**
  * MEH-991 Chunk 3 — visual parity baselines (VRT).
  * Baselines refreshed 2026-07-12 after MEH-1128 Wave D2 — the consumer
