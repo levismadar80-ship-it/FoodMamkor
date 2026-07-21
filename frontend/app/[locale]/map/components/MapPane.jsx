@@ -7,6 +7,7 @@ import {
   CircleNotch,
   Leaf,
   MagnifyingGlass,
+  MapPinLine,
   MapTrifold,
   NavigationArrow,
   SquaresFour,
@@ -65,6 +66,9 @@ export default function MapPane({
   registerApi,
   mapRef,
   visitedIds,
+  // MEH-1412: pickup/market_stand layer toggle (state owned by MapClient).
+  showSecondaryLayer,
+  onToggleSecondaryLayer,
   // overlay state + handlers
   mapMoved,
   onSearchThisArea,
@@ -96,7 +100,26 @@ export default function MapPane({
         registerApi={registerApi}
         mapRef={mapRef}
         visitedIds={visitedIds}
+        showSecondaryLayer={showSecondaryLayer}
       />
+      {/* MEH-1412 (MEH-1388 chunk 3): pickup / market_stand layer toggle. Logical
+          props (start-*) — this is a UI control, not a geographic map control, so
+          it flips correctly per locale (unlike the physical-positioned legend/GPS
+          below, which are the documented geo exceptions). z-[1000] = controls tier. */}
+      <button
+        type="button"
+        onClick={onToggleSecondaryLayer}
+        aria-pressed={showSecondaryLayer}
+        aria-label={t("map.pane.pickup_layer.aria")}
+        className={`absolute top-4 start-4 z-[1000] flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-md transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          showSecondaryLayer
+            ? "bg-primary text-white border-primary"
+            : "bg-surface-floating text-text border-border hover:bg-green-50"
+        }`}
+      >
+        <MapPinLine size={15} weight={showSecondaryLayer ? "fill" : "regular"} />
+        {t("map.pane.pickup_layer.label")}
+      </button>
       {mapMoved && (
         // eslint-disable-next-line no-restricted-syntax -- rtl-ok: horizontal centering idiom
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">

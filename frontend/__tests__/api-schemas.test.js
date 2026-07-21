@@ -143,4 +143,38 @@ describe("re-exported producer schemas", () => {
     expect(parsed.data?.delivery_areas?.[0]?.city).toBe("ירושלים");
     expect(parsed.data?.delivery_areas?.[0]?.delivery_day).toBe("ראשון");
   });
+
+  it("ProducerSchema preserves locations[] (MEH-1412 chunk 3 strip regression)", () => {
+    // Before MEH-1412 the non-strict z.object stripped locations (undeclared),
+    // so the map could never fan a producer into per-location markers. Assert
+    // the full 7-field shape survives the parse.
+    const parsed = ProducerSchema.safeParse({
+      id: 1,
+      name: "הלחם של גל",
+      locations: [
+        {
+          kind: "branch",
+          label: "הסניף המרכזי",
+          city: "קריית טבעון",
+          lat: 32.7194,
+          lng: 35.118,
+          is_primary: true,
+          precision: "exact",
+        },
+        { kind: "pickup", label: "נקודת איסוף", precision: "approximate" },
+      ],
+    });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.locations).toHaveLength(2);
+    expect(parsed.data?.locations?.[0]?.kind).toBe("branch");
+    expect(parsed.data?.locations?.[0]?.is_primary).toBe(true);
+    expect(parsed.data?.locations?.[0]?.lat).toBe(32.7194);
+    expect(parsed.data?.locations?.[1]?.precision).toBe("approximate");
+  });
+
+  it("ProducerSchema defaults locations[] to [] when absent (no-crash guard)", () => {
+    const parsed = ProducerSchema.safeParse({ id: 1, name: "חווה" });
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.locations).toEqual([]);
+  });
 });

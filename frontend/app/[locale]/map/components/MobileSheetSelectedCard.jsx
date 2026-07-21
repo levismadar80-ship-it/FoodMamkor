@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
-import { X } from "@phosphor-icons/react";
+import { MapPin, X } from "@phosphor-icons/react";
 
 import MapProducerCard from "@/components/MapProducerCard";
 
@@ -32,7 +32,11 @@ function findScrollParent(node) {
  * History:  MEH-1243 (extracted expanded pinned card); MEH-1243 follow-up
  *           (Refs MEH-1243 — expanded card → compact MapProducerCard).
  */
-export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
+export default function MobileSheetSelectedCard({
+  selectedProducer,
+  selectedLocation,
+  onClose,
+}) {
   const t = useTranslations();
   const rootRef = useRef(null);
 
@@ -69,8 +73,23 @@ export default function MobileSheetSelectedCard({ selectedProducer, onClose }) {
   // lives on the wrapper as a sibling of the card, top-START corner (right in
   // RTL). Pin re-tap does NOT deselect (useMapSync.handleMarkerClick always
   // selects), so this X is the sheet's only deselect affordance.
+  // MEH-1412 (MEH-1388 chunk 3): the tooltip context = business name (in the
+  // card) + the CLICKED location's label. Rendered on the wrapper (the frozen
+  // MapProducerCard is untouched); only shows when the tapped marker carried a
+  // label (pickup / market_stand / named branch — null for the lat/lng fallback
+  // marker and unlabelled primary rows). Logical props (start/gap) — RTL-safe.
+  const locationLabel = selectedLocation?.label;
+
   return (
     <div ref={rootRef} className="relative mb-3">
+      {locationLabel ? (
+        // ps-9 clears the deselect × (top-start, w-7) so the label never sits
+        // under it in RTL (start = right, where both live).
+        <div className="mb-1.5 flex items-center gap-1 ps-9 pe-1 text-xs text-fg-muted">
+          <MapPin size={13} weight="fill" className="shrink-0 text-primary" />
+          <span className="truncate">{locationLabel}</span>
+        </div>
+      ) : null}
       <MapProducerCard producer={selectedProducer} active />
       <button
         type="button"

@@ -71,6 +71,9 @@ export default function MapPage() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
+  // MEH-1412 (MEH-1388 chunk 3): pickup/market_stand marker layer visibility.
+  // Default on — all points show; the MapPane toggle flips it.
+  const [showSecondaryLayer, setShowSecondaryLayer] = useState(true);
   // Sort state for the desktop dropdown — consumed by sortedProducers below
   // (until this batch the select wrote state nothing read). `null` = "auto":
   // nearest when the visitor has a GPS fix, newest otherwise. GPS comes from
@@ -391,6 +394,8 @@ export default function MapPage() {
       registerApi={sync.registerMapApi}
       mapRef={sync.mapRef}
       visitedIds={hints.visitedIds}
+      showSecondaryLayer={showSecondaryLayer}
+      onToggleSecondaryLayer={() => setShowSecondaryLayer((v) => !v)}
       mapMoved={filters.mapMoved}
       onSearchThisArea={sync.handleSearchThisArea}
       visibleProducers={filters.visibleProducers}
@@ -589,6 +594,7 @@ export default function MapPage() {
         <MapBottomSheet snap={hints.sheetSnap} onSnapChange={hints.setSheetSnap} count={filters.visibleProducers.length} loading={feed.loading}>
           <MobileSheetSelectedCard
             selectedProducer={filters.selectedProducer}
+            selectedLocation={sync.selectedLocation}
             onClose={() => filters.setSelectedProducer(null)}
           />
           {cardList}

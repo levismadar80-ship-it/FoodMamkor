@@ -1102,7 +1102,11 @@
         "center_on_me": "Center map on my location",
         "categories": "Categories"
       },
-      "show_all": "Show all"
+      "show_all": "Show all",
+      "pickup_layer": {
+        "label": "Pickup points",
+        "aria": "Show or hide pickup points and market stands on the map"
+      }
     },
     "page": {
       "aria": {
