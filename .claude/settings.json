@@ -339,7 +339,6 @@
       "Edit(.claude/settings.json)",
       "Edit(.claude/hooks/**)",
       "Edit(frontend/middleware.ts)",
-      "Edit(frontend/middleware.js)",
       "Edit(frontend/next.config.js)",
       "Edit(Dockerfile)",
       "Edit(railway.json)",
