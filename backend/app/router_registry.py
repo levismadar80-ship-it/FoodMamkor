@@ -19,7 +19,6 @@ from app.routers import (
     group_buys,
     health,
     holiday_mode,
-    home_products,
     marketing,
     producer_me,
     producer_recipes,
@@ -51,7 +50,13 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(favorites.router)
     app.include_router(admin.router)
     app.include_router(admin_extra.router)
-    app.include_router(home_products.router)
+    # MEH-1406: home_products.router disabled per brand LOCK (licensed
+    # businesses only — the consumer home-cook / "from-the-neighbor's-kitchen"
+    # surface was removed). Router/module/models/schemas/tables all retained
+    # (no Alembic); this is a reversible unmount. To restore the live API,
+    # BOTH steps are needed: re-add `home_products` to the import tuple above
+    # AND uncomment the include line below.
+    # app.include_router(home_products.router)
     app.include_router(reports.router)
     app.include_router(upload.router)
     app.include_router(marketing.router)
