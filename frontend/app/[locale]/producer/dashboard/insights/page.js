@@ -25,7 +25,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Eye, MagnifyingGlass, ChatCircle, Phone, Leaf, Star } from "@phosphor-icons/react";
 import { Link as LocaleLink } from "@/i18n/navigation";
 import api from "@/lib/api";
@@ -202,8 +202,22 @@ function DeepAnalyticsSection({ analytics, profile }) {
   );
 }
 
+// MEH-1433: 4-digit windowed values (e.g. 2540/2540/2540) overflowed the card
+// at fixed 4xl/2xl/xl sizes — in RTL the leading digit clipped on the start
+// side. Compact notation caps every magnitude at a bounded width ("2.5K"),
+// paired with min-w-0 on the flex row + tabular-nums so the trio always fits.
+// he-IL renders the "K" suffix (with a trailing RLM) — kept functional-first
+// per the ticket; Sapir reviews the suffix in the PR screenshot.
+function formatCompact(n, locale) {
+  return new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(n ?? 0);
+}
+
 function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
   const t = useTranslations("dashboard.producer.analytics");
+  const locale = useLocale();
   return (
     <div className="bg-white border border-border rounded-[16px] p-5">
       <div className="flex items-center justify-between mb-3">
@@ -214,17 +228,23 @@ function WindowedMetricCard({ label, icon: Icon, windows, tooltip }) {
         {label}
         {tooltip && <InfoTooltip content={tooltip} />}
       </p>
-      <div className="flex items-baseline gap-3">
-        <span className="font-headline-lg text-4xl font-bold text-primary">
-          {windows?.last_7d ?? 0}
+      {/* MEH-1433: at lg the row is a 4-up grid inside max-w-5xl (~194px inner
+          per card) — three values at 4xl/2xl/xl + gap-3 need ~235px and clip
+          even for the reported 2540→"2.5K". Below lg (1-/2-col, wider cards)
+          the spec's 4xl/2xl/xl fit and are kept verbatim; only the lg tier
+          steps down one notch (hierarchy preserved) + gap tightens, so any
+          magnitude fits the narrowest card. */}
+      <div className="flex items-baseline gap-3 lg:gap-2 min-w-0">
+        <span className="font-headline-lg text-4xl lg:text-2xl font-bold text-primary tabular-nums">
+          {formatCompact(windows?.last_7d, locale)}
         </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-2xl font-semibold text-text">
-          {windows?.last_30d ?? 0}
+        <span className="text-lg lg:text-sm text-text/60">/</span>
+        <span className="font-headline-md text-2xl lg:text-xl font-semibold text-text tabular-nums">
+          {formatCompact(windows?.last_30d, locale)}
         </span>
-        <span className="text-lg text-text/60">/</span>
-        <span className="font-headline-md text-xl text-fg-muted">
-          {windows?.total ?? 0}
+        <span className="text-lg lg:text-sm text-text/60">/</span>
+        <span className="font-headline-md text-xl lg:text-base text-fg-muted tabular-nums">
+          {formatCompact(windows?.total, locale)}
         </span>
       </div>
     </div>

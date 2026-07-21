@@ -2903,17 +2903,6 @@
       "login_prompt_message": "כדי לשמור עסקים אוהבים — היכנסו"
     }
   },
-  "rate": {
-    "invalid_link": "קישור לא תקין",
-    "error_generic": "שגיאה בשליחה",
-    "loading": "בטעינה...",
-    "thanks_title": "תודה!",
-    "thanks_message": "הדירוג שלך נשמר. זה עוזר לקהילה.",
-    "heading": "איך היה?",
-    "bought_from": "קנית מ<seller>{name}</seller>",
-    "comment_placeholder": "תגובה קצרה (אופציונלי)",
-    "submit": "שלחו דירוג"
-  },
   "report": {
     "trigger": "דיווח על עסק",
     "form_heading": "דווח על עסק",
@@ -4217,7 +4206,8 @@
         "error_submit": "שליחת הבקשה לא הצליחה — נסו שוב.",
         "status_pending": "ממתינה לאישור",
         "status_rejected": "נדחתה",
-        "empty": "עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן."
+        "empty": "עוד אין תג כשרות לעסק. אפשר לבקש אחד כאן.",
+        "filter_hint": "כדי שהעסק יופיע בסינון \"כשר\", יש להעלות תעודת כשרות לאימות."
       },
       "manage_events": {
         "heading": "האירועים שלי",
@@ -4434,6 +4424,7 @@
         "diet_gluten_free": "🌾 ללא גלוטן",
         "diet_vegan": "🥦 טבעוני",
         "diet_lactose_free": "🥛 ללא לקטוז",
+        "diet_helper": "סימון תווית על מוצר מציג את העסק בסינון המתאים בדפי החיפוש והמפה.",
         "image_label": "תמונת מוצר",
         "image_alt": "תמונה",
         "image_remove": "הסר",
