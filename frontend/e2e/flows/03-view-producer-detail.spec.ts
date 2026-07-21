@@ -12,7 +12,10 @@ test.describe("Producer detail", () => {
     }
     await expect(firstCard).toBeVisible({ timeout: 15_000 });
 
-    await firstCard.click();
+    // MEH-1369: click the card's inner nav anchor (real <a href>, navigates
+    // natively pre-hydration), not the <article> wrapper whose click routes
+    // through a React onClick that races hydration. See parity.spec.ts header.
+    await firstCard.locator('a[href^="/"]').first().click();
     // Detail pages: /producer/:id, /p/:slug, or /{slug} (top-level for slugged producers)
     await page.waitForURL(url => !url.pathname.startsWith('/producers'), { timeout: 20_000 });
 

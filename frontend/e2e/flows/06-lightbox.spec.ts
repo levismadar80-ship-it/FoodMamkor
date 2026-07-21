@@ -15,7 +15,9 @@ test.describe("Lightbox", () => {
       test.skip(true, "No producer cards — staging DB may be empty");
       return;
     }
-    await firstCard.click();
+    // MEH-1369: click the card's inner nav anchor (real <a href>), not the
+    // <article> wrapper whose click races hydration. See parity.spec.ts header.
+    await firstCard.locator('a[href^="/"]').first().click();
     await page.waitForURL((url) => !url.pathname.startsWith("/producers"), { timeout: 20_000 });
 
     // Gallery image button — only exists when the producer has ≥1 photo
