@@ -292,14 +292,24 @@ export default function ProducerGroupBuysPage() {
           {/* MEH-1115: what a group buy is, under the page heading. */}
           <WhatsThis content={tWhat("group_buy")} testId="whats-this-group-buy" />
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          disabled={notApproved}
-          aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
-          className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
-        >
-          {showForm ? t("btn_close_form") : t("btn_open_form")}
-        </button>
+        {/* MEH-1420: hide the header toggle in the approved empty state so the
+            EmptyState CTA is the single create entry point (mirrors MEH-1097 F14
+            in recipes/page.js:85). The button returns once a group exists, or
+            while the form is open (rendering as "close"). notApproved is the
+            exception — keep the disabled button + aria-describedby hint
+            (MEH-1350 / MEH-1165): EmptyState self-hides its CTA there, so hiding
+            the header button too would orphan the hint's aria-describedby target
+            and leave zero affordance. */}
+        {!(items?.length === 0 && !showForm && !notApproved) && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            disabled={notApproved}
+            aria-describedby={notApproved ? "group-buy-approval-hint" : undefined}
+            className={`bg-primary text-white px-4 py-2 rounded-[10px] text-sm font-medium hover:bg-primary-dark transition ${notApproved ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            {showForm ? t("btn_close_form") : t("btn_open_form")}
+          </button>
+        )}
       </div>
 
       {/* MEH-1165: why-locked hint, aria-describedby-linked so it's announced
