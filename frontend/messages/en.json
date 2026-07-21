@@ -1104,11 +1104,6 @@
       },
       "show_all": "Show all"
     },
-    "sheet": {
-      "badge": {
-        "verified": "✓ Verified"
-      }
-    },
     "page": {
       "aria": {
         "business_list": "List of businesses on the map"
