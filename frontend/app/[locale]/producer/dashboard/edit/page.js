@@ -64,7 +64,7 @@ import EditAccordionCard, {
 } from "@/components/EditAccordionCard";
 import Input from "@/components/ui/Input";
 import ProductsSection from "@/components/ProductsSection";
-import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, ViewOnPageLink } from "./cards";
+import { DescriptionCard, OwnerStoryCard, CategoriesCard, ImagesCard, LocationCard, PricingCard, HoursCard, DeliveryCard, LicenseCard, KashrutCard, ViewOnPageLink } from "./cards";
 import { isDefaultDescription } from "@/lib/producer-completeness";
 
 // MEH-1116: stable English anchor id per card → the page-local open-state key.
@@ -77,6 +77,8 @@ const ANCHOR_TO_KEY = {
   categories: "categories",
   // MEH-1258: license editor card (deep-linked from the "נשאר להשלים" banner).
   license: "license",
+  // MEH-1167: kashrut-request card (badge request + cert photo + status).
+  kashrut: "kashrut",
   images: "images",
   location: "location",
   products: "products",
@@ -129,6 +131,7 @@ const KEY_TO_ANCHOR = {
   contact: "contact-channels",
   categories: "categories",
   license: "license",
+  kashrut: "kashrut",
   images: "images",
   location: "location",
   products: "products",
@@ -525,6 +528,24 @@ export default function ProducerDashboardEditPage() {
           onSave={(patch) => setProfile((p) => (p ? { ...p, ...patch } : p))}
           reportDirty={reportDirty}
         />
+      </EditAccordionCard>
+
+      {/* ②c MEH-1167 — kashrut-request card. After License (both are trust /
+          document-upload surfaces); closes the verified-only supply gap
+          (MEH-1392 F0). Self-fetches its request list; no onSave — badges
+          land via admin approval, not a producer profile write. */}
+      <EditAccordionCard
+        anchorId="kashrut"
+        title={t("kashrut.heading")}
+        summary={
+          (profile.kashrut_badges || []).length
+            ? tAcc("kashrut_has")
+            : tAcc("kashrut_none")
+        }
+        open={openKey === "kashrut"}
+        onToggle={() => toggleKey("kashrut")}
+      >
+        <KashrutCard profile={profile} reportDirty={reportDirty} />
       </EditAccordionCard>
 
       {/* ③ Edit-tab chunk C — producer-facing location/coords editor.

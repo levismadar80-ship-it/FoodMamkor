@@ -297,3 +297,71 @@ async def upload_owner_photo(
         raise HTTPException(
             status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
         )
+
+
+@router.post("/kashrut-cert")
+@limiter.limit("10/hour")
+async def upload_kashrut_cert(
+    request: Request,
+    file: UploadFile,
+    user: User = Depends(get_current_user),
+):
+    """Upload a photo of a kashrut certificate → Cloudinary (MEH-1167).
+
+    Mirrors /upload/owner-photo: same magic-byte sniff + 5 MB cap +
+    deliberately NO freemium gate (the /upload/image 3-image cap is a
+    GALLERY cap; a cert is not a gallery image — same reason owner-photo
+    exists). Two intentional differences: it does NOT persist to a
+    producer column (the URL rides the POST /producers/me/kashrut-request
+    body), and it uses a uuid public_id + a plain width-1200 `limit` crop
+    — a certificate is a document to keep readable, not a face to square-
+    crop. v1 is image-only (PDF is an explicit non-goal); the sniff already
+    rejects non-images.
+    # REUSES: backend/app/routers/upload.py:220 (/owner-photo sniff + cap)
+    """
+    if not user.producer_id:
+        raise HTTPException(status_code=403, detail="אין בית עסק משויך לחשבון")
+
+    contents = await file.read(MAX_FILE_SIZE + 1)
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"תמונה גדולה מדי (מקסימום {MAX_FILE_SIZE // 1024 // 1024}MB)",
+        )
+    if not contents:
+        raise HTTPException(status_code=400, detail="קובץ ריק")
+
+    detected = _sniff_image_type(contents[:32])
+    if detected is None:
+        raise HTTPException(
+            status_code=400,
+            detail="רק תמונות JPG/PNG/WebP/GIF/HEIC מותרות",
+        )
+
+    if not settings.cloudinary_cloud_name:
+        return {"url": f"/placeholder-image.png?cert={uuid.uuid4().hex[:8]}"}
+
+    try:
+        import cloudinary
+        import cloudinary.uploader
+
+        cloudinary.config(
+            cloud_name=settings.cloudinary_cloud_name,
+            api_key=settings.cloudinary_api_key,
+            api_secret=settings.cloudinary_api_secret,
+        )
+        result = cloudinary.uploader.upload(
+            contents,
+            folder="mehamakor/kashrut",
+            public_id=uuid.uuid4().hex,
+            resource_type="image",
+            transformation=[{"width": 1200, "crop": "limit"}],
+        )
+        return {"url": result["secure_url"]}
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.error("Cloudinary kashrut cert upload failed: %s", e)
+        raise HTTPException(
+            status_code=500, detail="שגיאה בהעלאת התמונה — נסי שוב בעוד רגע"
+        )
