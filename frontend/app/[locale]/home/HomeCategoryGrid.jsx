@@ -14,9 +14,10 @@ const EASE_QUART = [0.25, 1, 0.5, 1];
 /**
  * Category grid — Assembly v2 (MEH-643 chunk 2), navigation cards since
  * MEH-1080. Ten flat editorial cards in the 2-hero + 8-small asymmetric
- * layout: warm-white surface-card, 1px border, sharp corners, a hand-drawn
- * glyph on a cream panel (Phosphor Leaf fallback for the 4 cards awaiting
- * MEH-683 glyphs), a gold Cormorant-italic numeral (01-10, LTR-isolated),
+ * layout: warm-white surface-card, 1px border, sharp corners, a geometric
+ * glyph on a cream panel (MEH-683 unified set, keyed by canonical name;
+ * Phosphor Leaf fallback only if a name is unmapped), a gold Cormorant-italic
+ * numeral (01-10, LTR-isolated),
  * and the category name (= DB value verbatim).
  *
  * MEH-1080 [T-A] (MEH-1077 DISC-01): each card is a real <Link> to
@@ -61,7 +62,9 @@ export function HomeCategoryGrid({ categoryCards }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
         {categoryCards.map((card, idx) => {
-          const LineArt = CATEGORY_ICONS[card.key];
+          // MEH-683: CATEGORY_ICONS is keyed by canonical DB name. Cards carry
+          // photos (MEH-1183) so this glyph is the no-photo fallback only.
+          const LineArt = CATEGORY_ICONS[card.name];
           const isHero = idx < 2;
           const numeral = String(idx + 1).padStart(2, "0");
           const cardClassName = [
@@ -121,8 +124,8 @@ export function HomeCategoryGrid({ categoryCards }) {
             </>
           ) : (
             <>
-              {/* Glyph panel — cream background, hand-drawn line glyph in brand
-                  green; Phosphor Leaf stand-in until MEH-683 draws the missing 4. */}
+              {/* Glyph panel — cream background, geometric line glyph in brand
+                  green (MEH-683 unified set); Phosphor Leaf if name is unmapped. */}
               <div className={["grid place-items-center bg-background text-primary", aspectClassName].join(" ")}>
                 {LineArt ? (
                   <LineArt

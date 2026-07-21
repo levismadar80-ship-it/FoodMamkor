@@ -9,23 +9,25 @@
  * Keys match `category.name` values from the DB. Add entries alongside
  * any new category rows in the backend.
  *
- * `icon` is the Phosphor React component for the map pin glyph — white,
- * weight="fill", 14px inside the category-colored circle marker.
- * Replaces the emoji approach (which rendered inconsistently across
- * platforms and Android SVG `<text>` nodes).
+ * `icon` is the glyph component for the map pin — white, weight="fill",
+ * 14px inside the category-colored circle marker. Replaces the emoji
+ * approach (which rendered inconsistently across platforms and Android
+ * SVG `<text>` nodes).
+ *
+ * MEH-683 (LOCKED v2.1): the active category glyphs come from the unified
+ * geometric set in components/CategoryIcons.jsx — Cow→Meat (Tabler),
+ * Fish→FishSimple (Phosphor), JarLabel→OliveOil, Hexagon→Hive (Material).
+ * Colours are UNCHANGED (V2: colour lives on the map pin only; honey keeps
+ * its gold #C8821E). The two stale combined keys below ("ירקות, פירות
+ * ומשקים", "טיפוח וסבונים") predate the MEH-927/MEH-1098 taxonomy split and
+ * no longer match a live DB category — left untouched here (a separate
+ * taxonomy-alignment concern, not this glyph swap).
  */
 
-import {
-  Cow,
-  Fish,
-  Plant,
-  Cheese,
-  Bread,
-  JarLabel,
-  Hexagon,
-  FlowerTulip,
-  Leaf,
-} from "@phosphor-icons/react";
+// Vendored + re-exported glyphs from the single icon module (MEH-683 V1).
+import { Meat, FishSimple, Cheese, Bread, OliveOil, Hive } from "@/components/CategoryIcons";
+// Legacy stale-key glyphs + DEFAULT fallback stay on Phosphor.
+import { Plant, FlowerTulip, Leaf } from "@phosphor-icons/react";
 
 export const CATEGORY_STYLES = {
   // MEH-1268 (post-MEH-927 taxonomy): the combined "בשר, עוף ודגים" row was
@@ -35,16 +37,17 @@ export const CATEGORY_STYLES = {
   // "דגים" reusing the SAME meat colour with a distinct Fish glyph — redundant
   // shape encoding (MEH-936) keeps the two apart without adding a palette colour
   // (stays within the MEH-763 F2 ≤-colours / deuteranopia-safe constraint).
-  "בשר":                 { color: "#c04040", icon: Cow,         iconName: "Cow" },
-  "דגים":                { color: "#c04040", icon: Fish,        iconName: "Fish" },
+  // MEH-683: glyphs swapped to the unified set; colours unchanged.
+  "בשר":                 { color: "#c04040", icon: Meat,        iconName: "Meat" },
+  "דגים":                { color: "#c04040", icon: FishSimple,  iconName: "FishSimple" },
   "ירקות, פירות ומשקים": { color: "#2e6853", icon: Plant,       iconName: "Plant" },
   "חלב וגבינות":         { color: "#4a90d9", textColor: "#3b72ad", icon: Cheese,      iconName: "Cheese" },
   "לחמים ואפייה":        { color: "#896714", icon: Bread,       iconName: "Bread" }, // MEH-1065: accent token (retired stale gold)
   // MEH-743: honey split into its own DB category. MEH-763 (S5) gave it a
-  // dedicated identity — brand honey #C8821E + Hexagon (honeycomb) — distinct
-  // from oils (#e8a020 + JarLabel).
-  "שמנים":               { color: "#e8a020", icon: JarLabel,    iconName: "JarLabel" },
-  "דבש":                 { color: "#C8821E", icon: Hexagon,     iconName: "Hexagon" },
+  // dedicated identity — brand honey #C8821E + honeycomb glyph — distinct
+  // from oils (#e8a020). MEH-683: Hexagon→Hive (Material), JarLabel→OliveOil.
+  "שמנים":               { color: "#e8a020", icon: OliveOil,    iconName: "OliveOil" },
+  "דבש":                 { color: "#C8821E", icon: Hive,        iconName: "Hive" },
   "טיפוח וסבונים":       { color: "#9b59b6", icon: FlowerTulip, iconName: "FlowerTulip" },
 };
 
