@@ -80,6 +80,11 @@ export function useMapSync({
   const cardRefs = useRef(new Map());
   const hoverTimerRef = useRef(null);
   const [mapBounds, setMapBounds] = useState(null);
+  // MEH-1412 (MEH-1388 chunk 3): the location row behind the last-clicked
+  // marker, so the selected card can show its label (business name + label).
+  // Lives here (not useMapFilters) because the click handler owns it; the card
+  // only renders while selectedProducer is set, so a stale value is never shown.
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   const registerMapApi = useCallback((api) => {
     if (!api) return;
@@ -107,6 +112,10 @@ export function useMapSync({
     if (!producer?.lat || !producer?.lng) return;
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
+    // MEH-1412: a sidebar-card selection is not location-specific — clear any
+    // label left over from a previous marker click so the card never shows the
+    // wrong point's label (e.g. tap producer A's pickup pin, then B's card).
+    setSelectedLocation(null);
     // MEH-1298: removed the legacy `#map-container` scrollIntoView — a
     // stacked-layout page-scroll that moved the list under the pointer between
     // the two taps of the MEH-1243 Direction-B select→navigate gesture, so the
@@ -118,9 +127,12 @@ export function useMapSync({
 
   // MEH-58 Phase 2: mobile tap marker → sheet HALF + scroll card.
   // Desktop click marker → mini-popup only (handled by MapComponent).
-  const handleMarkerClick = useCallback((producer) => {
+  const handleMarkerClick = useCallback((producer, location = null) => {
     setActiveProducerId(producer.id);
     setSelectedProducer(producer);
+    // MEH-1412: remember which location's marker was clicked (null for the
+    // lat/lng fallback marker) so the card can label the point.
+    setSelectedLocation(location);
     const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
     if (!isDesktop) {
       setSheetSnap(HALF);
@@ -138,6 +150,7 @@ export function useMapSync({
     }
     if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
   }, [setActiveProducerId, setSelectedProducer, setSheetSnap]);
+  // setSelectedLocation is a stable setState fn — omitted from deps intentionally.
 
   // docs/archive/MAP_IMPROVEMENTS.md #3 — hover sync: map → card
   const handleMarkerHover = useCallback((producerId) => {
@@ -172,6 +185,7 @@ export function useMapSync({
   const handleMapCanvasClick = useCallback(() => {
     setSelectedProducer(null);
     setActiveProducerId(null);
+    setSelectedLocation(null); // MEH-1412: clear the labelled point with the selection.
   }, [setSelectedProducer, setActiveProducerId]);
 
   // MEH-14 / old bug #14: commit the current viewport AND refetch
@@ -257,5 +271,6 @@ export function useMapSync({
     handleMapMove,
     handleMapCanvasClick,
     handleSearchThisArea,
+    selectedLocation,
   };
 }

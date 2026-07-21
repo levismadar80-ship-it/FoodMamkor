@@ -243,6 +243,9 @@ export default function MapComponent({
   // MEH-14: IDs of producers the user has already viewed (from
   // recently_viewed sessionStorage). These markers render dimmed.
   visitedIds = null,
+  // MEH-1412 (MEH-1388 chunk 3): show/hide the pickup + market_stand secondary
+  // marker layer. Default true (all points visible); MapClient owns the toggle.
+  showSecondaryLayer = true,
 }) {
   const t = useTranslations("map.component");
   const visitedSet =
@@ -421,7 +424,15 @@ export default function MapComponent({
       maxClusterRadius: 60,
       disableClusteringAtZoom: 11,
       iconCreateFunction: (cluster) => {
-        const count = cluster.getChildCount();
+        // MEH-1412 (MEH-1388 chunk 3): the cluster badge counts UNIQUE
+        // businesses, not markers — a 10-location producer contributes 1, not
+        // 10. Each marker carries `producerId` (set in the marker loop); dedupe
+        // the cluster's leaf markers by it. getAllChildMarkers() flattens nested
+        // sub-clusters, so the count is correct at every zoom.
+        const uniqueBusinesses = new Set(
+          cluster.getAllChildMarkers().map((m) => m.producerId),
+        );
+        const count = uniqueBusinesses.size;
         return L.divIcon({
           html: `
             <div style="
@@ -563,6 +574,9 @@ export default function MapComponent({
           title: markerLabel,
           keyboard: true,
         });
+        // MEH-1412: tag the marker with its business id so the cluster badge can
+        // dedupe by producer (unique-business count, not marker count).
+        marker.producerId = p.id;
 
         // MEH-765: keyboard a11y — the divIcon has no native `alt`, so set
         // role + accessible name on each marker's element via the `add` event
@@ -575,7 +589,10 @@ export default function MapComponent({
           }
         });
 
-        marker.on("click", () => onProducerClickRef.current?.(p));
+        // MEH-1412: pass the clicked LOCATION alongside the producer so the
+        // selected-card can show the point's label (business name + label).
+        // ALL of a producer's markers still open the SAME producer card.
+        marker.on("click", () => onProducerClickRef.current?.(p, loc));
         marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
         marker.on("mouseout", () => onProducerHoverRef.current?.(null));
 
@@ -584,13 +601,33 @@ export default function MapComponent({
         return true;
       };
 
-      locations.forEach(addMarker);
+      // MEH-1412: render each usable location. Secondary points
+      // (pickup/market_stand) are suppressed when the layer toggle is off — but
+      // a suppressed point still COUNTS as a usable location, so the coord
+      // fallback below does not fire for a producer whose only points are hidden
+      // pickups (it stays off-map while the layer is hidden rather than
+      // reappearing as a primary pin).
+      let hadUsableLocation = false;
+      locations.forEach((loc) => {
+        const lat = loc?.lat;
+        const lng = loc?.lng;
+        const usable =
+          typeof lat === "number" &&
+          typeof lng === "number" &&
+          !isNaN(lat) &&
+          !isNaN(lng);
+        if (!usable) return;
+        hadUsableLocation = true;
+        const secondary = loc?.kind === "pickup" || loc?.kind === "market_stand";
+        if (secondary && !showSecondaryLayer) return; // hidden by the layer toggle
+        addMarker(loc);
+      });
 
-      // MEH-1412: if NO location produced a marker (every row lacked usable
-      // coords) but the producer still has its own lat/lng point, fall back to
-      // it — the chunk-2 backend keeps such a producer visible via COALESCE, so
-      // the map must not silently drop it (adversarial-review finding).
-      if (entryMarkers.length === 0) {
+      // Fallback ONLY when the producer had NO usable location at all (empty
+      // locations[] or every row coord-invalid) — parity with the chunk-2
+      // COALESCE (adversarial-review finding). A producer whose usable points
+      // were merely toggled off is intentionally left off-map.
+      if (!hadUsableLocation) {
         addMarker({
           kind: "branch",
           is_primary: true,
@@ -611,7 +648,7 @@ export default function MapComponent({
     // northern Israel when test data was sparse), making the map look
     // off-center on load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [producers, visitedIds]);
+  }, [producers, visitedIds, showSecondaryLayer]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[500px] rounded-lg" />
