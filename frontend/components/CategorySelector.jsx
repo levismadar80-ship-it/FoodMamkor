@@ -9,8 +9,9 @@ import { CATEGORY_ICONS } from "@/components/CategoryIcons";
  * CategorySelector — register step-02 producer category picker (S7 card aesthetic).
  *
  * Re-skin of the prior emoji-pill control to the S7 "card" design (MEH-203):
- * a 2-col card grid, unified geometric glyphs (CategoryIcons.jsx, MEH-683) for the 6
- * popular categories + a Phosphor Leaf fallback for the other 12, and a live
+ * a 2-col card grid, unified geometric glyphs (CategoryIcons.jsx, MEH-683) for
+ * every one of the 18 cards (Leaf fallback only for an unknown admin-created
+ * category with no CATEGORY_ICONS row), and a live
  * name+desc filter that DIMS (not hides) non-matching cards. The data contract
  * is unchanged — props categories / selectedIds / onChange(id) / onRequestCategory
  * still feed form.category_ids — so the mount (RegisterProducerClient.jsx:546)
@@ -199,9 +200,11 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
               const capDisabled = !selected && selectedIds.length >= MAX_CATEGORIES;
               const dimmed = q.length > 0 && !isMatch(cat);
               const desc = descFor(cat);
-              const popular = POPULAR_BY_NAME[cat.name];
-              // MEH-683: CATEGORY_ICONS re-keyed to canonical DB name (was slug).
-              const Glyph = popular ? CATEGORY_ICONS[popular.name] : null;
+              // MEH-683 #4: CATEGORY_ICONS is keyed by canonical DB name (was
+              // slug). EVERY card resolves its dedicated glyph; the Leaf
+              // fallback is now reached only by an unknown (admin-created)
+              // category with no row in CATEGORY_ICONS.
+              const Glyph = CATEGORY_ICONS[cat.name] || null;
               return (
                 <button
                   key={cat.id}
@@ -227,7 +230,7 @@ export default function CategorySelector({ categories, selectedIds, onChange, on
                     className={`flex items-center justify-center ${selected ? "text-primary" : "text-primary-dark"}`}
                     aria-hidden="true"
                   >
-                    {Glyph ? <Glyph size={46} strokeWidth={5.5} /> : <Leaf size={46} weight="light" />}
+                    {Glyph ? <Glyph size={46} /> : <Leaf size={46} weight="light" />}
                   </span>
                   <span className="min-w-0">
                     <span className="block font-headline-display font-bold text-[19px] leading-tight text-text">
