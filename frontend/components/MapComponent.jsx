@@ -419,7 +419,16 @@ export default function MapComponent({
 
     // MEH-58 Phase 1: cluster below zoom 11, green circle + white count.
     clusterGroupRef.current = L.markerClusterGroup({
-      chunkedLoading: true,
+      // MEH-1424: chunkedLoading must stay OFF now that markers arrive via
+      // bulk addLayers(). Chunked mode makes addLayers ASYNC (it re-schedules
+      // itself with setTimeout), and clearLayers() does NOT cancel the pending
+      // continuation — a rapid refetch (search-this-area, layer toggle) could
+      // re-add stale markers from the previous feed after the wipe. With the
+      // flag off the same code path runs to completion synchronously, still
+      // with a single _refreshClustersIcons() pass, preserving both the perf
+      // win and the pre-bulk synchronous timing semantics. (The old true value
+      // was dead anyway: singular addLayer never engaged chunking.)
+      chunkedLoading: false,
       showCoverageOnHover: false,
       maxClusterRadius: 60,
       disableClusteringAtZoom: 11,
@@ -531,6 +540,18 @@ export default function MapComponent({
     // Defensive: guard against null/empty producers (#10)
     if (!Array.isArray(producers) || producers.length === 0) return;
 
+    // MEH-1424: collect every marker and hand the whole batch to
+    // addLayers(bulk) ONCE after the loop, instead of addLayer per marker.
+    // Each singular addLayer re-runs iconCreateFunction on every affected
+    // cluster, and since MEH-1412 that function walks the cluster's whole
+    // subtree (getAllChildMarkers) to dedupe businesses — per-marker adds
+    // made the initial load O(N²): measured 663 icon builds / 96k marker
+    // walks for a 345-marker feed (1.17M walks at 1,150 markers), vs 9
+    // builds / ~2k walks with the bulk add, which runs ONE clustering pass
+    // and one icon build per visible cluster. Bulk add stays synchronous —
+    // see the chunkedLoading:false note on the group options above.
+    const bulkMarkers = [];
+
     producers.forEach((p) => {
       if (!p || !p.id) return;
 
@@ -596,7 +617,7 @@ export default function MapComponent({
         marker.on("mouseover", () => onProducerHoverRef.current?.(p.id));
         marker.on("mouseout", () => onProducerHoverRef.current?.(null));
 
-        clusterGroupRef.current.addLayer(marker);
+        bulkMarkers.push(marker); // MEH-1424: batched into one addLayers below
         entryMarkers.push({ marker, location: loc });
         return true;
       };
@@ -641,6 +662,10 @@ export default function MapComponent({
       if (entryMarkers.length === 0) return;
       markersRef.current.set(p.id, { markers: entryMarkers, producer: p });
     });
+
+    // MEH-1424: single bulk add — one clustering pass + one icon build per
+    // visible cluster (see the comment on bulkMarkers above).
+    clusterGroupRef.current.addLayers(bulkMarkers);
 
     // MEH-58 QA: removed auto-fitBounds that overrode the initial center
     // (MEH-932: now [32.4, 34.95] zoom 8, the fixed producer-band view). The
