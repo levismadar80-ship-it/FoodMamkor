@@ -11,9 +11,10 @@
 // ("בשר, עוף ודגים" etc.) with fuzzy `match` arrays are gone — the
 // includes()-first-match mapping silently hid producers whose category
 // appeared later in a card's label (MEH-1077 DISC-03).
-// Ordering: glyph-bearing cards lead (first 2 = hero cards); the 4
-// Leaf-fallback cards trail until MEH-683 draws their glyphs.
-// `key` doubles as the CATEGORY_ICONS lookup (meat/veg/dairy/bread/oil/care).
+// Ordering: hero cards lead (first 2); the rest follow. Cards render photos
+// (MEH-1183); the geometric glyph is the no-photo fallback only.
+// MEH-683: the CATEGORY_ICONS fallback is keyed by `name` (canonical DB value),
+// not `key` — `key` remains the stable React key + link slug.
 //
 // MEH-1183: `image` is a TEMPORARY bridge asset — Unsplash free-license
 // stock (MEH-1182 wired the `images.unsplash.com` remotePattern + CSP
